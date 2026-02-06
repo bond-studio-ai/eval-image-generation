@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       social={{
         providers: ['google'],
       }}
+      credentials={false}
     >
       {children}
     </NeonAuthUIProvider>
