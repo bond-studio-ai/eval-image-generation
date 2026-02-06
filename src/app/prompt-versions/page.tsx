@@ -53,7 +53,7 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Prompt Versions</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-600">
             Manage versioned prompts for image generation.
           </p>
         </div>
@@ -85,19 +85,19 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Model
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Generations
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Created
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Status
                 </th>
               </tr>
@@ -112,15 +112,15 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
                     >
                       {pv.name || 'Untitled'}
                     </Link>
-                    <p className="mt-1 max-w-xs truncate text-xs text-gray-500">{pv.userPrompt}</p>
+                    <p className="mt-1 max-w-xs truncate text-xs text-gray-600">{pv.userPrompt}</p>
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {pv.model || '-'}
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {pv.generationCount}
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {new Date(pv.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap">

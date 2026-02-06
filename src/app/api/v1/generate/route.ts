@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth/server';
 import { db } from '@/db';
 import { promptVersion } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
@@ -7,12 +6,6 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
   try {
-    // Validate auth session
-    const { data: session } = await auth.getSession();
-    if (!session?.user) {
-      return errorResponse('UNAUTHORIZED', 'Authentication required');
-    }
-
     const body = await request.json();
     const { prompt_version_id, input_images } = body as {
       prompt_version_id: string;

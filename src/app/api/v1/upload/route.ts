@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth/server';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -18,12 +17,6 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: Request) {
   try {
-    // Validate auth session
-    const { data: session } = await auth.getSession();
-    if (!session?.user) {
-      return errorResponse('UNAUTHORIZED', 'Authentication required');
-    }
-
     const body = await request.json();
     const { filename, contentType, size } = body as {
       filename: string;

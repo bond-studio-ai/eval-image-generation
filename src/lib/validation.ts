@@ -32,6 +32,13 @@ export const createPromptVersionSchema = z.object({
 export const updatePromptVersionSchema = z.object({
   name: z.string().max(255).optional(),
   description: z.string().optional(),
+  system_prompt: z.string().min(1).optional(),
+  user_prompt: z.string().min(1).optional(),
+  model: z.string().max(255).optional().nullable(),
+  output_type: z.string().max(50).optional().nullable(),
+  aspect_ratio: z.string().max(20).optional().nullable(),
+  output_resolution: z.string().max(20).optional().nullable(),
+  temperature: z.coerce.number().min(0).max(2).optional().nullable(),
 });
 
 export const listPromptVersionsSchema = paginationSchema.extend({
@@ -53,8 +60,8 @@ export const ratingSchema = z.enum(ratingValues);
 
 export const createGenerationSchema = z.object({
   prompt_version_id: z.string().uuid(),
-  input_images: z.array(z.object({ url: z.string().url() })).optional(),
-  output_images: z.array(z.object({ url: z.string().url() })).optional(),
+  input_images: z.array(z.object({ url: z.string().min(1) })).optional(),
+  output_images: z.array(z.object({ url: z.string().min(1) })).optional(),
   notes: z.string().optional(),
   execution_time: z.number().int().optional(),
 });
@@ -81,5 +88,5 @@ export const listGenerationsSchema = paginationSchema.extend({
 // ------------------------------------
 
 export const addImageSchema = z.object({
-  url: z.string().url(),
+  url: z.string().min(1),
 });

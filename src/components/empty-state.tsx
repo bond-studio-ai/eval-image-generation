@@ -8,7 +8,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 px-6 py-16">
       <svg
-        className="mx-auto h-12 w-12 text-gray-400"
+        className="mx-auto h-12 w-12 text-gray-500"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth={1}
@@ -21,7 +21,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
         />
       </svg>
       <h3 className="mt-4 text-sm font-semibold text-gray-900">{title}</h3>
-      <p className="mt-1 text-sm text-gray-500">{description}</p>
+      <p className="mt-1 text-sm text-gray-600">{description}</p>
       {action && <div className="mt-6">{action}</div>}
     </div>
   );

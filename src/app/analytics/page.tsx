@@ -86,20 +86,20 @@ export default async function AnalyticsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-gray-600">
         Insights into generation quality and prompt performance.
       </p>
 
       {/* Overview Stats */}
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm text-gray-500">Total Generations</p>
+          <p className="text-sm font-medium text-gray-600">Total Generations</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalGenerations}</p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm text-gray-500">Rated</p>
+          <p className="text-sm font-medium text-gray-600">Rated</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{overview.ratedGenerations}</p>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-600">
             {overview.totalGenerations > 0
               ? `${Math.round((overview.ratedGenerations / overview.totalGenerations) * 100)}%`
               : '0%'}{' '}
@@ -107,7 +107,7 @@ export default async function AnalyticsPage() {
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm text-gray-500">Active Prompts</p>
+          <p className="text-sm font-medium text-gray-600">Active Prompts</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalPrompts}</p>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default async function AnalyticsPage() {
                 </div>
               </div>
               <span className="w-16 text-right text-sm font-medium text-gray-900">{d.count}</span>
-              <span className="w-16 text-right text-sm text-gray-500">{d.percentage}%</span>
+              <span className="w-16 text-right text-sm text-gray-700">{d.percentage}%</span>
             </div>
           ))}
         </div>
@@ -138,19 +138,19 @@ export default async function AnalyticsPage() {
       <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-gray-900">Prompt Performance</h2>
         {performance.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No data yet.</p>
+          <p className="mt-4 text-sm text-gray-600">No data yet.</p>
         ) : (
           <div className="mt-4 overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                     Prompt
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                     Generations
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                     Avg Rating
                   </th>
                 </tr>
@@ -161,7 +161,7 @@ export default async function AnalyticsPage() {
                     <td className="py-3 pr-6 text-sm font-medium text-gray-900">
                       {p.name || 'Untitled'}
                     </td>
-                    <td className="px-6 py-3 text-right text-sm text-gray-500">
+                    <td className="px-6 py-3 text-right text-sm text-gray-700">
                       {p.generationCount}
                     </td>
                     <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">

@@ -103,7 +103,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Generations</h1>
-          <p className="mt-1 text-sm text-gray-500">Browse and filter all image generation runs.</p>
+          <p className="mt-1 text-sm text-gray-600">Browse and filter all image generation runs.</p>
         </div>
       </div>
 
@@ -154,19 +154,19 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Prompt
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Rating
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Images
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Created
                 </th>
               </tr>
@@ -185,13 +185,13 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
                   <td className="px-6 py-4 text-sm whitespace-nowrap">
                     <RatingBadge rating={gen.resultRating} />
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {gen.inputImageCount} in / {gen.outputImageCount} out
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {gen.executionTime ? `${gen.executionTime}ms` : '-'}
                   </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {new Date(gen.createdAt).toLocaleDateString()}
                   </td>
                 </tr>

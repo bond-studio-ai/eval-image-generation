@@ -1,8 +1,8 @@
 import { db } from '@/db';
-import { promptVersion } from '@/db/schema';
+import { generation, promptVersion } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { updatePromptVersionSchema, uuidSchema } from '@/lib/validation';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -72,6 +72,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return errorResponse('VALIDATION_ERROR', 'Invalid ID format');
     }
 
+    // Check if version has generations — if so, it's locked
+    const genCount = await db
+      .select({ count: count() })
+      .from(generation)
+      .where(eq(generation.promptVersionId, id));
+
+    if ((genCount[0]?.count ?? 0) > 0) {
+      return errorResponse('FORBIDDEN', 'Cannot edit a prompt version that has been used in generations');
+    }
+
     const body = await request.json();
     const parsed = updatePromptVersionSchema.safeParse(body);
 
@@ -84,6 +94,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updates: Record<string, unknown> = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
     if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+    if (parsed.data.system_prompt !== undefined) updates.systemPrompt = parsed.data.system_prompt;
+    if (parsed.data.user_prompt !== undefined) updates.userPrompt = parsed.data.user_prompt;
+    if (parsed.data.model !== undefined) updates.model = parsed.data.model;
+    if (parsed.data.output_type !== undefined) updates.outputType = parsed.data.output_type;
+    if (parsed.data.aspect_ratio !== undefined) updates.aspectRatio = parsed.data.aspect_ratio;
+    if (parsed.data.output_resolution !== undefined) updates.outputResolution = parsed.data.output_resolution;
+    if (parsed.data.temperature !== undefined)
+      updates.temperature = parsed.data.temperature !== null ? String(parsed.data.temperature) : null;
 
     if (Object.keys(updates).length === 0) {
       return errorResponse('VALIDATION_ERROR', 'No fields to update');
@@ -113,10 +131,19 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return errorResponse('VALIDATION_ERROR', 'Invalid ID format');
     }
 
-    // Soft delete
+    // Check if version has generations — if so, it cannot be deleted
+    const genCount = await db
+      .select({ count: count() })
+      .from(generation)
+      .where(eq(generation.promptVersionId, id));
+
+    if ((genCount[0]?.count ?? 0) > 0) {
+      return errorResponse('FORBIDDEN', 'Cannot delete a prompt version that has been used in generations');
+    }
+
+    // Hard delete (no generations reference this version)
     const [deleted] = await db
-      .update(promptVersion)
-      .set({ deletedAt: new Date() })
+      .delete(promptVersion)
       .where(eq(promptVersion.id, id))
       .returning();
 

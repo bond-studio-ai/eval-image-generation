@@ -1,39 +1,47 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function NewPromptVersionPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [userPrompt, setUserPrompt] = useState('');
+  const [model, setModel] = useState('');
+  const [outputType, setOutputType] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('');
+  const [outputResolution, setOutputResolution] = useState('');
+  const [temperature, setTemperature] = useState('');
+
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
+  const canCreate = systemPrompt.trim() && userPrompt.trim();
+
+  async function handleCreate() {
+    if (!canCreate) return;
+    setCreating(true);
     setError(null);
-
-    const form = new FormData(e.currentTarget);
-
-    const body = {
-      name: form.get('name') as string,
-      system_prompt: form.get('system_prompt') as string,
-      user_prompt: form.get('user_prompt') as string,
-      description: form.get('description') as string,
-      model: form.get('model') as string,
-      output_type: form.get('output_type') as string,
-      aspect_ratio: form.get('aspect_ratio') as string,
-      output_resolution: form.get('output_resolution') as string,
-      temperature: form.get('temperature')
-        ? parseFloat(form.get('temperature') as string)
-        : undefined,
-    };
 
     try {
       const res = await fetch('/api/v1/prompt-versions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          name: name || undefined,
+          description: description || undefined,
+          system_prompt: systemPrompt,
+          user_prompt: userPrompt,
+          model: model || undefined,
+          output_type: outputType || undefined,
+          aspect_ratio: aspectRatio || undefined,
+          output_resolution: outputResolution || undefined,
+          temperature: temperature ? parseFloat(temperature) : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -45,177 +53,193 @@ export default function NewPromptVersionPage() {
       router.push(`/prompt-versions/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-      setLoading(false);
+      setCreating(false);
     }
   }
 
+  const editableInput =
+    'w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1';
+
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900">New Prompt Version</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Create a new prompt version for image generation testing.
-      </p>
+    <div className="pb-20">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <Link href="/prompt-versions" className="text-sm text-gray-600 hover:text-gray-900">
+            &larr; Back to Prompt Versions
+          </Link>
 
-      {error && <div className="mt-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Untitled Prompt Version"
+            className="mt-2 block w-full border-0 border-b border-transparent bg-transparent px-0 py-1 text-2xl font-bold text-gray-900 transition-colors placeholder:text-gray-300 hover:border-gray-300 focus:border-primary-500 focus:ring-0 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add a description..."
+            className="mt-1 block w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-600 transition-colors placeholder:text-gray-300 hover:border-gray-300 focus:border-primary-500 focus:ring-0 focus:outline-none"
+          />
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        {/* Basic Info */}
+      {/* Stats placeholder — mirrors the detail page structure */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        {['Generations', 'Rated', 'Avg Rating', 'Unrated'].map((label) => (
+          <div key={label} className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+            <p className="text-sm font-medium text-gray-600">{label}</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">-</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Prompts */}
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+          <h2 className="text-sm font-semibold uppercase text-gray-900">
+            System Prompt <span className="text-red-500">*</span>
+          </h2>
+          <textarea
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            rows={8}
+            placeholder="System prompt that sets AI context and behavior..."
+            className={`mt-3 font-mono ${editableInput}`}
+          />
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+          <h2 className="text-sm font-semibold uppercase text-gray-900">
+            User Prompt <span className="text-red-500">*</span>
+          </h2>
+          <textarea
+            value={userPrompt}
+            onChange={(e) => setUserPrompt(e.target.value)}
+            rows={8}
+            placeholder="User-facing prompt template. Use {placeholders} for dynamic content."
+            className={`mt-3 font-mono ${editableInput}`}
+          />
+        </div>
+      </div>
 
-          <div className="mt-4 space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                id="name"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., Interior Design v2"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <input
-                type="text"
-                name="description"
-                id="description"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="Brief description of this version"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="system_prompt" className="block text-sm font-medium text-gray-700">
-                System Prompt <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="system_prompt"
-                id="system_prompt"
-                rows={4}
-                required
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="System prompt that sets AI context and behavior..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="user_prompt" className="block text-sm font-medium text-gray-700">
-                User Prompt <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="user_prompt"
-                id="user_prompt"
-                rows={4}
-                required
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="User-facing prompt template. Use {placeholders} for dynamic content."
-              />
-            </div>
+      {/* Model Settings */}
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="text-sm font-semibold uppercase text-gray-900">Model Settings</h2>
+        <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <div>
+            <label className="text-xs font-medium text-gray-600">Model</label>
+            <input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="e.g. gpt-image-1"
+              className={`mt-1 ${editableInput}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Output Type</label>
+            <input
+              type="text"
+              value={outputType}
+              onChange={(e) => setOutputType(e.target.value)}
+              placeholder="e.g. image"
+              className={`mt-1 ${editableInput}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Aspect Ratio</label>
+            <input
+              type="text"
+              value={aspectRatio}
+              onChange={(e) => setAspectRatio(e.target.value)}
+              placeholder="e.g. 16:9"
+              className={`mt-1 ${editableInput}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Resolution</label>
+            <input
+              type="text"
+              value={outputResolution}
+              onChange={(e) => setOutputResolution(e.target.value)}
+              placeholder="e.g. 1024x1024"
+              className={`mt-1 ${editableInput}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Temperature</label>
+            <input
+              type="text"
+              value={temperature}
+              onChange={(e) => setTemperature(e.target.value)}
+              placeholder="e.g. 0.7"
+              className={`mt-1 ${editableInput}`}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Model Settings */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="text-lg font-semibold text-gray-900">Model Settings</h2>
+      {/* Generations placeholder */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900">Generations</h2>
+        <p className="mt-4 text-sm text-gray-600">
+          No generations yet. Create this prompt version first, then generate images.
+        </p>
+      </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-                Model
-              </label>
-              <input
-                type="text"
-                name="model"
-                id="model"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., Nano Banana Pro"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="output_type" className="block text-sm font-medium text-gray-700">
-                Output Type
-              </label>
-              <input
-                type="text"
-                name="output_type"
-                id="output_type"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., Image"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="aspect_ratio" className="block text-sm font-medium text-gray-700">
-                Aspect Ratio
-              </label>
-              <input
-                type="text"
-                name="aspect_ratio"
-                id="aspect_ratio"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., 3:2"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="output_resolution"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Output Resolution
-              </label>
-              <input
-                type="text"
-                name="output_resolution"
-                id="output_resolution"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., 1K"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="temperature" className="block text-sm font-medium text-gray-700">
-                Temperature
-              </label>
-              <input
-                type="number"
-                name="temperature"
-                id="temperature"
-                step="0.1"
-                min="0"
-                max="2"
-                className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-xs focus:ring-1 focus:outline-none"
-                placeholder="e.g., 0.8"
-              />
-            </div>
+      {/* Sticky create bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-lg backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-3">
+            {!canCreate && (
+              <p className="text-sm text-gray-500">
+                Fill in the system prompt and user prompt to create.
+              </p>
+            )}
+            {canCreate && (
+              <p className="text-sm font-medium text-gray-700">Ready to create</p>
+            )}
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              disabled={creating}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={!canCreate || creating}
+              className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors disabled:opacity-50"
+            >
+              {creating && (
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              )}
+              {creating ? 'Creating...' : 'Create Prompt Version'}
+            </button>
           </div>
         </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Create Prompt Version'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

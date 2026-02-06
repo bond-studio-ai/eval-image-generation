@@ -14,3 +14,18 @@
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
 }
+
+/*
+ * Fix form control text color — the Neon Auth UI Tailwind layer
+ * resets these to a very light color, making them nearly invisible.
+ */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  color: var(--color-gray-900, #111827);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-gray-400, #9ca3af);
+}

@@ -2,6 +2,7 @@
 
 import { authClient } from '@/lib/auth/client';
 import { usePathname } from 'next/navigation';
+import { AppShellSkeleton } from './loading-state';
 import { Sidebar } from './sidebar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,11 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showSidebar = isSignedIn && !isAuthPage;
 
   if (session.isPending) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="border-primary-600 h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!showSidebar) {

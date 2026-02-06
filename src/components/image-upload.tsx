@@ -15,14 +15,26 @@ interface ImageUploadProps {
   maxImages?: number;
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
+    const previewUrl = URL.createObjectURL(file);
+
     try {
-      // Get presigned URL from our API
+      // Try S3 upload via presigned URL
       const res = await fetch('/api/v1/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,27 +46,32 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || 'Upload failed');
+        throw new Error('S3 upload API unavailable');
       }
 
       const { uploadUrl, publicUrl } = await res.json().then((r) => r.data);
 
       // Upload directly to S3
-      await fetch(uploadUrl, {
+      const s3Res = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
         body: file,
       });
 
-      return {
-        url: publicUrl,
-        name: file.name,
-        previewUrl: URL.createObjectURL(file),
-      };
-    } catch (error) {
-      console.error('Upload error:', error);
-      return null;
+      if (!s3Res.ok) {
+        throw new Error('S3 PUT failed');
+      }
+
+      return { url: publicUrl, name: file.name, previewUrl };
+    } catch {
+      // Fallback: store as data URL (works without S3 configured)
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        return { url: dataUrl, name: file.name, previewUrl };
+      } catch (fallbackErr) {
+        console.error('Upload error:', fallbackErr);
+        return null;
+      }
     }
   };
 
@@ -68,8 +85,13 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
 
       setUploading(true);
 
+      setError(null);
       const results = await Promise.all(toUpload.map(uploadFile));
       const successful = results.filter((r): r is UploadedImage => r !== null);
+
+      if (successful.length < toUpload.length) {
+        setError(`${toUpload.length - successful.length} file(s) failed to upload.`);
+      }
 
       onImagesChange([...images, ...successful]);
       setUploading(false);
@@ -127,7 +149,7 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
         {uploading ? (
           <div className="flex items-center justify-center gap-2">
             <svg
-              className="h-5 w-5 animate-spin text-gray-500"
+              className="h-5 w-5 animate-spin text-gray-600"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -145,12 +167,12 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="text-sm text-gray-500">Uploading...</span>
+            <span className="text-sm text-gray-600">Uploading...</span>
           </div>
         ) : (
           <div>
             <svg
-              className="mx-auto h-8 w-8 text-gray-400"
+              className="mx-auto h-8 w-8 text-gray-500"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -162,15 +184,20 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
                 d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
               />
             </svg>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-600">
               Drag & drop images here, or click to browse
             </p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-500">
               JPEG, PNG, WebP, GIF up to 10MB ({images.length}/{maxImages})
             </p>
           </div>
         )}
       </div>
+
+      {/* Error message */}
+      {error && (
+        <p className="mt-2 text-xs text-red-600">{error}</p>
+      )}
 
       {/* Image previews */}
       {images.length > 0 && (
