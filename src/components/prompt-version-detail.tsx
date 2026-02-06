@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DeletePromptVersionButton } from './delete-prompt-version-button';
 import { RatingBadge } from './rating-badge';
 
@@ -53,8 +53,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   const router = useRouter();
   const isEditable = generations.length === 0 && !data.deletedAt;
 
-  // Baseline values (updated on save)
-  const baseline = useRef({
+  // Baseline values (updated on save) — must be state so isDirty recalculates
+  const [baseline, setBaseline] = useState({
     name: data.name ?? '',
     description: data.description ?? '',
     systemPrompt: data.systemPrompt,
@@ -67,34 +67,33 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   });
 
   // Editable field state
-  const [name, setName] = useState(baseline.current.name);
-  const [description, setDescription] = useState(baseline.current.description);
-  const [systemPrompt, setSystemPrompt] = useState(baseline.current.systemPrompt);
-  const [userPrompt, setUserPrompt] = useState(baseline.current.userPrompt);
-  const [model, setModel] = useState(baseline.current.model);
-  const [outputType, setOutputType] = useState(baseline.current.outputType);
-  const [aspectRatio, setAspectRatio] = useState(baseline.current.aspectRatio);
-  const [outputResolution, setOutputResolution] = useState(baseline.current.outputResolution);
-  const [temperature, setTemperature] = useState(baseline.current.temperature);
+  const [name, setName] = useState(baseline.name);
+  const [description, setDescription] = useState(baseline.description);
+  const [systemPrompt, setSystemPrompt] = useState(baseline.systemPrompt);
+  const [userPrompt, setUserPrompt] = useState(baseline.userPrompt);
+  const [model, setModel] = useState(baseline.model);
+  const [outputType, setOutputType] = useState(baseline.outputType);
+  const [aspectRatio, setAspectRatio] = useState(baseline.aspectRatio);
+  const [outputResolution, setOutputResolution] = useState(baseline.outputResolution);
+  const [temperature, setTemperature] = useState(baseline.temperature);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isDirty = useMemo(() => {
     if (!isEditable) return false;
-    const b = baseline.current;
     return (
-      name !== b.name ||
-      description !== b.description ||
-      systemPrompt !== b.systemPrompt ||
-      userPrompt !== b.userPrompt ||
-      model !== b.model ||
-      outputType !== b.outputType ||
-      aspectRatio !== b.aspectRatio ||
-      outputResolution !== b.outputResolution ||
-      temperature !== b.temperature
+      name !== baseline.name ||
+      description !== baseline.description ||
+      systemPrompt !== baseline.systemPrompt ||
+      userPrompt !== baseline.userPrompt ||
+      model !== baseline.model ||
+      outputType !== baseline.outputType ||
+      aspectRatio !== baseline.aspectRatio ||
+      outputResolution !== baseline.outputResolution ||
+      temperature !== baseline.temperature
     );
-  }, [isEditable, name, description, systemPrompt, userPrompt, model, outputType, aspectRatio, outputResolution, temperature]);
+  }, [isEditable, baseline, name, description, systemPrompt, userPrompt, model, outputType, aspectRatio, outputResolution, temperature]);
 
   async function handleSave() {
     setSaving(true);
@@ -118,12 +117,16 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       });
 
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || 'Failed to save');
+        const ct = res.headers.get('content-type') ?? '';
+        if (ct.includes('application/json')) {
+          const d = await res.json();
+          throw new Error(d.error?.message || 'Failed to save');
+        }
+        throw new Error(res.status === 401 || res.redirected ? 'Session expired. Please refresh the page.' : `Failed to save (${res.status})`);
       }
 
       // Update baseline so isDirty resets
-      baseline.current = {
+      setBaseline({
         name,
         description,
         systemPrompt,
@@ -133,9 +136,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         aspectRatio,
         outputResolution,
         temperature,
-      };
-      // Force re-check of isDirty by triggering a tiny state update
-      setError(null);
+      });
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -145,16 +146,15 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   }
 
   function handleDiscard() {
-    const b = baseline.current;
-    setName(b.name);
-    setDescription(b.description);
-    setSystemPrompt(b.systemPrompt);
-    setUserPrompt(b.userPrompt);
-    setModel(b.model);
-    setOutputType(b.outputType);
-    setAspectRatio(b.aspectRatio);
-    setOutputResolution(b.outputResolution);
-    setTemperature(b.temperature);
+    setName(baseline.name);
+    setDescription(baseline.description);
+    setSystemPrompt(baseline.systemPrompt);
+    setUserPrompt(baseline.userPrompt);
+    setModel(baseline.model);
+    setOutputType(baseline.outputType);
+    setAspectRatio(baseline.aspectRatio);
+    setOutputResolution(baseline.outputResolution);
+    setTemperature(baseline.temperature);
     setError(null);
   }
 

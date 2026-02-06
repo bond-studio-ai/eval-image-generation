@@ -7,7 +7,7 @@ const ALLOWED_DOMAIN = 'bondstudio.ai';
 const proxyHandler = auth.middleware({ loginUrl: '/auth/sign-in' });
 
 export async function proxy(request: NextRequest) {
-  // Run the auth middleware first (handles session refresh, unauthenticated redirects)
+  // Run the auth middleware (handles session refresh, unauthenticated redirects to login)
   const response = await proxyHandler(request);
 
   // After auth middleware, check if user is authenticated with an allowed email domain
@@ -32,5 +32,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth).*)'],
+  // Exclude static assets, auth pages, and API routes from the proxy.
+  // API routes are excluded because the auth middleware issues HTML redirects
+  // that break client-side fetch calls. API routes are only called from
+  // authenticated pages, so they don't need the redirect-to-login behavior.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth|api).*)'],
 };
