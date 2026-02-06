@@ -4,8 +4,7 @@ import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import {
   generation,
-  generationImageInput,
-  generationImageOutput,
+  generationResult,
   promptVersion,
 } from '@/db/schema';
 import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
@@ -77,23 +76,16 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
   const total = totalResult[0]?.count ?? 0;
   const totalPages = Math.ceil(total / limit);
 
-  // Fetch image counts
+  // Fetch result counts
   const data = await Promise.all(
     rows.map(async (row) => {
-      const [inputCount, outputCount] = await Promise.all([
-        db
-          .select({ count: count() })
-          .from(generationImageInput)
-          .where(eq(generationImageInput.generationId, row.id)),
-        db
-          .select({ count: count() })
-          .from(generationImageOutput)
-          .where(eq(generationImageOutput.generationId, row.id)),
-      ]);
+      const [resultCount] = await db
+        .select({ count: count() })
+        .from(generationResult)
+        .where(eq(generationResult.generationId, row.id));
       return {
         ...row,
-        inputImageCount: inputCount[0]?.count ?? 0,
-        outputImageCount: outputCount[0]?.count ?? 0,
+        resultCount: resultCount?.count ?? 0,
       };
     }),
   );
@@ -161,7 +153,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
                   Rating
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Images
+                  Results
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Time
@@ -186,10 +178,10 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
                     <RatingBadge rating={gen.resultRating} />
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {gen.inputImageCount} in / {gen.outputImageCount} out
+                    {gen.resultCount} result{gen.resultCount !== 1 ? 's' : ''}
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {gen.executionTime ? `${gen.executionTime}ms` : '-'}
+                    {gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : '-'}
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {new Date(gen.createdAt).toLocaleDateString()}

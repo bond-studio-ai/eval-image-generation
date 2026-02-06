@@ -19,8 +19,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
       generations: {
         orderBy: (g, { desc }) => [desc(g.createdAt)],
         with: {
-          inputImages: true,
-          outputImages: true,
+          results: true,
         },
       },
     },
@@ -31,7 +30,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   }
 
   const generations = result.generations;
-  const rated = generations.filter((g) => g.resultRating !== null);
+  const rated = generations.filter((g: { resultRating: string | null }) => g.resultRating !== null);
   const ratingMap: Record<string, number> = {
     FAILED: 0,
     POOR: 1,
@@ -43,7 +42,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   const avgRating =
     rated.length > 0
       ? (
-          rated.reduce((sum, g) => sum + (ratingMap[g.resultRating!] ?? 0), 0) / rated.length
+          rated.reduce((sum: number, g: { resultRating: string | null }) => sum + (ratingMap[g.resultRating!] ?? 0), 0) / rated.length
         ).toFixed(2)
       : null;
 
@@ -66,8 +65,8 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     id: g.id,
     resultRating: g.resultRating,
     createdAt: g.createdAt.toISOString(),
-    inputImageCount: g.inputImages.length,
-    outputImageCount: g.outputImages.length,
+    inputImageCount: 0, // Input is now structured, not a count
+    outputImageCount: g.results.length,
   }));
 
   return (

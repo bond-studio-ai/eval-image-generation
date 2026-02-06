@@ -1,14 +1,43 @@
 import { db } from '@/db';
 import {
   generation,
-  generationImageInput,
-  generationImageOutput,
+  generationInput,
+  generationResult,
   promptVersion,
 } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createGenerationSchema, listGenerationsSchema } from '@/lib/validation';
 import { and, asc, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+
+/** Map from snake_case input keys to camelCase schema fields */
+const INPUT_KEY_MAP: Record<string, string> = {
+  dollhouse_view: 'dollhouseView',
+  real_photo: 'realPhoto',
+  faucets: 'faucets',
+  lightings: 'lightings',
+  lvps: 'lvps',
+  mirrors: 'mirrors',
+  paints: 'paints',
+  robe_hooks: 'robeHooks',
+  shelves: 'shelves',
+  shower_glasses: 'showerGlasses',
+  shower_systems: 'showerSystems',
+  floor_tiles: 'floorTiles',
+  wall_tiles: 'wallTiles',
+  shower_wall_tiles: 'showerWallTiles',
+  shower_floor_tiles: 'showerFloorTiles',
+  shower_curb_tiles: 'showerCurbTiles',
+  toilet_paper_holders: 'toiletPaperHolders',
+  toilets: 'toilets',
+  towel_bars: 'towelBars',
+  towel_rings: 'towelRings',
+  tub_doors: 'tubDoors',
+  tub_fillers: 'tubFillers',
+  tubs: 'tubs',
+  vanities: 'vanities',
+  wallpapers: 'wallpapers',
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,19 +104,13 @@ export async function GET(request: NextRequest) {
 
     const total = totalResult[0]?.count ?? 0;
 
-    // Fetch image counts
+    // Fetch result counts
     const data = await Promise.all(
       rows.map(async (row) => {
-        const [inputCount, outputCount] = await Promise.all([
-          db
-            .select({ count: count() })
-            .from(generationImageInput)
-            .where(eq(generationImageInput.generationId, row.id)),
-          db
-            .select({ count: count() })
-            .from(generationImageOutput)
-            .where(eq(generationImageOutput.generationId, row.id)),
-        ]);
+        const [resultCount] = await db
+          .select({ count: count() })
+          .from(generationResult)
+          .where(eq(generationResult.generationId, row.id));
 
         return {
           ...row,
@@ -95,8 +118,7 @@ export async function GET(request: NextRequest) {
             row.promptPreview && row.promptPreview.length > 100
               ? row.promptPreview.slice(0, 100) + '...'
               : row.promptPreview,
-          input_image_count: inputCount[0]?.count ?? 0,
-          output_image_count: outputCount[0]?.count ?? 0,
+          result_count: resultCount?.count ?? 0,
         };
       }),
     );
@@ -140,19 +162,19 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Insert input images
-    if (input_images && input_images.length > 0) {
-      await db.insert(generationImageInput).values(
-        input_images.map((img) => ({
-          generationId: created.id,
-          url: img.url,
-        })),
-      );
+    // Insert generation_input row (structured)
+    if (input_images) {
+      const inputValues: Record<string, unknown> = { generationId: created.id };
+      for (const [snakeKey, camelKey] of Object.entries(INPUT_KEY_MAP)) {
+        const val = (input_images as Record<string, string | null | undefined>)[snakeKey];
+        if (val) inputValues[camelKey] = val;
+      }
+      await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);
     }
 
-    // Insert output images
+    // Insert output results
     if (output_images && output_images.length > 0) {
-      await db.insert(generationImageOutput).values(
+      await db.insert(generationResult).values(
         output_images.map((img) => ({
           generationId: created.id,
           url: img.url,

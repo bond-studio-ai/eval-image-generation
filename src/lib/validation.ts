@@ -18,7 +18,7 @@ export const sortOrderSchema = z.enum(['asc', 'desc']).default('desc');
 // ------------------------------------
 
 export const createPromptVersionSchema = z.object({
-  name: z.string().max(255).optional(),
+  name: z.string().min(1, 'Name is required').max(255),
   system_prompt: z.string().min(1, 'System prompt is required'),
   user_prompt: z.string().min(1, 'User prompt is required'),
   description: z.string().optional(),
@@ -58,9 +58,38 @@ export const ratingValues = ['FAILED', 'POOR', 'ACCEPTABLE', 'GOOD', 'EXCELLENT'
 
 export const ratingSchema = z.enum(ratingValues);
 
+/** Schema for the structured input_images object (category-keyed S3 URLs) */
+export const generationInputSchema = z.object({
+  dollhouse_view: z.string().min(1).optional().nullable(),
+  real_photo: z.string().min(1).optional().nullable(),
+  faucets: z.string().min(1).optional().nullable(),
+  lightings: z.string().min(1).optional().nullable(),
+  lvps: z.string().min(1).optional().nullable(),
+  mirrors: z.string().min(1).optional().nullable(),
+  paints: z.string().min(1).optional().nullable(),
+  robe_hooks: z.string().min(1).optional().nullable(),
+  shelves: z.string().min(1).optional().nullable(),
+  shower_glasses: z.string().min(1).optional().nullable(),
+  shower_systems: z.string().min(1).optional().nullable(),
+  floor_tiles: z.string().min(1).optional().nullable(),
+  wall_tiles: z.string().min(1).optional().nullable(),
+  shower_wall_tiles: z.string().min(1).optional().nullable(),
+  shower_floor_tiles: z.string().min(1).optional().nullable(),
+  shower_curb_tiles: z.string().min(1).optional().nullable(),
+  toilet_paper_holders: z.string().min(1).optional().nullable(),
+  toilets: z.string().min(1).optional().nullable(),
+  towel_bars: z.string().min(1).optional().nullable(),
+  towel_rings: z.string().min(1).optional().nullable(),
+  tub_doors: z.string().min(1).optional().nullable(),
+  tub_fillers: z.string().min(1).optional().nullable(),
+  tubs: z.string().min(1).optional().nullable(),
+  vanities: z.string().min(1).optional().nullable(),
+  wallpapers: z.string().min(1).optional().nullable(),
+});
+
 export const createGenerationSchema = z.object({
   prompt_version_id: z.string().uuid(),
-  input_images: z.array(z.object({ url: z.string().min(1) })).optional(),
+  input_images: generationInputSchema.optional(),
   output_images: z.array(z.object({ url: z.string().min(1) })).optional(),
   notes: z.string().optional(),
   execution_time: z.number().int().optional(),
@@ -92,6 +121,62 @@ export const addImageSchema = z.object({
 });
 
 // ------------------------------------
+// Input category constants
+// ------------------------------------
+
+export const PRODUCT_CATEGORIES = [
+  'faucets',
+  'lightings',
+  'lvps',
+  'mirrors',
+  'paints',
+  'robe_hooks',
+  'shelves',
+  'shower_glasses',
+  'shower_systems',
+  'floor_tiles',
+  'wall_tiles',
+  'shower_wall_tiles',
+  'shower_floor_tiles',
+  'shower_curb_tiles',
+  'toilet_paper_holders',
+  'toilets',
+  'towel_bars',
+  'towel_rings',
+  'tub_doors',
+  'tub_fillers',
+  'tubs',
+  'vanities',
+  'wallpapers',
+] as const;
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  faucets: 'Faucets',
+  lightings: 'Lightings',
+  lvps: 'LVPs',
+  mirrors: 'Mirrors',
+  paints: 'Paints',
+  robe_hooks: 'Robe Hooks',
+  shelves: 'Shelves',
+  shower_glasses: 'Shower Glasses',
+  shower_systems: 'Shower Systems',
+  floor_tiles: 'Floor Tiles',
+  wall_tiles: 'Wall Tiles',
+  shower_wall_tiles: 'Shower Wall Tiles',
+  shower_floor_tiles: 'Shower Floor Tiles',
+  shower_curb_tiles: 'Shower Curb Tiles',
+  toilet_paper_holders: 'Toilet Paper Holders',
+  toilets: 'Toilets',
+  towel_bars: 'Towel Bars',
+  towel_rings: 'Towel Rings',
+  tub_doors: 'Tub Doors',
+  tub_fillers: 'Tub Fillers',
+  tubs: 'Tubs',
+  vanities: 'Vanities',
+  wallpapers: 'Wallpapers',
+};
+
+// ------------------------------------
 // Evaluations
 // ------------------------------------
 
@@ -103,24 +188,22 @@ export const PRODUCT_ACCURACY_ISSUES = [
 ] as const;
 
 export const SCENE_ACCURACY_ISSUES = [
+  'Unrealistic lighting & shadows',
   'Perspective drift',
   'Incorrect existing conditions',
   'Changed aspect ratio',
-] as const;
-
-export const INTEGRATION_ACCURACY_ISSUES = [
-  'No reflection shown in mirror',
-  'Unrealistic lighting & shadows',
   'Hallucinated details in the room',
 ] as const;
 
+/** Per-category product accuracy evaluation */
+const categoryEvalSchema = z.object({
+  issues: z.array(z.string()),
+  notes: z.string().optional(),
+});
+
 export const upsertEvaluationSchema = z.object({
-  output_image_id: z.string().uuid(),
-  product_accuracy_categories: z.array(z.string()).optional(),
-  product_accuracy_issues: z.array(z.string()).optional(),
-  product_accuracy_notes: z.string().optional(),
+  result_id: z.string().uuid(),
+  product_accuracy: z.record(z.string(), categoryEvalSchema).optional(),
   scene_accuracy_issues: z.array(z.string()).optional(),
   scene_accuracy_notes: z.string().optional(),
-  integration_accuracy_issues: z.array(z.string()).optional(),
-  integration_accuracy_notes: z.string().optional(),
 });

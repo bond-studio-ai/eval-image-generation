@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { generation, generationImageOutput } from '@/db/schema';
+import { generation, generationResult } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { addImageSchema, uuidSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const [created] = await db
-      .insert(generationImageOutput)
+      .insert(generationResult)
       .values({
         generationId: id,
         url: parsed.data.url,

@@ -1,5 +1,6 @@
 'use client';
 
+import { CATEGORY_LABELS } from '@/lib/validation';
 import { useCallback, useEffect, useState } from 'react';
 
 // Issue options
@@ -11,30 +12,29 @@ const PRODUCT_ACCURACY_ISSUES = [
 ];
 
 const SCENE_ACCURACY_ISSUES = [
+  'Unrealistic lighting & shadows',
   'Perspective drift',
   'Incorrect existing conditions',
   'Changed aspect ratio',
-];
-
-const INTEGRATION_ACCURACY_ISSUES = [
-  'No reflection shown in mirror',
-  'Unrealistic lighting & shadows',
   'Hallucinated details in the room',
 ];
 
+/** Per-category product accuracy data */
+interface CategoryEval {
+  issues: string[];
+  notes: string;
+}
+
 interface EvaluationData {
-  product_accuracy_categories: string[];
-  product_accuracy_issues: string[];
-  product_accuracy_notes: string;
+  product_accuracy: Record<string, CategoryEval>;
   scene_accuracy_issues: string[];
   scene_accuracy_notes: string;
-  integration_accuracy_issues: string[];
-  integration_accuracy_notes: string;
 }
 
 interface ImageEvaluationFormProps {
-  outputImageId: string;
-  categories?: string[]; // Available product categories for multi-select
+  resultId: string;
+  /** Product category keys (snake_case) that were used as inputs for this generation */
+  productCategories?: string[];
 }
 
 function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
@@ -61,12 +61,10 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 function IssueCheckboxGroup({
-  label,
   options,
   selected,
   onChange,
 }: {
-  label: string;
   options: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
@@ -80,98 +78,23 @@ function IssueCheckboxGroup({
   };
 
   return (
-    <div>
-      <p className="mb-2 text-xs font-medium text-gray-600">{label}</p>
-      <div className="space-y-1.5">
-        {options.map((issue) => (
-          <label key={issue} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={selected.includes(issue)}
-              onChange={() => toggle(issue)}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-            />
-            {issue}
-          </label>
-        ))}
-      </div>
+    <div className="space-y-1.5">
+      {options.map((issue) => (
+        <label key={issue} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={selected.includes(issue)}
+            onChange={() => toggle(issue)}
+            className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          {issue}
+        </label>
+      ))}
     </div>
   );
 }
 
-function CategoryTagInput({
-  selected,
-  onChange,
-}: {
-  selected: string[];
-  onChange: (selected: string[]) => void;
-}) {
-  const [input, setInput] = useState('');
-
-  const addCategory = () => {
-    const value = input.trim();
-    if (value && !selected.includes(value)) {
-      onChange([...selected, value]);
-      setInput('');
-    }
-  };
-
-  const removeCategory = (cat: string) => {
-    onChange(selected.filter((c) => c !== cat));
-  };
-
-  return (
-    <div>
-      <p className="mb-2 text-xs font-medium text-gray-600">Inaccurate categories</p>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addCategory();
-            }
-          }}
-          placeholder="Type category and press Enter..."
-          className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-        />
-        <button
-          type="button"
-          onClick={addCategory}
-          disabled={!input.trim()}
-          className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
-        >
-          Add
-        </button>
-      </div>
-      {selected.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {selected.map((cat) => (
-            <span
-              key={cat}
-              className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
-            >
-              {cat}
-              <button
-                type="button"
-                onClick={() => removeCategory(cat)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps) {
+export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageEvaluationFormProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -180,54 +103,75 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
   // Section open/close state
   const [productOpen, setProductOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
-  const [integrationOpen, setIntegrationOpen] = useState(false);
 
   // Evaluation data
   const [data, setData] = useState<EvaluationData>({
-    product_accuracy_categories: [],
-    product_accuracy_issues: [],
-    product_accuracy_notes: '',
+    product_accuracy: {},
     scene_accuracy_issues: [],
     scene_accuracy_notes: '',
-    integration_accuracy_issues: [],
-    integration_accuracy_notes: '',
   });
 
   // Load existing evaluation
   useEffect(() => {
-    fetch(`/api/v1/evaluations/${outputImageId}`)
+    fetch(`/api/v1/evaluations/${resultId}`)
       .then((r) => r.json())
       .then((r) => {
         if (r.data) {
+          const pa = r.data.product_accuracy ?? {};
+          // Ensure each active category has an entry
+          const productAccuracy: Record<string, CategoryEval> = {};
+          for (const cat of productCategories) {
+            productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
+          }
+          // Also include any categories that were saved but might not be in current productCategories
+          for (const [key, val] of Object.entries(pa)) {
+            if (!productAccuracy[key]) {
+              productAccuracy[key] = val as CategoryEval;
+            }
+          }
+
           setData({
-            product_accuracy_categories: r.data.product_accuracy_categories ?? [],
-            product_accuracy_issues: r.data.product_accuracy_issues ?? [],
-            product_accuracy_notes: r.data.product_accuracy_notes ?? '',
+            product_accuracy: productAccuracy,
             scene_accuracy_issues: r.data.scene_accuracy_issues ?? [],
             scene_accuracy_notes: r.data.scene_accuracy_notes ?? '',
-            integration_accuracy_issues: r.data.integration_accuracy_issues ?? [],
-            integration_accuracy_notes: r.data.integration_accuracy_notes ?? '',
           });
 
           // Auto-open sections that have data
-          if (
-            r.data.product_accuracy_categories?.length ||
-            r.data.product_accuracy_issues?.length ||
-            r.data.product_accuracy_notes
-          ) {
-            setProductOpen(true);
-          }
+          const hasProductData = Object.values(productAccuracy).some(
+            (cat) => cat.issues.length > 0 || cat.notes,
+          );
+          if (hasProductData) setProductOpen(true);
           if (r.data.scene_accuracy_issues?.length || r.data.scene_accuracy_notes) {
             setSceneOpen(true);
           }
-          if (r.data.integration_accuracy_issues?.length || r.data.integration_accuracy_notes) {
-            setIntegrationOpen(true);
+        } else {
+          // Initialize empty product accuracy for all active categories
+          const productAccuracy: Record<string, CategoryEval> = {};
+          for (const cat of productCategories) {
+            productAccuracy[cat] = { issues: [], notes: '' };
           }
+          setData((prev) => ({ ...prev, product_accuracy: productAccuracy }));
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [outputImageId]);
+  }, [resultId, productCategories]);
+
+  const updateCategoryEval = useCallback(
+    (category: string, field: 'issues' | 'notes', value: string[] | string) => {
+      setData((prev) => ({
+        ...prev,
+        product_accuracy: {
+          ...prev.product_accuracy,
+          [category]: {
+            ...prev.product_accuracy[category],
+            [field]: value,
+          },
+        },
+      }));
+    },
+    [],
+  );
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -239,7 +183,7 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          output_image_id: outputImageId,
+          result_id: resultId,
           ...data,
         }),
       });
@@ -257,17 +201,19 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
     } finally {
       setSaving(false);
     }
-  }, [outputImageId, data]);
+  }, [resultId, data]);
 
-  // Check if any evaluation data exists
+  // Count total issues
+  const totalProductIssues = Object.values(data.product_accuracy).reduce(
+    (sum, cat) => sum + cat.issues.length,
+    0,
+  );
+  const totalSceneIssues = data.scene_accuracy_issues.length;
   const hasIssues =
-    data.product_accuracy_categories.length > 0 ||
-    data.product_accuracy_issues.length > 0 ||
-    data.product_accuracy_notes ||
-    data.scene_accuracy_issues.length > 0 ||
+    totalProductIssues > 0 ||
+    totalSceneIssues > 0 ||
     data.scene_accuracy_notes ||
-    data.integration_accuracy_issues.length > 0 ||
-    data.integration_accuracy_notes;
+    Object.values(data.product_accuracy).some((cat) => cat.notes);
 
   if (loading) {
     return (
@@ -277,6 +223,8 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
       </div>
     );
   }
+
+  const activeCategories = Object.keys(data.product_accuracy);
 
   return (
     <div className="space-y-2">
@@ -290,47 +238,52 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
       </div>
 
       {/* Product Accuracy */}
-      <div className="rounded-md border border-gray-200">
-        <button
-          type="button"
-          onClick={() => setProductOpen(!productOpen)}
-          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
-        >
-          <span className="flex items-center gap-2">
-            Product Accuracy
-            {(data.product_accuracy_issues.length > 0 || data.product_accuracy_categories.length > 0) && (
-              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
-                {data.product_accuracy_issues.length + data.product_accuracy_categories.length}
-              </span>
-            )}
-          </span>
-          <ChevronIcon open={productOpen} />
-        </button>
-        {productOpen && (
-          <div className="space-y-3 border-t border-gray-200 px-3 py-3">
-            <CategoryTagInput
-              selected={data.product_accuracy_categories}
-              onChange={(v) => setData({ ...data, product_accuracy_categories: v })}
-            />
-            <IssueCheckboxGroup
-              label="High-level issues"
-              options={PRODUCT_ACCURACY_ISSUES}
-              selected={data.product_accuracy_issues}
-              onChange={(v) => setData({ ...data, product_accuracy_issues: v })}
-            />
-            <div>
-              <p className="mb-1 text-xs font-medium text-gray-600">Notes</p>
-              <textarea
-                value={data.product_accuracy_notes}
-                onChange={(e) => setData({ ...data, product_accuracy_notes: e.target.value })}
-                placeholder="Provide more detail about what was incorrect..."
-                rows={2}
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-              />
+      {activeCategories.length > 0 && (
+        <div className="rounded-md border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setProductOpen(!productOpen)}
+            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
+          >
+            <span className="flex items-center gap-2">
+              Product Accuracy
+              {totalProductIssues > 0 && (
+                <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
+                  {totalProductIssues}
+                </span>
+              )}
+            </span>
+            <ChevronIcon open={productOpen} />
+          </button>
+          {productOpen && (
+            <div className="space-y-4 border-t border-gray-200 px-3 py-3">
+              {activeCategories.map((category) => {
+                const catData = data.product_accuracy[category] ?? { issues: [], notes: '' };
+                const label = CATEGORY_LABELS[category] ?? category;
+                return (
+                  <div key={category} className="rounded border border-gray-100 bg-gray-50/50 p-3">
+                    <p className="mb-2 text-xs font-semibold text-gray-700">{label}</p>
+                    <IssueCheckboxGroup
+                      options={PRODUCT_ACCURACY_ISSUES}
+                      selected={catData.issues}
+                      onChange={(v) => updateCategoryEval(category, 'issues', v)}
+                    />
+                    <div className="mt-2">
+                      <textarea
+                        value={catData.notes}
+                        onChange={(e) => updateCategoryEval(category, 'notes', e.target.value)}
+                        placeholder="Notes about this category..."
+                        rows={2}
+                        className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Scene Accuracy */}
       <div className="rounded-md border border-gray-200">
@@ -341,9 +294,9 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
         >
           <span className="flex items-center gap-2">
             Scene Accuracy
-            {data.scene_accuracy_issues.length > 0 && (
+            {totalSceneIssues > 0 && (
               <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
-                {data.scene_accuracy_issues.length}
+                {totalSceneIssues}
               </span>
             )}
           </span>
@@ -352,7 +305,6 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
         {sceneOpen && (
           <div className="space-y-3 border-t border-gray-200 px-3 py-3">
             <IssueCheckboxGroup
-              label="High-level issues"
               options={SCENE_ACCURACY_ISSUES}
               selected={data.scene_accuracy_issues}
               onChange={(v) => setData({ ...data, scene_accuracy_issues: v })}
@@ -362,45 +314,6 @@ export function ImageEvaluationForm({ outputImageId }: ImageEvaluationFormProps)
               <textarea
                 value={data.scene_accuracy_notes}
                 onChange={(e) => setData({ ...data, scene_accuracy_notes: e.target.value })}
-                placeholder="Provide more detail about what was incorrect..."
-                rows={2}
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Integration Accuracy */}
-      <div className="rounded-md border border-gray-200">
-        <button
-          type="button"
-          onClick={() => setIntegrationOpen(!integrationOpen)}
-          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
-        >
-          <span className="flex items-center gap-2">
-            Integration Accuracy
-            {data.integration_accuracy_issues.length > 0 && (
-              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
-                {data.integration_accuracy_issues.length}
-              </span>
-            )}
-          </span>
-          <ChevronIcon open={integrationOpen} />
-        </button>
-        {integrationOpen && (
-          <div className="space-y-3 border-t border-gray-200 px-3 py-3">
-            <IssueCheckboxGroup
-              label="High-level issues"
-              options={INTEGRATION_ACCURACY_ISSUES}
-              selected={data.integration_accuracy_issues}
-              onChange={(v) => setData({ ...data, integration_accuracy_issues: v })}
-            />
-            <div>
-              <p className="mb-1 text-xs font-medium text-gray-600">Notes</p>
-              <textarea
-                value={data.integration_accuracy_notes}
-                onChange={(e) => setData({ ...data, integration_accuracy_notes: e.target.value })}
                 placeholder="Provide more detail about what was incorrect..."
                 rows={2}
                 className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"

@@ -18,8 +18,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       where: eq(generation.id, id),
       with: {
         promptVersion: true,
-        inputImages: true,
-        outputImages: true,
+        input: true,
+        results: true,
       },
     });
 
@@ -34,12 +34,45 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       notes: result.notes,
       execution_time: result.executionTime,
       created_at: result.createdAt,
-      input_images: result.inputImages,
-      output_images: result.outputImages,
+      input: result.input,
+      results: result.results,
     });
   } catch (error) {
     console.error('Error getting generation:', error);
     return errorResponse('INTERNAL_ERROR', 'Failed to get generation');
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    if (!uuidSchema.safeParse(id).success) {
+      return errorResponse('VALIDATION_ERROR', 'Invalid ID format');
+    }
+
+    const body = await request.json();
+    const updates: Record<string, unknown> = {};
+
+    if ('notes' in body) updates.notes = body.notes ?? null;
+
+    if (Object.keys(updates).length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'No valid fields to update');
+    }
+
+    const [updated] = await db
+      .update(generation)
+      .set(updates)
+      .where(eq(generation.id, id))
+      .returning();
+
+    if (!updated) {
+      return errorResponse('NOT_FOUND', 'Generation not found');
+    }
+
+    return successResponse({ id: updated.id, notes: updated.notes });
+  } catch (error) {
+    console.error('Error updating generation:', error);
+    return errorResponse('INTERNAL_ERROR', 'Failed to update generation');
   }
 }
 
@@ -50,7 +83,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return errorResponse('VALIDATION_ERROR', 'Invalid ID format');
     }
 
-    // Cascade delete will handle images
+    // Cascade delete will handle related rows
     const [deleted] = await db.delete(generation).where(eq(generation.id, id)).returning();
 
     if (!deleted) {

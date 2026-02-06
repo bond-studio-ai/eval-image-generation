@@ -1,8 +1,8 @@
 'use client';
 
-import { ImageUpload } from '@/components/image-upload';
 import { GeneratePageSkeleton } from '@/components/loading-state';
-import { ProductPicker, type SelectedProduct } from '@/components/product-picker';
+import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
+import { SceneImageInput } from '@/components/scene-image-input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -13,7 +13,6 @@ interface PromptVersion {
   userPrompt: string;
   description: string | null;
   model: string | null;
-  outputType: string | null;
   aspectRatio: string | null;
   outputResolution: string | null;
   temperature: string | null;
@@ -28,7 +27,6 @@ interface PromptVersionListItem {
   systemPrompt: string;
   userPrompt: string;
   model: string | null;
-  outputType: string | null;
   aspectRatio: string | null;
   outputResolution: string | null;
   temperature: string | null;
@@ -37,15 +35,12 @@ interface PromptVersionListItem {
   };
 }
 
-interface UploadedImage {
-  url: string;
-  name: string;
-  previewUrl: string;
-}
-
-interface MockResult {
-  request: Record<string, unknown>;
-  response: Record<string, unknown>;
+interface GenerationApiResult {
+  generation_id: string;
+  output_urls: string[];
+  execution_time_ms: number;
+  model: string;
+  text_response?: string;
 }
 
 function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
@@ -75,21 +70,23 @@ function GeneratePageContent() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [model, setModel] = useState('');
-  const [outputType, setOutputType] = useState('');
   const [aspectRatio, setAspectRatio] = useState('');
   const [outputResolution, setOutputResolution] = useState('');
   const [temperature, setTemperature] = useState('');
+  const [numberOfImages, setNumberOfImages] = useState('1');
 
   // Generation state
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [mockResult, setMockResult] = useState<MockResult | null>(null);
-  const [inputImages, setInputImages] = useState<UploadedImage[]>([]);
-  const [productImages, setProductImages] = useState<SelectedProduct[]>([]);
-  const [outputImages, setOutputImages] = useState<UploadedImage[]>([]);
+  const [generationResult, setGenerationResult] = useState<GenerationApiResult | null>(null);
   const [notes, setNotes] = useState('');
+
+  // New structured input images state
+  const [dollhouseView, setDollhouseView] = useState<string | null>(null);
+  const [realPhoto, setRealPhoto] = useState<string | null>(null);
+  const [productImages, setProductImages] = useState<ProductImagesState>({});
 
   // New version modal
   const [showNewVersionModal, setShowNewVersionModal] = useState(false);
@@ -104,6 +101,17 @@ function GeneratePageContent() {
   // Use ref for runGeneration so createNewVersion always has the latest reference
   const runGenerationRef = useRef<(versionId: string) => Promise<void>>(undefined);
 
+  // Build the input_images payload object
+  const buildInputImagesPayload = useCallback((): Record<string, string | null> => {
+    const payload: Record<string, string | null> = {};
+    if (dollhouseView) payload.dollhouse_view = dollhouseView;
+    if (realPhoto) payload.real_photo = realPhoto;
+    for (const [key, url] of Object.entries(productImages)) {
+      if (url) payload[key] = url;
+    }
+    return payload;
+  }, [dollhouseView, realPhoto, productImages]);
+
   // Detect if prompt has been modified from the original version
   const isModified = useMemo(() => {
     if (!originalVersion) return systemPrompt.trim() !== '' || userPrompt.trim() !== '';
@@ -111,12 +119,11 @@ function GeneratePageContent() {
       systemPrompt !== originalVersion.systemPrompt ||
       userPrompt !== originalVersion.userPrompt ||
       model !== (originalVersion.model ?? '') ||
-      outputType !== (originalVersion.outputType ?? '') ||
       aspectRatio !== (originalVersion.aspectRatio ?? '') ||
       outputResolution !== (originalVersion.outputResolution ?? '') ||
       temperature !== (originalVersion.temperature ?? '')
     );
-  }, [originalVersion, systemPrompt, userPrompt, model, outputType, aspectRatio, outputResolution, temperature]);
+  }, [originalVersion, systemPrompt, userPrompt, model, aspectRatio, outputResolution, temperature]);
 
   // Check if the selected version is locked (has generations)
   const isLocked = useMemo(() => {
@@ -152,14 +159,12 @@ function GeneratePageContent() {
           setSystemPrompt(pv.systemPrompt);
           setUserPrompt(pv.userPrompt);
           setModel(pv.model ?? '');
-          setOutputType(pv.outputType ?? '');
           setAspectRatio(pv.aspectRatio ?? '');
           setOutputResolution(pv.outputResolution ?? '');
           setTemperature(pv.temperature ?? '');
           setActiveVersionId(pv.id);
           // Reset generation state when switching versions
-          setMockResult(null);
-          setOutputImages([]);
+          setGenerationResult(null);
           setNotes('');
           setGenerationError(null);
         }
@@ -175,13 +180,11 @@ function GeneratePageContent() {
       setSystemPrompt('');
       setUserPrompt('');
       setModel('');
-      setOutputType('');
       setAspectRatio('');
       setOutputResolution('');
       setTemperature('');
       setActiveVersionId(null);
-      setMockResult(null);
-      setOutputImages([]);
+      setGenerationResult(null);
       setNotes('');
       setGenerationError(null);
     }
@@ -190,22 +193,20 @@ function GeneratePageContent() {
   const runGeneration = useCallback(
     async (versionId: string) => {
       setGenerating(true);
-      setMockResult(null);
+      setGenerationResult(null);
       setGenerationError(null);
 
       try {
-        // Combine uploaded input images and product images
-        const allInputImageUrls = [
-          ...inputImages.map((img) => img.url),
-          ...productImages.map((p) => p.imageUrl),
-        ];
+        const inputPayload = buildInputImagesPayload();
 
+        const numImages = parseInt(numberOfImages, 10);
         const res = await fetch('/api/v1/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt_version_id: versionId,
-            input_images: allInputImageUrls,
+            input_images: inputPayload,
+            ...(numImages > 1 && { number_of_images: numImages }),
           }),
         });
 
@@ -217,18 +218,18 @@ function GeneratePageContent() {
         }
 
         if (data.data) {
-          setMockResult(data.data);
+          setGenerationResult(data.data as GenerationApiResult);
         } else {
           setGenerationError('Unexpected response from generation API.');
         }
       } catch (error) {
         console.error('Generation error:', error);
-        setGenerationError('Network error — could not reach the generation API.');
+        setGenerationError('Network error -- could not reach the generation API.');
       } finally {
         setGenerating(false);
       }
     },
-    [inputImages, productImages],
+    [buildInputImagesPayload, numberOfImages],
   );
 
   // Keep the ref in sync so createNewVersion always uses the latest
@@ -236,7 +237,7 @@ function GeneratePageContent() {
 
   // Create new prompt version from modified prompt
   const createNewVersion = useCallback(async () => {
-    if (!newVersionDescription.trim()) return;
+    if (!newVersionName.trim()) return;
 
     setCreatingVersion(true);
     setVersionError(null);
@@ -246,12 +247,11 @@ function GeneratePageContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: newVersionName.trim() || undefined,
-          description: newVersionDescription.trim(),
+          name: newVersionName.trim(),
+          description: newVersionDescription.trim() || undefined,
           system_prompt: systemPrompt,
           user_prompt: userPrompt,
           model: model || undefined,
-          output_type: outputType || undefined,
           aspect_ratio: aspectRatio || undefined,
           output_resolution: outputResolution || undefined,
           temperature: temperature ? Number(temperature) : undefined,
@@ -276,7 +276,6 @@ function GeneratePageContent() {
           systemPrompt,
           userPrompt,
           model: model || null,
-          outputType: outputType || null,
           aspectRatio: aspectRatio || null,
           outputResolution: outputResolution || null,
           temperature: temperature || null,
@@ -289,7 +288,6 @@ function GeneratePageContent() {
             systemPrompt,
             userPrompt,
             model: model || null,
-            outputType: outputType || null,
             aspectRatio: aspectRatio || null,
             outputResolution: outputResolution || null,
             temperature: temperature || null,
@@ -306,11 +304,11 @@ function GeneratePageContent() {
       }
     } catch (error) {
       console.error('Error creating version:', error);
-      setVersionError('Network error — could not create prompt version.');
+      setVersionError('Network error -- could not create prompt version.');
     } finally {
       setCreatingVersion(false);
     }
-  }, [newVersionName, newVersionDescription, systemPrompt, userPrompt, model, outputType, aspectRatio, outputResolution, temperature]);
+  }, [newVersionName, newVersionDescription, systemPrompt, userPrompt, model, aspectRatio, outputResolution, temperature]);
 
   const handleGenerate = useCallback(async () => {
     if (!systemPrompt.trim() || !userPrompt.trim()) return;
@@ -326,51 +324,43 @@ function GeneratePageContent() {
   }, [systemPrompt, userPrompt, isModified, activeVersionId, runGeneration]);
 
   const handleSave = useCallback(async () => {
-    if (!activeVersionId || !mockResult) return;
+    if (!activeVersionId || !generationResult?.generation_id) return;
     setSaving(true);
     setSaveError(null);
 
     try {
-      const executionTime =
-        typeof mockResult.response === 'object' && mockResult.response !== null
-          ? (mockResult.response as Record<string, unknown>).execution_time_ms
-          : undefined;
+      const genId = generationResult.generation_id;
 
-      // Combine uploaded input images and product images
-      const allInputImages = [
-        ...inputImages.map((img) => ({ url: img.url })),
-        ...productImages.map((p) => ({ url: p.imageUrl })),
-      ];
-
-      const res = await fetch('/api/v1/generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt_version_id: activeVersionId,
-          input_images: allInputImages,
-          output_images: outputImages.map((img) => ({ url: img.url })),
-          notes: notes || undefined,
-          execution_time: typeof executionTime === 'number' ? Math.round(executionTime) : undefined,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setSaveError(data.error?.message || 'Failed to save generation.');
-        return;
+      // Update notes via PATCH if provided
+      if (notes) {
+        const patchRes = await fetch(`/api/v1/generations/${genId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes }),
+        });
+        if (!patchRes.ok) {
+          const d = await patchRes.json();
+          setSaveError(d.error?.message || 'Failed to update notes.');
+          return;
+        }
       }
 
-      if (data.data?.id) {
-        router.push(`/generations/${data.data.id}`);
-      }
+      router.push(`/generations/${genId}`);
     } catch (error) {
       console.error('Save error:', error);
-      setSaveError('Network error — could not save generation.');
+      setSaveError('Network error -- could not save generation.');
     } finally {
       setSaving(false);
     }
-  }, [activeVersionId, mockResult, inputImages, productImages, outputImages, notes, router]);
+  }, [activeVersionId, generationResult, notes, router]);
+
+  // Computed: output images from API generation
+  const allOutputImages = useMemo(() => {
+    return generationResult?.output_urls?.map((url, i) => ({
+      url,
+      label: `Generated #${i + 1}`,
+    })) ?? [];
+  }, [generationResult]);
 
   // Full-page loading when a version is being loaded on initial mount
   if (loadingVersion && !originalVersion) {
@@ -467,93 +457,115 @@ function GeneratePageContent() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           <div>
             <label htmlFor="model" className="mb-1 block text-xs font-medium text-gray-600">Model</label>
-            <input
+            <select
               id="model"
-              type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. gpt-image-1"
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
-          </div>
-          <div>
-            <label htmlFor="output-type" className="mb-1 block text-xs font-medium text-gray-600">Output Type</label>
-            <input
-              id="output-type"
-              type="text"
-              value={outputType}
-              onChange={(e) => setOutputType(e.target.value)}
-              placeholder="e.g. image"
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
+              className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              <option value="">Select model...</option>
+              <option value="gemini-2.5-flash-image">Nano Banana</option>
+              <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
+            </select>
           </div>
           <div>
             <label htmlFor="aspect-ratio" className="mb-1 block text-xs font-medium text-gray-600">Aspect Ratio</label>
-            <input
+            <select
               id="aspect-ratio"
-              type="text"
               value={aspectRatio}
               onChange={(e) => setAspectRatio(e.target.value)}
-              placeholder="e.g. 16:9"
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
+              className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              <option value="">Default</option>
+              <option value="1:1">1:1 (Square)</option>
+              <option value="2:3">2:3 (Portrait)</option>
+              <option value="3:2">3:2 (Landscape)</option>
+              <option value="3:4">3:4 (Portrait)</option>
+              <option value="4:3">4:3 (Landscape)</option>
+              <option value="4:5">4:5 (Portrait)</option>
+              <option value="5:4">5:4 (Landscape)</option>
+              <option value="9:16">9:16 (Tall Portrait)</option>
+              <option value="16:9">16:9 (Widescreen)</option>
+              <option value="21:9">21:9 (Ultra-wide)</option>
+            </select>
           </div>
           <div>
             <label htmlFor="resolution" className="mb-1 block text-xs font-medium text-gray-600">Resolution</label>
-            <input
+            <select
               id="resolution"
-              type="text"
               value={outputResolution}
               onChange={(e) => setOutputResolution(e.target.value)}
-              placeholder="e.g. 1024x1024"
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
+              className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              <option value="">Default (1K)</option>
+              <option value="1K">1K</option>
+              <option value="2K">2K</option>
+              <option value="4K">4K</option>
+            </select>
           </div>
           <div>
             <label htmlFor="temperature" className="mb-1 block text-xs font-medium text-gray-600">Temperature</label>
             <input
               id="temperature"
-              type="text"
+              type="number"
+              step="0.1"
+              min="0"
+              max="2"
               value={temperature}
               onChange={(e) => setTemperature(e.target.value)}
-              placeholder="e.g. 0.7"
+              placeholder="0.0 – 2.0"
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="num-images" className="mb-1 block text-xs font-medium text-gray-600"># of Images</label>
+            <input
+              id="num-images"
+              type="number"
+              step="1"
+              min="1"
+              max="10"
+              value={numberOfImages}
+              onChange={(e) => setNumberOfImages(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
             />
           </div>
         </div>
       </div>
 
-      {/* Input Images */}
+      {/* Scene Images */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
-          Input Images (Optional)
-        </h2>
-        <ImageUpload
-          label="Upload reference / input images"
-          images={inputImages}
-          onImagesChange={setInputImages}
-          maxImages={5}
-        />
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <SceneImageInput
+            label="Dollhouse View"
+            value={dollhouseView}
+            onChange={setDollhouseView}
+          />
+          <SceneImageInput
+            label="Real Photo"
+            value={realPhoto}
+            onChange={setRealPhoto}
+          />
+        </div>
       </div>
 
       {/* Product Images */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
-          Product Images
-        </h2>
-        <ProductPicker
-          selectedProducts={productImages}
-          onProductsChange={setProductImages}
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
+        <ProductImageInput
+          value={productImages}
+          onChange={setProductImages}
         />
       </div>
 
       {/* Generate */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
-          Run Generation (Mock)
+          Run Generation
         </h2>
         <p className="mb-4 text-sm text-gray-600">
-          This will simulate an API call to the AI image generation service with the prompt above.
+          This will call the Gemini API with the prompt and images above.
         </p>
         <button
           onClick={handleGenerate}
@@ -578,46 +590,50 @@ function GeneratePageContent() {
           </div>
         )}
 
-        {/* Mock API Request/Response */}
-        {mockResult && (
-          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-gray-600 uppercase">API Request</h3>
-              <pre className="max-h-64 overflow-auto rounded-lg bg-gray-900 p-4 text-xs text-green-400">
-                {JSON.stringify(mockResult.request, null, 2)}
-              </pre>
+        {/* Generation results */}
+        {generationResult && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                Success
+              </span>
+              <span className="text-xs text-gray-500">
+                {(generationResult.execution_time_ms / 1000).toFixed(1)}s | {generationResult.model}
+              </span>
             </div>
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-gray-600 uppercase">API Response</h3>
-              <pre className="max-h-64 overflow-auto rounded-lg bg-gray-900 p-4 text-xs text-green-400">
-                {JSON.stringify(mockResult.response, null, 2)}
-              </pre>
-            </div>
+
+            {generationResult.text_response && (
+              <div className="mt-3 rounded-lg bg-gray-50 p-3">
+                <p className="text-xs font-medium text-gray-600 uppercase">Text Response</p>
+                <p className="mt-1 text-sm whitespace-pre-wrap text-gray-700">{generationResult.text_response}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Upload Output Images */}
-      {mockResult && (
+      {/* Output Images */}
+      {allOutputImages.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
           <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
-            Upload Output Images
+            Output Images
           </h2>
-          <p className="mb-4 text-sm text-gray-600">
-            Upload the generated images for evaluation. In mock mode, upload images that represent
-            what the AI service would have produced.
-          </p>
-          <ImageUpload
-            label="Upload generated / output images"
-            images={outputImages}
-            onImagesChange={setOutputImages}
-            maxImages={10}
-          />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {allOutputImages.map((img, idx) => (
+              <div key={idx} className="overflow-hidden rounded-lg border border-gray-200 shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt={img.label} className="h-56 w-full object-contain bg-gray-50" />
+                <div className="p-2">
+                  <p className="truncate text-xs text-gray-600">{img.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Notes & Save */}
-      {mockResult && (
+      {generationResult && (
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
           <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
             Save Generation
@@ -637,7 +653,7 @@ function GeneratePageContent() {
           </div>
           <button
             onClick={handleSave}
-            disabled={saving || outputImages.length === 0}
+            disabled={saving}
             className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
           >
             {saving ? (
@@ -649,11 +665,6 @@ function GeneratePageContent() {
               'Save Generation'
             )}
           </button>
-          {outputImages.length === 0 && (
-            <p className="mt-2 text-xs text-amber-600">
-              Upload at least one output image before saving.
-            </p>
-          )}
           {saveError && (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
               <p className="text-sm text-red-700">{saveError}</p>
@@ -676,7 +687,7 @@ function GeneratePageContent() {
             <div className="mt-4 space-y-4">
               <div>
                 <label htmlFor="version-name" className="mb-1 block text-sm font-medium text-gray-700">
-                  Name (optional)
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="version-name"
@@ -689,7 +700,7 @@ function GeneratePageContent() {
               </div>
               <div>
                 <label htmlFor="version-desc" className="mb-1 block text-sm font-medium text-gray-700">
-                  Description <span className="text-red-500">*</span>
+                  Description (optional)
                 </label>
                 <textarea
                   id="version-desc"
@@ -723,7 +734,7 @@ function GeneratePageContent() {
               </button>
               <button
                 onClick={createNewVersion}
-                disabled={!newVersionDescription.trim() || creatingVersion}
+                disabled={!newVersionName.trim() || creatingVersion}
                 className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white"
               >
                 {creatingVersion ? (

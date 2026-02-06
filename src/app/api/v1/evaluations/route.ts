@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { imageEvaluation } from '@/db/schema';
+import { resultEvaluation } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { upsertEvaluationSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
@@ -16,47 +16,33 @@ export async function POST(request: Request) {
     }
 
     const {
-      output_image_id,
-      product_accuracy_categories,
-      product_accuracy_issues,
-      product_accuracy_notes,
+      result_id,
+      product_accuracy,
       scene_accuracy_issues,
       scene_accuracy_notes,
-      integration_accuracy_issues,
-      integration_accuracy_notes,
     } = parsed.data;
 
-    // Check if evaluation already exists for this output image
-    const existing = await db.query.imageEvaluation.findFirst({
-      where: eq(imageEvaluation.outputImageId, output_image_id),
+    // Check if evaluation already exists for this result
+    const existing = await db.query.resultEvaluation.findFirst({
+      where: eq(resultEvaluation.resultId, result_id),
     });
 
     const values = {
-      outputImageId: output_image_id,
-      productAccuracyCategories: product_accuracy_categories
-        ? JSON.stringify(product_accuracy_categories)
-        : null,
-      productAccuracyIssues: product_accuracy_issues
-        ? JSON.stringify(product_accuracy_issues)
-        : null,
-      productAccuracyNotes: product_accuracy_notes ?? null,
+      resultId: result_id,
+      productAccuracy: product_accuracy ? JSON.stringify(product_accuracy) : null,
       sceneAccuracyIssues: scene_accuracy_issues
         ? JSON.stringify(scene_accuracy_issues)
         : null,
       sceneAccuracyNotes: scene_accuracy_notes ?? null,
-      integrationAccuracyIssues: integration_accuracy_issues
-        ? JSON.stringify(integration_accuracy_issues)
-        : null,
-      integrationAccuracyNotes: integration_accuracy_notes ?? null,
       updatedAt: new Date(),
     };
 
     if (existing) {
       // Update existing evaluation
       const [updated] = await db
-        .update(imageEvaluation)
+        .update(resultEvaluation)
         .set(values)
-        .where(eq(imageEvaluation.id, existing.id))
+        .where(eq(resultEvaluation.id, existing.id))
         .returning();
 
       return successResponse(formatEvaluation(updated));
@@ -64,7 +50,7 @@ export async function POST(request: Request) {
 
     // Create new evaluation
     const [created] = await db
-      .insert(imageEvaluation)
+      .insert(resultEvaluation)
       .values(values)
       .returning();
 
@@ -75,25 +61,17 @@ export async function POST(request: Request) {
   }
 }
 
-function formatEvaluation(eval_: typeof imageEvaluation.$inferSelect) {
+function formatEvaluation(eval_: typeof resultEvaluation.$inferSelect) {
   return {
     id: eval_.id,
-    output_image_id: eval_.outputImageId,
-    product_accuracy_categories: eval_.productAccuracyCategories
-      ? JSON.parse(eval_.productAccuracyCategories)
-      : [],
-    product_accuracy_issues: eval_.productAccuracyIssues
-      ? JSON.parse(eval_.productAccuracyIssues)
-      : [],
-    product_accuracy_notes: eval_.productAccuracyNotes ?? '',
+    result_id: eval_.resultId,
+    product_accuracy: eval_.productAccuracy
+      ? JSON.parse(eval_.productAccuracy)
+      : {},
     scene_accuracy_issues: eval_.sceneAccuracyIssues
       ? JSON.parse(eval_.sceneAccuracyIssues)
       : [],
     scene_accuracy_notes: eval_.sceneAccuracyNotes ?? '',
-    integration_accuracy_issues: eval_.integrationAccuracyIssues
-      ? JSON.parse(eval_.integrationAccuracyIssues)
-      : [],
-    integration_accuracy_notes: eval_.integrationAccuracyNotes ?? '',
     created_at: eval_.createdAt,
     updated_at: eval_.updatedAt,
   };

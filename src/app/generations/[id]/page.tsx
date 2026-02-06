@@ -2,6 +2,7 @@ import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
+import { CATEGORY_LABELS } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -13,6 +14,33 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/** All product category DB column keys (camelCase) mapped to their snake_case labels */
+const PRODUCT_COLUMN_KEYS: { camelKey: string; snakeKey: string }[] = [
+  { camelKey: 'faucets', snakeKey: 'faucets' },
+  { camelKey: 'lightings', snakeKey: 'lightings' },
+  { camelKey: 'lvps', snakeKey: 'lvps' },
+  { camelKey: 'mirrors', snakeKey: 'mirrors' },
+  { camelKey: 'paints', snakeKey: 'paints' },
+  { camelKey: 'robeHooks', snakeKey: 'robe_hooks' },
+  { camelKey: 'shelves', snakeKey: 'shelves' },
+  { camelKey: 'showerGlasses', snakeKey: 'shower_glasses' },
+  { camelKey: 'showerSystems', snakeKey: 'shower_systems' },
+  { camelKey: 'floorTiles', snakeKey: 'floor_tiles' },
+  { camelKey: 'wallTiles', snakeKey: 'wall_tiles' },
+  { camelKey: 'showerWallTiles', snakeKey: 'shower_wall_tiles' },
+  { camelKey: 'showerFloorTiles', snakeKey: 'shower_floor_tiles' },
+  { camelKey: 'showerCurbTiles', snakeKey: 'shower_curb_tiles' },
+  { camelKey: 'toiletPaperHolders', snakeKey: 'toilet_paper_holders' },
+  { camelKey: 'toilets', snakeKey: 'toilets' },
+  { camelKey: 'towelBars', snakeKey: 'towel_bars' },
+  { camelKey: 'towelRings', snakeKey: 'towel_rings' },
+  { camelKey: 'tubDoors', snakeKey: 'tub_doors' },
+  { camelKey: 'tubFillers', snakeKey: 'tub_fillers' },
+  { camelKey: 'tubs', snakeKey: 'tubs' },
+  { camelKey: 'vanities', snakeKey: 'vanities' },
+  { camelKey: 'wallpapers', snakeKey: 'wallpapers' },
+];
+
 export default async function GenerationDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -20,13 +48,38 @@ export default async function GenerationDetailPage({ params }: PageProps) {
     where: eq(generation.id, id),
     with: {
       promptVersion: true,
-      inputImages: true,
-      outputImages: true,
+      input: true,
+      results: true,
     },
   });
 
   if (!result) {
     notFound();
+  }
+
+  // Extract active product categories from input for evaluation form
+  const inputData = result.input;
+  const activeProductCategories: string[] = [];
+  if (inputData) {
+    for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
+      const val = (inputData as Record<string, unknown>)[camelKey];
+      if (val) activeProductCategories.push(snakeKey);
+    }
+  }
+
+  // Product images with labels
+  const productImages: { key: string; label: string; url: string }[] = [];
+  if (inputData) {
+    for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
+      const val = (inputData as Record<string, unknown>)[camelKey] as string | null;
+      if (val) {
+        productImages.push({
+          key: snakeKey,
+          label: CATEGORY_LABELS[snakeKey] ?? snakeKey,
+          url: val,
+        });
+      }
+    }
   }
 
   return (
@@ -65,13 +118,13 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-gray-600">Execution Time</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
-            {result.executionTime ? `${result.executionTime}ms` : 'Not recorded'}
+            {result.executionTime ? `${(result.executionTime / 1000).toFixed(1)}s` : 'Not recorded'}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-xs font-medium text-gray-600">Images</p>
+          <p className="text-xs font-medium text-gray-600">Results</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
-            {result.inputImages.length} input, {result.outputImages.length} output
+            {result.results.length} output image{result.results.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
@@ -92,49 +145,80 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Input Images */}
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Input Images</h2>
-        {result.inputImages.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No input images for this generation.</p>
-        ) : (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {result.inputImages.map((img) => (
-              <div
-                key={img.id}
-                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
-              >
-                <div className="aspect-square bg-gray-100">
+      {/* Scene Images */}
+      {inputData && (inputData.dollhouseView || inputData.realPhoto) && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900">Scene Images</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {inputData.dollhouseView && (
+              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div className="flex h-56 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt="Input image" className="h-full w-full object-cover" />
+                  <img src={inputData.dollhouseView} alt="Dollhouse View" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
-                  <p className="truncate text-xs text-gray-600">{img.url}</p>
+                  <p className="text-xs font-medium text-gray-600">Dollhouse View</p>
+                </div>
+              </div>
+            )}
+            {inputData.realPhoto && (
+              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div className="flex h-56 items-center justify-center bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={inputData.realPhoto} alt="Real Photo" className="h-full w-full object-contain" />
+                </div>
+                <div className="p-2">
+                  <p className="text-xs font-medium text-gray-600">Real Photo</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Images */}
+      {productImages.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900">Product Images</h2>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {productImages.map((img) => (
+              <div
+                key={img.key}
+                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
+              >
+                <div className="flex h-44 items-center justify-center bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt={img.label} className="h-full w-full object-contain" />
+                </div>
+                <div className="p-2">
+                  <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                    {img.label}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Output Images with Evaluations */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Output Images</h2>
-        {result.outputImages.length === 0 ? (
+        {result.results.length === 0 ? (
           <p className="mt-4 text-sm text-gray-600">No output images for this generation.</p>
         ) : (
           <div className="mt-4 space-y-6">
-            {result.outputImages.map((img, idx) => (
+            {result.results.map((img, idx) => (
               <div
                 key={img.id}
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   {/* Image */}
-                  <div className="bg-gray-100">
-                    <div className="aspect-square">
+                  <div className="bg-gray-50">
+                    <div className="flex min-h-[20rem] items-center justify-center">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt={`Output image ${idx + 1}`} className="h-full w-full object-cover" />
+                      <img src={img.url} alt={`Output image ${idx + 1}`} className="h-full w-full object-contain" />
                     </div>
                     <div className="border-t border-gray-200 p-2">
                       <p className="truncate text-xs text-gray-600">{img.url}</p>
@@ -143,7 +227,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
 
                   {/* Evaluation Form */}
                   <div className="border-t border-gray-200 p-4 lg:border-t-0 lg:border-l">
-                    <ImageEvaluationForm outputImageId={img.id} />
+                    <ImageEvaluationForm
+                      resultId={img.id}
+                      productCategories={activeProductCategories}
+                    />
                   </div>
                 </div>
               </div>

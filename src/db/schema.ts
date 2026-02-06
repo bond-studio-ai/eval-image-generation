@@ -92,68 +92,93 @@ export const generation = pgTable(
   ],
 );
 
-export const generationImageOutput = pgTable(
-  'generation_image_output',
+/**
+ * generation_input: one-to-one with generation.
+ * Each column stores an S3 URL for a specific image type.
+ */
+export const generationInput = pgTable(
+  'generation_input',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-
-    // Relationships
     generationId: uuid('generation_id')
       .notNull()
       .references(() => generation.id, { onDelete: 'cascade' }),
 
-    // Image data
-    url: text('url').notNull(),
+    // Scene images (S3 URLs)
+    dollhouseView: text('dollhouse_view'),
+    realPhoto: text('real_photo'),
+
+    // Product images (S3 URLs) -- one per category
+    faucets: text('faucets'),
+    lightings: text('lightings'),
+    lvps: text('lvps'),
+    mirrors: text('mirrors'),
+    paints: text('paints'),
+    robeHooks: text('robe_hooks'),
+    shelves: text('shelves'),
+    showerGlasses: text('shower_glasses'),
+    showerSystems: text('shower_systems'),
+    floorTiles: text('floor_tiles'),
+    wallTiles: text('wall_tiles'),
+    showerWallTiles: text('shower_wall_tiles'),
+    showerFloorTiles: text('shower_floor_tiles'),
+    showerCurbTiles: text('shower_curb_tiles'),
+    toiletPaperHolders: text('toilet_paper_holders'),
+    toilets: text('toilets'),
+    towelBars: text('towel_bars'),
+    towelRings: text('towel_rings'),
+    tubDoors: text('tub_doors'),
+    tubFillers: text('tub_fillers'),
+    tubs: text('tubs'),
+    vanities: text('vanities'),
+    wallpapers: text('wallpapers'),
   },
-  (table) => [index('idx_output_generation').on(table.generationId)],
+  (table) => [unique('uq_generation_input').on(table.generationId)],
 );
 
-export const generationImageInput = pgTable(
-  'generation_image_input',
+/**
+ * generation_result: one-to-many with generation.
+ * Each row is one output image.
+ */
+export const generationResult = pgTable(
+  'generation_result',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-
-    // Relationships
     generationId: uuid('generation_id')
       .notNull()
       .references(() => generation.id, { onDelete: 'cascade' }),
-
-    // Image data
     url: text('url').notNull(),
   },
-  (table) => [index('idx_input_generation').on(table.generationId)],
+  (table) => [index('idx_result_generation').on(table.generationId)],
 );
 
-export const imageEvaluation = pgTable(
-  'image_evaluation',
+/**
+ * result_evaluation: one-to-one with generation_result.
+ * Stores evaluation criteria per output image.
+ */
+export const resultEvaluation = pgTable(
+  'result_evaluation',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-
-    // Relationships
-    outputImageId: uuid('output_image_id')
+    resultId: uuid('result_id')
       .notNull()
-      .references(() => generationImageOutput.id, { onDelete: 'cascade' }),
+      .references(() => generationResult.id, { onDelete: 'cascade' }),
 
-    // Product Accuracy
-    productAccuracyCategories: text('product_accuracy_categories'), // JSON array of inaccurate categories
-    productAccuracyIssues: text('product_accuracy_issues'), // JSON array of selected issues
-    productAccuracyNotes: text('product_accuracy_notes'),
+    // Product Accuracy -- per-category evaluation
+    // JSON object: { "faucets": { "issues": [...], "notes": "..." }, ... }
+    productAccuracy: text('product_accuracy'),
 
     // Scene Accuracy
-    sceneAccuracyIssues: text('scene_accuracy_issues'), // JSON array of selected issues
+    sceneAccuracyIssues: text('scene_accuracy_issues'), // JSON array
     sceneAccuracyNotes: text('scene_accuracy_notes'),
-
-    // Integration Accuracy
-    integrationAccuracyIssues: text('integration_accuracy_issues'), // JSON array of selected issues
-    integrationAccuracyNotes: text('integration_accuracy_notes'),
 
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    unique('uq_image_evaluation_output').on(table.outputImageId),
-    index('idx_image_evaluation_output').on(table.outputImageId),
+    unique('uq_result_evaluation').on(table.resultId),
+    index('idx_result_evaluation_result').on(table.resultId),
   ],
 );
 
@@ -170,31 +195,34 @@ export const generationRelations = relations(generation, ({ one, many }) => ({
     fields: [generation.promptVersionId],
     references: [promptVersion.id],
   }),
-  inputImages: many(generationImageInput),
-  outputImages: many(generationImageOutput),
+  input: one(generationInput, {
+    fields: [generation.id],
+    references: [generationInput.generationId],
+  }),
+  results: many(generationResult),
 }));
 
-export const generationImageOutputRelations = relations(generationImageOutput, ({ one }) => ({
+export const generationInputRelations = relations(generationInput, ({ one }) => ({
   generation: one(generation, {
-    fields: [generationImageOutput.generationId],
-    references: [generation.id],
-  }),
-  evaluation: one(imageEvaluation, {
-    fields: [generationImageOutput.id],
-    references: [imageEvaluation.outputImageId],
-  }),
-}));
-
-export const generationImageInputRelations = relations(generationImageInput, ({ one }) => ({
-  generation: one(generation, {
-    fields: [generationImageInput.generationId],
+    fields: [generationInput.generationId],
     references: [generation.id],
   }),
 }));
 
-export const imageEvaluationRelations = relations(imageEvaluation, ({ one }) => ({
-  outputImage: one(generationImageOutput, {
-    fields: [imageEvaluation.outputImageId],
-    references: [generationImageOutput.id],
+export const generationResultRelations = relations(generationResult, ({ one }) => ({
+  generation: one(generation, {
+    fields: [generationResult.generationId],
+    references: [generation.id],
+  }),
+  evaluation: one(resultEvaluation, {
+    fields: [generationResult.id],
+    references: [resultEvaluation.resultId],
+  }),
+}));
+
+export const resultEvaluationRelations = relations(resultEvaluation, ({ one }) => ({
+  result: one(generationResult, {
+    fields: [resultEvaluation.resultId],
+    references: [generationResult.id],
   }),
 }));
