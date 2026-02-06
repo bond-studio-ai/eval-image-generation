@@ -1,3 +1,4 @@
+import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
@@ -116,24 +117,34 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Output Images */}
+      {/* Output Images with Evaluations */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Output Images</h2>
         {result.outputImages.length === 0 ? (
           <p className="mt-4 text-sm text-gray-600">No output images for this generation.</p>
         ) : (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {result.outputImages.map((img) => (
+          <div className="mt-4 space-y-6">
+            {result.outputImages.map((img, idx) => (
               <div
                 key={img.id}
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
               >
-                <div className="aspect-square bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt="Output image" className="h-full w-full object-cover" />
-                </div>
-                <div className="p-2">
-                  <p className="truncate text-xs text-gray-600">{img.url}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                  {/* Image */}
+                  <div className="bg-gray-100">
+                    <div className="aspect-square">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt={`Output image ${idx + 1}`} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="border-t border-gray-200 p-2">
+                      <p className="truncate text-xs text-gray-600">{img.url}</p>
+                    </div>
+                  </div>
+
+                  {/* Evaluation Form */}
+                  <div className="border-t border-gray-200 p-4 lg:border-t-0 lg:border-l">
+                    <ImageEvaluationForm outputImageId={img.id} />
+                  </div>
                 </div>
               </div>
             ))}

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Generate unique S3 key
     const ext = filename.split('.').pop() || 'jpg';
-    const key = `uploads/${randomUUID()}.${ext}`;
+    const key = `evals/uploads/${randomUUID()}.${ext}`;
 
     // Generate presigned upload URL
     const command = new PutObjectCommand({

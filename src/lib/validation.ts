@@ -90,3 +90,37 @@ export const listGenerationsSchema = paginationSchema.extend({
 export const addImageSchema = z.object({
   url: z.string().min(1),
 });
+
+// ------------------------------------
+// Evaluations
+// ------------------------------------
+
+export const PRODUCT_ACCURACY_ISSUES = [
+  'Incorrect scale',
+  'Incorrect finish',
+  "Didn't follow the reference image",
+  'Incorrect tile pattern',
+] as const;
+
+export const SCENE_ACCURACY_ISSUES = [
+  'Perspective drift',
+  'Incorrect existing conditions',
+  'Changed aspect ratio',
+] as const;
+
+export const INTEGRATION_ACCURACY_ISSUES = [
+  'No reflection shown in mirror',
+  'Unrealistic lighting & shadows',
+  'Hallucinated details in the room',
+] as const;
+
+export const upsertEvaluationSchema = z.object({
+  output_image_id: z.string().uuid(),
+  product_accuracy_categories: z.array(z.string()).optional(),
+  product_accuracy_issues: z.array(z.string()).optional(),
+  product_accuracy_notes: z.string().optional(),
+  scene_accuracy_issues: z.array(z.string()).optional(),
+  scene_accuracy_notes: z.string().optional(),
+  integration_accuracy_issues: z.array(z.string()).optional(),
+  integration_accuracy_notes: z.string().optional(),
+});

@@ -2,6 +2,7 @@
 
 import { ImageUpload } from '@/components/image-upload';
 import { GeneratePageSkeleton } from '@/components/loading-state';
+import { ProductPicker, type SelectedProduct } from '@/components/product-picker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -86,6 +87,7 @@ function GeneratePageContent() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [mockResult, setMockResult] = useState<MockResult | null>(null);
   const [inputImages, setInputImages] = useState<UploadedImage[]>([]);
+  const [productImages, setProductImages] = useState<SelectedProduct[]>([]);
   const [outputImages, setOutputImages] = useState<UploadedImage[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -192,12 +194,18 @@ function GeneratePageContent() {
       setGenerationError(null);
 
       try {
+        // Combine uploaded input images and product images
+        const allInputImageUrls = [
+          ...inputImages.map((img) => img.url),
+          ...productImages.map((p) => p.imageUrl),
+        ];
+
         const res = await fetch('/api/v1/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt_version_id: versionId,
-            input_images: inputImages.map((img) => img.url),
+            input_images: allInputImageUrls,
           }),
         });
 
@@ -220,7 +228,7 @@ function GeneratePageContent() {
         setGenerating(false);
       }
     },
-    [inputImages],
+    [inputImages, productImages],
   );
 
   // Keep the ref in sync so createNewVersion always uses the latest
@@ -328,12 +336,18 @@ function GeneratePageContent() {
           ? (mockResult.response as Record<string, unknown>).execution_time_ms
           : undefined;
 
+      // Combine uploaded input images and product images
+      const allInputImages = [
+        ...inputImages.map((img) => ({ url: img.url })),
+        ...productImages.map((p) => ({ url: p.imageUrl })),
+      ];
+
       const res = await fetch('/api/v1/generations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt_version_id: activeVersionId,
-          input_images: inputImages.map((img) => ({ url: img.url })),
+          input_images: allInputImages,
           output_images: outputImages.map((img) => ({ url: img.url })),
           notes: notes || undefined,
           execution_time: typeof executionTime === 'number' ? Math.round(executionTime) : undefined,
@@ -356,7 +370,7 @@ function GeneratePageContent() {
     } finally {
       setSaving(false);
     }
-  }, [activeVersionId, mockResult, inputImages, outputImages, notes, router]);
+  }, [activeVersionId, mockResult, inputImages, productImages, outputImages, notes, router]);
 
   // Full-page loading when a version is being loaded on initial mount
   if (loadingVersion && !originalVersion) {
@@ -519,6 +533,17 @@ function GeneratePageContent() {
           images={inputImages}
           onImagesChange={setInputImages}
           maxImages={5}
+        />
+      </div>
+
+      {/* Product Images */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">
+          Product Images
+        </h2>
+        <ProductPicker
+          selectedProducts={productImages}
+          onProductsChange={setProductImages}
         />
       </div>
 

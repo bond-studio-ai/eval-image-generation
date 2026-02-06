@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -123,6 +124,39 @@ export const generationImageInput = pgTable(
   (table) => [index('idx_input_generation').on(table.generationId)],
 );
 
+export const imageEvaluation = pgTable(
+  'image_evaluation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    // Relationships
+    outputImageId: uuid('output_image_id')
+      .notNull()
+      .references(() => generationImageOutput.id, { onDelete: 'cascade' }),
+
+    // Product Accuracy
+    productAccuracyCategories: text('product_accuracy_categories'), // JSON array of inaccurate categories
+    productAccuracyIssues: text('product_accuracy_issues'), // JSON array of selected issues
+    productAccuracyNotes: text('product_accuracy_notes'),
+
+    // Scene Accuracy
+    sceneAccuracyIssues: text('scene_accuracy_issues'), // JSON array of selected issues
+    sceneAccuracyNotes: text('scene_accuracy_notes'),
+
+    // Integration Accuracy
+    integrationAccuracyIssues: text('integration_accuracy_issues'), // JSON array of selected issues
+    integrationAccuracyNotes: text('integration_accuracy_notes'),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('uq_image_evaluation_output').on(table.outputImageId),
+    index('idx_image_evaluation_output').on(table.outputImageId),
+  ],
+);
+
 // ------------------------------------
 // Relations
 // ------------------------------------
@@ -145,11 +179,22 @@ export const generationImageOutputRelations = relations(generationImageOutput, (
     fields: [generationImageOutput.generationId],
     references: [generation.id],
   }),
+  evaluation: one(imageEvaluation, {
+    fields: [generationImageOutput.id],
+    references: [imageEvaluation.outputImageId],
+  }),
 }));
 
 export const generationImageInputRelations = relations(generationImageInput, ({ one }) => ({
   generation: one(generation, {
     fields: [generationImageInput.generationId],
     references: [generation.id],
+  }),
+}));
+
+export const imageEvaluationRelations = relations(imageEvaluation, ({ one }) => ({
+  outputImage: one(generationImageOutput, {
+    fields: [imageEvaluation.outputImageId],
+    references: [generationImageOutput.id],
   }),
 }));
