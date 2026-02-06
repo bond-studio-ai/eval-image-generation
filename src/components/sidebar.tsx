@@ -1,7 +1,9 @@
 'use client';
 
+import { SignedIn, SignedOut, UserButton } from '@neondatabase/auth/react/ui';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: DashboardIcon },
@@ -12,6 +14,11 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
@@ -42,6 +49,26 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="border-t border-gray-200 px-4 py-4">
+        {mounted ? (
+          <>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+            <SignedOut>
+              <Link
+                href="/auth/sign-in"
+                className="bg-primary-600 hover:bg-primary-700 flex w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+              >
+                Sign In
+              </Link>
+            </SignedOut>
+          </>
+        ) : (
+          <div className="h-10" />
+        )}
+      </div>
     </aside>
   );
 }
