@@ -37,6 +37,13 @@ interface ProductImageInputProps {
   onChange: (value: ProductImagesState) => void;
 }
 
+/** Append image optimization params for display thumbnails only. */
+function thumbUrl(url: string): string {
+  if (!url || url.startsWith('data:')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}w=256&f=webp`;
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -117,7 +124,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={imageUrl}
+                    src={thumbUrl(imageUrl)}
                     alt={cat.label}
                     className="h-28 w-full object-contain bg-gray-50 p-1"
                   />
@@ -318,7 +325,7 @@ function CategoryPickerModal({
                   {product.featuredImage?.url && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={product.featuredImage.url}
+                      src={thumbUrl(product.featuredImage.url)}
                       alt={product.name}
                       className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
                     />
