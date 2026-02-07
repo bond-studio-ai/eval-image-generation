@@ -14,7 +14,7 @@ export interface GeminiGenerateRequest {
   aspectRatio?: string;
   imageSize?: string; // "1K", "2K", "4K"
   temperature?: number;
-  numberOfImages?: number; // candidateCount for Gemini API
+  numberOfImages?: number; // number of sequential API calls
 }
 
 export interface GeminiGenerateResponse {
@@ -119,43 +119,55 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
   if (req.aspectRatio) imageConfig.aspectRatio = req.aspectRatio;
   if (req.imageSize) imageConfig.imageSize = req.imageSize;
 
-  const numImages = Math.max(1, Math.min(req.numberOfImages ?? 1, 10));
+  const numImages = Math.max(1, Math.min(req.numberOfImages ?? 1, 4));
 
-  // Call Gemini API with candidateCount for multiple images
-  const response = await ai.models.generateContent({
-    model: req.model,
-    contents,
-    config: {
-      systemInstruction: req.systemPrompt,
-      responseModalities: ['TEXT', 'IMAGE'],
-      ...(req.temperature != null && { temperature: req.temperature }),
-      ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
-      ...(numImages > 1 && { candidateCount: numImages }),
-    },
-  });
+  const apiConfig = {
+    systemInstruction: req.systemPrompt,
+    responseModalities: ['TEXT', 'IMAGE'],
+    ...(req.temperature != null && { temperature: req.temperature }),
+    ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
+  };
 
-  const executionTimeMs = Date.now() - start;
+  // Make concurrent API calls (candidateCount is not supported for image models)
+  const results = await Promise.all(
+    Array.from({ length: numImages }, () =>
+      ai.models.generateContent({
+        model: req.model,
+        contents,
+        config: apiConfig,
+      }),
+    ),
+  );
 
-  // Parse response: extract output images and text from all candidates
   const outputUrls: string[] = [];
   let textResponse: string | undefined;
 
-  if (response.candidates && response.candidates.length > 0) {
-    for (const candidate of response.candidates) {
-      const parts = candidate.content?.parts ?? [];
+  // Upload all output images concurrently
+  const uploadPromises: Promise<void>[] = [];
+
+  for (const response of results) {
+    if (response.candidates && response.candidates.length > 0) {
+      const parts = response.candidates[0].content?.parts ?? [];
       for (const part of parts) {
         if (part.inlineData?.data) {
-          const url = await uploadBase64ToS3(
-            part.inlineData.data,
-            part.inlineData.mimeType || 'image/png',
+          uploadPromises.push(
+            uploadBase64ToS3(
+              part.inlineData.data,
+              part.inlineData.mimeType || 'image/png',
+            ).then((url) => {
+              outputUrls.push(url);
+            }),
           );
-          outputUrls.push(url);
         } else if (part.text) {
           textResponse = (textResponse ?? '') + part.text;
         }
       }
     }
   }
+
+  await Promise.all(uploadPromises);
+
+  const executionTimeMs = Date.now() - start;
 
   return {
     outputUrls,

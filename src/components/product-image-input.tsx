@@ -3,30 +3,30 @@
 import { type CatalogProduct } from '@/components/product-picker';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-const PRODUCT_CATEGORIES = [
-  { key: 'faucets', label: 'Faucets' },
-  { key: 'lightings', label: 'Lightings' },
-  { key: 'lvps', label: 'LVPs' },
-  { key: 'mirrors', label: 'Mirrors' },
-  { key: 'paints', label: 'Paints' },
-  { key: 'robe_hooks', label: 'Robe Hooks' },
-  { key: 'shelves', label: 'Shelves' },
-  { key: 'shower_glasses', label: 'Shower Glasses' },
-  { key: 'shower_systems', label: 'Shower Systems' },
-  { key: 'floor_tiles', label: 'Floor Tiles' },
-  { key: 'wall_tiles', label: 'Wall Tiles' },
-  { key: 'shower_wall_tiles', label: 'Shower Wall Tiles' },
-  { key: 'shower_floor_tiles', label: 'Shower Floor Tiles' },
-  { key: 'shower_curb_tiles', label: 'Shower Curb Tiles' },
-  { key: 'toilet_paper_holders', label: 'Toilet Paper Holders' },
-  { key: 'toilets', label: 'Toilets' },
-  { key: 'towel_bars', label: 'Towel Bars' },
-  { key: 'towel_rings', label: 'Towel Rings' },
-  { key: 'tub_doors', label: 'Tub Doors' },
-  { key: 'tub_fillers', label: 'Tub Fillers' },
-  { key: 'tubs', label: 'Tubs' },
-  { key: 'vanities', label: 'Vanities' },
-  { key: 'wallpapers', label: 'Wallpapers' },
+export const PRODUCT_CATEGORIES = [
+  { key: 'faucets', label: 'Faucets', apiCategories: ['Faucets', 'Faucet Accessories'] },
+  { key: 'lightings', label: 'Lightings', apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'] },
+  { key: 'lvps', label: 'LVPs', apiCategories: ['LVP'] },
+  { key: 'mirrors', label: 'Mirrors', apiCategories: ['Mirror'] },
+  { key: 'paints', label: 'Paints', apiCategories: ['Paint'] },
+  { key: 'robe_hooks', label: 'Robe Hooks', apiCategories: ['Robe Hooks'] },
+  { key: 'shelves', label: 'Shelves', apiCategories: ['Shelves'] },
+  { key: 'shower_glasses', label: 'Shower Glasses', apiCategories: ['Shower Glass'] },
+  { key: 'shower_systems', label: 'Shower Systems', apiCategories: ['Shower Systems', 'Shower System Components'] },
+  { key: 'floor_tiles', label: 'Floor Tiles', apiCategories: ['Tile'] },
+  { key: 'wall_tiles', label: 'Wall Tiles', apiCategories: ['Tile'] },
+  { key: 'shower_wall_tiles', label: 'Shower Wall Tiles', apiCategories: ['Tile'] },
+  { key: 'shower_floor_tiles', label: 'Shower Floor Tiles', apiCategories: ['Tile'] },
+  { key: 'shower_curb_tiles', label: 'Shower Curb Tiles', apiCategories: ['Tile'] },
+  { key: 'toilet_paper_holders', label: 'Toilet Paper Holders', apiCategories: ['Toilet Paper Holders'] },
+  { key: 'toilets', label: 'Toilets', apiCategories: ['Toilet', 'Toilet Accessories'] },
+  { key: 'towel_bars', label: 'Towel Bars', apiCategories: ['Towel Bars'] },
+  { key: 'towel_rings', label: 'Towel Rings', apiCategories: ['Towel Rings'] },
+  { key: 'tub_doors', label: 'Tub Doors', apiCategories: ['Tub Doors'] },
+  { key: 'tub_fillers', label: 'Tub Fillers', apiCategories: ['Tub Filler'] },
+  { key: 'tubs', label: 'Tubs', apiCategories: ['Tubs', 'Tub Accessories', 'Tub Drains'] },
+  { key: 'vanities', label: 'Vanities', apiCategories: ['Vanities', 'Linen Cabinets'] },
+  { key: 'wallpapers', label: 'Wallpapers', apiCategories: ['Wallpaper', 'Wallpaper Accessories'] },
 ] as const;
 
 /** Map of category_key -> S3 URL */
@@ -49,7 +49,7 @@ function fileToDataUrl(file: File): Promise<string> {
 export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   // Fetch products on mount
   useEffect(() => {
@@ -62,21 +62,12 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
       .catch(() => setLoadingProducts(false));
   }, []);
 
-  // Get active categories (those with images set)
-  const activeCategories = useMemo(() => {
-    return Object.entries(value)
-      .filter(([, url]) => url)
-      .map(([key, url]) => ({
-        key,
-        label: PRODUCT_CATEGORIES.find((c) => c.key === key)?.label ?? key,
-        url: url!,
-      }));
-  }, [value]);
-
-  // Available categories for adding (those not yet used)
-  const availableCategories = useMemo(() => {
-    return PRODUCT_CATEGORIES.filter((c) => !value[c.key]);
-  }, [value]);
+  const setCategoryImage = useCallback(
+    (key: string, url: string) => {
+      onChange({ ...value, [key]: url });
+    },
+    [value, onChange],
+  );
 
   const removeCategory = useCallback(
     (key: string) => {
@@ -87,68 +78,84 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
     [value, onChange],
   );
 
-  const setCategoryImage = useCallback(
-    (key: string, url: string) => {
-      onChange({ ...value, [key]: url });
-    },
-    [value, onChange],
-  );
-
   return (
     <div>
-      {/* Active product images */}
-      {activeCategories.length > 0 && (
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {activeCategories.map((cat) => (
-            <div key={cat.key} className="group relative rounded-lg border border-gray-200 bg-white p-2 shadow-xs">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cat.url}
-                alt={cat.label}
-                className="h-40 w-full rounded object-contain bg-gray-50"
-              />
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="truncate text-xs font-medium text-gray-700">{cat.label}</span>
+      {/* Grid of all product categories */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {PRODUCT_CATEGORIES.map((cat) => {
+          const imageUrl = value[cat.key];
+          const hasImage = !!imageUrl;
+
+          return (
+            <div
+              key={cat.key}
+              className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs transition-shadow hover:shadow-md"
+            >
+              {/* Category label */}
+              <div className="flex items-center justify-between border-b border-gray-100 px-2.5 py-1.5">
+                <span className="truncate text-xs font-semibold text-gray-700">{cat.label}</span>
+                {hasImage && (
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(cat.key)}
+                    className="ml-1 shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                    title="Remove image"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Image or empty state */}
+              {hasImage ? (
                 <button
                   type="button"
-                  onClick={() => removeCategory(cat.key)}
-                  className="rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                  onClick={() => setActiveCategory(cat.key)}
+                  className="group relative block w-full cursor-pointer"
                 >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageUrl}
+                    alt={cat.label}
+                    className="h-28 w-full object-contain bg-gray-50 p-1"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                    <span className="rounded bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 opacity-0 shadow transition-opacity group-hover:opacity-100">
+                      Change
+                    </span>
+                  </div>
                 </button>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory(cat.key)}
+                  className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span className="text-[10px] font-medium">Add Image</span>
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
-      {/* Add button */}
-      {availableCategories.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-800"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Add Product Image
-        </button>
-      )}
-
-      {/* Add Modal */}
-      {showAddModal && (
-        <AddProductModal
-          availableCategories={availableCategories}
+      {/* Category picker modal */}
+      {activeCategory && (
+        <CategoryPickerModal
+          categoryKey={activeCategory}
+          categoryLabel={PRODUCT_CATEGORIES.find((c) => c.key === activeCategory)?.label ?? activeCategory}
           products={products}
           loadingProducts={loadingProducts}
-          onAdd={(key, url) => {
-            setCategoryImage(key, url);
-            setShowAddModal(false);
+          onSelect={(url) => {
+            setCategoryImage(activeCategory, url);
+            setActiveCategory(null);
           }}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => setActiveCategory(null)}
         />
       )}
     </div>
@@ -156,43 +163,48 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
 }
 
 // ------------------------------------
-// Add Product Modal
+// Category Picker Modal
 // ------------------------------------
 
-interface AddProductModalProps {
-  availableCategories: readonly { key: string; label: string }[];
+interface CategoryPickerModalProps {
+  categoryKey: string;
+  categoryLabel: string;
   products: CatalogProduct[];
   loadingProducts: boolean;
-  onAdd: (categoryKey: string, imageUrl: string) => void;
+  onSelect: (imageUrl: string) => void;
   onClose: () => void;
 }
 
-function AddProductModal({
-  availableCategories,
+function CategoryPickerModal({
+  categoryKey,
+  categoryLabel,
   products,
   loadingProducts,
-  onAdd,
+  onSelect,
   onClose,
-}: AddProductModalProps) {
-  const [selectedCategory, setSelectedCategory] = useState(availableCategories[0]?.key ?? '');
+}: CategoryPickerModalProps) {
   const [mode, setMode] = useState<'catalog' | 'upload'>('catalog');
   const [search, setSearch] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter products by search and selected category
+  // Resolve the API category names for this category key
+  const apiCategoryNames = useMemo(() => {
+    const def = PRODUCT_CATEGORIES.find((c) => c.key === categoryKey);
+    return def?.apiCategories.map((n) => n.toLowerCase()) ?? [categoryLabel.toLowerCase()];
+  }, [categoryKey, categoryLabel]);
+
+  // Filter products by category and search
   const filteredProducts = useMemo(() => {
-    if (!selectedCategory) return [];
-    const catLabel = availableCategories.find((c) => c.key === selectedCategory)?.label ?? '';
     const q = search.toLowerCase().trim();
     return products
       .filter((p) => {
         if (!p.featuredImage?.url) return false;
-        // Always filter by selected category first
-        const matchesCategory = p.category?.name.toLowerCase().includes(catLabel.toLowerCase());
+        // Filter by exact API category name match
+        const productCat = p.category?.name.toLowerCase();
+        const matchesCategory = productCat ? apiCategoryNames.includes(productCat) : false;
         if (!matchesCategory) return false;
-
-        // Then apply text search if provided
+        // Then apply search
         if (!q) return true;
         return (
           p.name.toLowerCase().includes(q) ||
@@ -202,7 +214,7 @@ function AddProductModal({
         );
       })
       .slice(0, 50);
-  }, [products, search, selectedCategory, availableCategories]);
+  }, [products, search, apiCategoryNames]);
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
@@ -228,12 +240,12 @@ function AddProductModal({
       });
 
       if (!s3Res.ok) throw new Error('S3 PUT failed');
-      onAdd(selectedCategory, publicUrl);
+      onSelect(publicUrl);
     } catch {
       // Fallback: data URL
       try {
         const dataUrl = await fileToDataUrl(file);
-        onAdd(selectedCategory, dataUrl);
+        onSelect(dataUrl);
       } catch {
         // ignore
       }
@@ -243,31 +255,14 @@ function AddProductModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-900">Add Product Image</h3>
-
-        {/* Category selector */}
-        <div className="mt-4">
-          <label htmlFor="category-select" className="mb-1 block text-sm font-medium text-gray-700">
-            Category
-          </label>
-          <select
-            id="category-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-          >
-            {availableCategories.map((cat) => (
-              <option key={cat.key} value={cat.key}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {categoryLabel}
+        </h3>
 
         {/* Mode toggle */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={() => setMode('catalog')}
@@ -315,7 +310,7 @@ function AddProductModal({
                   type="button"
                   onClick={() => {
                     if (product.featuredImage?.url) {
-                      onAdd(selectedCategory, product.featuredImage.url);
+                      onSelect(product.featuredImage.url);
                     }
                   }}
                   className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left text-sm transition-colors last:border-0 hover:bg-gray-50"

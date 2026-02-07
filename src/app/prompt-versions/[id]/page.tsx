@@ -54,7 +54,6 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     systemPrompt: result.systemPrompt,
     userPrompt: result.userPrompt,
     model: result.model,
-    outputType: result.outputType,
     aspectRatio: result.aspectRatio,
     outputResolution: result.outputResolution,
     temperature: result.temperature,

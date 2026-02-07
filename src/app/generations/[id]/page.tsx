@@ -1,3 +1,4 @@
+import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
@@ -104,7 +105,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             </Link>
           </p>
         </div>
-        <RatingBadge rating={result.resultRating} />
+        <div className="flex items-center gap-3">
+          <RatingBadge rating={result.resultRating} />
+          <DeleteGenerationButton generationId={result.id} />
+        </div>
       </div>
 
       {/* Meta */}

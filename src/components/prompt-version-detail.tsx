@@ -25,7 +25,6 @@ interface PromptVersionData {
   systemPrompt: string;
   userPrompt: string;
   model: string | null;
-  outputType: string | null;
   aspectRatio: string | null;
   outputResolution: string | null;
   temperature: string | null;
@@ -59,10 +58,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     description: data.description ?? '',
     systemPrompt: data.systemPrompt,
     userPrompt: data.userPrompt,
-    model: data.model ?? '',
-    outputType: data.outputType ?? '',
-    aspectRatio: data.aspectRatio ?? '',
-    outputResolution: data.outputResolution ?? '',
+    model: data.model ?? 'gemini-2.5-flash-image',
+    aspectRatio: data.aspectRatio ?? '1:1',
+    outputResolution: data.outputResolution ?? '1K',
     temperature: data.temperature ?? '',
   });
 
@@ -72,7 +70,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   const [systemPrompt, setSystemPrompt] = useState(baseline.systemPrompt);
   const [userPrompt, setUserPrompt] = useState(baseline.userPrompt);
   const [model, setModel] = useState(baseline.model);
-  const [outputType, setOutputType] = useState(baseline.outputType);
   const [aspectRatio, setAspectRatio] = useState(baseline.aspectRatio);
   const [outputResolution, setOutputResolution] = useState(baseline.outputResolution);
   const [temperature, setTemperature] = useState(baseline.temperature);
@@ -88,12 +85,11 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       systemPrompt !== baseline.systemPrompt ||
       userPrompt !== baseline.userPrompt ||
       model !== baseline.model ||
-      outputType !== baseline.outputType ||
       aspectRatio !== baseline.aspectRatio ||
       outputResolution !== baseline.outputResolution ||
       temperature !== baseline.temperature
     );
-  }, [isEditable, baseline, name, description, systemPrompt, userPrompt, model, outputType, aspectRatio, outputResolution, temperature]);
+  }, [isEditable, baseline, name, description, systemPrompt, userPrompt, model, aspectRatio, outputResolution, temperature]);
 
   async function handleSave() {
     setSaving(true);
@@ -109,7 +105,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
           system_prompt: systemPrompt,
           user_prompt: userPrompt,
           model: model || null,
-          output_type: outputType || null,
           aspect_ratio: aspectRatio || null,
           output_resolution: outputResolution || null,
           temperature: temperature ? Number(temperature) : null,
@@ -132,7 +127,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         systemPrompt,
         userPrompt,
         model,
-        outputType,
         aspectRatio,
         outputResolution,
         temperature,
@@ -151,7 +145,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     setSystemPrompt(baseline.systemPrompt);
     setUserPrompt(baseline.userPrompt);
     setModel(baseline.model);
-    setOutputType(baseline.outputType);
     setAspectRatio(baseline.aspectRatio);
     setOutputResolution(baseline.outputResolution);
     setTemperature(baseline.temperature);
@@ -162,7 +155,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   const editableInput =
     'w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1';
 
-  const hasModelSettings = isEditable || model || outputType || aspectRatio || outputResolution || temperature;
+  const hasModelSettings = isEditable || model || aspectRatio || outputResolution || temperature;
 
   return (
     <div className={isDirty ? 'pb-20' : ''}>
@@ -315,51 +308,56 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
           <h2 className="text-sm font-semibold uppercase text-gray-900">Model Settings</h2>
 
           {isEditable ? (
-            <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
                 <label className="text-xs font-medium text-gray-600">Model</label>
-                <input
-                  type="text"
+                <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="e.g. gpt-image-1"
                   className={`mt-1 ${editableInput}`}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600">Output Type</label>
-                <input
-                  type="text"
-                  value={outputType}
-                  onChange={(e) => setOutputType(e.target.value)}
-                  placeholder="e.g. image"
-                  className={`mt-1 ${editableInput}`}
-                />
+                >
+                  <option value="gemini-2.5-flash-image">Nano Banana</option>
+                  <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Aspect Ratio</label>
-                <input
-                  type="text"
+                <select
                   value={aspectRatio}
                   onChange={(e) => setAspectRatio(e.target.value)}
-                  placeholder="e.g. 16:9"
                   className={`mt-1 ${editableInput}`}
-                />
+                >
+                  <option value="1:1">1:1 (Square)</option>
+                  <option value="2:3">2:3 (Portrait)</option>
+                  <option value="3:2">3:2 (Landscape)</option>
+                  <option value="3:4">3:4 (Portrait)</option>
+                  <option value="4:3">4:3 (Landscape)</option>
+                  <option value="4:5">4:5 (Portrait)</option>
+                  <option value="5:4">5:4 (Landscape)</option>
+                  <option value="9:16">9:16 (Tall Portrait)</option>
+                  <option value="16:9">16:9 (Widescreen)</option>
+                  <option value="21:9">21:9 (Ultra-wide)</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Resolution</label>
-                <input
-                  type="text"
+                <select
                   value={outputResolution}
                   onChange={(e) => setOutputResolution(e.target.value)}
-                  placeholder="e.g. 1024x1024"
                   className={`mt-1 ${editableInput}`}
-                />
+                >
+                  <option value="1K">1K</option>
+                  <option value="2K">2K</option>
+                  <option value="4K">4K</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Temperature</label>
                 <input
-                  type="text"
+                  type="number"
+                  step="any"
+                  min="0"
+                  max="2"
                   value={temperature}
                   onChange={(e) => setTemperature(e.target.value)}
                   placeholder="e.g. 0.7"
@@ -368,17 +366,15 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               </div>
             </div>
           ) : (
-            <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {data.model && (
                 <div>
                   <dt className="text-xs font-medium text-gray-600">Model</dt>
-                  <dd className="mt-1 text-sm font-medium text-gray-900">{data.model}</dd>
-                </div>
-              )}
-              {data.outputType && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-600">Output Type</dt>
-                  <dd className="mt-1 text-sm font-medium text-gray-900">{data.outputType}</dd>
+                  <dd className="mt-1 text-sm font-medium text-gray-900">
+                    {data.model === 'gemini-2.5-flash-image' ? 'Nano Banana' :
+                     data.model === 'gemini-3-pro-image-preview' ? 'Nano Banana Pro' :
+                     data.model}
+                  </dd>
                 </div>
               )}
               {data.aspectRatio && (

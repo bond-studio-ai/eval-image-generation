@@ -11,10 +11,9 @@ export default function NewPromptVersionPage() {
   const [description, setDescription] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
-  const [model, setModel] = useState('');
-  const [outputType, setOutputType] = useState('');
-  const [aspectRatio, setAspectRatio] = useState('');
-  const [outputResolution, setOutputResolution] = useState('');
+  const [model, setModel] = useState('gemini-2.5-flash-image');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [outputResolution, setOutputResolution] = useState('1K');
   const [temperature, setTemperature] = useState('');
 
   const [creating, setCreating] = useState(false);
@@ -37,7 +36,6 @@ export default function NewPromptVersionPage() {
           system_prompt: systemPrompt,
           user_prompt: userPrompt,
           model: model || undefined,
-          output_type: outputType || undefined,
           aspect_ratio: aspectRatio || undefined,
           output_resolution: outputResolution || undefined,
           temperature: temperature ? parseFloat(temperature) : undefined,
@@ -136,51 +134,56 @@ export default function NewPromptVersionPage() {
       {/* Model Settings */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="text-sm font-semibold uppercase text-gray-900">Model Settings</h2>
-        <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <label className="text-xs font-medium text-gray-600">Model</label>
-            <input
-              type="text"
+            <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. gpt-image-1"
               className={`mt-1 ${editableInput}`}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-600">Output Type</label>
-            <input
-              type="text"
-              value={outputType}
-              onChange={(e) => setOutputType(e.target.value)}
-              placeholder="e.g. image"
-              className={`mt-1 ${editableInput}`}
-            />
+            >
+              <option value="gemini-2.5-flash-image">Nano Banana</option>
+              <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600">Aspect Ratio</label>
-            <input
-              type="text"
+            <select
               value={aspectRatio}
               onChange={(e) => setAspectRatio(e.target.value)}
-              placeholder="e.g. 16:9"
               className={`mt-1 ${editableInput}`}
-            />
+            >
+              <option value="1:1">1:1 (Square)</option>
+              <option value="2:3">2:3 (Portrait)</option>
+              <option value="3:2">3:2 (Landscape)</option>
+              <option value="3:4">3:4 (Portrait)</option>
+              <option value="4:3">4:3 (Landscape)</option>
+              <option value="4:5">4:5 (Portrait)</option>
+              <option value="5:4">5:4 (Landscape)</option>
+              <option value="9:16">9:16 (Tall Portrait)</option>
+              <option value="16:9">16:9 (Widescreen)</option>
+              <option value="21:9">21:9 (Ultra-wide)</option>
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600">Resolution</label>
-            <input
-              type="text"
+            <select
               value={outputResolution}
               onChange={(e) => setOutputResolution(e.target.value)}
-              placeholder="e.g. 1024x1024"
               className={`mt-1 ${editableInput}`}
-            />
+            >
+              <option value="1K">1K</option>
+              <option value="2K">2K</option>
+              <option value="4K">4K</option>
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600">Temperature</label>
             <input
-              type="text"
+              type="number"
+              step="any"
+              min="0"
+              max="2"
               value={temperature}
               onChange={(e) => setTemperature(e.target.value)}
               placeholder="e.g. 0.7"

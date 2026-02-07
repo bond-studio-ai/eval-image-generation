@@ -182,6 +182,48 @@ export const resultEvaluation = pgTable(
   ],
 );
 
+/**
+ * image_selection: standalone draft/workspace table.
+ * Persists the current image selections on the generate page
+ * so they can be picked up between sessions.
+ * Same image columns as generation_input but not tied to a generation.
+ */
+export const imageSelection = pgTable('image_selection', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  // Scene images (S3 URLs)
+  dollhouseView: text('dollhouse_view'),
+  realPhoto: text('real_photo'),
+
+  // Product images (S3 URLs) -- one per category
+  faucets: text('faucets'),
+  lightings: text('lightings'),
+  lvps: text('lvps'),
+  mirrors: text('mirrors'),
+  paints: text('paints'),
+  robeHooks: text('robe_hooks'),
+  shelves: text('shelves'),
+  showerGlasses: text('shower_glasses'),
+  showerSystems: text('shower_systems'),
+  floorTiles: text('floor_tiles'),
+  wallTiles: text('wall_tiles'),
+  showerWallTiles: text('shower_wall_tiles'),
+  showerFloorTiles: text('shower_floor_tiles'),
+  showerCurbTiles: text('shower_curb_tiles'),
+  toiletPaperHolders: text('toilet_paper_holders'),
+  toilets: text('toilets'),
+  towelBars: text('towel_bars'),
+  towelRings: text('towel_rings'),
+  tubDoors: text('tub_doors'),
+  tubFillers: text('tub_fillers'),
+  tubs: text('tubs'),
+  vanities: text('vanities'),
+  wallpapers: text('wallpapers'),
+
+  // Timestamps
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ------------------------------------
 // Relations
 // ------------------------------------

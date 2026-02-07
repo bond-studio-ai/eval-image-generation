@@ -1,3 +1,4 @@
+import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { RatingBadge } from '@/components/rating-badge';
@@ -161,6 +162,9 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Created
                 </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -185,6 +189,9 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                     {new Date(gen.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <DeleteGenerationButton generationId={gen.id} variant="icon" />
                   </td>
                 </tr>
               ))}
