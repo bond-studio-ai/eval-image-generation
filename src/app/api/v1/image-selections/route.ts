@@ -1,35 +1,42 @@
 import { db } from '@/db';
 import { imageSelection } from '@/db/schema';
+import { auth } from '@/lib/auth/server';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 /**
- * GET /api/v1/image-selections?id=<uuid>
- * Returns the saved image selection for the given id, or null.
+ * GET /api/v1/image-selections
+ * Returns the authenticated user's saved image selection, or null.
  */
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
-  if (!id) {
-    // Return the first (most recently updated) selection if no id provided
-    const rows = await db.select().from(imageSelection).limit(1);
-    return NextResponse.json({ data: rows[0] ?? null });
+export async function GET() {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
   }
 
-  const rows = await db.select().from(imageSelection).where(eq(imageSelection.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(imageSelection)
+    .where(eq(imageSelection.userId, session.user.id))
+    .limit(1);
+
   return NextResponse.json({ data: rows[0] ?? null });
 }
 
 /**
  * PUT /api/v1/image-selections
- * Upserts (insert or update) an image selection row.
+ * Upserts (insert or update) the authenticated user's image selection.
  */
 export async function PUT(request: Request) {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
+  }
+
+  const userId = session.user.id;
   const body = await request.json();
 
   const {
-    id,
     dollhouse_view,
     real_photo,
     faucets,
@@ -86,23 +93,21 @@ export async function PUT(request: Request) {
     updatedAt: new Date(),
   };
 
-  if (id) {
-    // Try update first
-    const updated = await db
-      .update(imageSelection)
-      .set(values)
-      .where(eq(imageSelection.id, id))
-      .returning();
+  // Try to update the user's existing row
+  const updated = await db
+    .update(imageSelection)
+    .set(values)
+    .where(eq(imageSelection.userId, userId))
+    .returning();
 
-    if (updated.length > 0) {
-      return NextResponse.json({ data: updated[0] });
-    }
+  if (updated.length > 0) {
+    return NextResponse.json({ data: updated[0] });
   }
 
-  // Insert new row
+  // Insert new row for this user
   const inserted = await db
     .insert(imageSelection)
-    .values(id ? { id, ...values } : values)
+    .values({ userId, ...values })
     .returning();
 
   return NextResponse.json({ data: inserted[0] });

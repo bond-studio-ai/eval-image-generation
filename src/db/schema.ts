@@ -188,12 +188,17 @@ export const resultEvaluation = pgTable(
  * so they can be picked up between sessions.
  * Same image columns as generation_input but not tied to a generation.
  */
-export const imageSelection = pgTable('image_selection', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const imageSelection = pgTable(
+  'image_selection',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
 
-  // Scene images (S3 URLs)
-  dollhouseView: text('dollhouse_view'),
-  realPhoto: text('real_photo'),
+    // Owner (Neon Auth user id)
+    userId: text('user_id').notNull(),
+
+    // Scene images (S3 URLs)
+    dollhouseView: text('dollhouse_view'),
+    realPhoto: text('real_photo'),
 
   // Product images (S3 URLs) -- one per category
   faucets: text('faucets'),
@@ -220,9 +225,14 @@ export const imageSelection = pgTable('image_selection', {
   vanities: text('vanities'),
   wallpapers: text('wallpapers'),
 
-  // Timestamps
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+    // Timestamps
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('uq_image_selection_user').on(table.userId),
+    index('idx_image_selection_user').on(table.userId),
+  ],
+);
 
 // ------------------------------------
 // Relations

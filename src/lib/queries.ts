@@ -112,9 +112,13 @@ export async function fetchPromptVersionById(id: string): Promise<PromptVersionD
 export type ImageSelectionRow = typeof imageSelection.$inferSelect;
 
 /**
- * Fetch the most recently updated image selection (workspace draft).
+ * Fetch the image selection for a specific user.
  */
-export async function fetchLatestImageSelection(): Promise<ImageSelectionRow | null> {
-  const rows = await db.select().from(imageSelection).limit(1);
+export async function fetchImageSelectionByUser(userId: string): Promise<ImageSelectionRow | null> {
+  const rows = await db
+    .select()
+    .from(imageSelection)
+    .where(eq(imageSelection.userId, userId))
+    .limit(1);
   return rows[0] ?? null;
 }

@@ -115,7 +115,6 @@ export function GeneratePageContent({
   const [dollhouseView, setDollhouseView] = useState<string | null>(initialImageState?.dollhouseView ?? null);
   const [realPhoto, setRealPhoto] = useState<string | null>(initialImageState?.realPhoto ?? null);
   const [productImages, setProductImages] = useState<ProductImagesState>(initialImageState?.productImages ?? {});
-  const [imageSelectionId, setImageSelectionId] = useState<string | null>(initialImageState?.id ?? null);
   const imageSelectionLoaded = useRef(true); // Already loaded from SSR
 
   // Active prompt version ID (the one that will be used for generation)
@@ -164,8 +163,7 @@ export function GeneratePageContent({
   useEffect(() => {
     if (!imageSelectionLoaded.current) return;
 
-    const payload: Record<string, string | null | undefined> = {
-      id: imageSelectionId ?? undefined,
+    const payload: Record<string, string | null> = {
       dollhouse_view: dollhouseView,
       real_photo: realPhoto,
     };
@@ -180,17 +178,11 @@ export function GeneratePageContent({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-        .then((r) => r.json())
-        .then((r) => {
-          if (r.data?.id && !imageSelectionId) {
-            setImageSelectionId(r.data.id);
-          }
-        })
         .catch(() => { /* ignore */ });
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [dollhouseView, realPhoto, productImages, imageSelectionId]);
+  }, [dollhouseView, realPhoto, productImages]);
 
   // Load selected prompt version when changed via dropdown (not initial load)
   useEffect(() => {
