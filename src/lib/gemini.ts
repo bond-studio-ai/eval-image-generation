@@ -43,12 +43,23 @@ const BUCKET = process.env.AWS_S3_BUCKET!;
 // ------------------------------------
 
 /**
+ * Append CDN optimization query params to image URLs that need them.
+ * Catalog CDN URLs require these params; S3/data URLs are left unchanged.
+ */
+function withImageParams(url: string): string {
+  if (!url || url.startsWith('data:') || url.includes('.amazonaws.com')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}w=256&f=webp`;
+}
+
+/**
  * Fetch an image URL and return { base64, mimeType }.
  */
 async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
-  const res = await fetch(url);
+  const fetchUrl = withImageParams(url);
+  const res = await fetch(fetchUrl);
   if (!res.ok) {
-    throw new Error(`Failed to fetch image: ${url} (${res.status})`);
+    throw new Error(`Failed to fetch image: ${fetchUrl} (${res.status})`);
   }
 
   const contentType = res.headers.get('content-type') || 'image/jpeg';
