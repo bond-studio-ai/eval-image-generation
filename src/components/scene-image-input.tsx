@@ -1,5 +1,6 @@
 'use client';
 
+import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useRef, useState } from 'react';
 
 interface SceneImageInputProps {
@@ -94,7 +95,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
         <div className="group relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={value}
+            src={withImageParams(value)}
             alt={label}
             className="h-56 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
           />

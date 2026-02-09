@@ -1,13 +1,7 @@
 'use client';
 
+import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-/** Append image optimization params for display thumbnails only. */
-function thumbUrl(url: string): string {
-  if (!url || url.startsWith('data:')) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}w=256&f=webp`;
-}
 
 export interface CatalogProduct {
   id: string;
@@ -162,7 +156,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                   {product.featuredImage?.url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={thumbUrl(product.featuredImage.url)}
+                      src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
                       className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
                     />
@@ -200,7 +194,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
             <div key={product.id} className="group relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={thumbUrl(product.imageUrl)}
+                src={withImageParams(product.imageUrl)}
                 alt={product.name}
                 className="h-24 w-full rounded-lg border border-gray-200 object-cover"
               />

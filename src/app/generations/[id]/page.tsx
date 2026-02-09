@@ -3,6 +3,7 @@ import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
+import { withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
@@ -158,7 +159,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="flex h-56 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={inputData.dollhouseView} alt="Dollhouse View" className="h-full w-full object-contain" />
+                  <img src={withImageParams(inputData.dollhouseView)} alt="Dollhouse View" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Dollhouse View</p>
@@ -169,7 +170,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="flex h-56 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={inputData.realPhoto} alt="Real Photo" className="h-full w-full object-contain" />
+                  <img src={withImageParams(inputData.realPhoto)} alt="Real Photo" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Real Photo</p>
@@ -192,7 +193,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               >
                 <div className="flex h-44 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt={img.label} className="h-full w-full object-contain" />
+                  <img src={withImageParams(img.url)} alt={img.label} className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">

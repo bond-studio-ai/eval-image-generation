@@ -1,6 +1,7 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { GenerateContentConfig, GoogleGenAI, type Content } from '@google/genai';
 import { randomUUID } from 'crypto';
+import { withImageParams } from './image-utils';
 
 // ------------------------------------
 // Types
@@ -42,16 +43,6 @@ const BUCKET = process.env.AWS_S3_BUCKET!;
 // ------------------------------------
 // Helpers
 // ------------------------------------
-
-/**
- * Append CDN optimization query params to image URLs that need them.
- * Catalog CDN URLs require these params; S3/data URLs are left unchanged.
- */
-function withImageParams(url: string): string {
-  if (!url || url.startsWith('data:') || url.includes('.amazonaws.com')) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}w=256&f=webp`;
-}
 
 /**
  * Fetch an image URL and return { base64, mimeType }.

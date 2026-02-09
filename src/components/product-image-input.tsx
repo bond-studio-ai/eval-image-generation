@@ -1,6 +1,7 @@
 'use client';
 
 import { type CatalogProduct } from '@/components/product-picker';
+import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export const PRODUCT_CATEGORIES = [
@@ -35,13 +36,6 @@ export type ProductImagesState = Record<string, string | null>;
 interface ProductImageInputProps {
   value: ProductImagesState;
   onChange: (value: ProductImagesState) => void;
-}
-
-/** Append image optimization params for display thumbnails only. */
-function thumbUrl(url: string): string {
-  if (!url || url.startsWith('data:')) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}w=256&f=webp`;
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -124,7 +118,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={thumbUrl(imageUrl)}
+                    src={withImageParams(imageUrl)}
                     alt={cat.label}
                     className="h-28 w-full object-contain bg-gray-50 p-1"
                   />
@@ -325,7 +319,7 @@ function CategoryPickerModal({
                   {product.featuredImage?.url && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={thumbUrl(product.featuredImage.url)}
+                      src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
                       className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
                     />
