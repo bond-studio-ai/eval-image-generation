@@ -79,8 +79,30 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
     [value, onChange],
   );
 
+  const hasAnyImage = Object.values(value).some(Boolean);
+
+  const clearAll = useCallback(() => {
+    onChange({});
+  }, [onChange]);
+
   return (
     <div>
+      {/* Clear all button */}
+      {hasAnyImage && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear All
+          </button>
+        </div>
+      )}
+
       {/* Grid of all product categories */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {PRODUCT_CATEGORIES.map((cat) => {
