@@ -7,7 +7,7 @@ import {
 } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createGenerationSchema, listGenerationsSchema } from '@/lib/validation';
-import { and, asc, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 /** Map from snake_case input keys to camelCase schema fields */
@@ -104,24 +104,37 @@ export async function GET(request: NextRequest) {
 
     const total = totalResult[0]?.count ?? 0;
 
-    // Fetch result counts
-    const data = await Promise.all(
-      rows.map(async (row) => {
-        const [resultCount] = await db
-          .select({ count: count() })
+    // Batch-fetch result URLs for all generations in a single query
+    const genIds = rows.map((r) => r.id);
+    const allResults = genIds.length > 0
+      ? await db
+          .select({
+            generationId: generationResult.generationId,
+            url: generationResult.url,
+          })
           .from(generationResult)
-          .where(eq(generationResult.generationId, row.id));
+          .where(inArray(generationResult.generationId, genIds))
+      : [];
 
-        return {
-          ...row,
-          prompt_preview:
-            row.promptPreview && row.promptPreview.length > 100
-              ? row.promptPreview.slice(0, 100) + '...'
-              : row.promptPreview,
-          result_count: resultCount?.count ?? 0,
-        };
-      }),
-    );
+    const resultsByGenId = new Map<string, string[]>();
+    for (const r of allResults) {
+      const list = resultsByGenId.get(r.generationId) ?? [];
+      list.push(r.url);
+      resultsByGenId.set(r.generationId, list);
+    }
+
+    const data = rows.map((row) => {
+      const urls = resultsByGenId.get(row.id) ?? [];
+      return {
+        ...row,
+        prompt_preview:
+          row.promptPreview && row.promptPreview.length > 100
+            ? row.promptPreview.slice(0, 100) + '...'
+            : row.promptPreview,
+        result_urls: urls,
+        result_count: urls.length,
+      };
+    });
 
     return paginatedResponse(data, { page, limit, total });
   } catch (error) {

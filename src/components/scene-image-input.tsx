@@ -97,6 +97,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           <img
             src={withImageParams(value)}
             alt={label}
+            loading="lazy"
             className="h-56 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
           />
           <button

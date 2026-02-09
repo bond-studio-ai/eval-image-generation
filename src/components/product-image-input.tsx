@@ -142,6 +142,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                   <img
                     src={withImageParams(imageUrl)}
                     alt={cat.label}
+                    loading="lazy"
                     className="h-28 w-full object-contain bg-gray-50 p-1"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
@@ -343,6 +344,7 @@ function CategoryPickerModal({
                     <img
                       src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
+                      loading="lazy"
                       className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
                     />
                   )}

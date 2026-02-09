@@ -136,14 +136,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
             scene_accuracy_notes: r.data.scene_accuracy_notes ?? '',
           });
 
-          // Auto-open sections that have data
-          const hasProductData = Object.values(productAccuracy).some(
-            (cat) => cat.issues.length > 0 || cat.notes,
-          );
-          if (hasProductData) setProductOpen(true);
-          if (r.data.scene_accuracy_issues?.length || r.data.scene_accuracy_notes) {
-            setSceneOpen(true);
-          }
+          // Keep sections collapsed by default (user opens when needed)
         } else {
           // Initialize empty product accuracy for all active categories
           const productAccuracy: Record<string, CategoryEval> = {};

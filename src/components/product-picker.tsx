@@ -158,6 +158,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                     <img
                       src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
+                      loading="lazy"
                       className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
                     />
                   ) : (
@@ -196,6 +197,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
               <img
                 src={withImageParams(product.imageUrl)}
                 alt={product.name}
+                loading="lazy"
                 className="h-24 w-full rounded-lg border border-gray-200 object-cover"
               />
               <button

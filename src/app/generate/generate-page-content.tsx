@@ -673,7 +673,7 @@ export function GeneratePageContent({
             {allOutputImages.map((img, idx) => (
               <div key={idx} className="overflow-hidden rounded-lg border border-gray-200 shadow-xs">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt={img.label} className="h-56 w-full object-contain bg-gray-50" />
+                <img src={img.url} alt={img.label} loading="lazy" className="h-56 w-full object-contain bg-gray-50" />
                 <div className="p-2">
                   <p className="truncate text-xs text-gray-600">{img.label}</p>
                 </div>

@@ -112,8 +112,54 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Rating */}
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="text-sm font-semibold text-gray-900 uppercase">Rate this Generation</h2>
+        <div className="mt-3">
+          <RatingForm generationId={result.id} currentRating={result.resultRating} />
+        </div>
+      </div>
+
+      {/* Output Images with Evaluations */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900">Output Images</h2>
+        {result.results.length === 0 ? (
+          <p className="mt-4 text-sm text-gray-600">No output images for this generation.</p>
+        ) : (
+          <div className="mt-4 space-y-6">
+            {result.results.map((img, idx) => (
+              <div
+                key={img.id}
+                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                  {/* Image */}
+                  <div className="bg-gray-50">
+                    <div className="flex min-h-[20rem] items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt={`Output image ${idx + 1}`} loading="lazy" className="h-full w-full object-contain" />
+                    </div>
+                    <div className="border-t border-gray-200 p-2">
+                      <p className="truncate text-xs text-gray-600">{img.url}</p>
+                    </div>
+                  </div>
+
+                  {/* Evaluation Form */}
+                  <div className="border-t border-gray-200 p-4 lg:border-t-0 lg:border-l">
+                    <ImageEvaluationForm
+                      resultId={img.id}
+                      productCategories={activeProductCategories}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Meta */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-gray-600">Created</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
@@ -142,14 +188,6 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Rating */}
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-sm font-semibold text-gray-900 uppercase">Rate this Generation</h2>
-        <div className="mt-3">
-          <RatingForm generationId={result.id} currentRating={result.resultRating} />
-        </div>
-      </div>
-
       {/* Scene Images */}
       {inputData && (inputData.dollhouseView || inputData.realPhoto) && (
         <div className="mt-8">
@@ -159,7 +197,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="flex h-56 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(inputData.dollhouseView)} alt="Dollhouse View" className="h-full w-full object-contain" />
+                  <img src={withImageParams(inputData.dollhouseView)} alt="Dollhouse View" loading="lazy" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Dollhouse View</p>
@@ -170,7 +208,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="flex h-56 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(inputData.realPhoto)} alt="Real Photo" className="h-full w-full object-contain" />
+                  <img src={withImageParams(inputData.realPhoto)} alt="Real Photo" loading="lazy" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Real Photo</p>
@@ -193,7 +231,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               >
                 <div className="flex h-44 items-center justify-center bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(img.url)} alt={img.label} className="h-full w-full object-contain" />
+                  <img src={withImageParams(img.url)} alt={img.label} loading="lazy" className="h-full w-full object-contain" />
                 </div>
                 <div className="p-2">
                   <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
@@ -205,44 +243,6 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           </div>
         </div>
       )}
-
-      {/* Output Images with Evaluations */}
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Output Images</h2>
-        {result.results.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No output images for this generation.</p>
-        ) : (
-          <div className="mt-4 space-y-6">
-            {result.results.map((img, idx) => (
-              <div
-                key={img.id}
-                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-2">
-                  {/* Image */}
-                  <div className="bg-gray-50">
-                    <div className="flex min-h-[20rem] items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt={`Output image ${idx + 1}`} className="h-full w-full object-contain" />
-                    </div>
-                    <div className="border-t border-gray-200 p-2">
-                      <p className="truncate text-xs text-gray-600">{img.url}</p>
-                    </div>
-                  </div>
-
-                  {/* Evaluation Form */}
-                  <div className="border-t border-gray-200 p-4 lg:border-t-0 lg:border-l">
-                    <ImageEvaluationForm
-                      resultId={img.id}
-                      productCategories={activeProductCategories}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Prompts Used */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">

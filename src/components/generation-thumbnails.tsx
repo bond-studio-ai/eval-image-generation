@@ -1,5 +1,6 @@
 'use client';
 
+import { withImageParams } from '@/lib/image-utils';
 import { useState } from 'react';
 
 interface GenerationThumbnailsProps {
@@ -21,7 +22,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
   return (
     <>
-      {/* Thumbnail(s) */}
+      {/* Thumbnail(s) — small ?w=96 for the 48px display */}
       <button
         type="button"
         onClick={(e) => {
@@ -29,14 +30,15 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
           e.stopPropagation();
           setExpanded(true);
         }}
-        className="flex items-center gap-1.5"
+        className="flex cursor-pointer items-center gap-1.5"
       >
         {urls.slice(0, 2).map((url, i) => (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             key={i}
-            src={url}
+            src={withImageParams(url, 96)}
             alt={`Result ${i + 1}`}
+            loading="lazy"
             className="h-12 w-12 shrink-0 rounded border border-gray-200 object-cover transition-shadow hover:shadow-md"
           />
         ))}
@@ -47,7 +49,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         )}
       </button>
 
-      {/* Lightbox */}
+      {/* Lightbox — full-size images */}
       {expanded && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"

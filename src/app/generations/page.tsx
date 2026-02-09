@@ -1,18 +1,17 @@
-import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { EmptyState } from '@/components/empty-state';
-import { GenerationThumbnails } from '@/components/generation-thumbnails';
-import { Pagination } from '@/components/pagination';
-import { RatingBadge } from '@/components/rating-badge';
+import { GenerationsList, type GenerationRow } from '@/components/generations-list';
 import { db } from '@/db';
 import {
   generation,
   generationResult,
   promptVersion,
 } from '@/db/schema';
-import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
+
+const PAGE_SIZE = 20;
 
 interface PageProps {
   searchParams: Promise<{
@@ -27,9 +26,6 @@ interface PageProps {
 
 export default async function GenerationsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const page = parseInt(params.page || '1', 10);
-  const limit = 20;
-  const offset = (page - 1) * limit;
 
   const conditions = [];
   if (params.prompt_version_id) {
@@ -70,28 +66,53 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       .innerJoin(promptVersion, eq(promptVersion.id, generation.promptVersionId))
       .where(whereClause)
       .orderBy(desc(generation.createdAt))
-      .limit(limit)
-      .offset(offset),
+      .limit(PAGE_SIZE),
     db.select({ count: count() }).from(generation).where(whereClause),
   ]);
 
   const total = totalResult[0]?.count ?? 0;
-  const totalPages = Math.ceil(total / limit);
 
-  // Fetch result URLs for each generation
-  const data = await Promise.all(
-    rows.map(async (row) => {
-      const results = await db
-        .select({ url: generationResult.url })
+  // Batch-fetch result URLs for all generations in a single query
+  const genIds = rows.map((r) => r.id);
+  const allResults = genIds.length > 0
+    ? await db
+        .select({
+          generationId: generationResult.generationId,
+          url: generationResult.url,
+        })
         .from(generationResult)
-        .where(eq(generationResult.generationId, row.id));
-      return {
-        ...row,
-        resultUrls: results.map((r) => r.url),
-        resultCount: results.length,
-      };
-    }),
-  );
+        .where(inArray(generationResult.generationId, genIds))
+    : [];
+
+  const resultsByGenId = new Map<string, string[]>();
+  for (const r of allResults) {
+    const list = resultsByGenId.get(r.generationId) ?? [];
+    list.push(r.url);
+    resultsByGenId.set(r.generationId, list);
+  }
+
+  const initialData: GenerationRow[] = rows.map((row) => {
+    const urls = resultsByGenId.get(row.id) ?? [];
+    return {
+      id: row.id,
+      promptVersionId: row.promptVersionId,
+      promptName: row.promptName,
+      resultRating: row.resultRating,
+      notes: row.notes,
+      executionTime: row.executionTime,
+      createdAt: row.createdAt.toISOString(),
+      resultUrls: urls,
+      resultCount: urls.length,
+    };
+  });
+
+  const filters = {
+    rating: params.rating,
+    unrated: params.unrated,
+    prompt_version_id: params.prompt_version_id,
+    from: params.from,
+    to: params.to,
+  };
 
   return (
     <div>
@@ -137,7 +158,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      {data.length === 0 ? (
+      {initialData.length === 0 ? (
         <div className="mt-8">
           <EmptyState
             title="No generations found"
@@ -145,68 +166,12 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
           />
         </div>
       ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Output
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Prompt
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Rating
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Results
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {data.map((gen) => (
-                <tr key={gen.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <GenerationThumbnails urls={gen.resultUrls} />
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <Link
-                      href={`/generations/${gen.id}`}
-                      className="hover:text-primary-600 font-medium text-gray-900"
-                    >
-                      {gen.promptName || 'Untitled'}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap">
-                    <RatingBadge rating={gen.resultRating} />
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {gen.resultCount} result{gen.resultCount !== 1 ? 's' : ''}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {new Date(gen.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <DeleteGenerationButton generationId={gen.id} variant="icon" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={page} totalPages={totalPages} total={total} />
-        </div>
+        <GenerationsList
+          initialData={initialData}
+          initialTotal={total}
+          pageSize={PAGE_SIZE}
+          filters={filters}
+        />
       )}
     </div>
   );
