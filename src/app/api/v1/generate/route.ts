@@ -37,10 +37,11 @@ const ALL_INPUT_KEYS = [...SCENE_KEYS, ...PRODUCT_CATEGORIES] as const;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt_version_id, input_images, number_of_images } = body as {
+    const { prompt_version_id, input_images, number_of_images, use_google_search } = body as {
       prompt_version_id: string;
       input_images?: Record<string, string | null>;
       number_of_images?: number;
+      use_google_search?: boolean;
     };
 
     if (!prompt_version_id) {
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       imageSize: pv.outputResolution ?? undefined,
       temperature: pv.temperature ? Number(pv.temperature) : undefined,
       numberOfImages: number_of_images,
+      useGoogleSearch: use_google_search,
     });
 
     // Create generation row

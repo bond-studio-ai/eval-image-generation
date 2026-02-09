@@ -101,6 +101,7 @@ export function GeneratePageContent({
   const [outputResolution, setOutputResolution] = useState(initialPromptVersion?.outputResolution ?? '1K');
   const [temperature, setTemperature] = useState(initialPromptVersion?.temperature ?? '');
   const [numberOfImages, setNumberOfImages] = useState('1');
+  const [useGoogleSearch, setUseGoogleSearch] = useState(false);
 
   // Generation state
   const [generating, setGenerating] = useState(false);
@@ -254,6 +255,7 @@ export function GeneratePageContent({
             prompt_version_id: versionId,
             input_images: inputPayload,
             ...(numImages > 1 && { number_of_images: numImages }),
+            ...(useGoogleSearch && { use_google_search: true }),
           }),
         });
 
@@ -276,7 +278,7 @@ export function GeneratePageContent({
         setGenerating(false);
       }
     },
-    [buildInputImagesPayload, numberOfImages],
+    [buildInputImagesPayload, numberOfImages, useGoogleSearch],
   );
 
   // Keep the ref in sync so createNewVersion always uses the latest
@@ -567,6 +569,18 @@ export function GeneratePageContent({
               <option value="4">4</option>
             </select>
           </div>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <input
+            id="google-search"
+            type="checkbox"
+            checked={useGoogleSearch}
+            onChange={(e) => setUseGoogleSearch(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <label htmlFor="google-search" className="text-xs font-medium text-gray-600">
+            Grounding with Google Search
+          </label>
         </div>
       </div>
 

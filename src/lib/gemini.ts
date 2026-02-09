@@ -1,5 +1,5 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { GoogleGenAI, type Content } from '@google/genai';
+import { GenerateContentConfig, GoogleGenAI, type Content } from '@google/genai';
 import { randomUUID } from 'crypto';
 
 // ------------------------------------
@@ -15,6 +15,7 @@ export interface GeminiGenerateRequest {
   imageSize?: string; // "1K", "2K", "4K"
   temperature?: number;
   numberOfImages?: number; // number of sequential API calls
+  useGoogleSearch?: boolean; // Grounding with Google Search
 }
 
 export interface GeminiGenerateResponse {
@@ -126,17 +127,18 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
   ];
 
   // Build imageConfig if aspect ratio or size specified
-  const imageConfig: Record<string, string> = {};
+  const imageConfig: GenerateContentConfig["imageConfig"] = {};
   if (req.aspectRatio) imageConfig.aspectRatio = req.aspectRatio;
   if (req.imageSize) imageConfig.imageSize = req.imageSize;
 
   const numImages = Math.max(1, Math.min(req.numberOfImages ?? 1, 4));
 
-  const apiConfig = {
+  const apiConfig: GenerateContentConfig = {
     systemInstruction: req.systemPrompt,
     responseModalities: ['TEXT', 'IMAGE'],
     ...(req.temperature != null && { temperature: req.temperature }),
     ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
+    ...(req.useGoogleSearch && { tools: [{ googleSearch: {} }] }),
   };
 
   // Make concurrent API calls (candidateCount is not supported for image models)
