@@ -33,10 +33,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   const rated = generations.filter((g: { resultRating: string | null }) => g.resultRating !== null);
   const ratingMap: Record<string, number> = {
     FAILED: 0,
-    POOR: 1,
-    ACCEPTABLE: 2,
-    GOOD: 3,
-    EXCELLENT: 4,
+    GOOD: 1,
   };
 
   const avgRating =

@@ -18,10 +18,7 @@ import {
 
 export const generationRatingEnum = pgEnum('generation_rating', [
   'FAILED',
-  'POOR',
-  'ACCEPTABLE',
   'GOOD',
-  'EXCELLENT',
 ]);
 
 // ------------------------------------

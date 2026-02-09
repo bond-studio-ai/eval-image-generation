@@ -22,10 +22,7 @@ export async function GET(request: NextRequest) {
 
     const ratingMap = sql`CASE result_rating
       WHEN 'FAILED' THEN 0
-      WHEN 'POOR' THEN 1
-      WHEN 'ACCEPTABLE' THEN 2
-      WHEN 'GOOD' THEN 3
-      WHEN 'EXCELLENT' THEN 4
+      WHEN 'GOOD' THEN 1
     END`;
 
     let query = db
@@ -35,8 +32,8 @@ export async function GET(request: NextRequest) {
         generationCount: count(generation.id),
         ratedCount: sql<number>`COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} IS NOT NULL)`,
         avgRatingScore: sql<number>`ROUND(AVG(${ratingMap})::numeric, 2)`,
-        excellentRate: sql<number>`ROUND(
-          COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} = 'EXCELLENT')::numeric
+        goodRate: sql<number>`ROUND(
+          COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} = 'GOOD')::numeric
           / NULLIF(COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} IS NOT NULL), 0),
           2
         )`,
@@ -62,7 +59,7 @@ export async function GET(request: NextRequest) {
         generation_count: row.generationCount,
         rated_count: row.ratedCount ?? 0,
         avg_rating_score: row.avgRatingScore ?? null,
-        excellent_rate: row.excellentRate ?? 0,
+        good_rate: row.goodRate ?? 0,
         failure_rate: row.failureRate ?? 0,
       })),
     );

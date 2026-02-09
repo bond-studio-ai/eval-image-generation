@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     const totalGenerations = totalGenerationsResult[0]?.count ?? 0;
 
-    const ratingOrder = ['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'POOR', 'FAILED'];
+    const ratingOrder = ['GOOD', 'FAILED'];
     const distribution = ratingOrder.map((rating) => {
       const entry = distributionResult.find((r) => r.rating === rating);
       const ratingCount = entry?.count ?? 0;

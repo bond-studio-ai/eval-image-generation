@@ -4,19 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 const ratings = [
-  { value: 'FAILED', label: 'Failed', color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-  { value: 'POOR', label: 'Poor', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-  {
-    value: 'ACCEPTABLE',
-    label: 'Acceptable',
-    color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-  },
-  { value: 'GOOD', label: 'Good', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-  {
-    value: 'EXCELLENT',
-    label: 'Excellent',
-    color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
-  },
+  { value: 'GOOD', label: 'Good', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+  { value: 'FAILED', label: 'Failed', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
 ];
 
 interface RatingFormProps {

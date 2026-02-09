@@ -1,5 +1,6 @@
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { EmptyState } from '@/components/empty-state';
+import { GenerationThumbnails } from '@/components/generation-thumbnails';
 import { Pagination } from '@/components/pagination';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
@@ -38,7 +39,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
     conditions.push(
       eq(
         generation.resultRating,
-        params.rating as 'FAILED' | 'POOR' | 'ACCEPTABLE' | 'GOOD' | 'EXCELLENT',
+        params.rating as 'FAILED' | 'GOOD',
       ),
     );
   }
@@ -77,16 +78,17 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
   const total = totalResult[0]?.count ?? 0;
   const totalPages = Math.ceil(total / limit);
 
-  // Fetch result counts
+  // Fetch result URLs for each generation
   const data = await Promise.all(
     rows.map(async (row) => {
-      const [resultCount] = await db
-        .select({ count: count() })
+      const results = await db
+        .select({ url: generationResult.url })
         .from(generationResult)
         .where(eq(generationResult.generationId, row.id));
       return {
         ...row,
-        resultCount: resultCount?.count ?? 0,
+        resultUrls: results.map((r) => r.url),
+        resultCount: results.length,
       };
     }),
   );
@@ -102,7 +104,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
 
       {/* Filters */}
       <div className="mt-6 flex flex-wrap gap-2">
-        {['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'POOR', 'FAILED'].map((r) => (
+        {['GOOD', 'FAILED'].map((r) => (
           <Link
             key={r}
             href={`/generations?rating=${r}`}
@@ -147,6 +149,9 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
+                  Output
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                   Prompt
                 </th>
@@ -170,6 +175,9 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
             <tbody className="divide-y divide-gray-200 bg-white">
               {data.map((gen) => (
                 <tr key={gen.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <GenerationThumbnails urls={gen.resultUrls} />
+                  </td>
                   <td className="px-6 py-4 text-sm">
                     <Link
                       href={`/generations/${gen.id}`}

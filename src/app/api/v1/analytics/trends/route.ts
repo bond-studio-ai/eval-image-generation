@@ -23,10 +23,7 @@ export async function GET(request: NextRequest) {
 
     const ratingMap = sql`CASE result_rating
       WHEN 'FAILED' THEN 0
-      WHEN 'POOR' THEN 1
-      WHEN 'ACCEPTABLE' THEN 2
-      WHEN 'GOOD' THEN 3
-      WHEN 'EXCELLENT' THEN 4
+      WHEN 'GOOD' THEN 1
     END`;
 
     const truncExpr = sql`date_trunc(${interval}, ${generation.createdAt})`;
@@ -36,7 +33,7 @@ export async function GET(request: NextRequest) {
         period: truncExpr,
         generationCount: sql<number>`COUNT(*)`,
         avgRatingScore: sql<number>`ROUND(AVG(${ratingMap})::numeric, 2)`,
-        excellentCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.resultRating} = 'EXCELLENT')`,
+        goodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.resultRating} = 'GOOD')`,
         failedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.resultRating} = 'FAILED')`,
       })
       .from(generation)
@@ -49,7 +46,7 @@ export async function GET(request: NextRequest) {
         period: row.period,
         generation_count: row.generationCount,
         avg_rating_score: row.avgRatingScore ?? null,
-        excellent_count: row.excellentCount,
+        good_count: row.goodCount,
         failed_count: row.failedCount,
       })),
     );

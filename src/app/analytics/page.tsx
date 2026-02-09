@@ -15,7 +15,7 @@ async function getRatingDistribution() {
     .groupBy(generation.resultRating);
 
   const total = results.reduce((sum, r) => sum + r.count, 0);
-  const ratingOrder = ['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'POOR', 'FAILED'];
+  const ratingOrder = ['GOOD', 'FAILED'];
 
   return ratingOrder.map((rating) => {
     const entry = results.find((r) => r.rating === rating);
@@ -31,10 +31,7 @@ async function getRatingDistribution() {
 async function getPromptPerformance() {
   const ratingMap = sql`CASE result_rating
     WHEN 'FAILED' THEN 0
-    WHEN 'POOR' THEN 1
-    WHEN 'ACCEPTABLE' THEN 2
-    WHEN 'GOOD' THEN 3
-    WHEN 'EXCELLENT' THEN 4
+    WHEN 'GOOD' THEN 1
   END`;
 
   return db
@@ -67,11 +64,8 @@ async function getOverviewStats() {
 }
 
 const ratingColors: Record<string, string> = {
-  EXCELLENT: 'bg-emerald-500',
-  GOOD: 'bg-blue-500',
-  ACCEPTABLE: 'bg-yellow-500',
-  POOR: 'bg-orange-500',
-  FAILED: 'bg-red-500',
+  GOOD: 'bg-green-500',
+  FAILED: 'bg-orange-500',
 };
 
 export default async function AnalyticsPage() {

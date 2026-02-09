@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!parsed.success) {
       return errorResponse('VALIDATION_ERROR', 'Invalid rating value', {
         field: 'rating',
-        allowed: ['FAILED', 'POOR', 'ACCEPTABLE', 'GOOD', 'EXCELLENT'],
+        allowed: ['FAILED', 'GOOD'],
       });
     }
 

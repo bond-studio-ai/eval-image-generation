@@ -54,7 +54,7 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 // Generations
 // ------------------------------------
 
-export const ratingValues = ['FAILED', 'POOR', 'ACCEPTABLE', 'GOOD', 'EXCELLENT'] as const;
+export const ratingValues = ['FAILED', 'GOOD'] as const;
 
 export const ratingSchema = z.enum(ratingValues);
 

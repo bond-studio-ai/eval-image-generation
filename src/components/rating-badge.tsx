@@ -1,23 +1,11 @@
 const ratingConfig: Record<string, { label: string; className: string }> = {
-  EXCELLENT: {
-    label: 'Excellent',
-    className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  },
   GOOD: {
     label: 'Good',
-    className: 'bg-blue-50 text-blue-700 ring-blue-600/20',
-  },
-  ACCEPTABLE: {
-    label: 'Acceptable',
-    className: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
-  },
-  POOR: {
-    label: 'Poor',
-    className: 'bg-orange-50 text-orange-700 ring-orange-600/20',
+    className: 'bg-green-50 text-green-700 ring-green-600/20',
   },
   FAILED: {
     label: 'Failed',
-    className: 'bg-red-50 text-red-700 ring-red-600/20',
+    className: 'bg-orange-50 text-orange-700 ring-orange-600/20',
   },
 };
 

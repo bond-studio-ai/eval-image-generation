@@ -29,13 +29,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const ratings = result.generations;
     const rated = ratings.filter((g) => g.resultRating !== null);
-    const ratingMap = { FAILED: 0, POOR: 1, ACCEPTABLE: 2, GOOD: 3, EXCELLENT: 4 };
+    const ratingMap: Record<string, number> = { FAILED: 0, GOOD: 1 };
 
     const distribution: Record<string, number> = {
-      EXCELLENT: 0,
       GOOD: 0,
-      ACCEPTABLE: 0,
-      POOR: 0,
       FAILED: 0,
     };
     let ratingSum = 0;
