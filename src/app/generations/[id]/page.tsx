@@ -1,4 +1,5 @@
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
+import { ExpandableImage } from '@/components/expandable-image';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { RatingBadge } from '@/components/rating-badge';
@@ -141,13 +142,11 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   {/* Image */}
                   <div className="bg-gray-50">
-                    <div className="relative h-80 min-h-[20rem] bg-gray-50">
-                      <ImageWithSkeleton
-                        src={img.url}
-                        alt={`Output image ${idx + 1}`}
-                        loading="lazy"
-                      />
-                    </div>
+                    <ExpandableImage
+                      src={img.url}
+                      alt={`Output image ${idx + 1}`}
+                      wrapperClassName="relative block h-80 min-h-[20rem] w-full bg-gray-50"
+                    />
                     <div className="border-t border-gray-200 p-2">
                       <p className="truncate text-xs text-gray-600">{img.url}</p>
                     </div>
