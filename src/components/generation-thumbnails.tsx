@@ -89,7 +89,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
           onClick={() => setExpanded(false)}
         >
           <div
-            className="relative flex max-h-[92vh] w-full max-w-[92vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
