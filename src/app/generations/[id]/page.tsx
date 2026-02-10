@@ -1,5 +1,6 @@
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
@@ -140,9 +141,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   {/* Image */}
                   <div className="bg-gray-50">
-                    <div className="flex min-h-[20rem] items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt={`Output image ${idx + 1}`} loading="lazy" className="h-full w-full object-contain" />
+                    <div className="relative h-80 min-h-[20rem] bg-gray-50">
+                      <ImageWithSkeleton
+                        src={img.url}
+                        alt={`Output image ${idx + 1}`}
+                        loading="lazy"
+                      />
                     </div>
                     <div className="border-t border-gray-200 p-2">
                       <p className="truncate text-xs text-gray-600">{img.url}</p>
@@ -200,10 +204,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {inputData.dollhouseView && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                <div className="flex h-56 items-center justify-center bg-gray-50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(inputData.dollhouseView)} alt="Dollhouse View" loading="lazy" className="h-full w-full object-contain" />
-                </div>
+                <ImageWithSkeleton
+                  src={withImageParams(inputData.dollhouseView)}
+                  alt="Dollhouse View"
+                  loading="lazy"
+                  wrapperClassName="h-56 w-full bg-gray-50"
+                />
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Dollhouse View</p>
                 </div>
@@ -211,10 +217,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             )}
             {inputData.realPhoto && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                <div className="flex h-56 items-center justify-center bg-gray-50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(inputData.realPhoto)} alt="Real Photo" loading="lazy" className="h-full w-full object-contain" />
-                </div>
+                <ImageWithSkeleton
+                  src={withImageParams(inputData.realPhoto)}
+                  alt="Real Photo"
+                  loading="lazy"
+                  wrapperClassName="h-56 w-full bg-gray-50"
+                />
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Real Photo</p>
                 </div>
@@ -222,10 +230,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             )}
             {inputData.moodBoard && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                <div className="flex h-56 items-center justify-center bg-gray-50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(inputData.moodBoard)} alt="Mood Board" loading="lazy" className="h-full w-full object-contain" />
-                </div>
+                <ImageWithSkeleton
+                  src={withImageParams(inputData.moodBoard)}
+                  alt="Mood Board"
+                  loading="lazy"
+                  wrapperClassName="h-56 w-full bg-gray-50"
+                />
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Mood Board</p>
                 </div>
@@ -245,10 +255,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 key={img.key}
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
               >
-                <div className="flex h-44 items-center justify-center bg-gray-50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withImageParams(img.url)} alt={img.label} loading="lazy" className="h-full w-full object-contain" />
-                </div>
+                <ImageWithSkeleton
+                  src={withImageParams(img.url)}
+                  alt={img.label}
+                  loading="lazy"
+                  wrapperClassName="h-44 w-full bg-gray-50"
+                />
                 <div className="p-2">
                   <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                     {img.label}

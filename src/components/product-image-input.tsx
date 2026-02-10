@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { type CatalogProduct } from '@/components/product-picker';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -138,12 +139,11 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                   onClick={() => setActiveCategory(cat.key)}
                   className="group relative block w-full cursor-pointer"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <ImageWithSkeleton
                     src={withImageParams(imageUrl)}
                     alt={cat.label}
                     loading="lazy"
-                    className="h-28 w-full object-contain bg-gray-50 p-1"
+                    wrapperClassName="h-28 w-full bg-gray-50 p-1"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                     <span className="rounded bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 opacity-0 shadow transition-opacity group-hover:opacity-100">
@@ -340,12 +340,12 @@ function CategoryPickerModal({
                   className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left text-sm transition-colors last:border-0 hover:bg-gray-50"
                 >
                   {product.featuredImage?.url && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <ImageWithSkeleton
                       src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
                       loading="lazy"
-                      className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
+                      wrapperClassName="h-10 w-10 shrink-0 rounded border border-gray-200"
+                      className="object-cover"
                     />
                   )}
                   <div className="min-w-0 flex-1">

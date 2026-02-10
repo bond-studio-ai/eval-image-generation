@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useRef, useState } from 'react';
 
@@ -93,12 +94,11 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
       {value ? (
         <div className="group relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ImageWithSkeleton
             src={withImageParams(value)}
             alt={label}
             loading="lazy"
-            className="min-h-96 h-96 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
+            wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50"
           />
           <button
             type="button"

@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { useCallback, useRef, useState } from 'react';
 
 interface UploadedImage {
@@ -204,10 +205,11 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {images.map((img, idx) => (
             <div key={idx} className="group relative">
-              <img
+              <ImageWithSkeleton
                 src={img.previewUrl || img.url}
                 alt={img.name}
-                className="h-24 w-full rounded-lg border border-gray-200 object-cover"
+                wrapperClassName="h-24 w-full rounded-lg border border-gray-200"
+                className="object-cover"
               />
               <button
                 type="button"

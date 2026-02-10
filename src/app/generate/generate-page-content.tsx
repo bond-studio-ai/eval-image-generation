@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import type { ImageSelectionRow, PromptVersionDetail, PromptVersionListItem } from '@/lib/queries';
@@ -682,8 +683,12 @@ export function GeneratePageContent({
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {allOutputImages.map((img, idx) => (
               <div key={idx} className="overflow-hidden rounded-lg border border-gray-200 shadow-xs">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt={img.label} loading="lazy" className="h-56 w-full object-contain bg-gray-50" />
+                <ImageWithSkeleton
+                  src={img.url}
+                  alt={img.label}
+                  loading="lazy"
+                  wrapperClassName="h-56 w-full rounded-t-lg bg-gray-50"
+                />
                 <div className="p-2">
                   <p className="truncate text-xs text-gray-600">{img.label}</p>
                 </div>

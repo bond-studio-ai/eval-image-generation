@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -154,12 +155,12 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                   }`}
                 >
                   {product.featuredImage?.url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <ImageWithSkeleton
                       src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
                       loading="lazy"
-                      className="h-10 w-10 shrink-0 rounded border border-gray-200 object-cover"
+                      wrapperClassName="h-10 w-10 shrink-0 rounded border border-gray-200"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100">
@@ -193,12 +194,12 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {selectedProducts.map((product) => (
             <div key={product.id} className="group relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageWithSkeleton
                 src={withImageParams(product.imageUrl)}
                 alt={product.name}
                 loading="lazy"
-                className="h-24 w-full rounded-lg border border-gray-200 object-cover"
+                wrapperClassName="h-24 w-full rounded-lg border border-gray-200"
+                className="object-cover"
               />
               <button
                 type="button"
