@@ -17,7 +17,8 @@ interface PageProps {
   searchParams: Promise<{
     page?: string;
     prompt_version_id?: string;
-    rating?: string;
+    scene_accuracy_rating?: string;
+    product_accuracy_rating?: string;
     unrated?: string;
     from?: string;
     to?: string;
@@ -31,16 +32,24 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
   if (params.prompt_version_id) {
     conditions.push(eq(generation.promptVersionId, params.prompt_version_id));
   }
-  if (params.rating) {
+  if (params.scene_accuracy_rating) {
     conditions.push(
       eq(
-        generation.resultRating,
-        params.rating as 'FAILED' | 'GOOD',
+        generation.sceneAccuracyRating,
+        params.scene_accuracy_rating as 'FAILED' | 'GOOD',
+      ),
+    );
+  }
+  if (params.product_accuracy_rating) {
+    conditions.push(
+      eq(
+        generation.productAccuracyRating,
+        params.product_accuracy_rating as 'FAILED' | 'GOOD',
       ),
     );
   }
   if (params.unrated === 'true') {
-    conditions.push(isNull(generation.resultRating));
+    conditions.push(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating)));
   }
   if (params.from) {
     conditions.push(gte(generation.createdAt, new Date(params.from)));
@@ -57,7 +66,8 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
         id: generation.id,
         promptVersionId: generation.promptVersionId,
         promptName: promptVersion.name,
-        resultRating: generation.resultRating,
+        sceneAccuracyRating: generation.sceneAccuracyRating,
+        productAccuracyRating: generation.productAccuracyRating,
         notes: generation.notes,
         executionTime: generation.executionTime,
         createdAt: generation.createdAt,
@@ -97,7 +107,8 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       id: row.id,
       promptVersionId: row.promptVersionId,
       promptName: row.promptName,
-      resultRating: row.resultRating,
+      sceneAccuracyRating: row.sceneAccuracyRating,
+      productAccuracyRating: row.productAccuracyRating,
       notes: row.notes,
       executionTime: row.executionTime,
       createdAt: row.createdAt.toISOString(),
@@ -107,7 +118,8 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
   });
 
   const filters = {
-    rating: params.rating,
+    scene_accuracy_rating: params.scene_accuracy_rating,
+    product_accuracy_rating: params.product_accuracy_rating,
     unrated: params.unrated,
     prompt_version_id: params.prompt_version_id,
     from: params.from,
@@ -124,13 +136,28 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-500 mr-1">Scene:</span>
         {['GOOD', 'FAILED'].map((r) => (
           <Link
-            key={r}
-            href={`/generations?rating=${r}`}
+            key={`scene-${r}`}
+            href={`/generations?scene_accuracy_rating=${r}`}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              params.rating === r
+              params.scene_accuracy_rating === r
+                ? 'bg-primary-100 text-primary-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {r}
+          </Link>
+        ))}
+        <span className="text-xs text-gray-500 ml-2 mr-1">Product:</span>
+        {['GOOD', 'FAILED'].map((r) => (
+          <Link
+            key={`product-${r}`}
+            href={`/generations?product_accuracy_rating=${r}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              params.product_accuracy_rating === r
                 ? 'bg-primary-100 text-primary-700'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
@@ -140,7 +167,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
         ))}
         <Link
           href="/generations?unrated=true"
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
+          className={`ml-2 rounded-full px-3 py-1 text-xs font-medium ${
             params.unrated === 'true'
               ? 'bg-amber-100 text-amber-700'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -148,7 +175,7 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
         >
           Unrated
         </Link>
-        {(params.rating || params.unrated || params.from || params.to) && (
+        {(params.scene_accuracy_rating || params.product_accuracy_rating || params.unrated || params.from || params.to) && (
           <Link
             href="/generations"
             className="rounded-full px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"

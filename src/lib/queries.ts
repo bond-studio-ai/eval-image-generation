@@ -80,7 +80,7 @@ export async function fetchPromptVersionById(id: string): Promise<PromptVersionD
     where: eq(promptVersion.id, id),
     with: {
       generations: {
-        columns: { id: true, resultRating: true },
+        columns: { id: true, sceneAccuracyRating: true, productAccuracyRating: true },
       },
     },
   });

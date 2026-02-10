@@ -12,7 +12,8 @@ import { RatingBadge } from './rating-badge';
 
 interface SerializedGeneration {
   id: string;
-  resultRating: string | null;
+  sceneAccuracyRating: string | null;
+  productAccuracyRating: string | null;
   createdAt: string;
   inputImageCount: number;
   outputImageCount: number;
@@ -433,7 +434,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                   <tr key={gen.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4 text-sm">
                       <Link href={`/generations/${gen.id}`}>
-                        <RatingBadge rating={gen.resultRating} />
+                        <div className="flex gap-1">
+                          <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
+                          <RatingBadge rating={gen.productAccuracyRating} label="Product" />
+                        </div>
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">

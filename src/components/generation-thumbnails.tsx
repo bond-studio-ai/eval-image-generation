@@ -7,6 +7,46 @@ interface GenerationThumbnailsProps {
   urls: string[];
 }
 
+function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded border border-gray-200">
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-gray-200" />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={withImageParams(url, 96)}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        className={`h-full w-full object-cover transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </div>
+  );
+}
+
+function LightboxImage({ url, alt }: { url: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+      {/* Skeleton placeholder — maintains a 4:3 aspect ratio until image loads */}
+      {!loaded && (
+        <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+      />
+    </div>
+  );
+}
+
 export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -22,7 +62,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
   return (
     <>
-      {/* Thumbnail(s) — small ?w=96 for the 48px display */}
+      {/* Thumbnail(s) with loading skeleton */}
       <button
         type="button"
         onClick={(e) => {
@@ -33,14 +73,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         className="flex cursor-pointer items-center gap-1.5"
       >
         {urls.slice(0, 2).map((url, i) => (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            key={i}
-            src={withImageParams(url, 96)}
-            alt={`Result ${i + 1}`}
-            loading="lazy"
-            className="h-12 w-12 shrink-0 rounded border border-gray-200 object-cover transition-shadow hover:shadow-md"
-          />
+          <ThumbnailImage key={i} url={url} alt={`Result ${i + 1}`} />
         ))}
         {urls.length > 2 && (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
@@ -49,36 +82,39 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         )}
       </button>
 
-      {/* Lightbox — full-size images */}
+      {/* Lightbox — full-width modal with skeleton loading */}
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 sm:p-6"
           onClick={() => setExpanded(false)}
         >
           <div
-            className="relative max-h-[90vh] max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow-2xl"
+            className="relative flex max-h-[92vh] w-full max-w-[92vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setExpanded(false)}
-              className="absolute top-3 right-3 z-10 rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
+              <span className="text-sm font-medium text-gray-700">
+                {urls.length} result{urls.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-            <div className={`grid gap-3 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-              {urls.map((url, i) => (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Result ${i + 1}`}
-                  className="w-full rounded-lg object-contain"
-                />
-              ))}
+            {/* Image grid */}
+            <div className="flex-1 overflow-auto p-4">
+              <div className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                {urls.map((url, i) => (
+                  <LightboxImage key={i} url={url} alt={`Result ${i + 1}`} />
+                ))}
+              </div>
             </div>
           </div>
         </div>

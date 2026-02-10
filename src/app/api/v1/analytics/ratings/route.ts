@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const from = params.get('from');
     const to = params.get('to');
 
-    const conditions = [isNotNull(generation.resultRating)];
+    const conditions = [isNotNull(generation.sceneAccuracyRating)];
     if (promptVersionId) {
       conditions.push(eq(generation.promptVersionId, promptVersionId));
     }
@@ -28,12 +28,12 @@ export async function GET(request: NextRequest) {
       db.select({ count: count() }).from(generation).where(whereClause),
       db
         .select({
-          rating: generation.resultRating,
+          rating: generation.sceneAccuracyRating,
           count: count(),
         })
         .from(generation)
         .where(whereClause)
-        .groupBy(generation.resultRating),
+        .groupBy(generation.sceneAccuracyRating),
     ]);
 
     const totalRated = totalResult[0]?.count ?? 0;

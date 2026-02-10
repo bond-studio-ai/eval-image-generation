@@ -10,7 +10,8 @@ export interface GenerationRow {
   id: string;
   promptVersionId: string;
   promptName: string | null;
-  resultRating: string | null;
+  sceneAccuracyRating: string | null;
+  productAccuracyRating: string | null;
   notes: string | null;
   executionTime: number | null;
   createdAt: string;
@@ -23,7 +24,8 @@ interface GenerationsListProps {
   initialTotal: number;
   pageSize: number;
   filters: {
-    rating?: string;
+    scene_accuracy_rating?: string;
+    product_accuracy_rating?: string;
     unrated?: string;
     prompt_version_id?: string;
     from?: string;
@@ -55,7 +57,8 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
 
     const nextPage = page + 1;
     const params = new URLSearchParams({ page: String(nextPage), limit: String(pageSize) });
-    if (filters.rating) params.set('rating', filters.rating);
+    if (filters.scene_accuracy_rating) params.set('scene_accuracy_rating', filters.scene_accuracy_rating);
+    if (filters.product_accuracy_rating) params.set('product_accuracy_rating', filters.product_accuracy_rating);
     if (filters.unrated) params.set('unrated', filters.unrated);
     if (filters.prompt_version_id) params.set('prompt_version_id', filters.prompt_version_id);
     if (filters.from) params.set('from', filters.from);
@@ -70,7 +73,8 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
           id: row.id as string,
           promptVersionId: row.promptVersionId as string,
           promptName: row.promptName as string | null,
-          resultRating: row.resultRating as string | null,
+          sceneAccuracyRating: row.sceneAccuracyRating as string | null,
+          productAccuracyRating: row.productAccuracyRating as string | null,
           notes: row.notes as string | null,
           executionTime: row.executionTime as number | null,
           createdAt: row.createdAt as string,
@@ -150,8 +154,11 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
                   {gen.promptName || 'Untitled'}
                 </Link>
               </td>
-              <td className="px-6 py-4 text-sm whitespace-nowrap">
-                <RatingBadge rating={gen.resultRating} />
+              <td className="px-6 py-4 text-sm">
+                <div className="flex flex-wrap gap-1">
+                  <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
+                  <RatingBadge rating={gen.productAccuracyRating} label="Product" />
+                </div>
               </td>
               <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                 {gen.resultCount} result{gen.resultCount !== 1 ? 's' : ''}
@@ -171,17 +178,26 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       </table>
 
       {/* Infinite scroll sentinel + status */}
-      <div ref={sentinelRef} className="flex items-center justify-center py-4">
+      <div ref={sentinelRef}>
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Spinner className="h-4 w-4" />
-            Loading more...
+          <div className="divide-y divide-gray-200">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3">
+                <div className="h-12 w-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
         {!loading && !hasMore && generations.length > 0 && (
-          <p className="text-xs text-gray-400">
-            Showing all {total} generation{total !== 1 ? 's' : ''}
-          </p>
+          <div className="flex items-center justify-center py-4">
+            <p className="text-xs text-gray-400">
+              Showing all {total} generation{total !== 1 ? 's' : ''}
+            </p>
+          </div>
         )}
       </div>
     </div>

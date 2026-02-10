@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       where: eq(promptVersion.id, id),
       with: {
         generations: {
-          columns: { id: true, resultRating: true },
+          columns: { id: true, sceneAccuracyRating: true, productAccuracyRating: true },
         },
       },
     });
@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     const ratings = result.generations;
-    const rated = ratings.filter((g) => g.resultRating !== null);
+    const rated = ratings.filter((g) => g.sceneAccuracyRating !== null);
     const ratingMap: Record<string, number> = { FAILED: 0, GOOD: 1 };
 
     const distribution: Record<string, number> = {
@@ -38,9 +38,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     let ratingSum = 0;
 
     for (const g of rated) {
-      if (g.resultRating) {
-        distribution[g.resultRating]++;
-        ratingSum += ratingMap[g.resultRating];
+      if (g.sceneAccuracyRating) {
+        distribution[g.sceneAccuracyRating]++;
+        ratingSum += ratingMap[g.sceneAccuracyRating];
       }
     }
 

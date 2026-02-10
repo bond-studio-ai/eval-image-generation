@@ -19,14 +19,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!parsed.success) {
       return errorResponse('VALIDATION_ERROR', 'Invalid rating value', {
-        field: 'rating',
         allowed: ['FAILED', 'GOOD'],
+        fields: ['scene_accuracy_rating', 'product_accuracy_rating'],
       });
+    }
+
+    const updates: Record<string, string> = {};
+    if (parsed.data.scene_accuracy_rating !== undefined) {
+      updates.sceneAccuracyRating = parsed.data.scene_accuracy_rating;
+    }
+    if (parsed.data.product_accuracy_rating !== undefined) {
+      updates.productAccuracyRating = parsed.data.product_accuracy_rating;
     }
 
     const [updated] = await db
       .update(generation)
-      .set({ resultRating: parsed.data.rating })
+      .set(updates)
       .where(eq(generation.id, id))
       .returning();
 
@@ -36,7 +44,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return successResponse({
       id: updated.id,
-      result_rating: updated.resultRating,
+      scene_accuracy_rating: updated.sceneAccuracyRating,
+      product_accuracy_rating: updated.productAccuracyRating,
     });
   } catch (error) {
     console.error('Error rating generation:', error);

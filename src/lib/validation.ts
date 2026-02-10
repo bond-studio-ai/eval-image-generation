@@ -96,19 +96,24 @@ export const createGenerationSchema = z.object({
 });
 
 export const rateGenerationSchema = z.object({
-  rating: ratingSchema,
-});
+  scene_accuracy_rating: ratingSchema.optional(),
+  product_accuracy_rating: ratingSchema.optional(),
+}).refine(
+  (data) => data.scene_accuracy_rating !== undefined || data.product_accuracy_rating !== undefined,
+  { message: 'At least one rating field must be provided' },
+);
 
 export const listGenerationsSchema = paginationSchema.extend({
   prompt_version_id: z.string().uuid().optional(),
-  rating: ratingSchema.optional(),
+  scene_accuracy_rating: ratingSchema.optional(),
+  product_accuracy_rating: ratingSchema.optional(),
   unrated: z
     .enum(['true', 'false'])
     .optional()
     .transform((v) => v === 'true'),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
-  sort: z.enum(['created_at', 'rating']).default('created_at'),
+  sort: z.enum(['created_at']).default('created_at'),
   order: sortOrderSchema,
 });
 

@@ -30,7 +30,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return successResponse({
       id: result.id,
       prompt_version: result.promptVersion,
-      result_rating: result.resultRating,
+      scene_accuracy_rating: result.sceneAccuracyRating,
+      product_accuracy_rating: result.productAccuracyRating,
       notes: result.notes,
       execution_time: result.executionTime,
       created_at: result.createdAt,

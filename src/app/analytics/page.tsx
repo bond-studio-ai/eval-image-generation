@@ -1,18 +1,19 @@
 import { db } from '@/db';
 import { generation, promptVersion } from '@/db/schema';
-import { count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
-async function getRatingDistribution() {
+type DistEntry = { rating: string; count: number; percentage: number };
+
+async function getDistributionFor(
+  column: typeof generation.sceneAccuracyRating | typeof generation.productAccuracyRating,
+): Promise<DistEntry[]> {
   const results = await db
-    .select({
-      rating: generation.resultRating,
-      count: count(),
-    })
+    .select({ rating: column, count: count() })
     .from(generation)
-    .where(isNotNull(generation.resultRating))
-    .groupBy(generation.resultRating);
+    .where(isNotNull(column))
+    .groupBy(column);
 
   const total = results.reduce((sum, r) => sum + r.count, 0);
   const ratingOrder = ['GOOD', 'FAILED'];
@@ -29,30 +30,32 @@ async function getRatingDistribution() {
 }
 
 async function getPromptPerformance() {
-  const ratingMap = sql`CASE result_rating
-    WHEN 'FAILED' THEN 0
-    WHEN 'GOOD' THEN 1
-  END`;
+  const sceneMap = sql`CASE scene_accuracy_rating WHEN 'FAILED' THEN 0 WHEN 'GOOD' THEN 1 END`;
+  const productMap = sql`CASE product_accuracy_rating WHEN 'FAILED' THEN 0 WHEN 'GOOD' THEN 1 END`;
 
   return db
     .select({
       id: promptVersion.id,
       name: promptVersion.name,
       generationCount: count(generation.id),
-      avgRating: sql<number>`ROUND(AVG(${ratingMap})::numeric, 2)`,
+      avgSceneRating: sql<number>`ROUND(AVG(${sceneMap})::numeric, 2)`,
+      avgProductRating: sql<number>`ROUND(AVG(${productMap})::numeric, 2)`,
     })
     .from(promptVersion)
     .leftJoin(generation, eq(generation.promptVersionId, promptVersion.id))
     .where(isNull(promptVersion.deletedAt))
     .groupBy(promptVersion.id)
-    .orderBy(sql`AVG(${ratingMap}) DESC NULLS LAST`)
+    .orderBy(sql`AVG(${sceneMap}) DESC NULLS LAST`)
     .limit(10);
 }
 
 async function getOverviewStats() {
   const [totalGens, ratedGens, totalPrompts] = await Promise.all([
     db.select({ count: count() }).from(generation),
-    db.select({ count: count() }).from(generation).where(isNotNull(generation.resultRating)),
+    db
+      .select({ count: count() })
+      .from(generation)
+      .where(or(isNotNull(generation.sceneAccuracyRating), isNotNull(generation.productAccuracyRating))),
     db.select({ count: count() }).from(promptVersion).where(isNull(promptVersion.deletedAt)),
   ]);
 
@@ -68,14 +71,40 @@ const ratingColors: Record<string, string> = {
   FAILED: 'bg-orange-500',
 };
 
+function DistributionChart({ data, title }: { data: DistEntry[]; title: string }) {
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      <div className="mt-6 space-y-4">
+        {data.map((d) => (
+          <div key={d.rating} className="flex items-center gap-4">
+            <span className="w-20 text-sm font-medium text-gray-700">{d.rating}</span>
+            <div className="flex-1">
+              <div className="h-8 w-full rounded-full bg-gray-100">
+                <div
+                  className={`h-8 rounded-full ${ratingColors[d.rating]} transition-all duration-500`}
+                  style={{ width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <span className="w-12 text-right text-sm font-medium text-gray-900">{d.count}</span>
+            <span className="w-14 text-right text-sm text-gray-700">{d.percentage}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function AnalyticsPage() {
-  const [distribution, performance, overview] = await Promise.all([
-    getRatingDistribution(),
+  const [sceneDist, productDist, performance, overview] = await Promise.all([
+    getDistributionFor(generation.sceneAccuracyRating),
+    getDistributionFor(generation.productAccuracyRating),
     getPromptPerformance(),
     getOverviewStats(),
   ]);
-
-  const maxDistCount = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
     <div>
@@ -106,26 +135,10 @@ export default async function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Rating Distribution */}
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-lg font-semibold text-gray-900">Rating Distribution</h2>
-        <div className="mt-6 space-y-4">
-          {distribution.map((d) => (
-            <div key={d.rating} className="flex items-center gap-4">
-              <span className="w-24 text-sm font-medium text-gray-700">{d.rating}</span>
-              <div className="flex-1">
-                <div className="h-8 w-full rounded-full bg-gray-100">
-                  <div
-                    className={`h-8 rounded-full ${ratingColors[d.rating]} transition-all duration-500`}
-                    style={{ width: `${maxDistCount > 0 ? (d.count / maxDistCount) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-              <span className="w-16 text-right text-sm font-medium text-gray-900">{d.count}</span>
-              <span className="w-16 text-right text-sm text-gray-700">{d.percentage}%</span>
-            </div>
-          ))}
-        </div>
+      {/* Rating Distributions — side by side */}
+      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <DistributionChart data={sceneDist} title="Scene Accuracy" />
+        <DistributionChart data={productDist} title="Product Accuracy" />
       </div>
 
       {/* Prompt Performance */}
@@ -145,7 +158,10 @@ export default async function AnalyticsPage() {
                     Generations
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Avg Rating
+                    Avg Scene
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
+                    Avg Product
                   </th>
                 </tr>
               </thead>
@@ -159,7 +175,10 @@ export default async function AnalyticsPage() {
                       {p.generationCount}
                     </td>
                     <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
-                      {p.avgRating ?? '-'}
+                      {p.avgSceneRating ?? '-'}
+                    </td>
+                    <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                      {p.avgProductRating ?? '-'}
                     </td>
                   </tr>
                 ))}

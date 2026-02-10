@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       lte(generation.createdAt, new Date(to)),
     ];
 
-    const ratingMap = sql`CASE result_rating
+    const ratingMap = sql`CASE scene_accuracy_rating
       WHEN 'FAILED' THEN 0
       WHEN 'GOOD' THEN 1
     END`;
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
         period: truncExpr,
         generationCount: sql<number>`COUNT(*)`,
         avgRatingScore: sql<number>`ROUND(AVG(${ratingMap})::numeric, 2)`,
-        goodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.resultRating} = 'GOOD')`,
-        failedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.resultRating} = 'FAILED')`,
+        goodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'GOOD')`,
+        failedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'FAILED')`,
       })
       .from(generation)
       .where(and(...conditions))

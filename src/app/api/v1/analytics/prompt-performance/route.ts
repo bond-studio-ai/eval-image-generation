@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
     const from = params.get('from');
     const to = params.get('to');
     const limit = parseInt(params.get('limit') || '10', 10);
-    const _promptVersionIds = params.get('prompt_version_ids')?.split(',').filter(Boolean);
 
     const conditions = [isNull(promptVersion.deletedAt)];
     if (from) {
@@ -20,26 +19,26 @@ export async function GET(request: NextRequest) {
       conditions.push(lte(generation.createdAt, new Date(to)));
     }
 
-    const ratingMap = sql`CASE result_rating
+    const ratingMap = sql`CASE scene_accuracy_rating
       WHEN 'FAILED' THEN 0
       WHEN 'GOOD' THEN 1
     END`;
 
-    let query = db
+    const query = db
       .select({
         promptVersionId: promptVersion.id,
         promptName: promptVersion.name,
         generationCount: count(generation.id),
-        ratedCount: sql<number>`COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} IS NOT NULL)`,
+        ratedCount: sql<number>`COUNT(${generation.id}) FILTER (WHERE ${generation.sceneAccuracyRating} IS NOT NULL)`,
         avgRatingScore: sql<number>`ROUND(AVG(${ratingMap})::numeric, 2)`,
         goodRate: sql<number>`ROUND(
-          COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} = 'GOOD')::numeric
-          / NULLIF(COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} IS NOT NULL), 0),
+          COUNT(${generation.id}) FILTER (WHERE ${generation.sceneAccuracyRating} = 'GOOD')::numeric
+          / NULLIF(COUNT(${generation.id}) FILTER (WHERE ${generation.sceneAccuracyRating} IS NOT NULL), 0),
           2
         )`,
         failureRate: sql<number>`ROUND(
-          COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} = 'FAILED')::numeric
-          / NULLIF(COUNT(${generation.id}) FILTER (WHERE ${generation.resultRating} IS NOT NULL), 0),
+          COUNT(${generation.id}) FILTER (WHERE ${generation.sceneAccuracyRating} = 'FAILED')::numeric
+          / NULLIF(COUNT(${generation.id}) FILTER (WHERE ${generation.sceneAccuracyRating} IS NOT NULL), 0),
           2
         )`,
       })

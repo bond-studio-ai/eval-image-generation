@@ -50,18 +50,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { page, limit, prompt_version_id, rating, unrated, from, to, sort, order } = parsed.data;
+    const { page, limit, prompt_version_id, scene_accuracy_rating, product_accuracy_rating, unrated, from, to, sort, order } = parsed.data;
     const offset = (page - 1) * limit;
 
     const conditions = [];
     if (prompt_version_id) {
       conditions.push(eq(generation.promptVersionId, prompt_version_id));
     }
-    if (rating) {
-      conditions.push(eq(generation.resultRating, rating));
+    if (scene_accuracy_rating) {
+      conditions.push(eq(generation.sceneAccuracyRating, scene_accuracy_rating));
+    }
+    if (product_accuracy_rating) {
+      conditions.push(eq(generation.productAccuracyRating, product_accuracy_rating));
     }
     if (unrated) {
-      conditions.push(isNull(generation.resultRating));
+      conditions.push(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating)));
     }
     if (from) {
       conditions.push(gte(generation.createdAt, new Date(from)));
@@ -73,13 +76,9 @@ export async function GET(request: NextRequest) {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const orderBy =
-      sort === 'rating'
-        ? order === 'asc'
-          ? asc(generation.resultRating)
-          : desc(generation.resultRating)
-        : order === 'asc'
-          ? asc(generation.createdAt)
-          : desc(generation.createdAt);
+      order === 'asc'
+        ? asc(generation.createdAt)
+        : desc(generation.createdAt);
 
     const [rows, totalResult] = await Promise.all([
       db
@@ -88,7 +87,8 @@ export async function GET(request: NextRequest) {
           promptVersionId: generation.promptVersionId,
           promptName: promptVersion.name,
           promptPreview: promptVersion.userPrompt,
-          resultRating: generation.resultRating,
+          sceneAccuracyRating: generation.sceneAccuracyRating,
+          productAccuracyRating: generation.productAccuracyRating,
           notes: generation.notes,
           executionTime: generation.executionTime,
           createdAt: generation.createdAt,

@@ -67,8 +67,9 @@ export const generation = pgTable(
       .notNull()
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
 
-    // Rating
-    resultRating: generationRatingEnum('result_rating'),
+    // Ratings
+    sceneAccuracyRating: generationRatingEnum('scene_accuracy_rating'),
+    productAccuracyRating: generationRatingEnum('product_accuracy_rating'),
 
     // Additional data
     notes: text('notes'),
@@ -80,12 +81,12 @@ export const generation = pgTable(
   (table) => [
     index('idx_generation_prompt_version').on(table.promptVersionId),
     index('idx_generation_created_at').on(table.createdAt),
-    index('idx_generation_rating')
-      .on(table.resultRating)
-      .where(sql`result_rating IS NOT NULL`),
-    index('idx_generation_unrated')
-      .on(table.createdAt)
-      .where(sql`result_rating IS NULL`),
+    index('idx_generation_scene_rating')
+      .on(table.sceneAccuracyRating)
+      .where(sql`scene_accuracy_rating IS NOT NULL`),
+    index('idx_generation_product_rating')
+      .on(table.productAccuracyRating)
+      .where(sql`product_accuracy_rating IS NOT NULL`),
   ],
 );
 

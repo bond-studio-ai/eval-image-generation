@@ -107,7 +107,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <RatingBadge rating={result.resultRating} />
+          <RatingBadge rating={result.sceneAccuracyRating} label="Scene" />
+          <RatingBadge rating={result.productAccuracyRating} label="Product" />
           <DeleteGenerationButton generationId={result.id} />
         </div>
       </div>
@@ -116,7 +117,11 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="text-sm font-semibold text-gray-900 uppercase">Rate this Generation</h2>
         <div className="mt-3">
-          <RatingForm generationId={result.id} currentRating={result.resultRating} />
+          <RatingForm
+            generationId={result.id}
+            currentSceneAccuracyRating={result.sceneAccuracyRating}
+            currentProductAccuracyRating={result.productAccuracyRating}
+          />
         </div>
       </div>
 

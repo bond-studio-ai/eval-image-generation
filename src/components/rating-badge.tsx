@@ -9,11 +9,11 @@ const ratingConfig: Record<string, { label: string; className: string }> = {
   },
 };
 
-export function RatingBadge({ rating }: { rating: string | null }) {
+export function RatingBadge({ rating, label }: { rating: string | null; label?: string }) {
   if (!rating) {
     return (
       <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/10 ring-inset">
-        Unrated
+        {label ? `${label}: Unrated` : 'Unrated'}
       </span>
     );
   }
@@ -25,7 +25,7 @@ export function RatingBadge({ rating }: { rating: string | null }) {
     <span
       className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.className}`}
     >
-      {config.label}
+      {label ? `${label}: ${config.label}` : config.label}
     </span>
   );
 }

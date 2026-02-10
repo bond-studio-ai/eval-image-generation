@@ -30,7 +30,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   }
 
   const generations = result.generations;
-  const rated = generations.filter((g: { resultRating: string | null }) => g.resultRating !== null);
+  const rated = generations.filter((g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null);
   const ratingMap: Record<string, number> = {
     FAILED: 0,
     GOOD: 1,
@@ -39,7 +39,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   const avgRating =
     rated.length > 0
       ? (
-          rated.reduce((sum: number, g: { resultRating: string | null }) => sum + (ratingMap[g.resultRating!] ?? 0), 0) / rated.length
+          rated.reduce((sum: number, g: { sceneAccuracyRating: string | null }) => sum + (ratingMap[g.sceneAccuracyRating!] ?? 0), 0) / rated.length
         ).toFixed(2)
       : null;
 
@@ -59,7 +59,8 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
 
   const serializedGenerations = generations.map((g) => ({
     id: g.id,
-    resultRating: g.resultRating,
+    sceneAccuracyRating: g.sceneAccuracyRating,
+    productAccuracyRating: g.productAccuracyRating,
     createdAt: g.createdAt.toISOString(),
     inputImageCount: 0, // Input is now structured, not a count
     outputImageCount: g.results.length,

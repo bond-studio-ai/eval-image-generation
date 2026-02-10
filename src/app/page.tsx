@@ -1,7 +1,7 @@
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation, promptVersion } from '@/db/schema';
-import { count, isNull } from 'drizzle-orm';
+import { and, count, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ async function getStats() {
   const [promptCount, generationCount, unratedCount, recentGenerations] = await Promise.all([
     db.select({ count: count() }).from(promptVersion).where(isNull(promptVersion.deletedAt)),
     db.select({ count: count() }).from(generation),
-    db.select({ count: count() }).from(generation).where(isNull(generation.resultRating)),
+    db.select({ count: count() }).from(generation).where(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating))),
     db.query.generation.findMany({
       orderBy: (g, { desc }) => [desc(g.createdAt)],
       limit: 5,
@@ -129,7 +129,10 @@ export default async function DashboardPage() {
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap">
-                      <RatingBadge rating={gen.resultRating} />
+                      <div className="flex gap-1">
+                        <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
+                        <RatingBadge rating={gen.productAccuracyRating} label="Product" />
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-600">
                       {new Date(gen.createdAt).toLocaleDateString()}
