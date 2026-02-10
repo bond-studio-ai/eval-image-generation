@@ -105,6 +105,7 @@ export function GeneratePageContent({
   const [temperature, setTemperature] = useState(initialPromptVersion?.temperature ?? '');
   const [numberOfImages, setNumberOfImages] = useState('1');
   const [useGoogleSearch, setUseGoogleSearch] = useState(false);
+  const [tagImages, setTagImages] = useState(true);
 
   // Generation state
   const [generating, setGenerating] = useState(false);
@@ -262,6 +263,7 @@ export function GeneratePageContent({
             input_images: inputPayload,
             ...(numImages > 1 && { number_of_images: numImages }),
             ...(useGoogleSearch && { use_google_search: true }),
+            ...(!tagImages && { tag_images: false }),
           }),
         });
 
@@ -284,7 +286,7 @@ export function GeneratePageContent({
         setGenerating(false);
       }
     },
-    [buildInputImagesPayload, numberOfImages, useGoogleSearch],
+    [buildInputImagesPayload, numberOfImages, useGoogleSearch, tagImages],
   );
 
   // Keep the ref in sync so createNewVersion always uses the latest
@@ -576,17 +578,31 @@ export function GeneratePageContent({
             </select>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2">
-          <input
-            id="google-search"
-            type="checkbox"
-            checked={useGoogleSearch}
-            onChange={(e) => setUseGoogleSearch(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <label htmlFor="google-search" className="text-xs font-medium text-gray-600">
-            Grounding with Google Search
-          </label>
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              id="tag-images"
+              type="checkbox"
+              checked={tagImages}
+              onChange={(e) => setTagImages(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <label htmlFor="tag-images" className="text-xs font-medium text-gray-600">
+              Tag images in prompt
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="google-search"
+              type="checkbox"
+              checked={useGoogleSearch}
+              onChange={(e) => setUseGoogleSearch(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <label htmlFor="google-search" className="text-xs font-medium text-gray-600">
+              Grounding with Google Search
+            </label>
+          </div>
         </div>
       </div>
 

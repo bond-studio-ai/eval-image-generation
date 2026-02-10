@@ -67,11 +67,12 @@ const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt_version_id, input_images, number_of_images, use_google_search } = body as {
+    const { prompt_version_id, input_images, number_of_images, use_google_search, tag_images } = body as {
       prompt_version_id: string;
       input_images?: Record<string, string | null>;
       number_of_images?: number;
       use_google_search?: boolean;
+      tag_images?: boolean;
     };
 
     if (!prompt_version_id) {
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
       temperature: pv.temperature ? Number(pv.temperature) : undefined,
       numberOfImages: number_of_images,
       useGoogleSearch: use_google_search,
+      tagImages: tag_images,
     });
 
     // Create generation row

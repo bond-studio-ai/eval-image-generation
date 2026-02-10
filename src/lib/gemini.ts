@@ -24,6 +24,7 @@ export interface GeminiGenerateRequest {
   temperature?: number;
   numberOfImages?: number; // number of sequential API calls
   useGoogleSearch?: boolean; // Grounding with Google Search
+  tagImages?: boolean; // prepend "Reference image (label):" before each image (default true)
 }
 
 export interface GeminiGenerateResponse {
@@ -107,14 +108,17 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
     req.inputImages.map(({ url }) => urlToBase64(url)),
   );
 
-  // Build the contents array: label each image so Gemini knows what it is (e.g. product type), then the user prompt
+  // Build the contents array: optionally label each image so Gemini knows what it is, then the user prompt
+  const shouldTag = req.tagImages !== false; // default true
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userParts: any[] = [];
   for (let i = 0; i < imageData.length; i++) {
-    const label = req.inputImages[i].label;
-    userParts.push({
-      text: `Reference image (${label}):`,
-    });
+    if (shouldTag) {
+      const label = req.inputImages[i].label;
+      userParts.push({
+        text: `Reference image (${label}):`,
+      });
+    }
     userParts.push({
       inlineData: {
         mimeType: imageData[i].mimeType,
