@@ -31,8 +31,38 @@ const PRODUCT_CATEGORIES = [
   'wallpapers',
 ] as const;
 
-const SCENE_KEYS = ['dollhouse_view', 'real_photo'] as const;
+const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
 const ALL_INPUT_KEYS = [...SCENE_KEYS, ...PRODUCT_CATEGORIES] as const;
+
+/** Human-readable labels for each input key, sent to Gemini so it knows what each image is. */
+const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
+  dollhouse_view: 'Dollhouse view (scene)',
+  real_photo: 'Real photo (scene)',
+  mood_board: 'Mood board (scene)',
+  faucets: 'Faucet',
+  lightings: 'Lighting',
+  lvps: 'LVP',
+  mirrors: 'Mirror',
+  paints: 'Paint',
+  robe_hooks: 'Robe hook',
+  shelves: 'Shelf',
+  shower_glasses: 'Shower glass',
+  shower_systems: 'Shower system',
+  floor_tiles: 'Floor tile',
+  wall_tiles: 'Wall tile',
+  shower_wall_tiles: 'Shower wall tile',
+  shower_floor_tiles: 'Shower floor tile',
+  shower_curb_tiles: 'Shower curb tile',
+  toilet_paper_holders: 'Toilet paper holder',
+  toilets: 'Toilet',
+  towel_bars: 'Towel bar',
+  towel_rings: 'Towel ring',
+  tub_doors: 'Tub door',
+  tub_fillers: 'Tub filler',
+  tubs: 'Tub',
+  vanities: 'Vanity',
+  wallpapers: 'Wallpaper',
+};
 
 export async function POST(request: Request) {
   try {
@@ -57,12 +87,14 @@ export async function POST(request: Request) {
       return errorResponse('NOT_FOUND', 'Prompt version not found');
     }
 
-    // Collect all non-null image URLs from input
-    const imageUrls: string[] = [];
+    // Collect all non-null images with labels so Gemini knows what each image is (product type or scene)
+    const inputImages: { url: string; label: string }[] = [];
     if (input_images) {
       for (const key of ALL_INPUT_KEYS) {
         const url = input_images[key];
-        if (url) imageUrls.push(url);
+        if (url) {
+          inputImages.push({ url, label: INPUT_KEY_LABELS[key] });
+        }
       }
     }
 
@@ -71,7 +103,7 @@ export async function POST(request: Request) {
       systemPrompt: pv.systemPrompt,
       userPrompt: pv.userPrompt,
       model: pv.model || 'gemini-2.5-flash-image',
-      inputImageUrls: imageUrls,
+      inputImages,
       aspectRatio: pv.aspectRatio ?? undefined,
       imageSize: pv.outputResolution ?? undefined,
       temperature: pv.temperature ? Number(pv.temperature) : undefined,
@@ -99,6 +131,7 @@ export async function POST(request: Request) {
       const keyMap: Record<string, string> = {
         dollhouse_view: 'dollhouseView',
         real_photo: 'realPhoto',
+        mood_board: 'moodBoard',
         faucets: 'faucets',
         lightings: 'lightings',
         lvps: 'lvps',

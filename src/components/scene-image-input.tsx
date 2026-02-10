@@ -98,7 +98,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
             src={withImageParams(value)}
             alt={label}
             loading="lazy"
-            className="h-56 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
+            className="min-h-96 h-96 w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
           />
           <button
             type="button"
@@ -112,7 +112,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
         </div>
       ) : (
         <div
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+          className={`flex min-h-96 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
             dragOver
               ? 'border-primary-500 bg-primary-50'
               : 'border-gray-300 hover:border-gray-400'

@@ -14,6 +14,7 @@ import { NextRequest } from 'next/server';
 const INPUT_KEY_MAP: Record<string, string> = {
   dollhouse_view: 'dollhouseView',
   real_photo: 'realPhoto',
+  mood_board: 'moodBoard',
   faucets: 'faucets',
   lightings: 'lightings',
   lvps: 'lvps',

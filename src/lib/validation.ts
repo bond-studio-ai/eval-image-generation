@@ -62,6 +62,7 @@ export const ratingSchema = z.enum(ratingValues);
 export const generationInputSchema = z.object({
   dollhouse_view: z.string().min(1).optional().nullable(),
   real_photo: z.string().min(1).optional().nullable(),
+  mood_board: z.string().min(1).optional().nullable(),
   faucets: z.string().min(1).optional().nullable(),
   lightings: z.string().min(1).optional().nullable(),
   lvps: z.string().min(1).optional().nullable(),

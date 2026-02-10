@@ -7,11 +7,18 @@ import { withImageParams } from './image-utils';
 // Types
 // ------------------------------------
 
+/** Single input image with an optional label so Gemini knows what it represents (e.g. product type or "scene"). */
+export interface LabeledInputImage {
+  url: string;
+  label: string;
+}
+
 export interface GeminiGenerateRequest {
   systemPrompt: string;
   userPrompt: string;
   model: string;
-  inputImageUrls: string[]; // S3 URLs to convert to base64
+  /** Input images with labels (e.g. "Faucet", "Dollhouse view") so the model knows what each image is. */
+  inputImages: LabeledInputImage[];
   aspectRatio?: string;
   imageSize?: string; // "1K", "2K", "4K"
   temperature?: number;
@@ -96,19 +103,26 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
   const start = Date.now();
 
   // Convert all input image URLs to base64
-  const imageData = await Promise.all(req.inputImageUrls.map(urlToBase64));
+  const imageData = await Promise.all(
+    req.inputImages.map(({ url }) => urlToBase64(url)),
+  );
 
-  // Build the contents array for the API call
+  // Build the contents array: label each image so Gemini knows what it is (e.g. product type), then the user prompt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userParts: any[] = [{ text: req.userPrompt }];
-  for (const img of imageData) {
+  const userParts: any[] = [];
+  for (let i = 0; i < imageData.length; i++) {
+    const label = req.inputImages[i].label;
+    userParts.push({
+      text: `Reference image (${label}):`,
+    });
     userParts.push({
       inlineData: {
-        mimeType: img.mimeType,
-        data: img.base64,
+        mimeType: imageData[i].mimeType,
+        data: imageData[i].base64,
       },
     });
   }
+  userParts.push({ text: req.userPrompt });
 
   const contents: Content[] = [
     {

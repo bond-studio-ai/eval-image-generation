@@ -194,10 +194,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       )}
 
       {/* Scene Images */}
-      {inputData && (inputData.dollhouseView || inputData.realPhoto) && (
+      {inputData && (inputData.dollhouseView || inputData.realPhoto || inputData.moodBoard) && (
         <div className="mt-8">
           <h2 className="text-lg font-semibold text-gray-900">Scene Images</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {inputData.dollhouseView && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="flex h-56 items-center justify-center bg-gray-50">
@@ -217,6 +217,17 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-gray-600">Real Photo</p>
+                </div>
+              </div>
+            )}
+            {inputData.moodBoard && (
+              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div className="flex h-56 items-center justify-center bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={withImageParams(inputData.moodBoard)} alt="Mood Board" loading="lazy" className="h-full w-full object-contain" />
+                </div>
+                <div className="p-2">
+                  <p className="text-xs font-medium text-gray-600">Mood Board</p>
                 </div>
               </div>
             )}

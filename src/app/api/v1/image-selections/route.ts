@@ -39,6 +39,7 @@ export async function PUT(request: Request) {
   const {
     dollhouse_view,
     real_photo,
+    mood_board,
     faucets,
     lightings,
     lvps,
@@ -67,6 +68,7 @@ export async function PUT(request: Request) {
   const values = {
     dollhouseView: dollhouse_view ?? null,
     realPhoto: real_photo ?? null,
+    moodBoard: mood_board ?? null,
     faucets: faucets ?? null,
     lightings: lightings ?? null,
     lvps: lvps ?? null,

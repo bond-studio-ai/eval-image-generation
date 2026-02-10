@@ -52,6 +52,7 @@ function imageSelectionToState(d: ImageSelectionRow): {
   id: string;
   dollhouseView: string | null;
   realPhoto: string | null;
+  moodBoard: string | null;
   productImages: ProductImagesState;
 } {
   const prods: ProductImagesState = {};
@@ -66,6 +67,7 @@ function imageSelectionToState(d: ImageSelectionRow): {
     id: d.id,
     dollhouseView: d.dollhouseView,
     realPhoto: d.realPhoto,
+    moodBoard: d.moodBoard,
     productImages: prods,
   };
 }
@@ -115,6 +117,7 @@ export function GeneratePageContent({
   const initialImageState = initialImageSelection ? imageSelectionToState(initialImageSelection) : null;
   const [dollhouseView, setDollhouseView] = useState<string | null>(initialImageState?.dollhouseView ?? null);
   const [realPhoto, setRealPhoto] = useState<string | null>(initialImageState?.realPhoto ?? null);
+  const [moodBoard, setMoodBoard] = useState<string | null>(initialImageState?.moodBoard ?? null);
   const [productImages, setProductImages] = useState<ProductImagesState>(initialImageState?.productImages ?? {});
   const imageSelectionLoaded = useRef(true); // Already loaded from SSR
 
@@ -136,11 +139,12 @@ export function GeneratePageContent({
     const payload: Record<string, string | null> = {};
     if (dollhouseView) payload.dollhouse_view = dollhouseView;
     if (realPhoto) payload.real_photo = realPhoto;
+    if (moodBoard) payload.mood_board = moodBoard;
     for (const [key, url] of Object.entries(productImages)) {
       if (url) payload[key] = url;
     }
     return payload;
-  }, [dollhouseView, realPhoto, productImages]);
+  }, [dollhouseView, realPhoto, moodBoard, productImages]);
 
   // Detect if prompt has been modified from the original version
   const isModified = useMemo(() => {
@@ -167,6 +171,7 @@ export function GeneratePageContent({
     const payload: Record<string, string | null> = {
       dollhouse_view: dollhouseView,
       real_photo: realPhoto,
+      mood_board: moodBoard,
     };
     for (const [key, url] of Object.entries(productImages)) {
       // Keys are already in snake_case from the UI state
@@ -183,7 +188,7 @@ export function GeneratePageContent({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [dollhouseView, realPhoto, productImages]);
+  }, [dollhouseView, realPhoto, moodBoard, productImages]);
 
   // Load selected prompt version when changed via dropdown (not initial load)
   useEffect(() => {
@@ -587,7 +592,7 @@ export function GeneratePageContent({
       {/* Scene Images */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <SceneImageInput
             label="Dollhouse View"
             value={dollhouseView}
@@ -597,6 +602,11 @@ export function GeneratePageContent({
             label="Real Photo"
             value={realPhoto}
             onChange={setRealPhoto}
+          />
+          <SceneImageInput
+            label="Mood Board"
+            value={moodBoard}
+            onChange={setMoodBoard}
           />
         </div>
       </div>

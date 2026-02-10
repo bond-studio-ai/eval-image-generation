@@ -105,6 +105,7 @@ export const generationInput = pgTable(
     // Scene images (S3 URLs)
     dollhouseView: text('dollhouse_view'),
     realPhoto: text('real_photo'),
+    moodBoard: text('mood_board'),
 
     // Product images (S3 URLs) -- one per category
     faucets: text('faucets'),
@@ -197,6 +198,7 @@ export const imageSelection = pgTable(
     // Scene images (S3 URLs)
     dollhouseView: text('dollhouse_view'),
     realPhoto: text('real_photo'),
+    moodBoard: text('mood_board'),
 
   // Product images (S3 URLs) -- one per category
   faucets: text('faucets'),
