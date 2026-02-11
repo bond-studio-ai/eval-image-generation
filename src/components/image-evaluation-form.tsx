@@ -1,7 +1,7 @@
 'use client';
 
 import { CATEGORY_LABELS } from '@/lib/validation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Issue options
 const PRODUCT_ACCURACY_ISSUES = [
@@ -111,6 +111,10 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     scene_accuracy_notes: '',
   });
 
+  // Track whether the initial load has completed so we don't auto-save the
+  // default / loaded state.
+  const loadedRef = useRef(false);
+
   // Load existing evaluation
   useEffect(() => {
     fetch(`/api/v1/evaluations/${resultId}`)
@@ -146,6 +150,10 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
           setData((prev) => ({ ...prev, product_accuracy: productAccuracy }));
         }
         setLoading(false);
+        // Mark loaded after a tick so the auto-save effect skips the initial state.
+        requestAnimationFrame(() => {
+          loadedRef.current = true;
+        });
       })
       .catch(() => setLoading(false));
   }, [resultId, productCategories]);
@@ -166,35 +174,46 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     [],
   );
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    setSaved(false);
-    setError(null);
+  // Persist evaluation to the server.
+  const save = useCallback(
+    async (payload: EvaluationData) => {
+      setSaving(true);
+      setSaved(false);
+      setError(null);
 
-    try {
-      const res = await fetch('/api/v1/evaluations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          result_id: resultId,
-          ...data,
-        }),
-      });
+      try {
+        const res = await fetch('/api/v1/evaluations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ result_id: resultId, ...payload }),
+        });
 
-      if (!res.ok) {
-        const json = await res.json();
-        setError(json.error?.message || 'Failed to save');
-        return;
+        if (!res.ok) {
+          const json = await res.json();
+          setError(json.error?.message || 'Failed to save');
+          return;
+        }
+
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch {
+        setError('Network error');
+      } finally {
+        setSaving(false);
       }
+    },
+    [resultId],
+  );
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch {
-      setError('Network error');
-    } finally {
-      setSaving(false);
-    }
-  }, [resultId, data]);
+  // Auto-save whenever evaluation data changes (debounced 800ms for notes,
+  // but the effect fires on every change).
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    const timer = setTimeout(() => {
+      save(data);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [data, save]);
 
   // Count total issues
   const totalProductIssues = Object.values(data.product_accuracy).reduce(
@@ -202,11 +221,18 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     0,
   );
   const totalSceneIssues = data.scene_accuracy_issues.length;
-  const hasIssues =
-    totalProductIssues > 0 ||
-    totalSceneIssues > 0 ||
-    data.scene_accuracy_notes ||
-    Object.values(data.product_accuracy).some((cat) => cat.notes);
+
+  // Collect all active issue labels for the tag strip
+  const allIssueTags: { label: string; color: 'red' | 'amber' }[] = [];
+  for (const issue of data.scene_accuracy_issues) {
+    allIssueTags.push({ label: issue, color: 'red' });
+  }
+  for (const [category, catData] of Object.entries(data.product_accuracy)) {
+    const catLabel = CATEGORY_LABELS[category] ?? category;
+    for (const issue of catData.issues) {
+      allIssueTags.push({ label: `${catLabel}: ${issue}`, color: 'amber' });
+    }
+  }
 
   if (loading) {
     return (
@@ -223,12 +249,30 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold text-gray-700 uppercase">Evaluation</h4>
-        {hasIssues && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-            Has issues
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {saving && <Spinner className="h-3 w-3 text-gray-400" />}
+          {saved && <span className="text-xs font-medium text-green-600">Saved</span>}
+          {error && <span className="text-xs text-red-600">{error}</span>}
+        </div>
       </div>
+
+      {/* Issue tags */}
+      {allIssueTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {allIssueTags.map((tag) => (
+            <span
+              key={tag.label}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                tag.color === 'red'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {tag.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Scene Accuracy (first) */}
       <div className="rounded-md border border-gray-200">
@@ -315,31 +359,6 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
               <p className="text-sm text-gray-500">No product references were used for this generation.</p>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Save button */}
-      <div className="flex items-center gap-3 pt-1">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-white transition-colors"
-        >
-          {saving ? (
-            <>
-              <Spinner className="h-3 w-3" />
-              Saving...
-            </>
-          ) : (
-            'Save Evaluation'
-          )}
-        </button>
-        {saved && (
-          <span className="text-xs font-medium text-green-600">Saved!</span>
-        )}
-        {error && (
-          <span className="text-xs text-red-600">{error}</span>
         )}
       </div>
     </div>
