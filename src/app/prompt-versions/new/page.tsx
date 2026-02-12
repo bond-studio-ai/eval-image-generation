@@ -154,7 +154,6 @@ export default function NewPromptVersionPage() {
               className={`mt-1 ${editableInput}`}
             >
               <option value="1:1">1:1 (Square)</option>
-              <option value="2:1">2:1 (Landscape)</option>
               <option value="2:3">2:3 (Portrait)</option>
               <option value="3:2">3:2 (Landscape)</option>
               <option value="3:4">3:4 (Portrait)</option>

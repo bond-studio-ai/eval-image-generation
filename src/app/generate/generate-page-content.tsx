@@ -525,7 +525,6 @@ export function GeneratePageContent({
               className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
             >
               <option value="1:1">1:1 (Square)</option>
-              <option value="2:1">2:1 (Landscape)</option>
               <option value="2:3">2:3 (Portrait)</option>
               <option value="3:2">3:2 (Landscape)</option>
               <option value="3:4">3:4 (Portrait)</option>
