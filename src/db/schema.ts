@@ -68,6 +68,8 @@ export const generation = pgTable(
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
     inputPresetId: uuid('input_preset_id')
       .references(() => inputPreset.id, { onDelete: 'set null' }),
+    // FK enforced at DB level; inline reference omitted to avoid circular dependency
+    strategyId: uuid('strategy_id'),
 
     // Ratings
     sceneAccuracyRating: generationRatingEnum('scene_accuracy_rating'),
@@ -83,6 +85,7 @@ export const generation = pgTable(
   (table) => [
     index('idx_generation_prompt_version').on(table.promptVersionId),
     index('idx_generation_input_preset').on(table.inputPresetId),
+    index('idx_generation_strategy').on(table.strategyId),
     index('idx_generation_created_at').on(table.createdAt),
     index('idx_generation_scene_rating')
       .on(table.sceneAccuracyRating)
@@ -241,6 +244,37 @@ export const inputPreset = pgTable(
 );
 
 /**
+ * strategy: a named reference to a generation output image.
+ * Allows feeding a previous generation's output as input to new generations.
+ */
+export const strategy = pgTable(
+  'strategy',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    // Metadata
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+
+    // Source: which generation result image this strategy references
+    sourceResultId: uuid('source_result_id')
+      .notNull()
+      .references(() => generationResult.id, { onDelete: 'restrict' }),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('idx_strategy_created_at').on(table.createdAt),
+    index('idx_strategy_active')
+      .on(table.createdAt)
+      .where(sql`deleted_at IS NULL`),
+    index('idx_strategy_source_result').on(table.sourceResultId),
+  ],
+);
+
+/**
  * image_selection: standalone draft/workspace table.
  * Persists the current image selections on the generate page
  * so they can be picked up between sessions.
@@ -310,6 +344,10 @@ export const generationRelations = relations(generation, ({ one, many }) => ({
     fields: [generation.inputPresetId],
     references: [inputPreset.id],
   }),
+  strategy: one(strategy, {
+    fields: [generation.strategyId],
+    references: [strategy.id],
+  }),
   input: one(generationInput, {
     fields: [generation.id],
     references: [generationInput.generationId],
@@ -324,7 +362,7 @@ export const generationInputRelations = relations(generationInput, ({ one }) => 
   }),
 }));
 
-export const generationResultRelations = relations(generationResult, ({ one }) => ({
+export const generationResultRelations = relations(generationResult, ({ one, many }) => ({
   generation: one(generation, {
     fields: [generationResult.generationId],
     references: [generation.id],
@@ -333,6 +371,15 @@ export const generationResultRelations = relations(generationResult, ({ one }) =
     fields: [generationResult.id],
     references: [resultEvaluation.resultId],
   }),
+  strategies: many(strategy),
+}));
+
+export const strategyRelations = relations(strategy, ({ one, many }) => ({
+  sourceResult: one(generationResult, {
+    fields: [strategy.sourceResultId],
+    references: [generationResult.id],
+  }),
+  generations: many(generation),
 }));
 
 export const resultEvaluationRelations = relations(resultEvaluation, ({ one }) => ({

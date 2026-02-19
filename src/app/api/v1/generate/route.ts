@@ -91,6 +91,7 @@ export async function POST(request: Request) {
 
     // Collect all non-null images with labels so Gemini knows what each image is (product type or scene)
     const inputImages: { url: string; label: string }[] = [];
+
     if (input_images) {
       for (const key of ALL_INPUT_KEYS) {
         const url = input_images[key];

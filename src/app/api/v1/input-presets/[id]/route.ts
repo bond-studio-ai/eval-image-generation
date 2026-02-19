@@ -5,6 +5,37 @@ import { uuidSchema } from '@/lib/validation';
 import { count, eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
+const ALLOWED_FIELDS: Record<string, string> = {
+  dollhouse_view: 'dollhouseView',
+  real_photo: 'realPhoto',
+  mood_board: 'moodBoard',
+  faucets: 'faucets',
+  lightings: 'lightings',
+  lvps: 'lvps',
+  mirrors: 'mirrors',
+  paints: 'paints',
+  robe_hooks: 'robeHooks',
+  shelves: 'shelves',
+  shower_glasses: 'showerGlasses',
+  shower_systems: 'showerSystems',
+  floor_tiles: 'floorTiles',
+  wall_tiles: 'wallTiles',
+  shower_wall_tiles: 'showerWallTiles',
+  shower_floor_tiles: 'showerFloorTiles',
+  shower_curb_tiles: 'showerCurbTiles',
+  toilet_paper_holders: 'toiletPaperHolders',
+  toilets: 'toilets',
+  towel_bars: 'towelBars',
+  towel_rings: 'towelRings',
+  tub_doors: 'tubDoors',
+  tub_fillers: 'tubFillers',
+  tubs: 'tubs',
+  vanities: 'vanities',
+  wallpapers: 'wallpapers',
+  name: 'name',
+  description: 'description',
+};
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -38,5 +69,50 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching input preset:', error);
     return errorResponse('INTERNAL_ERROR', 'Failed to fetch input preset');
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    if (!uuidSchema.safeParse(id).success) {
+      return errorResponse('VALIDATION_ERROR', 'Invalid preset ID');
+    }
+
+    const existing = await db.query.inputPreset.findFirst({
+      where: eq(inputPreset.id, id),
+    });
+
+    if (!existing) {
+      return errorResponse('NOT_FOUND', 'Input preset not found');
+    }
+
+    const body = await request.json();
+    const updates: Record<string, unknown> = {};
+
+    for (const [snakeKey, value] of Object.entries(body)) {
+      const camelKey = ALLOWED_FIELDS[snakeKey];
+      if (!camelKey) continue;
+      updates[camelKey] = typeof value === 'string' ? value : null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'No valid fields to update');
+    }
+
+    const [updated] = await db
+      .update(inputPreset)
+      .set(updates)
+      .where(eq(inputPreset.id, id))
+      .returning();
+
+    return successResponse(updated);
+  } catch (error) {
+    console.error('Error updating input preset:', error);
+    return errorResponse('INTERNAL_ERROR', 'Failed to update input preset');
   }
 }

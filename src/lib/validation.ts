@@ -51,6 +51,25 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 });
 
 // ------------------------------------
+// Strategies
+// ------------------------------------
+
+export const createStrategySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().optional(),
+  source_result_id: z.string().uuid('Invalid result ID'),
+});
+
+export const listStrategiesSchema = paginationSchema.extend({
+  include_deleted: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  sort: z.enum(['created_at', 'name']).default('created_at'),
+  order: sortOrderSchema,
+});
+
+// ------------------------------------
 // Input Presets
 // ------------------------------------
 

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { generation, imageSelection, inputPreset, promptVersion } from '@/db/schema';
+import { generation, generationResult, imageSelection, inputPreset, promptVersion, strategy } from '@/db/schema';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 
 // ------------------------------------
@@ -99,6 +99,102 @@ export async function fetchPromptVersionById(id: string): Promise<PromptVersionD
     aspectRatio: pvData.aspectRatio,
     outputResolution: pvData.outputResolution,
     temperature: pvData.temperature,
+    stats: {
+      generation_count: generations.length,
+    },
+  };
+}
+
+// ------------------------------------
+// Strategies
+// ------------------------------------
+
+export interface StrategyListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  sourceResultId: string;
+  imageUrl: string;
+  createdAt: Date;
+  stats?: {
+    generation_count: number;
+  };
+}
+
+export interface StrategyDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  sourceResultId: string;
+  imageUrl: string;
+  sourceGenerationId: string;
+  createdAt: Date;
+  deletedAt: Date | null;
+  stats?: {
+    generation_count: number;
+  };
+}
+
+export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> {
+  const rows = await db.query.strategy.findMany({
+    where: isNull(strategy.deletedAt),
+    orderBy: [desc(strategy.createdAt)],
+    limit,
+    with: {
+      sourceResult: {
+        columns: { url: true, generationId: true },
+      },
+    },
+  });
+
+  return Promise.all(
+    rows.map(async (s) => {
+      const stats = await db
+        .select({ count: count() })
+        .from(generation)
+        .where(eq(generation.strategyId, s.id));
+
+      return {
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        sourceResultId: s.sourceResultId,
+        imageUrl: s.sourceResult.url,
+        createdAt: s.createdAt,
+        stats: {
+          generation_count: stats[0]?.count ?? 0,
+        },
+      };
+    }),
+  );
+}
+
+export async function fetchStrategyById(id: string): Promise<StrategyDetail | null> {
+  const result = await db.query.strategy.findFirst({
+    where: eq(strategy.id, id),
+    with: {
+      sourceResult: {
+        columns: { url: true, generationId: true },
+      },
+      generations: {
+        columns: { id: true },
+      },
+    },
+  });
+
+  if (!result) return null;
+
+  const { generations, ...sData } = result;
+
+  return {
+    id: sData.id,
+    name: sData.name,
+    description: sData.description,
+    sourceResultId: sData.sourceResultId,
+    imageUrl: sData.sourceResult.url,
+    sourceGenerationId: sData.sourceResult.generationId,
+    createdAt: sData.createdAt,
+    deletedAt: sData.deletedAt,
     stats: {
       generation_count: generations.length,
     },
