@@ -1,9 +1,9 @@
 import { db } from '@/db';
-import { strategy, strategyRun, strategyStep, strategyStepResult } from '@/db/schema';
+import { strategy, strategyStep } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { StrategyRunButton } from './run-button';
+import { StrategyRunsList } from './runs-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,9 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         orderBy: (r, { desc }) => [desc(r.createdAt)],
         limit: 20,
         with: {
-          stepResults: true,
+          stepResults: {
+            columns: { id: true, status: true },
+          },
         },
       },
     },
@@ -37,6 +39,17 @@ export default async function StrategyDetailPage({ params }: PageProps) {
   if (!result) {
     notFound();
   }
+
+  const initialRuns = result.runs.map((run) => ({
+    id: run.id,
+    status: run.status,
+    createdAt: run.createdAt.toISOString(),
+    completedAt: run.completedAt?.toISOString() ?? null,
+    stepResults: run.stepResults.map((sr) => ({
+      id: sr.id,
+      status: sr.status,
+    })),
+  }));
 
   return (
     <div>
@@ -58,7 +71,6 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           >
             Edit
           </Link>
-          <StrategyRunButton strategyId={result.id} />
         </div>
       </div>
 
@@ -69,7 +81,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           <p className="mt-4 text-sm text-gray-600">No steps defined. Edit this strategy to add steps.</p>
         ) : (
           <div className="mt-4 space-y-3">
-            {result.steps.map((step, idx) => (
+            {result.steps.map((step) => (
               <div
                 key={step.id}
                 className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs"
@@ -137,69 +149,8 @@ export default async function StrategyDetailPage({ params }: PageProps) {
 
       {/* Runs */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Runs</h2>
-        {result.runs.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No runs yet. Click &ldquo;Run Strategy&rdquo; to execute.</p>
-        ) : (
-          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Steps</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Started</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Completed</th>
-                  <th className="px-6 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {result.runs.map((run) => {
-                  const completed = run.stepResults.filter((sr) => sr.status === 'completed').length;
-                  const total = run.stepResults.length;
-                  return (
-                    <tr key={run.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <StatusBadge status={run.status} />
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
-                        {completed}/{total}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {new Date(run.createdAt).toLocaleString()}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {run.completedAt ? new Date(run.completedAt).toLocaleString() : '-'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                        <Link
-                          href={`/strategies/${result.id}/runs/${run.id}`}
-                          className="text-primary-600 hover:text-primary-500 font-medium"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <StrategyRunsList strategyId={result.id} initialRuns={initialRuns} />
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-700',
-    running: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    failed: 'bg-red-100 text-red-700',
-  };
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
-      {status}
-    </span>
   );
 }
