@@ -51,6 +51,50 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 });
 
 // ------------------------------------
+// Input Presets
+// ------------------------------------
+
+export const createInputPresetSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().optional(),
+  dollhouse_view: z.string().min(1).optional().nullable(),
+  real_photo: z.string().min(1).optional().nullable(),
+  mood_board: z.string().min(1).optional().nullable(),
+  faucets: z.string().min(1).optional().nullable(),
+  lightings: z.string().min(1).optional().nullable(),
+  lvps: z.string().min(1).optional().nullable(),
+  mirrors: z.string().min(1).optional().nullable(),
+  paints: z.string().min(1).optional().nullable(),
+  robe_hooks: z.string().min(1).optional().nullable(),
+  shelves: z.string().min(1).optional().nullable(),
+  shower_glasses: z.string().min(1).optional().nullable(),
+  shower_systems: z.string().min(1).optional().nullable(),
+  floor_tiles: z.string().min(1).optional().nullable(),
+  wall_tiles: z.string().min(1).optional().nullable(),
+  shower_wall_tiles: z.string().min(1).optional().nullable(),
+  shower_floor_tiles: z.string().min(1).optional().nullable(),
+  shower_curb_tiles: z.string().min(1).optional().nullable(),
+  toilet_paper_holders: z.string().min(1).optional().nullable(),
+  toilets: z.string().min(1).optional().nullable(),
+  towel_bars: z.string().min(1).optional().nullable(),
+  towel_rings: z.string().min(1).optional().nullable(),
+  tub_doors: z.string().min(1).optional().nullable(),
+  tub_fillers: z.string().min(1).optional().nullable(),
+  tubs: z.string().min(1).optional().nullable(),
+  vanities: z.string().min(1).optional().nullable(),
+  wallpapers: z.string().min(1).optional().nullable(),
+});
+
+export const listInputPresetsSchema = paginationSchema.extend({
+  include_deleted: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  sort: z.enum(['created_at', 'name']).default('created_at'),
+  order: sortOrderSchema,
+});
+
+// ------------------------------------
 // Generations
 // ------------------------------------
 

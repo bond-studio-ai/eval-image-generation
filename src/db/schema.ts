@@ -66,6 +66,8 @@ export const generation = pgTable(
     promptVersionId: uuid('prompt_version_id')
       .notNull()
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
+    inputPresetId: uuid('input_preset_id')
+      .references(() => inputPreset.id, { onDelete: 'set null' }),
 
     // Ratings
     sceneAccuracyRating: generationRatingEnum('scene_accuracy_rating'),
@@ -80,6 +82,7 @@ export const generation = pgTable(
   },
   (table) => [
     index('idx_generation_prompt_version').on(table.promptVersionId),
+    index('idx_generation_input_preset').on(table.inputPresetId),
     index('idx_generation_created_at').on(table.createdAt),
     index('idx_generation_scene_rating')
       .on(table.sceneAccuracyRating)
@@ -182,6 +185,62 @@ export const resultEvaluation = pgTable(
 );
 
 /**
+ * input_preset: shared, reusable set of input images.
+ * Any user can select a preset to populate the generate page.
+ * Mirrors the image columns of generation_input.
+ */
+export const inputPreset = pgTable(
+  'input_preset',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    // Metadata
+    name: varchar('name', { length: 255 }),
+    description: text('description'),
+
+    // Scene images (S3 URLs)
+    dollhouseView: text('dollhouse_view'),
+    realPhoto: text('real_photo'),
+    moodBoard: text('mood_board'),
+
+    // Product images (S3 URLs) -- one per category
+    faucets: text('faucets'),
+    lightings: text('lightings'),
+    lvps: text('lvps'),
+    mirrors: text('mirrors'),
+    paints: text('paints'),
+    robeHooks: text('robe_hooks'),
+    shelves: text('shelves'),
+    showerGlasses: text('shower_glasses'),
+    showerSystems: text('shower_systems'),
+    floorTiles: text('floor_tiles'),
+    wallTiles: text('wall_tiles'),
+    showerWallTiles: text('shower_wall_tiles'),
+    showerFloorTiles: text('shower_floor_tiles'),
+    showerCurbTiles: text('shower_curb_tiles'),
+    toiletPaperHolders: text('toilet_paper_holders'),
+    toilets: text('toilets'),
+    towelBars: text('towel_bars'),
+    towelRings: text('towel_rings'),
+    tubDoors: text('tub_doors'),
+    tubFillers: text('tub_fillers'),
+    tubs: text('tubs'),
+    vanities: text('vanities'),
+    wallpapers: text('wallpapers'),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('idx_input_preset_created_at').on(table.createdAt),
+    index('idx_input_preset_active')
+      .on(table.createdAt)
+      .where(sql`deleted_at IS NULL`),
+  ],
+);
+
+/**
  * image_selection: standalone draft/workspace table.
  * Persists the current image selections on the generate page
  * so they can be picked up between sessions.
@@ -247,6 +306,10 @@ export const generationRelations = relations(generation, ({ one, many }) => ({
     fields: [generation.promptVersionId],
     references: [promptVersion.id],
   }),
+  inputPreset: one(inputPreset, {
+    fields: [generation.inputPresetId],
+    references: [inputPreset.id],
+  }),
   input: one(generationInput, {
     fields: [generation.id],
     references: [generationInput.generationId],
@@ -277,4 +340,8 @@ export const resultEvaluationRelations = relations(resultEvaluation, ({ one }) =
     fields: [resultEvaluation.resultId],
     references: [generationResult.id],
   }),
+}));
+
+export const inputPresetRelations = relations(inputPreset, ({ many }) => ({
+  generations: many(generation),
 }));

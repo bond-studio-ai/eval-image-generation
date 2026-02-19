@@ -67,8 +67,9 @@ const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt_version_id, input_images, number_of_images, use_google_search, tag_images } = body as {
+    const { prompt_version_id, input_preset_id, input_images, number_of_images, use_google_search, tag_images } = body as {
       prompt_version_id: string;
+      input_preset_id?: string;
       input_images?: Record<string, string | null>;
       number_of_images?: number;
       use_google_search?: boolean;
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
       .insert(generation)
       .values({
         promptVersionId: prompt_version_id,
+        inputPresetId: input_preset_id ?? null,
         executionTime: Math.round(geminiResult.executionTimeMs),
       })
       .returning();
