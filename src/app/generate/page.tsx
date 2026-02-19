@@ -9,6 +9,8 @@ import {
 import { redirect } from 'next/navigation';
 import { GeneratePageContent } from './generate-page-content';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   searchParams: Promise<{ prompt_version_id?: string; input_preset_id?: string }>;
 }
