@@ -61,6 +61,7 @@ export const createStrategySchema = z.object({
 
 export const strategyStepSchema = z.object({
   step_order: z.number().int().min(1),
+  name: z.string().max(255).optional().nullable(),
   prompt_version_id: z.string().uuid(),
   input_preset_id: z.string().uuid().optional().nullable(),
   model: z.string().max(255).default('gemini-2.5-flash-image'),

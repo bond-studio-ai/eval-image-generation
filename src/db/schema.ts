@@ -276,6 +276,7 @@ export const strategyStep = pgTable(
       .notNull()
       .references(() => strategy.id, { onDelete: 'cascade' }),
     stepOrder: integer('step_order').notNull(),
+    name: varchar('name', { length: 255 }),
 
     promptVersionId: uuid('prompt_version_id')
       .notNull()

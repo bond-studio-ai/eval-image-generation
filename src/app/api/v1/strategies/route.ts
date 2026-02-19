@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
         steps.map((s) => ({
           strategyId: created.id,
           stepOrder: s.step_order,
+          name: s.name ?? null,
           promptVersionId: s.prompt_version_id,
           inputPresetId: s.input_preset_id ?? null,
           model: s.model,

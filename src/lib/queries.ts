@@ -131,6 +131,7 @@ export interface StrategyDetailItem {
 export interface StrategyStepItem {
   id: string;
   stepOrder: number;
+  name: string | null;
   promptVersionId: string;
   promptVersionName: string | null;
   inputPresetId: string | null;
@@ -194,6 +195,7 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
     steps: result.steps.map((step) => ({
       id: step.id,
       stepOrder: step.stepOrder,
+      name: step.name,
       promptVersionId: step.promptVersionId,
       promptVersionName: step.promptVersion?.name ?? null,
       inputPresetId: step.inputPresetId,

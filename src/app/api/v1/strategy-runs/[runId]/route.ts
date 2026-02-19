@@ -5,6 +5,8 @@ import { uuidSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ runId: string }> },
@@ -24,7 +26,7 @@ export async function GET(
           orderBy: [strategyStepResult.strategyStepId],
           with: {
             step: {
-              columns: { stepOrder: true, model: true },
+              columns: { stepOrder: true, name: true, model: true, aspectRatio: true, outputResolution: true, temperature: true, dollhouseViewFromStep: true, realPhotoFromStep: true, moodBoardFromStep: true },
               with: {
                 promptVersion: { columns: { id: true, name: true } },
                 inputPreset: { columns: { id: true, name: true } },

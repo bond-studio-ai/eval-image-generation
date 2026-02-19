@@ -27,7 +27,7 @@ export function StrategyRunsList({ strategyId, initialRuns }: { strategyId: stri
 
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/strategies/${strategyId}/runs`);
+      const res = await fetch(`/api/v1/strategies/${strategyId}/runs`, { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setRuns(json.data ?? []);

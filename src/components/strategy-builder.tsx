@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 interface StepData {
+  name: string;
   prompt_version_id: string;
   input_preset_id: string | null;
   model: string;
@@ -29,6 +30,7 @@ interface StrategyBuilderProps {
 
 function defaultStep(promptVersionId: string): StepData {
   return {
+    name: '',
     prompt_version_id: promptVersionId,
     input_preset_id: null,
     model: 'gemini-2.5-flash-image',
@@ -106,6 +108,7 @@ export function StrategyBuilder({
         description: description.trim() || undefined,
         steps: steps.map((s, i) => ({
           ...s,
+          name: s.name.trim() || null,
           step_order: i + 1,
           temperature: s.temperature,
         })),
@@ -178,10 +181,19 @@ export function StrategyBuilder({
         <div className="mt-3 space-y-4">
           {steps.map((step, idx) => (
             <div key={idx} className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center justify-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
-                  Step {idx + 1}
-                </span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
+                    Step {idx + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={step.name}
+                    onChange={(e) => updateStep(idx, { name: e.target.value })}
+                    placeholder={`Step ${idx + 1}`}
+                    className="w-48 rounded border border-gray-200 px-2 py-1 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                  />
+                </div>
                 {steps.length > 1 && (
                   <button
                     type="button"

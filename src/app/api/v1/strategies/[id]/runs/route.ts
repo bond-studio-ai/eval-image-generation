@@ -5,6 +5,8 @@ import { uuidSchema } from '@/lib/validation';
 import { desc, eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

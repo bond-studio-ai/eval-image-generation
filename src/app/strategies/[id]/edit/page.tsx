@@ -32,6 +32,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
           initialName={strat.name}
           initialDescription={strat.description ?? ''}
           initialSteps={strat.steps.map((s) => ({
+            name: s.name ?? '',
             prompt_version_id: s.promptVersionId,
             input_preset_id: s.inputPresetId,
             model: s.model,
