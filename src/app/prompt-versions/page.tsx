@@ -1,5 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
-import { Pagination } from '@/components/pagination';
+import { PromptVersionsList, type PromptVersionRow } from '@/components/prompt-versions-list';
 import { db } from '@/db';
 import { generation, promptVersion } from '@/db/schema';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
@@ -37,14 +37,21 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
   const total = totalResult[0]?.count ?? 0;
   const totalPages = Math.ceil(total / limit);
 
-  // Fetch generation counts
-  const data = await Promise.all(
+  const data: PromptVersionRow[] = await Promise.all(
     rows.map(async (pv) => {
       const genCount = await db
         .select({ count: count() })
         .from(generation)
         .where(eq(generation.promptVersionId, pv.id));
-      return { ...pv, generationCount: genCount[0]?.count ?? 0 };
+      return {
+        id: pv.id,
+        name: pv.name,
+        userPrompt: pv.userPrompt,
+        model: pv.model,
+        generationCount: genCount[0]?.count ?? 0,
+        createdAt: pv.createdAt.toISOString(),
+        deletedAt: pv.deletedAt?.toISOString() ?? null,
+      };
     }),
   );
 
@@ -81,65 +88,7 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
           />
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Model
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Generations
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {data.map((pv) => (
-                <tr key={pv.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <Link
-                      href={`/prompt-versions/${pv.id}`}
-                      className="hover:text-primary-600 text-sm font-medium text-gray-900"
-                    >
-                      {pv.name || 'Untitled'}
-                    </Link>
-                    <p className="mt-1 max-w-xs truncate text-xs text-gray-600">{pv.userPrompt}</p>
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {pv.model || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {pv.generationCount}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {new Date(pv.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap">
-                    {pv.deletedAt ? (
-                      <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">
-                        Deleted
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
-                        Active
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={page} totalPages={totalPages} total={total} />
-        </div>
+        <PromptVersionsList data={data} page={page} totalPages={totalPages} total={total} />
       )}
     </div>
   );

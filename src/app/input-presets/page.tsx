@@ -1,5 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
-import { Pagination } from '@/components/pagination';
+import { InputPresetsList, type InputPresetRow } from '@/components/input-presets-list';
 import { db } from '@/db';
 import { generation, inputPreset } from '@/db/schema';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
@@ -46,7 +46,7 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
   const total = totalResult[0]?.count ?? 0;
   const totalPages = Math.ceil(total / limit);
 
-  const data = await Promise.all(
+  const data: InputPresetRow[] = await Promise.all(
     rows.map(async (ip) => {
       const genCount = await db
         .select({ count: count() })
@@ -57,7 +57,15 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
         (col) => (ip as Record<string, unknown>)[col] != null,
       ).length;
 
-      return { ...ip, generationCount: genCount[0]?.count ?? 0, imageCount };
+      return {
+        id: ip.id,
+        name: ip.name,
+        description: ip.description,
+        imageCount,
+        generationCount: genCount[0]?.count ?? 0,
+        createdAt: ip.createdAt.toISOString(),
+        deletedAt: ip.deletedAt?.toISOString() ?? null,
+      };
     }),
   );
 
@@ -94,67 +102,7 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
           />
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Images
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Generations
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {data.map((ip) => (
-                <tr key={ip.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <Link
-                      href={`/input-presets/${ip.id}`}
-                      className="hover:text-primary-600 text-sm font-medium text-gray-900"
-                    >
-                      {ip.name || 'Untitled'}
-                    </Link>
-                    {ip.description && (
-                      <p className="mt-1 max-w-xs truncate text-xs text-gray-600">{ip.description}</p>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {ip.imageCount} image{ip.imageCount !== 1 ? 's' : ''}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {ip.generationCount}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                    {new Date(ip.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap">
-                    {ip.deletedAt ? (
-                      <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">
-                        Deleted
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
-                        Active
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={page} totalPages={totalPages} total={total} />
-        </div>
+        <InputPresetsList data={data} page={page} totalPages={totalPages} total={total} />
       )}
     </div>
   );
