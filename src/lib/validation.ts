@@ -57,7 +57,21 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 export const createStrategySchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional(),
-  source_result_id: z.string().uuid('Invalid result ID'),
+});
+
+export const strategyStepSchema = z.object({
+  step_order: z.number().int().min(1),
+  prompt_version_id: z.string().uuid(),
+  input_preset_id: z.string().uuid().optional().nullable(),
+  model: z.string().max(255).default('gemini-2.5-flash-image'),
+  aspect_ratio: z.string().max(20).default('1:1'),
+  output_resolution: z.string().max(20).default('1K'),
+  temperature: z.coerce.number().min(0).max(2).default(1.0),
+  use_google_search: z.boolean().default(false),
+  tag_images: z.boolean().default(true),
+  dollhouse_view_from_step: z.number().int().min(1).optional().nullable(),
+  real_photo_from_step: z.number().int().min(1).optional().nullable(),
+  mood_board_from_step: z.number().int().min(1).optional().nullable(),
 });
 
 export const listStrategiesSchema = paginationSchema.extend({

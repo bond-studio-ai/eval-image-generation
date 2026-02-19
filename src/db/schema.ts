@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import {
+  boolean,
   decimal,
   index,
   integer,
@@ -68,8 +69,6 @@ export const generation = pgTable(
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
     inputPresetId: uuid('input_preset_id')
       .references(() => inputPreset.id, { onDelete: 'set null' }),
-    // FK enforced at DB level; inline reference omitted to avoid circular dependency
-    strategyId: uuid('strategy_id'),
 
     // Ratings
     sceneAccuracyRating: generationRatingEnum('scene_accuracy_rating'),
@@ -85,7 +84,6 @@ export const generation = pgTable(
   (table) => [
     index('idx_generation_prompt_version').on(table.promptVersionId),
     index('idx_generation_input_preset').on(table.inputPresetId),
-    index('idx_generation_strategy').on(table.strategyId),
     index('idx_generation_created_at').on(table.createdAt),
     index('idx_generation_scene_rating')
       .on(table.sceneAccuracyRating)
@@ -244,24 +242,16 @@ export const inputPreset = pgTable(
 );
 
 /**
- * strategy: a named reference to a generation output image.
- * Allows feeding a previous generation's output as input to new generations.
+ * strategy: a multi-step workflow for chaining generations.
+ * Each strategy defines ordered steps where outputs from earlier steps
+ * can feed into scene fields of later steps.
  */
 export const strategy = pgTable(
   'strategy',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-
-    // Metadata
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
-
-    // Source: which generation result image this strategy references
-    sourceResultId: uuid('source_result_id')
-      .notNull()
-      .references(() => generationResult.id, { onDelete: 'restrict' }),
-
-    // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
@@ -270,7 +260,91 @@ export const strategy = pgTable(
     index('idx_strategy_active')
       .on(table.createdAt)
       .where(sql`deleted_at IS NULL`),
-    index('idx_strategy_source_result').on(table.sourceResultId),
+  ],
+);
+
+/**
+ * strategy_step: one step in a strategy workflow.
+ * References a prompt and optionally an input preset, with per-step model settings.
+ * Scene fields can be overridden with the output of a previous step.
+ */
+export const strategyStep = pgTable(
+  'strategy_step',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strategyId: uuid('strategy_id')
+      .notNull()
+      .references(() => strategy.id, { onDelete: 'cascade' }),
+    stepOrder: integer('step_order').notNull(),
+
+    promptVersionId: uuid('prompt_version_id')
+      .notNull()
+      .references(() => promptVersion.id, { onDelete: 'restrict' }),
+    inputPresetId: uuid('input_preset_id')
+      .references(() => inputPreset.id, { onDelete: 'set null' }),
+
+    // Per-step model settings
+    model: varchar('model', { length: 255 }).notNull().default('gemini-2.5-flash-image'),
+    aspectRatio: varchar('aspect_ratio', { length: 20 }).notNull().default('1:1'),
+    outputResolution: varchar('output_resolution', { length: 20 }).notNull().default('1K'),
+    temperature: decimal('temperature', { precision: 3, scale: 2 }).notNull().default('1.00'),
+    useGoogleSearch: boolean('use_google_search').notNull().default(false),
+    tagImages: boolean('tag_images').notNull().default(true),
+
+    // Scene field overrides: step number (1-indexed) whose output replaces this field
+    dollhouseViewFromStep: integer('dollhouse_view_from_step'),
+    realPhotoFromStep: integer('real_photo_from_step'),
+    moodBoardFromStep: integer('mood_board_from_step'),
+  },
+  (table) => [
+    index('idx_strategy_step_strategy').on(table.strategyId),
+    unique('uq_strategy_step_order').on(table.strategyId, table.stepOrder),
+  ],
+);
+
+/**
+ * strategy_run: an execution of a strategy workflow.
+ */
+export const strategyRun = pgTable(
+  'strategy_run',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strategyId: uuid('strategy_id')
+      .notNull()
+      .references(() => strategy.id, { onDelete: 'cascade' }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('idx_strategy_run_strategy').on(table.strategyId),
+    index('idx_strategy_run_created_at').on(table.createdAt),
+  ],
+);
+
+/**
+ * strategy_step_result: result of executing one step within a strategy run.
+ */
+export const strategyStepResult = pgTable(
+  'strategy_step_result',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strategyRunId: uuid('strategy_run_id')
+      .notNull()
+      .references(() => strategyRun.id, { onDelete: 'cascade' }),
+    strategyStepId: uuid('strategy_step_id')
+      .notNull()
+      .references(() => strategyStep.id, { onDelete: 'cascade' }),
+    generationId: uuid('generation_id')
+      .references(() => generation.id, { onDelete: 'set null' }),
+    outputUrl: text('output_url'),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    error: text('error'),
+    executionTime: integer('execution_time'),
+  },
+  (table) => [
+    index('idx_step_result_run').on(table.strategyRunId),
+    index('idx_step_result_step').on(table.strategyStepId),
   ],
 );
 
@@ -344,10 +418,6 @@ export const generationRelations = relations(generation, ({ one, many }) => ({
     fields: [generation.inputPresetId],
     references: [inputPreset.id],
   }),
-  strategy: one(strategy, {
-    fields: [generation.strategyId],
-    references: [strategy.id],
-  }),
   input: one(generationInput, {
     fields: [generation.id],
     references: [generationInput.generationId],
@@ -362,7 +432,7 @@ export const generationInputRelations = relations(generationInput, ({ one }) => 
   }),
 }));
 
-export const generationResultRelations = relations(generationResult, ({ one, many }) => ({
+export const generationResultRelations = relations(generationResult, ({ one }) => ({
   generation: one(generation, {
     fields: [generationResult.generationId],
     references: [generation.id],
@@ -371,15 +441,49 @@ export const generationResultRelations = relations(generationResult, ({ one, man
     fields: [generationResult.id],
     references: [resultEvaluation.resultId],
   }),
-  strategies: many(strategy),
 }));
 
-export const strategyRelations = relations(strategy, ({ one, many }) => ({
-  sourceResult: one(generationResult, {
-    fields: [strategy.sourceResultId],
-    references: [generationResult.id],
+export const strategyRelations = relations(strategy, ({ many }) => ({
+  steps: many(strategyStep),
+  runs: many(strategyRun),
+}));
+
+export const strategyStepRelations = relations(strategyStep, ({ one }) => ({
+  strategy: one(strategy, {
+    fields: [strategyStep.strategyId],
+    references: [strategy.id],
   }),
-  generations: many(generation),
+  promptVersion: one(promptVersion, {
+    fields: [strategyStep.promptVersionId],
+    references: [promptVersion.id],
+  }),
+  inputPreset: one(inputPreset, {
+    fields: [strategyStep.inputPresetId],
+    references: [inputPreset.id],
+  }),
+}));
+
+export const strategyRunRelations = relations(strategyRun, ({ one, many }) => ({
+  strategy: one(strategy, {
+    fields: [strategyRun.strategyId],
+    references: [strategy.id],
+  }),
+  stepResults: many(strategyStepResult),
+}));
+
+export const strategyStepResultRelations = relations(strategyStepResult, ({ one }) => ({
+  run: one(strategyRun, {
+    fields: [strategyStepResult.strategyRunId],
+    references: [strategyRun.id],
+  }),
+  step: one(strategyStep, {
+    fields: [strategyStepResult.strategyStepId],
+    references: [strategyStep.id],
+  }),
+  generation: one(generation, {
+    fields: [strategyStepResult.generationId],
+    references: [generation.id],
+  }),
 }));
 
 export const resultEvaluationRelations = relations(resultEvaluation, ({ one }) => ({

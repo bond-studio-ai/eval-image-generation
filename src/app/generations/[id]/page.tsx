@@ -3,7 +3,6 @@ import { ExpandableImage } from '@/components/expandable-image';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { RatingBadge } from '@/components/rating-badge';
-import { UseAsInputButton } from '@/components/use-as-input-button';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
 import { withImageParams } from '@/lib/image-utils';
@@ -148,9 +147,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                       alt={`Output image ${idx + 1}`}
                       wrapperClassName="relative block h-80 min-h-[20rem] w-full bg-gray-50"
                     />
-                    <div className="flex items-center justify-between border-t border-gray-200 p-2">
-                      <p className="min-w-0 flex-1 truncate text-xs text-gray-600">{img.url}</p>
-                      <UseAsInputButton imageUrl={img.url} />
+                    <div className="border-t border-gray-200 p-2">
+                      <p className="min-w-0 truncate text-xs text-gray-600">{img.url}</p>
                     </div>
                   </div>
 

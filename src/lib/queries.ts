@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { generation, generationResult, imageSelection, inputPreset, promptVersion, strategy } from '@/db/schema';
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
+import { generation, imageSelection, inputPreset, promptVersion, strategy, strategyRun, strategyStep } from '@/db/schema';
+import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 // ------------------------------------
 // Prompt Versions
@@ -113,26 +113,37 @@ export interface StrategyListItem {
   id: string;
   name: string;
   description: string | null;
-  sourceResultId: string;
-  imageUrl: string;
   createdAt: Date;
-  stats?: {
-    generation_count: number;
-  };
+  stepCount: number;
+  runCount: number;
 }
 
-export interface StrategyDetail {
+export interface StrategyDetailItem {
   id: string;
   name: string;
   description: string | null;
-  sourceResultId: string;
-  imageUrl: string;
-  sourceGenerationId: string;
   createdAt: Date;
   deletedAt: Date | null;
-  stats?: {
-    generation_count: number;
-  };
+  steps: StrategyStepItem[];
+  runCount: number;
+}
+
+export interface StrategyStepItem {
+  id: string;
+  stepOrder: number;
+  promptVersionId: string;
+  promptVersionName: string | null;
+  inputPresetId: string | null;
+  inputPresetName: string | null;
+  model: string;
+  aspectRatio: string;
+  outputResolution: string;
+  temperature: string | null;
+  useGoogleSearch: boolean;
+  tagImages: boolean;
+  dollhouseViewFromStep: number | null;
+  realPhotoFromStep: number | null;
+  moodBoardFromStep: number | null;
 }
 
 export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> {
@@ -141,63 +152,62 @@ export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> 
     orderBy: [desc(strategy.createdAt)],
     limit,
     with: {
-      sourceResult: {
-        columns: { url: true, generationId: true },
-      },
+      steps: { columns: { id: true } },
+      runs: { columns: { id: true } },
     },
   });
 
-  return Promise.all(
-    rows.map(async (s) => {
-      const stats = await db
-        .select({ count: count() })
-        .from(generation)
-        .where(eq(generation.strategyId, s.id));
-
-      return {
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        sourceResultId: s.sourceResultId,
-        imageUrl: s.sourceResult.url,
-        createdAt: s.createdAt,
-        stats: {
-          generation_count: stats[0]?.count ?? 0,
-        },
-      };
-    }),
-  );
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    createdAt: s.createdAt,
+    stepCount: s.steps.length,
+    runCount: s.runs.length,
+  }));
 }
 
-export async function fetchStrategyById(id: string): Promise<StrategyDetail | null> {
+export async function fetchStrategyById(id: string): Promise<StrategyDetailItem | null> {
   const result = await db.query.strategy.findFirst({
     where: eq(strategy.id, id),
     with: {
-      sourceResult: {
-        columns: { url: true, generationId: true },
+      steps: {
+        orderBy: [strategyStep.stepOrder],
+        with: {
+          promptVersion: { columns: { name: true } },
+          inputPreset: { columns: { name: true } },
+        },
       },
-      generations: {
-        columns: { id: true },
-      },
+      runs: { columns: { id: true } },
     },
   });
 
   if (!result) return null;
 
-  const { generations, ...sData } = result;
-
   return {
-    id: sData.id,
-    name: sData.name,
-    description: sData.description,
-    sourceResultId: sData.sourceResultId,
-    imageUrl: sData.sourceResult.url,
-    sourceGenerationId: sData.sourceResult.generationId,
-    createdAt: sData.createdAt,
-    deletedAt: sData.deletedAt,
-    stats: {
-      generation_count: generations.length,
-    },
+    id: result.id,
+    name: result.name,
+    description: result.description,
+    createdAt: result.createdAt,
+    deletedAt: result.deletedAt,
+    runCount: result.runs.length,
+    steps: result.steps.map((step) => ({
+      id: step.id,
+      stepOrder: step.stepOrder,
+      promptVersionId: step.promptVersionId,
+      promptVersionName: step.promptVersion?.name ?? null,
+      inputPresetId: step.inputPresetId,
+      inputPresetName: step.inputPreset?.name ?? null,
+      model: step.model,
+      aspectRatio: step.aspectRatio,
+      outputResolution: step.outputResolution,
+      temperature: step.temperature,
+      useGoogleSearch: step.useGoogleSearch,
+      tagImages: step.tagImages,
+      dollhouseViewFromStep: step.dollhouseViewFromStep,
+      realPhotoFromStep: step.realPhotoFromStep,
+      moodBoardFromStep: step.moodBoardFromStep,
+    })),
   };
 }
 

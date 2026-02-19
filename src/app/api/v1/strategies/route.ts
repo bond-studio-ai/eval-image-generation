@@ -1,9 +1,10 @@
 import { db } from '@/db';
-import { generation, generationResult, strategy } from '@/db/schema';
+import { strategy, strategyRun, strategyStep } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
-import { createStrategySchema, listStrategiesSchema } from '@/lib/validation';
+import { createStrategySchema, listStrategiesSchema, strategyStepSchema } from '@/lib/validation';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,17 +32,13 @@ export async function GET(request: NextRequest) {
           : desc(strategy.createdAt);
 
     const [rows, totalResult] = await Promise.all([
-      db.query.strategy.findMany({
-        where: conditions.length > 0 ? and(...conditions) : undefined,
-        orderBy: [orderBy],
-        limit,
-        offset,
-        with: {
-          sourceResult: {
-            columns: { url: true },
-          },
-        },
-      }),
+      db
+        .select()
+        .from(strategy)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(orderBy)
+        .limit(limit)
+        .offset(offset),
       db
         .select({ count: count() })
         .from(strategy)
@@ -52,17 +49,15 @@ export async function GET(request: NextRequest) {
 
     const data = await Promise.all(
       rows.map(async (s) => {
-        const stats = await db
-          .select({ count: count() })
-          .from(generation)
-          .where(eq(generation.strategyId, s.id));
+        const [stepCount, runCount] = await Promise.all([
+          db.select({ count: count() }).from(strategyStep).where(eq(strategyStep.strategyId, s.id)),
+          db.select({ count: count() }).from(strategyRun).where(eq(strategyRun.strategyId, s.id)),
+        ]);
 
         return {
           ...s,
-          imageUrl: s.sourceResult.url,
-          stats: {
-            generation_count: stats[0]?.count ?? 0,
-          },
+          stepCount: stepCount[0]?.count ?? 0,
+          runCount: runCount[0]?.count ?? 0,
         };
       }),
     );
@@ -74,10 +69,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const createWithStepsSchema = createStrategySchema.extend({
+  steps: z.array(strategyStepSchema).min(1, 'At least one step is required'),
+});
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = createStrategySchema.safeParse(body);
+    const parsed = createWithStepsSchema.safeParse(body);
 
     if (!parsed.success) {
       return errorResponse('VALIDATION_ERROR', 'Invalid request body', {
@@ -85,27 +84,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { name, description, source_result_id } = parsed.data;
-
-    // Verify the source result exists
-    const sourceResult = await db.query.generationResult.findFirst({
-      where: eq(generationResult.id, source_result_id),
-    });
-
-    if (!sourceResult) {
-      return errorResponse('NOT_FOUND', 'Source generation result not found');
-    }
+    const { name, description, steps } = parsed.data;
 
     const [created] = await db
       .insert(strategy)
       .values({
         name,
         description: description ?? null,
-        sourceResultId: source_result_id,
       })
       .returning();
 
-    return successResponse({ ...created, imageUrl: sourceResult.url }, 201);
+    if (steps.length > 0) {
+      await db.insert(strategyStep).values(
+        steps.map((s) => ({
+          strategyId: created.id,
+          stepOrder: s.step_order,
+          promptVersionId: s.prompt_version_id,
+          inputPresetId: s.input_preset_id ?? null,
+          model: s.model,
+          aspectRatio: s.aspect_ratio,
+          outputResolution: s.output_resolution,
+          temperature: String(s.temperature),
+          useGoogleSearch: s.use_google_search,
+          tagImages: s.tag_images,
+          dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
+          realPhotoFromStep: s.real_photo_from_step ?? null,
+          moodBoardFromStep: s.mood_board_from_step ?? null,
+        })),
+      );
+    }
+
+    return successResponse({ ...created, stepCount: steps.length }, 201);
   } catch (error) {
     console.error('Error creating strategy:', error);
     return errorResponse('INTERNAL_ERROR', 'Failed to create strategy');
