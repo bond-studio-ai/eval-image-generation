@@ -67,9 +67,11 @@ const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt_version_id, input_images, number_of_images, use_google_search, tag_images } = body as {
+    const { prompt_version_id, input_preset_id, input_images, arbitrary_image_urls, number_of_images, use_google_search, tag_images } = body as {
       prompt_version_id: string;
+      input_preset_id?: string;
       input_images?: Record<string, string | null>;
+      arbitrary_image_urls?: string[];
       number_of_images?: number;
       use_google_search?: boolean;
       tag_images?: boolean;
@@ -90,6 +92,7 @@ export async function POST(request: Request) {
 
     // Collect all non-null images with labels so Gemini knows what each image is (product type or scene)
     const inputImages: { url: string; label: string }[] = [];
+
     if (input_images) {
       for (const key of ALL_INPUT_KEYS) {
         const url = input_images[key];
@@ -98,6 +101,15 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    const extraImages = Array.isArray(arbitrary_image_urls) ? arbitrary_image_urls : [];
+    extraImages.forEach((item: unknown, i: number) => {
+      const url = typeof item === 'string' ? item : (item != null && typeof item === 'object' && 'url' in item && typeof (item as { url: unknown }).url === 'string') ? (item as { url: string }).url : '';
+      const tag = (item != null && typeof item === 'object' && 'tag' in item && typeof (item as { tag: unknown }).tag === 'string') ? (item as { tag: string }).tag : undefined;
+      if (url) {
+        inputImages.push({ url, label: tag?.trim() || `Additional image ${i + 1}` });
+      }
+    });
 
     // Call Gemini API
     const geminiResult = await generateWithGemini({
@@ -118,6 +130,7 @@ export async function POST(request: Request) {
       .insert(generation)
       .values({
         promptVersionId: prompt_version_id,
+        inputPresetId: input_preset_id ?? null,
         executionTime: Math.round(geminiResult.executionTimeMs),
       })
       .returning();

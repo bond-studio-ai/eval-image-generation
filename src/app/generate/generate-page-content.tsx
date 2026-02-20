@@ -2,8 +2,7 @@
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
-import { SceneImageInput } from '@/components/scene-image-input';
-import type { ImageSelectionRow, PromptVersionDetail, PromptVersionListItem } from '@/lib/queries';
+import type { ImageSelectionRow, InputPresetDetail, InputPresetListItem, PromptVersionDetail, PromptVersionListItem } from '@/lib/queries';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -51,9 +50,6 @@ const PRODUCT_KEYS = [
 
 function imageSelectionToState(d: ImageSelectionRow): {
   id: string;
-  dollhouseView: string | null;
-  realPhoto: string | null;
-  moodBoard: string | null;
   productImages: ProductImagesState;
 } {
   const prods: ProductImagesState = {};
@@ -66,25 +62,28 @@ function imageSelectionToState(d: ImageSelectionRow): {
   }
   return {
     id: d.id,
-    dollhouseView: d.dollhouseView,
-    realPhoto: d.realPhoto,
-    moodBoard: d.moodBoard,
     productImages: prods,
   };
 }
 
 export interface GeneratePageContentProps {
   initialPromptVersions: PromptVersionListItem[];
+  initialInputPresets: InputPresetListItem[];
   initialImageSelection: ImageSelectionRow | null;
   initialPromptVersion: PromptVersionDetail | null;
   initialPromptVersionId: string | null;
+  initialInputPreset: InputPresetDetail | null;
+  initialInputPresetId: string | null;
 }
 
 export function GeneratePageContent({
   initialPromptVersions,
+  initialInputPresets,
   initialImageSelection,
   initialPromptVersion,
   initialPromptVersionId,
+  initialInputPreset,
+  initialInputPresetId,
 }: GeneratePageContentProps) {
   const router = useRouter();
 
@@ -115,16 +114,28 @@ export function GeneratePageContent({
   const [generationResult, setGenerationResult] = useState<GenerationApiResult | null>(null);
   const [notes, setNotes] = useState('');
 
-  // Image selections state (initialized from SSR)
-  const initialImageState = initialImageSelection ? imageSelectionToState(initialImageSelection) : null;
-  const [dollhouseView, setDollhouseView] = useState<string | null>(initialImageState?.dollhouseView ?? null);
-  const [realPhoto, setRealPhoto] = useState<string | null>(initialImageState?.realPhoto ?? null);
-  const [moodBoard, setMoodBoard] = useState<string | null>(initialImageState?.moodBoard ?? null);
+  // Image selections state (initialized from input preset if provided, otherwise from saved selection)
+  const initialImageState = initialInputPreset
+    ? imageSelectionToState(initialInputPreset as unknown as ImageSelectionRow)
+    : initialImageSelection
+      ? imageSelectionToState(initialImageSelection)
+      : null;
   const [productImages, setProductImages] = useState<ProductImagesState>(initialImageState?.productImages ?? {});
   const imageSelectionLoaded = useRef(true); // Already loaded from SSR
 
   // Active prompt version ID (the one that will be used for generation)
   const [activeVersionId, setActiveVersionId] = useState<string | null>(initialPromptVersion?.id ?? null);
+
+  // Input preset state
+  const [inputPresets, setInputPresets] = useState<InputPresetListItem[]>(initialInputPresets);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialInputPresetId);
+  const [loadingPreset, setLoadingPreset] = useState(false);
+  const [activePresetId, setActivePresetId] = useState<string | null>(initialInputPreset?.id ?? null);
+  const [activePresetArbitraryImages, setActivePresetArbitraryImages] = useState<{ url: string; tag?: string }[]>(
+    initialInputPreset && Array.isArray((initialInputPreset as unknown as { arbitraryImages?: { url: string; tag?: string }[] }).arbitraryImages)
+      ? (initialInputPreset as unknown as { arbitraryImages: { url: string; tag?: string }[] }).arbitraryImages.filter((x) => x?.url)
+      : [],
+  );
 
   // New version modal
   const [showNewVersionModal, setShowNewVersionModal] = useState(false);
@@ -133,20 +144,24 @@ export function GeneratePageContent({
   const [creatingVersion, setCreatingVersion] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
 
+  // New input preset modal
+  const [showNewPresetModal, setShowNewPresetModal] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetDescription, setNewPresetDescription] = useState('');
+  const [creatingPreset, setCreatingPreset] = useState(false);
+  const [presetError, setPresetError] = useState<string | null>(null);
+
   // Use ref for runGeneration so createNewVersion always has the latest reference
   const runGenerationRef = useRef<(versionId: string) => Promise<void>>(undefined);
 
   // Build the input_images payload object
   const buildInputImagesPayload = useCallback((): Record<string, string | null> => {
     const payload: Record<string, string | null> = {};
-    if (dollhouseView) payload.dollhouse_view = dollhouseView;
-    if (realPhoto) payload.real_photo = realPhoto;
-    if (moodBoard) payload.mood_board = moodBoard;
     for (const [key, url] of Object.entries(productImages)) {
       if (url) payload[key] = url;
     }
     return payload;
-  }, [dollhouseView, realPhoto, moodBoard, productImages]);
+  }, [productImages]);
 
   // Detect if prompt has been modified from the original version
   const isModified = useMemo(() => {
@@ -170,13 +185,8 @@ export function GeneratePageContent({
   useEffect(() => {
     if (!imageSelectionLoaded.current) return;
 
-    const payload: Record<string, string | null> = {
-      dollhouse_view: dollhouseView,
-      real_photo: realPhoto,
-      mood_board: moodBoard,
-    };
+    const payload: Record<string, string | null> = {};
     for (const [key, url] of Object.entries(productImages)) {
-      // Keys are already in snake_case from the UI state
       payload[key] = url;
     }
 
@@ -190,7 +200,7 @@ export function GeneratePageContent({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [dollhouseView, realPhoto, moodBoard, productImages]);
+  }, [productImages]);
 
   // Load selected prompt version when changed via dropdown (not initial load)
   useEffect(() => {
@@ -245,6 +255,113 @@ export function GeneratePageContent({
     }
   };
 
+  // Load selected input preset when changed via dropdown
+  useEffect(() => {
+    if (selectedPresetId === initialInputPresetId) return;
+
+    if (!selectedPresetId) {
+      setActivePresetId(null);
+      setActivePresetArbitraryImages([]);
+      setLoadingPreset(false);
+      return;
+    }
+
+    setLoadingPreset(true);
+    fetch(`/api/v1/input-presets/${selectedPresetId}`)
+      .then((r) => r.json())
+      .then((r) => {
+        if (r.data) {
+          const ip = r.data as InputPresetDetail & { arbitraryImageUrls?: string[] };
+          setActivePresetId(ip.id);
+          setActivePresetArbitraryImages(
+            Array.isArray(ip.arbitraryImages) ? ip.arbitraryImages.filter((x: { url?: string }) => x?.url) : [],
+          );
+          // Populate image fields from the preset
+          const prods: ProductImagesState = {};
+          for (const k of PRODUCT_KEYS) {
+            const val = (ip as unknown as Record<string, unknown>)[k] as string | null | undefined;
+            if (val) {
+              const uiKey = CAMEL_TO_SNAKE[k] ?? k;
+              prods[uiKey] = val;
+            }
+          }
+          setProductImages(prods);
+        }
+        setLoadingPreset(false);
+      })
+      .catch(() => setLoadingPreset(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPresetId]);
+
+  const handlePresetSelect = (id: string) => {
+    setSelectedPresetId(id || null);
+    if (!id) {
+      setActivePresetId(null);
+      setActivePresetArbitraryImages([]);
+      setProductImages({});
+    }
+  };
+
+  // Save current images as a new input preset
+  const createNewPreset = useCallback(async () => {
+    if (!newPresetName.trim()) return;
+
+    setCreatingPreset(true);
+    setPresetError(null);
+
+    try {
+      const payload: Record<string, unknown> = {
+        name: newPresetName.trim(),
+        description: newPresetDescription.trim() || undefined,
+      };
+
+      for (const [key, url] of Object.entries(productImages)) {
+        if (url) payload[key] = url;
+      }
+
+      const res = await fetch('/api/v1/input-presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPresetError(data.error?.message || 'Failed to create input preset.');
+        return;
+      }
+
+      if (data.data?.id) {
+        const newId = data.data.id;
+        setActivePresetId(newId);
+        setSelectedPresetId(newId);
+        setInputPresets((prev) => [
+          {
+            id: newId,
+            name: newPresetName.trim() || null,
+            description: newPresetDescription.trim() || null,
+            dollhouseView: null,
+            realPhoto: null,
+            moodBoard: null,
+            createdAt: new Date(),
+            imageCount: Object.values(productImages).filter(Boolean).length,
+            stats: { generation_count: 0 },
+          },
+          ...prev,
+        ]);
+        setShowNewPresetModal(false);
+        setNewPresetName('');
+        setNewPresetDescription('');
+      }
+    } catch (error) {
+      console.error('Error creating preset:', error);
+      setPresetError('Network error -- could not create input preset.');
+    } finally {
+      setCreatingPreset(false);
+    }
+  }, [newPresetName, newPresetDescription, productImages]);
+
   const runGeneration = useCallback(
     async (versionId: string) => {
       setGenerating(true);
@@ -260,7 +377,9 @@ export function GeneratePageContent({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt_version_id: versionId,
+            ...(activePresetId && { input_preset_id: activePresetId }),
             input_images: inputPayload,
+            ...(activePresetArbitraryImages.length > 0 && { arbitrary_image_urls: activePresetArbitraryImages }),
             ...(numImages > 1 && { number_of_images: numImages }),
             ...(useGoogleSearch && { use_google_search: true }),
             ...(!tagImages && { tag_images: false }),
@@ -286,7 +405,7 @@ export function GeneratePageContent({
         setGenerating(false);
       }
     },
-    [buildInputImagesPayload, numberOfImages, useGoogleSearch, tagImages],
+    [buildInputImagesPayload, numberOfImages, useGoogleSearch, tagImages, activePresetId, activePresetArbitraryImages],
   );
 
   // Keep the ref in sync so createNewVersion always uses the latest
@@ -470,6 +589,46 @@ export function GeneratePageContent({
         )}
       </div>
 
+      {/* Input Preset Selector */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="preset-select" className="block text-sm font-semibold text-gray-900 uppercase">
+            Input Preset
+          </label>
+          <button
+            type="button"
+            onClick={() => setShowNewPresetModal(true)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-700"
+          >
+            Save as Preset
+          </button>
+        </div>
+        <div className="relative">
+          <select
+            id="preset-select"
+            value={selectedPresetId ?? ''}
+            onChange={(e) => handlePresetSelect(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500"
+            disabled={loadingPreset}
+          >
+            <option value="">-- No preset (manual selection) --</option>
+            {inputPresets.map((ip) => (
+              <option key={ip.id} value={ip.id}>
+                {ip.name || 'Untitled'} ({ip.imageCount} image{ip.imageCount !== 1 ? 's' : ''})
+              </option>
+            ))}
+          </select>
+          {loadingPreset && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+              <Spinner className="h-4 w-4 text-gray-400" />
+            </div>
+          )}
+        </div>
+        {loadingPreset && (
+          <p className="mt-2 text-xs text-gray-500">Loading preset images...</p>
+        )}
+      </div>
+
       {/* Editable Prompts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
@@ -606,28 +765,6 @@ export function GeneratePageContent({
         </div>
       </div>
 
-      {/* Scene Images */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <SceneImageInput
-            label="Dollhouse View"
-            value={dollhouseView}
-            onChange={setDollhouseView}
-          />
-          <SceneImageInput
-            label="Real Photo"
-            value={realPhoto}
-            onChange={setRealPhoto}
-          />
-          <SceneImageInput
-            label="Mood Board"
-            value={moodBoard}
-            onChange={setMoodBoard}
-          />
-        </div>
-      </div>
-
       {/* Product Images */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
@@ -752,6 +889,82 @@ export function GeneratePageContent({
               <p className="text-sm text-red-700">{saveError}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* New Input Preset Modal */}
+      {showNewPresetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900">Save as Input Preset</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Save the current image selections as a reusable input preset.
+            </p>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="preset-name" className="mb-1 block text-sm font-medium text-gray-700">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="preset-name"
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="e.g. Modern bathroom suite"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                />
+              </div>
+              <div>
+                <label htmlFor="preset-desc" className="mb-1 block text-sm font-medium text-gray-700">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="preset-desc"
+                  rows={3}
+                  value={newPresetDescription}
+                  onChange={(e) => setNewPresetDescription(e.target.value)}
+                  placeholder="Describe this set of images..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                />
+              </div>
+            </div>
+
+            {presetError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm text-red-700">{presetError}</p>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowNewPresetModal(false);
+                  setNewPresetName('');
+                  setNewPresetDescription('');
+                  setPresetError(null);
+                }}
+                disabled={creatingPreset}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createNewPreset}
+                disabled={!newPresetName.trim() || creatingPreset}
+                className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white"
+              >
+                {creatingPreset ? (
+                  <>
+                    <Spinner />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Preset'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

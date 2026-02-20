@@ -51,6 +51,92 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 });
 
 // ------------------------------------
+// Strategies
+// ------------------------------------
+
+export const createStrategySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().optional(),
+});
+
+export const strategyStepSchema = z.object({
+  step_order: z.number().int().min(1),
+  name: z.string().max(255).optional().nullable(),
+  prompt_version_id: z.string().uuid(),
+  model: z.string().max(255).default('gemini-2.5-flash-image'),
+  aspect_ratio: z.string().max(20).default('1:1'),
+  output_resolution: z.string().max(20).default('1K'),
+  temperature: z.coerce.number().min(0).max(2).default(1.0),
+  use_google_search: z.boolean().default(false),
+  tag_images: z.boolean().default(true),
+  dollhouse_view_from_step: z.number().int().min(1).optional().nullable(),
+  real_photo_from_step: z.number().int().min(1).optional().nullable(),
+  mood_board_from_step: z.number().int().min(1).optional().nullable(),
+  include_dollhouse: z.boolean().default(true),
+  include_real_photo: z.boolean().default(true),
+  include_mood_board: z.boolean().default(true),
+  include_product_categories: z.array(z.string()).default([]),
+  arbitrary_image_from_step: z.number().int().min(1).optional().nullable(),
+});
+
+export const listStrategiesSchema = paginationSchema.extend({
+  include_deleted: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  sort: z.enum(['created_at', 'name']).default('created_at'),
+  order: sortOrderSchema,
+});
+
+// ------------------------------------
+// Input Presets
+// ------------------------------------
+
+export const createInputPresetSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().optional(),
+  dollhouse_view: z.string().min(1).optional().nullable(),
+  real_photo: z.string().min(1).optional().nullable(),
+  mood_board: z.string().min(1).optional().nullable(),
+  faucets: z.string().min(1).optional().nullable(),
+  lightings: z.string().min(1).optional().nullable(),
+  lvps: z.string().min(1).optional().nullable(),
+  mirrors: z.string().min(1).optional().nullable(),
+  paints: z.string().min(1).optional().nullable(),
+  robe_hooks: z.string().min(1).optional().nullable(),
+  shelves: z.string().min(1).optional().nullable(),
+  shower_glasses: z.string().min(1).optional().nullable(),
+  shower_systems: z.string().min(1).optional().nullable(),
+  floor_tiles: z.string().min(1).optional().nullable(),
+  wall_tiles: z.string().min(1).optional().nullable(),
+  shower_wall_tiles: z.string().min(1).optional().nullable(),
+  shower_floor_tiles: z.string().min(1).optional().nullable(),
+  shower_curb_tiles: z.string().min(1).optional().nullable(),
+  toilet_paper_holders: z.string().min(1).optional().nullable(),
+  toilets: z.string().min(1).optional().nullable(),
+  towel_bars: z.string().min(1).optional().nullable(),
+  towel_rings: z.string().min(1).optional().nullable(),
+  tub_doors: z.string().min(1).optional().nullable(),
+  tub_fillers: z.string().min(1).optional().nullable(),
+  tubs: z.string().min(1).optional().nullable(),
+  vanities: z.string().min(1).optional().nullable(),
+  wallpapers: z.string().min(1).optional().nullable(),
+  arbitrary_images: z
+    .array(z.object({ url: z.string().min(1), tag: z.string().max(500).optional() }))
+    .optional()
+    .default([]),
+});
+
+export const listInputPresetsSchema = paginationSchema.extend({
+  include_deleted: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  sort: z.enum(['created_at', 'name']).default('created_at'),
+  order: sortOrderSchema,
+});
+
+// ------------------------------------
 // Generations
 // ------------------------------------
 

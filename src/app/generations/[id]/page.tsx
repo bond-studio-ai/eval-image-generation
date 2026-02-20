@@ -148,7 +148,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                       wrapperClassName="relative block h-80 min-h-[20rem] w-full bg-gray-50"
                     />
                     <div className="border-t border-gray-200 p-2">
-                      <p className="truncate text-xs text-gray-600">{img.url}</p>
+                      <p className="min-w-0 truncate text-xs text-gray-600">{img.url}</p>
                     </div>
                   </div>
 

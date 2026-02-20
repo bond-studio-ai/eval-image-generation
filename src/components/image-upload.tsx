@@ -14,6 +14,8 @@ interface ImageUploadProps {
   images: UploadedImage[];
   onImagesChange: (images: UploadedImage[]) => void;
   maxImages?: number;
+  /** Rendered above each image in the grid (e.g. a tag input). */
+  renderAboveImage?: (index: number, image: UploadedImage) => React.ReactNode;
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -25,7 +27,7 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: ImageUploadProps) {
+export function ImageUpload({ label, images, onImagesChange, maxImages = 10, renderAboveImage }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +206,8 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10 }: I
       {images.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {images.map((img, idx) => (
-            <div key={idx} className="group relative">
+            <div key={idx} className="group relative flex flex-col gap-1.5">
+              {renderAboveImage?.(idx, img)}
               <ImageWithSkeleton
                 src={img.previewUrl || img.url}
                 alt={img.name}
