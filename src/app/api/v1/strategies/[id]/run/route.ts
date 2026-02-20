@@ -449,7 +449,6 @@ export async function POST(
       201,
     );
   } catch (error) {
-    console.error('Error running strategy:', error);
     const message = error instanceof Error ? error.message : 'Failed to run strategy';
     return errorResponse('INTERNAL_ERROR', message);
   }
