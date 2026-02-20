@@ -217,13 +217,18 @@ export function StrategyBuilder({
                   <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
                     Step {idx + 1}
                   </span>
-                  <input
-                    type="text"
-                    value={step.name}
-                    onChange={(e) => updateStep(idx, { name: e.target.value })}
-                    placeholder={`Step ${idx + 1}`}
-                    className="w-48 rounded border border-gray-200 px-2 py-1 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={step.name}
+                      onChange={(e) => updateStep(idx, { name: e.target.value })}
+                      placeholder="Name this step..."
+                      className="w-56 rounded-lg border border-gray-300 bg-gray-50 pl-3 pr-8 py-1.5 text-sm font-medium text-gray-800 placeholder:text-gray-400 hover:border-gray-400 hover:bg-white focus:border-primary-500 focus:bg-white focus:ring-primary-500 focus:outline-none focus:ring-1 transition-colors"
+                    />
+                    <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                    </svg>
+                  </div>
                 </div>
                 {steps.length > 1 && (
                   <button
