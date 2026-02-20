@@ -118,6 +118,7 @@ async function executeSingleStep(
   stepResultId: string,
   stepOutputs: Map<number, string>,
   presetData: PresetData,
+  isLastStep: boolean,
 ): Promise<string | null> {
   await db
     .update(strategyStepResult)
@@ -195,33 +196,39 @@ async function executeSingleStep(
 
   const outputUrl = geminiResult.outputUrls[0] ?? null;
 
-  const [gen] = await db
-    .insert(generation)
-    .values({
-      promptVersionId: step.promptVersionId,
-      inputPresetId: null,
-      executionTime: Math.round(geminiResult.executionTimeMs),
-    })
-    .returning();
+  let generationId: string | null = null;
 
-  if (Object.keys(inputImagesMap).length > 0) {
-    const inputValues: Record<string, unknown> = { generationId: gen.id };
-    for (const [snakeKey, camelKey] of Object.entries(SNAKE_TO_CAMEL)) {
-      const val = inputImagesMap[snakeKey];
-      if (val) inputValues[camelKey] = val;
+  if (isLastStep) {
+    const [gen] = await db
+      .insert(generation)
+      .values({
+        promptVersionId: step.promptVersionId,
+        inputPresetId: null,
+        executionTime: Math.round(geminiResult.executionTimeMs),
+      })
+      .returning();
+
+    generationId = gen.id;
+
+    if (Object.keys(inputImagesMap).length > 0) {
+      const inputValues: Record<string, unknown> = { generationId: gen.id };
+      for (const [snakeKey, camelKey] of Object.entries(SNAKE_TO_CAMEL)) {
+        const val = inputImagesMap[snakeKey];
+        if (val) inputValues[camelKey] = val;
+      }
+      await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);
     }
-    await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);
-  }
 
-  if (outputUrl) {
-    await db.insert(generationResult).values({ generationId: gen.id, url: outputUrl });
+    if (outputUrl) {
+      await db.insert(generationResult).values({ generationId: gen.id, url: outputUrl });
+    }
   }
 
   await db
     .update(strategyStepResult)
     .set({
       status: 'completed',
-      generationId: gen.id,
+      generationId,
       outputUrl,
       executionTime: Math.round(geminiResult.executionTimeMs),
     })
@@ -242,6 +249,8 @@ async function executeSteps(runId: string, steps: StepRow[]) {
   const deps = buildDepsMap(steps);
   const stepByOrder = new Map(steps.map((s) => [s.stepOrder, s]));
 
+  const maxStepOrder = Math.max(...steps.map((s) => s.stepOrder));
+
   const completed = new Set<number>();
   const failed = new Set<number>();
   const running = new Map<number, Promise<{ stepOrder: number; ok: boolean }>>();
@@ -253,7 +262,8 @@ async function executeSteps(runId: string, steps: StepRow[]) {
 
   const dispatch = (step: StepRow) => {
     const stepResult = stepResultByStepId.get(step.id)!;
-    const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData)
+    const isLast = step.stepOrder === maxStepOrder;
+    const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData, isLast)
       .then((outputUrl) => {
         if (outputUrl) stepOutputs.set(step.stepOrder, outputUrl);
         return { stepOrder: step.stepOrder, ok: true };
