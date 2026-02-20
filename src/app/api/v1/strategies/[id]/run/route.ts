@@ -8,7 +8,8 @@ import { after, NextRequest } from 'next/server';
 
 /** Preset data extracted from a single input_preset row for one run. */
 interface PresetData {
-  keyed: Record<string, string>;
+  sceneImages: Record<string, string>;
+  productImages: Record<string, string[]>;
   arbitrary: { url: string; tag?: string }[];
 }
 
@@ -76,13 +77,21 @@ function getTransitiveDependents(stepOrder: number, deps: Map<number, Set<number
 }
 
 function extractPresetData(presetRow: Record<string, unknown>): PresetData {
-  const keyed: Record<string, string> = {};
+  const sceneImages: Record<string, string> = {};
+  const productImages: Record<string, string[]> = {};
   const arbitrary: { url: string; tag?: string }[] = [];
 
-  for (const key of ALL_INPUT_KEYS) {
+  for (const key of SCENE_KEYS) {
     const camelKey = SNAKE_TO_CAMEL[key];
     const val = presetRow[camelKey];
-    if (typeof val === 'string' && val) keyed[key] = val;
+    if (typeof val === 'string' && val) sceneImages[key] = val;
+  }
+
+  for (const key of PRODUCT_CATEGORIES) {
+    const camelKey = SNAKE_TO_CAMEL[key];
+    const val = presetRow[camelKey];
+    const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+    if (urls.length > 0) productImages[key] = urls;
   }
 
   const images = presetRow.arbitraryImages as { url: string; tag?: string }[] | undefined;
@@ -94,7 +103,7 @@ function extractPresetData(presetRow: Record<string, unknown>): PresetData {
     }
   }
 
-  return { keyed, arbitrary };
+  return { sceneImages, productImages, arbitrary };
 }
 
 async function loadPresetForRun(runId: string): Promise<PresetData> {
@@ -104,11 +113,11 @@ async function loadPresetForRun(runId: string): Promise<PresetData> {
     with: { inputPreset: true },
   });
 
-  if (runPresets.length === 0) return { keyed: {}, arbitrary: [] };
+  if (runPresets.length === 0) return { sceneImages: {}, productImages: {}, arbitrary: [] };
 
   // Each run has exactly one preset now (parallel model)
   const preset = runPresets[0].inputPreset as unknown as Record<string, unknown>;
-  if (!preset) return { keyed: {}, arbitrary: [] };
+  if (!preset) return { sceneImages: {}, productImages: {}, arbitrary: [] };
 
   return extractPresetData(preset);
 }
@@ -130,7 +139,8 @@ async function executeSingleStep(
   });
   if (!pv) throw new Error(`Prompt version ${step.promptVersionId} not found`);
 
-  const inputImagesMap: Record<string, string | null> = {};
+  const sceneMap: Record<string, string | null> = {};
+  const productMap: Record<string, string[]> = {};
 
   const includeDollhouse = step.includeDollhouse ?? true;
   const includeRealPhoto = step.includeRealPhoto ?? true;
@@ -140,32 +150,41 @@ async function executeSingleStep(
     if (key === 'dollhouse_view' && !includeDollhouse) continue;
     if (key === 'real_photo' && !includeRealPhoto) continue;
     if (key === 'mood_board' && !includeMoodBoard) continue;
-    const val = presetData.keyed[key];
-    if (val) inputImagesMap[key] = val;
+    const val = presetData.sceneImages[key];
+    if (val) sceneMap[key] = val;
   }
   for (const key of PRODUCT_CATEGORIES) {
     if (!includeProducts.includes(key)) continue;
-    const val = presetData.keyed[key];
-    if (val) inputImagesMap[key] = val;
+    const urls = presetData.productImages[key];
+    if (urls && urls.length > 0) productMap[key] = [...urls];
   }
 
   if (step.dollhouseViewFromStep != null) {
     const url = stepOutputs.get(step.dollhouseViewFromStep);
-    if (url) inputImagesMap.dollhouse_view = url;
+    if (url) sceneMap.dollhouse_view = url;
   }
   if (step.realPhotoFromStep != null) {
     const url = stepOutputs.get(step.realPhotoFromStep);
-    if (url) inputImagesMap.real_photo = url;
+    if (url) sceneMap.real_photo = url;
   }
   if (step.moodBoardFromStep != null) {
     const url = stepOutputs.get(step.moodBoardFromStep);
-    if (url) inputImagesMap.mood_board = url;
+    if (url) sceneMap.mood_board = url;
   }
 
   const labeledImages: { url: string; label: string }[] = [];
-  for (const key of ALL_INPUT_KEYS) {
-    const url = inputImagesMap[key];
+  for (const key of SCENE_KEYS) {
+    const url = sceneMap[key];
     if (url) labeledImages.push({ url, label: INPUT_KEY_LABELS[key] });
+  }
+  for (const key of PRODUCT_CATEGORIES) {
+    const urls = productMap[key];
+    if (urls) {
+      urls.forEach((url, i) => {
+        const suffix = urls.length > 1 ? ` ${i + 1}` : '';
+        labeledImages.push({ url, label: `${INPUT_KEY_LABELS[key]}${suffix}` });
+      });
+    }
   }
 
   if (step.arbitraryImageFromStep != null) {
@@ -210,11 +229,16 @@ async function executeSingleStep(
 
     generationId = gen.id;
 
-    if (Object.keys(inputImagesMap).length > 0) {
+    const hasInputs = Object.keys(sceneMap).length > 0 || Object.keys(productMap).length > 0;
+    if (hasInputs) {
       const inputValues: Record<string, unknown> = { generationId: gen.id };
-      for (const [snakeKey, camelKey] of Object.entries(SNAKE_TO_CAMEL)) {
-        const val = inputImagesMap[snakeKey];
-        if (val) inputValues[camelKey] = val;
+      for (const key of SCENE_KEYS) {
+        const val = sceneMap[key];
+        if (val) inputValues[SNAKE_TO_CAMEL[key]] = val;
+      }
+      for (const key of PRODUCT_CATEGORIES) {
+        const urls = productMap[key];
+        if (urls && urls.length > 0) inputValues[SNAKE_TO_CAMEL[key]] = urls;
       }
       await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);
     }

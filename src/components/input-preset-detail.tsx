@@ -59,13 +59,15 @@ interface InputPresetDetailProps {
 }
 
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
-  const productImages = PRODUCT_KEYS
-    .map((k) => {
-      const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
-      const url = data[k] as string | null;
-      return url ? { key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, url } : null;
-    })
-    .filter(Boolean) as { key: string; label: string; url: string }[];
+  const productImages: { key: string; label: string; urls: string[] }[] = [];
+  for (const k of PRODUCT_KEYS) {
+    const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
+    const val = data[k];
+    const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+    if (urls.length > 0) {
+      productImages.push({ key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, urls });
+    }
+  }
 
   return (
     <div>
@@ -176,14 +178,31 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             {productImages.map((img) => (
               <div key={img.key} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <div className="border-b border-gray-100 px-2.5 py-1.5">
-                  <span className="truncate text-xs font-semibold text-gray-700">{img.label}</span>
+                  <span className="truncate text-xs font-semibold text-gray-700">
+                    {img.label}
+                    {img.urls.length > 1 && <span className="ml-1 text-gray-400">({img.urls.length})</span>}
+                  </span>
                 </div>
-                <ImageWithSkeleton
-                  src={withImageParams(img.url)}
-                  alt={img.label}
-                  loading="lazy"
-                  wrapperClassName="h-28 w-full bg-gray-50 p-1"
-                />
+                {img.urls.length === 1 ? (
+                  <ImageWithSkeleton
+                    src={withImageParams(img.urls[0])}
+                    alt={img.label}
+                    loading="lazy"
+                    wrapperClassName="h-28 w-full bg-gray-50 p-1"
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-0.5 p-1">
+                    {img.urls.map((url, i) => (
+                      <ImageWithSkeleton
+                        key={i}
+                        src={withImageParams(url)}
+                        alt={`${img.label} ${i + 1}`}
+                        loading="lazy"
+                        wrapperClassName="h-14 w-full rounded bg-gray-50"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

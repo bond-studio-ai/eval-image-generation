@@ -57,14 +57,14 @@ function imageSelectionToState(d: ImageSelectionRow): {
   productImages: ProductImagesState;
 } {
   const prods: ProductImagesState = {};
+  const rec = d as unknown as Record<string, unknown>;
   for (const k of PRODUCT_KEYS) {
-    const val = (d as Record<string, unknown>)[k] as string | null | undefined;
-    if (val) {
-      const uiKey = CAMEL_TO_SNAKE[k] ?? k;
-      prods[uiKey] = val;
+    const val = rec[k];
+    const uiKey = CAMEL_TO_SNAKE[k] ?? k;
+    if (Array.isArray(val) && val.length > 0) {
+      prods[uiKey] = val.filter((v): v is string => typeof v === 'string' && !!v);
     }
   }
-  const rec = d as unknown as Record<string, unknown>;
   return {
     id: d.id,
     dollhouseView: (rec.dollhouseView as string) ?? null,
@@ -166,13 +166,13 @@ export function GeneratePageContent({
   const runGenerationRef = useRef<(versionId: string) => Promise<void>>(undefined);
 
   // Build the input_images payload object
-  const buildInputImagesPayload = useCallback((): Record<string, string | null> => {
-    const payload: Record<string, string | null> = {};
+  const buildInputImagesPayload = useCallback((): Record<string, string | string[] | null> => {
+    const payload: Record<string, string | string[] | null> = {};
     if (dollhouseView) payload.dollhouse_view = dollhouseView;
     if (realPhoto) payload.real_photo = realPhoto;
     if (moodBoard) payload.mood_board = moodBoard;
-    for (const [key, url] of Object.entries(productImages)) {
-      if (url) payload[key] = url;
+    for (const [key, urls] of Object.entries(productImages)) {
+      if (urls && urls.length > 0) payload[key] = urls;
     }
     return payload;
   }, [dollhouseView, realPhoto, moodBoard, productImages]);
@@ -199,13 +199,13 @@ export function GeneratePageContent({
   useEffect(() => {
     if (!imageSelectionLoaded.current) return;
 
-    const payload: Record<string, string | null> = {
+    const payload: Record<string, string | string[] | null> = {
       dollhouse_view: dollhouseView,
       real_photo: realPhoto,
       mood_board: moodBoard,
     };
-    for (const [key, url] of Object.entries(productImages)) {
-      payload[key] = url;
+    for (const [key, urls] of Object.entries(productImages)) {
+      payload[key] = urls && urls.length > 0 ? urls : [];
     }
 
     const timer = setTimeout(() => {
@@ -301,10 +301,10 @@ export function GeneratePageContent({
           setMoodBoard((rec.moodBoard as string) ?? null);
           const prods: ProductImagesState = {};
           for (const k of PRODUCT_KEYS) {
-            const val = rec[k] as string | null | undefined;
-            if (val) {
-              const uiKey = CAMEL_TO_SNAKE[k] ?? k;
-              prods[uiKey] = val;
+            const val = rec[k];
+            const uiKey = CAMEL_TO_SNAKE[k] ?? k;
+            if (Array.isArray(val) && val.length > 0) {
+              prods[uiKey] = val.filter((v): v is string => typeof v === 'string' && !!v);
             }
           }
           setProductImages(prods);
@@ -343,8 +343,8 @@ export function GeneratePageContent({
       if (dollhouseView) payload.dollhouse_view = dollhouseView;
       if (realPhoto) payload.real_photo = realPhoto;
       if (moodBoard) payload.mood_board = moodBoard;
-      for (const [key, url] of Object.entries(productImages)) {
-        if (url) payload[key] = url;
+      for (const [key, urls] of Object.entries(productImages)) {
+        if (urls && urls.length > 0) payload[key] = urls;
       }
 
       const res = await fetch('/api/v1/input-presets', {
@@ -373,7 +373,7 @@ export function GeneratePageContent({
             realPhoto: realPhoto ?? null,
             moodBoard: moodBoard ?? null,
             createdAt: new Date(),
-            imageCount: Object.values(productImages).filter(Boolean).length,
+            imageCount: Object.values(productImages).reduce((sum, arr) => sum + (arr?.length ?? 0), 0),
             stats: { generation_count: 0 },
           },
           ...prev,

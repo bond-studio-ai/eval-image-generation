@@ -24,7 +24,7 @@ export default function NewInputPresetPage() {
 
   const hasAnyImage =
     !!dollhouseView || !!realPhoto || !!moodBoard ||
-    Object.values(productImages).some(Boolean) ||
+    Object.values(productImages).some((arr) => arr && arr.length > 0) ||
     arbitraryImages.length > 0;
 
   const canCreate = name.trim() && hasAnyImage;
@@ -43,8 +43,8 @@ export default function NewInputPresetPage() {
       if (dollhouseView) payload.dollhouse_view = dollhouseView;
       if (realPhoto) payload.real_photo = realPhoto;
       if (moodBoard) payload.mood_board = moodBoard;
-      for (const [key, url] of Object.entries(productImages)) {
-        if (url) payload[key] = url;
+      for (const [key, urls] of Object.entries(productImages)) {
+        if (urls && urls.length > 0) payload[key] = urls;
       }
       if (arbitraryImages.length > 0) payload.arbitrary_images = arbitraryImages;
 

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const { prompt_version_id, input_preset_id, input_images, arbitrary_image_urls, number_of_images, use_google_search, tag_images } = body as {
       prompt_version_id: string;
       input_preset_id?: string;
-      input_images?: Record<string, string | null>;
+      input_images?: Record<string, string | string[] | null>;
       arbitrary_image_urls?: string[];
       number_of_images?: number;
       use_google_search?: boolean;
@@ -94,11 +94,21 @@ export async function POST(request: Request) {
     const inputImages: { url: string; label: string }[] = [];
 
     if (input_images) {
-      for (const key of ALL_INPUT_KEYS) {
+      for (const key of SCENE_KEYS) {
         const url = input_images[key];
-        if (url) {
+        if (typeof url === 'string' && url) {
           inputImages.push({ url, label: INPUT_KEY_LABELS[key] });
         }
+      }
+      for (const key of PRODUCT_CATEGORIES) {
+        const val = input_images[key];
+        const urls = Array.isArray(val) ? val : (typeof val === 'string' && val ? [val] : []);
+        urls.forEach((url, i) => {
+          if (url) {
+            const suffix = urls.length > 1 ? ` ${i + 1}` : '';
+            inputImages.push({ url, label: `${INPUT_KEY_LABELS[key]}${suffix}` });
+          }
+        });
       }
     }
 
@@ -174,7 +184,12 @@ export async function POST(request: Request) {
 
       for (const [snakeKey, camelKey] of Object.entries(keyMap)) {
         const val = input_images[snakeKey];
-        if (val) inputValues[camelKey] = val;
+        if (SCENE_KEYS.includes(snakeKey as typeof SCENE_KEYS[number])) {
+          if (typeof val === 'string' && val) inputValues[camelKey] = val;
+        } else {
+          const arr = Array.isArray(val) ? val.filter(Boolean) : (typeof val === 'string' && val ? [val] : []);
+          if (arr.length > 0) inputValues[camelKey] = arr;
+        }
       }
 
       await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);

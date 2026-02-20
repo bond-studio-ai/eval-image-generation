@@ -31,8 +31,8 @@ export const PRODUCT_CATEGORIES = [
   { key: 'wallpapers', label: 'Wallpapers', apiCategories: ['Wallpaper', 'Wallpaper Accessories'] },
 ] as const;
 
-/** Map of category_key -> S3 URL */
-export type ProductImagesState = Record<string, string | null>;
+/** Map of category_key -> array of S3 URLs */
+export type ProductImagesState = Record<string, string[]>;
 
 interface ProductImageInputProps {
   value: ProductImagesState;
@@ -53,7 +53,6 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Fetch products on mount
   useEffect(() => {
     fetch('/api/v1/products')
       .then((r) => r.json())
@@ -64,14 +63,30 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
       .catch(() => setLoadingProducts(false));
   }, []);
 
-  const setCategoryImage = useCallback(
+  const addCategoryImage = useCallback(
     (key: string, url: string) => {
-      onChange({ ...value, [key]: url });
+      const current = value[key] ?? [];
+      onChange({ ...value, [key]: [...current, url] });
     },
     [value, onChange],
   );
 
-  const removeCategory = useCallback(
+  const removeCategoryImage = useCallback(
+    (key: string, idx: number) => {
+      const current = value[key] ?? [];
+      const next = current.filter((_, i) => i !== idx);
+      const updated = { ...value };
+      if (next.length === 0) {
+        delete updated[key];
+      } else {
+        updated[key] = next;
+      }
+      onChange(updated);
+    },
+    [value, onChange],
+  );
+
+  const clearCategory = useCallback(
     (key: string) => {
       const updated = { ...value };
       delete updated[key];
@@ -80,17 +95,19 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
     [value, onChange],
   );
 
-  const hasAnyImage = Object.values(value).some(Boolean);
+  const hasAnyImage = Object.values(value).some((arr) => arr && arr.length > 0);
 
   const clearAll = useCallback(() => {
     onChange({});
   }, [onChange]);
 
+  const totalImages = Object.values(value).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
+
   return (
     <div>
-      {/* Clear all button */}
       {hasAnyImage && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-gray-500">{totalImages} image{totalImages !== 1 ? 's' : ''} across {Object.values(value).filter((a) => a && a.length > 0).length} categories</span>
           <button
             type="button"
             onClick={clearAll}
@@ -104,26 +121,27 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
         </div>
       )}
 
-      {/* Grid of all product categories */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {PRODUCT_CATEGORIES.map((cat) => {
-          const imageUrl = value[cat.key];
-          const hasImage = !!imageUrl;
+          const images = value[cat.key] ?? [];
+          const hasImages = images.length > 0;
 
           return (
             <div
               key={cat.key}
               className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs transition-shadow hover:shadow-md"
             >
-              {/* Category label */}
               <div className="flex items-center justify-between border-b border-gray-100 px-2.5 py-1.5">
-                <span className="truncate text-xs font-semibold text-gray-700">{cat.label}</span>
-                {hasImage && (
+                <span className="truncate text-xs font-semibold text-gray-700">
+                  {cat.label}
+                  {hasImages && <span className="ml-1 text-gray-400">({images.length})</span>}
+                </span>
+                {hasImages && (
                   <button
                     type="button"
-                    onClick={() => removeCategory(cat.key)}
+                    onClick={() => clearCategory(cat.key)}
                     className="ml-1 shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                    title="Remove image"
+                    title="Remove all images"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -132,25 +150,39 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                 )}
               </div>
 
-              {/* Image or empty state */}
-              {hasImage ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveCategory(cat.key)}
-                  className="group relative block w-full cursor-pointer"
-                >
-                  <ImageWithSkeleton
-                    src={withImageParams(imageUrl)}
-                    alt={cat.label}
-                    loading="lazy"
-                    wrapperClassName="h-28 w-full bg-gray-50 p-1"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-                    <span className="rounded bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 opacity-0 shadow transition-opacity group-hover:opacity-100">
-                      Change
-                    </span>
+              {hasImages ? (
+                <div className="p-1.5">
+                  <div className="grid grid-cols-2 gap-1">
+                    {images.map((url, idx) => (
+                      <div key={idx} className="group relative">
+                        <ImageWithSkeleton
+                          src={withImageParams(url)}
+                          alt={`${cat.label} ${idx + 1}`}
+                          loading="lazy"
+                          wrapperClassName="h-16 w-full rounded bg-gray-50"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCategoryImage(cat.key, idx)}
+                          className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(cat.key)}
+                      className="flex h-16 items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                    </button>
                   </div>
-                </button>
+                </div>
               ) : (
                 <button
                   type="button"
@@ -168,7 +200,6 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
         })}
       </div>
 
-      {/* Category picker modal */}
       {activeCategory && (
         <CategoryPickerModal
           categoryKey={activeCategory}
@@ -176,8 +207,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
           products={products}
           loadingProducts={loadingProducts}
           onSelect={(url) => {
-            setCategoryImage(activeCategory, url);
-            setActiveCategory(null);
+            addCategoryImage(activeCategory, url);
           }}
           onClose={() => setActiveCategory(null)}
         />
@@ -212,23 +242,19 @@ function CategoryPickerModal({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resolve the API category names for this category key
   const apiCategoryNames = useMemo(() => {
     const def = PRODUCT_CATEGORIES.find((c) => c.key === categoryKey);
     return def?.apiCategories.map((n) => n.toLowerCase()) ?? [categoryLabel.toLowerCase()];
   }, [categoryKey, categoryLabel]);
 
-  // Filter products by category and search
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim();
     return products
       .filter((p) => {
         if (!p.featuredImage?.url) return false;
-        // Filter by exact API category name match
         const productCat = p.category?.name.toLowerCase();
         const matchesCategory = productCat ? apiCategoryNames.includes(productCat) : false;
         if (!matchesCategory) return false;
-        // Then apply search
         if (!q) return true;
         return (
           p.name.toLowerCase().includes(q) ||
@@ -266,7 +292,6 @@ function CategoryPickerModal({
       if (!s3Res.ok) throw new Error('S3 PUT failed');
       onSelect(publicUrl);
     } catch {
-      // Fallback: data URL
       try {
         const dataUrl = await fileToDataUrl(file);
         onSelect(dataUrl);
@@ -281,9 +306,12 @@ function CategoryPickerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {categoryLabel}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {categoryLabel}
+          </h3>
+          <span className="text-xs text-gray-400">Modal stays open — add multiple</span>
+        </div>
 
         {/* Mode toggle */}
         <div className="mt-3 flex gap-2">
@@ -311,7 +339,6 @@ function CategoryPickerModal({
           </button>
         </div>
 
-        {/* Catalog mode */}
         {mode === 'catalog' && (
           <div className="mt-4">
             <input
@@ -358,7 +385,6 @@ function CategoryPickerModal({
           </div>
         )}
 
-        {/* Upload mode */}
         {mode === 'upload' && (
           <div className="mt-4">
             <input
@@ -399,14 +425,13 @@ function CategoryPickerModal({
           </div>
         )}
 
-        {/* Close button */}
         <div className="mt-6 flex justify-end">
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            Done
           </button>
         </div>
       </div>

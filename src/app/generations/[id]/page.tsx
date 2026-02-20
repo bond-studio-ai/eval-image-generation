@@ -67,20 +67,21 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
       const val = (inputData as Record<string, unknown>)[camelKey];
-      if (val) activeProductCategories.push(snakeKey);
+      const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+      if (urls.length > 0) activeProductCategories.push(snakeKey);
     }
   }
 
-  // Product images with labels
-  const productImages: { key: string; label: string; url: string }[] = [];
+  const productImages: { key: string; label: string; urls: string[] }[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const val = (inputData as Record<string, unknown>)[camelKey] as string | null;
-      if (val) {
+      const val = (inputData as Record<string, unknown>)[camelKey];
+      const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+      if (urls.length > 0) {
         productImages.push({
           key: snakeKey,
           label: CATEGORY_LABELS[snakeKey] ?? snakeKey,
-          url: val,
+          urls,
         });
       }
     }
@@ -254,15 +255,30 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 key={img.key}
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
               >
-                <ImageWithSkeleton
-                  src={withImageParams(img.url)}
-                  alt={img.label}
-                  loading="lazy"
-                  wrapperClassName="h-44 w-full bg-gray-50"
-                />
+                {img.urls.length === 1 ? (
+                  <ImageWithSkeleton
+                    src={withImageParams(img.urls[0])}
+                    alt={img.label}
+                    loading="lazy"
+                    wrapperClassName="h-44 w-full bg-gray-50"
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-0.5 p-1">
+                    {img.urls.map((url, i) => (
+                      <ImageWithSkeleton
+                        key={i}
+                        src={withImageParams(url)}
+                        alt={`${img.label} ${i + 1}`}
+                        loading="lazy"
+                        wrapperClassName="h-20 w-full rounded bg-gray-50"
+                      />
+                    ))}
+                  </div>
+                )}
                 <div className="p-2">
                   <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                     {img.label}
+                    {img.urls.length > 1 && ` (${img.urls.length})`}
                   </span>
                 </div>
               </div>

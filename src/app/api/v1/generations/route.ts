@@ -178,10 +178,16 @@ export async function POST(request: NextRequest) {
 
     // Insert generation_input row (structured)
     if (input_images) {
+      const SCENE_FIELDS = new Set(['dollhouse_view', 'real_photo', 'mood_board']);
       const inputValues: Record<string, unknown> = { generationId: created.id };
       for (const [snakeKey, camelKey] of Object.entries(INPUT_KEY_MAP)) {
-        const val = (input_images as Record<string, string | null | undefined>)[snakeKey];
-        if (val) inputValues[camelKey] = val;
+        const val = (input_images as Record<string, unknown>)[snakeKey];
+        if (SCENE_FIELDS.has(snakeKey)) {
+          if (typeof val === 'string' && val) inputValues[camelKey] = val;
+        } else {
+          const arr = Array.isArray(val) ? val.filter(Boolean) : [];
+          if (arr.length > 0) inputValues[camelKey] = arr;
+        }
       }
       await db.insert(generationInput).values(inputValues as typeof generationInput.$inferInsert);
     }

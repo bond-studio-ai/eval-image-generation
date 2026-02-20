@@ -108,10 +108,17 @@ export async function PATCH(
       });
     }
 
+    const SCENE_FIELDS = new Set(['dollhouse_view', 'real_photo', 'mood_board', 'name', 'description']);
     for (const [snakeKey, value] of Object.entries(body)) {
       const camelKey = ALLOWED_FIELDS[snakeKey];
       if (!camelKey) continue;
-      updates[camelKey] = typeof value === 'string' ? value : value === null ? null : undefined;
+      if (SCENE_FIELDS.has(snakeKey)) {
+        updates[camelKey] = typeof value === 'string' ? value : value === null ? null : undefined;
+      } else {
+        if (Array.isArray(value)) {
+          updates[camelKey] = value.filter((v): v is string => typeof v === 'string' && v.length > 0);
+        }
+      }
     }
     // Remove undefined so we don't overwrite with undefined
     Object.keys(updates).forEach((k) => updates[k] === undefined && delete updates[k]);
