@@ -31,6 +31,7 @@ export function StrategyRunsList({
   inputPresets: InputPresetListItem[];
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
+  const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
@@ -55,6 +56,16 @@ export function StrategyRunsList({
 
   const handleRunCreated = useCallback(() => {
     fetchRuns();
+  }, [fetchRuns]);
+
+  const handleRetry = useCallback(async (runId: string) => {
+    setRetryingRunId(runId);
+    try {
+      const res = await fetch(`/api/v1/strategy-runs/${runId}/retry`, { method: 'POST' });
+      if (!res.ok) return;
+      await fetchRuns();
+    } catch { /* ignore */ }
+    finally { setRetryingRunId(null); }
   }, [fetchRuns]);
 
   return (
@@ -101,12 +112,34 @@ export function StrategyRunsList({
                       {run.completedAt ? new Date(run.completedAt).toLocaleString() : '-'}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                      <Link
-                        href={`/strategies/${strategyId}/runs/${run.id}`}
-                        className="text-primary-600 hover:text-primary-500 font-medium"
-                      >
-                        View
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        {run.status === 'failed' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRetry(run.id)}
+                            disabled={retryingRunId === run.id}
+                            className="inline-flex items-center gap-1 font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50"
+                          >
+                            {retryingRunId === run.id ? (
+                              <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                              </svg>
+                            )}
+                            Retry
+                          </button>
+                        )}
+                        <Link
+                          href={`/strategies/${strategyId}/runs/${run.id}`}
+                          className="text-primary-600 hover:text-primary-500 font-medium"
+                        >
+                          View
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

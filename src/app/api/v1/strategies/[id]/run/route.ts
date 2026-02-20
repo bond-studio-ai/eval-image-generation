@@ -263,7 +263,7 @@ async function executeSingleStep(
   return outputUrl;
 }
 
-async function executeSteps(runId: string, steps: StepRow[]) {
+export async function executeSteps(runId: string, steps: StepRow[]) {
   const stepResultRows = await db.query.strategyStepResult.findMany({
     where: eq(strategyStepResult.strategyRunId, runId),
   });
@@ -281,6 +281,15 @@ async function executeSteps(runId: string, steps: StepRow[]) {
   const failed = new Set<number>();
   const running = new Map<number, Promise<{ stepOrder: number; ok: boolean }>>();
 
+  // Seed completed set and stepOutputs from already-completed step results (for retries)
+  for (const step of steps) {
+    const sr = stepResultByStepId.get(step.id);
+    if (sr && sr.status === 'completed') {
+      completed.add(step.stepOrder);
+      if (sr.outputUrl) stepOutputs.set(step.stepOrder, sr.outputUrl);
+    }
+  }
+
   const isReady = (stepOrder: number) => {
     const d = deps.get(stepOrder)!;
     return [...d].every((dep) => completed.has(dep));
@@ -296,6 +305,7 @@ async function executeSteps(runId: string, steps: StepRow[]) {
       })
       .catch(async (error) => {
         const message = error instanceof Error ? error.message : 'Step failed';
+        console.error('Step failed:', error);
         await db
           .update(strategyStepResult)
           .set({ status: 'failed', error: message })

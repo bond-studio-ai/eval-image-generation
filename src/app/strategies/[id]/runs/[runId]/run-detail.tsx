@@ -55,6 +55,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export function RunDetail({ strategyId, runId, initialData }: { strategyId: string; runId: string; initialData: RunData }) {
   const [data, setData] = useState<RunData>(initialData);
+  const [retrying, setRetrying] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isActive = data.status === 'running' || data.status === 'pending';
@@ -77,6 +78,16 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isActive, fetchData]);
+
+  const handleRetry = useCallback(async () => {
+    setRetrying(true);
+    try {
+      const res = await fetch(`/api/v1/strategy-runs/${runId}/retry`, { method: 'POST' });
+      if (!res.ok) return;
+      await fetchData();
+    } catch { /* ignore */ }
+    finally { setRetrying(false); }
+  }, [runId, fetchData]);
 
   const sorted = [...data.stepResults].sort(
     (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
@@ -111,7 +122,29 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
             {data.strategy.name} &middot; {new Date(data.createdAt).toLocaleString()}
           </p>
         </div>
-        <StatusBadge status={data.status} />
+        <div className="flex items-center gap-3">
+          {data.status === 'failed' && (
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying}
+              className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+            >
+              {retrying ? (
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                </svg>
+              )}
+              Retry
+            </button>
+          )}
+          <StatusBadge status={data.status} />
+        </div>
       </div>
 
       {/* DAG visualization */}
