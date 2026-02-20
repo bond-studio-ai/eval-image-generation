@@ -261,33 +261,26 @@ export function StrategyBuilder({
                 <p className="mb-3 text-xs font-medium text-gray-700">Include from run presets</p>
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-4">
-                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={step.include_dollhouse}
-                          onChange={(e) => updateStep(idx, { include_dollhouse: e.target.checked })}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        Dollhouse
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={step.include_real_photo}
-                          onChange={(e) => updateStep(idx, { include_real_photo: e.target.checked })}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        Real Life
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={step.include_mood_board}
-                          onChange={(e) => updateStep(idx, { include_mood_board: e.target.checked })}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        Mood Board
-                      </label>
+                      {([
+                        { key: 'include_dollhouse', override: 'dollhouse_view_from_step', label: 'Dollhouse' },
+                        { key: 'include_real_photo', override: 'real_photo_from_step', label: 'Real Life' },
+                        { key: 'include_mood_board', override: 'mood_board_from_step', label: 'Mood Board' },
+                      ] as const).map(({ key, override, label }) => {
+                        const overridden = step[override] != null;
+                        return (
+                          <label key={key} className={`flex items-center gap-2 text-sm ${overridden ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-700'}`}>
+                            <input
+                              type="checkbox"
+                              checked={overridden ? false : step[key]}
+                              disabled={overridden}
+                              onChange={(e) => updateStep(idx, { [key]: e.target.checked })}
+                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                            />
+                            {label}
+                            {overridden && <span className="text-xs text-amber-600">(from step {step[override]})</span>}
+                          </label>
+                        );
+                      })}
                     </div>
                     <div>
                       <p className="mb-1 text-xs text-gray-600">Specific products to use</p>
@@ -409,30 +402,32 @@ export function StrategyBuilder({
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                   <p className="mb-2 text-xs font-medium text-amber-800">Use output from a previous step as scene input</p>
                   <div className="grid grid-cols-3 gap-3">
-                    {(['dollhouse_view_from_step', 'real_photo_from_step', 'mood_board_from_step'] as const).map((field) => {
-                      const labels: Record<string, string> = {
-                        dollhouse_view_from_step: 'Dollhouse View',
-                        real_photo_from_step: 'Real Photo',
-                        mood_board_from_step: 'Mood Board',
-                      };
-                      return (
-                        <div key={field}>
-                          <label className="mb-1 block text-xs text-amber-700">{labels[field]}</label>
-                          <select
-                            value={step[field] ?? ''}
-                            onChange={(e) => updateStep(idx, { [field]: e.target.value ? Number(e.target.value) : null })}
-                            className="w-full rounded border border-amber-300 bg-white px-2 py-1 text-xs focus:border-amber-500 focus:ring-amber-500 focus:outline-none focus:ring-1"
-                          >
-                            <option value="">-- None --</option>
-                            {Array.from({ length: idx }, (_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                Step {i + 1} output
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    })}
+                    {([
+                      { field: 'dollhouse_view_from_step', includeKey: 'include_dollhouse', label: 'Dollhouse View' },
+                      { field: 'real_photo_from_step', includeKey: 'include_real_photo', label: 'Real Photo' },
+                      { field: 'mood_board_from_step', includeKey: 'include_mood_board', label: 'Mood Board' },
+                    ] as const).map(({ field, includeKey, label }) => (
+                      <div key={field}>
+                        <label className="mb-1 block text-xs text-amber-700">{label}</label>
+                        <select
+                          value={step[field] ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? Number(e.target.value) : null;
+                            const updates: Record<string, unknown> = { [field]: val };
+                            if (val != null) updates[includeKey] = false;
+                            updateStep(idx, updates);
+                          }}
+                          className="w-full rounded border border-amber-300 bg-white px-2 py-1 text-xs focus:border-amber-500 focus:ring-amber-500 focus:outline-none focus:ring-1"
+                        >
+                          <option value="">-- None --</option>
+                          {Array.from({ length: idx }, (_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              Step {i + 1} output
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
