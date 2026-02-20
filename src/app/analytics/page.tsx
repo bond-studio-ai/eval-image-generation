@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation, promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, promptVersion } from '@/db/V1/schema';
 import { and, count, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';

@@ -1,10 +1,10 @@
-import { db } from '@/db';
+import { db } from '@/db/V1';
 import {
   generation,
   generationInput,
   generationResult,
   promptVersion,
-} from '@/db/schema';
+} from '@/db/V1/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createGenerationSchema, listGenerationsSchema } from '@/lib/validation';
 import { and, asc, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';

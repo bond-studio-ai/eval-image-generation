@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation, imageSelection, promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, imageSelection, promptVersion } from '@/db/V1/schema';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 
 // ------------------------------------

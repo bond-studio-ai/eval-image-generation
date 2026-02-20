@@ -1,6 +1,6 @@
 import { PromptVersionDetail } from '@/components/prompt-version-detail';
-import { db } from '@/db';
-import { promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { promptVersion } from '@/db/V1/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 
