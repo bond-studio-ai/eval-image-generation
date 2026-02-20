@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { withImageParams } from '@/lib/image-utils';
+import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import Link from 'next/link';
 import { RatingBadge } from './rating-badge';
@@ -63,7 +63,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   for (const k of PRODUCT_KEYS) {
     const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
     const val = data[k];
-    const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+    const urls = toUrlArray(val);
     if (urls.length > 0) {
       productImages.push({ key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, urls });
     }

@@ -3,6 +3,7 @@
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { toUrlArray } from '@/lib/image-utils';
 import type { ImageSelectionRow, InputPresetDetail, InputPresetListItem, PromptVersionDetail, PromptVersionListItem } from '@/lib/queries';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -59,11 +60,9 @@ function imageSelectionToState(d: ImageSelectionRow): {
   const prods: ProductImagesState = {};
   const rec = d as unknown as Record<string, unknown>;
   for (const k of PRODUCT_KEYS) {
-    const val = rec[k];
     const uiKey = CAMEL_TO_SNAKE[k] ?? k;
-    if (Array.isArray(val) && val.length > 0) {
-      prods[uiKey] = val.filter((v): v is string => typeof v === 'string' && !!v);
-    }
+    const urls = toUrlArray(rec[k]);
+    if (urls.length > 0) prods[uiKey] = urls;
   }
   return {
     id: d.id,
@@ -301,11 +300,9 @@ export function GeneratePageContent({
           setMoodBoard((rec.moodBoard as string) ?? null);
           const prods: ProductImagesState = {};
           for (const k of PRODUCT_KEYS) {
-            const val = rec[k];
             const uiKey = CAMEL_TO_SNAKE[k] ?? k;
-            if (Array.isArray(val) && val.length > 0) {
-              prods[uiKey] = val.filter((v): v is string => typeof v === 'string' && !!v);
-            }
+            const urls = toUrlArray(rec[k]);
+            if (urls.length > 0) prods[uiKey] = urls;
           }
           setProductImages(prods);
         }

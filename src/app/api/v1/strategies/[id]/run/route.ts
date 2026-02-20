@@ -90,7 +90,9 @@ function extractPresetData(presetRow: Record<string, unknown>): PresetData {
   for (const key of PRODUCT_CATEGORIES) {
     const camelKey = SNAKE_TO_CAMEL[key];
     const val = presetRow[camelKey];
-    const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+    const urls = Array.isArray(val)
+      ? val.filter((v): v is string => typeof v === 'string' && !!v)
+      : (typeof val === 'string' && val ? [val] : []);
     if (urls.length > 0) productImages[key] = urls;
   }
 

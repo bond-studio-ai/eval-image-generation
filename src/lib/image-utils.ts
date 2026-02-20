@@ -11,3 +11,14 @@ export function withImageParams(url: string, width = 256): string {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}w=${width}&f=webp`;
 }
+
+/**
+ * Normalize a DB product-image value (may be a single text URL or a text[])
+ * into a string[]. Handles pre-migration (single string) and post-migration
+ * (array) column types gracefully.
+ */
+export function toUrlArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === 'string' && !!v);
+  if (typeof val === 'string' && val) return [val];
+  return [];
+}

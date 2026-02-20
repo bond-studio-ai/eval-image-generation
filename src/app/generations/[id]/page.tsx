@@ -5,7 +5,7 @@ import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { RatingBadge } from '@/components/rating-badge';
 import { db } from '@/db';
 import { generation } from '@/db/schema';
-import { withImageParams } from '@/lib/image-utils';
+import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
@@ -66,8 +66,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const activeProductCategories: string[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const val = (inputData as Record<string, unknown>)[camelKey];
-      const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+      const urls = toUrlArray((inputData as Record<string, unknown>)[camelKey]);
       if (urls.length > 0) activeProductCategories.push(snakeKey);
     }
   }
@@ -75,8 +74,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const productImages: { key: string; label: string; urls: string[] }[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const val = (inputData as Record<string, unknown>)[camelKey];
-      const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+      const urls = toUrlArray((inputData as Record<string, unknown>)[camelKey]);
       if (urls.length > 0) {
         productImages.push({
           key: snakeKey,

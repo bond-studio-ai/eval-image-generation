@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (SCENE_FIELDS.has(snakeKey)) {
         if (typeof val === 'string' && val) inputValues[camelKey] = val;
       } else {
-        const arr = Array.isArray(val) ? val.filter(Boolean) : [];
+        const arr = Array.isArray(val) ? val.filter(Boolean) : (typeof val === 'string' && val ? [val] : []);
         if (arr.length > 0) inputValues[camelKey] = arr;
       }
     }
