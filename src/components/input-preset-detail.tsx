@@ -114,6 +114,34 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       </div>
 
+      {/* Scene Images */}
+      {(data.dollhouseView || data.realPhoto || data.moodBoard) && (
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              { label: 'Dollhouse View', url: data.dollhouseView as string | null },
+              { label: 'Real Photo', url: data.realPhoto as string | null },
+              { label: 'Mood Board', url: data.moodBoard as string | null },
+            ]
+              .filter((s) => s.url)
+              .map((s) => (
+                <div key={s.label} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+                  <div className="border-b border-gray-100 px-2.5 py-1.5">
+                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
+                  </div>
+                  <ImageWithSkeleton
+                    src={withImageParams(s.url!)}
+                    alt={s.label}
+                    loading="lazy"
+                    wrapperClassName="h-48 w-full bg-gray-50 p-1"
+                  />
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Arbitrary Images */}
       {Array.isArray(data.arbitraryImages) && data.arbitraryImages.length > 0 && (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">

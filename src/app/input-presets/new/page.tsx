@@ -2,6 +2,7 @@
 
 import { ImageUpload } from '@/components/image-upload';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
+import { SceneImageInput } from '@/components/scene-image-input';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,6 +13,9 @@ export default function NewInputPresetPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
+  const [dollhouseView, setDollhouseView] = useState<string | null>(null);
+  const [realPhoto, setRealPhoto] = useState<string | null>(null);
+  const [moodBoard, setMoodBoard] = useState<string | null>(null);
   const [productImages, setProductImages] = useState<ProductImagesState>({});
   const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>([]);
 
@@ -19,6 +23,7 @@ export default function NewInputPresetPage() {
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
+    !!dollhouseView || !!realPhoto || !!moodBoard ||
     Object.values(productImages).some(Boolean) ||
     arbitraryImages.length > 0;
 
@@ -35,6 +40,9 @@ export default function NewInputPresetPage() {
         description: description.trim() || undefined,
       };
 
+      if (dollhouseView) payload.dollhouse_view = dollhouseView;
+      if (realPhoto) payload.real_photo = realPhoto;
+      if (moodBoard) payload.mood_board = moodBoard;
       for (const [key, url] of Object.entries(productImages)) {
         if (url) payload[key] = url;
       }
@@ -91,6 +99,16 @@ export default function NewInputPresetPage() {
             placeholder="Add a description..."
             className="mt-1 block w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-600 transition-colors placeholder:text-gray-300 hover:border-gray-300 focus:border-primary-500 focus:ring-0 focus:outline-none"
           />
+        </div>
+      </div>
+
+      {/* Scene Images */}
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
+          <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
+          <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
         </div>
       </div>
 

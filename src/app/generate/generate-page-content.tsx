@@ -2,6 +2,7 @@
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
+import { SceneImageInput } from '@/components/scene-image-input';
 import type { ImageSelectionRow, InputPresetDetail, InputPresetListItem, PromptVersionDetail, PromptVersionListItem } from '@/lib/queries';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -50,6 +51,9 @@ const PRODUCT_KEYS = [
 
 function imageSelectionToState(d: ImageSelectionRow): {
   id: string;
+  dollhouseView: string | null;
+  realPhoto: string | null;
+  moodBoard: string | null;
   productImages: ProductImagesState;
 } {
   const prods: ProductImagesState = {};
@@ -60,8 +64,12 @@ function imageSelectionToState(d: ImageSelectionRow): {
       prods[uiKey] = val;
     }
   }
+  const rec = d as unknown as Record<string, unknown>;
   return {
     id: d.id,
+    dollhouseView: (rec.dollhouseView as string) ?? null,
+    realPhoto: (rec.realPhoto as string) ?? null,
+    moodBoard: (rec.moodBoard as string) ?? null,
     productImages: prods,
   };
 }
@@ -120,6 +128,9 @@ export function GeneratePageContent({
     : initialImageSelection
       ? imageSelectionToState(initialImageSelection)
       : null;
+  const [dollhouseView, setDollhouseView] = useState<string | null>(initialImageState?.dollhouseView ?? null);
+  const [realPhoto, setRealPhoto] = useState<string | null>(initialImageState?.realPhoto ?? null);
+  const [moodBoard, setMoodBoard] = useState<string | null>(initialImageState?.moodBoard ?? null);
   const [productImages, setProductImages] = useState<ProductImagesState>(initialImageState?.productImages ?? {});
   const imageSelectionLoaded = useRef(true); // Already loaded from SSR
 
@@ -157,11 +168,14 @@ export function GeneratePageContent({
   // Build the input_images payload object
   const buildInputImagesPayload = useCallback((): Record<string, string | null> => {
     const payload: Record<string, string | null> = {};
+    if (dollhouseView) payload.dollhouse_view = dollhouseView;
+    if (realPhoto) payload.real_photo = realPhoto;
+    if (moodBoard) payload.mood_board = moodBoard;
     for (const [key, url] of Object.entries(productImages)) {
       if (url) payload[key] = url;
     }
     return payload;
-  }, [productImages]);
+  }, [dollhouseView, realPhoto, moodBoard, productImages]);
 
   // Detect if prompt has been modified from the original version
   const isModified = useMemo(() => {
@@ -185,7 +199,11 @@ export function GeneratePageContent({
   useEffect(() => {
     if (!imageSelectionLoaded.current) return;
 
-    const payload: Record<string, string | null> = {};
+    const payload: Record<string, string | null> = {
+      dollhouse_view: dollhouseView,
+      real_photo: realPhoto,
+      mood_board: moodBoard,
+    };
     for (const [key, url] of Object.entries(productImages)) {
       payload[key] = url;
     }
@@ -200,7 +218,7 @@ export function GeneratePageContent({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [productImages]);
+  }, [dollhouseView, realPhoto, moodBoard, productImages]);
 
   // Load selected prompt version when changed via dropdown (not initial load)
   useEffect(() => {
@@ -277,9 +295,13 @@ export function GeneratePageContent({
             Array.isArray(ip.arbitraryImages) ? ip.arbitraryImages.filter((x: { url?: string }) => x?.url) : [],
           );
           // Populate image fields from the preset
+          const rec = ip as unknown as Record<string, unknown>;
+          setDollhouseView((rec.dollhouseView as string) ?? null);
+          setRealPhoto((rec.realPhoto as string) ?? null);
+          setMoodBoard((rec.moodBoard as string) ?? null);
           const prods: ProductImagesState = {};
           for (const k of PRODUCT_KEYS) {
-            const val = (ip as unknown as Record<string, unknown>)[k] as string | null | undefined;
+            const val = rec[k] as string | null | undefined;
             if (val) {
               const uiKey = CAMEL_TO_SNAKE[k] ?? k;
               prods[uiKey] = val;
@@ -298,6 +320,9 @@ export function GeneratePageContent({
     if (!id) {
       setActivePresetId(null);
       setActivePresetArbitraryImages([]);
+      setDollhouseView(null);
+      setRealPhoto(null);
+      setMoodBoard(null);
       setProductImages({});
     }
   };
@@ -315,6 +340,9 @@ export function GeneratePageContent({
         description: newPresetDescription.trim() || undefined,
       };
 
+      if (dollhouseView) payload.dollhouse_view = dollhouseView;
+      if (realPhoto) payload.real_photo = realPhoto;
+      if (moodBoard) payload.mood_board = moodBoard;
       for (const [key, url] of Object.entries(productImages)) {
         if (url) payload[key] = url;
       }
@@ -341,9 +369,9 @@ export function GeneratePageContent({
             id: newId,
             name: newPresetName.trim() || null,
             description: newPresetDescription.trim() || null,
-            dollhouseView: null,
-            realPhoto: null,
-            moodBoard: null,
+            dollhouseView: dollhouseView ?? null,
+            realPhoto: realPhoto ?? null,
+            moodBoard: moodBoard ?? null,
             createdAt: new Date(),
             imageCount: Object.values(productImages).filter(Boolean).length,
             stats: { generation_count: 0 },
@@ -360,7 +388,7 @@ export function GeneratePageContent({
     } finally {
       setCreatingPreset(false);
     }
-  }, [newPresetName, newPresetDescription, productImages]);
+  }, [newPresetName, newPresetDescription, dollhouseView, realPhoto, moodBoard, productImages]);
 
   const runGeneration = useCallback(
     async (versionId: string) => {
@@ -762,6 +790,16 @@ export function GeneratePageContent({
               Grounding with Google Search
             </label>
           </div>
+        </div>
+      </div>
+
+      {/* Scene Images */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
+          <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
+          <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
         </div>
       </div>
 
