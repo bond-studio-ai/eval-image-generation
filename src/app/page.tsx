@@ -1,6 +1,6 @@
 import { RatingBadge } from '@/components/rating-badge';
-import { db } from '@/db';
-import { generation, promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, promptVersion } from '@/db/V1/schema';
 import { and, count, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 

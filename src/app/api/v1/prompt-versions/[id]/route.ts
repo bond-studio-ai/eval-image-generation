@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation, promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, promptVersion } from '@/db/V1/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { updatePromptVersionSchema, uuidSchema } from '@/lib/validation';
 import { count, eq } from 'drizzle-orm';

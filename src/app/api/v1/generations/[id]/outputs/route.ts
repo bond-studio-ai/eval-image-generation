@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation, generationResult } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, generationResult } from '@/db/V1/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { addImageSchema, uuidSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';

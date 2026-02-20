@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation, generationResult } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, generationResult } from '@/db/V1/schema';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { desc, eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';

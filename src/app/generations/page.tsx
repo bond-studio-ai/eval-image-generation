@@ -1,11 +1,11 @@
 import { EmptyState } from '@/components/empty-state';
 import { GenerationsList, type GenerationRow } from '@/components/generations-list';
-import { db } from '@/db';
+import { db } from '@/db/V1';
 import {
   generation,
   generationResult,
   promptVersion,
-} from '@/db/schema';
+} from '@/db/V1/schema';
 import { and, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import Link from 'next/link';
 

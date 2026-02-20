@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { imageSelection } from '@/db/schema';
+import { db } from '@/db/V1';
+import { imageSelection } from '@/db/V1/schema';
 import { auth } from '@/lib/auth/server';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';

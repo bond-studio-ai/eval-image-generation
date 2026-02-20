@@ -1,7 +1,7 @@
-import { db } from '@/db';
-import { generation, generationInput, generationResult, promptVersion } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation, generationInput, generationResult, promptVersion } from '@/db/V1/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
-import { generateWithGemini } from '@/lib/gemini';
+import { generateWithGemini } from '@/lib/models/gemini';
 import { eq } from 'drizzle-orm';
 
 /** All product category keys that can appear in input_images */

@@ -1,0 +1,1347 @@
+{
+  "id": "8801ba73-9528-4e1d-b23c-3e13f35d777d",
+  "prevId": "0a0eea69-65f7-4d72-9980-639ebf3fb12e",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.generation": {
+      "name": "generation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "prompt_version_id": {
+          "name": "prompt_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "execution_time": {
+          "name": "execution_time",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "scene_accuracy_rating": {
+          "name": "scene_accuracy_rating",
+          "type": "generation_rating",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_accuracy_rating": {
+          "name": "product_accuracy_rating",
+          "type": "generation_rating",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "input_preset_id": {
+          "name": "input_preset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strategy_id": {
+          "name": "strategy_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "renovation_type": {
+          "name": "renovation_type",
+          "type": "renovation_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_prompt_version_id_prompt_version_id_fk": {
+          "name": "generation_prompt_version_id_prompt_version_id_fk",
+          "tableFrom": "generation",
+          "tableTo": "prompt_version",
+          "columnsFrom": [
+            "prompt_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_input": {
+      "name": "generation_input",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dollhouse_view": {
+          "name": "dollhouse_view",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "real_photo": {
+          "name": "real_photo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "faucets": {
+          "name": "faucets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lightings": {
+          "name": "lightings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lvps": {
+          "name": "lvps",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mirrors": {
+          "name": "mirrors",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paints": {
+          "name": "paints",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "robe_hooks": {
+          "name": "robe_hooks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shelves": {
+          "name": "shelves",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_glasses": {
+          "name": "shower_glasses",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_systems": {
+          "name": "shower_systems",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "floor_tiles": {
+          "name": "floor_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wall_tiles": {
+          "name": "wall_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_wall_tiles": {
+          "name": "shower_wall_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_floor_tiles": {
+          "name": "shower_floor_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_curb_tiles": {
+          "name": "shower_curb_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "toilet_paper_holders": {
+          "name": "toilet_paper_holders",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "toilets": {
+          "name": "toilets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "towel_bars": {
+          "name": "towel_bars",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "towel_rings": {
+          "name": "towel_rings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tub_doors": {
+          "name": "tub_doors",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tub_fillers": {
+          "name": "tub_fillers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tubs": {
+          "name": "tubs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vanities": {
+          "name": "vanities",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallpapers": {
+          "name": "wallpapers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mood_board": {
+          "name": "mood_board",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_input_generation_id_generation_id_fk": {
+          "name": "generation_input_generation_id_generation_id_fk",
+          "tableFrom": "generation_input",
+          "tableTo": "generation",
+          "columnsFrom": [
+            "generation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_input_v2": {
+      "name": "generation_input_v2",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_product_image": {
+      "name": "generation_product_image",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_input_id": {
+          "name": "generation_input_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "product_category",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_product_image_generation_input_id_generation_input_i": {
+          "name": "generation_product_image_generation_input_id_generation_input_i",
+          "tableFrom": "generation_product_image",
+          "tableTo": "generation_input",
+          "columnsFrom": [
+            "generation_input_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_result": {
+      "name": "generation_result",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_result_generation_id_generation_id_fk": {
+          "name": "generation_result_generation_id_generation_id_fk",
+          "tableFrom": "generation_result",
+          "tableTo": "generation",
+          "columnsFrom": [
+            "generation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_scene_image": {
+      "name": "generation_scene_image",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_input_id": {
+          "name": "generation_input_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "scene_image_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_scene_image_generation_input_id_generation_input_id_": {
+          "name": "generation_scene_image_generation_input_id_generation_input_id_",
+          "tableFrom": "generation_scene_image",
+          "tableTo": "generation_input",
+          "columnsFrom": [
+            "generation_input_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generation_step_execution": {
+      "name": "generation_step_execution",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step_order": {
+          "name": "step_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "system_prompt": {
+          "name": "system_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_prompt": {
+          "name": "user_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_name": {
+          "name": "model_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "temperature": {
+          "name": "temperature",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_type": {
+          "name": "output_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aspect_ratio": {
+          "name": "aspect_ratio",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_resolution": {
+          "name": "output_resolution",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generation_step_execution_generation_id_fk": {
+          "name": "generation_step_execution_generation_id_fk",
+          "tableFrom": "generation_step_execution",
+          "tableTo": "generation",
+          "columnsFrom": [
+            "generation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_generation_step_execution_order": {
+          "name": "uq_generation_step_execution_order",
+          "nullsNotDistinct": false,
+          "columns": [
+            "generation_id",
+            "step_order"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.image_preset": {
+      "name": "image_preset",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "renovation_type": {
+          "name": "renovation_type",
+          "type": "renovation_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.image_selection": {
+      "name": "image_selection",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dollhouse_view": {
+          "name": "dollhouse_view",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "real_photo": {
+          "name": "real_photo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "faucets": {
+          "name": "faucets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lightings": {
+          "name": "lightings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lvps": {
+          "name": "lvps",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mirrors": {
+          "name": "mirrors",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paints": {
+          "name": "paints",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "robe_hooks": {
+          "name": "robe_hooks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shelves": {
+          "name": "shelves",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_glasses": {
+          "name": "shower_glasses",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_systems": {
+          "name": "shower_systems",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "floor_tiles": {
+          "name": "floor_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wall_tiles": {
+          "name": "wall_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_wall_tiles": {
+          "name": "shower_wall_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_floor_tiles": {
+          "name": "shower_floor_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shower_curb_tiles": {
+          "name": "shower_curb_tiles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "toilet_paper_holders": {
+          "name": "toilet_paper_holders",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "toilets": {
+          "name": "toilets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "towel_bars": {
+          "name": "towel_bars",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "towel_rings": {
+          "name": "towel_rings",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tub_doors": {
+          "name": "tub_doors",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tub_fillers": {
+          "name": "tub_fillers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tubs": {
+          "name": "tubs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vanities": {
+          "name": "vanities",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallpapers": {
+          "name": "wallpapers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mood_board": {
+          "name": "mood_board",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_image_selection_user": {
+          "name": "idx_image_selection_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_image_selection_user": {
+          "name": "uq_image_selection_user",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.model_v2": {
+      "name": "model_v2",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_input_tokens": {
+          "name": "max_input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_output_tokens": {
+          "name": "max_output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_per_input_token": {
+          "name": "cost_per_input_token",
+          "type": "numeric(10, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_per_output_token": {
+          "name": "cost_per_output_token",
+          "type": "numeric(10, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.preset_product_image": {
+      "name": "preset_product_image",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "preset_id": {
+          "name": "preset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.preset_scene_image": {
+      "name": "preset_scene_image",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "preset_id": {
+          "name": "preset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.prompt_version": {
+      "name": "prompt_version",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "system_prompt": {
+          "name": "system_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_prompt": {
+          "name": "user_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_type": {
+          "name": "output_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aspect_ratio": {
+          "name": "aspect_ratio",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_resolution": {
+          "name": "output_resolution",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temperature": {
+          "name": "temperature",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.result_evaluation": {
+      "name": "result_evaluation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "result_id": {
+          "name": "result_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product_accuracy": {
+          "name": "product_accuracy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scene_accuracy_issues": {
+          "name": "scene_accuracy_issues",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scene_accuracy_notes": {
+          "name": "scene_accuracy_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "result_evaluation_result_id_generation_result_id_fk": {
+          "name": "result_evaluation_result_id_generation_result_id_fk",
+          "tableFrom": "result_evaluation",
+          "tableTo": "generation_result",
+          "columnsFrom": [
+            "result_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.strategy_step": {
+      "name": "strategy_step",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "strategy_id": {
+          "name": "strategy_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prompt_version_id": {
+          "name": "prompt_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temperature": {
+          "name": "temperature",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_type": {
+          "name": "output_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aspect_ratio": {
+          "name": "aspect_ratio",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_resolution": {
+          "name": "output_resolution",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.strategy_v2": {
+      "name": "strategy_v2",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "renovation_type": {
+          "name": "renovation_type",
+          "type": "renovation_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.generation_rating": {
+      "name": "generation_rating",
+      "schema": "public",
+      "values": [
+        "FAILED",
+        "GOOD"
+      ]
+    },
+    "public.product_category": {
+      "name": "product_category",
+      "schema": "public",
+      "values": [
+        "FAUCETS",
+        "LIGHTINGS",
+        "LVPS",
+        "MIRRORS",
+        "PAINTS",
+        "ROBE_HOOKS",
+        "SHELVES",
+        "SHOWER_GLASSES",
+        "SHOWER_SYSTEMS",
+        "FLOOR_TILES",
+        "WALL_TILES",
+        "SHOWER_WALL_TILES",
+        "SHOWER_FLOOR_TILES",
+        "SHOWER_CURB_TILES",
+        "TOILET_PAPER_HOLDERS",
+        "TOILETS",
+        "TOWEL_BARS",
+        "TOWEL_RINGS",
+        "TUB_DOORS",
+        "TUB_FILLERS",
+        "TUBS",
+        "VANITIES",
+        "WALLPAPERS"
+      ]
+    },
+    "public.renovation_type": {
+      "name": "renovation_type",
+      "schema": "public",
+      "values": [
+        "FULL",
+        "PARTIAL"
+      ]
+    },
+    "public.scene_image_type": {
+      "name": "scene_image_type",
+      "schema": "public",
+      "values": [
+        "DOLLHOUSE_VIEW",
+        "REAL_PHOTO",
+        "MOOD_BOARD"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

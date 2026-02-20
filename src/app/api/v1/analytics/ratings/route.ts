@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { generation } from '@/db/schema';
+import { db } from '@/db/V1';
+import { generation } from '@/db/V1/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { and, count, eq, gte, isNotNull, lte } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
