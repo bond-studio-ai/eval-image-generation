@@ -1,5 +1,6 @@
 'use client';
 
+import type { InputPresetListItem } from '@/lib/queries';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StrategyRunButton } from './run-button';
@@ -14,12 +15,21 @@ interface Run {
   status: string;
   createdAt: string;
   completedAt: string | null;
+  inputPresetName: string | null;
   stepResults: StepResult[];
 }
 
 const POLL_INTERVAL = 3000;
 
-export function StrategyRunsList({ strategyId, initialRuns }: { strategyId: string; initialRuns: Run[] }) {
+export function StrategyRunsList({
+  strategyId,
+  initialRuns,
+  inputPresets,
+}: {
+  strategyId: string;
+  initialRuns: Run[];
+  inputPresets: InputPresetListItem[];
+}) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -51,7 +61,7 @@ export function StrategyRunsList({ strategyId, initialRuns }: { strategyId: stri
     <>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Runs</h2>
-        <StrategyRunButton strategyId={strategyId} onRunCreated={handleRunCreated} />
+        <StrategyRunButton strategyId={strategyId} inputPresets={inputPresets} onRunCreated={handleRunCreated} />
       </div>
 
       {runs.length === 0 ? (
@@ -62,6 +72,7 @@ export function StrategyRunsList({ strategyId, initialRuns }: { strategyId: stri
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Input Preset</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Steps</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Started</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Completed</th>
@@ -76,6 +87,9 @@ export function StrategyRunsList({ strategyId, initialRuns }: { strategyId: stri
                   <tr key={run.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4">
                       <StatusBadge status={run.status} />
+                    </td>
+                    <td className="max-w-[200px] truncate whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                      {run.inputPresetName || <span className="text-gray-400">-</span>}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
                       {completed}/{total}

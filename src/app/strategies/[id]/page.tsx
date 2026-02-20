@@ -1,6 +1,7 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { db } from '@/db';
-import { strategy, strategyStep } from '@/db/schema';
+import { strategy, strategyRunInputPreset, strategyStep } from '@/db/schema';
+import { fetchInputPresets } from '@/lib/queries';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -22,15 +23,19 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         orderBy: [strategyStep.stepOrder],
         with: {
           promptVersion: { columns: { id: true, name: true } },
-          inputPreset: { columns: { id: true, name: true } },
         },
       },
       runs: {
         orderBy: (r, { desc }) => [desc(r.createdAt)],
-        limit: 20,
+        limit: 50,
         with: {
           stepResults: {
             columns: { id: true, status: true },
+          },
+          inputPresets: {
+            with: {
+              inputPreset: { columns: { id: true, name: true } },
+            },
           },
         },
       },
@@ -41,11 +46,13 @@ export default async function StrategyDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const inputPresets = await fetchInputPresets(100);
   const initialRuns = result.runs.map((run) => ({
     id: run.id,
     status: run.status,
     createdAt: run.createdAt.toISOString(),
     completedAt: run.completedAt?.toISOString() ?? null,
+    inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
     stepResults: run.stepResults.map((sr) => ({
       id: sr.id,
       status: sr.status,
@@ -91,10 +98,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                 outputResolution: step.outputResolution,
                 temperature: step.temperature,
                 promptName: step.promptVersion?.name,
-                inputPresetName: step.inputPreset?.name,
                 dollhouseViewFromStep: step.dollhouseViewFromStep,
                 realPhotoFromStep: step.realPhotoFromStep,
                 moodBoardFromStep: step.moodBoardFromStep,
+                arbitraryImageFromStep: step.arbitraryImageFromStep,
               }))}
             />
           </div>
@@ -103,7 +110,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
 
       {/* Runs */}
       <div className="mt-8">
-        <StrategyRunsList strategyId={result.id} initialRuns={initialRuns} />
+        <StrategyRunsList strategyId={result.id} initialRuns={initialRuns} inputPresets={inputPresets} />
       </div>
     </div>
   );

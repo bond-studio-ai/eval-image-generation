@@ -94,11 +94,27 @@ export async function PATCH(
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 
+    if (Array.isArray(body.arbitrary_images)) {
+      updates.arbitraryImages = body.arbitrary_images.filter(
+        (item: unknown) =>
+          item != null &&
+          typeof item === 'object' &&
+          'url' in item &&
+          typeof (item as { url: unknown }).url === 'string' &&
+          (item as { url: string }).url.length > 0,
+      ).map((item: unknown) => {
+        const o = item as { url: string; tag?: string };
+        return { url: o.url, tag: typeof o.tag === 'string' ? o.tag : undefined };
+      });
+    }
+
     for (const [snakeKey, value] of Object.entries(body)) {
       const camelKey = ALLOWED_FIELDS[snakeKey];
       if (!camelKey) continue;
-      updates[camelKey] = typeof value === 'string' ? value : null;
+      updates[camelKey] = typeof value === 'string' ? value : value === null ? null : undefined;
     }
+    // Remove undefined so we don't overwrite with undefined
+    Object.keys(updates).forEach((k) => updates[k] === undefined && delete updates[k]);
 
     if (Object.keys(updates).length === 0) {
       return errorResponse('VALIDATION_ERROR', 'No valid fields to update');

@@ -24,7 +24,6 @@ export default async function StrategyRunPage({ params }: PageProps) {
             columns: { stepOrder: true, name: true, model: true, aspectRatio: true, outputResolution: true, temperature: true, dollhouseViewFromStep: true, realPhotoFromStep: true, moodBoardFromStep: true },
             with: {
               promptVersion: { columns: { id: true, name: true } },
-              inputPreset: { columns: { id: true, name: true } },
             },
           },
         },
@@ -61,7 +60,6 @@ export default async function StrategyRunPage({ params }: PageProps) {
             realPhotoFromStep: sr.step.realPhotoFromStep,
             moodBoardFromStep: sr.step.moodBoardFromStep,
             promptVersion: sr.step.promptVersion,
-            inputPreset: sr.step.inputPreset,
           }
         : null,
     })),

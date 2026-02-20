@@ -1,7 +1,7 @@
 'use client';
 
+import { ImageUpload } from '@/components/image-upload';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
-import { SceneImageInput } from '@/components/scene-image-input';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,19 +12,15 @@ export default function NewInputPresetPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const [dollhouseView, setDollhouseView] = useState<string | null>(null);
-  const [realPhoto, setRealPhoto] = useState<string | null>(null);
-  const [moodBoard, setMoodBoard] = useState<string | null>(null);
   const [productImages, setProductImages] = useState<ProductImagesState>({});
+  const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>([]);
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    !!dollhouseView ||
-    !!realPhoto ||
-    !!moodBoard ||
-    Object.values(productImages).some(Boolean);
+    Object.values(productImages).some(Boolean) ||
+    arbitraryImages.length > 0;
 
   const canCreate = name.trim() && hasAnyImage;
 
@@ -39,12 +35,10 @@ export default function NewInputPresetPage() {
         description: description.trim() || undefined,
       };
 
-      if (dollhouseView) payload.dollhouse_view = dollhouseView;
-      if (realPhoto) payload.real_photo = realPhoto;
-      if (moodBoard) payload.mood_board = moodBoard;
       for (const [key, url] of Object.entries(productImages)) {
         if (url) payload[key] = url;
       }
+      if (arbitraryImages.length > 0) payload.arbitrary_images = arbitraryImages;
 
       const res = await fetch('/api/v1/input-presets', {
         method: 'POST',
@@ -100,20 +94,42 @@ export default function NewInputPresetPage() {
         </div>
       </div>
 
-      {/* Scene Images */}
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
-          <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
-          <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
-        </div>
-      </div>
-
       {/* Product Images */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
         <ProductImageInput value={productImages} onChange={setProductImages} />
+      </div>
+
+      {/* Arbitrary images (not tied to a specific attribute) */}
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Optional images to include with this preset. You can tag each image so the tag is sent to the model as context.
+        </p>
+        <ImageUpload
+          label=""
+          maxImages={10}
+          images={arbitraryImages.map((a, i) => ({ url: a.url, name: a.tag || `Image ${i + 1}`, previewUrl: a.url }))}
+          onImagesChange={(imgs) =>
+            setArbitraryImages(imgs.map((img) => ({
+              url: img.url,
+              tag: arbitraryImages.find((a) => a.url === img.url)?.tag,
+            })))
+          }
+          renderAboveImage={(idx) => (
+            <input
+              type="text"
+              value={arbitraryImages[idx]?.tag ?? ''}
+              onChange={(e) =>
+                setArbitraryImages((prev) =>
+                  prev.map((a, i) => (i === idx ? { ...a, tag: e.target.value || undefined } : a)),
+                )
+              }
+              placeholder="Tag (optional)"
+              className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+            />
+          )}
+        />
       </div>
 
       {/* Sticky create bar */}

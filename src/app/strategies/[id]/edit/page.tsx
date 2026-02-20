@@ -34,7 +34,6 @@ export default async function EditStrategyPage({ params }: PageProps) {
           initialSteps={strat.steps.map((s) => ({
             name: s.name ?? '',
             prompt_version_id: s.promptVersionId,
-            input_preset_id: s.inputPresetId,
             model: s.model,
             aspect_ratio: s.aspectRatio,
             output_resolution: s.outputResolution,
@@ -44,6 +43,11 @@ export default async function EditStrategyPage({ params }: PageProps) {
             dollhouse_view_from_step: s.dollhouseViewFromStep,
             real_photo_from_step: s.realPhotoFromStep,
             mood_board_from_step: s.moodBoardFromStep,
+            include_dollhouse: s.includeDollhouse ?? true,
+            include_real_photo: s.includeRealPhoto ?? true,
+            include_mood_board: s.includeMoodBoard ?? true,
+            include_product_categories: s.includeProductCategories ?? [],
+            arbitrary_image_from_step: s.arbitraryImageFromStep,
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

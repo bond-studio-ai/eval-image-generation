@@ -7,7 +7,6 @@ import { useCallback, useState } from 'react';
 interface StepData {
   name: string;
   prompt_version_id: string;
-  input_preset_id: string | null;
   model: string;
   aspect_ratio: string;
   output_resolution: string;
@@ -17,7 +16,30 @@ interface StepData {
   dollhouse_view_from_step: number | null;
   real_photo_from_step: number | null;
   mood_board_from_step: number | null;
+  include_dollhouse: boolean;
+  include_real_photo: boolean;
+  include_mood_board: boolean;
+  include_product_categories: string[];
+  arbitrary_image_from_step: number | null;
 }
+
+const PRODUCT_CATEGORIES = [
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
+] as const;
+
+const PRODUCT_LABELS: Record<string, string> = {
+  faucets: 'Faucets', lightings: 'Lightings', lvps: 'LVPs', mirrors: 'Mirrors', paints: 'Paints',
+  robe_hooks: 'Robe hooks', shelves: 'Shelves', shower_glasses: 'Shower glasses', shower_systems: 'Shower systems',
+  floor_tiles: 'Floor tiles', wall_tiles: 'Wall tiles', shower_wall_tiles: 'Shower wall tiles',
+  shower_floor_tiles: 'Shower floor tiles', shower_curb_tiles: 'Shower curb tiles',
+  toilet_paper_holders: 'Toilet paper holders', toilets: 'Toilets', towel_bars: 'Towel bars',
+  towel_rings: 'Towel rings', tub_doors: 'Tub doors', tub_fillers: 'Tub fillers', tubs: 'Tubs',
+  vanities: 'Vanities', wallpapers: 'Wallpapers',
+};
 
 interface StrategyBuilderProps {
   strategyId?: string;
@@ -32,7 +54,6 @@ function defaultStep(promptVersionId: string): StepData {
   return {
     name: '',
     prompt_version_id: promptVersionId,
-    input_preset_id: null,
     model: 'gemini-2.5-flash-image',
     aspect_ratio: '1:1',
     output_resolution: '1K',
@@ -42,6 +63,11 @@ function defaultStep(promptVersionId: string): StepData {
     dollhouse_view_from_step: null,
     real_photo_from_step: null,
     mood_board_from_step: null,
+    include_dollhouse: true,
+    include_real_photo: true,
+    include_mood_board: true,
+    include_product_categories: [],
+    arbitrary_image_from_step: null,
   };
 }
 
@@ -85,12 +111,12 @@ export function StrategyBuilder({
   const removeStep = useCallback((idx: number) => {
     setSteps((prev) => {
       const next = prev.filter((_, i) => i !== idx);
-      // Clear any override references to removed/shifted steps
       return next.map((s) => ({
         ...s,
         dollhouse_view_from_step: s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length ? null : s.dollhouse_view_from_step,
         real_photo_from_step: s.real_photo_from_step && s.real_photo_from_step > next.length ? null : s.real_photo_from_step,
         mood_board_from_step: s.mood_board_from_step && s.mood_board_from_step > next.length ? null : s.mood_board_from_step,
+        arbitrary_image_from_step: s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length ? null : s.arbitrary_image_from_step,
       }));
     });
   }, []);
@@ -111,6 +137,11 @@ export function StrategyBuilder({
           name: s.name.trim() || null,
           step_order: i + 1,
           temperature: s.temperature,
+          include_dollhouse: s.include_dollhouse,
+          include_real_photo: s.include_real_photo,
+          include_mood_board: s.include_mood_board,
+          include_product_categories: s.include_product_categories ?? [],
+          arbitrary_image_from_step: s.arbitrary_image_from_step ?? null,
         })),
       };
 
@@ -223,21 +254,80 @@ export function StrategyBuilder({
                   </select>
                 </div>
 
-                {/* Input Preset */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Input Preset</label>
-                  <select
-                    value={step.input_preset_id ?? ''}
-                    onChange={(e) => updateStep(idx, { input_preset_id: e.target.value || null })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  >
-                    <option value="">-- None --</option>
-                    {inputPresets.map((ip) => (
-                      <option key={ip.id} value={ip.id}>{ip.name || 'Untitled'}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
+
+              {/* Include from run presets: what to pull for this step (presets are chosen when you run) */}
+              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="mb-3 text-xs font-medium text-gray-700">Include from run presets</p>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={step.include_dollhouse}
+                          onChange={(e) => updateStep(idx, { include_dollhouse: e.target.checked })}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        Dollhouse
+                      </label>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={step.include_real_photo}
+                          onChange={(e) => updateStep(idx, { include_real_photo: e.target.checked })}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        Real Life
+                      </label>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={step.include_mood_board}
+                          onChange={(e) => updateStep(idx, { include_mood_board: e.target.checked })}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        Mood Board
+                      </label>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs text-gray-600">Specific products to use</p>
+                      <div className="mb-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateStep(idx, { include_product_categories: [...PRODUCT_CATEGORIES] })}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateStep(idx, { include_product_categories: [] })}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                        >
+                          Deselect all
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
+                        {PRODUCT_CATEGORIES.map((key) => (
+                          <label key={key} className="flex cursor-pointer items-center gap-2 text-xs text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={step.include_product_categories.includes(key)}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...step.include_product_categories, key]
+                                  : step.include_product_categories.filter((c) => c !== key);
+                                updateStep(idx, { include_product_categories: next });
+                              }}
+                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                            {PRODUCT_LABELS[key] ?? key}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
               {/* Model Settings */}
               <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -346,6 +436,28 @@ export function StrategyBuilder({
                   </div>
                 </div>
               )}
+
+              {/* Include output from previous step as arbitrary image (step 2+) */}
+              {idx > 0 && (
+                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <p className="mb-2 text-xs font-medium text-blue-800">Include output from a previous step as extra image</p>
+                  <div className="max-w-xs">
+                    <select
+                      value={step.arbitrary_image_from_step ?? ''}
+                      onChange={(e) => updateStep(idx, { arbitrary_image_from_step: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full rounded border border-blue-300 bg-white px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1"
+                    >
+                      <option value="">-- None --</option>
+                      {Array.from({ length: idx }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          Step {i + 1} output
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
             </div>
           ))}
         </div>

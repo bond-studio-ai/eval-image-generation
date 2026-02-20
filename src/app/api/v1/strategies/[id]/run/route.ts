@@ -1,10 +1,16 @@
 import { db } from '@/db';
-import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyRun, strategyStep, strategyStepResult } from '@/db/schema';
+import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyRun, strategyRunInputPreset, strategyStep, strategyStepResult } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { generateWithGemini } from '@/lib/gemini';
 import { uuidSchema } from '@/lib/validation';
-import { eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { after, NextRequest } from 'next/server';
+
+/** Preset data extracted from a single input_preset row for one run. */
+interface PresetData {
+  keyed: Record<string, string>;
+  arbitrary: { url: string; tag?: string }[];
+}
 
 const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
 const PRODUCT_CATEGORIES = [
@@ -48,6 +54,7 @@ function buildDepsMap(steps: StepRow[]): Map<number, Set<number>> {
     if (step.dollhouseViewFromStep != null) d.add(step.dollhouseViewFromStep);
     if (step.realPhotoFromStep != null) d.add(step.realPhotoFromStep);
     if (step.moodBoardFromStep != null) d.add(step.moodBoardFromStep);
+    if (step.arbitraryImageFromStep != null) d.add(step.arbitraryImageFromStep);
     deps.set(step.stepOrder, d);
   }
   return deps;
@@ -68,10 +75,49 @@ function getTransitiveDependents(stepOrder: number, deps: Map<number, Set<number
   return dependents;
 }
 
+function extractPresetData(presetRow: Record<string, unknown>): PresetData {
+  const keyed: Record<string, string> = {};
+  const arbitrary: { url: string; tag?: string }[] = [];
+
+  for (const key of ALL_INPUT_KEYS) {
+    const camelKey = SNAKE_TO_CAMEL[key];
+    const val = presetRow[camelKey];
+    if (typeof val === 'string' && val) keyed[key] = val;
+  }
+
+  const images = presetRow.arbitraryImages as { url: string; tag?: string }[] | undefined;
+  if (Array.isArray(images)) {
+    for (const item of images) {
+      if (item && typeof item.url === 'string' && item.url) {
+        arbitrary.push({ url: item.url, tag: typeof item.tag === 'string' ? item.tag : undefined });
+      }
+    }
+  }
+
+  return { keyed, arbitrary };
+}
+
+async function loadPresetForRun(runId: string): Promise<PresetData> {
+  const runPresets = await db.query.strategyRunInputPreset.findMany({
+    where: eq(strategyRunInputPreset.strategyRunId, runId),
+    orderBy: [asc(strategyRunInputPreset.order)],
+    with: { inputPreset: true },
+  });
+
+  if (runPresets.length === 0) return { keyed: {}, arbitrary: [] };
+
+  // Each run has exactly one preset now (parallel model)
+  const preset = runPresets[0].inputPreset as unknown as Record<string, unknown>;
+  if (!preset) return { keyed: {}, arbitrary: [] };
+
+  return extractPresetData(preset);
+}
+
 async function executeSingleStep(
   step: StepRow,
   stepResultId: string,
   stepOutputs: Map<number, string>,
+  presetData: PresetData,
 ): Promise<string | null> {
   await db
     .update(strategyStepResult)
@@ -85,18 +131,21 @@ async function executeSingleStep(
 
   const inputImagesMap: Record<string, string | null> = {};
 
-  if (step.inputPresetId) {
-    const preset = await db.query.inputPreset.findFirst({
-      where: eq(inputPreset.id, step.inputPresetId),
-    });
-    if (preset) {
-      const presetRecord = preset as unknown as Record<string, unknown>;
-      for (const key of ALL_INPUT_KEYS) {
-        const camelKey = SNAKE_TO_CAMEL[key];
-        const val = presetRecord[camelKey];
-        if (typeof val === 'string') inputImagesMap[key] = val;
-      }
-    }
+  const includeDollhouse = step.includeDollhouse ?? true;
+  const includeRealPhoto = step.includeRealPhoto ?? true;
+  const includeMoodBoard = step.includeMoodBoard ?? true;
+  const includeProducts = Array.isArray(step.includeProductCategories) ? step.includeProductCategories : [];
+  for (const key of SCENE_KEYS) {
+    if (key === 'dollhouse_view' && !includeDollhouse) continue;
+    if (key === 'real_photo' && !includeRealPhoto) continue;
+    if (key === 'mood_board' && !includeMoodBoard) continue;
+    const val = presetData.keyed[key];
+    if (val) inputImagesMap[key] = val;
+  }
+  for (const key of PRODUCT_CATEGORIES) {
+    if (!includeProducts.includes(key)) continue;
+    const val = presetData.keyed[key];
+    if (val) inputImagesMap[key] = val;
   }
 
   if (step.dollhouseViewFromStep != null) {
@@ -118,6 +167,19 @@ async function executeSingleStep(
     if (url) labeledImages.push({ url, label: INPUT_KEY_LABELS[key] });
   }
 
+  if (step.arbitraryImageFromStep != null) {
+    const url = stepOutputs.get(step.arbitraryImageFromStep);
+    if (url) {
+      labeledImages.push({ url, label: `Output from Step ${step.arbitraryImageFromStep}` });
+    }
+  }
+
+  presetData.arbitrary.forEach((item, i) => {
+    if (item.url) {
+      labeledImages.push({ url: item.url, label: item.tag?.trim() || `Additional image ${i + 1}` });
+    }
+  });
+
   const geminiResult = await generateWithGemini({
     systemPrompt: pv.systemPrompt,
     userPrompt: pv.userPrompt,
@@ -137,7 +199,7 @@ async function executeSingleStep(
     .insert(generation)
     .values({
       promptVersionId: step.promptVersionId,
-      inputPresetId: step.inputPresetId ?? null,
+      inputPresetId: null,
       executionTime: Math.round(geminiResult.executionTimeMs),
     })
     .returning();
@@ -173,6 +235,8 @@ async function executeSteps(runId: string, steps: StepRow[]) {
     where: eq(strategyStepResult.strategyRunId, runId),
   });
 
+  const presetData = await loadPresetForRun(runId);
+
   const stepResultByStepId = new Map(stepResultRows.map((sr) => [sr.strategyStepId, sr]));
   const stepOutputs = new Map<number, string>();
   const deps = buildDepsMap(steps);
@@ -189,7 +253,7 @@ async function executeSteps(runId: string, steps: StepRow[]) {
 
   const dispatch = (step: StepRow) => {
     const stepResult = stepResultByStepId.get(step.id)!;
-    const promise = executeSingleStep(step, stepResult.id, stepOutputs)
+    const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData)
       .then((outputUrl) => {
         if (outputUrl) stepOutputs.set(step.stepOrder, outputUrl);
         return { stepOrder: step.stepOrder, ok: true };
@@ -248,7 +312,7 @@ async function executeSteps(runId: string, steps: StepRow[]) {
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -256,6 +320,32 @@ export async function POST(
 
     if (!uuidSchema.safeParse(id).success) {
       return errorResponse('VALIDATION_ERROR', 'Invalid strategy ID');
+    }
+
+    const body = await request.json().catch(() => null);
+    const rawIds = body?.input_preset_ids;
+
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'At least one input preset is required');
+    }
+
+    const inputPresetIds = rawIds.filter(
+      (x: unknown) => typeof x === 'string' && uuidSchema.safeParse(x).success,
+    ) as string[];
+
+    if (inputPresetIds.length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'At least one valid input preset ID is required');
+    }
+
+    // Verify all presets exist
+    const existingPresets = await db
+      .select({ id: inputPreset.id })
+      .from(inputPreset)
+      .where(inArray(inputPreset.id, inputPresetIds));
+    const existingIds = new Set(existingPresets.map((p) => p.id));
+    const missingIds = inputPresetIds.filter((pid) => !existingIds.has(pid));
+    if (missingIds.length > 0) {
+      return errorResponse('VALIDATION_ERROR', `Input presets not found: ${missingIds.join(', ')}`);
     }
 
     const strat = await db.query.strategy.findFirst({
@@ -275,24 +365,43 @@ export async function POST(
       return errorResponse('VALIDATION_ERROR', 'Strategy has no steps');
     }
 
-    const [run] = await db
-      .insert(strategyRun)
-      .values({ strategyId: id, status: 'running' })
-      .returning();
+    // Create one run per input preset (they execute in parallel)
+    const runs: { id: string; inputPresetId: string }[] = [];
 
-    await db
-      .insert(strategyStepResult)
-      .values(
-        strat.steps.map((step) => ({
-          strategyRunId: run.id,
-          strategyStepId: step.id,
-          status: 'pending',
-        })),
-      );
+    for (const presetId of inputPresetIds) {
+      const [run] = await db
+        .insert(strategyRun)
+        .values({ strategyId: id, status: 'running' })
+        .returning();
 
-    after(() => executeSteps(run.id, strat.steps));
+      await db
+        .insert(strategyStepResult)
+        .values(
+          strat.steps.map((step) => ({
+            strategyRunId: run.id,
+            strategyStepId: step.id,
+            status: 'pending',
+          })),
+        );
 
-    return successResponse({ id: run.id, status: 'running' }, 201);
+      await db.insert(strategyRunInputPreset).values({
+        strategyRunId: run.id,
+        inputPresetId: presetId,
+        order: 0,
+      });
+
+      runs.push({ id: run.id, inputPresetId: presetId });
+    }
+
+    // Fire all runs in parallel
+    for (const run of runs) {
+      after(() => executeSteps(run.id, strat.steps));
+    }
+
+    return successResponse(
+      { runs: runs.map((r) => ({ id: r.id, inputPresetId: r.inputPresetId, status: 'running' })) },
+      201,
+    );
   } catch (error) {
     console.error('Error running strategy:', error);
     const message = error instanceof Error ? error.message : 'Failed to run strategy';

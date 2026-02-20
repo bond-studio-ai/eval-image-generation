@@ -23,7 +23,6 @@ export async function GET(
           orderBy: [strategyStep.stepOrder],
           with: {
             promptVersion: { columns: { id: true, name: true } },
-            inputPreset: { columns: { id: true, name: true } },
           },
         },
         runs: {
@@ -89,7 +88,6 @@ export async function PATCH(
             stepOrder: s.step_order,
             name: s.name ?? null,
             promptVersionId: s.prompt_version_id,
-            inputPresetId: s.input_preset_id ?? null,
             model: s.model,
             aspectRatio: s.aspect_ratio,
             outputResolution: s.output_resolution,
@@ -99,6 +97,11 @@ export async function PATCH(
             dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
             realPhotoFromStep: s.real_photo_from_step ?? null,
             moodBoardFromStep: s.mood_board_from_step ?? null,
+            includeDollhouse: s.include_dollhouse ?? true,
+            includeRealPhoto: s.include_real_photo ?? true,
+            includeMoodBoard: s.include_mood_board ?? true,
+            includeProductCategories: s.include_product_categories ?? [],
+            arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
           })),
         );
       }
@@ -111,7 +114,6 @@ export async function PATCH(
           orderBy: [strategyStep.stepOrder],
           with: {
             promptVersion: { columns: { id: true, name: true } },
-            inputPreset: { columns: { id: true, name: true } },
           },
         },
       },

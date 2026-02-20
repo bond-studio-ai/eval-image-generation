@@ -6,13 +6,13 @@ export interface DagStep {
   model?: string;
   aspectRatio?: string;
   outputResolution?: string;
-  inputPresetName?: string | null;
   promptName?: string | null;
   temperature?: string | number | null;
   status?: 'pending' | 'running' | 'completed' | 'failed';
   dollhouseViewFromStep: number | null;
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
+  arbitraryImageFromStep?: number | null;
 }
 
 interface Edge {
@@ -26,17 +26,18 @@ interface NodePosition {
   y: number;
 }
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 120;
-const LEVEL_GAP_X = 100;
-const NODE_GAP_Y = 28;
-const PADDING = 28;
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 84;
+const LEVEL_GAP_X = 80;
+const NODE_GAP_Y = 24;
+const PADDING = 24;
 
 function getDeps(step: DagStep): number[] {
   const deps: number[] = [];
   if (step.dollhouseViewFromStep != null) deps.push(step.dollhouseViewFromStep);
   if (step.realPhotoFromStep != null) deps.push(step.realPhotoFromStep);
   if (step.moodBoardFromStep != null) deps.push(step.moodBoardFromStep);
+  if (step.arbitraryImageFromStep != null) deps.push(step.arbitraryImageFromStep);
   return [...new Set(deps)];
 }
 
@@ -50,6 +51,9 @@ function getEdges(step: DagStep): Edge[] {
   }
   if (step.moodBoardFromStep != null) {
     edges.push({ from: step.moodBoardFromStep, to: step.stepOrder, label: 'Mood Board' });
+  }
+  if (step.arbitraryImageFromStep != null) {
+    edges.push({ from: step.arbitraryImageFromStep, to: step.stepOrder, label: 'Image' });
   }
   return edges;
 }
@@ -211,9 +215,9 @@ export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
                 markerEnd="url(#arrowhead)"
               />
               <rect
-                x={labelX - 30}
+                x={labelX - 24}
                 y={labelY - 8}
-                width={60}
+                width={48}
                 height={16}
                 rx={4}
                 className="fill-white stroke-gray-200"
@@ -252,60 +256,52 @@ export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
             >
               <div className={`flex h-full flex-col overflow-hidden rounded-lg border ${border} ${bg} shadow-xs`}>
                 {/* Header */}
-                <div className={`flex items-center justify-between px-3 py-1.5 ${headerBg}`}>
-                  <span className={`text-[11px] font-semibold ${headerText}`}>
-                    {truncate(step.label, 22)}
+                <div className={`flex items-center justify-between px-2.5 py-1 ${headerBg}`}>
+                  <span className={`text-[10px] font-semibold ${headerText}`}>
+                    {truncate(step.label, 20)}
                   </span>
                   {step.status === 'running' && (
                     <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
                   )}
                   {step.status === 'completed' && (
-                    <svg className="h-3.5 w-3.5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-3 w-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   )}
                   {step.status === 'failed' && (
-                    <svg className="h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-3 w-3 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   )}
                 </div>
                 {/* Body */}
-                <div className="flex flex-1 flex-col gap-0.5 px-3 py-1.5">
+                <div className="flex flex-1 flex-col gap-0.5 px-2.5 py-1">
                   {step.promptName && (
-                    <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                    <div className="flex items-center gap-1 text-[9px] text-gray-600">
                       <svg className="h-2.5 w-2.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                       </svg>
-                      <span className="truncate">{truncate(step.promptName, 26)}</span>
+                      <span className="truncate">{truncate(step.promptName, 22)}</span>
                     </div>
                   )}
-                  {step.inputPresetName && (
-                    <div className="flex items-center gap-1 text-[10px] text-gray-600">
-                      <svg className="h-2.5 w-2.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                      </svg>
-                      <span className="truncate">{truncate(step.inputPresetName, 26)}</span>
-                    </div>
-                  )}
-                  <div className="mt-auto flex flex-wrap items-center gap-1.5">
+                  <div className="mt-auto flex flex-wrap items-center gap-1">
                     {modelLabel && (
-                      <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+                      <span className="rounded bg-gray-200/80 px-1 py-0.5 text-[8px] font-medium text-gray-600">
                         {modelLabel}
                       </span>
                     )}
                     {step.aspectRatio && (
-                      <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[9px] text-gray-500">
+                      <span className="rounded bg-gray-200/80 px-1 py-0.5 text-[8px] text-gray-500">
                         {step.aspectRatio}
                       </span>
                     )}
                     {step.outputResolution && (
-                      <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[9px] text-gray-500">
+                      <span className="rounded bg-gray-200/80 px-1 py-0.5 text-[8px] text-gray-500">
                         {step.outputResolution}
                       </span>
                     )}
                     {step.temperature != null && (
-                      <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[9px] text-gray-500">
+                      <span className="rounded bg-gray-200/80 px-1 py-0.5 text-[8px] text-gray-500">
                         t={String(step.temperature)}
                       </span>
                     )}

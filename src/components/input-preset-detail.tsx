@@ -34,9 +34,6 @@ interface InputPresetData {
   id: string;
   name: string | null;
   description: string | null;
-  dollhouseView: string | null;
-  realPhoto: string | null;
-  moodBoard: string | null;
   deletedAt: string | null;
   [key: string]: unknown;
 }
@@ -69,12 +66,6 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       return url ? { key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, url } : null;
     })
     .filter(Boolean) as { key: string; label: string; url: string }[];
-
-  const sceneImages = [
-    { label: 'Dollhouse View', url: data.dollhouseView },
-    { label: 'Real Photo', url: data.realPhoto },
-    { label: 'Mood Board', url: data.moodBoard },
-  ].filter((s) => s.url) as { label: string; url: string }[];
 
   return (
     <div>
@@ -123,20 +114,24 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       </div>
 
-      {/* Scene Images */}
-      {sceneImages.length > 0 && (
-        <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {sceneImages.map((img) => (
-              <div key={img.label}>
-                <p className="mb-2 text-xs font-medium text-gray-600">{img.label}</p>
+      {/* Arbitrary Images */}
+      {Array.isArray(data.arbitraryImages) && data.arbitraryImages.length > 0 && (
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {data.arbitraryImages.map((item: { url: string; tag?: string }, i: number) => (
+              <div key={i} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(img.url)}
-                  alt={img.label}
+                  src={withImageParams(item.url)}
+                  alt={item.tag || `Additional image ${i + 1}`}
                   loading="lazy"
-                  wrapperClassName="h-56 w-full rounded-lg border border-gray-200 bg-gray-50"
+                  wrapperClassName="h-28 w-full bg-gray-50 p-1"
                 />
+                {item.tag && (
+                  <p className="truncate border-t border-gray-100 px-2 py-1 text-xs text-gray-600" title={item.tag}>
+                    {item.tag}
+                  </p>
+                )}
               </div>
             ))}
           </div>

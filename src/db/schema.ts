@@ -4,6 +4,7 @@ import {
   decimal,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -229,6 +230,10 @@ export const inputPreset = pgTable(
     vanities: text('vanities'),
     wallpapers: text('wallpapers'),
 
+    // Arbitrary image URLs (not tied to a specific attribute)
+    // Arbitrary images: optional tag sent to Gemini as label
+    arbitraryImages: jsonb('arbitrary_images').$type<{ url: string; tag?: string }[]>().notNull().default([]),
+
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -265,8 +270,8 @@ export const strategy = pgTable(
 
 /**
  * strategy_step: one step in a strategy workflow.
- * References a prompt and optionally an input preset, with per-step model settings.
- * Scene fields can be overridden with the output of a previous step.
+ * References a prompt; per-step model settings and which run preset fields to include.
+ * Input presets are selected at run time, not on the step.
  */
 export const strategyStep = pgTable(
   'strategy_step',
@@ -281,8 +286,6 @@ export const strategyStep = pgTable(
     promptVersionId: uuid('prompt_version_id')
       .notNull()
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
-    inputPresetId: uuid('input_preset_id')
-      .references(() => inputPreset.id, { onDelete: 'set null' }),
 
     // Per-step model settings
     model: varchar('model', { length: 255 }).notNull().default('gemini-2.5-flash-image'),
@@ -296,6 +299,15 @@ export const strategyStep = pgTable(
     dollhouseViewFromStep: integer('dollhouse_view_from_step'),
     realPhotoFromStep: integer('real_photo_from_step'),
     moodBoardFromStep: integer('mood_board_from_step'),
+
+    // What to include from the run's merged input presets
+    includeDollhouse: boolean('include_dollhouse').notNull().default(true),
+    includeRealPhoto: boolean('include_real_photo').notNull().default(true),
+    includeMoodBoard: boolean('include_mood_board').notNull().default(true),
+    includeProductCategories: jsonb('include_product_categories').$type<string[]>().notNull().default([]),
+
+    // For steps 2+: include output from a previous step as an extra image (step order 1-indexed)
+    arbitraryImageFromStep: integer('arbitrary_image_from_step'),
   },
   (table) => [
     index('idx_strategy_step_strategy').on(table.strategyId),
@@ -305,6 +317,7 @@ export const strategyStep = pgTable(
 
 /**
  * strategy_run: an execution of a strategy workflow.
+ * Input presets are selected when starting the run (see strategy_run_input_preset).
  */
 export const strategyRun = pgTable(
   'strategy_run',
@@ -320,6 +333,27 @@ export const strategyRun = pgTable(
   (table) => [
     index('idx_strategy_run_strategy').on(table.strategyId),
     index('idx_strategy_run_created_at').on(table.createdAt),
+  ],
+);
+
+/**
+ * strategy_run_input_preset: input presets selected for a run (ordered).
+ * Each step pulls from this merged set based on its include flags.
+ */
+export const strategyRunInputPreset = pgTable(
+  'strategy_run_input_preset',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strategyRunId: uuid('strategy_run_id')
+      .notNull()
+      .references(() => strategyRun.id, { onDelete: 'cascade' }),
+    inputPresetId: uuid('input_preset_id')
+      .notNull()
+      .references(() => inputPreset.id, { onDelete: 'cascade' }),
+    order: integer('order').notNull(), // 0, 1, 2... for merge order (first non-null wins per key)
+  },
+  (table) => [
+    index('idx_run_input_preset_run').on(table.strategyRunId),
   ],
 );
 
@@ -458,10 +492,6 @@ export const strategyStepRelations = relations(strategyStep, ({ one }) => ({
     fields: [strategyStep.promptVersionId],
     references: [promptVersion.id],
   }),
-  inputPreset: one(inputPreset, {
-    fields: [strategyStep.inputPresetId],
-    references: [inputPreset.id],
-  }),
 }));
 
 export const strategyRunRelations = relations(strategyRun, ({ one, many }) => ({
@@ -470,6 +500,18 @@ export const strategyRunRelations = relations(strategyRun, ({ one, many }) => ({
     references: [strategy.id],
   }),
   stepResults: many(strategyStepResult),
+  inputPresets: many(strategyRunInputPreset),
+}));
+
+export const strategyRunInputPresetRelations = relations(strategyRunInputPreset, ({ one }) => ({
+  run: one(strategyRun, {
+    fields: [strategyRunInputPreset.strategyRunId],
+    references: [strategyRun.id],
+  }),
+  inputPreset: one(inputPreset, {
+    fields: [strategyRunInputPreset.inputPresetId],
+    references: [inputPreset.id],
+  }),
 }));
 
 export const strategyStepResultRelations = relations(strategyStepResult, ({ one }) => ({
@@ -496,4 +538,5 @@ export const resultEvaluationRelations = relations(resultEvaluation, ({ one }) =
 
 export const inputPresetRelations = relations(inputPreset, ({ many }) => ({
   generations: many(generation),
+  strategyRunPresets: many(strategyRunInputPreset),
 }));

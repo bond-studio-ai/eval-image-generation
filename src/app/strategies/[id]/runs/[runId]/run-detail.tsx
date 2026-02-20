@@ -16,7 +16,6 @@ interface StepInfo {
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
   promptVersion: { id: string; name: string | null } | null;
-  inputPreset: { id: string; name: string | null } | null;
 }
 
 interface StepResult {
@@ -93,11 +92,10 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       outputResolution: sr.step!.outputResolution,
       temperature: sr.step!.temperature,
       promptName: sr.step!.promptVersion?.name,
-      inputPresetName: sr.step!.inputPreset?.name,
-      status: sr.status as DagStep['status'],
       dollhouseViewFromStep: sr.step!.dollhouseViewFromStep,
       realPhotoFromStep: sr.step!.realPhotoFromStep,
       moodBoardFromStep: sr.step!.moodBoardFromStep,
+      status: sr.status as DagStep['status'],
     }));
 
   return (

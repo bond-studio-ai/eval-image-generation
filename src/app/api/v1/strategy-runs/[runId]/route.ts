@@ -29,7 +29,6 @@ export async function GET(
               columns: { stepOrder: true, name: true, model: true, aspectRatio: true, outputResolution: true, temperature: true, dollhouseViewFromStep: true, realPhotoFromStep: true, moodBoardFromStep: true },
               with: {
                 promptVersion: { columns: { id: true, name: true } },
-                inputPreset: { columns: { id: true, name: true } },
               },
             },
           },

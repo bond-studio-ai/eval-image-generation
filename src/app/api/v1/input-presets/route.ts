@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { name, description, ...images } = parsed.data;
+    const { name, description, arbitrary_images, ...images } = parsed.data;
 
     const [created] = await db
       .insert(inputPreset)
@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         tubs: images.tubs ?? null,
         vanities: images.vanities ?? null,
         wallpapers: images.wallpapers ?? null,
+        arbitraryImages: arbitrary_images ?? [],
       })
       .returning();
 

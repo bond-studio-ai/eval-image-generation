@@ -134,8 +134,6 @@ export interface StrategyStepItem {
   name: string | null;
   promptVersionId: string;
   promptVersionName: string | null;
-  inputPresetId: string | null;
-  inputPresetName: string | null;
   model: string;
   aspectRatio: string;
   outputResolution: string;
@@ -145,6 +143,11 @@ export interface StrategyStepItem {
   dollhouseViewFromStep: number | null;
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
+  includeDollhouse: boolean;
+  includeRealPhoto: boolean;
+  includeMoodBoard: boolean;
+  includeProductCategories: string[];
+  arbitraryImageFromStep: number | null;
 }
 
 export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> {
@@ -176,7 +179,6 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
         orderBy: [strategyStep.stepOrder],
         with: {
           promptVersion: { columns: { name: true } },
-          inputPreset: { columns: { name: true } },
         },
       },
       runs: { columns: { id: true } },
@@ -198,8 +200,6 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
       name: step.name,
       promptVersionId: step.promptVersionId,
       promptVersionName: step.promptVersion?.name ?? null,
-      inputPresetId: step.inputPresetId,
-      inputPresetName: step.inputPreset?.name ?? null,
       model: step.model,
       aspectRatio: step.aspectRatio,
       outputResolution: step.outputResolution,
@@ -209,6 +209,11 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
       dollhouseViewFromStep: step.dollhouseViewFromStep,
       realPhotoFromStep: step.realPhotoFromStep,
       moodBoardFromStep: step.moodBoardFromStep,
+      includeDollhouse: step.includeDollhouse ?? true,
+      includeRealPhoto: step.includeRealPhoto ?? true,
+      includeMoodBoard: step.includeMoodBoard ?? true,
+      includeProductCategories: Array.isArray(step.includeProductCategories) ? step.includeProductCategories : [],
+      arbitraryImageFromStep: step.arbitraryImageFromStep ?? null,
     })),
   };
 }

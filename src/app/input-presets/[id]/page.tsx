@@ -43,9 +43,11 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
 
   const { generations, ...ipData } = result;
 
-  const imageCount = IMAGE_COLUMNS.filter(
+  const keyedImageCount = IMAGE_COLUMNS.filter(
     (col) => (ipData as Record<string, unknown>)[col] != null,
   ).length;
+  const arbitraryCount = Array.isArray(ipData.arbitraryImages) ? ipData.arbitraryImages.length : 0;
+  const imageCount = keyedImageCount + arbitraryCount;
 
   const serializedData = {
     ...ipData,

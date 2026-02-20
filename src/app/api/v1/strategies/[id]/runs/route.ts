@@ -30,15 +30,25 @@ export async function GET(
     const runs = await db.query.strategyRun.findMany({
       where: eq(strategyRun.strategyId, id),
       orderBy: [desc(strategyRun.createdAt)],
-      limit: 20,
+      limit: 50,
       with: {
         stepResults: {
           columns: { id: true, status: true },
         },
+        inputPresets: {
+          with: {
+            inputPreset: { columns: { id: true, name: true } },
+          },
+        },
       },
     });
 
-    return successResponse(runs);
+    const data = runs.map((run) => ({
+      ...run,
+      inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
+    }));
+
+    return successResponse(data);
   } catch (error) {
     console.error('Error fetching strategy runs:', error);
     return errorResponse('INTERNAL_ERROR', 'Failed to fetch strategy runs');
