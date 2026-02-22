@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { generation, generationInput, generationResult, promptVersion } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
-import { generateWithGemini } from '@/lib/gemini';
+import { generate } from '@/lib/models';
 import { eq } from 'drizzle-orm';
 
 /** All product category keys that can appear in input_images */
@@ -67,7 +67,15 @@ const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt_version_id, input_preset_id, input_images, arbitrary_image_urls, number_of_images, use_google_search, tag_images } = body as {
+    const {
+      prompt_version_id,
+      input_preset_id,
+      input_images,
+      arbitrary_image_urls,
+      number_of_images,
+      use_google_search,
+      tag_images,
+    } = body as {
       prompt_version_id: string;
       input_preset_id?: string;
       input_images?: Record<string, string | string[] | null>;
@@ -102,7 +110,7 @@ export async function POST(request: Request) {
       }
       for (const key of PRODUCT_CATEGORIES) {
         const val = input_images[key];
-        const urls = Array.isArray(val) ? val : (typeof val === 'string' && val ? [val] : []);
+        const urls = Array.isArray(val) ? val : typeof val === 'string' && val ? [val] : [];
         urls.forEach((url, i) => {
           if (url) {
             const suffix = urls.length > 1 ? ` ${i + 1}` : '';
@@ -114,15 +122,29 @@ export async function POST(request: Request) {
 
     const extraImages = Array.isArray(arbitrary_image_urls) ? arbitrary_image_urls : [];
     extraImages.forEach((item: unknown, i: number) => {
-      const url = typeof item === 'string' ? item : (item != null && typeof item === 'object' && 'url' in item && typeof (item as { url: unknown }).url === 'string') ? (item as { url: string }).url : '';
-      const tag = (item != null && typeof item === 'object' && 'tag' in item && typeof (item as { tag: unknown }).tag === 'string') ? (item as { tag: string }).tag : undefined;
+      const url =
+        typeof item === 'string'
+          ? item
+          : item != null &&
+              typeof item === 'object' &&
+              'url' in item &&
+              typeof (item as { url: unknown }).url === 'string'
+            ? (item as { url: string }).url
+            : '';
+      const tag =
+        item != null &&
+        typeof item === 'object' &&
+        'tag' in item &&
+        typeof (item as { tag: unknown }).tag === 'string'
+          ? (item as { tag: string }).tag
+          : undefined;
       if (url) {
         inputImages.push({ url, label: tag?.trim() || `Additional image ${i + 1}` });
       }
     });
 
     // Call Gemini API
-    const geminiResult = await generateWithGemini({
+    const geminiResult = await generate({
       systemPrompt: pv.systemPrompt,
       userPrompt: pv.userPrompt,
       model: pv.model || 'gemini-2.5-flash-image',
@@ -184,10 +206,14 @@ export async function POST(request: Request) {
 
       for (const [snakeKey, camelKey] of Object.entries(keyMap)) {
         const val = input_images[snakeKey];
-        if (SCENE_KEYS.includes(snakeKey as typeof SCENE_KEYS[number])) {
+        if (SCENE_KEYS.includes(snakeKey as (typeof SCENE_KEYS)[number])) {
           if (typeof val === 'string' && val) inputValues[camelKey] = val;
         } else {
-          const arr = Array.isArray(val) ? val.filter(Boolean) : (typeof val === 'string' && val ? [val] : []);
+          const arr = Array.isArray(val)
+            ? val.filter(Boolean)
+            : typeof val === 'string' && val
+              ? [val]
+              : [];
           if (arr.length > 0) inputValues[camelKey] = arr;
         }
       }
@@ -198,7 +224,7 @@ export async function POST(request: Request) {
     // Insert generation_result rows for each output image
     if (geminiResult.outputUrls.length > 0) {
       await db.insert(generationResult).values(
-        geminiResult.outputUrls.map((url) => ({
+        geminiResult.outputUrls.map((url: any) => ({
           generationId: gen.id,
           url,
         })),

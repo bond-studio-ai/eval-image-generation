@@ -1,7 +1,18 @@
 import { db } from '@/db';
-import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyRun, strategyRunInputPreset, strategyStep, strategyStepResult } from '@/db/schema';
+import {
+  generation,
+  generationInput,
+  generationResult,
+  inputPreset,
+  promptVersion,
+  strategy,
+  strategyRun,
+  strategyRunInputPreset,
+  strategyStep,
+  strategyStepResult,
+} from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
-import { generateWithGemini } from '@/lib/gemini';
+import { generate } from '@/lib/models';
 import { uuidSchema } from '@/lib/validation';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { after, NextRequest } from 'next/server';
@@ -15,34 +26,87 @@ interface PresetData {
 
 const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
 const PRODUCT_CATEGORIES = [
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
+  'faucets',
+  'lightings',
+  'lvps',
+  'mirrors',
+  'paints',
+  'robe_hooks',
+  'shelves',
+  'shower_glasses',
+  'shower_systems',
+  'floor_tiles',
+  'wall_tiles',
+  'shower_wall_tiles',
+  'shower_floor_tiles',
+  'shower_curb_tiles',
+  'toilet_paper_holders',
+  'toilets',
+  'towel_bars',
+  'towel_rings',
+  'tub_doors',
+  'tub_fillers',
+  'tubs',
+  'vanities',
+  'wallpapers',
 ] as const;
 const ALL_INPUT_KEYS = [...SCENE_KEYS, ...PRODUCT_CATEGORIES] as const;
 
 const INPUT_KEY_LABELS: Record<(typeof ALL_INPUT_KEYS)[number], string> = {
-  dollhouse_view: 'Dollhouse view (scene)', real_photo: 'Real photo (scene)', mood_board: 'Mood board (scene)',
-  faucets: 'Faucet', lightings: 'Lighting', lvps: 'LVP', mirrors: 'Mirror', paints: 'Paint',
-  robe_hooks: 'Robe hook', shelves: 'Shelf', shower_glasses: 'Shower glass', shower_systems: 'Shower system',
-  floor_tiles: 'Floor tile', wall_tiles: 'Wall tile', shower_wall_tiles: 'Shower wall tile',
-  shower_floor_tiles: 'Shower floor tile', shower_curb_tiles: 'Shower curb tile',
-  toilet_paper_holders: 'Toilet paper holder', toilets: 'Toilet', towel_bars: 'Towel bar',
-  towel_rings: 'Towel ring', tub_doors: 'Tub door', tub_fillers: 'Tub filler', tubs: 'Tub',
-  vanities: 'Vanity', wallpapers: 'Wallpaper',
+  dollhouse_view: 'Dollhouse view (scene)',
+  real_photo: 'Real photo (scene)',
+  mood_board: 'Mood board (scene)',
+  faucets: 'Faucet',
+  lightings: 'Lighting',
+  lvps: 'LVP',
+  mirrors: 'Mirror',
+  paints: 'Paint',
+  robe_hooks: 'Robe hook',
+  shelves: 'Shelf',
+  shower_glasses: 'Shower glass',
+  shower_systems: 'Shower system',
+  floor_tiles: 'Floor tile',
+  wall_tiles: 'Wall tile',
+  shower_wall_tiles: 'Shower wall tile',
+  shower_floor_tiles: 'Shower floor tile',
+  shower_curb_tiles: 'Shower curb tile',
+  toilet_paper_holders: 'Toilet paper holder',
+  toilets: 'Toilet',
+  towel_bars: 'Towel bar',
+  towel_rings: 'Towel ring',
+  tub_doors: 'Tub door',
+  tub_fillers: 'Tub filler',
+  tubs: 'Tub',
+  vanities: 'Vanity',
+  wallpapers: 'Wallpaper',
 };
 
 const SNAKE_TO_CAMEL: Record<string, string> = {
-  dollhouse_view: 'dollhouseView', real_photo: 'realPhoto', mood_board: 'moodBoard',
-  faucets: 'faucets', lightings: 'lightings', lvps: 'lvps', mirrors: 'mirrors', paints: 'paints',
-  robe_hooks: 'robeHooks', shelves: 'shelves', shower_glasses: 'showerGlasses',
-  shower_systems: 'showerSystems', floor_tiles: 'floorTiles', wall_tiles: 'wallTiles',
-  shower_wall_tiles: 'showerWallTiles', shower_floor_tiles: 'showerFloorTiles',
-  shower_curb_tiles: 'showerCurbTiles', toilet_paper_holders: 'toiletPaperHolders',
-  toilets: 'toilets', towel_bars: 'towelBars', towel_rings: 'towelRings',
-  tub_doors: 'tubDoors', tub_fillers: 'tubFillers', tubs: 'tubs', vanities: 'vanities',
+  dollhouse_view: 'dollhouseView',
+  real_photo: 'realPhoto',
+  mood_board: 'moodBoard',
+  faucets: 'faucets',
+  lightings: 'lightings',
+  lvps: 'lvps',
+  mirrors: 'mirrors',
+  paints: 'paints',
+  robe_hooks: 'robeHooks',
+  shelves: 'shelves',
+  shower_glasses: 'showerGlasses',
+  shower_systems: 'showerSystems',
+  floor_tiles: 'floorTiles',
+  wall_tiles: 'wallTiles',
+  shower_wall_tiles: 'showerWallTiles',
+  shower_floor_tiles: 'showerFloorTiles',
+  shower_curb_tiles: 'showerCurbTiles',
+  toilet_paper_holders: 'toiletPaperHolders',
+  toilets: 'toilets',
+  towel_bars: 'towelBars',
+  towel_rings: 'towelRings',
+  tub_doors: 'tubDoors',
+  tub_fillers: 'tubFillers',
+  tubs: 'tubs',
+  vanities: 'vanities',
   wallpapers: 'wallpapers',
 };
 
@@ -92,7 +156,9 @@ function extractPresetData(presetRow: Record<string, unknown>): PresetData {
     const val = presetRow[camelKey];
     const urls = Array.isArray(val)
       ? val.filter((v): v is string => typeof v === 'string' && !!v)
-      : (typeof val === 'string' && val ? [val] : []);
+      : typeof val === 'string' && val
+        ? [val]
+        : [];
     if (urls.length > 0) productImages[key] = urls;
   }
 
@@ -147,7 +213,9 @@ async function executeSingleStep(
   const includeDollhouse = step.includeDollhouse ?? true;
   const includeRealPhoto = step.includeRealPhoto ?? true;
   const includeMoodBoard = step.includeMoodBoard ?? true;
-  const includeProducts = Array.isArray(step.includeProductCategories) ? step.includeProductCategories : [];
+  const includeProducts = Array.isArray(step.includeProductCategories)
+    ? step.includeProductCategories
+    : [];
   for (const key of SCENE_KEYS) {
     if (key === 'dollhouse_view' && !includeDollhouse) continue;
     if (key === 'real_photo' && !includeRealPhoto) continue;
@@ -202,7 +270,7 @@ async function executeSingleStep(
     }
   });
 
-  const geminiResult = await generateWithGemini({
+  const result = await generate({
     systemPrompt: pv.systemPrompt,
     userPrompt: pv.userPrompt,
     model: step.model,
@@ -215,7 +283,7 @@ async function executeSingleStep(
     tagImages: step.tagImages,
   });
 
-  const outputUrl = geminiResult.outputUrls[0] ?? null;
+  const outputUrl = result.outputUrls[0] ?? null;
 
   let generationId: string | null = null;
 
@@ -225,7 +293,7 @@ async function executeSingleStep(
       .values({
         promptVersionId: step.promptVersionId,
         inputPresetId: null,
-        executionTime: Math.round(geminiResult.executionTimeMs),
+        executionTime: Math.round(result.executionTimeMs),
       })
       .returning();
 
@@ -256,7 +324,7 @@ async function executeSingleStep(
       status: 'completed',
       generationId,
       outputUrl,
-      executionTime: Math.round(geminiResult.executionTimeMs),
+      executionTime: Math.round(result.executionTimeMs),
     })
     .where(eq(strategyStepResult.id, stepResultId));
 
@@ -357,10 +425,7 @@ export async function executeSteps(runId: string, steps: StepRow[]) {
     .where(eq(strategyRun.id, runId));
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -420,15 +485,13 @@ export async function POST(
         .values({ strategyId: id, status: 'running' })
         .returning();
 
-      await db
-        .insert(strategyStepResult)
-        .values(
-          strat.steps.map((step) => ({
-            strategyRunId: run.id,
-            strategyStepId: step.id,
-            status: 'pending',
-          })),
-        );
+      await db.insert(strategyStepResult).values(
+        strat.steps.map((step) => ({
+          strategyRunId: run.id,
+          strategyStepId: step.id,
+          status: 'pending',
+        })),
+      );
 
       await db.insert(strategyRunInputPreset).values({
         strategyRunId: run.id,
