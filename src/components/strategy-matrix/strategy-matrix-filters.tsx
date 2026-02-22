@@ -6,6 +6,7 @@ import type { StrategyMatrixParams } from '@/hooks/matrix/strategy-matrix-types'
 const DEFAULT_MODELS: { value: string; label: string }[] = [
   { value: 'gemini-2.5-flash-image', label: 'Nano Banana' },
   { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+  { value: 'seedream-4.5', label: 'Seedream' },
 ];
 
 const TEMP_DEBOUNCE_MS = 400;
@@ -18,13 +19,6 @@ interface StrategyMatrixFiltersProps {
 const EMPTY_PARAMS: Partial<StrategyMatrixParams> = {
   model: undefined,
   minTemperature: undefined,
-  maxTemperature: undefined,
-  minCoverage: undefined,
-  minImages: undefined,
-  sceneWeight: undefined,
-  productWeight: undefined,
-  sort: undefined,
-  order: undefined,
 };
 
 export function StrategyMatrixFilters({ params, onParamsChange }: StrategyMatrixFiltersProps) {
