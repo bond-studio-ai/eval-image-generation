@@ -7,10 +7,6 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // -----------------------------
-    // Query Params
-    // -----------------------------
-
     const sort = searchParams.get('sort') ?? 'globalPercentage';
     const order = searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
 
@@ -31,10 +27,6 @@ export async function GET(request: Request) {
           .filter(Boolean)
       : [];
 
-    // -----------------------------
-    // Rows & Columns
-    // -----------------------------
-
     const presets = await db.query.inputPreset.findMany({
       where: isNull(inputPreset.deletedAt),
     });
@@ -45,65 +37,69 @@ export async function GET(request: Request) {
 
     const totalPresets = presets.length;
 
-    // -----------------------------
-    // Dynamic Filters SQL
-    // -----------------------------
-
-    const modelFilter = modelList.length > 0 ? sql`AND g.model = ANY(${modelList})` : sql``;
+    // ✅ FIXED: use IN (...) instead of ANY(...)
+    const modelFilter =
+      modelList.length > 0
+        ? sql`AND ss.model IN (${sql.join(
+            modelList.map((m) => sql`${m}`),
+            sql`, `,
+          )})`
+        : sql``;
 
     const tempMinFilter =
-      minTemperature !== null ? sql`AND g.temperature >= ${Number(minTemperature)}` : sql``;
+      minTemperature !== null ? sql`AND ss.temperature >= ${Number(minTemperature)}` : sql``;
 
     const tempMaxFilter =
-      maxTemperature !== null ? sql`AND g.temperature <= ${Number(maxTemperature)}` : sql``;
-
-    // -----------------------------
-    // MATRIX QUERY
-    // -----------------------------
+      maxTemperature !== null ? sql`AND ss.temperature <= ${Number(maxTemperature)}` : sql``;
 
     const matrixAgg = await db.execute(sql`
-      WITH latest_runs AS (
-        SELECT DISTINCT ON (sr.strategy_id, srip.input_preset_id)
-          sr.id AS run_id,
-          sr.strategy_id,
-          sr.status,
-          srip.input_preset_id
-        FROM strategy_run sr
-        JOIN strategy_run_input_preset srip
-          ON srip.strategy_run_id = sr.id
-        ORDER BY sr.strategy_id, srip.input_preset_id, sr.created_at DESC
-      )
-      SELECT
-        lr.strategy_id,
-        lr.input_preset_id,
-        lr.run_id,
-        lr.status,
-        COUNT(gr.id) AS total_images,
-        COUNT(gr.id) FILTER (
-          WHERE g.scene_accuracy_rating = 'GOOD'
-             OR g.product_accuracy_rating = 'GOOD'
-        ) AS good_images,
-        COUNT(gr.id) FILTER (
-          WHERE g.scene_accuracy_rating IS NOT NULL
-             OR g.product_accuracy_rating IS NOT NULL
-        ) AS evaluated_images,
-        MAX(ssr.output_url) AS output_url
-      FROM latest_runs lr
-      LEFT JOIN strategy_step_result ssr
-        ON ssr.strategy_run_id = lr.run_id
-      LEFT JOIN generation g
-        ON g.id = ssr.generation_id
-        ${modelFilter}
-        ${tempMinFilter}
-        ${tempMaxFilter}
-      LEFT JOIN generation_result gr
-        ON gr.generation_id = g.id
-      GROUP BY
-        lr.strategy_id,
-        lr.input_preset_id,
-        lr.run_id,
-        lr.status
-    `);
+  WITH latest_runs AS (
+    SELECT DISTINCT ON (sr.strategy_id, srip.input_preset_id)
+      sr.id AS run_id,
+      sr.strategy_id,
+      sr.status,
+      srip.input_preset_id
+    FROM strategy_run sr
+    JOIN strategy_run_input_preset srip
+      ON srip.strategy_run_id = sr.id
+    ORDER BY sr.strategy_id, srip.input_preset_id, sr.created_at DESC
+  )
+  SELECT
+    lr.strategy_id,
+    lr.input_preset_id,
+    lr.run_id,
+    lr.status,
+    COUNT(gr.id) AS total_images,
+    COUNT(gr.id) FILTER (
+      WHERE g.scene_accuracy_rating = 'GOOD'
+         OR g.product_accuracy_rating = 'GOOD'
+    ) AS good_images,
+    COUNT(gr.id) FILTER (
+      WHERE g.scene_accuracy_rating IS NOT NULL
+         OR g.product_accuracy_rating IS NOT NULL
+    ) AS evaluated_images,
+    MAX(ssr.output_url) AS output_url
+  FROM latest_runs lr
+  LEFT JOIN strategy_step_result ssr
+    ON ssr.strategy_run_id = lr.run_id
+  LEFT JOIN strategy_step ss
+    ON ss.id = ssr.strategy_step_id
+  LEFT JOIN generation g
+    ON g.id = ssr.generation_id
+  LEFT JOIN generation_result gr
+    ON gr.generation_id = g.id
+
+  WHERE 1=1
+    ${modelFilter}
+    ${tempMinFilter}
+    ${tempMaxFilter}
+
+  GROUP BY
+    lr.strategy_id,
+    lr.input_preset_id,
+    lr.run_id,
+    lr.status
+`);
 
     const matrixLookup = new Map<string, any>();
 
@@ -145,10 +141,6 @@ export async function GET(request: Request) {
       }),
     }));
 
-    // -----------------------------
-    // STRATEGY SUMMARY QUERY
-    // -----------------------------
-
     const summaryAgg = await db.execute(sql`
       WITH preset_scores AS (
         SELECT
@@ -164,10 +156,14 @@ export async function GET(request: Request) {
         LEFT JOIN strategy_run sr ON sr.strategy_id = s.id
         LEFT JOIN strategy_run_input_preset srip ON srip.strategy_run_id = sr.id
         LEFT JOIN strategy_step_result ssr ON ssr.strategy_run_id = sr.id
-        LEFT JOIN generation g ON g.id = ssr.generation_id
+
+        LEFT JOIN strategy_step ss
+          ON ss.id = ssr.strategy_step_id
           ${modelFilter}
           ${tempMinFilter}
           ${tempMaxFilter}
+
+        LEFT JOIN generation g ON g.id = ssr.generation_id
         LEFT JOIN generation_result gr ON gr.generation_id = g.id
         WHERE s.deleted_at IS NULL
         GROUP BY s.id, srip.input_preset_id
@@ -213,17 +209,9 @@ export async function GET(request: Request) {
       };
     });
 
-    // -----------------------------
-    // Filtering
-    // -----------------------------
-
     strategySummary = strategySummary.filter(
       (s) => s.coverageRatio >= minCoverage && s.totalImages >= minImages,
     );
-
-    // -----------------------------
-    // Sorting
-    // -----------------------------
 
     strategySummary.sort((a: any, b: any) => {
       const valA = a[sort];
@@ -236,8 +224,14 @@ export async function GET(request: Request) {
     });
 
     return successResponse({
-      rows: presets.map((p) => ({ id: p.id, name: p.name })),
-      columns: strategies.map((s) => ({ id: s.id, name: s.name })),
+      rows: presets.map((p) => ({
+        id: p.id,
+        name: p.name,
+      })),
+      columns: strategies.map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
       matrix,
       strategySummary,
     });
