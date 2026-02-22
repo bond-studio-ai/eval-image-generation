@@ -10,15 +10,21 @@ export async function GET(request: Request) {
     const sort = searchParams.get('sort') ?? 'globalPercentage';
     const order = searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
 
-    const minCoverage = Number(searchParams.get('minCoverage') ?? 0);
-    const minImages = Number(searchParams.get('minImages') ?? 0);
+    const minCoverageParam = searchParams.get('minCoverage');
+    const minImagesParam = searchParams.get('minImages');
 
     const sceneWeight = Number(searchParams.get('sceneWeight') ?? 0.5);
     const productWeight = Number(searchParams.get('productWeight') ?? 0.5);
 
-    const minTemperature = searchParams.get('minTemperature');
-    const maxTemperature = searchParams.get('maxTemperature');
+    const minTemperatureParam = searchParams.get('minTemperature');
+    const maxTemperatureParam = searchParams.get('maxTemperature');
     const modelParam = searchParams.get('model');
+
+    const minCoverage = minCoverageParam !== null ? Number(minCoverageParam) : null;
+    const minImages = minImagesParam !== null ? Number(minImagesParam) : null;
+
+    const minTemperature = minTemperatureParam !== null ? Number(minTemperatureParam) : null;
+    const maxTemperature = maxTemperatureParam !== null ? Number(maxTemperatureParam) : null;
 
     const modelList = modelParam
       ? modelParam
@@ -37,7 +43,7 @@ export async function GET(request: Request) {
 
     const totalPresets = presets.length;
 
-    // ✅ FIXED: use IN (...) instead of ANY(...)
+    // MODEL FILTER
     const modelFilter =
       modelList.length > 0
         ? sql`AND ss.model IN (${sql.join(
@@ -46,60 +52,69 @@ export async function GET(request: Request) {
           )})`
         : sql``;
 
-    const tempMinFilter =
-      minTemperature !== null ? sql`AND ss.temperature >= ${Number(minTemperature)}` : sql``;
+    // TEMPERATURE FILTER LOGIC
+    let temperatureFilter = sql``;
 
-    const tempMaxFilter =
-      maxTemperature !== null ? sql`AND ss.temperature <= ${Number(maxTemperature)}` : sql``;
+    if (minTemperature !== null && maxTemperature === null) {
+      temperatureFilter = sql`AND ss.temperature = ${minTemperature}`;
+    } else if (minTemperature !== null && maxTemperature !== null) {
+      temperatureFilter = sql`
+        AND ss.temperature >= ${minTemperature}
+        AND ss.temperature <= ${maxTemperature}
+      `;
+    }
 
     const matrixAgg = await db.execute(sql`
-  WITH latest_runs AS (
-    SELECT DISTINCT ON (sr.strategy_id, srip.input_preset_id)
-      sr.id AS run_id,
-      sr.strategy_id,
-      sr.status,
-      srip.input_preset_id
-    FROM strategy_run sr
-    JOIN strategy_run_input_preset srip
-      ON srip.strategy_run_id = sr.id
-    ORDER BY sr.strategy_id, srip.input_preset_id, sr.created_at DESC
-  )
-  SELECT
-    lr.strategy_id,
-    lr.input_preset_id,
-    lr.run_id,
-    lr.status,
-    COUNT(gr.id) AS total_images,
-    COUNT(gr.id) FILTER (
-      WHERE g.scene_accuracy_rating = 'GOOD'
-         OR g.product_accuracy_rating = 'GOOD'
-    ) AS good_images,
-    COUNT(gr.id) FILTER (
-      WHERE g.scene_accuracy_rating IS NOT NULL
-         OR g.product_accuracy_rating IS NOT NULL
-    ) AS evaluated_images,
-    MAX(ssr.output_url) AS output_url
-  FROM latest_runs lr
-  LEFT JOIN strategy_step_result ssr
-    ON ssr.strategy_run_id = lr.run_id
-  LEFT JOIN strategy_step ss
-    ON ss.id = ssr.strategy_step_id
-  LEFT JOIN generation g
-    ON g.id = ssr.generation_id
-  LEFT JOIN generation_result gr
-    ON gr.generation_id = g.id
-
-  WHERE 1=1
-    ${modelFilter}
-    ${tempMinFilter}
-    ${tempMaxFilter}
-
-  GROUP BY
-    lr.strategy_id,
-    lr.input_preset_id,
-    lr.run_id,
-    lr.status
-`);
+      WITH latest_runs AS (
+        SELECT DISTINCT ON (sr.strategy_id, srip.input_preset_id)
+          sr.id AS run_id,
+          sr.strategy_id,
+          sr.status,
+          srip.input_preset_id
+        FROM strategy_run sr
+        JOIN strategy_run_input_preset srip
+          ON srip.strategy_run_id = sr.id
+        ORDER BY sr.strategy_id, srip.input_preset_id, sr.created_at DESC
+      )
+      SELECT
+        lr.strategy_id,
+        lr.input_preset_id,
+        lr.run_id,
+        lr.status,
+        COUNT(gr.id) AS total_images,
+        COUNT(gr.id) FILTER (
+          WHERE g.scene_accuracy_rating = 'GOOD'
+             OR g.product_accuracy_rating = 'GOOD'
+        ) AS good_images,
+        COUNT(gr.id) FILTER (
+          WHERE g.scene_accuracy_rating IS NOT NULL
+             OR g.product_accuracy_rating IS NOT NULL
+        ) AS evaluated_images,
+        MAX(ssr.output_url) AS output_url,
+        ARRAY_AGG(DISTINCT ss.model) AS models,
+        COALESCE(
+          JSON_AGG(DISTINCT ss.temperature)
+          FILTER (WHERE ss.temperature IS NOT NULL),
+          '[]'
+        ) AS temperatures
+      FROM latest_runs lr
+      LEFT JOIN strategy_step_result ssr
+        ON ssr.strategy_run_id = lr.run_id
+      LEFT JOIN strategy_step ss
+        ON ss.id = ssr.strategy_step_id
+      LEFT JOIN generation g
+        ON g.id = ssr.generation_id
+      LEFT JOIN generation_result gr
+        ON gr.generation_id = g.id
+      WHERE 1=1
+        ${modelFilter}
+        ${temperatureFilter}
+      GROUP BY
+        lr.strategy_id,
+        lr.input_preset_id,
+        lr.run_id,
+        lr.status
+    `);
 
     const matrixLookup = new Map<string, any>();
 
@@ -115,9 +130,11 @@ export async function GET(request: Request) {
         status: r.status?.toUpperCase() ?? 'UNKNOWN',
         totalImages,
         goodImages,
-        percentage: evaluatedImages === 0 ? null : Math.round((goodImages / totalImages) * 100),
+        percentage: evaluatedImages === 0 ? null : Math.round((goodImages / evaluatedImages) * 100),
         needsEval: evaluatedImages === 0,
         outputUrl: r.output_url ?? null,
+        models: r.models ?? [],
+        temperatures: r.temperatures ?? [],
       });
     }
 
@@ -136,6 +153,8 @@ export async function GET(request: Request) {
             percentage: null,
             needsEval: false,
             outputUrl: null,
+            models: [],
+            temperatures: [],
           }
         );
       }),
@@ -156,13 +175,10 @@ export async function GET(request: Request) {
         LEFT JOIN strategy_run sr ON sr.strategy_id = s.id
         LEFT JOIN strategy_run_input_preset srip ON srip.strategy_run_id = sr.id
         LEFT JOIN strategy_step_result ssr ON ssr.strategy_run_id = sr.id
-
         LEFT JOIN strategy_step ss
           ON ss.id = ssr.strategy_step_id
           ${modelFilter}
-          ${tempMinFilter}
-          ${tempMaxFilter}
-
+          ${temperatureFilter}
         LEFT JOIN generation g ON g.id = ssr.generation_id
         LEFT JOIN generation_result gr ON gr.generation_id = g.id
         WHERE s.deleted_at IS NULL
@@ -209,9 +225,14 @@ export async function GET(request: Request) {
       };
     });
 
-    strategySummary = strategySummary.filter(
-      (s) => s.coverageRatio >= minCoverage && s.totalImages >= minImages,
-    );
+    // MIN FILTERS — exact match when only min sent
+    if (minCoverage !== null) {
+      strategySummary = strategySummary.filter((s) => s.coverageRatio === minCoverage);
+    }
+
+    if (minImages !== null) {
+      strategySummary = strategySummary.filter((s) => s.totalImages === minImages);
+    }
 
     strategySummary.sort((a: any, b: any) => {
       const valA = a[sort];
