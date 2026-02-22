@@ -6,7 +6,7 @@ import type { StrategyMatrixParams } from '@/hooks/matrix/strategy-matrix-types'
 const DEFAULT_MODELS: { value: string; label: string }[] = [
   { value: 'gemini-2.5-flash-image', label: 'Nano Banana' },
   { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-  { value: 'seedream-4.5', label: 'Seedream' },
+  { value: 'seedream/4.5-edit', label: 'Seedream 4.5' },
 ];
 
 const TEMP_DEBOUNCE_MS = 400;

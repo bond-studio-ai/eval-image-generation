@@ -144,7 +144,7 @@ export default function NewPromptVersionPage() {
             >
               <option value="gemini-2.5-flash-image">Nano Banana</option>
               <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
-              <option value="seedream-4.5">Seedream</option>
+              <option value="seedream/4.5-edit">Seedream 4.5</option>
             </select>
           </div>
           <div>
