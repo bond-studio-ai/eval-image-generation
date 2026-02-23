@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       with: {
-        strategy: { columns: { id: true, name: true } },
+        strategy: { columns: { id: true, name: true, deletedAt: true } },
         stepResults: {
           columns: { id: true, status: true, outputUrl: true, generationId: true },
           with: {
@@ -38,7 +38,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = runs.map((run) => {
+    const runsForActiveStrategies = runs.filter(
+      (run) => run.strategy?.deletedAt == null,
+    );
+
+    const data = runsForActiveStrategies.map((run) => {
       const resultsWithOrder =       (run.stepResults ?? []).filter(
         (sr) => sr.step != null,
       ) as { id: string; status: string; outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];

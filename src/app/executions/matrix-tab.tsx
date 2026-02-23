@@ -62,38 +62,26 @@ export function MatrixTab() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [runs]);
 
-  useEffect(() => {
-    if (presetFilter === null && allPresets.length > 0) {
-      setPresetFilter(new Set(allPresets));
-    }
-  }, [allPresets, presetFilter]);
-
-  useEffect(() => {
-    if (strategyFilter === null && allStrategies.length > 0) {
-      setStrategyFilter(new Set(allStrategies.map((s) => s.id)));
-    }
-  }, [allStrategies, strategyFilter]);
-
-  const activePresets = presetFilter ?? new Set(allPresets);
-  const activeStrategies = strategyFilter ?? new Set(allStrategies.map((s) => s.id));
+  const activePresets = presetFilter ?? new Set<string>();
+  const activeStrategies = strategyFilter ?? new Set<string>();
 
   const togglePreset = useCallback((name: string) => {
     setPresetFilter((prev) => {
-      const base = prev ?? new Set(allPresets);
+      const base = prev ?? new Set<string>();
       const next = new Set(base);
       if (next.has(name)) next.delete(name); else next.add(name);
       return next;
     });
-  }, [allPresets]);
+  }, []);
 
   const toggleStrategy = useCallback((id: string) => {
     setStrategyFilter((prev) => {
-      const base = prev ?? new Set(allStrategies.map((s) => s.id));
+      const base = prev ?? new Set<string>();
       const next = new Set(base);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  }, [allStrategies]);
+  }, []);
 
   const matrix = useMemo(() => {
     const visiblePresets = allPresets.filter((p) => activePresets.has(p));

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       with: {
-        strategy: { columns: { id: true, name: true } },
+        strategy: { columns: { id: true, name: true, deletedAt: true } },
         runs: {
           with: {
             stepResults: {
@@ -37,7 +37,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = batches.map((batch) => {
+    const activeBatches = batches.filter(
+      (batch) => batch.strategy?.deletedAt == null,
+    );
+
+    const data = activeBatches.map((batch) => {
       const runs = batch.runs.map((run) => {
         const resultsWithOrder = (run.stepResults ?? []).filter(
           (sr) => sr.step != null,
