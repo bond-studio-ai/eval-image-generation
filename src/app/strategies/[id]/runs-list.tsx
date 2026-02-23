@@ -18,6 +18,7 @@ interface Run {
   completedAt: string | null;
   inputPresetName: string | null;
   lastOutputUrl?: string | null;
+  lastOutputGenerationId?: string | null;
   batchRunId?: string | null;
   stepResults: StepResult[];
 }
@@ -39,7 +40,7 @@ export function StrategyRunsList({
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
@@ -128,7 +129,7 @@ export function StrategyRunsList({
                 strategyId={strategyId}
                 retryingRunId={retryingRunId}
                 onRetry={handleRetry}
-                onImageClick={(src, runHref) => setLightbox({ src, runHref })}
+                onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
               />
             ) : (
               <IndividualRunCard
@@ -143,7 +144,13 @@ export function StrategyRunsList({
         </div>
       )}
       {lightbox && (
-        <GridLightbox src={lightbox.src} runHref={lightbox.runHref} onClose={() => setLightbox(null)} />
+        <GridLightbox
+          src={lightbox.src}
+          runHref={lightbox.runHref}
+          generationId={lightbox.generationId}
+          onRated={() => fetchRuns()}
+          onClose={() => setLightbox(null)}
+        />
       )}
     </>
   );
@@ -208,7 +215,7 @@ function BatchRunCard({
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
-  onImageClick: (src: string, runHref: string) => void;
+  onImageClick: (run: Run) => void;
 }) {
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
@@ -255,7 +262,7 @@ function BatchMatrix({
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
-  onImageClick: (src: string, runHref: string) => void;
+  onImageClick: (run: Run) => void;
 }) {
   const byPreset = new Map<string, Run[]>();
   for (const run of runs) {
@@ -278,7 +285,7 @@ function BatchMatrix({
           <tr>
             <th
               className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
-              style={{ minWidth: 200 }}
+              style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
             </th>
@@ -296,8 +303,8 @@ function BatchMatrix({
             return (
               <tr key={presetName} className="hover:bg-gray-50/50">
                 <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                  style={{ minWidth: 200 }}>
-                  <span className="block max-w-[200px] truncate">{presetName}</span>
+                  style={{ minWidth: 200, maxWidth: 200 }}>
+                  <span className="block break-words">{presetName}</span>
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
                   const run = presetRuns[i];
@@ -310,7 +317,7 @@ function BatchMatrix({
                         ) : run.lastOutputUrl ? (
                           <button
                             type="button"
-                            onClick={() => onImageClick(run.lastOutputUrl!, `/strategies/${strategyId}/runs/${run.id}`)}
+                            onClick={() => onImageClick(run)}
                             className="group relative"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -11,6 +11,7 @@ interface RunRow {
   completedAt: string | null;
   inputPresetName: string | null;
   lastOutputUrl: string | null;
+  lastOutputGenerationId: string | null;
   stepResults: { id: string; status: string }[];
 }
 
@@ -34,7 +35,7 @@ export function BatchRunsTab() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchBatches = useCallback(async () => {
@@ -123,7 +124,7 @@ export function BatchRunsTab() {
                   strategyId={batch.strategyId}
                   retryingRunId={retryingRunId}
                   onRetry={handleRetry}
-                  onImageClick={(src, runHref) => setLightbox({ src, runHref })}
+                  onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${batch.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
                 />
               </div>
             )}
@@ -131,7 +132,13 @@ export function BatchRunsTab() {
         );
       })}
       {lightbox && (
-        <GridLightbox src={lightbox.src} runHref={lightbox.runHref} onClose={() => setLightbox(null)} />
+        <GridLightbox
+          src={lightbox.src}
+          runHref={lightbox.runHref}
+          generationId={lightbox.generationId}
+          onRated={() => fetchBatches()}
+          onClose={() => setLightbox(null)}
+        />
       )}
     </div>
   );
@@ -150,7 +157,7 @@ function BatchMatrix({
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
-  onImageClick: (src: string, runHref: string) => void;
+  onImageClick: (run: RunRow) => void;
 }) {
   const byPreset = new Map<string, RunRow[]>();
   for (const run of runs) {
@@ -173,7 +180,7 @@ function BatchMatrix({
           <tr>
             <th
               className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
-              style={{ minWidth: 200 }}
+              style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
             </th>
@@ -191,8 +198,8 @@ function BatchMatrix({
             return (
               <tr key={presetName} className="hover:bg-gray-50/50">
                 <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                  style={{ minWidth: 200 }}>
-                  <span className="block max-w-[200px] truncate">{presetName}</span>
+                  style={{ minWidth: 200, maxWidth: 200 }}>
+                  <span className="block break-words">{presetName}</span>
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
                   const run = presetRuns[i];
@@ -205,7 +212,7 @@ function BatchMatrix({
                         ) : run.lastOutputUrl ? (
                           <button
                             type="button"
-                            onClick={() => onImageClick(run.lastOutputUrl!, `/strategies/${strategyId}/runs/${run.id}`)}
+                            onClick={() => onImageClick(run)}
                             className="group relative"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}

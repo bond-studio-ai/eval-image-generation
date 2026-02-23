@@ -33,7 +33,7 @@ export async function GET(
       limit: 50,
       with: {
         stepResults: {
-          columns: { id: true, status: true, outputUrl: true },
+          columns: { id: true, status: true, outputUrl: true, generationId: true },
           with: {
             step: { columns: { stepOrder: true } },
           },
@@ -48,16 +48,18 @@ export async function GET(
 
     const data = runs.map((run) => {
       const inputPresetName = run.inputPresets?.[0]?.inputPreset?.name ?? null;
-      const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { id: string; status: string; outputUrl: string | null; step: { stepOrder: number } }[];
+      const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
       const lastResult = resultsWithOrder.length > 0
         ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
         : null;
       const lastOutputUrl = lastResult?.outputUrl ?? null;
+      const lastOutputGenerationId = lastResult?.generationId ?? null;
       return {
         ...run,
         batchRunId: run.batchRunId ?? null,
         inputPresetName,
         lastOutputUrl,
+        lastOutputGenerationId,
       };
     });
 

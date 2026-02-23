@@ -12,6 +12,8 @@ interface RatingFormProps {
   generationId: string;
   currentSceneAccuracyRating: string | null;
   currentProductAccuracyRating: string | null;
+  /** When provided (e.g. in a modal), called after rating is saved instead of router.refresh(). */
+  onRated?: () => void;
 }
 
 function RatingRow({
@@ -50,6 +52,7 @@ export function RatingForm({
   generationId,
   currentSceneAccuracyRating,
   currentProductAccuracyRating,
+  onRated,
 }: RatingFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -62,7 +65,8 @@ export function RatingForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      router.refresh();
+      if (onRated) onRated();
+      else router.refresh();
     } catch (error) {
       console.error('Failed to rate:', error);
     } finally {

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       with: {
         strategy: { columns: { id: true, name: true } },
         stepResults: {
-          columns: { id: true, status: true, outputUrl: true },
+          columns: { id: true, status: true, outputUrl: true, generationId: true },
           with: {
             step: { columns: { stepOrder: true } },
           },
@@ -39,9 +39,9 @@ export async function GET(request: NextRequest) {
     });
 
     const data = runs.map((run) => {
-      const resultsWithOrder = (run.stepResults ?? []).filter(
+      const resultsWithOrder =       (run.stepResults ?? []).filter(
         (sr) => sr.step != null,
-      ) as { id: string; status: string; outputUrl: string | null; step: { stepOrder: number } }[];
+      ) as { id: string; status: string; outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
       const lastResult = resultsWithOrder.length > 0
         ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
         : null;
@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
         completedAt: run.completedAt,
         inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
         lastOutputUrl: lastResult?.outputUrl ?? null,
+        lastOutputGenerationId: lastResult?.generationId ?? null,
         stepsSummary: {
           completed: run.stepResults.filter((sr) => sr.status === 'completed').length,
           total: run.stepResults.length,

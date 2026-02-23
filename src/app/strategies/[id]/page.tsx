@@ -30,7 +30,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         limit: 50,
         with: {
           stepResults: {
-            columns: { id: true, status: true, outputUrl: true },
+            columns: { id: true, status: true, outputUrl: true, generationId: true },
             with: {
               step: { columns: { stepOrder: true } },
             },
@@ -51,11 +51,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
 
   const inputPresets = await fetchInputPresets(100);
   const initialRuns = result.runs.map((run) => {
-    const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { outputUrl: string | null; step: { stepOrder: number } }[];
+    const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
     const lastResult = resultsWithOrder.length > 0
       ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
       : null;
     const lastOutputUrl = lastResult?.outputUrl ?? null;
+    const lastOutputGenerationId = lastResult?.generationId ?? null;
     return {
       id: run.id,
       status: run.status,
@@ -63,6 +64,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       completedAt: run.completedAt?.toISOString() ?? null,
       inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
       lastOutputUrl,
+      lastOutputGenerationId,
       batchRunId: run.batchRunId ?? null,
       stepResults: run.stepResults.map((sr) => ({
         id: sr.id,

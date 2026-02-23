@@ -12,6 +12,7 @@ interface RunRow {
   createdAt: string;
   inputPresetName: string | null;
   lastOutputUrl: string | null;
+  lastOutputGenerationId: string | null;
 }
 
 const POLL_INTERVAL = 5000;
@@ -22,7 +23,7 @@ export function IndividualExecutionsTab() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
 
   const [presetFilter, setPresetFilter] = useState<Set<string> | null>(null);
   const [strategyFilter, setStrategyFilter] = useState<Set<string> | null>(null);
@@ -196,7 +197,7 @@ export function IndividualExecutionsTab() {
                       run.lastOutputUrl ? (
                         <button
                           type="button"
-                          onClick={() => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}` })}
+                          onClick={() => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
                           className="group relative"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -228,7 +229,13 @@ export function IndividualExecutionsTab() {
         </div>
       )}
       {lightbox && (
-        <GridLightbox src={lightbox.src} runHref={lightbox.runHref} onClose={() => setLightbox(null)} />
+        <GridLightbox
+          src={lightbox.src}
+          runHref={lightbox.runHref}
+          generationId={lightbox.generationId}
+          onRated={() => fetchRuns()}
+          onClose={() => setLightbox(null)}
+        />
       )}
     </div>
   );
