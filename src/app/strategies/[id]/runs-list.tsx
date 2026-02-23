@@ -1,5 +1,6 @@
 'use client';
 
+import { GridLightbox } from '@/components/grid-lightbox';
 import type { InputPresetListItem } from '@/lib/queries';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +39,7 @@ export function StrategyRunsList({
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; runHref: string } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
@@ -126,6 +128,7 @@ export function StrategyRunsList({
                 strategyId={strategyId}
                 retryingRunId={retryingRunId}
                 onRetry={handleRetry}
+                onImageClick={(src, runHref) => setLightbox({ src, runHref })}
               />
             ) : (
               <IndividualRunCard
@@ -138,6 +141,9 @@ export function StrategyRunsList({
             ),
           )}
         </div>
+      )}
+      {lightbox && (
+        <GridLightbox src={lightbox.src} runHref={lightbox.runHref} onClose={() => setLightbox(null)} />
       )}
     </>
   );
@@ -196,11 +202,13 @@ function BatchRunCard({
   strategyId,
   retryingRunId,
   onRetry,
+  onImageClick,
 }: {
   batch: { id: string; runs: Run[]; status: string; createdAt: string };
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
+  onImageClick: (src: string, runHref: string) => void;
 }) {
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
@@ -228,7 +236,7 @@ function BatchRunCard({
       </div>
 
       <div className="p-4">
-        <BatchMatrix runs={batch.runs} strategyId={strategyId} retryingRunId={retryingRunId} onRetry={onRetry} />
+        <BatchMatrix runs={batch.runs} strategyId={strategyId} retryingRunId={retryingRunId} onRetry={onRetry} onImageClick={onImageClick} />
       </div>
     </div>
   );
@@ -241,11 +249,13 @@ function BatchMatrix({
   strategyId,
   retryingRunId,
   onRetry,
+  onImageClick,
 }: {
   runs: Run[];
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
+  onImageClick: (src: string, runHref: string) => void;
 }) {
   const byPreset = new Map<string, Run[]>();
   for (const run of runs) {
@@ -259,7 +269,7 @@ function BatchMatrix({
   const presetNames = Array.from(byPreset.keys()).sort();
   const maxExecutions = Math.max(0, ...Array.from(byPreset.values()).map((a) => a.length));
 
-  const CELL = 160;
+  const CELL = 240;
 
   return (
     <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
@@ -298,11 +308,21 @@ function BatchMatrix({
                         {!run ? (
                           <span className="text-gray-200">&mdash;</span>
                         ) : run.lastOutputUrl ? (
-                          <Link href={`/strategies/${strategyId}/runs/${run.id}`} className="block">
+                          <button
+                            type="button"
+                            onClick={() => onImageClick(run.lastOutputUrl!, `/strategies/${strategyId}/runs/${run.id}`)}
+                            className="group relative"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={run.lastOutputUrl} alt=""
-                              className="rounded-lg border border-gray-200 object-cover shadow-sm"
+                              className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
                               style={{ width: CELL - 20, height: CELL - 20 }} />
-                          </Link>
+                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+                              <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                              </svg>
+                            </div>
+                          </button>
                         ) : (
                           <>
                             <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
