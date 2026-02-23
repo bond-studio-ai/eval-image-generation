@@ -1,5 +1,24 @@
 
 
+/** One result (image) in a generation. */
+export interface MatrixRunResult {
+  resultId: string;
+  url: string | null;
+}
+
+/** One generation with its results. */
+export interface MatrixRunGeneration {
+  generationId: string;
+  results: MatrixRunResult[];
+}
+
+/** Run payload: list of generations, each with results (resultId + url). */
+export interface MatrixRun {
+  runId: string | null;
+  status: string;
+  generations: MatrixRunGeneration[];
+}
+
 export interface MatrixCell {
   strategyId: string;
   runId: string | null;
@@ -8,7 +27,10 @@ export interface MatrixCell {
   goodImages: number;
   percentage: number | null;
   needsEval: boolean;
-  outputUrl: string | null;
+  outputUrls: string[] | null;
+  generationIds: string[];
+  generationResultIds: string[];
+  run?: MatrixRun;
 }
 
 export interface StrategySummaryItem {

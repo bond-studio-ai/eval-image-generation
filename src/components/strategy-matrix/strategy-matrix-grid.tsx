@@ -36,16 +36,17 @@ export function StrategyMatrixGrid({
   summaryByStrategyId,
   onEnlarge,
 }: StrategyMatrixGridProps) {
+  console.log(data);
   return (
     <div className="max-h-[70vh] min-h-[320px] overflow-auto rounded-lg border border-gray-200 bg-white">
       <table
-        className="w-full border-collapse text-left"
+        className="w-full border-collapse text-left z-10"
         style={{ minWidth: PRESET_COLUMN_WIDTH + data.columns.length * STRATEGY_COLUMN_WIDTH }}
       >
         <thead>
-          <tr className="bg-gray-50">
+          <tr className="bg-gray-50 z-10">
             <th
-              className="sticky left-0 top-0 z-20 border-b border-r border-gray-200 bg-gray-50 px-3 py-3 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
+              className="sticky left-0 top-0 z-10 border-b border-r border-gray-200 bg-gray-50 px-3 py-3 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
               style={{ width: PRESET_COLUMN_WIDTH, minWidth: PRESET_COLUMN_WIDTH }}
             >
               <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
@@ -105,13 +106,12 @@ export function StrategyMatrixGrid({
                       presetName={row.name}
                       strategyName={strategy.name}
                       onEnlarge={() => {
-                        if (cell?.outputUrl) {
+                        const generations = cell?.run?.generations;
+                        if (cell && generations?.length) {
                           onEnlarge({
-                            imageUrl: cell.outputUrl,
                             presetName: row.name,
                             strategyName: strategy.name,
-                            score: cell.percentage,
-                            status: getStatusDisplay(cell),
+                            generations,
                           });
                         }
                       }}

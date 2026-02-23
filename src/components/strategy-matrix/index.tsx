@@ -57,7 +57,11 @@ export function StrategyMatrix() {
       )}
 
       {enlarged && (
-        <StrategyMatrixEnlargeDialog cell={enlarged} onClose={() => setEnlarged(null)} />
+        <StrategyMatrixEnlargeDialog
+          key={`${enlarged.presetName}-${enlarged.strategyName}`}
+          cell={enlarged}
+          onClose={() => setEnlarged(null)}
+        />
       )}
     </div>
   );

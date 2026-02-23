@@ -1,9 +1,7 @@
-
+import type { MatrixRunGeneration } from '@/hooks/matrix/strategy-matrix-types';
 
 export type EnlargedCell = {
-  imageUrl: string;
   presetName: string;
   strategyName: string;
-  score: number | null;
-  status: string;
+  generations: MatrixRunGeneration[];
 };

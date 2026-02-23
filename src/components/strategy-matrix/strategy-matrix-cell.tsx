@@ -28,7 +28,7 @@ export function StrategyMatrixCell({
     );
   }
 
-  const imageUrl = cell.outputUrl;
+  const imageUrl = cell.outputUrls?.[0];
   const score = cell.percentage;
   const isNeedsEval = statusDisplay.toLowerCase() === 'needs eval';
 
