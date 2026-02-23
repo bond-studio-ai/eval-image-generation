@@ -81,17 +81,21 @@ export async function GET(request: Request) {
         lr.input_preset_id,
         lr.run_id,
         lr.status,
+
         COUNT(gr.id) AS total_images,
+
         COUNT(gr.id) FILTER (
           WHERE g.scene_accuracy_rating = 'GOOD'
              OR g.product_accuracy_rating = 'GOOD'
         ) AS good_images,
+
         COUNT(gr.id) FILTER (
           WHERE g.scene_accuracy_rating IS NOT NULL
              OR g.product_accuracy_rating IS NOT NULL
         ) AS evaluated_images,
-        MAX(ssr.output_url) AS output_url,
+
         ARRAY_AGG(DISTINCT ss.model) AS models,
+
         COALESCE(
           JSON_AGG(DISTINCT ss.temperature)
           FILTER (WHERE ss.temperature IS NOT NULL),
@@ -102,7 +106,10 @@ export async function GET(request: Request) {
           FILTER (WHERE g.id IS NOT NULL) AS generation_ids,
 
         ARRAY_AGG(DISTINCT gr.id)
-          FILTER (WHERE gr.id IS NOT NULL) AS generation_result_ids
+          FILTER (WHERE gr.id IS NOT NULL) AS generation_result_ids,
+
+        ARRAY_AGG(DISTINCT gr.url)
+          FILTER (WHERE gr.url IS NOT NULL) AS output_urls
 
       FROM latest_runs lr
       LEFT JOIN strategy_step_result ssr
@@ -139,11 +146,11 @@ export async function GET(request: Request) {
         goodImages,
         percentage: evaluatedImages === 0 ? null : Math.round((goodImages / evaluatedImages) * 100),
         needsEval: evaluatedImages === 0,
-        outputUrl: r.output_url ?? null,
         models: r.models ?? [],
         temperatures: r.temperatures ?? [],
         generationIds: r.generation_ids ?? [],
         generationResultIds: r.generation_result_ids ?? [],
+        outputUrls: r.output_urls ?? [],
       });
     }
 
@@ -161,11 +168,11 @@ export async function GET(request: Request) {
             goodImages: 0,
             percentage: null,
             needsEval: false,
-            outputUrl: null,
             models: [],
             temperatures: [],
             generationIds: [],
             generationResultIds: [],
+            outputUrls: [],
           }
         );
       }),
