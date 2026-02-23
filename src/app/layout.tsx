@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/app-shell';
 import { AuthProvider } from '@/components/auth-provider';
+import { QueryProvider } from '@/components/query-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -16,7 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-gray-50`}>
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <QueryProvider>
+            <AppShell>{children}</AppShell>
+          </QueryProvider>
         </AuthProvider>
       </body>
     </html>
