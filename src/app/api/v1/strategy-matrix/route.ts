@@ -138,6 +138,32 @@ export async function GET(request: Request) {
       const goodImages = Number(r.good_images);
       const evaluatedImages = Number(r.evaluated_images);
 
+      const generationIds = r.generation_ids ?? [];
+      const generationResultIds = r.generation_result_ids ?? [];
+      const outputUrls = r.output_urls ?? [];
+
+      // Build nested structure (parent -> child)
+      const generationMap = new Map<string, any>();
+
+      generationIds.forEach((genId: string) => {
+        generationMap.set(genId, {
+          generationId: genId,
+          results: [],
+        });
+      });
+
+      generationResultIds.forEach((resultId: string, index: number) => {
+        const url = outputUrls[index] ?? null;
+        const genId = generationIds[index] ?? null;
+
+        if (genId && generationMap.has(genId)) {
+          generationMap.get(genId).results.push({
+            resultId,
+            url,
+          });
+        }
+      });
+
       matrixLookup.set(key, {
         strategyId: r.strategy_id,
         runId: r.run_id,
@@ -148,9 +174,14 @@ export async function GET(request: Request) {
         needsEval: evaluatedImages === 0,
         models: r.models ?? [],
         temperatures: r.temperatures ?? [],
-        generationIds: r.generation_ids ?? [],
-        generationResultIds: r.generation_result_ids ?? [],
-        outputUrls: r.output_urls ?? [],
+        generationIds,
+        generationResultIds,
+        outputUrls,
+        run: {
+          runId: r.run_id,
+          status: r.status?.toUpperCase() ?? 'UNKNOWN',
+          generations: Array.from(generationMap.values()),
+        },
       });
     }
 
@@ -173,6 +204,11 @@ export async function GET(request: Request) {
             generationIds: [],
             generationResultIds: [],
             outputUrls: [],
+            run: {
+              runId: null,
+              status: 'NO_RUN',
+              generations: [],
+            },
           }
         );
       }),
