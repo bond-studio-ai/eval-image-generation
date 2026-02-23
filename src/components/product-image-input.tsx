@@ -304,7 +304,7 @@ function CategoryPickerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">

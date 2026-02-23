@@ -16,6 +16,24 @@
 }
 
 /*
+ * Clickable elements use pointer cursor instead of default arrow.
+ */
+a,
+button:not(:disabled),
+[role='button']:not(:disabled),
+[type='button'],
+[type='submit'],
+[type='reset'] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role='button']:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/*
  * Fix form control text color — the Neon Auth UI Tailwind layer
  * resets these to a very light color, making them nearly invisible.
  */

@@ -85,7 +85,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
       {/* Lightbox — full-width modal with skeleton loading */}
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 sm:p-6"
+          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
           onClick={() => setExpanded(false)}
         >
           <div

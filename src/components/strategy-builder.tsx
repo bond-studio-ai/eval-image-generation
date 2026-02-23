@@ -546,7 +546,7 @@ function PromptVersionSelector({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setSearch(''); }} />
+          <div className="fixed inset-0 z-40 cursor-pointer" onClick={() => { setOpen(false); setSearch(''); }} />
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input

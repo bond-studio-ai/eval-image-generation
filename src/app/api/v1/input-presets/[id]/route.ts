@@ -91,6 +91,17 @@ export async function PATCH(
       return errorResponse('NOT_FOUND', 'Input preset not found');
     }
 
+    const genCount = await db
+      .select({ count: count() })
+      .from(generation)
+      .where(eq(generation.inputPresetId, id));
+    if ((genCount[0]?.count ?? 0) > 0) {
+      return errorResponse(
+        'VALIDATION_ERROR',
+        'Cannot modify an input preset that has generations. Clone it first, then edit the copy.',
+      );
+    }
+
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 

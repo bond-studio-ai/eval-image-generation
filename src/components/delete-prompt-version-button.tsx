@@ -55,7 +55,7 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !deleting && setShowConfirm(false)}>
+        <div className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50" onClick={() => !deleting && setShowConfirm(false)}>
           <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">

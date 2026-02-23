@@ -82,7 +82,7 @@ export function StrategyRunButton({
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}>
+        <div className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50 p-4" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}>
           <div
             className="flex w-full max-w-2xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
             style={{ height: '520px' }}
