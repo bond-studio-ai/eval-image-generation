@@ -96,7 +96,14 @@ export async function GET(request: Request) {
           JSON_AGG(DISTINCT ss.temperature)
           FILTER (WHERE ss.temperature IS NOT NULL),
           '[]'
-        ) AS temperatures
+        ) AS temperatures,
+
+        ARRAY_AGG(DISTINCT g.id)
+          FILTER (WHERE g.id IS NOT NULL) AS generation_ids,
+
+        ARRAY_AGG(DISTINCT gr.id)
+          FILTER (WHERE gr.id IS NOT NULL) AS generation_result_ids
+
       FROM latest_runs lr
       LEFT JOIN strategy_step_result ssr
         ON ssr.strategy_run_id = lr.run_id
@@ -135,6 +142,8 @@ export async function GET(request: Request) {
         outputUrl: r.output_url ?? null,
         models: r.models ?? [],
         temperatures: r.temperatures ?? [],
+        generationIds: r.generation_ids ?? [],
+        generationResultIds: r.generation_result_ids ?? [],
       });
     }
 
@@ -155,6 +164,8 @@ export async function GET(request: Request) {
             outputUrl: null,
             models: [],
             temperatures: [],
+            generationIds: [],
+            generationResultIds: [],
           }
         );
       }),
