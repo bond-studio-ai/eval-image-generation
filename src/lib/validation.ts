@@ -50,6 +50,7 @@ export const createStrategySchema = z.object({
 });
 
 export const strategyStepSchema = z.object({
+  id: z.string().uuid().optional(),
   step_order: z.number().int().min(1),
   name: z.string().max(255).optional().nullable(),
   prompt_version_id: z.string().uuid(),

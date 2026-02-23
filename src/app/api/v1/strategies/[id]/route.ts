@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { strategy, strategyStep } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { uuidSchema, strategyStepSchema } from '@/lib/validation';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 export async function GET(
@@ -79,31 +79,48 @@ export async function PATCH(
         });
       }
 
-      await db.delete(strategyStep).where(eq(strategyStep.strategyId, id));
+      const existingSteps = await db.query.strategyStep.findMany({
+        where: eq(strategyStep.strategyId, id),
+      });
+      const existingIds = new Set(existingSteps.map((s) => s.id));
 
-      if (parsed.data.length > 0) {
+      const incomingWithId = parsed.data.filter((s) => s.id && existingIds.has(s.id));
+      const incomingNew = parsed.data.filter((s) => !s.id || !existingIds.has(s.id));
+      const keptIds = new Set(incomingWithId.map((s) => s.id!));
+      const removedIds = [...existingIds].filter((eid) => !keptIds.has(eid));
+
+      const stepValues = (s: (typeof parsed.data)[number]) => ({
+        stepOrder: s.step_order,
+        name: s.name ?? null,
+        promptVersionId: s.prompt_version_id,
+        model: s.model,
+        aspectRatio: s.aspect_ratio,
+        outputResolution: s.output_resolution,
+        temperature: String(s.temperature),
+        useGoogleSearch: s.use_google_search,
+        tagImages: s.tag_images,
+        dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
+        realPhotoFromStep: s.real_photo_from_step ?? null,
+        moodBoardFromStep: s.mood_board_from_step ?? null,
+        includeDollhouse: s.include_dollhouse ?? true,
+        includeRealPhoto: s.include_real_photo ?? true,
+        includeMoodBoard: s.include_mood_board ?? true,
+        includeProductCategories: s.include_product_categories ?? [],
+        arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
+      });
+
+      for (const s of incomingWithId) {
+        await db.update(strategyStep).set(stepValues(s)).where(eq(strategyStep.id, s.id!));
+      }
+
+      if (incomingNew.length > 0) {
         await db.insert(strategyStep).values(
-          parsed.data.map((s) => ({
-            strategyId: id,
-            stepOrder: s.step_order,
-            name: s.name ?? null,
-            promptVersionId: s.prompt_version_id,
-            model: s.model,
-            aspectRatio: s.aspect_ratio,
-            outputResolution: s.output_resolution,
-            temperature: String(s.temperature),
-            useGoogleSearch: s.use_google_search,
-            tagImages: s.tag_images,
-            dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
-            realPhotoFromStep: s.real_photo_from_step ?? null,
-            moodBoardFromStep: s.mood_board_from_step ?? null,
-            includeDollhouse: s.include_dollhouse ?? true,
-            includeRealPhoto: s.include_real_photo ?? true,
-            includeMoodBoard: s.include_mood_board ?? true,
-            includeProductCategories: s.include_product_categories ?? [],
-            arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
-          })),
+          incomingNew.map((s) => ({ strategyId: id, ...stepValues(s) })),
         );
+      }
+
+      if (removedIds.length > 0) {
+        await db.delete(strategyStep).where(inArray(strategyStep.id, removedIds));
       }
     }
 

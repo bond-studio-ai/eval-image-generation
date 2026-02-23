@@ -309,6 +309,25 @@ export const strategyStep = pgTable(
 );
 
 /**
+ * strategy_batch_run: groups multiple strategy_run rows that were kicked off together.
+ */
+export const strategyBatchRun = pgTable(
+  'strategy_batch_run',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strategyId: uuid('strategy_id')
+      .notNull()
+      .references(() => strategy.id, { onDelete: 'cascade' }),
+    executionCount: integer('execution_count').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_strategy_batch_run_strategy').on(table.strategyId),
+    index('idx_strategy_batch_run_created_at').on(table.createdAt),
+  ],
+);
+
+/**
  * strategy_run: an execution of a strategy workflow.
  * Input presets are selected when starting the run (see strategy_run_input_preset).
  */
@@ -319,6 +338,8 @@ export const strategyRun = pgTable(
     strategyId: uuid('strategy_id')
       .notNull()
       .references(() => strategy.id, { onDelete: 'cascade' }),
+    batchRunId: uuid('batch_run_id')
+      .references(() => strategyBatchRun.id, { onDelete: 'set null' }),
     status: varchar('status', { length: 20 }).notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
@@ -326,6 +347,7 @@ export const strategyRun = pgTable(
   (table) => [
     index('idx_strategy_run_strategy').on(table.strategyId),
     index('idx_strategy_run_created_at').on(table.createdAt),
+    index('idx_strategy_run_batch').on(table.batchRunId),
   ],
 );
 
@@ -474,6 +496,15 @@ export const generationResultRelations = relations(generationResult, ({ one }) =
 export const strategyRelations = relations(strategy, ({ many }) => ({
   steps: many(strategyStep),
   runs: many(strategyRun),
+  batchRuns: many(strategyBatchRun),
+}));
+
+export const strategyBatchRunRelations = relations(strategyBatchRun, ({ one, many }) => ({
+  strategy: one(strategy, {
+    fields: [strategyBatchRun.strategyId],
+    references: [strategy.id],
+  }),
+  runs: many(strategyRun),
 }));
 
 export const strategyStepRelations = relations(strategyStep, ({ one }) => ({
@@ -491,6 +522,10 @@ export const strategyRunRelations = relations(strategyRun, ({ one, many }) => ({
   strategy: one(strategy, {
     fields: [strategyRun.strategyId],
     references: [strategy.id],
+  }),
+  batchRun: one(strategyBatchRun, {
+    fields: [strategyRun.batchRunId],
+    references: [strategyBatchRun.id],
   }),
   stepResults: many(strategyStepResult),
   inputPresets: many(strategyRunInputPreset),

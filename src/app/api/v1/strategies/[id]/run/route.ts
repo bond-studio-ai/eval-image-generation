@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyRun, strategyRunInputPreset, strategyStep, strategyStepResult } from '@/db/schema';
+import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyBatchRun, strategyRun, strategyRunInputPreset, strategyStep, strategyStepResult } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { generateWithGemini } from '@/lib/gemini';
 import { uuidSchema } from '@/lib/validation';
@@ -442,13 +442,27 @@ export async function POST(
       return errorResponse('VALIDATION_ERROR', 'Strategy has no steps');
     }
 
-    // Create one run per input preset (they execute in parallel)
+    const isBatch = body?.batch === true;
+    const executionCount = typeof body?.execution_count === 'number'
+      ? Math.max(1, Math.min(100, body.execution_count))
+      : 1;
+
+    let batchRunId: string | null = null;
+
+    if (isBatch) {
+      const [batch] = await db
+        .insert(strategyBatchRun)
+        .values({ strategyId: id, executionCount })
+        .returning();
+      batchRunId = batch.id;
+    }
+
     const runs: { id: string; inputPresetId: string }[] = [];
 
     for (const presetId of inputPresetIds) {
       const [run] = await db
         .insert(strategyRun)
-        .values({ strategyId: id, status: 'running' })
+        .values({ strategyId: id, batchRunId, status: 'running' })
         .returning();
 
       await db
@@ -470,13 +484,15 @@ export async function POST(
       runs.push({ id: run.id, inputPresetId: presetId });
     }
 
-    // Fire all runs in parallel
     for (const run of runs) {
       after(() => executeSteps(run.id, strat.steps));
     }
 
     return successResponse(
-      { runs: runs.map((r) => ({ id: r.id, inputPresetId: r.inputPresetId, status: 'running' })) },
+      {
+        batchRunId,
+        runs: runs.map((r) => ({ id: r.id, inputPresetId: r.inputPresetId, status: 'running' })),
+      },
       201,
     );
   } catch (error) {

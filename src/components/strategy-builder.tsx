@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 interface StepData {
+  id?: string;
   name: string;
   prompt_version_id: string;
   model: string;
@@ -134,6 +135,7 @@ export function StrategyBuilder({
         description: description.trim() || undefined,
         steps: steps.map((s, i) => ({
           ...s,
+          id: s.id ?? undefined,
           name: s.name.trim() || null,
           step_order: i + 1,
           temperature: s.temperature,
