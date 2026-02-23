@@ -174,6 +174,34 @@ async function executeSingleStep(
     if (url) sceneMap.mood_board = url;
   }
 
+  // Validate preset provides every input the step requires (no from-step override)
+  const missingRequirements: string[] = [];
+  if (includeDollhouse && step.dollhouseViewFromStep == null && !sceneMap.dollhouse_view) {
+    missingRequirements.push('Dollhouse view');
+  }
+  if (includeRealPhoto && step.realPhotoFromStep == null && !sceneMap.real_photo) {
+    missingRequirements.push('Real photo');
+  }
+  if (includeMoodBoard && step.moodBoardFromStep == null && !sceneMap.mood_board) {
+    missingRequirements.push('Mood board');
+  }
+  for (const key of includeProducts) {
+    const urls = key in productMap ? productMap[key as keyof typeof productMap] : undefined;
+    if (!urls || urls.length === 0) {
+      missingRequirements.push(key in INPUT_KEY_LABELS ? INPUT_KEY_LABELS[key as keyof typeof INPUT_KEY_LABELS] : key);
+    }
+  }
+  if (missingRequirements.length > 0) {
+    await db
+      .update(strategyStepResult)
+      .set({
+        status: 'failed',
+        error: `Preset is missing required input(s): ${missingRequirements.join(', ')}`,
+      })
+      .where(eq(strategyStepResult.id, stepResultId));
+    return null;
+  }
+
   const labeledImages: { url: string; label: string }[] = [];
   for (const key of SCENE_KEYS) {
     const url = sceneMap[key];
@@ -300,8 +328,11 @@ export async function executeSteps(runId: string, steps: StepRow[]) {
     const isLast = step.stepOrder === maxStepOrder;
     const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData, isLast)
       .then((outputUrl) => {
-        if (outputUrl) stepOutputs.set(step.stepOrder, outputUrl);
-        return { stepOrder: step.stepOrder, ok: true };
+        if (outputUrl) {
+          stepOutputs.set(step.stepOrder, outputUrl);
+          return { stepOrder: step.stepOrder, ok: true };
+        }
+        return { stepOrder: step.stepOrder, ok: false };
       })
       .catch(async (error) => {
         const message = error instanceof Error ? error.message : 'Step failed';

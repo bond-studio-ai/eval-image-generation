@@ -22,11 +22,6 @@ export const createPromptVersionSchema = z.object({
   system_prompt: z.string().min(1, 'System prompt is required'),
   user_prompt: z.string().min(1, 'User prompt is required'),
   description: z.string().optional(),
-  model: z.string().max(255).optional(),
-  output_type: z.string().max(50).optional(),
-  aspect_ratio: z.string().max(20).optional(),
-  output_resolution: z.string().max(20).optional(),
-  temperature: z.coerce.number().min(0).max(2).optional(),
 });
 
 export const updatePromptVersionSchema = z.object({
@@ -34,11 +29,6 @@ export const updatePromptVersionSchema = z.object({
   description: z.string().optional(),
   system_prompt: z.string().min(1).optional(),
   user_prompt: z.string().min(1).optional(),
-  model: z.string().max(255).optional().nullable(),
-  output_type: z.string().max(50).optional().nullable(),
-  aspect_ratio: z.string().max(20).optional().nullable(),
-  output_resolution: z.string().max(20).optional().nullable(),
-  temperature: z.coerce.number().min(0).max(2).optional().nullable(),
 });
 
 export const listPromptVersionsSchema = paginationSchema.extend({

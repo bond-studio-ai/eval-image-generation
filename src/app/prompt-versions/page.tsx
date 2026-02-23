@@ -47,7 +47,6 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
         id: pv.id,
         name: pv.name,
         userPrompt: pv.userPrompt,
-        model: pv.model,
         generationCount: genCount[0]?.count ?? 0,
         createdAt: pv.createdAt.toISOString(),
         deletedAt: pv.deletedAt?.toISOString() ?? null,

@@ -105,10 +105,10 @@ export function GeneratePageContent({
   // Editable prompt fields (initialized from SSR version if available)
   const [systemPrompt, setSystemPrompt] = useState(initialPromptVersion?.systemPrompt ?? '');
   const [userPrompt, setUserPrompt] = useState(initialPromptVersion?.userPrompt ?? '');
-  const [model, setModel] = useState(initialPromptVersion?.model ?? 'gemini-2.5-flash-image');
-  const [aspectRatio, setAspectRatio] = useState(initialPromptVersion?.aspectRatio ?? '1:1');
-  const [outputResolution, setOutputResolution] = useState(initialPromptVersion?.outputResolution ?? '1K');
-  const [temperature, setTemperature] = useState(initialPromptVersion?.temperature ?? '');
+  const [model, setModel] = useState('gemini-2.5-flash-image');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [outputResolution, setOutputResolution] = useState('1K');
+  const [temperature, setTemperature] = useState('');
   const [numberOfImages, setNumberOfImages] = useState('1');
   const [useGoogleSearch, setUseGoogleSearch] = useState(false);
   const [tagImages, setTagImages] = useState(true);
@@ -181,13 +181,9 @@ export function GeneratePageContent({
     if (!originalVersion) return systemPrompt.trim() !== '' || userPrompt.trim() !== '';
     return (
       systemPrompt !== originalVersion.systemPrompt ||
-      userPrompt !== originalVersion.userPrompt ||
-      model !== (originalVersion.model ?? '') ||
-      aspectRatio !== (originalVersion.aspectRatio ?? '') ||
-      outputResolution !== (originalVersion.outputResolution ?? '') ||
-      temperature !== (originalVersion.temperature ?? '')
+      userPrompt !== originalVersion.userPrompt
     );
-  }, [originalVersion, systemPrompt, userPrompt, model, aspectRatio, outputResolution, temperature]);
+  }, [originalVersion, systemPrompt, userPrompt]);
 
   // Check if the selected version is locked (has generations)
   const isLocked = useMemo(() => {
@@ -239,10 +235,6 @@ export function GeneratePageContent({
           setOriginalVersion(pv);
           setSystemPrompt(pv.systemPrompt);
           setUserPrompt(pv.userPrompt);
-          setModel(pv.model ?? 'gemini-2.5-flash-image');
-          setAspectRatio(pv.aspectRatio ?? '1:1');
-          setOutputResolution(pv.outputResolution ?? '1K');
-          setTemperature(pv.temperature ?? '');
           setActiveVersionId(pv.id);
           // Reset generation state when switching versions
           setGenerationResult(null);
@@ -476,10 +468,6 @@ export function GeneratePageContent({
           description: newVersionDescription.trim(),
           systemPrompt,
           userPrompt,
-          model: model || null,
-          aspectRatio: aspectRatio || null,
-          outputResolution: outputResolution || null,
-          temperature: temperature || null,
           stats: { generation_count: 0 },
         });
         setPromptVersions((prev) => [
@@ -488,10 +476,6 @@ export function GeneratePageContent({
             name: newVersionName.trim() || null,
             systemPrompt,
             userPrompt,
-            model: model || null,
-            aspectRatio: aspectRatio || null,
-            outputResolution: outputResolution || null,
-            temperature: temperature || null,
             stats: { generation_count: 0 },
           },
           ...prev,

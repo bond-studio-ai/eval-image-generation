@@ -10,6 +10,7 @@ const navigation = [
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
   { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
+  { name: 'Executions', href: '/executions', icon: ExecutionsIcon },
   { name: 'Generations', href: '/generations', icon: GenerationsIcon },
   { name: 'Analytics', href: '/analytics', icon: AnalyticsIcon },
 ];
@@ -139,6 +140,24 @@ function StrategyIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+      />
+    </svg>
+  );
+}
+
+function ExecutionsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"
       />
     </svg>
   );

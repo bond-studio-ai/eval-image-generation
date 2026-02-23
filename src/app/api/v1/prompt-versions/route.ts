@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { system_prompt, user_prompt, name, description, ...modelSettings } = parsed.data;
+    const { system_prompt, user_prompt, name, description } = parsed.data;
 
     const [created] = await db
       .insert(promptVersion)
@@ -90,11 +90,6 @@ export async function POST(request: NextRequest) {
         userPrompt: user_prompt,
         name: name ?? null,
         description: description ?? null,
-        model: modelSettings.model ?? null,
-        outputType: modelSettings.output_type ?? null,
-        aspectRatio: modelSettings.aspect_ratio ?? null,
-        outputResolution: modelSettings.output_resolution ?? null,
-        temperature: modelSettings.temperature?.toString() ?? null,
       })
       .returning();
 

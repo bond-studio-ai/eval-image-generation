@@ -40,13 +40,6 @@ export const promptVersion = pgTable(
     name: varchar('name', { length: 255 }),
     description: text('description'),
 
-    // Model settings
-    model: varchar('model', { length: 255 }),
-    outputType: varchar('output_type', { length: 50 }),
-    aspectRatio: varchar('aspect_ratio', { length: 20 }),
-    outputResolution: varchar('output_resolution', { length: 20 }),
-    temperature: decimal('temperature', { precision: 3, scale: 2 }),
-
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

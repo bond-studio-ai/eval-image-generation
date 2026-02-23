@@ -93,12 +93,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (parsed.data.description !== undefined) updates.description = parsed.data.description;
     if (parsed.data.system_prompt !== undefined) updates.systemPrompt = parsed.data.system_prompt;
     if (parsed.data.user_prompt !== undefined) updates.userPrompt = parsed.data.user_prompt;
-    if (parsed.data.model !== undefined) updates.model = parsed.data.model;
-    if (parsed.data.output_type !== undefined) updates.outputType = parsed.data.output_type;
-    if (parsed.data.aspect_ratio !== undefined) updates.aspectRatio = parsed.data.aspect_ratio;
-    if (parsed.data.output_resolution !== undefined) updates.outputResolution = parsed.data.output_resolution;
-    if (parsed.data.temperature !== undefined)
-      updates.temperature = parsed.data.temperature !== null ? String(parsed.data.temperature) : null;
 
     if (Object.keys(updates).length === 0) {
       return errorResponse('VALIDATION_ERROR', 'No fields to update');

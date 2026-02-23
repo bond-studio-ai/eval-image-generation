@@ -50,10 +50,6 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     description: result.description,
     systemPrompt: result.systemPrompt,
     userPrompt: result.userPrompt,
-    model: result.model,
-    aspectRatio: result.aspectRatio,
-    outputResolution: result.outputResolution,
-    temperature: result.temperature,
     deletedAt: result.deletedAt?.toISOString() ?? null,
   };
 

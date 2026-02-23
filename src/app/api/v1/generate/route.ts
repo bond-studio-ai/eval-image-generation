@@ -121,15 +121,15 @@ export async function POST(request: Request) {
       }
     });
 
-    // Call Gemini API
+    // Call Gemini API (use app defaults; prompt version no longer stores model settings)
     const geminiResult = await generateWithGemini({
       systemPrompt: pv.systemPrompt,
       userPrompt: pv.userPrompt,
-      model: pv.model || 'gemini-2.5-flash-image',
+      model: 'gemini-2.5-flash-image',
       inputImages,
-      aspectRatio: pv.aspectRatio ?? undefined,
-      imageSize: pv.outputResolution ?? undefined,
-      temperature: pv.temperature ? Number(pv.temperature) : undefined,
+      aspectRatio: undefined,
+      imageSize: undefined,
+      temperature: undefined,
       numberOfImages: number_of_images,
       useGoogleSearch: use_google_search,
       tagImages: tag_images,

@@ -10,7 +10,6 @@ export interface PromptVersionRow {
   id: string;
   name: string | null;
   userPrompt: string;
-  model: string | null;
   generationCount: number;
   createdAt: string;
   deletedAt: string | null;
@@ -78,9 +77,6 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Model
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Generations
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
@@ -112,9 +108,6 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
                     {pv.name || 'Untitled'}
                   </Link>
                   <p className="mt-1 max-w-xs truncate text-xs text-gray-600">{pv.userPrompt}</p>
-                </td>
-                <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                  {pv.model || '-'}
                 </td>
                 <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                   {pv.generationCount}

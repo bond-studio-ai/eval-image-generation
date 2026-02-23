@@ -11,10 +11,6 @@ export interface PromptVersionListItem {
   name: string | null;
   systemPrompt: string;
   userPrompt: string;
-  model: string | null;
-  aspectRatio: string | null;
-  outputResolution: string | null;
-  temperature: string | null;
   stats?: {
     generation_count: number;
   };
@@ -26,10 +22,6 @@ export interface PromptVersionDetail {
   systemPrompt: string;
   userPrompt: string;
   description: string | null;
-  model: string | null;
-  aspectRatio: string | null;
-  outputResolution: string | null;
-  temperature: string | null;
   stats?: {
     generation_count: number;
   };
@@ -59,10 +51,6 @@ export async function fetchPromptVersions(limit = 100): Promise<PromptVersionLis
         name: pv.name,
         systemPrompt: pv.systemPrompt,
         userPrompt: pv.userPrompt,
-        model: pv.model,
-        aspectRatio: pv.aspectRatio,
-        outputResolution: pv.outputResolution,
-        temperature: pv.temperature,
         stats: {
           generation_count: stats[0]?.count ?? 0,
         },
@@ -95,10 +83,6 @@ export async function fetchPromptVersionById(id: string): Promise<PromptVersionD
     systemPrompt: pvData.systemPrompt,
     userPrompt: pvData.userPrompt,
     description: pvData.description,
-    model: pvData.model,
-    aspectRatio: pvData.aspectRatio,
-    outputResolution: pvData.outputResolution,
-    temperature: pvData.temperature,
     stats: {
       generation_count: generations.length,
     },
