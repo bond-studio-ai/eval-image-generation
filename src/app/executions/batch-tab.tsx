@@ -2,13 +2,16 @@
 
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
+import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { ExecutionsRunButton } from '@/app/executions/executions-run-button';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface RunRow {
   id: string;
   strategyId: string;
+  strategyName: string | null;
   status: string;
   createdAt: string;
   completedAt: string | null;
@@ -20,9 +23,10 @@ interface RunRow {
 
 interface BatchRow {
   id: string;
+  name: string | null;
   strategyId: string | null;
   strategyName: string | null;
-  executionCount: number;
+  numberOfImages: number;
   createdAt: string;
   status: string;
   totalRuns: number;
@@ -40,7 +44,9 @@ export function BatchRunsTab() {
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [cellGallery, setCellGallery] = useState<RunRow[] | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchBatches = useCallback(async () => {
@@ -83,10 +89,22 @@ export function BatchRunsTab() {
     finally { setMarkingBatchId(null); }
   }, [fetchBatches]);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading batch runs…</p>;
+  const handleDeleteBatch = useCallback(async (batchId: string, batchName: string | null) => {
+    if (!confirm(`Delete "${batchName ?? 'Untitled run'}"? This will permanently remove the batch and all its runs.`)) return;
+    setDeletingBatchId(batchId);
+    try {
+      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      if (expandedId === batchId) setExpandedId(null);
+      await fetchBatches();
+    } catch { /* ignore */ }
+    finally { setDeletingBatchId(null); }
+  }, [fetchBatches, expandedId]);
+
+  if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
 
   if (batches.length === 0) {
-    return <p className="text-sm text-gray-600">No batch runs yet. Use &ldquo;Run&rdquo; above or &ldquo;Run Batch&rdquo; on a strategy to create one.</p>;
+    return <p className="text-sm text-gray-600">No runs yet. Use &ldquo;Run&rdquo; to create one.</p>;
   }
 
   return (
@@ -111,56 +129,12 @@ export function BatchRunsTab() {
         </div>
       </div>
 
-      {viewMode === 'matrix' ? (
-        <>
-          {batches.map((batch) => {
-            const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
-            return (
-              <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-                <div className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={batch.status} />
-                    {batch.strategyId != null ? (
-                      <Link
-                        href={`/strategies/${batch.strategyId}`}
-                        className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
-                      >
-                        {batch.strategyName ?? 'Unknown strategy'}
-                      </Link>
-                    ) : (
-                      <span className="text-sm font-semibold text-gray-900">{batch.strategyName ?? 'Multiple strategies'}</span>
-                    )}
-                    <span className="text-sm text-gray-600">
-                      {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} · {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(batch.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="border-t border-gray-100 p-4">
-                  <BatchMatrix
-                    runs={batch.runs}
-                    strategyId={batch.strategyId}
-                    retryingRunId={retryingRunId}
-                    onRetry={handleRetry}
-                    onRated={fetchBatches}
-                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </>
-      ) : (
-      <>
       {batches.map((batch) => {
         const isExpanded = expandedId === batch.id;
         const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
 
         return (
           <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-            {/* Header row: left = expand, right = actions */}
             <div className="flex w-full items-center justify-between px-5 py-3">
               <button
                 type="button"
@@ -174,17 +148,7 @@ export function BatchRunsTab() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
                 <StatusBadge status={batch.status} />
-                {batch.strategyId != null ? (
-                  <Link
-                    href={`/strategies/${batch.strategyId}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
-                  >
-                    {batch.strategyName ?? 'Unknown strategy'}
-                  </Link>
-                ) : (
-                  <span className="text-sm font-semibold text-gray-900">{batch.strategyName ?? 'Multiple strategies'}</span>
-                )}
+                <span className="text-sm font-semibold text-gray-900">{batch.name ?? 'Untitled run'}</span>
                 <span className="text-sm text-gray-600">
                   {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
                   {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
@@ -204,30 +168,55 @@ export function BatchRunsTab() {
                     {markingBatchId === batch.id ? '…' : 'Mark batch as failed'}
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                  disabled={deletingBatchId === batch.id}
+                  className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  title="Delete run"
+                >
+                  {deletingBatchId === batch.id ? (
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  )}
+                </button>
                 <span className="text-xs text-gray-400">
                   {new Date(batch.createdAt).toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* Expanded: matrix */}
             {isExpanded && (
               <div className="border-t border-gray-100 p-4">
-                <BatchMatrix
-                  runs={batch.runs}
-                  strategyId={batch.strategyId}
-                  retryingRunId={retryingRunId}
-                  onRetry={handleRetry}
-                  onRated={fetchBatches}
-                  onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${batch.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                />
+                {viewMode === 'matrix' ? (
+                  <MatrixView
+                    runs={batch.runs}
+                    retryingRunId={retryingRunId}
+                    onRetry={handleRetry}
+                    onRated={fetchBatches}
+                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                    onCellClick={(cellRuns) => setCellGallery(cellRuns)}
+                  />
+                ) : (
+                  <ListView
+                    runs={batch.runs}
+                    retryingRunId={retryingRunId}
+                    onRetry={handleRetry}
+                    onRated={fetchBatches}
+                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                  />
+                )}
               </div>
             )}
           </div>
         );
       })}
-      </>
-      )}
       {lightbox && (
         <GridLightbox
           src={lightbox.src}
@@ -237,38 +226,161 @@ export function BatchRunsTab() {
           onClose={() => setLightbox(null)}
         />
       )}
+      {cellGallery && (
+        <CellGalleryModal
+          runs={cellGallery}
+          onImageClick={(run) => {
+            setCellGallery(null);
+            setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null });
+          }}
+          onClose={() => setCellGallery(null)}
+        />
+      )}
     </div>
   );
 }
 
-/* ─── Batch Matrix ─── */
+/* ─── List view: strategy sections → preset rows × #N columns ─── */
 
-function BatchMatrix({
+function ListView({
   runs,
-  strategyId: _strategyId,
   retryingRunId,
   onRetry,
   onRated,
   onImageClick,
 }: {
   runs: RunRow[];
-  strategyId: string | null;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
 }) {
-  const byPreset = new Map<string, RunRow[]>();
+  const strategyOrder: string[] = [];
+  const strategyLabels = new Map<string, string>();
   for (const run of runs) {
-    const key = run.inputPresetName ?? '(no preset)';
-    if (!byPreset.has(key)) byPreset.set(key, []);
-    byPreset.get(key)!.push(run);
+    if (!strategyLabels.has(run.strategyId)) {
+      strategyOrder.push(run.strategyId);
+      strategyLabels.set(run.strategyId, run.strategyName ?? run.strategyId);
+    }
   }
-  for (const arr of byPreset.values()) {
+
+  const grouped = new Map<string, Map<string, RunRow[]>>();
+  for (const run of runs) {
+    if (!grouped.has(run.strategyId)) grouped.set(run.strategyId, new Map());
+    const byPreset = grouped.get(run.strategyId)!;
+    const preset = run.inputPresetName ?? '(no preset)';
+    if (!byPreset.has(preset)) byPreset.set(preset, []);
+    byPreset.get(preset)!.push(run);
+  }
+  for (const byPreset of grouped.values()) {
+    for (const arr of byPreset.values()) {
+      arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+  }
+
+  const CELL = 240;
+
+  return (
+    <div className="space-y-6">
+      {strategyOrder.map((stratId) => {
+        const byPreset = grouped.get(stratId)!;
+        const presetNames = Array.from(byPreset.keys()).sort();
+        const maxExec = Math.max(0, ...Array.from(byPreset.values()).map((a) => a.length));
+
+        return (
+          <div key={stratId}>
+            <h3 className="mb-2 text-sm font-semibold text-gray-800">
+              <StrategyHoverCard strategyId={stratId}>
+                <Link href={`/strategies/${stratId}`} className="text-primary-600 hover:text-primary-500">
+                  {strategyLabels.get(stratId)}
+                </Link>
+              </StrategyHoverCard>
+            </h3>
+            <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
+              <table className="divide-y divide-gray-200" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
+                      style={{ minWidth: 200, maxWidth: 200 }}
+                    >
+                      Input preset
+                    </th>
+                    {Array.from({ length: maxExec }, (_, i) => (
+                      <th key={i} className="px-2 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-600"
+                        style={{ width: CELL, minWidth: CELL }}>
+                        #{i + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {presetNames.map((presetName) => {
+                    const presetRuns = byPreset.get(presetName)!;
+                    return (
+                      <tr key={presetName} className="hover:bg-gray-50/50">
+                        <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
+                          style={{ minWidth: 200, maxWidth: 200 }}>
+                          <span className="block break-words">{presetName}</span>
+                        </td>
+                        {Array.from({ length: maxExec }, (_, i) => (
+                          <RunCell key={i} run={presetRuns[i]} cellSize={CELL} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Matrix view: preset rows × strategy columns, first image only, click to expand ─── */
+
+function MatrixView({
+  runs,
+  retryingRunId,
+  onRetry,
+  onRated,
+  onImageClick,
+  onCellClick,
+}: {
+  runs: RunRow[];
+  retryingRunId: string | null;
+  onRetry: (runId: string) => void;
+  onRated?: () => void;
+  onImageClick: (run: RunRow) => void;
+  onCellClick: (cellRuns: RunRow[]) => void;
+}) {
+  const strategyNames: string[] = [];
+  const strategyIds: string[] = [];
+  const seen = new Set<string>();
+  for (const run of runs) {
+    if (!seen.has(run.strategyId)) {
+      seen.add(run.strategyId);
+      strategyNames.push(run.strategyName ?? run.strategyId);
+      strategyIds.push(run.strategyId);
+    }
+  }
+
+  const presetNames = new Set<string>();
+  for (const run of runs) presetNames.add(run.inputPresetName ?? '(no preset)');
+  const sortedPresets = Array.from(presetNames).sort();
+
+  const grid = new Map<string, RunRow[]>();
+  for (const run of runs) {
+    const presetName = run.inputPresetName ?? '(no preset)';
+    const key = `${presetName}\0${run.strategyId}`;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key)!.push(run);
+  }
+  for (const arr of grid.values()) {
     arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
-  const presetNames = Array.from(byPreset.keys()).sort();
-  const maxExecutions = Math.max(0, ...Array.from(byPreset.values()).map((a) => a.length));
 
   const CELL = 240;
 
@@ -283,74 +395,226 @@ function BatchMatrix({
             >
               Input preset
             </th>
-            {Array.from({ length: maxExecutions }, (_, i) => (
-              <th key={i} className="px-2 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-600"
-                style={{ width: CELL, minWidth: CELL }}>
-                #{i + 1}
+            {strategyNames.map((name, i) => (
+              <th key={strategyIds[i]} className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600"
+                style={{ minWidth: CELL }}>
+                <StrategyHoverCard strategyId={strategyIds[i]}>
+                  <Link href={`/strategies/${strategyIds[i]}`} className="text-primary-600 hover:text-primary-500">
+                    {name}
+                  </Link>
+                </StrategyHoverCard>
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
-          {presetNames.map((presetName) => {
-            const presetRuns = byPreset.get(presetName)!;
-            return (
-              <tr key={presetName} className="hover:bg-gray-50/50">
-                <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                  style={{ minWidth: 200, maxWidth: 200 }}>
-                  <span className="block break-words">{presetName}</span>
-                </td>
-                {Array.from({ length: maxExecutions }, (_, i) => {
-                  const run = presetRuns[i];
-                  return (
-                    <td key={i} className="border-l border-gray-100 p-1.5 text-center align-middle"
-                      style={{ width: CELL, height: CELL, minWidth: CELL }}>
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                        {!run ? (
-                          <span className="text-gray-200">&mdash;</span>
-                        ) : run.lastOutputUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => onImageClick(run)}
-                            className="group relative block"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={run.lastOutputUrl} alt=""
-                              className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
-                              style={{ width: CELL - 20, height: CELL - 20 }} />
-                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                              </svg>
-                            </div>
-                            {run.lastOutputGenerationId && (
-                              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
-                            )}
-                          </button>
-                        ) : (
-                          <>
-                            <Link href={`/strategies/${run.strategyId}/runs/${run.id}`}>
-                              <StatusBadge status={run.status} />
-                            </Link>
-                            {run.status === 'failed' && (
-                              <button type="button" onClick={() => onRetry(run.id)}
-                                disabled={retryingRunId === run.id}
-                                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
-                                {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+          {sortedPresets.map((presetName) => (
+            <tr key={presetName} className="hover:bg-gray-50/50">
+              <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
+                style={{ minWidth: 200, maxWidth: 200 }}>
+                <span className="block break-words">{presetName}</span>
+              </td>
+              {strategyIds.map((stratId) => {
+                const cellRuns = grid.get(`${presetName}\0${stratId}`) ?? [];
+                const firstRun = cellRuns[0];
+                const hasMultiple = cellRuns.length > 1;
+                return (
+                  <td key={stratId} className="border-l border-gray-100 p-1.5 text-center align-middle"
+                    style={{ width: CELL, height: CELL, minWidth: CELL }}>
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+                      {!firstRun ? (
+                        <span className="text-gray-200">&mdash;</span>
+                      ) : firstRun.lastOutputUrl ? (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => hasMultiple ? onCellClick(cellRuns) : onImageClick(firstRun)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') hasMultiple ? onCellClick(cellRuns) : onImageClick(firstRun); }}
+                          className="group relative block cursor-pointer"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={firstRun.lastOutputUrl} alt=""
+                            className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                            style={{ width: CELL - 20, height: CELL - 20 }} />
+                          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+                            <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                            </svg>
+                          </div>
+                          {hasMultiple && (
+                            <span className="absolute top-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                              {cellRuns.length}
+                            </span>
+                          )}
+                          {firstRun.lastOutputGenerationId && (
+                            <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} onRated={onRated} />
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <Link href={`/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
+                            <StatusBadge status={firstRun.status} />
+                          </Link>
+                          {firstRun.status === 'failed' && (
+                            <button type="button" onClick={() => onRetry(firstRun.id)}
+                              disabled={retryingRunId === firstRun.id}
+                              className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
+                              {retryingRunId === firstRun.id ? 'Retrying…' : 'Retry'}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/* ─── Cell gallery modal: shows all images in a cell when numberOfImages > 1 ─── */
+
+function CellGalleryModal({
+  runs,
+  onImageClick,
+  onClose,
+}: {
+  runs: RunRow[];
+  onImageClick: (run: RunRow) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9998] flex cursor-pointer items-center justify-center bg-black/60 p-6"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[80vh] w-full max-w-3xl cursor-default overflow-auto rounded-xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">{runs.length} images</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {runs.map((run) => (
+            <div key={run.id} className="relative">
+              {run.lastOutputUrl ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onImageClick(run)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
+                  className="group relative cursor-pointer"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={run.lastOutputUrl}
+                    alt=""
+                    className="w-full rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                    style={{ aspectRatio: '1' }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+                    <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
+                  </div>
+                  {run.lastOutputGenerationId && (
+                    <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} />
+                  )}
+                </div>
+              ) : (
+                <div className="flex aspect-square items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                  <StatusBadge status={run.status} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/* ─── Shared cell renderer ─── */
+
+function RunCell({
+  run,
+  cellSize,
+  retryingRunId,
+  onRetry,
+  onRated,
+  onImageClick,
+}: {
+  run: RunRow | undefined;
+  cellSize: number;
+  retryingRunId: string | null;
+  onRetry: (runId: string) => void;
+  onRated?: () => void;
+  onImageClick: (run: RunRow) => void;
+}) {
+  return (
+    <td className="border-l border-gray-100 p-1.5 text-center align-middle"
+      style={{ width: cellSize, height: cellSize, minWidth: cellSize }}>
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+        {!run ? (
+          <span className="text-gray-200">&mdash;</span>
+        ) : run.lastOutputUrl ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onImageClick(run)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
+            className="group relative block cursor-pointer"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={run.lastOutputUrl} alt=""
+              className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+              style={{ width: cellSize - 20, height: cellSize - 20 }} />
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+              <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              </svg>
+            </div>
+            {run.lastOutputGenerationId && (
+              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+            )}
+          </div>
+        ) : (
+          <>
+            <Link href={`/strategies/${run.strategyId}/runs/${run.id}`}>
+              <StatusBadge status={run.status} />
+            </Link>
+            {run.status === 'failed' && (
+              <button type="button" onClick={() => onRetry(run.id)}
+                disabled={retryingRunId === run.id}
+                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
+                {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </td>
   );
 }
 

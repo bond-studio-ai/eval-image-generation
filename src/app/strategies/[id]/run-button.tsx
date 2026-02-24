@@ -37,7 +37,7 @@ export function StrategyRunButton({
         body: JSON.stringify({
           input_preset_ids: [selectedId],
           batch: true,
-          execution_count: 1,
+          number_of_images: 1,
         }),
       });
       const data = await res.json();
@@ -150,7 +150,7 @@ export function StrategyBatchRunButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [executionCount, setExecutionCount] = useState(1);
+  const [numberOfImages, setNumberOfImages] = useState(1);
 
   const presetMap = useMemo(
     () => new Map(inputPresets.map((p) => [p.id, p])),
@@ -178,27 +178,27 @@ export function StrategyBatchRunButton({
     setSubmitting(true);
     setError(null);
 
-    const count = Math.max(1, Math.min(100, executionCount));
+    const count = Math.max(1, Math.min(100, numberOfImages));
     const inputPresetIds = Array.from({ length: count }, () => selectedIds).flat();
 
     try {
       const res = await fetch(`/api/v1/strategies/${strategyId}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_preset_ids: inputPresetIds, batch: true, execution_count: count }),
+        body: JSON.stringify({ input_preset_ids: inputPresetIds, batch: true, number_of_images: count }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed to start batch'); return; }
       setShowModal(false);
       setSelectedIds([]);
       setSearch('');
-      setExecutionCount(1);
+      setNumberOfImages(1);
       onRunCreated?.();
     } catch { setError('Network error'); }
     finally { setSubmitting(false); }
-  }, [strategyId, selectedIds, executionCount, onRunCreated]);
+  }, [strategyId, selectedIds, numberOfImages, onRunCreated]);
 
-  const totalRuns = selectedIds.length * Math.max(1, Math.min(100, executionCount));
+  const totalRuns = selectedIds.length * Math.max(1, Math.min(100, numberOfImages));
 
   return (
     <>
@@ -300,15 +300,15 @@ export function StrategyBatchRunButton({
 
             <div className="shrink-0 border-t border-gray-200 px-5 py-3">
               <label className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">Executions per preset</span>
+                <span className="text-sm font-medium text-gray-700">Number of images</span>
                 <input
-                  type="number" min={1} max={100} value={executionCount}
-                  onChange={(e) => setExecutionCount(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
+                  type="number" min={1} max={100} value={numberOfImages}
+                  onChange={(e) => setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
                   className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                 />
               </label>
               <p className="mt-1 text-xs text-gray-500">
-                {selectedIds.length} preset(s) &times; {Math.max(1, Math.min(100, executionCount))} execution(s) = {totalRuns} total run(s).
+                {selectedIds.length} preset(s) &times; {Math.max(1, Math.min(100, numberOfImages))} image(s) = {totalRuns} total run(s).
               </p>
             </div>
 

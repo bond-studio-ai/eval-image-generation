@@ -470,16 +470,19 @@ export async function POST(
     };
 
     const isBatch = body?.batch === true;
-    const executionCount = typeof body?.execution_count === 'number'
-      ? Math.max(1, Math.min(100, body.execution_count))
+    const numberOfImages = typeof body?.number_of_images === 'number'
+      ? Math.max(1, Math.min(100, body.number_of_images))
       : 1;
+    const batchName = typeof body?.name === 'string' && body.name.trim()
+      ? body.name.trim()
+      : `Run ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 
     let batchRunId: string | null = null;
 
     if (isBatch) {
       const [batch] = await db
         .insert(strategyBatchRun)
-        .values({ strategyId: id, executionCount })
+        .values({ name: batchName, strategyId: id, numberOfImages })
         .returning();
       batchRunId = batch.id;
     }

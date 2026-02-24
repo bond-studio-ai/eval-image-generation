@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface StrategyItem {
@@ -18,11 +18,26 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [runName, setRunName] = useState('');
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
-  const [executionCount, setExecutionCount] = useState(1);
+  const [numberOfImages, setNumberOfImages] = useState(1);
+  const [strategySearch, setStrategySearch] = useState('');
+  const [presetSearch, setPresetSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const filteredStrategies = useMemo(() => {
+    const q = strategySearch.toLowerCase().trim();
+    if (!q) return strategies;
+    return strategies.filter((s) => s.name.toLowerCase().includes(q));
+  }, [strategies, strategySearch]);
+
+  const filteredPresets = useMemo(() => {
+    const q = presetSearch.toLowerCase().trim();
+    if (!q) return presets;
+    return presets.filter((p) => (p.name ?? '').toLowerCase().includes(q));
+  }, [presets, presetSearch]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -60,16 +75,17 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     if (selectedStrategyIds.length === 0 || selectedPresetIds.length === 0) return;
     setSubmitting(true);
     setError(null);
-    const count = Math.max(1, Math.min(100, executionCount));
+    const count = Math.max(1, Math.min(100, numberOfImages));
 
     try {
       const res = await fetch('/api/v1/strategy-batch-runs/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name: runName.trim() || undefined,
           strategy_ids: selectedStrategyIds,
           input_preset_ids: selectedPresetIds,
-          execution_count: count,
+          number_of_images: count,
         }),
       });
       const data = await res.json();
@@ -79,18 +95,21 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         return;
       }
       setShowModal(false);
+      setRunName('');
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
-      setExecutionCount(1);
+      setNumberOfImages(1);
+      setStrategySearch('');
+      setPresetSearch('');
       onRunCreated?.();
     } catch {
       setError('Network error');
     } finally {
       setSubmitting(false);
     }
-  }, [selectedStrategyIds, selectedPresetIds, executionCount, onRunCreated]);
+  }, [runName, selectedStrategyIds, selectedPresetIds, numberOfImages, onRunCreated]);
 
-  const totalRuns = selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, executionCount));
+  const totalRuns = selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
 
   return (
     <>
@@ -120,14 +139,22 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
             }}
           >
             <div
-              className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+              className="flex w-full max-w-3xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+              style={{ height: 'min(80vh, 640px)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="shrink-0 border-b border-gray-200 px-5 py-4">
-                <h3 className="text-lg font-semibold text-gray-900">Run</h3>
+                <h3 className="text-lg font-semibold text-gray-900">New Run</h3>
                 <p className="mt-1 text-sm text-gray-600">
                   Select strategies and input presets. This creates one batch: strategies × presets × images to generate.
                 </p>
+                <input
+                  type="text"
+                  value={runName}
+                  onChange={(e) => setRunName(e.target.value)}
+                  placeholder="Run name (optional — auto-generated if empty)"
+                  className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                />
               </div>
 
               {loading ? (
@@ -135,64 +162,192 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                   Loading…
                 </div>
               ) : (
-                <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 overflow-auto p-4">
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">Strategies</p>
-                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2">
-                      {strategies.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-gray-400">No strategies</p>
-                      ) : (
-                        strategies.map((s) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => toggleStrategy(s.id)}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${selectedStrategyIds.includes(s.id) ? 'bg-primary-50 ring-1 ring-primary-500' : 'hover:bg-gray-50'}`}
-                          >
-                            <span className="truncate font-medium text-gray-900">{s.name || 'Unnamed'}</span>
+                <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
+                  {/* Strategies */}
+                  <div className="flex min-h-0 flex-col">
+                    <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                          Strategies
+                          {selectedStrategyIds.length > 0 && (
+                            <span className="ml-1.5 inline-flex items-center rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700">
+                              {selectedStrategyIds.length}
+                            </span>
+                          )}
+                        </p>
+                        {selectedStrategyIds.length > 0 && (
+                          <button type="button" onClick={() => setSelectedStrategyIds([])} className="text-[10px] font-medium text-gray-400 hover:text-gray-600">
+                            Clear
                           </button>
-                        ))
+                        )}
+                      </div>
+                      <div className="relative mt-2">
+                        <svg className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                        <input
+                          type="text"
+                          value={strategySearch}
+                          onChange={(e) => setStrategySearch(e.target.value)}
+                          placeholder="Search strategies…"
+                          className="w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                      {filteredStrategies.length === 0 ? (
+                        <p className="py-4 text-center text-xs text-gray-400">
+                          {strategies.length === 0 ? 'No strategies available' : 'No matches'}
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          {filteredStrategies.map((s) => {
+                            const selected = selectedStrategyIds.includes(s.id);
+                            return (
+                              <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => toggleStrategy(s.id)}
+                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                                  selected
+                                    ? 'border-primary-400 bg-primary-50 shadow-sm'
+                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                  selected
+                                    ? 'border-primary-500 bg-primary-500 text-white'
+                                    : 'border-gray-300 bg-white'
+                                }`}>
+                                  {selected && (
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="truncate font-medium text-gray-900">{s.name || 'Unnamed'}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">Input presets</p>
-                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2">
-                      {presets.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-gray-400">No presets</p>
-                      ) : (
-                        presets.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => togglePreset(p.id)}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${selectedPresetIds.includes(p.id) ? 'bg-primary-50 ring-1 ring-primary-500' : 'hover:bg-gray-50'}`}
-                          >
-                            <span className="truncate font-medium text-gray-900">{p.name || 'Untitled'}</span>
+
+                  {/* Input presets */}
+                  <div className="flex min-h-0 flex-col">
+                    <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                          Input presets
+                          {selectedPresetIds.length > 0 && (
+                            <span className="ml-1.5 inline-flex items-center rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700">
+                              {selectedPresetIds.length}
+                            </span>
+                          )}
+                        </p>
+                        {selectedPresetIds.length > 0 && (
+                          <button type="button" onClick={() => setSelectedPresetIds([])} className="text-[10px] font-medium text-gray-400 hover:text-gray-600">
+                            Clear
                           </button>
-                        ))
+                        )}
+                      </div>
+                      <div className="relative mt-2">
+                        <svg className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                        <input
+                          type="text"
+                          value={presetSearch}
+                          onChange={(e) => setPresetSearch(e.target.value)}
+                          placeholder="Search presets…"
+                          className="w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                      {filteredPresets.length === 0 ? (
+                        <p className="py-4 text-center text-xs text-gray-400">
+                          {presets.length === 0 ? 'No presets available' : 'No matches'}
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          {filteredPresets.map((p) => {
+                            const selected = selectedPresetIds.includes(p.id);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => togglePreset(p.id)}
+                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                                  selected
+                                    ? 'border-primary-400 bg-primary-50 shadow-sm'
+                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                  selected
+                                    ? 'border-primary-500 bg-primary-500 text-white'
+                                    : 'border-gray-300 bg-white'
+                                }`}>
+                                  {selected && (
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="truncate font-medium text-gray-900">{p.name || 'Untitled'}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="shrink-0 border-t border-gray-200 px-5 py-3">
-                <label className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Images to generate (per preset)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={executionCount}
-                    onChange={(e) =>
-                      setExecutionCount(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-                    }
-                    className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                  />
-                </label>
-                <p className="mt-1 text-xs text-gray-500">
-                  {selectedStrategyIds.length} strategy × {selectedPresetIds.length} preset × {Math.max(1, Math.min(100, executionCount))} image(s) = {totalRuns} total run(s) in one batch.
+              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="num-images" className="text-sm font-medium text-gray-700">Images per combination</label>
+                    <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
+                        disabled={numberOfImages <= 1}
+                        className="flex h-9 w-9 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                        </svg>
+                      </button>
+                      <input
+                        id="num-images"
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={numberOfImages}
+                        onChange={(e) =>
+                          setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
+                        }
+                        className="h-9 w-14 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
+                        disabled={numberOfImages >= 100}
+                        className="flex h-9 w-9 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total run{totalRuns === 1 ? '' : 's'}</span>
                 </p>
               </div>
 

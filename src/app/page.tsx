@@ -41,13 +41,13 @@ export default async function DashboardPage() {
     {
       label: 'Total Generations',
       value: stats.generationCount,
-      href: '/generations',
+      href: '/executions?tab=generations',
       color: 'bg-emerald-50 text-emerald-700',
     },
     {
       label: 'Unrated',
       value: stats.unratedCount,
-      href: '/generations?unrated=true',
+      href: '/executions?tab=generations&unrated=true',
       color: 'bg-amber-50 text-amber-700',
     },
   ];
@@ -62,13 +62,13 @@ export default async function DashboardPage() {
           </p>
         </div>
         <Link
-          href="/generate"
+          href="/executions"
           className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
           </svg>
-          Generate Image
+          New Run
         </Link>
       </div>
 
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Recent Generations</h2>
           <Link
-            href="/generations"
+            href="/executions?tab=generations"
             className="text-primary-600 hover:text-primary-500 text-sm font-medium"
           >
             View all

@@ -1,11 +1,9 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { db } from '@/db';
 import { strategy, strategyStep } from '@/db/schema';
-import { fetchInputPresets } from '@/lib/queries';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { StrategyRunsList } from './runs-list';
 import { StrategyPerformance } from './strategy-performance';
 import { StrategySettingsPrompts } from './strategy-settings-prompts';
 
@@ -27,55 +25,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           promptVersion: { columns: { id: true, name: true } },
         },
       },
-      runs: {
-        orderBy: (r, { desc }) => [desc(r.createdAt)],
-        limit: 50,
-        with: {
-          stepResults: {
-            columns: { id: true, status: true, outputUrl: true, generationId: true },
-            with: {
-              step: { columns: { stepOrder: true } },
-            },
-          },
-          inputPresets: {
-            with: {
-              inputPreset: { columns: { id: true, name: true } },
-            },
-          },
-        },
-      },
     },
   });
 
   if (!result) {
     notFound();
   }
-
-  const inputPresets = await fetchInputPresets(100);
-  // Only batch runs count: include runs that belong to a batch
-  const batchRunsOnly = result.runs.filter((run) => run.batchRunId != null);
-  const initialRuns = batchRunsOnly.map((run) => {
-    const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
-    const lastResult = resultsWithOrder.length > 0
-      ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
-      : null;
-    const lastOutputUrl = lastResult?.outputUrl ?? null;
-    const lastOutputGenerationId = lastResult?.generationId ?? null;
-    return {
-      id: run.id,
-      status: run.status,
-      createdAt: run.createdAt.toISOString(),
-      completedAt: run.completedAt?.toISOString() ?? null,
-      inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
-      lastOutputUrl,
-      lastOutputGenerationId,
-      batchRunId: run.batchRunId ?? null,
-      stepResults: run.stepResults.map((sr) => ({
-        id: sr.id,
-        status: sr.status,
-      })),
-    };
-  });
 
   return (
     <div>
@@ -148,10 +103,6 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Runs and results matrix */}
-      <div className="mt-8">
-        <StrategyRunsList strategyId={result.id} initialRuns={initialRuns} inputPresets={inputPresets} />
-      </div>
     </div>
   );
 }

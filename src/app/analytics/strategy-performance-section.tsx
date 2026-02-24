@@ -1,5 +1,6 @@
 'use client';
 
+import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
@@ -134,16 +135,18 @@ export function StrategyPerformanceSection() {
                       </button>
                     </td>
                     <td className="py-3 pr-6 text-sm font-medium text-gray-900">
-                      <Link href={`/strategies/${row.id}`} className="text-primary-600 hover:text-primary-500">
-                        {row.name || 'Unnamed'}
-                      </Link>
+                      <StrategyHoverCard strategyId={row.id}>
+                        <Link href={`/strategies/${row.id}`} className="text-primary-600 hover:text-primary-500">
+                          {row.name || 'Unnamed'}
+                        </Link>
+                      </StrategyHoverCard>
                     </td>
                     <td className="px-6 py-3 text-right text-sm text-gray-700">{row.generationCount}</td>
                     <td className="px-6 py-3 text-right text-sm text-gray-700">{row.goodPct}%</td>
                     <td className="px-6 py-3 text-right text-sm text-gray-700">{row.badPct}%</td>
                     <td className="px-6 py-3 text-right text-sm text-gray-700">{row.notRatedPct}%</td>
                     <td className="px-6 py-3 text-right text-sm text-gray-700">
-                      {row.avgExecTimeMs != null ? `${row.avgExecTimeMs} ms` : '—'}
+                      {row.avgExecTimeMs != null ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s` : '—'}
                     </td>
                   </tr>
                   {isExpanded && (

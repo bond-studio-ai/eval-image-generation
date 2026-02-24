@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         return {
           id: run.id,
           strategyId: run.strategyId,
+          strategyName: (run.strategy as { name: string } | null)?.name ?? null,
           status: run.status,
           createdAt: run.createdAt,
           completedAt: run.completedAt,
@@ -81,9 +82,10 @@ export async function GET(request: NextRequest) {
 
       return {
         id: batch.id,
+        name: batch.name,
         strategyId: batch.strategyId,
         strategyName,
-        executionCount: batch.executionCount,
+        numberOfImages: batch.numberOfImages,
         createdAt: batch.createdAt,
         status: derivedStatus,
         totalRuns: runs.length,

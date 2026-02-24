@@ -2,10 +2,8 @@
 
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
-import type { InputPresetListItem } from '@/lib/queries';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StrategyBatchRunButton } from './run-button';
 
 interface StepResult {
   id: string;
@@ -31,11 +29,9 @@ const POLL_INTERVAL = 3000;
 export function StrategyRunsList({
   strategyId,
   initialRuns,
-  inputPresets,
 }: {
   strategyId: string;
   initialRuns: Run[];
-  inputPresets: InputPresetListItem[];
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
@@ -62,8 +58,6 @@ export function StrategyRunsList({
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [hasActiveRun, fetchRuns]);
-
-  const handleRunCreated = useCallback(() => { fetchRuns(); }, [fetchRuns]);
 
   const handleRetry = useCallback(async (runId: string) => {
     setRetryingRunId(runId);
@@ -133,7 +127,6 @@ export function StrategyRunsList({
               Matrix
             </button>
           </div>
-          <StrategyBatchRunButton strategyId={strategyId} inputPresets={inputPresets} onRunCreated={handleRunCreated} />
         </div>
       </div>
 
@@ -326,10 +319,12 @@ function BatchMatrix({
                         {!run ? (
                           <span className="text-gray-200">&mdash;</span>
                         ) : run.lastOutputUrl ? (
-                          <button
-                            type="button"
+                          <div
+                            role="button"
+                            tabIndex={0}
                             onClick={() => onImageClick(run)}
-                            className="group relative block"
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
+                            className="group relative block cursor-pointer"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={run.lastOutputUrl} alt=""
@@ -343,7 +338,7 @@ function BatchMatrix({
                             {run.lastOutputGenerationId && (
                               <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
                             )}
-                          </button>
+                          </div>
                         ) : (
                           <>
                             <Link href={`/strategies/${strategyId}/runs/${run.id}`}>

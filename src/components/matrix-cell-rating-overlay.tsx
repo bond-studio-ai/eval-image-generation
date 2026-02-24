@@ -45,27 +45,31 @@ export function MatrixCellRatingOverlay({
 
   return (
     <div
-      className={`absolute inset-0 flex flex-col items-stretch justify-end rounded-lg bg-black/60 p-2 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
+      className={`absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-8 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-white">
-        <div className="flex items-center gap-1.5">
-          <span className="w-12 shrink-0 text-[10px] font-medium uppercase tracking-wide drop-shadow">Scene</span>
-          <button type="button" onClick={() => rate('GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Scene good">
-            {thumbUp}
-          </button>
-          <button type="button" onClick={() => rate('FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Scene failed">
-            {thumbDown}
-          </button>
+      <div className="flex gap-4 text-white">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Scene</span>
+          <div className="flex gap-1">
+            <button type="button" onClick={() => rate('GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Scene good">
+              {thumbUp}
+            </button>
+            <button type="button" onClick={() => rate('FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Scene failed">
+              {thumbDown}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-12 shrink-0 text-[10px] font-medium uppercase tracking-wide drop-shadow">Product</span>
-          <button type="button" onClick={() => rate(undefined, 'GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Product good">
-            {thumbUp}
-          </button>
-          <button type="button" onClick={() => rate(undefined, 'FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Product failed">
-            {thumbDown}
-          </button>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Product</span>
+          <div className="flex gap-1">
+            <button type="button" onClick={() => rate(undefined, 'GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Product good">
+              {thumbUp}
+            </button>
+            <button type="button" onClick={() => rate(undefined, 'FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Product failed">
+              {thumbDown}
+            </button>
+          </div>
         </div>
       </div>
     </div>

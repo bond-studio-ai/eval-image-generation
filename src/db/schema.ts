@@ -322,9 +322,10 @@ export const strategyBatchRun = pgTable(
   'strategy_batch_run',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }),
     strategyId: uuid('strategy_id')
       .references(() => strategy.id, { onDelete: 'cascade' }),
-    executionCount: integer('execution_count').notNull().default(1),
+    numberOfImages: integer('number_of_images').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

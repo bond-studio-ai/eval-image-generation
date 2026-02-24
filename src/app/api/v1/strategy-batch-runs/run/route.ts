@@ -8,15 +8,18 @@ import { after, NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-/** POST: create one batch spanning multiple strategies × presets × execution_count. */
+/** POST: create one batch spanning multiple strategies × presets × number_of_images. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
     const rawStrategyIds = body?.strategy_ids;
     const rawPresetIds = body?.input_preset_ids;
-    const executionCount = typeof body?.execution_count === 'number'
-      ? Math.max(1, Math.min(100, body.execution_count))
+    const numberOfImages = typeof body?.number_of_images === 'number'
+      ? Math.max(1, Math.min(100, body.number_of_images))
       : 1;
+    const batchName = typeof body?.name === 'string' && body.name.trim()
+      ? body.name.trim()
+      : `Run ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 
     if (!Array.isArray(rawStrategyIds) || rawStrategyIds.length === 0) {
       return errorResponse('VALIDATION_ERROR', 'At least one strategy is required');
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const [batch] = await db
       .insert(strategyBatchRun)
-      .values({ strategyId: null, executionCount })
+      .values({ name: batchName, strategyId: null, numberOfImages })
       .returning();
 
     if (!batch) return errorResponse('INTERNAL_ERROR', 'Failed to create batch');
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
         tagImages: strat.tagImages,
       };
       for (const presetId of presetIds) {
-        for (let i = 0; i < executionCount; i++) {
+        for (let i = 0; i < numberOfImages; i++) {
           const [run] = await db
             .insert(strategyRun)
             .values({ strategyId, batchRunId: batch.id, status: 'running' })

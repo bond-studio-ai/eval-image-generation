@@ -87,7 +87,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
 
   return (
     <div>
-      <Link href="/generations" className="text-sm text-gray-600 hover:text-gray-900">
+      <Link href="/executions?tab=generations" className="text-sm text-gray-600 hover:text-gray-900">
         &larr; Back to Generations
       </Link>
 
