@@ -1,7 +1,6 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { GenerateContentConfig, GoogleGenAI, type Content } from '@google/genai';
 import { randomUUID } from 'crypto';
-import { withImageParams } from './image-utils';
 
 // ------------------------------------
 // Types
@@ -69,7 +68,7 @@ async function urlToBase64(url: string): Promise<{ base64: string; mimeType: str
     throw new Error(`Invalid data URL format`);
   }
 
-  const fetchUrl = withImageParams(toCdnUrl(url));
+  const fetchUrl = toCdnUrl(url);
   const res = await fetch(fetchUrl);
   if (!res.ok) {
     const body = await res.text().catch(() => '');
