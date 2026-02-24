@@ -98,11 +98,11 @@ export function MatrixCellRatingOverlay({
   function thumbBtnClass(current: Rating, target: 'GOOD' | 'FAILED') {
     if (current === target) {
       return target === 'GOOD'
-        ? `${btnBase} bg-green-500 text-white shadow-sm ring-1 ring-green-400`
+        ? `${btnBase} bg-sky-500 text-white shadow-sm ring-1 ring-sky-400`
         : `${btnBase} bg-red-500 text-white shadow-sm ring-1 ring-red-400`;
     }
     return target === 'GOOD'
-      ? `${btnBase} text-green-300 hover:bg-green-500/30 hover:text-green-200`
+      ? `${btnBase} text-sky-300 hover:bg-sky-500/30 hover:text-sky-200`
       : `${btnBase} text-red-300 hover:bg-red-500/30 hover:text-red-200`;
   }
 
