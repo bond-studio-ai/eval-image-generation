@@ -11,7 +11,7 @@ interface Section {
 export function SectionNav({ sections }: { sections: Section[] }) {
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
   const clickScrolling = useRef(false);
-  const clickTimer = useRef<ReturnType<typeof setTimeout>>();
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const els = sections

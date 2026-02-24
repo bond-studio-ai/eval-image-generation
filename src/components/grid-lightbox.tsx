@@ -169,7 +169,7 @@ export function GridLightbox({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setExpandedImage({ src: outputUrl, alt: 'Output' }); }}
-                  className="cursor-zoom-in"
+                  className="flex h-full w-full min-h-0 items-center justify-center cursor-zoom-in"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -195,25 +195,8 @@ export function GridLightbox({
                       className={`shrink-0 flex flex-col items-center gap-0.5 rounded border-2 overflow-hidden ${selectedSceneIndex === i ? 'border-primary-500 ring-1 ring-primary-500' : 'border-transparent hover:border-gray-300'}`}
                       title={selectedSceneIndex === i ? 'Click to disable compare' : 'Click to compare with scene reference'}
                     >
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedImage({ src: img.url, alt: img.label });
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setExpandedImage({ src: img.url, alt: img.label });
-                          }
-                        }}
-                        className="block cursor-zoom-in"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.url} alt={img.label} className="h-14 w-14 object-cover" />
-                      </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt={img.label} className="h-14 w-14 object-cover" />
                       <span className="text-[10px] font-medium text-gray-500 max-w-[4rem] truncate">{img.label}</span>
                     </button>
                   ))}
@@ -223,6 +206,55 @@ export function GridLightbox({
           </div>
           {generationId && (
             <>
+              {productImages.length > 0 && (
+                <div className="mt-4 border-t border-gray-200 pt-6">
+                  <div className="flex flex-wrap gap-2">
+                    {productImages.map((img) => (
+                      <div
+                        key={img.key}
+                        className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5"
+                      >
+                        {img.urls.length === 1 ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setExpandedImage({ src: img.urls[0], alt: img.label }); }}
+                            className="h-12 w-12 shrink-0 overflow-hidden rounded cursor-zoom-in"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={withImageParams(img.urls[0], 96)}
+                              alt={img.label}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <div className="flex gap-0.5">
+                            {img.urls.map((url, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` }); }}
+                                className="h-10 w-10 shrink-0 overflow-hidden rounded cursor-zoom-in"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={withImageParams(url, 80)}
+                                  alt={`${img.label} ${i + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <span className="text-[10px] font-medium text-gray-700 max-w-[5rem] truncate text-center">
+                          {img.label}
+                          {img.urls.length > 1 && ` (${img.urls.length})`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mt-6 grid grid-cols-1 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-2">
                 {initialResultId && (
                   <div>
@@ -244,58 +276,6 @@ export function GridLightbox({
                   )}
                 </div>
               </div>
-              {productImages.length > 0 && (
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <p className="mb-3 text-sm font-medium text-gray-700">Product images used</p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                    {productImages.map((img) => (
-                      <div
-                        key={img.key}
-                        className="overflow-hidden rounded-lg border border-gray-200 bg-white"
-                      >
-                        {img.urls.length === 1 ? (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setExpandedImage({ src: img.urls[0], alt: img.label }); }}
-                            className="block h-24 w-full cursor-zoom-in"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={withImageParams(img.urls[0], 256)}
-                              alt={img.label}
-                              className="h-full w-full object-cover"
-                            />
-                          </button>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-0.5 p-0.5">
-                            {img.urls.map((url, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` }); }}
-                                className="cursor-zoom-in"
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={withImageParams(url, 128)}
-                                  alt={`${img.label} ${i + 1}`}
-                                  className="h-14 w-full rounded object-cover"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <div className="p-1.5">
-                          <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700">
-                            {img.label}
-                            {img.urls.length > 1 && ` (${img.urls.length})`}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

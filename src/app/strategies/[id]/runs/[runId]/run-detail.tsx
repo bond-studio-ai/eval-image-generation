@@ -208,6 +208,26 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         </div>
       </div>
 
+      {/* Run-level skip reason when run is skipped */}
+      {data.status === 'skipped' && (() => {
+        const skippedReasons = sorted
+          .filter((sr) => sr.status === 'skipped' && sr.error)
+          .map((sr) => ({ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error! }));
+        if (skippedReasons.length === 0) return null;
+        return (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-medium text-amber-800">Why this run was skipped</p>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-700">
+              {skippedReasons.map(({ step, reason }, i) => (
+                <li key={i}>
+                  <span className="font-medium">{step}:</span> {reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
+
       {/* Strategy settings tags */}
       {(data.strategy.model != null || data.strategy.aspectRatio != null) && (
         <div className="mt-4 flex flex-wrap gap-2">
