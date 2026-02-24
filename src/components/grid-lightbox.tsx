@@ -183,9 +183,6 @@ export function GridLightbox({
                     </button>
                   ))}
                 </div>
-                {selectedSceneIndex !== null && (
-                  <span className="text-xs text-gray-400">Compare on · click again to turn off</span>
-                )}
               </div>
             )}
           </div>
