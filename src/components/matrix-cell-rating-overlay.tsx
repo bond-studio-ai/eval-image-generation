@@ -20,7 +20,6 @@ export function MatrixCellRatingOverlay({
   const cached = ratingCache.get(generationId);
   const [sceneRating, setSceneRating] = useState<Rating>(cached?.scene ?? null);
   const [productRating, setProductRating] = useState<Rating>(cached?.product ?? null);
-  const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(!!cached);
 
   useEffect(() => {
@@ -46,10 +45,15 @@ export function MatrixCellRatingOverlay({
     async (scene?: 'GOOD' | 'FAILED', product?: 'GOOD' | 'FAILED') => {
       const prevScene = sceneRating;
       const prevProduct = productRating;
-      if (scene !== undefined) setSceneRating(scene);
-      if (product !== undefined) setProductRating(product);
 
-      setLoading(true);
+      // Optimistic update: UI and cache immediately
+      const nextScene = scene !== undefined ? scene : prevScene;
+      const nextProduct = product !== undefined ? product : prevProduct;
+      setSceneRating(nextScene);
+      setProductRating(nextProduct);
+      ratingCache.set(generationId, { scene: nextScene, product: nextProduct });
+      onRated?.();
+
       try {
         const body: Record<string, string> = {};
         if (scene !== undefined) body.scene_accuracy_rating = scene;
@@ -62,21 +66,20 @@ export function MatrixCellRatingOverlay({
         if (res.ok) {
           const json = await res.json();
           const d = json.data ?? json;
-          const newScene: Rating = d.scene_accuracy_rating ?? prevScene;
-          const newProduct: Rating = d.product_accuracy_rating ?? prevProduct;
+          const newScene: Rating = d.scene_accuracy_rating ?? nextScene;
+          const newProduct: Rating = d.product_accuracy_rating ?? nextProduct;
           setSceneRating(newScene);
           setProductRating(newProduct);
           ratingCache.set(generationId, { scene: newScene, product: newProduct });
-          onRated?.();
         } else {
           setSceneRating(prevScene);
           setProductRating(prevProduct);
+          ratingCache.set(generationId, { scene: prevScene, product: prevProduct });
         }
       } catch {
         setSceneRating(prevScene);
         setProductRating(prevProduct);
-      } finally {
-        setLoading(false);
+        ratingCache.set(generationId, { scene: prevScene, product: prevProduct });
       }
     },
     [generationId, onRated, sceneRating, productRating],
@@ -93,7 +96,7 @@ export function MatrixCellRatingOverlay({
     </svg>
   );
 
-  const btnBase = 'rounded-md p-1.5 transition-all disabled:opacity-50';
+  const btnBase = 'rounded-md p-1.5 transition-all';
 
   function thumbBtnClass(current: Rating, target: 'GOOD' | 'FAILED') {
     if (current === target) {
@@ -115,10 +118,10 @@ export function MatrixCellRatingOverlay({
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Scene</span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate('GOOD')} disabled={loading} className={thumbBtnClass(sceneRating, 'GOOD')} title="Scene good">
+            <button type="button" onClick={() => rate('GOOD')} className={thumbBtnClass(sceneRating, 'GOOD')} title="Scene good">
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate('FAILED')} disabled={loading} className={thumbBtnClass(sceneRating, 'FAILED')} title="Scene failed">
+            <button type="button" onClick={() => rate('FAILED')} className={thumbBtnClass(sceneRating, 'FAILED')} title="Scene failed">
               {thumbDown}
             </button>
           </div>
@@ -126,10 +129,10 @@ export function MatrixCellRatingOverlay({
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Product</span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate(undefined, 'GOOD')} disabled={loading} className={thumbBtnClass(productRating, 'GOOD')} title="Product good">
+            <button type="button" onClick={() => rate(undefined, 'GOOD')} className={thumbBtnClass(productRating, 'GOOD')} title="Product good">
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate(undefined, 'FAILED')} disabled={loading} className={thumbBtnClass(productRating, 'FAILED')} title="Product failed">
+            <button type="button" onClick={() => rate(undefined, 'FAILED')} className={thumbBtnClass(productRating, 'FAILED')} title="Product failed">
               {thumbDown}
             </button>
           </div>
