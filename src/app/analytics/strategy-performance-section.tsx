@@ -81,20 +81,23 @@ function RatingSummaryBar({ good, failed, unset, label }: { good: number; failed
   );
 }
 
-function IssueList({ title, items, colorClass }: { title: string; items: IssueItem[]; colorClass: string }) {
+function IssueList({ title, items, total, colorClass }: { title: string; items: IssueItem[]; total: number; colorClass: string }) {
   if (items.length === 0) return null;
   return (
     <div>
       <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">{title}</p>
       <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
-            <span className="min-w-0 truncate text-gray-700" title={item.issue}>{item.issue}</span>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}>
-              {item.count}
-            </span>
-          </li>
-        ))}
+        {items.map((item) => {
+          const pctVal = total > 0 ? Math.round((item.count / total) * 10000) / 100 : 0;
+          return (
+            <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate text-gray-700" title={item.issue}>{item.issue}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}>
+                {pctVal}%
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -275,6 +278,7 @@ export function StrategyPerformanceSection() {
                             <IssueList
                               title="Scene accuracy issues"
                               items={breakdown.scene_issues}
+                              total={breakdown.rating_summary?.total ?? 0}
                               colorClass="bg-red-100 text-red-700"
                             />
 
@@ -282,6 +286,7 @@ export function StrategyPerformanceSection() {
                             <IssueList
                               title="Product accuracy issues"
                               items={breakdown.product_issues}
+                              total={breakdown.rating_summary?.total ?? 0}
                               colorClass="bg-amber-100 text-amber-700"
                             />
 
