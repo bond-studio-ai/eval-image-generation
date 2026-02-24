@@ -106,9 +106,9 @@ function IssueList({ title, items, total, colorClass }: { title: string; items: 
 export function StrategyPerformanceSection() {
   const [rows, setRows] = useState<StrategyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
-  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [breakdowns, setBreakdowns] = useState<Record<string, BreakdownData | null>>({});
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -125,24 +125,31 @@ export function StrategyPerformanceSection() {
   }, []);
 
   const fetchBreakdown = useCallback(async (strategyId: string) => {
-    setBreakdownLoading(true);
+    setLoadingIds((prev) => new Set(prev).add(strategyId));
     try {
       const res = await fetch(`/api/v1/analytics/strategy-errors?strategy_id=${encodeURIComponent(strategyId)}`, { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      setBreakdown(json.data ?? null);
-    } catch { setBreakdown(null); }
-    finally { setBreakdownLoading(false); }
+      setBreakdowns((prev) => ({ ...prev, [strategyId]: json.data ?? null }));
+    } catch {
+      setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
+    } finally {
+      setLoadingIds((prev) => { const next = new Set(prev); next.delete(strategyId); return next; });
+    }
   }, []);
 
   const toggleExpand = useCallback((id: string) => {
-    setExpandedId((prev) => {
-      if (prev === id) return null;
-      setBreakdown(null);
-      fetchBreakdown(id);
-      return id;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!breakdowns[id]) fetchBreakdown(id);
+      }
+      return next;
     });
-  }, [fetchBreakdown]);
+  }, [fetchBreakdown, breakdowns]);
 
   if (loading) {
     return (
@@ -199,7 +206,9 @@ export function StrategyPerformanceSection() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.map((row) => {
-              const isExpanded = expandedId === row.id;
+              const isExpanded = expandedIds.has(row.id);
+              const rowBreakdown = breakdowns[row.id];
+              const isLoadingBreakdown = loadingIds.has(row.id);
               return (
                 <Fragment key={row.id}>
                   <tr className="hover:bg-gray-50/50">
@@ -247,28 +256,28 @@ export function StrategyPerformanceSection() {
                   {isExpanded && (
                     <tr key={`${row.id}-breakdown`}>
                       <td colSpan={COL_SPAN} className="bg-gray-50/80 py-4 pl-10 pr-6">
-                        {breakdownLoading ? (
+                        {isLoadingBreakdown ? (
                           <p className="text-sm text-gray-500">Loading breakdown…</p>
-                        ) : !breakdown ? (
+                        ) : !rowBreakdown ? (
                           <p className="text-sm text-gray-500">No data available.</p>
                         ) : (
                           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                             {/* Rating summary bars */}
-                            {breakdown.rating_summary && (
+                            {rowBreakdown.rating_summary && (
                               <div className="space-y-3 lg:col-span-2">
                                 <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Rating distribution</p>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                   <RatingSummaryBar
                                     label="Scene accuracy"
-                                    good={breakdown.rating_summary.scene_good}
-                                    failed={breakdown.rating_summary.scene_failed}
-                                    unset={breakdown.rating_summary.scene_unset}
+                                    good={rowBreakdown.rating_summary.scene_good}
+                                    failed={rowBreakdown.rating_summary.scene_failed}
+                                    unset={rowBreakdown.rating_summary.scene_unset}
                                   />
                                   <RatingSummaryBar
                                     label="Product accuracy"
-                                    good={breakdown.rating_summary.product_good}
-                                    failed={breakdown.rating_summary.product_failed}
-                                    unset={breakdown.rating_summary.product_unset}
+                                    good={rowBreakdown.rating_summary.product_good}
+                                    failed={rowBreakdown.rating_summary.product_failed}
+                                    unset={rowBreakdown.rating_summary.product_unset}
                                   />
                                 </div>
                               </div>
@@ -277,25 +286,25 @@ export function StrategyPerformanceSection() {
                             {/* Scene evaluation issues */}
                             <IssueList
                               title="Scene accuracy issues"
-                              items={breakdown.scene_issues}
-                              total={(breakdown.rating_summary?.scene_good ?? 0) + (breakdown.rating_summary?.scene_failed ?? 0)}
+                              items={rowBreakdown.scene_issues}
+                              total={(rowBreakdown.rating_summary?.scene_good ?? 0) + (rowBreakdown.rating_summary?.scene_failed ?? 0)}
                               colorClass="bg-red-100 text-red-700"
                             />
 
                             {/* Product evaluation issues */}
                             <IssueList
                               title="Product accuracy issues"
-                              items={breakdown.product_issues}
-                              total={(breakdown.rating_summary?.product_good ?? 0) + (breakdown.rating_summary?.product_failed ?? 0)}
+                              items={rowBreakdown.product_issues}
+                              total={(rowBreakdown.rating_summary?.product_good ?? 0) + (rowBreakdown.rating_summary?.product_failed ?? 0)}
                               colorClass="bg-amber-100 text-amber-700"
                             />
 
                             {/* Execution errors */}
-                            {breakdown.execution_errors.length > 0 && (
+                            {rowBreakdown.execution_errors.length > 0 && (
                               <div className="lg:col-span-2">
                                 <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">Execution errors</p>
                                 <ul className="max-h-40 space-y-1 overflow-y-auto">
-                                  {breakdown.execution_errors.map((item, i) => (
+                                  {rowBreakdown.execution_errors.map((item, i) => (
                                     <li key={i} className="flex items-center justify-between gap-3 text-sm">
                                       <span className="min-w-0 truncate text-gray-700" title={item.reason}>{item.reason}</span>
                                       <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">
@@ -308,10 +317,10 @@ export function StrategyPerformanceSection() {
                             )}
 
                             {/* Empty state */}
-                            {breakdown.scene_issues.length === 0 &&
-                              breakdown.product_issues.length === 0 &&
-                              breakdown.execution_errors.length === 0 &&
-                              !breakdown.rating_summary && (
+                            {rowBreakdown.scene_issues.length === 0 &&
+                              rowBreakdown.product_issues.length === 0 &&
+                              rowBreakdown.execution_errors.length === 0 &&
+                              !rowBreakdown.rating_summary && (
                                 <p className="text-sm text-gray-500 lg:col-span-2">No evaluation data or errors for this strategy.</p>
                               )}
                           </div>

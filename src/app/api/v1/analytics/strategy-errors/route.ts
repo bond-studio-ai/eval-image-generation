@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
 
       db
         .select({
+          generationId: generation.id,
           sceneAccuracyIssues: resultEvaluation.sceneAccuracyIssues,
           productAccuracy: resultEvaluation.productAccuracy,
         })
@@ -81,15 +82,16 @@ export async function GET(request: NextRequest) {
         ),
     ]);
 
-    const sceneIssueCounts: Record<string, number> = {};
-    const productIssueCounts: Record<string, number> = {};
+    const sceneIssueSets: Record<string, Set<string>> = {};
+    const productIssueSets: Record<string, Set<string>> = {};
 
     for (const row of evaluations) {
+      const genId = row.generationId;
       if (row.sceneAccuracyIssues) {
         try {
           const issues: string[] = JSON.parse(row.sceneAccuracyIssues);
           for (const issue of issues) {
-            sceneIssueCounts[issue] = (sceneIssueCounts[issue] ?? 0) + 1;
+            (sceneIssueSets[issue] ??= new Set()).add(genId);
           }
         } catch { /* malformed JSON */ }
       }
@@ -99,12 +101,21 @@ export async function GET(request: NextRequest) {
           for (const catData of Object.values(categories)) {
             if (Array.isArray(catData.issues)) {
               for (const issue of catData.issues) {
-                productIssueCounts[issue] = (productIssueCounts[issue] ?? 0) + 1;
+                (productIssueSets[issue] ??= new Set()).add(genId);
               }
             }
           }
         } catch { /* malformed JSON */ }
       }
+    }
+
+    const sceneIssueCounts: Record<string, number> = {};
+    for (const [issue, genIds] of Object.entries(sceneIssueSets)) {
+      sceneIssueCounts[issue] = genIds.size;
+    }
+    const productIssueCounts: Record<string, number> = {};
+    for (const [issue, genIds] of Object.entries(productIssueSets)) {
+      productIssueCounts[issue] = genIds.size;
     }
 
     const toSorted = (counts: Record<string, number>) =>
