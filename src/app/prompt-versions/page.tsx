@@ -46,6 +46,8 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
       return {
         id: pv.id,
         name: pv.name,
+        description: pv.description,
+        systemPrompt: pv.systemPrompt,
         userPrompt: pv.userPrompt,
         generationCount: genCount[0]?.count ?? 0,
         createdAt: pv.createdAt.toISOString(),

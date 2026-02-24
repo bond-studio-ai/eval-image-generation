@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 export interface PromptVersionRow {
   id: string;
   name: string | null;
+  description: string | null;
+  systemPrompt: string;
   userPrompt: string;
   generationCount: number;
   createdAt: string;
@@ -57,6 +59,29 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
     }
   }, [selected, router]);
 
+  const [cloningId, setCloningId] = useState<string | null>(null);
+
+  const handleClone = useCallback(async (pv: PromptVersionRow) => {
+    setCloningId(pv.id);
+    try {
+      const res = await fetch('/api/v1/prompt-versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `Copy of ${pv.name || 'Untitled'}`,
+          description: pv.description || undefined,
+          system_prompt: pv.systemPrompt,
+          user_prompt: pv.userPrompt,
+        }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      const newId = json.data?.id;
+      if (newId) router.push(`/prompt-versions/${newId}`);
+    } catch { /* ignore */ }
+    finally { setCloningId(null); }
+  }, [router]);
+
   const allSelected = activeItems.length > 0 && selected.size === activeItems.length;
 
   return (
@@ -85,6 +110,7 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
               <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Status
               </th>
+              <th className="w-10 px-3 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
@@ -125,6 +151,26 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
                       Active
                     </span>
                   )}
+                </td>
+                <td className="px-3 py-4">
+                  <button
+                    type="button"
+                    onClick={() => handleClone(pv)}
+                    disabled={cloningId === pv.id}
+                    title="Clone prompt version"
+                    className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                  >
+                    {cloningId === pv.id ? (
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                      </svg>
+                    )}
+                  </button>
                 </td>
               </tr>
             ))}
