@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { generation, imageSelection, inputPreset, promptVersion, strategy, strategyRun, strategyStep } from '@/db/schema';
+import { generation, inputPreset, promptVersion, strategy, strategyRun, strategyStep } from '@/db/schema';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 // ------------------------------------
@@ -307,20 +307,3 @@ export async function fetchInputPresetById(id: string): Promise<InputPresetDetai
   };
 }
 
-// ------------------------------------
-// Image Selections
-// ------------------------------------
-
-export type ImageSelectionRow = typeof imageSelection.$inferSelect;
-
-/**
- * Fetch the image selection for a specific user.
- */
-export async function fetchImageSelectionByUser(userId: string): Promise<ImageSelectionRow | null> {
-  const rows = await db
-    .select()
-    .from(imageSelection)
-    .where(eq(imageSelection.userId, userId))
-    .limit(1);
-  return rows[0] ?? null;
-}

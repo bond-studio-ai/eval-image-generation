@@ -180,8 +180,7 @@ export const resultEvaluation = pgTable(
 );
 
 /**
- * input_preset: shared, reusable set of input images.
- * Any user can select a preset to populate the generate page.
+ * input_preset: shared, reusable set of input images for strategy runs.
  * Mirrors the image columns of generation_input.
  */
 export const inputPreset = pgTable(
@@ -406,10 +405,8 @@ export const strategyStepResult = pgTable(
 );
 
 /**
- * image_selection: standalone draft/workspace table.
- * Persists the current image selections on the generate page
- * so they can be picked up between sessions.
- * Same image columns as generation_input but not tied to a generation.
+ * image_selection: legacy table (generate page removed).
+ * Same image columns as generation_input. No longer used; can be dropped in a future migration.
  */
 export const imageSelection = pgTable(
   'image_selection',

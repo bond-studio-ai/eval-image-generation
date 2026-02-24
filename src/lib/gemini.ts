@@ -1,6 +1,7 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { GenerateContentConfig, GoogleGenAI, type Content } from '@google/genai';
 import { randomUUID } from 'crypto';
+import { withImageParams } from './image-utils';
 
 // ------------------------------------
 // Types
@@ -61,6 +62,9 @@ function toCdnUrl(url: string): string {
   return url.replace(S3_HOST_PATTERN, CDN_HOST);
 }
 
+/** HTTP status codes that often indicate "image too large" from CDN (e.g. 502 Bad Gateway). */
+const FALLBACK_STATUS_CODES = new Set([502, 503, 504]);
+
 async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
   if (url.startsWith('data:')) {
     const match = url.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -68,8 +72,20 @@ async function urlToBase64(url: string): Promise<{ base64: string; mimeType: str
     throw new Error(`Invalid data URL format`);
   }
 
-  const fetchUrl = toCdnUrl(url);
-  const res = await fetch(fetchUrl);
+  const cdnUrl = toCdnUrl(url);
+
+  const tryFetch = async (fetchUrl: string): Promise<Response> => {
+    const res = await fetch(fetchUrl);
+    return res;
+  };
+
+  let res = await tryFetch(cdnUrl);
+
+  if (!res.ok && FALLBACK_STATUS_CODES.has(res.status)) {
+    const fallbackUrl = withImageParams(cdnUrl, 1024);
+    res = await tryFetch(fallbackUrl);
+  }
+
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Failed to fetch image (${res.status} ${res.statusText}): ${url.substring(0, 200)}${body ? ` — ${body.substring(0, 200)}` : ''}`);

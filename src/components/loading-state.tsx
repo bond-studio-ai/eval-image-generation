@@ -54,57 +54,6 @@ export function PageSkeleton() {
   );
 }
 
-/** Skeleton for the Generate page layout. */
-export function GeneratePageSkeleton() {
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <Skeleton className="h-7 w-44" />
-        <Skeleton className="h-4 w-96" />
-      </div>
-
-      {/* Prompt version selector card */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs space-y-3">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-9 w-full rounded-lg" />
-      </div>
-
-      {/* Two-column prompt editors */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs space-y-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs space-y-3">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-
-      {/* Model settings row */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs space-y-4">
-        <Skeleton className="h-4 w-28" />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-3 w-14" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Generate button placeholder */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs space-y-4">
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-4 w-80" />
-        <Skeleton className="h-10 w-36 rounded-lg" />
-      </div>
-    </div>
-  );
-}
-
 /** Skeleton for the full app shell (sidebar + content area). */
 export function AppShellSkeleton() {
   return (
