@@ -37,7 +37,7 @@ export function StrategyRunButton({
         body: JSON.stringify({
           input_preset_ids: [selectedId],
           batch: true,
-          number_of_images: 1,
+          number_of_images: 8,
         }),
       });
       const data = await res.json();
@@ -150,7 +150,7 @@ export function StrategyBatchRunButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [numberOfImages, setNumberOfImages] = useState(1);
+  const [numberOfImages, setNumberOfImages] = useState(8);
 
   const presetMap = useMemo(
     () => new Map(inputPresets.map((p) => [p.id, p])),
@@ -192,7 +192,7 @@ export function StrategyBatchRunButton({
       setShowModal(false);
       setSelectedIds([]);
       setSearch('');
-      setNumberOfImages(1);
+      setNumberOfImages(8);
       onRunCreated?.();
     } catch { setError('Network error'); }
     finally { setSubmitting(false); }

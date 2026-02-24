@@ -1,6 +1,7 @@
 'use client';
 
 import { RatingForm } from '@/app/generations/[id]/rating-form';
+import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { getActiveProductCategories } from '@/lib/generation-utils';
 import Link from 'next/link';
@@ -31,7 +32,10 @@ export function GridLightbox({
   onClose,
 }: GridLightboxProps) {
   const [generation, setGeneration] = useState<GenerationData | null>(null);
-  const [imageIndex, setImageIndex] = useState(0);
+  /** Which scene to compare (0/1/2 = Dollhouse/Real Photo/Mood Board). null = output only. */
+  const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
+  /** 0–100: position of the comparison bar (left % shows scene, right % shows output). */
+  const [comparisonPosition, setComparisonPosition] = useState(50);
 
   const fetchGeneration = useCallback(async (id: string) => {
     try {
@@ -46,58 +50,59 @@ export function GridLightbox({
         results: results.map((r: { id: string; url?: string }) => ({ id: r.id, url: r.url ?? '' })),
         input: data.input ?? null,
       });
-      const idx = results.findIndex((r: { url?: string }) => r.url === src);
-      setImageIndex(idx >= 0 ? idx : 0);
     } catch {
       setGeneration(null);
-      setImageIndex(0);
     }
-  }, [src]);
+  }, []);
 
   useEffect(() => {
     if (generationId) fetchGeneration(generationId);
-    else {
-      setGeneration(null);
-      setImageIndex(0);
-    }
+    else setGeneration(null);
   }, [generationId, fetchGeneration]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      const results = generation?.results ?? [];
-      if (results.length <= 1) return;
-      if (e.key === 'ArrowLeft') setImageIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
-      if (e.key === 'ArrowRight') setImageIndex((i) => (i >= results.length - 1 ? 0 : i + 1));
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose, generation?.results]);
 
   const handleRated = useCallback(() => {
     if (generationId) fetchGeneration(generationId);
     onRated?.();
   }, [generationId, fetchGeneration, onRated]);
 
-  const displayUrl = useMemo(() => {
-    const results = generation?.results ?? [];
-    if (results.length > 0 && results[imageIndex]) return results[imageIndex].url;
-    return src;
-  }, [generation?.results, imageIndex, src]);
-
-  const resultId = useMemo(() => {
-    if (!generation?.results?.length) return null;
-    const r = generation.results[imageIndex] ?? generation.results[0];
-    return r?.id ?? null;
-  }, [generation?.results, imageIndex]);
-
   const productCategories = useMemo(
     () => getActiveProductCategories(generation?.input ?? null),
     [generation?.input],
   );
 
-  const results = generation?.results ?? [];
-  const hasMultiple = results.length > 1;
+  const sceneImages = useMemo(() => {
+    const input = generation?.input;
+    if (!input) return [];
+    const entries: { label: string; url: string }[] = [];
+    if (typeof input.dollhouseView === 'string' && input.dollhouseView) entries.push({ label: 'Dollhouse', url: input.dollhouseView });
+    if (typeof input.realPhoto === 'string' && input.realPhoto) entries.push({ label: 'Real Photo', url: input.realPhoto });
+    if (typeof input.moodBoard === 'string' && input.moodBoard) entries.push({ label: 'Mood Board', url: input.moodBoard });
+    return entries;
+  }, [generation?.input]);
+
+  /** Output image URL for this modal (the one that was clicked). Never changes when switching scene comparison. */
+  const outputUrl = useMemo(() => {
+    const list = generation?.results ?? [];
+    if (list.length === 0) return src;
+    const idx = list.findIndex((r) => r.url === src);
+    return idx >= 0 ? list[idx].url : list[0]?.url ?? src;
+  }, [generation?.results, src]);
+
+  /** Result ID for the evaluation form: always the output that was opened (matches src). */
+  const initialResultId = useMemo(() => {
+    if (!generation?.results?.length) return null;
+    const idx = generation.results.findIndex((r) => r.url === src);
+    const r = idx >= 0 ? generation.results[idx] : generation.results[0];
+    return r?.id ?? null;
+  }, [generation?.results, src]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   return createPortal(
     <div
@@ -105,10 +110,10 @@ export function GridLightbox({
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[95vh] max-w-[95vw] cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="relative flex w-[1200px] max-w-[95vw] max-h-[90vh] cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2.5">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-3">
             <Link
               href={runHref}
@@ -116,9 +121,9 @@ export function GridLightbox({
             >
               View run details &rarr;
             </Link>
-            {hasMultiple && (
+            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && (
               <span className="text-sm text-gray-500">
-                Image {imageIndex + 1} of {results.length}
+                Comparing with {sceneImages[selectedSceneIndex].label}
               </span>
             )}
           </div>
@@ -133,54 +138,65 @@ export function GridLightbox({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-auto p-4">
+        <div className="flex flex-1 flex-col overflow-auto p-8">
           <div className="relative flex flex-col items-center">
-            {hasMultiple && (
-              <>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setImageIndex((i) => (i <= 0 ? results.length - 1 : i - 1)); }}
-                  className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setImageIndex((i) => (i >= results.length - 1 ? 0 : i + 1)); }}
-                  className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </button>
-              </>
-            )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={displayUrl}
-              alt=""
-              className="max-h-[50vh] w-auto rounded-lg object-contain"
-            />
-            {hasMultiple && (
-              <div className="mt-2 flex gap-1 overflow-x-auto pb-1">
-                {results.map((r, i) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setImageIndex(i); }}
-                    className={`shrink-0 rounded border-2 overflow-hidden ${i === imageIndex ? 'border-primary-500' : 'border-transparent hover:border-gray-300'}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.url} alt="" className="h-14 w-14 object-cover" />
-                  </button>
-                ))}
+            {/* Fixed-size image area so switching between output-only and comparison doesn't resize */}
+            <div className="flex h-[520px] w-full min-w-0 items-center justify-center rounded-lg bg-[#1a1a1a]">
+              {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] ? (
+                <ComparisonSlider
+                  leftImageUrl={sceneImages[selectedSceneIndex].url}
+                  rightImageUrl={outputUrl}
+                  position={comparisonPosition}
+                  onPositionChange={setComparisonPosition}
+                  leftImageAlt={sceneImages[selectedSceneIndex].label}
+                  rightImageAlt="Output"
+                  leftLabel={sceneImages[selectedSceneIndex].label}
+                  rightLabel="Output"
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={outputUrl}
+                  alt="Output"
+                  className="max-h-full max-w-full rounded-lg object-contain"
+                />
+              )}
+            </div>
+            {sceneImages.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-500">Compare with:</span>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {sceneImages.map((img, i) => (
+                    <button
+                      key={img.label}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSceneIndex(selectedSceneIndex === i ? null : i);
+                      }}
+                      className={`shrink-0 flex flex-col items-center gap-0.5 rounded border-2 overflow-hidden ${selectedSceneIndex === i ? 'border-primary-500 ring-1 ring-primary-500' : 'border-transparent hover:border-gray-300'}`}
+                      title={selectedSceneIndex === i ? 'Click to disable compare' : 'Click to compare with scene reference'}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt={img.label} className="h-14 w-14 object-cover" />
+                      <span className="text-[10px] font-medium text-gray-500 max-w-[4rem] truncate">{img.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {selectedSceneIndex !== null && (
+                  <span className="text-xs text-gray-400">Compare on · click again to turn off</span>
+                )}
               </div>
             )}
           </div>
           {generationId && (
-            <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
+            <div className="mt-6 grid grid-cols-1 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-2">
+              {initialResultId && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700">Scene & product issues</p>
+                  <ImageEvaluationForm resultId={initialResultId} productCategories={productCategories} />
+                </div>
+              )}
               <div>
                 <p className="mb-2 text-sm font-medium text-gray-700">Rate generation</p>
                 {generation ? (
@@ -194,12 +210,6 @@ export function GridLightbox({
                   <p className="text-sm text-gray-500">Loading…</p>
                 )}
               </div>
-              {resultId && (
-                <div className="border-t border-gray-200 pt-4">
-                  <p className="mb-2 text-sm font-medium text-gray-700">Scene & product issues</p>
-                  <ImageEvaluationForm resultId={resultId} productCategories={productCategories} />
-                </div>
-              )}
             </div>
           )}
         </div>

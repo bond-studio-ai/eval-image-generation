@@ -21,7 +21,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [runName, setRunName] = useState('');
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
-  const [numberOfImages, setNumberOfImages] = useState(1);
+  const [numberOfImages, setNumberOfImages] = useState(8);
   const [customImages, setCustomImages] = useState(false);
   const [strategySearch, setStrategySearch] = useState('');
   const [presetSearch, setPresetSearch] = useState('');
@@ -99,7 +99,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
       setRunName('');
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
-      setNumberOfImages(1);
+      setNumberOfImages(8);
       setCustomImages(false);
       setStrategySearch('');
       setPresetSearch('');
