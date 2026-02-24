@@ -9,6 +9,7 @@ export interface DagStep {
   promptName?: string | null;
   temperature?: string | number | null;
   status?: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  error?: string | null;
   dollhouseViewFromStep: number | null;
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
@@ -285,6 +286,11 @@ export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
                 </div>
                 {/* Body */}
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
+                  {step.status === 'skipped' && step.error && (
+                    <div className="text-[10px] text-amber-700" title={step.error}>
+                      {truncate(step.error, 36)}
+                    </div>
+                  )}
                   {step.promptName && (
                     <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
                       <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

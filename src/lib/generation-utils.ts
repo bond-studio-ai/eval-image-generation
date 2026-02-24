@@ -1,4 +1,5 @@
 import { toUrlArray } from './image-utils';
+import { CATEGORY_LABELS } from './validation';
 
 /** Product category: camelCase (DB/input) -> snake_case (evaluation form) */
 const PRODUCT_COLUMN_KEYS: { camelKey: string; snakeKey: string }[] = [
@@ -36,6 +37,33 @@ export function getActiveProductCategories(input: Record<string, unknown> | null
   for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
     const urls = toUrlArray(input[camelKey]);
     if (urls.length > 0) out.push(snakeKey);
+  }
+  return out;
+}
+
+export interface ProductImageItem {
+  key: string;
+  label: string;
+  urls: string[];
+}
+
+/**
+ * Returns product category images from generation input for display (grid, etc.).
+ */
+export function getProductImagesFromInput(
+  input: Record<string, unknown> | null | undefined,
+): ProductImageItem[] {
+  if (!input) return [];
+  const out: ProductImageItem[] = [];
+  for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
+    const urls = toUrlArray(input[camelKey]);
+    if (urls.length > 0) {
+      out.push({
+        key: snakeKey,
+        label: CATEGORY_LABELS[snakeKey] ?? snakeKey,
+        urls,
+      });
+    }
   }
   return out;
 }

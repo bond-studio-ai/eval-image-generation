@@ -135,6 +135,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       realPhotoFromStep: sr.step!.realPhotoFromStep,
       moodBoardFromStep: sr.step!.moodBoardFromStep,
       status: sr.status as DagStep['status'],
+      error: sr.error,
     }));
 
   return (
@@ -332,6 +333,11 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                   <p className="text-sm font-medium text-red-700">Step failed</p>
                   {sr.error && <p className="mt-1 text-sm text-red-600">{sr.error}</p>}
+                </div>
+              ) : sr.status === 'skipped' ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-700">Step skipped</p>
+                  {sr.error && <p className="mt-1 text-sm text-amber-600">{sr.error}</p>}
                 </div>
               ) : sr.status === 'running' ? (
                 <div className="flex items-center gap-2 py-4">
