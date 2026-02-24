@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+type Rating = 'GOOD' | 'FAILED' | null;
 
 interface MatrixCellRatingOverlayProps {
   generationId: string;
@@ -8,16 +10,45 @@ interface MatrixCellRatingOverlayProps {
   className?: string;
 }
 
-/** Renders an overlay with scene/product thumbs up/down. Place inside a group-hover parent (e.g. button.group). */
+const ratingCache = new Map<string, { scene: Rating; product: Rating }>();
+
 export function MatrixCellRatingOverlay({
   generationId,
   onRated,
   className = '',
 }: MatrixCellRatingOverlayProps) {
+  const cached = ratingCache.get(generationId);
+  const [sceneRating, setSceneRating] = useState<Rating>(cached?.scene ?? null);
+  const [productRating, setProductRating] = useState<Rating>(cached?.product ?? null);
   const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(!!cached);
+
+  useEffect(() => {
+    if (fetched) return;
+    let cancelled = false;
+    fetch(`/api/v1/generations/${generationId}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const d = json.data ?? json;
+        const scene: Rating = d.sceneAccuracyRating ?? d.scene_accuracy_rating ?? null;
+        const product: Rating = d.productAccuracyRating ?? d.product_accuracy_rating ?? null;
+        setSceneRating(scene);
+        setProductRating(product);
+        ratingCache.set(generationId, { scene, product });
+        setFetched(true);
+      })
+      .catch(() => { if (!cancelled) setFetched(true); });
+    return () => { cancelled = true; };
+  }, [generationId, fetched]);
 
   const rate = useCallback(
     async (scene?: 'GOOD' | 'FAILED', product?: 'GOOD' | 'FAILED') => {
+      const prevScene = sceneRating;
+      const prevProduct = productRating;
+      if (scene !== undefined) setSceneRating(scene);
+      if (product !== undefined) setProductRating(product);
+
       setLoading(true);
       try {
         const body: Record<string, string> = {};
@@ -28,20 +59,52 @@ export function MatrixCellRatingOverlay({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        if (res.ok) onRated?.();
-      } catch { /* ignore */ }
-      finally { setLoading(false); }
+        if (res.ok) {
+          const json = await res.json();
+          const d = json.data ?? json;
+          const newScene: Rating = d.scene_accuracy_rating ?? prevScene;
+          const newProduct: Rating = d.product_accuracy_rating ?? prevProduct;
+          setSceneRating(newScene);
+          setProductRating(newProduct);
+          ratingCache.set(generationId, { scene: newScene, product: newProduct });
+          onRated?.();
+        } else {
+          setSceneRating(prevScene);
+          setProductRating(prevProduct);
+        }
+      } catch {
+        setSceneRating(prevScene);
+        setProductRating(prevProduct);
+      } finally {
+        setLoading(false);
+      }
     },
-    [generationId, onRated],
+    [generationId, onRated, sceneRating, productRating],
   );
 
-  const btn = 'rounded p-1.5 text-white/95 hover:bg-white/20 hover:text-white disabled:opacity-50 transition-colors';
   const thumbUp = (
-    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 11V4a3 3 0 0 1 3-3h7" /></svg>
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 11V4a3 3 0 0 1 3-3h7" />
+    </svg>
   );
   const thumbDown = (
-    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13v7" /></svg>
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13v7" />
+    </svg>
   );
+
+  const btnBase = 'rounded-md p-1.5 transition-all disabled:opacity-50';
+
+  function thumbBtnClass(current: Rating, target: 'GOOD' | 'FAILED') {
+    if (current === target) {
+      return target === 'GOOD'
+        ? `${btnBase} bg-green-500 text-white shadow-sm ring-1 ring-green-400`
+        : `${btnBase} bg-red-500 text-white shadow-sm ring-1 ring-red-400`;
+    }
+    return target === 'GOOD'
+      ? `${btnBase} text-green-300 hover:bg-green-500/30 hover:text-green-200`
+      : `${btnBase} text-red-300 hover:bg-red-500/30 hover:text-red-200`;
+  }
 
   return (
     <div
@@ -52,10 +115,10 @@ export function MatrixCellRatingOverlay({
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Scene</span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate('GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Scene good">
+            <button type="button" onClick={() => rate('GOOD')} disabled={loading} className={thumbBtnClass(sceneRating, 'GOOD')} title="Scene good">
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate('FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Scene failed">
+            <button type="button" onClick={() => rate('FAILED')} disabled={loading} className={thumbBtnClass(sceneRating, 'FAILED')} title="Scene failed">
               {thumbDown}
             </button>
           </div>
@@ -63,10 +126,10 @@ export function MatrixCellRatingOverlay({
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Product</span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate(undefined, 'GOOD')} disabled={loading} className={`${btn} text-green-300`} title="Product good">
+            <button type="button" onClick={() => rate(undefined, 'GOOD')} disabled={loading} className={thumbBtnClass(productRating, 'GOOD')} title="Product good">
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate(undefined, 'FAILED')} disabled={loading} className={`${btn} text-orange-300`} title="Product failed">
+            <button type="button" onClick={() => rate(undefined, 'FAILED')} disabled={loading} className={thumbBtnClass(productRating, 'FAILED')} title="Product failed">
               {thumbDown}
             </button>
           </div>
