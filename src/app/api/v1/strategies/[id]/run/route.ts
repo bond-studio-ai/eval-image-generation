@@ -206,7 +206,7 @@ async function executeSingleStep(
     await db
       .update(strategyStepResult)
       .set({
-        status: 'failed',
+        status: 'skipped',
         error: `Preset is missing required input(s): ${missingRequirements.join(', ')}`,
       })
       .where(eq(strategyStepResult.id, stepResultId));
@@ -389,18 +389,33 @@ export async function executeSteps(runId: string, steps: StepRow[], strategyDefa
           const depResult = stepResultByStepId.get(depStep.id)!;
           await db
             .update(strategyStepResult)
-            .set({ status: 'failed', error: `Skipped: dependency step ${result.stepOrder} failed` })
+            .set({ status: 'skipped', error: `Dependency step ${result.stepOrder} failed` })
             .where(eq(strategyStepResult.id, depResult.id));
         }
       }
     }
   }
 
-  const hasFailed = failed.size > 0;
+  const finalResults = await db.query.strategyStepResult.findMany({
+    where: eq(strategyStepResult.strategyRunId, runId),
+    columns: { status: true },
+  });
+  const hasRealFailure = finalResults.some((r) => r.status === 'failed');
+  const allSkippedOrCompleted = finalResults.every((r) => r.status === 'completed' || r.status === 'skipped');
+
+  let runStatus: string;
+  if (hasRealFailure) {
+    runStatus = 'failed';
+  } else if (allSkippedOrCompleted && finalResults.some((r) => r.status === 'skipped')) {
+    runStatus = 'skipped';
+  } else {
+    runStatus = 'completed';
+  }
+
   await db
     .update(strategyRun)
     .set({
-      status: hasFailed ? 'failed' : 'completed',
+      status: runStatus,
       completedAt: new Date(),
     })
     .where(eq(strategyRun.id, runId));

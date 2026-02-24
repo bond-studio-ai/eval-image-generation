@@ -22,6 +22,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
   const [numberOfImages, setNumberOfImages] = useState(1);
+  const [customImages, setCustomImages] = useState(false);
   const [strategySearch, setStrategySearch] = useState('');
   const [presetSearch, setPresetSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -44,8 +45,8 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      fetch('/api/v1/strategies?limit=100').then((r) => r.json()),
-      fetch('/api/v1/input-presets?limit=100').then((r) => r.json()),
+      fetch('/api/v1/strategies?limit=100', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('/api/v1/input-presets?limit=100', { cache: 'no-store' }).then((r) => r.json()),
     ])
       .then(([stratRes, presetRes]) => {
         if (cancelled) return;
@@ -99,6 +100,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
       setNumberOfImages(1);
+      setCustomImages(false);
       setStrategySearch('');
       setPresetSearch('');
       onRunCreated?.();
@@ -308,42 +310,69 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               )}
 
               <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="num-images" className="text-sm font-medium text-gray-700">Images per combination</label>
-                    <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">Images per combination</span>
+                  <div className="inline-flex items-center gap-1.5">
+                    {[1, 2, 4, 8].map((n) => (
                       <button
+                        key={n}
                         type="button"
-                        onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
-                        disabled={numberOfImages <= 1}
-                        className="flex h-9 w-9 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                        onClick={() => { setNumberOfImages(n); setCustomImages(false); }}
+                        className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${
+                          !customImages && numberOfImages === n
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                        </svg>
+                        {n}
                       </button>
-                      <input
-                        id="num-images"
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={numberOfImages}
-                        onChange={(e) =>
-                          setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-                        }
-                        className="h-9 w-14 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
-                        disabled={numberOfImages >= 100}
-                        className="flex h-9 w-9 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                      </button>
-                    </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => { setCustomImages(true); if ([1, 2, 4, 8].includes(numberOfImages)) setNumberOfImages(3); }}
+                      className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${
+                        customImages
+                          ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      Custom
+                    </button>
+                    {customImages && (
+                      <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
+                          disabled={numberOfImages <= 1}
+                          className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                          </svg>
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          autoFocus
+                          value={numberOfImages}
+                          onChange={(e) =>
+                            setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
+                          }
+                          className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
+                          disabled={numberOfImages >= 100}
+                          className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-gray-500">

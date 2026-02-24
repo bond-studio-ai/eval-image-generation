@@ -455,7 +455,7 @@ function MatrixView({
                           <Link href={`/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
                             <StatusBadge status={firstRun.status} />
                           </Link>
-                          {firstRun.status === 'failed' && (
+                          {(firstRun.status === 'failed' || firstRun.status === 'skipped') && (
                             <button type="button" onClick={() => onRetry(firstRun.id)}
                               disabled={retryingRunId === firstRun.id}
                               className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
@@ -604,7 +604,7 @@ function RunCell({
             <Link href={`/strategies/${run.strategyId}/runs/${run.id}`}>
               <StatusBadge status={run.status} />
             </Link>
-            {run.status === 'failed' && (
+            {(run.status === 'failed' || run.status === 'skipped') && (
               <button type="button" onClick={() => onRetry(run.id)}
                 disabled={retryingRunId === run.id}
                 className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
@@ -624,6 +624,7 @@ function StatusBadge({ status }: { status: string }) {
     running: 'bg-blue-100 text-blue-700',
     completed: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
+    skipped: 'bg-amber-100 text-amber-700',
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>

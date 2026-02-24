@@ -55,6 +55,7 @@ function StatusBadge({ status }: { status: string }) {
     running: 'bg-blue-100 text-blue-700',
     completed: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
+    skipped: 'bg-amber-100 text-amber-700',
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
@@ -150,7 +151,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {data.status !== 'failed' && (
+          {data.status !== 'failed' && data.status !== 'skipped' && (
             <button
               type="button"
               onClick={() => handleMarkStatus('failed')}
@@ -166,7 +167,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
               Mark as failed
             </button>
           )}
-          {data.status === 'failed' && (
+          {(data.status === 'failed' || data.status === 'skipped') && (
             <>
               <button
                 type="button"

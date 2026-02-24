@@ -8,7 +8,7 @@ export interface DagStep {
   outputResolution?: string;
   promptName?: string | null;
   temperature?: string | number | null;
-  status?: 'pending' | 'running' | 'completed' | 'failed';
+  status?: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   dollhouseViewFromStep: number | null;
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
@@ -128,6 +128,7 @@ const STATUS_BORDER: Record<string, string> = {
   running: 'border-blue-400',
   completed: 'border-green-400',
   failed: 'border-red-400',
+  skipped: 'border-amber-400',
   default: 'border-gray-200',
 };
 
@@ -136,6 +137,7 @@ const STATUS_BG: Record<string, string> = {
   running: 'bg-blue-50',
   completed: 'bg-green-50',
   failed: 'bg-red-50',
+  skipped: 'bg-amber-50',
   default: 'bg-white',
 };
 
@@ -144,6 +146,7 @@ const STATUS_HEADER_BG: Record<string, string> = {
   running: 'bg-blue-100',
   completed: 'bg-green-100',
   failed: 'bg-red-100',
+  skipped: 'bg-amber-100',
   default: 'bg-gray-100',
 };
 
@@ -152,6 +155,7 @@ const STATUS_HEADER_TEXT: Record<string, string> = {
   running: 'text-blue-700',
   completed: 'text-green-700',
   failed: 'text-red-700',
+  skipped: 'text-amber-700',
   default: 'text-gray-900',
 };
 
@@ -271,6 +275,11 @@ export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
                   {step.status === 'failed' && (
                     <svg className="h-4 w-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {step.status === 'skipped' && (
+                    <svg className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" />
                     </svg>
                   )}
                 </div>

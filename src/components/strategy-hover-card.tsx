@@ -1,6 +1,7 @@
 'use client';
 
 import { STRATEGY_PROPERTY_COLORS } from '@/lib/strategy-property-colors';
+import { ViewPromptModal } from '@/components/view-prompt-modal';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -15,7 +16,7 @@ interface StrategyData {
   temperature: string | null;
   useGoogleSearch: boolean;
   tagImages: boolean;
-  steps: { stepOrder: number; name: string | null; promptVersion?: { name: string | null } | null }[];
+  steps: { stepOrder: number; name: string | null; promptVersion?: { id: string; name: string | null } | null }[];
 }
 
 const cache = new Map<string, StrategyData>();
@@ -30,6 +31,7 @@ export function StrategyHoverCard({
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<StrategyData | null>(cache.get(strategyId) ?? null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -141,8 +143,17 @@ export function StrategyHoverCard({
                       <li key={step.stepOrder} className="text-xs text-gray-600">
                         <span className="font-medium text-gray-800">{step.stepOrder}.</span>{' '}
                         {step.name ?? 'Untitled'}
-                        {step.promptVersion?.name && (
-                          <span className="text-gray-400"> — {step.promptVersion.name}</span>
+                        {step.promptVersion && (
+                          <>
+                            <span className="text-gray-400"> — </span>
+                            <button
+                              type="button"
+                              onClick={() => setViewingPrompt({ id: step.promptVersion!.id, name: step.promptVersion!.name })}
+                              className="text-primary-600 hover:text-primary-500 hover:underline"
+                            >
+                              {step.promptVersion.name || 'Untitled prompt'}
+                            </button>
+                          </>
                         )}
                       </li>
                     ))}
@@ -153,6 +164,13 @@ export function StrategyHoverCard({
           )}
         </div>,
         document.body,
+      )}
+      {viewingPrompt && (
+        <ViewPromptModal
+          promptVersionId={viewingPrompt.id}
+          promptVersionName={viewingPrompt.name}
+          onClose={() => setViewingPrompt(null)}
+        />
       )}
     </>
   );

@@ -28,26 +28,25 @@ export async function POST(
       return errorResponse('NOT_FOUND', 'Strategy run not found');
     }
 
-    if (run.status !== 'failed') {
-      return errorResponse('VALIDATION_ERROR', 'Only failed runs can be retried');
+    if (run.status !== 'failed' && run.status !== 'skipped') {
+      return errorResponse('VALIDATION_ERROR', 'Only failed or skipped runs can be retried');
     }
 
-    const failedResultIds = run.stepResults
-      .filter((sr) => sr.status === 'failed')
+    const retryableResultIds = run.stepResults
+      .filter((sr) => sr.status === 'failed' || sr.status === 'skipped')
       .map((sr) => sr.id);
 
-    if (failedResultIds.length === 0) {
-      return errorResponse('VALIDATION_ERROR', 'No failed steps to retry');
+    if (retryableResultIds.length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'No failed or skipped steps to retry');
     }
 
-    // Reset failed step results to pending
     await db
       .update(strategyStepResult)
       .set({ status: 'pending', error: null, outputUrl: null, generationId: null, executionTime: null })
       .where(
         and(
           eq(strategyStepResult.strategyRunId, runId),
-          inArray(strategyStepResult.id, failedResultIds),
+          inArray(strategyStepResult.id, retryableResultIds),
         ),
       );
 

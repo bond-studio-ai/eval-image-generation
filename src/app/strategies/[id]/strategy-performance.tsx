@@ -53,7 +53,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
   return (
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
       <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
         <div>
           <p className="text-xs font-medium text-gray-500">Generations</p>
           <p className="mt-0.5 text-xl font-semibold text-gray-900">{generation_count}</p>
@@ -69,6 +69,10 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
         <div>
           <p className="text-xs font-medium text-gray-500">Good (product %)</p>
           <p className="mt-0.5 text-xl font-semibold text-green-600">{product_good_pct}%</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-gray-500">Bad (product %)</p>
+          <p className="mt-0.5 text-xl font-semibold text-orange-600">{product_failed_pct}%</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Not rated %</p>
