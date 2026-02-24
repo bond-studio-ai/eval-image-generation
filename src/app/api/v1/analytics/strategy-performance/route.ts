@@ -6,7 +6,11 @@ import { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-/** GET: list strategies with generation count, good/bad/not-rated %, avg exec time for analytics. */
+function pct(n: number, total: number) {
+  return total > 0 ? Math.round((n / total) * 10000) / 100 : 0;
+}
+
+/** GET: list strategies with generation count, scene/product good/failed %, not-rated %, avg exec time. */
 export async function GET(_request: NextRequest) {
   try {
     const rows = await db
@@ -14,9 +18,13 @@ export async function GET(_request: NextRequest) {
         id: strategy.id,
         name: strategy.name,
         generationCount: sql<number>`COUNT(${generation.id})::int`,
-        goodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'GOOD' OR ${generation.productAccuracyRating} = 'GOOD')::int`,
-        badCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'FAILED' OR ${generation.productAccuracyRating} = 'FAILED')::int`,
-        notRatedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} IS NULL AND ${generation.productAccuracyRating} IS NULL)::int`,
+        sceneGoodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'GOOD')::int`,
+        sceneFailedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'FAILED')::int`,
+        sceneUnsetCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.id} IS NOT NULL AND ${generation.sceneAccuracyRating} IS NULL)::int`,
+        productGoodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.productAccuracyRating} = 'GOOD')::int`,
+        productFailedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.productAccuracyRating} = 'FAILED')::int`,
+        productUnsetCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.id} IS NOT NULL AND ${generation.productAccuracyRating} IS NULL)::int`,
+        notRatedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.id} IS NOT NULL AND ${generation.sceneAccuracyRating} IS NULL AND ${generation.productAccuracyRating} IS NULL)::int`,
         avgExecTimeMs: sql<number | null>`ROUND(AVG(${strategyStepResult.executionTime})::numeric, 0)::int`,
       })
       .from(strategy)
@@ -34,16 +42,17 @@ export async function GET(_request: NextRequest) {
 
     const data = rows.map((r) => {
       const total = Number(r.generationCount ?? 0);
-      const good = Number(r.goodCount ?? 0);
-      const bad = Number(r.badCount ?? 0);
-      const notRated = Number(r.notRatedCount ?? 0);
       return {
         id: r.id,
         name: r.name,
         generationCount: total,
-        goodPct: total > 0 ? Math.round((good / total) * 10000) / 100 : 0,
-        badPct: total > 0 ? Math.round((bad / total) * 10000) / 100 : 0,
-        notRatedPct: total > 0 ? Math.round((notRated / total) * 10000) / 100 : 0,
+        sceneGoodPct: pct(Number(r.sceneGoodCount ?? 0), total),
+        sceneFailedPct: pct(Number(r.sceneFailedCount ?? 0), total),
+        sceneUnsetPct: pct(Number(r.sceneUnsetCount ?? 0), total),
+        productGoodPct: pct(Number(r.productGoodCount ?? 0), total),
+        productFailedPct: pct(Number(r.productFailedCount ?? 0), total),
+        productUnsetPct: pct(Number(r.productUnsetCount ?? 0), total),
+        notRatedPct: pct(Number(r.notRatedCount ?? 0), total),
         avgExecTimeMs: r.avgExecTimeMs != null ? Number(r.avgExecTimeMs) : null,
       };
     });
