@@ -241,12 +241,12 @@ async function executeSingleStep(
     }
   });
 
-  const model = step.model ?? strategyDefaults.model;
-  const aspectRatio = step.aspectRatio ?? strategyDefaults.aspectRatio;
-  const outputResolution = step.outputResolution ?? strategyDefaults.outputResolution;
-  const temperature = step.temperature ?? strategyDefaults.temperature;
-  const useGoogleSearch = step.useGoogleSearch ?? strategyDefaults.useGoogleSearch;
-  const tagImages = step.tagImages ?? strategyDefaults.tagImages;
+  const model = strategyDefaults.model;
+  const aspectRatio = strategyDefaults.aspectRatio;
+  const outputResolution = strategyDefaults.outputResolution;
+  const temperature = strategyDefaults.temperature;
+  const useGoogleSearch = strategyDefaults.useGoogleSearch;
+  const tagImages = strategyDefaults.tagImages;
 
   const geminiResult = await generateWithGemini({
     systemPrompt: pv.systemPrompt,

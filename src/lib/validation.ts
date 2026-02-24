@@ -75,7 +75,7 @@ export const strategyStepSchema = z.object({
   step_order: z.number().int().min(1),
   name: z.string().max(255).optional().nullable(),
   prompt_version_id: z.string().uuid(),
-  model: z.string().max(255).default('gemini-2.5-flash-image'),
+  model: z.string().max(255).default('gemini-3-pro-image-preview'),
   aspect_ratio: z.string().max(20).default('1:1'),
   output_resolution: z.string().max(20).default('1K'),
   temperature: z.coerce.number().min(0).max(2).default(1.0),

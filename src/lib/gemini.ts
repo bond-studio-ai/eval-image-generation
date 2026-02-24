@@ -65,10 +65,22 @@ function toCdnUrl(url: string): string {
 /** HTTP status codes that often indicate "image too large" from CDN (e.g. 502 Bad Gateway). */
 const FALLBACK_STATUS_CODES = new Set([502, 503, 504]);
 
-async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
+const DEBUG_GEMINI = process.env.DEBUG_GEMINI_IMAGES === '1' || process.env.DEBUG_GEMINI_IMAGES === 'true';
+
+async function urlToBase64(
+  url: string,
+  label: string,
+): Promise<{ base64: string; mimeType: string; usedFallback: boolean; fetchUrl: string; bytes: number }> {
   if (url.startsWith('data:')) {
     const match = url.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (match) return { mimeType: match[1], base64: match[2] };
+    if (match) {
+      const base64 = match[2];
+      const bytes = Math.round((base64.length * 3) / 4);
+      if (DEBUG_GEMINI) {
+        console.debug('[Gemini image]', { label, source: 'data URL', mimeType: match[1], bytes });
+      }
+      return { base64, mimeType: match[1], usedFallback: false, fetchUrl: '(data)', bytes };
+    }
     throw new Error(`Invalid data URL format`);
   }
 
@@ -80,10 +92,21 @@ async function urlToBase64(url: string): Promise<{ base64: string; mimeType: str
   };
 
   let res = await tryFetch(cdnUrl);
+  let usedFallback = false;
+  let fetchUrl = cdnUrl;
 
   if (!res.ok && FALLBACK_STATUS_CODES.has(res.status)) {
-    const fallbackUrl = withImageParams(cdnUrl, 1024);
-    res = await tryFetch(fallbackUrl);
+    fetchUrl = withImageParams(cdnUrl, 1024);
+    if (DEBUG_GEMINI) {
+      console.debug('[Gemini image]', {
+        label,
+        firstAttempt: cdnUrl,
+        firstStatus: res.status,
+        fallbackUrl: fetchUrl,
+      });
+    }
+    res = await tryFetch(fetchUrl);
+    usedFallback = true;
   }
 
   if (!res.ok) {
@@ -98,7 +121,24 @@ async function urlToBase64(url: string): Promise<{ base64: string; mimeType: str
   }
   const base64 = Buffer.from(buffer).toString('base64');
 
-  return { base64, mimeType: contentType };
+  if (DEBUG_GEMINI) {
+    console.debug('[Gemini image]', {
+      label,
+      fetchUrl: fetchUrl.length > 120 ? fetchUrl.slice(0, 120) + '...' : fetchUrl,
+      usedFallback,
+      status: res.status,
+      bytes: buffer.byteLength,
+      mimeType: contentType,
+    });
+  }
+
+  return {
+    base64,
+    mimeType: contentType,
+    usedFallback,
+    fetchUrl,
+    bytes: buffer.byteLength,
+  };
 }
 
 /**
@@ -174,8 +214,29 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
 
   // Convert all input image URLs to base64
   const imageData = await Promise.all(
-    req.inputImages.map(({ url }) => urlToBase64(url)),
+    req.inputImages.map(({ url, label }) => urlToBase64(url, label)),
   );
+
+  if (DEBUG_GEMINI) {
+    console.debug('[Gemini request]', {
+      model: req.model,
+      imageCount: req.inputImages.length,
+      images: imageData.map((d, i) => ({
+        label: req.inputImages[i].label,
+        bytes: d.bytes,
+        mimeType: d.mimeType,
+        usedFallback: d.usedFallback,
+        fetchUrl: d.fetchUrl?.length > 100 ? d.fetchUrl.slice(0, 100) + '...' : d.fetchUrl,
+      })),
+      aspectRatio: req.aspectRatio,
+      imageSize: req.imageSize,
+      temperature: req.temperature,
+      useGoogleSearch: req.useGoogleSearch,
+      tagImages: req.tagImages !== false,
+      systemPromptLength: req.systemPrompt?.length ?? 0,
+      userPromptLength: req.userPrompt?.length ?? 0,
+    });
+  }
 
   // Build the contents array: optionally label each image so Gemini knows what it is, then the user prompt
   const shouldTag = req.tagImages !== false; // default true
@@ -218,6 +279,19 @@ export async function generateWithGemini(req: GeminiGenerateRequest): Promise<Ge
     ...(Object.keys(imageConfig).length > 0 && { imageConfig }),
     ...(req.useGoogleSearch && { tools: [{ googleSearch: {} }] }),
   };
+
+  if (DEBUG_GEMINI) {
+    console.debug('[Gemini payload]', {
+      partsCount: userParts.length,
+      partSummary: userParts.map((p, i) =>
+        'text' in p && p.text
+          ? `text[${i}]: "${String(p.text).slice(0, 60)}..."`
+          : 'inlineData' in p && p.inlineData
+            ? `inlineData[${i}]: ${(p.inlineData as { mimeType?: string }).mimeType} ${Math.round(((p.inlineData as { data?: string }).data?.length ?? 0) * 0.75 / 1024)}KB`
+            : `part[${i}]`,
+      ),
+    });
+  }
 
   const callGemini = () =>
     ai.models.generateContent({ model: req.model, contents, config: apiConfig });

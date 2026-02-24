@@ -65,7 +65,7 @@ function defaultStep(promptVersionId: string): StepData {
   return {
     name: '',
     prompt_version_id: promptVersionId,
-    model: 'gemini-2.5-flash-image',
+    model: 'gemini-3-pro-image-preview',
     aspect_ratio: '1:1',
     output_resolution: '1K',
     temperature: 1.0,
@@ -91,7 +91,7 @@ const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', 
 const RESOLUTIONS = ['1K', '2K', '4K'];
 
 const defaultStrategySettings: StrategySettings = {
-  model: 'gemini-2.5-flash-image',
+  model: 'gemini-3-pro-image-preview',
   aspect_ratio: '1:1',
   output_resolution: '1K',
   temperature: 1.0,
@@ -167,7 +167,12 @@ export function StrategyBuilder({
           id: s.id ?? undefined,
           name: s.name.trim() || null,
           step_order: i + 1,
-          temperature: s.temperature,
+          model: strategySettings.model,
+          aspect_ratio: strategySettings.aspect_ratio,
+          output_resolution: strategySettings.output_resolution,
+          temperature: strategySettings.temperature,
+          use_google_search: strategySettings.use_google_search,
+          tag_images: strategySettings.tag_images,
           include_dollhouse: s.include_dollhouse,
           include_real_photo: s.include_real_photo,
           include_mood_board: s.include_mood_board,

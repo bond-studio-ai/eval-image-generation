@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       .values({
         name,
         description: description ?? null,
-        model: model ?? 'gemini-2.5-flash-image',
+        model: model ?? 'gemini-3-pro-image-preview',
         aspectRatio: aspect_ratio ?? '1:1',
         outputResolution: output_resolution ?? '1K',
         temperature: temperature != null ? String(temperature) : '1.00',

@@ -250,7 +250,7 @@ export const strategy = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
     // Strategy-level model settings (used by all steps unless step overrides)
-    model: varchar('model', { length: 255 }).notNull().default('gemini-2.5-flash-image'),
+    model: varchar('model', { length: 255 }).notNull().default('gemini-3-pro-image-preview'),
     aspectRatio: varchar('aspect_ratio', { length: 20 }).notNull().default('1:1'),
     outputResolution: varchar('output_resolution', { length: 20 }).notNull().default('1K'),
     temperature: decimal('temperature', { precision: 3, scale: 2 }).notNull().default('1.00'),
@@ -287,7 +287,7 @@ export const strategyStep = pgTable(
       .references(() => promptVersion.id, { onDelete: 'restrict' }),
 
     // Per-step model settings
-    model: varchar('model', { length: 255 }).notNull().default('gemini-2.5-flash-image'),
+    model: varchar('model', { length: 255 }).notNull().default('gemini-3-pro-image-preview'),
     aspectRatio: varchar('aspect_ratio', { length: 20 }).notNull().default('1:1'),
     outputResolution: varchar('output_resolution', { length: 20 }).notNull().default('1K'),
     temperature: decimal('temperature', { precision: 3, scale: 2 }).notNull().default('1.00'),
