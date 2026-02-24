@@ -278,7 +278,7 @@ export function StrategyPerformanceSection() {
                             <IssueList
                               title="Scene accuracy issues"
                               items={breakdown.scene_issues}
-                              total={breakdown.rating_summary?.total ?? 0}
+                              total={(breakdown.rating_summary?.scene_good ?? 0) + (breakdown.rating_summary?.scene_failed ?? 0)}
                               colorClass="bg-red-100 text-red-700"
                             />
 
@@ -286,7 +286,7 @@ export function StrategyPerformanceSection() {
                             <IssueList
                               title="Product accuracy issues"
                               items={breakdown.product_issues}
-                              total={breakdown.rating_summary?.total ?? 0}
+                              total={(breakdown.rating_summary?.product_good ?? 0) + (breakdown.rating_summary?.product_failed ?? 0)}
                               colorClass="bg-amber-100 text-amber-700"
                             />
 
