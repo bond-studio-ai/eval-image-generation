@@ -39,7 +39,7 @@ const POLL_INTERVAL = 5000;
 export function BatchRunsTab() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
@@ -94,11 +94,11 @@ export function BatchRunsTab() {
     try {
       const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}`, { method: 'DELETE' });
       if (!res.ok) return;
-      if (expandedId === batchId) setExpandedId(null);
+      setExpandedIds((prev) => { const next = new Set(prev); next.delete(batchId); return next; });
       await fetchBatches();
     } catch { /* ignore */ }
     finally { setDeletingBatchId(null); }
-  }, [fetchBatches, expandedId]);
+  }, [fetchBatches]);
 
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
 
@@ -128,7 +128,7 @@ export function BatchRunsTab() {
       </div>
 
       {batches.map((batch) => {
-        const isExpanded = expandedId === batch.id;
+        const isExpanded = expandedIds.has(batch.id);
         const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
 
         return (
@@ -136,7 +136,7 @@ export function BatchRunsTab() {
             <div className="flex w-full items-center justify-between px-5 py-3">
               <button
                 type="button"
-                onClick={() => setExpandedId(isExpanded ? null : batch.id)}
+                onClick={() => setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; })}
                 className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1"
               >
                 <svg
