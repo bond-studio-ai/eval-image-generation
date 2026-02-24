@@ -3,7 +3,6 @@
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
-import { ExecutionsRunButton } from '@/app/executions/executions-run-button';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -109,8 +108,7 @@ export function BatchRunsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <ExecutionsRunButton onRunCreated={fetchBatches} />
+      <div className="flex items-center justify-end">
         <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
           <button
             type="button"

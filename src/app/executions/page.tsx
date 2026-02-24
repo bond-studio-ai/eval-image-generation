@@ -6,6 +6,7 @@ import { and, asc, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-or
 import Link from 'next/link';
 import { fetchPromptVersions } from '@/lib/queries';
 import { GenerationsFilters } from '@/app/generations/generations-filters';
+import { ExecutionsPageHeader } from './executions-page-header';
 import { ExecutionsTabs } from './executions-tabs';
 
 export const dynamic = 'force-dynamic';
@@ -37,12 +38,7 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Runs</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Run strategies and browse generated images.
-        </p>
-      </div>
+      <ExecutionsPageHeader />
       <TabNav active="batches" />
       <ExecutionsTabs />
     </div>
@@ -173,12 +169,7 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Runs</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Run strategies and browse generated images.
-        </p>
-      </div>
+      <ExecutionsPageHeader />
       <TabNav active="generations" />
 
       <GenerationsFilters params={params} promptVersions={promptVersions} />
