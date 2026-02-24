@@ -1,11 +1,14 @@
 'use client';
 
 import { GridLightbox } from '@/components/grid-lightbox';
+import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
+import { ExecutionsRunButton } from '@/app/executions/executions-run-button';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
+  strategyId: string;
   status: string;
   createdAt: string;
   completedAt: string | null;
@@ -17,7 +20,7 @@ interface RunRow {
 
 interface BatchRow {
   id: string;
-  strategyId: string;
+  strategyId: string | null;
   strategyName: string | null;
   executionCount: number;
   createdAt: string;
@@ -34,7 +37,9 @@ export function BatchRunsTab() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
+  const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -68,27 +73,100 @@ export function BatchRunsTab() {
     finally { setRetryingRunId(null); }
   }, [fetchBatches]);
 
+  const handleMarkBatchFailed = useCallback(async (batchId: string) => {
+    setMarkingBatchId(batchId);
+    try {
+      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}/mark-failed`, { method: 'POST' });
+      if (!res.ok) return;
+      await fetchBatches();
+    } catch { /* ignore */ }
+    finally { setMarkingBatchId(null); }
+  }, [fetchBatches]);
+
   if (loading) return <p className="text-sm text-gray-500">Loading batch runs…</p>;
 
   if (batches.length === 0) {
-    return <p className="text-sm text-gray-600">No batch runs yet. Use &ldquo;Run Batch&rdquo; on a strategy to create one.</p>;
+    return <p className="text-sm text-gray-600">No batch runs yet. Use &ldquo;Run&rdquo; above or &ldquo;Run Batch&rdquo; on a strategy to create one.</p>;
   }
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <ExecutionsRunButton onRunCreated={fetchBatches} />
+        <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            List
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('matrix')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'matrix' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Matrix
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'matrix' ? (
+        <>
+          {batches.map((batch) => {
+            const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
+            return (
+              <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={batch.status} />
+                    {batch.strategyId != null ? (
+                      <Link
+                        href={`/strategies/${batch.strategyId}`}
+                        className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
+                      >
+                        {batch.strategyName ?? 'Unknown strategy'}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-semibold text-gray-900">{batch.strategyName ?? 'Multiple strategies'}</span>
+                    )}
+                    <span className="text-sm text-gray-600">
+                      {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} · {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(batch.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-100 p-4">
+                  <BatchMatrix
+                    runs={batch.runs}
+                    strategyId={batch.strategyId}
+                    retryingRunId={retryingRunId}
+                    onRetry={handleRetry}
+                    onRated={fetchBatches}
+                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : (
+      <>
       {batches.map((batch) => {
         const isExpanded = expandedId === batch.id;
         const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
 
         return (
           <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-            {/* Header - click to expand */}
-            <button
-              type="button"
-              onClick={() => setExpandedId(isExpanded ? null : batch.id)}
-              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
+            {/* Header row: left = expand, right = actions */}
+            <div className="flex w-full items-center justify-between px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : batch.id)}
+                className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1"
+              >
                 <svg
                   className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                   fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
@@ -96,13 +174,17 @@ export function BatchRunsTab() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
                 <StatusBadge status={batch.status} />
-                <Link
-                  href={`/strategies/${batch.strategyId}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
-                >
-                  {batch.strategyName ?? 'Unknown strategy'}
-                </Link>
+                {batch.strategyId != null ? (
+                  <Link
+                    href={`/strategies/${batch.strategyId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
+                  >
+                    {batch.strategyName ?? 'Unknown strategy'}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-semibold text-gray-900">{batch.strategyName ?? 'Multiple strategies'}</span>
+                )}
                 <span className="text-sm text-gray-600">
                   {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
                   {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
@@ -110,11 +192,23 @@ export function BatchRunsTab() {
                 <span className="text-xs text-gray-400">
                   {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
                 </span>
+              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {batch.status !== 'failed' && (
+                  <button
+                    type="button"
+                    onClick={() => handleMarkBatchFailed(batch.id)}
+                    disabled={markingBatchId === batch.id}
+                    className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {markingBatchId === batch.id ? '…' : 'Mark batch as failed'}
+                  </button>
+                )}
+                <span className="text-xs text-gray-400">
+                  {new Date(batch.createdAt).toLocaleString()}
+                </span>
               </div>
-              <span className="text-xs text-gray-400">
-                {new Date(batch.createdAt).toLocaleString()}
-              </span>
-            </button>
+            </div>
 
             {/* Expanded: matrix */}
             {isExpanded && (
@@ -124,6 +218,7 @@ export function BatchRunsTab() {
                   strategyId={batch.strategyId}
                   retryingRunId={retryingRunId}
                   onRetry={handleRetry}
+                  onRated={fetchBatches}
                   onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${batch.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
                 />
               </div>
@@ -131,6 +226,8 @@ export function BatchRunsTab() {
           </div>
         );
       })}
+      </>
+      )}
       {lightbox && (
         <GridLightbox
           src={lightbox.src}
@@ -148,15 +245,17 @@ export function BatchRunsTab() {
 
 function BatchMatrix({
   runs,
-  strategyId,
+  strategyId: _strategyId,
   retryingRunId,
   onRetry,
+  onRated,
   onImageClick,
 }: {
   runs: RunRow[];
-  strategyId: string;
+  strategyId: string | null;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
+  onRated?: () => void;
   onImageClick: (run: RunRow) => void;
 }) {
   const byPreset = new Map<string, RunRow[]>();
@@ -213,7 +312,7 @@ function BatchMatrix({
                           <button
                             type="button"
                             onClick={() => onImageClick(run)}
-                            className="group relative"
+                            className="group relative block"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={run.lastOutputUrl} alt=""
@@ -224,10 +323,13 @@ function BatchMatrix({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                               </svg>
                             </div>
+                            {run.lastOutputGenerationId && (
+                              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+                            )}
                           </button>
                         ) : (
                           <>
-                            <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
+                            <Link href={`/strategies/${run.strategyId}/runs/${run.id}`}>
                               <StatusBadge status={run.status} />
                             </Link>
                             {run.status === 'failed' && (

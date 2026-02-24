@@ -31,6 +31,8 @@ interface GenerationsListProps {
     prompt_version_id?: string;
     from?: string;
     to?: string;
+    sort?: string;
+    order?: string;
   };
 }
 
@@ -95,6 +97,8 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     if (filters.prompt_version_id) params.set('prompt_version_id', filters.prompt_version_id);
     if (filters.from) params.set('from', filters.from);
     if (filters.to) params.set('to', filters.to);
+    if (filters.sort) params.set('sort', filters.sort);
+    if (filters.order) params.set('order', filters.order);
 
     try {
       const res = await fetch(`/api/v1/generations?${params}`);

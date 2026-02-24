@@ -1,6 +1,7 @@
+import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
 import { db } from '@/db';
-import { generation, promptVersion } from '@/db/schema';
-import { and, count, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { generation } from '@/db/schema';
+import { count, isNotNull, or } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,40 +30,18 @@ async function getDistributionFor(
   });
 }
 
-async function getPromptPerformance() {
-  const sceneMap = sql`CASE scene_accuracy_rating WHEN 'FAILED' THEN 0 WHEN 'GOOD' THEN 1 END`;
-  const productMap = sql`CASE product_accuracy_rating WHEN 'FAILED' THEN 0 WHEN 'GOOD' THEN 1 END`;
-
-  return db
-    .select({
-      id: promptVersion.id,
-      name: promptVersion.name,
-      generationCount: count(generation.id),
-      avgSceneRating: sql<number>`ROUND(AVG(${sceneMap})::numeric, 2)`,
-      avgProductRating: sql<number>`ROUND(AVG(${productMap})::numeric, 2)`,
-    })
-    .from(promptVersion)
-    .leftJoin(generation, eq(generation.promptVersionId, promptVersion.id))
-    .where(isNull(promptVersion.deletedAt))
-    .groupBy(promptVersion.id)
-    .orderBy(sql`AVG(${sceneMap}) DESC NULLS LAST`)
-    .limit(10);
-}
-
 async function getOverviewStats() {
-  const [totalGens, ratedGens, totalPrompts] = await Promise.all([
+  const [totalGens, ratedGens] = await Promise.all([
     db.select({ count: count() }).from(generation),
     db
       .select({ count: count() })
       .from(generation)
       .where(or(isNotNull(generation.sceneAccuracyRating), isNotNull(generation.productAccuracyRating))),
-    db.select({ count: count() }).from(promptVersion).where(isNull(promptVersion.deletedAt)),
   ]);
 
   return {
     totalGenerations: totalGens[0]?.count ?? 0,
     ratedGenerations: ratedGens[0]?.count ?? 0,
-    totalPrompts: totalPrompts[0]?.count ?? 0,
   };
 }
 
@@ -99,10 +78,9 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
 }
 
 export default async function AnalyticsPage() {
-  const [sceneDist, productDist, performance, overview] = await Promise.all([
+  const [sceneDist, productDist, overview] = await Promise.all([
     getDistributionFor(generation.sceneAccuracyRating),
     getDistributionFor(generation.productAccuracyRating),
-    getPromptPerformance(),
     getOverviewStats(),
   ]);
 
@@ -110,11 +88,11 @@ export default async function AnalyticsPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
       <p className="mt-1 text-sm text-gray-600">
-        Insights into generation quality and prompt performance.
+        Insights into generation quality and strategy performance.
       </p>
 
       {/* Overview Stats */}
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <p className="text-sm font-medium text-gray-600">Total Generations</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalGenerations}</p>
@@ -129,10 +107,6 @@ export default async function AnalyticsPage() {
             of total
           </p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Active Prompts</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalPrompts}</p>
-        </div>
       </div>
 
       {/* Rating Distributions — side by side */}
@@ -141,52 +115,8 @@ export default async function AnalyticsPage() {
         <DistributionChart data={productDist} title="Product Accuracy" />
       </div>
 
-      {/* Prompt Performance */}
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-lg font-semibold text-gray-900">Prompt Performance</h2>
-        {performance.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No data yet.</p>
-        ) : (
-          <div className="mt-4 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Prompt
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Generations
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Avg Scene
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Avg Product
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {performance.map((p) => (
-                  <tr key={p.id}>
-                    <td className="py-3 pr-6 text-sm font-medium text-gray-900">
-                      {p.name || 'Untitled'}
-                    </td>
-                    <td className="px-6 py-3 text-right text-sm text-gray-700">
-                      {p.generationCount}
-                    </td>
-                    <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
-                      {p.avgSceneRating ?? '-'}
-                    </td>
-                    <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
-                      {p.avgProductRating ?? '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Strategy performance and error breakdown */}
+      <StrategyPerformanceSection />
     </div>
   );
 }

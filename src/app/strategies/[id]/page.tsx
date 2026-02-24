@@ -1,11 +1,13 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { db } from '@/db';
-import { strategy, strategyRunInputPreset, strategyStep } from '@/db/schema';
+import { strategy, strategyStep } from '@/db/schema';
 import { fetchInputPresets } from '@/lib/queries';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StrategyRunsList } from './runs-list';
+import { StrategyPerformance } from './strategy-performance';
+import { StrategySettingsPrompts } from './strategy-settings-prompts';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +52,9 @@ export default async function StrategyDetailPage({ params }: PageProps) {
   }
 
   const inputPresets = await fetchInputPresets(100);
-  const initialRuns = result.runs.map((run) => {
+  // Only batch runs count: include runs that belong to a batch
+  const batchRunsOnly = result.runs.filter((run) => run.batchRunId != null);
+  const initialRuns = batchRunsOnly.map((run) => {
     const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as { outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
     const lastResult = resultsWithOrder.length > 0
       ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
@@ -99,6 +103,25 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Strategy settings & prompts */}
+      <StrategySettingsPrompts
+        model={result.model}
+        aspectRatio={result.aspectRatio}
+        outputResolution={result.outputResolution}
+        temperature={result.temperature}
+        useGoogleSearch={result.useGoogleSearch}
+        tagImages={result.tagImages}
+        description={result.description}
+        steps={result.steps.map((s) => ({
+          stepOrder: s.stepOrder,
+          name: s.name,
+          promptVersionId: s.promptVersionId,
+          promptVersionName: s.promptVersion?.name ?? null,
+        }))}
+      />
+
+      <StrategyPerformance strategyId={result.id} />
+
       {/* Flow Diagram */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Execution Flow</h2>
@@ -110,10 +133,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
               steps={result.steps.map((step): DagStep => ({
                 stepOrder: step.stepOrder,
                 label: step.name || `Step ${step.stepOrder}`,
-                model: step.model,
-                aspectRatio: step.aspectRatio,
-                outputResolution: step.outputResolution,
-                temperature: step.temperature,
+                model: step.model ?? result.model,
+                aspectRatio: step.aspectRatio ?? result.aspectRatio,
+                outputResolution: step.outputResolution ?? result.outputResolution,
+                temperature: step.temperature ?? result.temperature,
                 promptName: step.promptVersion?.name,
                 dollhouseViewFromStep: step.dollhouseViewFromStep,
                 realPhotoFromStep: step.realPhotoFromStep,

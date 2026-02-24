@@ -31,6 +31,7 @@ export function GridLightbox({
   onClose,
 }: GridLightboxProps) {
   const [generation, setGeneration] = useState<GenerationData | null>(null);
+  const [imageIndex, setImageIndex] = useState(0);
 
   const fetchGeneration = useCallback(async (id: string) => {
     try {
@@ -45,39 +46,58 @@ export function GridLightbox({
         results: results.map((r: { id: string; url?: string }) => ({ id: r.id, url: r.url ?? '' })),
         input: data.input ?? null,
       });
+      const idx = results.findIndex((r: { url?: string }) => r.url === src);
+      setImageIndex(idx >= 0 ? idx : 0);
     } catch {
       setGeneration(null);
+      setImageIndex(0);
     }
-  }, []);
+  }, [src]);
 
   useEffect(() => {
     if (generationId) fetchGeneration(generationId);
-    else setGeneration(null);
+    else {
+      setGeneration(null);
+      setImageIndex(0);
+    }
   }, [generationId, fetchGeneration]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      const results = generation?.results ?? [];
+      if (results.length <= 1) return;
+      if (e.key === 'ArrowLeft') setImageIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
+      if (e.key === 'ArrowRight') setImageIndex((i) => (i >= results.length - 1 ? 0 : i + 1));
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, generation?.results]);
 
   const handleRated = useCallback(() => {
     if (generationId) fetchGeneration(generationId);
     onRated?.();
   }, [generationId, fetchGeneration, onRated]);
 
+  const displayUrl = useMemo(() => {
+    const results = generation?.results ?? [];
+    if (results.length > 0 && results[imageIndex]) return results[imageIndex].url;
+    return src;
+  }, [generation?.results, imageIndex, src]);
+
   const resultId = useMemo(() => {
     if (!generation?.results?.length) return null;
-    const match = generation.results.find((r) => r.url === src);
-    return match?.id ?? generation.results[0]?.id ?? null;
-  }, [generation?.results, src]);
+    const r = generation.results[imageIndex] ?? generation.results[0];
+    return r?.id ?? null;
+  }, [generation?.results, imageIndex]);
 
   const productCategories = useMemo(
     () => getActiveProductCategories(generation?.input ?? null),
     [generation?.input],
   );
+
+  const results = generation?.results ?? [];
+  const hasMultiple = results.length > 1;
 
   return createPortal(
     <div
@@ -89,12 +109,19 @@ export function GridLightbox({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2.5">
-          <Link
-            href={runHref}
-            className="text-primary-600 hover:text-primary-500 text-sm font-medium"
-          >
-            View run details &rarr;
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={runHref}
+              className="text-primary-600 hover:text-primary-500 text-sm font-medium"
+            >
+              View run details &rarr;
+            </Link>
+            {hasMultiple && (
+              <span className="text-sm text-gray-500">
+                Image {imageIndex + 1} of {results.length}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -107,12 +134,51 @@ export function GridLightbox({
         </div>
 
         <div className="flex flex-1 flex-col overflow-auto p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            className="max-h-[50vh] w-auto rounded-lg object-contain"
-          />
+          <div className="relative flex flex-col items-center">
+            {hasMultiple && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setImageIndex((i) => (i <= 0 ? results.length - 1 : i - 1)); }}
+                  className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setImageIndex((i) => (i >= results.length - 1 ? 0 : i + 1)); }}
+                  className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              </>
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={displayUrl}
+              alt=""
+              className="max-h-[50vh] w-auto rounded-lg object-contain"
+            />
+            {hasMultiple && (
+              <div className="mt-2 flex gap-1 overflow-x-auto pb-1">
+                {results.map((r, i) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setImageIndex(i); }}
+                    className={`shrink-0 rounded border-2 overflow-hidden ${i === imageIndex ? 'border-primary-500' : 'border-transparent hover:border-gray-300'}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r.url} alt="" className="h-14 w-14 object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {generationId && (
             <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
               <div>

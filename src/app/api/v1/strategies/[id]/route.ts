@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { strategy, strategyStep } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
-import { uuidSchema, strategyStepSchema } from '@/lib/validation';
+import { uuidSchema, strategyStepSchema, updateStrategySchema } from '@/lib/validation';
 import { eq, inArray } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
@@ -63,9 +63,22 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const parsed = updateStrategySchema.safeParse(body);
     const updates: Record<string, unknown> = {};
-    if (typeof body.name === 'string') updates.name = body.name;
-    if (typeof body.description === 'string' || body.description === null) updates.description = body.description;
+    if (parsed.success) {
+      const p = parsed.data;
+      if (p.name !== undefined) updates.name = p.name;
+      if (p.description !== undefined) updates.description = p.description;
+      if (p.model !== undefined) updates.model = p.model;
+      if (p.aspect_ratio !== undefined) updates.aspectRatio = p.aspect_ratio;
+      if (p.output_resolution !== undefined) updates.outputResolution = p.output_resolution;
+      if (p.temperature !== undefined) updates.temperature = String(p.temperature);
+      if (p.use_google_search !== undefined) updates.useGoogleSearch = p.use_google_search;
+      if (p.tag_images !== undefined) updates.tagImages = p.tag_images;
+    } else {
+      if (typeof body.name === 'string') updates.name = body.name;
+      if (typeof body.description === 'string' || body.description === null) updates.description = body.description;
+    }
 
     if (Object.keys(updates).length > 0) {
       await db.update(strategy).set(updates).where(eq(strategy.id, id));

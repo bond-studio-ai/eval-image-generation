@@ -42,10 +42,20 @@ const PRODUCT_LABELS: Record<string, string> = {
   vanities: 'Vanities', wallpapers: 'Wallpapers',
 };
 
+interface StrategySettings {
+  model: string;
+  aspect_ratio: string;
+  output_resolution: string;
+  temperature: number;
+  use_google_search: boolean;
+  tag_images: boolean;
+}
+
 interface StrategyBuilderProps {
   strategyId?: string;
   initialName?: string;
   initialDescription?: string;
+  initialStrategySettings?: StrategySettings;
   initialSteps?: StepData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
@@ -80,10 +90,20 @@ const MODELS = [
 const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
 const RESOLUTIONS = ['1K', '2K', '4K'];
 
+const defaultStrategySettings: StrategySettings = {
+  model: 'gemini-2.5-flash-image',
+  aspect_ratio: '1:1',
+  output_resolution: '1K',
+  temperature: 1.0,
+  use_google_search: false,
+  tag_images: true,
+};
+
 export function StrategyBuilder({
   strategyId,
   initialName = '',
   initialDescription = '',
+  initialStrategySettings,
   initialSteps,
   promptVersions,
   inputPresets,
@@ -91,6 +111,9 @@ export function StrategyBuilder({
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [strategySettings, setStrategySettings] = useState<StrategySettings>(
+    initialStrategySettings ?? defaultStrategySettings,
+  );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
       ? initialSteps
@@ -133,6 +156,12 @@ export function StrategyBuilder({
       const payload = {
         name: name.trim(),
         description: description.trim() || undefined,
+        model: strategySettings.model,
+        aspect_ratio: strategySettings.aspect_ratio,
+        output_resolution: strategySettings.output_resolution,
+        temperature: strategySettings.temperature,
+        use_google_search: strategySettings.use_google_search,
+        tag_images: strategySettings.tag_images,
         steps: steps.map((s, i) => ({
           ...s,
           id: s.id ?? undefined,
@@ -172,7 +201,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, steps, isEditing, strategyId, router]);
 
   return (
     <div className="space-y-6">
@@ -205,6 +234,82 @@ export function StrategyBuilder({
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Strategy-level settings (Model, Aspect Ratio, etc.) */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <h2 className="text-sm font-semibold text-gray-900 uppercase">Strategy settings</h2>
+        <p className="mt-1 text-xs text-gray-500">Used by all steps. Model, aspect ratio, resolution, temperature, tag images, and Google Search.</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
+            <select
+              value={strategySettings.model}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, model: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              {MODELS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Aspect Ratio</label>
+            <select
+              value={strategySettings.aspect_ratio}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, aspect_ratio: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              {ASPECT_RATIOS.map((ar) => (
+                <option key={ar} value={ar}>{ar}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Resolution</label>
+            <select
+              value={strategySettings.output_resolution}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, output_resolution: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            >
+              {RESOLUTIONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Temperature</label>
+            <input
+              type="number"
+              min={0}
+              max={2}
+              step={0.1}
+              value={strategySettings.temperature}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, temperature: Number(e.target.value) || 1.0 }))}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            />
+          </div>
+        </div>
+        <div className="mt-3 flex gap-6">
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={strategySettings.tag_images}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, tag_images: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            Tag images
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={strategySettings.use_google_search}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, use_google_search: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            Google Search
+          </label>
         </div>
       </div>
 
@@ -323,81 +428,6 @@ export function StrategyBuilder({
                     </div>
                   </div>
                 </div>
-
-              {/* Model Settings */}
-              <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
-                  <select
-                    value={step.model}
-                    onChange={(e) => updateStep(idx, { model: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  >
-                    {MODELS.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Aspect Ratio</label>
-                  <select
-                    value={step.aspect_ratio}
-                    onChange={(e) => updateStep(idx, { aspect_ratio: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  >
-                    {ASPECT_RATIOS.map((ar) => (
-                      <option key={ar} value={ar}>{ar}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Resolution</label>
-                  <select
-                    value={step.output_resolution}
-                    onChange={(e) => updateStep(idx, { output_resolution: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  >
-                    {RESOLUTIONS.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Temperature</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    value={step.temperature}
-                    onChange={(e) => updateStep(idx, { temperature: Number(e.target.value) || 1.0 })}
-                    placeholder="1.0"
-                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                  />
-                </div>
-              </div>
-
-              {/* Checkboxes */}
-              <div className="mt-3 flex gap-6">
-                <label className="flex items-center gap-2 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={step.tag_images}
-                    onChange={(e) => updateStep(idx, { tag_images: e.target.checked })}
-                    className="rounded border-gray-300"
-                  />
-                  Tag images
-                </label>
-                <label className="flex items-center gap-2 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={step.use_google_search}
-                    onChange={(e) => updateStep(idx, { use_google_search: e.target.checked })}
-                    className="rounded border-gray-300"
-                  />
-                  Google Search
-                </label>
-              </div>
 
               {/* Scene Field Overrides (only for step 2+) */}
               {idx > 0 && (

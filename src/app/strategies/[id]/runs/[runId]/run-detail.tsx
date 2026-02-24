@@ -2,6 +2,7 @@
 
 import { ExpandableImage } from '@/components/expandable-image';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
+import { ViewPromptModal } from '@/components/view-prompt-modal';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -33,7 +34,16 @@ interface RunData {
   status: string;
   createdAt: string;
   completedAt: string | null;
-  strategy: { id: string; name: string };
+  strategy: {
+    id: string;
+    name: string;
+    model?: string;
+    aspectRatio?: string;
+    outputResolution?: string;
+    temperature?: string | null;
+    useGoogleSearch?: boolean;
+    tagImages?: boolean;
+  };
   stepResults: StepResult[];
 }
 
@@ -56,6 +66,9 @@ function StatusBadge({ status }: { status: string }) {
 export function RunDetail({ strategyId, runId, initialData }: { strategyId: string; runId: string; initialData: RunData }) {
   const [data, setData] = useState<RunData>(initialData);
   const [retrying, setRetrying] = useState(false);
+  const [markingStatus, setMarkingStatus] = useState<'idle' | 'failed' | 'completed'>('idle');
+  const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
+  const [viewingPromptName, setViewingPromptName] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isActive = data.status === 'running' || data.status === 'pending';
@@ -87,6 +100,20 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       await fetchData();
     } catch { /* ignore */ }
     finally { setRetrying(false); }
+  }, [runId, fetchData]);
+
+  const handleMarkStatus = useCallback(async (status: 'failed' | 'completed') => {
+    setMarkingStatus(status);
+    try {
+      const res = await fetch(`/api/v1/strategy-runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) return;
+      await fetchData();
+    } catch { /* ignore */ }
+    finally { setMarkingStatus('idle'); }
   }, [runId, fetchData]);
 
   const sorted = [...data.stepResults].sort(
@@ -123,29 +150,97 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {data.status === 'failed' && (
+          {data.status !== 'failed' && (
             <button
               type="button"
-              onClick={handleRetry}
-              disabled={retrying}
-              className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+              onClick={() => handleMarkStatus('failed')}
+              disabled={markingStatus !== 'idle'}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
             >
-              {retrying ? (
+              {markingStatus === 'failed' ? (
                 <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-              ) : (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
-                </svg>
-              )}
-              Retry
+              ) : null}
+              Mark as failed
             </button>
+          )}
+          {data.status === 'failed' && (
+            <>
+              <button
+                type="button"
+                onClick={() => handleMarkStatus('completed')}
+                disabled={markingStatus !== 'idle'}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
+              >
+                {markingStatus === 'completed' ? (
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : null}
+                Mark as completed
+              </button>
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={retrying}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+              >
+                {retrying ? (
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                  </svg>
+                )}
+                Retry
+              </button>
+            </>
           )}
           <StatusBadge status={data.status} />
         </div>
       </div>
+
+      {/* Strategy settings tags */}
+      {(data.strategy.model != null || data.strategy.aspectRatio != null) && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {data.strategy.model != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Model: {data.strategy.model}
+            </span>
+          )}
+          {data.strategy.aspectRatio != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Aspect: {data.strategy.aspectRatio}
+            </span>
+          )}
+          {data.strategy.outputResolution != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Resolution: {data.strategy.outputResolution}
+            </span>
+          )}
+          {data.strategy.temperature != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Temp: {data.strategy.temperature}
+            </span>
+          )}
+          {data.strategy.tagImages != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Tag images: {data.strategy.tagImages ? 'Yes' : 'No'}
+            </span>
+          )}
+          {data.strategy.useGoogleSearch != null && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              Google Search: {data.strategy.useGoogleSearch ? 'Yes' : 'No'}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* DAG visualization */}
       {dagSteps.length > 0 && (
@@ -171,9 +266,21 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
                 </span>
                 <span className="text-sm text-gray-600">{sr.step?.model}</span>
                 {sr.step?.promptVersion && (
-                  <span className="text-sm text-gray-500">
-                    Prompt: <Link href={`/prompt-versions/${sr.step.promptVersion.id}`} className="text-primary-600 hover:text-primary-500">{sr.step.promptVersion.name || 'Untitled'}</Link>
-                  </span>
+                  <>
+                    <span className="text-sm text-gray-500">
+                      Prompt: <Link href={`/prompt-versions/${sr.step.promptVersion.id}`} className="text-primary-600 hover:text-primary-500">{sr.step.promptVersion.name || 'Untitled'}</Link>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewingPromptId(sr.step!.promptVersion!.id);
+                        setViewingPromptName(sr.step!.promptVersion!.name);
+                      }}
+                      className="text-xs text-gray-500 underline hover:text-gray-700"
+                    >
+                      View prompt
+                    </button>
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-3">
@@ -240,6 +347,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
           </div>
         ))}
       </div>
+
+      {viewingPromptId && (
+        <ViewPromptModal
+          promptVersionId={viewingPromptId}
+          promptVersionName={viewingPromptName}
+          onClose={() => { setViewingPromptId(null); setViewingPromptName(null); }}
+        />
+      )}
     </div>
   );
 }

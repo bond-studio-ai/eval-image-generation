@@ -250,6 +250,13 @@ export const strategy = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
+    // Strategy-level model settings (used by all steps unless step overrides)
+    model: varchar('model', { length: 255 }).notNull().default('gemini-2.5-flash-image'),
+    aspectRatio: varchar('aspect_ratio', { length: 20 }).notNull().default('1:1'),
+    outputResolution: varchar('output_resolution', { length: 20 }).notNull().default('1K'),
+    temperature: decimal('temperature', { precision: 3, scale: 2 }).notNull().default('1.00'),
+    useGoogleSearch: boolean('use_google_search').notNull().default(false),
+    tagImages: boolean('tag_images').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
@@ -316,7 +323,6 @@ export const strategyBatchRun = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     strategyId: uuid('strategy_id')
-      .notNull()
       .references(() => strategy.id, { onDelete: 'cascade' }),
     executionCount: integer('execution_count').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

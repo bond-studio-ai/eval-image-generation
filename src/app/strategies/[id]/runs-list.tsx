@@ -1,10 +1,11 @@
 'use client';
 
 import { GridLightbox } from '@/components/grid-lightbox';
+import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import type { InputPresetListItem } from '@/lib/queries';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StrategyBatchRunButton, StrategyRunButton } from './run-button';
+import { StrategyBatchRunButton } from './run-button';
 
 interface StepResult {
   id: string;
@@ -23,9 +24,7 @@ interface Run {
   stepResults: StepResult[];
 }
 
-type ListItem =
-  | { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string }
-  | { kind: 'run'; run: Run };
+type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string };
 
 const POLL_INTERVAL = 3000;
 
@@ -41,6 +40,7 @@ export function StrategyRunsList({
   const [runs, setRuns] = useState<Run[]>(initialRuns);
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
@@ -75,7 +75,18 @@ export function StrategyRunsList({
     finally { setRetryingRunId(null); }
   }, [fetchRuns]);
 
-  // Build unified chronological list: batch cards + individual run rows
+  const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
+  const handleMarkBatchFailed = useCallback(async (batchId: string) => {
+    setMarkingBatchId(batchId);
+    try {
+      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}/mark-failed`, { method: 'POST' });
+      if (!res.ok) return;
+      await fetchRuns();
+    } catch { /* ignore */ }
+    finally { setMarkingBatchId(null); }
+  }, [fetchRuns]);
+
+  // Only batch runs count: build list of batch cards (omit individual runs)
   const items: ListItem[] = [];
   const batchMap = new Map<string, Run[]>();
 
@@ -83,8 +94,6 @@ export function StrategyRunsList({
     if (run.batchRunId) {
       if (!batchMap.has(run.batchRunId)) batchMap.set(run.batchRunId, []);
       batchMap.get(run.batchRunId)!.push(run);
-    } else {
-      items.push({ kind: 'run', run });
     }
   }
 
@@ -101,46 +110,73 @@ export function StrategyRunsList({
     items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '' });
   }
 
-  items.sort((a, b) => {
-    const dateA = a.kind === 'batch' ? a.createdAt : a.run.createdAt;
-    const dateB = b.kind === 'batch' ? b.createdAt : b.run.createdAt;
-    return new Date(dateB).getTime() - new Date(dateA).getTime();
-  });
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Runs</h2>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('matrix')}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'matrix' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Matrix
+            </button>
+          </div>
           <StrategyBatchRunButton strategyId={strategyId} inputPresets={inputPresets} onRunCreated={handleRunCreated} />
-          <StrategyRunButton strategyId={strategyId} inputPresets={inputPresets} onRunCreated={handleRunCreated} />
         </div>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-600">No runs yet. Click &ldquo;Run&rdquo; or &ldquo;Run Batch&rdquo; to execute.</p>
-      ) : (
+        <p className="mt-4 text-sm text-gray-600">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
+      ) : viewMode === 'list' ? (
         <div className="mt-4 space-y-4">
-          {items.map((item) =>
-            item.kind === 'batch' ? (
-              <BatchRunCard
-                key={`batch-${item.id}`}
-                batch={item}
-                strategyId={strategyId}
-                retryingRunId={retryingRunId}
-                onRetry={handleRetry}
-                onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-              />
-            ) : (
-              <IndividualRunCard
-                key={`run-${item.run.id}`}
-                run={item.run}
-                strategyId={strategyId}
-                retryingRunId={retryingRunId}
-                onRetry={handleRetry}
-              />
-            ),
-          )}
+          {items.map((item) => (
+            <BatchRunCard
+              key={`batch-${item.id}`}
+              batch={item}
+              strategyId={strategyId}
+              retryingRunId={retryingRunId}
+              onRetry={handleRetry}
+              onRated={fetchRuns}
+              onMarkBatchFailed={handleMarkBatchFailed}
+              markingBatchId={markingBatchId}
+              onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 space-y-6">
+          {items.map((item) => (
+            <div key={`batch-matrix-${item.id}`} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Batch · {new Date(item.createdAt).toLocaleString()}
+                </span>
+                <StatusBadge status={item.status} />
+              </div>
+              <div className="p-4">
+                <BatchMatrix
+                  runs={item.runs}
+                  strategyId={strategyId}
+                  retryingRunId={retryingRunId}
+                  onRetry={handleRetry}
+                  onRated={fetchRuns}
+                  onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       )}
       {lightbox && (
@@ -156,52 +192,6 @@ export function StrategyRunsList({
   );
 }
 
-/* ─────────── Individual Run Card ─────────── */
-
-function IndividualRunCard({
-  run,
-  strategyId,
-  retryingRunId,
-  onRetry,
-}: {
-  run: Run;
-  strategyId: string;
-  retryingRunId: string | null;
-  onRetry: (runId: string) => void;
-}) {
-  const completed = run.stepResults.filter((sr) => sr.status === 'completed').length;
-  const total = run.stepResults.length;
-
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <div className="flex items-center justify-between px-5 py-3">
-        <div className="flex items-center gap-3">
-          <StatusBadge status={run.status} />
-          <span className="text-sm font-medium text-gray-900">
-            {run.inputPresetName || <span className="text-gray-400">No preset</span>}
-          </span>
-          <span className="text-xs text-gray-400">
-            Steps {completed}/{total}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">{new Date(run.createdAt).toLocaleString()}</span>
-          {run.status === 'failed' && (
-            <button type="button" onClick={() => onRetry(run.id)} disabled={retryingRunId === run.id}
-              className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
-              {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
-            </button>
-          )}
-          <Link href={`/strategies/${strategyId}/runs/${run.id}`}
-            className="text-primary-600 hover:text-primary-500 text-xs font-medium">
-            View
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─────────── Batch Run Card with embedded matrix ─────────── */
 
 function BatchRunCard({
@@ -209,17 +199,24 @@ function BatchRunCard({
   strategyId,
   retryingRunId,
   onRetry,
+  onRated,
+  onMarkBatchFailed,
+  markingBatchId,
   onImageClick,
 }: {
   batch: { id: string; runs: Run[]; status: string; createdAt: string };
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
+  onRated?: () => void;
+  onMarkBatchFailed?: (batchId: string) => void;
+  markingBatchId: string | null;
   onImageClick: (run: Run) => void;
 }) {
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
   const failedRuns = batch.runs.filter((r) => r.status === 'failed').length;
+  const isMarking = markingBatchId === batch.id;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -237,13 +234,25 @@ function BatchRunCard({
             {completedRuns} completed{failedRuns > 0 ? `, ${failedRuns} failed` : ''}
           </span>
         </div>
-        <span className="text-xs text-gray-400">
-          {new Date(batch.createdAt).toLocaleString()}
-        </span>
+        <div className="flex items-center gap-2">
+          {onMarkBatchFailed && batch.status !== 'failed' && (
+            <button
+              type="button"
+              onClick={() => onMarkBatchFailed(batch.id)}
+              disabled={isMarking}
+              className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+            >
+              {isMarking ? '…' : 'Mark batch as failed'}
+            </button>
+          )}
+          <span className="text-xs text-gray-400">
+            {new Date(batch.createdAt).toLocaleString()}
+          </span>
+        </div>
       </div>
 
       <div className="p-4">
-        <BatchMatrix runs={batch.runs} strategyId={strategyId} retryingRunId={retryingRunId} onRetry={onRetry} onImageClick={onImageClick} />
+        <BatchMatrix runs={batch.runs} strategyId={strategyId} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
       </div>
     </div>
   );
@@ -256,12 +265,14 @@ function BatchMatrix({
   strategyId,
   retryingRunId,
   onRetry,
+  onRated,
   onImageClick,
 }: {
   runs: Run[];
   strategyId: string;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
+  onRated?: () => void;
   onImageClick: (run: Run) => void;
 }) {
   const byPreset = new Map<string, Run[]>();
@@ -318,7 +329,7 @@ function BatchMatrix({
                           <button
                             type="button"
                             onClick={() => onImageClick(run)}
-                            className="group relative"
+                            className="group relative block"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={run.lastOutputUrl} alt=""
@@ -329,6 +340,9 @@ function BatchMatrix({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                               </svg>
                             </div>
+                            {run.lastOutputGenerationId && (
+                              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+                            )}
                           </button>
                         ) : (
                           <>

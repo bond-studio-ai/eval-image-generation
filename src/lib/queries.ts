@@ -108,6 +108,12 @@ export interface StrategyDetailItem {
   description: string | null;
   createdAt: Date;
   deletedAt: Date | null;
+  model: string;
+  aspectRatio: string;
+  outputResolution: string;
+  temperature: string | null;
+  useGoogleSearch: boolean;
+  tagImages: boolean;
   steps: StrategyStepItem[];
   runCount: number;
 }
@@ -141,7 +147,7 @@ export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> 
     limit,
     with: {
       steps: { columns: { id: true } },
-      runs: { columns: { id: true } },
+      batchRuns: { columns: { id: true } },
     },
   });
 
@@ -151,7 +157,7 @@ export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> 
     description: s.description,
     createdAt: s.createdAt,
     stepCount: s.steps.length,
-    runCount: s.runs.length,
+    runCount: s.batchRuns.length,
   }));
 }
 
@@ -165,7 +171,7 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
           promptVersion: { columns: { name: true } },
         },
       },
-      runs: { columns: { id: true } },
+      batchRuns: { columns: { id: true } },
     },
   });
 
@@ -177,7 +183,13 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
     description: result.description,
     createdAt: result.createdAt,
     deletedAt: result.deletedAt,
-    runCount: result.runs.length,
+    model: result.model,
+    aspectRatio: result.aspectRatio,
+    outputResolution: result.outputResolution,
+    temperature: result.temperature,
+    useGoogleSearch: result.useGoogleSearch,
+    tagImages: result.tagImages,
+    runCount: result.batchRuns.length,
     steps: result.steps.map((step) => ({
       id: step.id,
       stepOrder: step.stepOrder,

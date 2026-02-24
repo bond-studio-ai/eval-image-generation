@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         strategy: { columns: { id: true, name: true, deletedAt: true } },
         runs: {
           with: {
+            strategy: { columns: { name: true } },
             stepResults: {
               columns: { id: true, status: true, outputUrl: true, generationId: true },
               with: {
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     });
 
     const activeBatches = batches.filter(
-      (batch) => batch.strategy?.deletedAt == null,
+      (batch) => batch.strategyId == null || batch.strategy?.deletedAt == null,
     );
 
     const data = activeBatches.map((batch) => {
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
           : null;
         return {
           id: run.id,
+          strategyId: run.strategyId,
           status: run.status,
           createdAt: run.createdAt,
           completedAt: run.completedAt,
@@ -70,10 +72,17 @@ export async function GET(request: NextRequest) {
             ? 'failed'
             : 'pending';
 
+      const strategyName = batch.strategyId != null
+        ? (batch.strategy?.name ?? null)
+        : (() => {
+            const names = [...new Set(batch.runs.map((r) => r.strategy?.name).filter(Boolean))] as string[];
+            return names.length > 0 ? names.join(', ') : 'Multiple strategies';
+          })();
+
       return {
         id: batch.id,
         strategyId: batch.strategyId,
-        strategyName: batch.strategy?.name ?? null,
+        strategyName,
         executionCount: batch.executionCount,
         createdAt: batch.createdAt,
         status: derivedStatus,

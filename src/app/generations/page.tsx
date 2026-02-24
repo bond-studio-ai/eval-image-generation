@@ -6,8 +6,10 @@ import {
   generationResult,
   promptVersion,
 } from '@/db/schema';
-import { and, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import Link from 'next/link';
+import { fetchPromptVersions } from '@/lib/queries';
+import { buildGenerationsQuery, GenerationsFilters } from './generations-filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +24,14 @@ interface PageProps {
     unrated?: string;
     from?: string;
     to?: string;
+    sort?: string;
+    order?: string;
   }>;
 }
 
 export default async function GenerationsPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const order = params.order === 'asc' ? 'asc' : 'desc';
 
   const conditions = [];
   if (params.prompt_version_id) {
@@ -59,8 +64,9 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const orderBy = order === 'asc' ? asc(generation.createdAt) : desc(generation.createdAt);
 
-  const [rows, totalResult] = await Promise.all([
+  const [rows, totalResult, promptVersions] = await Promise.all([
     db
       .select({
         id: generation.id,
@@ -75,9 +81,10 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       .from(generation)
       .innerJoin(promptVersion, eq(promptVersion.id, generation.promptVersionId))
       .where(whereClause)
-      .orderBy(desc(generation.createdAt))
+      .orderBy(orderBy)
       .limit(PAGE_SIZE),
     db.select({ count: count() }).from(generation).where(whereClause),
+    fetchPromptVersions(200),
   ]);
 
   const total = totalResult[0]?.count ?? 0;
@@ -124,6 +131,8 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
     prompt_version_id: params.prompt_version_id,
     from: params.from,
     to: params.to,
+    sort: params.sort ?? 'created_at',
+    order: params.order ?? 'desc',
   };
 
   return (
@@ -136,53 +145,26 @@ export default async function GenerationsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters */}
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-gray-500 mr-1">Scene:</span>
-        {['GOOD', 'FAILED'].map((r) => (
-          <Link
-            key={`scene-${r}`}
-            href={`/generations?scene_accuracy_rating=${r}`}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              params.scene_accuracy_rating === r
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {r}
-          </Link>
-        ))}
-        <span className="text-xs text-gray-500 ml-2 mr-1">Product:</span>
-        {['GOOD', 'FAILED'].map((r) => (
-          <Link
-            key={`product-${r}`}
-            href={`/generations?product_accuracy_rating=${r}`}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              params.product_accuracy_rating === r
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {r}
-          </Link>
-        ))}
+      <GenerationsFilters
+        params={params}
+        promptVersions={promptVersions}
+      />
+
+      {/* Sort */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-500">Sort:</span>
         <Link
-          href="/generations?unrated=true"
-          className={`ml-2 rounded-full px-3 py-1 text-xs font-medium ${
-            params.unrated === 'true'
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          href={buildGenerationsQuery({ ...params, order: 'desc' })}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${params.order !== 'asc' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
-          Unrated
+          Newest first
         </Link>
-        {(params.scene_accuracy_rating || params.product_accuracy_rating || params.unrated || params.from || params.to) && (
-          <Link
-            href="/generations"
-            className="rounded-full px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-          >
-            Clear Filters
-          </Link>
-        )}
+        <Link
+          href={buildGenerationsQuery({ ...params, order: 'asc' })}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${params.order === 'asc' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
+          Oldest first
+        </Link>
       </div>
 
       {initialData.length === 0 ? (

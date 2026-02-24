@@ -31,6 +31,14 @@ export default async function EditStrategyPage({ params }: PageProps) {
           strategyId={strat.id}
           initialName={strat.name}
           initialDescription={strat.description ?? ''}
+          initialStrategySettings={{
+            model: strat.model,
+            aspect_ratio: strat.aspectRatio,
+            output_resolution: strat.outputResolution,
+            temperature: strat.temperature ? Number(strat.temperature) : 1.0,
+            use_google_search: strat.useGoogleSearch,
+            tag_images: strat.tagImages,
+          }}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
             name: s.name ?? '',

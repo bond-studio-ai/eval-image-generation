@@ -16,7 +16,18 @@ export default async function StrategyRunPage({ params }: PageProps) {
   const run = await db.query.strategyRun.findFirst({
     where: eq(strategyRun.id, runId),
     with: {
-      strategy: { columns: { id: true, name: true } },
+      strategy: {
+        columns: {
+          id: true,
+          name: true,
+          model: true,
+          aspectRatio: true,
+          outputResolution: true,
+          temperature: true,
+          useGoogleSearch: true,
+          tagImages: true,
+        },
+      },
       stepResults: {
         orderBy: [strategyStepResult.strategyStepId],
         with: {
@@ -40,7 +51,16 @@ export default async function StrategyRunPage({ params }: PageProps) {
     status: run.status,
     createdAt: run.createdAt.toISOString(),
     completedAt: run.completedAt?.toISOString() ?? null,
-    strategy: { id: run.strategy.id, name: run.strategy.name },
+    strategy: {
+      id: run.strategy.id,
+      name: run.strategy.name,
+      model: run.strategy.model,
+      aspectRatio: run.strategy.aspectRatio,
+      outputResolution: run.strategy.outputResolution,
+      temperature: run.strategy.temperature,
+      useGoogleSearch: run.strategy.useGoogleSearch,
+      tagImages: run.strategy.tagImages,
+    },
     stepResults: run.stepResults.map((sr) => ({
       id: sr.id,
       status: sr.status,

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { strategyRun, strategyStep, strategyStepResult } from '@/db/schema';
+import { strategy, strategyRun, strategyStep, strategyStepResult } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { executeSteps } from '@/app/api/v1/strategies/[id]/run/route';
 import { uuidSchema } from '@/lib/validation';
@@ -57,13 +57,30 @@ export async function POST(
       .set({ status: 'running', completedAt: null })
       .where(eq(strategyRun.id, runId));
 
-    // Fetch the strategy steps
-    const steps = await db.query.strategyStep.findMany({
-      where: eq(strategyStep.strategyId, run.strategyId),
-      orderBy: [asc(strategyStep.stepOrder)],
+    // Fetch the strategy and steps for strategy-level defaults
+    const strat = await db.query.strategy.findFirst({
+      where: eq(strategy.id, run.strategyId),
+      with: {
+        steps: {
+          orderBy: [strategyStep.stepOrder],
+        },
+      },
     });
 
-    after(() => executeSteps(runId, steps));
+    if (!strat) {
+      return errorResponse('NOT_FOUND', 'Strategy not found');
+    }
+
+    const strategyDefaults = {
+      model: strat.model,
+      aspectRatio: strat.aspectRatio,
+      outputResolution: strat.outputResolution,
+      temperature: strat.temperature,
+      useGoogleSearch: strat.useGoogleSearch,
+      tagImages: strat.tagImages,
+    };
+
+    after(() => executeSteps(runId, strat.steps, strategyDefaults));
 
     return successResponse({ id: runId, status: 'running' });
   } catch (error) {

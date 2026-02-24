@@ -34,7 +34,11 @@ export function StrategyRunButton({
       const res = await fetch(`/api/v1/strategies/${strategyId}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_preset_ids: [selectedId] }),
+        body: JSON.stringify({
+          input_preset_ids: [selectedId],
+          batch: true,
+          execution_count: 1,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
@@ -67,7 +71,7 @@ export function StrategyRunButton({
           >
             <div className="shrink-0 border-b border-gray-200 px-5 py-4">
               <h3 className="text-lg font-semibold text-gray-900">Run strategy</h3>
-              <p className="mt-1 text-sm text-gray-600">Select an input preset for a single execution.</p>
+              <p className="mt-1 text-sm text-gray-600">Select an input preset to run (creates a batch of one).</p>
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-3">

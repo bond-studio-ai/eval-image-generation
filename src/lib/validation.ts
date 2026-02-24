@@ -47,6 +47,27 @@ export const listPromptVersionsSchema = paginationSchema.extend({
 export const createStrategySchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional(),
+  model: z.string().max(255).optional(),
+  aspect_ratio: z.string().max(20).optional(),
+  output_resolution: z.string().max(20).optional(),
+  temperature: z.coerce.number().min(0).max(2).optional(),
+  use_google_search: z.boolean().optional(),
+  tag_images: z.boolean().optional(),
+});
+
+export const updateStrategySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional().nullable(),
+  model: z.string().max(255).optional(),
+  aspect_ratio: z.string().max(20).optional(),
+  output_resolution: z.string().max(20).optional(),
+  temperature: z.coerce.number().min(0).max(2).optional(),
+  use_google_search: z.boolean().optional(),
+  tag_images: z.boolean().optional(),
+});
+
+export const patchStrategyRunSchema = z.object({
+  status: z.enum(['failed', 'completed']),
 });
 
 export const strategyStepSchema = z.object({

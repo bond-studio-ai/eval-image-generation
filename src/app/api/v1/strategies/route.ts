@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { strategy, strategyRun, strategyStep } from '@/db/schema';
+import { strategy, strategyBatchRun, strategyStep } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createStrategySchema, listStrategiesSchema, strategyStepSchema } from '@/lib/validation';
 import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       rows.map(async (s) => {
         const [stepCount, runCount] = await Promise.all([
           db.select({ count: count() }).from(strategyStep).where(eq(strategyStep.strategyId, s.id)),
-          db.select({ count: count() }).from(strategyRun).where(eq(strategyRun.strategyId, s.id)),
+          db.select({ count: count() }).from(strategyBatchRun).where(eq(strategyBatchRun.strategyId, s.id)),
         ]);
 
         return {
@@ -84,13 +84,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { name, description, steps } = parsed.data;
+    const { name, description, steps, model, aspect_ratio, output_resolution, temperature, use_google_search, tag_images } = parsed.data;
 
     const [created] = await db
       .insert(strategy)
       .values({
         name,
         description: description ?? null,
+        model: model ?? 'gemini-2.5-flash-image',
+        aspectRatio: aspect_ratio ?? '1:1',
+        outputResolution: output_resolution ?? '1K',
+        temperature: temperature != null ? String(temperature) : '1.00',
+        useGoogleSearch: use_google_search ?? false,
+        tagImages: tag_images ?? true,
       })
       .returning();
 

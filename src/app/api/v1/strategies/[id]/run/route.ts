@@ -48,6 +48,16 @@ const SNAKE_TO_CAMEL: Record<string, string> = {
 
 type StepRow = typeof strategyStep.$inferSelect;
 
+/** Strategy-level defaults for model settings (used when step does not override). */
+type StrategyDefaults = {
+  model: string;
+  aspectRatio: string;
+  outputResolution: string;
+  temperature: string | null;
+  useGoogleSearch: boolean;
+  tagImages: boolean;
+};
+
 function buildDepsMap(steps: StepRow[]): Map<number, Set<number>> {
   const deps = new Map<number, Set<number>>();
   for (const step of steps) {
@@ -130,6 +140,7 @@ async function executeSingleStep(
   stepOutputs: Map<number, string>,
   presetData: PresetData,
   isLastStep: boolean,
+  strategyDefaults: StrategyDefaults,
 ): Promise<string | null> {
   await db
     .update(strategyStepResult)
@@ -230,17 +241,24 @@ async function executeSingleStep(
     }
   });
 
+  const model = step.model ?? strategyDefaults.model;
+  const aspectRatio = step.aspectRatio ?? strategyDefaults.aspectRatio;
+  const outputResolution = step.outputResolution ?? strategyDefaults.outputResolution;
+  const temperature = step.temperature ?? strategyDefaults.temperature;
+  const useGoogleSearch = step.useGoogleSearch ?? strategyDefaults.useGoogleSearch;
+  const tagImages = step.tagImages ?? strategyDefaults.tagImages;
+
   const geminiResult = await generateWithGemini({
     systemPrompt: pv.systemPrompt,
     userPrompt: pv.userPrompt,
-    model: step.model,
+    model,
     inputImages: labeledImages,
-    aspectRatio: step.aspectRatio,
-    imageSize: step.outputResolution,
-    temperature: step.temperature ? Number(step.temperature) : undefined,
+    aspectRatio,
+    imageSize: outputResolution,
+    temperature: temperature ? Number(temperature) : undefined,
     numberOfImages: 1,
-    useGoogleSearch: step.useGoogleSearch,
-    tagImages: step.tagImages,
+    useGoogleSearch,
+    tagImages,
   });
 
   const outputUrl = geminiResult.outputUrls[0] ?? null;
@@ -291,7 +309,7 @@ async function executeSingleStep(
   return outputUrl;
 }
 
-export async function executeSteps(runId: string, steps: StepRow[]) {
+export async function executeSteps(runId: string, steps: StepRow[], strategyDefaults: StrategyDefaults) {
   const stepResultRows = await db.query.strategyStepResult.findMany({
     where: eq(strategyStepResult.strategyRunId, runId),
   });
@@ -326,7 +344,7 @@ export async function executeSteps(runId: string, steps: StepRow[]) {
   const dispatch = (step: StepRow) => {
     const stepResult = stepResultByStepId.get(step.id)!;
     const isLast = step.stepOrder === maxStepOrder;
-    const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData, isLast)
+    const promise = executeSingleStep(step, stepResult.id, stepOutputs, presetData, isLast, strategyDefaults)
       .then((outputUrl) => {
         if (outputUrl) {
           stepOutputs.set(step.stepOrder, outputUrl);
@@ -442,6 +460,15 @@ export async function POST(
       return errorResponse('VALIDATION_ERROR', 'Strategy has no steps');
     }
 
+    const strategyDefaults: StrategyDefaults = {
+      model: strat.model,
+      aspectRatio: strat.aspectRatio,
+      outputResolution: strat.outputResolution,
+      temperature: strat.temperature,
+      useGoogleSearch: strat.useGoogleSearch,
+      tagImages: strat.tagImages,
+    };
+
     const isBatch = body?.batch === true;
     const executionCount = typeof body?.execution_count === 'number'
       ? Math.max(1, Math.min(100, body.execution_count))
@@ -485,7 +512,7 @@ export async function POST(
     }
 
     for (const run of runs) {
-      after(() => executeSteps(run.id, strat.steps));
+      after(() => executeSteps(run.id, strat.steps, strategyDefaults));
     }
 
     return successResponse(
