@@ -1,6 +1,8 @@
 import { fetchInputPresets, fetchPromptVersions } from '@/lib/queries';
 import { StrategyBuilder } from '@/components/strategy-builder';
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewStrategyPage() {
   const [promptVersions, inputPresets] = await Promise.all([
     fetchPromptVersions(100),
