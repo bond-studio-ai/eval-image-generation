@@ -171,10 +171,12 @@ export function BatchRunsTab() {
           return (
             <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
               <div className="flex w-full items-center justify-between px-5 py-3">
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; })}
-                  className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; }); } }}
+                  className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1 cursor-pointer"
                 >
                   <svg
                     className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -201,7 +203,7 @@ export function BatchRunsTab() {
                   <span className="text-xs text-gray-400">
                     {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
                   </span>
-                </button>
+                </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {batch.status !== 'reviewed' && (
                     <button
