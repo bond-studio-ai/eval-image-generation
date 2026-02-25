@@ -92,12 +92,42 @@ export function ProductCategoryRates({
     return <p className="text-sm text-gray-500">No product evaluation data available.</p>;
   }
 
+  const sortedCompact = [...categories].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortKey === 'name') return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+  });
+
   if (compact) {
     return (
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Product category rates</p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Product category rates</p>
+          <div className="flex gap-1">
+            {([
+              { key: 'name' as ProdSortKey, label: 'Name' },
+              { key: 'total' as ProdSortKey, label: 'Count' },
+              { key: 'successPct' as ProdSortKey, label: 'Success' },
+              { key: 'failurePct' as ProdSortKey, label: 'Failure' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleSort(key)}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                  sortKey === key
+                    ? 'bg-gray-200 text-gray-800'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {label}
+                <ProdSortIcon active={sortKey === key} dir={sortDir} />
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-y-1.5">
-          {categories.map((cat) => (
+          {sortedCompact.map((cat) => (
             <div key={cat.name} className="flex items-center gap-2">
               <span className="w-28 truncate text-xs text-gray-700" title={formatCategoryName(cat.name)}>
                 {formatCategoryName(cat.name)}

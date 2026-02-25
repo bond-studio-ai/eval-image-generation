@@ -57,6 +57,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_dollhouse: s.includeDollhouse ?? true,
             include_real_photo: s.includeRealPhoto ?? true,
             include_mood_board: s.includeMoodBoard ?? true,
+            include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
             arbitrary_image_from_step: s.arbitraryImageFromStep,
           }))}

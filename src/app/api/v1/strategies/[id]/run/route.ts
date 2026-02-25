@@ -186,6 +186,7 @@ async function executeSingleStep(
   const includeDollhouse = step.includeDollhouse ?? true;
   const includeRealPhoto = step.includeRealPhoto ?? true;
   const includeMoodBoard = step.includeMoodBoard ?? true;
+  const includeProductImages = step.includeProductImages ?? true;
 
   for (const key of SCENE_KEYS) {
     if (key === 'dollhouse_view' && !includeDollhouse) continue;
@@ -195,11 +196,11 @@ async function executeSingleStep(
     if (val) sceneMap[key] = val;
   }
 
-  // Include ALL product categories available in the input preset so prompt tags
-  // are resolved based on the preset contents, not the strategy checkboxes.
-  for (const key of PRODUCT_CATEGORIES) {
-    const urls = presetData.productImages[key];
-    if (urls && urls.length > 0) productMap[key] = [...urls];
+  if (includeProductImages) {
+    for (const key of PRODUCT_CATEGORIES) {
+      const urls = presetData.productImages[key];
+      if (urls && urls.length > 0) productMap[key] = [...urls];
+    }
   }
 
   if (step.dollhouseViewFromStep != null) {

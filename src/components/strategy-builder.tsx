@@ -20,6 +20,7 @@ interface StepData {
   include_dollhouse: boolean;
   include_real_photo: boolean;
   include_mood_board: boolean;
+  include_product_images: boolean;
   include_product_categories: string[];
   arbitrary_image_from_step: number | null;
 }
@@ -60,6 +61,7 @@ function defaultStep(promptVersionId: string): StepData {
     include_dollhouse: true,
     include_real_photo: true,
     include_mood_board: true,
+    include_product_images: true,
     include_product_categories: [],
     arbitrary_image_from_step: null,
   };
@@ -159,6 +161,7 @@ export function StrategyBuilder({
           include_dollhouse: s.include_dollhouse,
           include_real_photo: s.include_real_photo,
           include_mood_board: s.include_mood_board,
+          include_product_images: s.include_product_images,
           include_product_categories: s.include_product_categories ?? [],
           arbitrary_image_from_step: s.arbitrary_image_from_step ?? null,
         })),
@@ -377,7 +380,15 @@ export function StrategyBuilder({
                         );
                       })}
                     </div>
-                    <p className="text-xs text-gray-400">Products are included automatically based on the input preset.</p>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={step.include_product_images}
+                        onChange={(e) => updateStep(idx, { include_product_images: e.target.checked })}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      Product images
+                    </label>
                   </div>
                 </div>
 

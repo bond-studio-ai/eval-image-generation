@@ -136,6 +136,7 @@ export interface StrategyStepItem {
   includeDollhouse: boolean;
   includeRealPhoto: boolean;
   includeMoodBoard: boolean;
+  includeProductImages: boolean;
   includeProductCategories: string[];
   arbitraryImageFromStep: number | null;
 }
@@ -208,6 +209,7 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
       includeDollhouse: step.includeDollhouse ?? true,
       includeRealPhoto: step.includeRealPhoto ?? true,
       includeMoodBoard: step.includeMoodBoard ?? true,
+      includeProductImages: step.includeProductImages ?? true,
       includeProductCategories: Array.isArray(step.includeProductCategories) ? step.includeProductCategories : [],
       arbitraryImageFromStep: step.arbitraryImageFromStep ?? null,
     })),

@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
           includeDollhouse: s.include_dollhouse ?? true,
           includeRealPhoto: s.include_real_photo ?? true,
           includeMoodBoard: s.include_mood_board ?? true,
+          includeProductImages: s.include_product_images ?? true,
           includeProductCategories: s.include_product_categories ?? [],
           arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
         })),

@@ -303,6 +303,7 @@ export const strategyStep = pgTable(
     includeDollhouse: boolean('include_dollhouse').notNull().default(true),
     includeRealPhoto: boolean('include_real_photo').notNull().default(true),
     includeMoodBoard: boolean('include_mood_board').notNull().default(true),
+    includeProductImages: boolean('include_product_images').notNull().default(true),
     includeProductCategories: jsonb('include_product_categories').$type<string[]>().notNull().default([]),
 
     // For steps 2+: include output from a previous step as an extra image (step order 1-indexed)

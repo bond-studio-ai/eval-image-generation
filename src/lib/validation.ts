@@ -87,6 +87,7 @@ export const strategyStepSchema = z.object({
   include_dollhouse: z.boolean().default(true),
   include_real_photo: z.boolean().default(true),
   include_mood_board: z.boolean().default(true),
+  include_product_images: z.boolean().default(true),
   include_product_categories: z.array(z.string()).default([]),
   arbitrary_image_from_step: z.number().int().min(1).optional().nullable(),
 });
