@@ -69,7 +69,7 @@ export async function generateWithFal(req: FalGenerateRequest): Promise<FalGener
           },
           body: JSON.stringify({
             prompt,
-            image_urls: req.inputImages.map((img) => withImageParams(img.url, 1024)),
+            image_urls: req.inputImages.map((img) => withImageParams(img.url, 512)),
             num_images: 1,
           }),
         });
