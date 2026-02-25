@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 function pct(n: number, total: number) {
-  return total > 0 ? Math.round((n / total) * 10000) / 100 : 0;
+  return total > 0 ? Math.round((n / total) * 100) : 0;
 }
 
 /** GET: list strategies with generation count, scene/product good/failed %, not-rated %, avg exec time. */

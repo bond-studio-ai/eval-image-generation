@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 function pct(n: number, total: number) {
-  return total > 0 ? Math.round((n / total) * 10000) / 100 : 0;
+  return total > 0 ? Math.round((n / total) * 100) : 0;
 }
 
 export async function GET(request: NextRequest) {

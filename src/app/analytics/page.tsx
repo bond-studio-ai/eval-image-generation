@@ -54,7 +54,7 @@ async function getDistributionFor(
     return {
       rating,
       count: ratingCount,
-      percentage: total > 0 ? Math.round((ratingCount / total) * 10000) / 100 : 0,
+      percentage: total > 0 ? Math.round((ratingCount / total) * 100) : 0,
     };
   });
 }

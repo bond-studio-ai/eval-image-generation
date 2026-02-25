@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       return {
         rating,
         count: ratingCount,
-        percentage: totalRated > 0 ? Math.round((ratingCount / totalRated) * 10000) / 100 : 0,
+        percentage: totalRated > 0 ? Math.round((ratingCount / totalRated) * 100) : 0,
       };
     });
 

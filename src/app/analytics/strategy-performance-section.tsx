@@ -91,7 +91,7 @@ function IssueList({ title, items, total, colorClass }: { title: string; items: 
       <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">{title}</p>
       <ul className="space-y-1">
         {items.map((item) => {
-          const pctVal = total > 0 ? Math.round((item.count / total) * 10000) / 100 : 0;
+          const pctVal = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
             <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
               <span className="min-w-0 truncate text-gray-700" title={item.issue}>{item.issue}</span>
@@ -205,12 +205,10 @@ export function StrategyPerformanceSection({
                 Gens
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                <span className="block">Scene</span>
-                <span className="font-normal normal-case text-gray-400">good / fail (of rated)</span>
+                Scene
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                <span className="block">Product</span>
-                <span className="font-normal normal-case text-gray-400">good / fail (of rated)</span>
+                Product
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Unrated

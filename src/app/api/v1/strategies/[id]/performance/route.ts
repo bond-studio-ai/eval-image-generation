@@ -69,11 +69,11 @@ export async function GET(
       product_good_count: productGood,
       product_failed_count: productFailed,
       not_rated_count: notRated,
-      scene_good_pct: total > 0 ? Math.round((sceneGood / total) * 10000) / 100 : 0,
-      scene_failed_pct: total > 0 ? Math.round((sceneFailed / total) * 10000) / 100 : 0,
-      product_good_pct: total > 0 ? Math.round((productGood / total) * 10000) / 100 : 0,
-      product_failed_pct: total > 0 ? Math.round((productFailed / total) * 10000) / 100 : 0,
-      not_rated_pct: total > 0 ? Math.round((notRated / total) * 10000) / 100 : 0,
+      scene_good_pct: total > 0 ? Math.round((sceneGood / total) * 100) : 0,
+      scene_failed_pct: total > 0 ? Math.round((sceneFailed / total) * 100) : 0,
+      product_good_pct: total > 0 ? Math.round((productGood / total) * 100) : 0,
+      product_failed_pct: total > 0 ? Math.round((productFailed / total) * 100) : 0,
+      not_rated_pct: total > 0 ? Math.round((notRated / total) * 100) : 0,
       avg_execution_time_ms: avgExecTimeMs,
     });
   } catch (error) {
