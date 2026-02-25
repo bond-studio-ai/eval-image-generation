@@ -1,3 +1,4 @@
+import { withImageParams } from './image-utils';
 import { fetchAndUploadToS3 } from './s3';
 
 export interface FalGenerateRequest {
@@ -68,7 +69,7 @@ export async function generateWithFal(req: FalGenerateRequest): Promise<FalGener
           },
           body: JSON.stringify({
             prompt,
-            image_urls: req.inputImages.map((img) => img.url),
+            image_urls: req.inputImages.map((img) => withImageParams(img.url, 1024)),
             num_images: 1,
           }),
         });

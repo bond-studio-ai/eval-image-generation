@@ -46,7 +46,7 @@ function deriveRunReviewStatus(run: RunRow): string {
   return 'in_progress';
 }
 
-export function BatchRunsTab() {
+export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -73,7 +73,7 @@ export function BatchRunsTab() {
     finally { setLoading(false); }
   }, [appliedFrom, appliedTo]);
 
-  useEffect(() => { fetchBatches(); }, [fetchBatches]);
+  useEffect(() => { fetchBatches(); }, [fetchBatches, refreshKey]);
 
   const hasActive = batches.some((b) => b.status === 'running');
   useEffect(() => {

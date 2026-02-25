@@ -38,8 +38,6 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <ExecutionsPageHeader />
-      <TabNav active="batches" />
       <ExecutionsTabs />
     </div>
   );
