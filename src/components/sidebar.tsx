@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigation = [
+  { name: 'Analytics', href: '/', icon: AnalyticsIcon },
   { name: 'Runs', href: '/executions', icon: RunsIcon },
   { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
-  { name: 'Analytics', href: '/analytics', icon: AnalyticsIcon },
 ];
 
 export function Sidebar() {
@@ -26,7 +26,7 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
           return (
             <Link

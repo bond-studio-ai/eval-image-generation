@@ -24,14 +24,14 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
         if (value) next.set(key, value);
         else next.delete(key);
       }
-      router.push(`/analytics?${next}`);
+      router.push(`/?${next}`);
     },
     [router, searchParams],
   );
 
   const clearAll = useCallback(() => {
     const tab = searchParams.get('tab');
-    router.push(tab ? `/analytics?tab=${tab}` : '/analytics');
+    router.push(tab ? `/?tab=${tab}` : '/');
   }, [router, searchParams]);
 
   const hasDateFilter = !!(from || to);

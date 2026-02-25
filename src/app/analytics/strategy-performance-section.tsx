@@ -182,15 +182,6 @@ export function StrategyPerformanceSection({
     });
   }, [fetchBreakdown, breakdowns]);
 
-  if (loading) {
-    return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
-        <p className="mt-4 text-sm text-gray-500">Loading…</p>
-      </div>
-    );
-  }
-
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
@@ -209,6 +200,15 @@ export function StrategyPerformanceSection({
     const bv = b[sortKey] ?? -1;
     return dir * ((av as number) - (bv as number));
   });
+
+  if (loading) {
+    return (
+      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
+        <p className="mt-4 text-sm text-gray-500">Loading…</p>
+      </div>
+    );
+  }
 
   if (rows.length === 0) {
     return (
