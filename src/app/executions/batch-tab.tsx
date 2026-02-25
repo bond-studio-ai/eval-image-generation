@@ -1,5 +1,6 @@
 'use client';
 
+import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
@@ -18,13 +19,15 @@ interface RunRow {
   lastOutputUrl: string | null;
   lastOutputGenerationId: string | null;
   stepResults: { id: string; status: string }[];
+  totalGenerations: number;
+  ratedGenerations: number;
 }
 
 interface BatchRow {
   id: string;
   name: string | null;
   strategyId: string | null;
-  strategyName: string | null;
+  strategies: { id: string; name: string }[];
   numberOfImages: number;
   createdAt: string;
   status: string;
@@ -36,6 +39,14 @@ interface BatchRow {
 
 const POLL_INTERVAL = 5000;
 
+function deriveRunReviewStatus(run: RunRow): string {
+  if (run.status === 'running' || run.status === 'pending') return 'running';
+  if (run.totalGenerations === 0) return 'pending';
+  if (run.ratedGenerations === 0) return 'pending';
+  if (run.ratedGenerations >= run.totalGenerations) return 'reviewed';
+  return 'in_progress';
+}
+
 export function BatchRunsTab() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,27 +57,42 @@ export function BatchRunsTab() {
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [cellGallery, setCellGallery] = useState<RunRow[] | null>(null);
+  const [appliedFrom, setAppliedFrom] = useState('');
+  const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchBatches = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/strategy-batch-runs', { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (appliedFrom) params.set('from', appliedFrom);
+      if (appliedTo) params.set('to', appliedTo);
+      const res = await fetch(`/api/v1/strategy-batch-runs?${params}`, { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setBatches(json.data ?? []);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [appliedFrom, appliedTo]);
 
   useEffect(() => { fetchBatches(); }, [fetchBatches]);
 
-  const hasActive = batches.some((b) => b.status === 'running' || b.status === 'pending');
+  const hasActive = batches.some((b) => b.status === 'running');
   useEffect(() => {
     if (hasActive) {
       intervalRef.current = setInterval(fetchBatches, POLL_INTERVAL);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [hasActive, fetchBatches]);
+
+  const handleDateChange = useCallback((from: string, to: string) => {
+    setAppliedFrom(from);
+    setAppliedTo(to);
+  }, []);
+
+  const handleClearDate = useCallback(() => {
+    setAppliedFrom('');
+    setAppliedTo('');
+  }, []);
 
   const handleRetry = useCallback(async (runId: string) => {
     setRetryingRunId(runId);
@@ -102,13 +128,17 @@ export function BatchRunsTab() {
 
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
 
-  if (batches.length === 0) {
-    return <p className="text-sm text-gray-600">No runs yet. Use &ldquo;Run&rdquo; to create one.</p>;
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      {/* Date filter + view toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <DateRangePicker
+          from={appliedFrom}
+          to={appliedTo}
+          onChange={handleDateChange}
+          onClear={handleClearDate}
+        />
+
         <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
           <button
             type="button"
@@ -127,94 +157,112 @@ export function BatchRunsTab() {
         </div>
       </div>
 
-      {batches.map((batch) => {
-        const isExpanded = expandedIds.has(batch.id);
-        const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
+      {batches.length === 0 ? (
+        <p className="text-sm text-gray-600">
+          {appliedFrom || appliedTo
+            ? 'No runs match the selected date range.'
+            : 'No runs yet. Use \u201cRun\u201d to create one.'}
+        </p>
+      ) : (
+        batches.map((batch) => {
+          const isExpanded = expandedIds.has(batch.id);
+          const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
+          const isMultiStrategy = batch.strategies.length > 1;
 
-        return (
-          <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-            <div className="flex w-full items-center justify-between px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; })}
-                className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1"
-              >
-                <svg
-                  className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                  fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-                <StatusBadge status={batch.status} />
-                <span className="text-sm font-semibold text-gray-900">{batch.name ?? 'Untitled run'}</span>
-                <span className="text-sm text-gray-600">
-                  {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
-                  {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
-                </span>
-              </button>
-              <div className="flex shrink-0 items-center gap-2">
-                {batch.status !== 'failed' && (
-                  <button
-                    type="button"
-                    onClick={() => handleMarkBatchFailed(batch.id)}
-                    disabled={markingBatchId === batch.id}
-                    className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    {markingBatchId === batch.id ? '…' : 'Mark batch as failed'}
-                  </button>
-                )}
+          return (
+            <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+              <div className="flex w-full items-center justify-between px-5 py-3">
                 <button
                   type="button"
-                  onClick={() => handleDeleteBatch(batch.id, batch.name)}
-                  disabled={deletingBatchId === batch.id}
-                  className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                  title="Delete run"
+                  onClick={() => setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; })}
+                  className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1"
                 >
-                  {deletingBatchId === batch.id ? (
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  )}
+                  <svg
+                    className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                  <ReviewStatusBadge status={batch.status} />
+                  <span className="text-sm font-semibold text-gray-900">{batch.name ?? 'Untitled run'}</span>
+                  {isMultiStrategy ? (
+                    <MultiStrategyLabel strategies={batch.strategies} />
+                  ) : batch.strategies.length === 1 ? (
+                    <StrategyHoverCard strategyId={batch.strategies[0].id}>
+                      <span className="text-xs text-primary-600 hover:text-primary-500 cursor-help">
+                        {batch.strategies[0].name}
+                      </span>
+                    </StrategyHoverCard>
+                  ) : null}
+                  <span className="text-sm text-gray-600">
+                    {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
+                    {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
+                  </span>
                 </button>
-                <span className="text-xs text-gray-400">
-                  {new Date(batch.createdAt).toLocaleString()}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {batch.status !== 'reviewed' && (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkBatchFailed(batch.id)}
+                      disabled={markingBatchId === batch.id}
+                      className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {markingBatchId === batch.id ? '…' : 'Mark batch as failed'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                    disabled={deletingBatchId === batch.id}
+                    className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    title="Delete run"
+                  >
+                    {deletingBatchId === batch.id ? (
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-xs text-gray-400">
+                    {new Date(batch.createdAt).toLocaleString()}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {isExpanded && (
-              <div className="border-t border-gray-100 p-4">
-                {viewMode === 'matrix' ? (
-                  <MatrixView
-                    runs={batch.runs}
-                    retryingRunId={retryingRunId}
-                    onRetry={handleRetry}
-                    onRated={fetchBatches}
-                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                    onCellClick={(cellRuns) => setCellGallery(cellRuns)}
-                  />
-                ) : (
-                  <ListView
-                    runs={batch.runs}
-                    retryingRunId={retryingRunId}
-                    onRetry={handleRetry}
-                    onRated={fetchBatches}
-                    onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+              {isExpanded && (
+                <div className="border-t border-gray-100 p-4">
+                  {viewMode === 'matrix' ? (
+                    <MatrixView
+                      runs={batch.runs}
+                      retryingRunId={retryingRunId}
+                      onRetry={handleRetry}
+                      onRated={fetchBatches}
+                      onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                      onCellClick={(cellRuns) => setCellGallery(cellRuns)}
+                    />
+                  ) : (
+                    <ListView
+                      runs={batch.runs}
+                      retryingRunId={retryingRunId}
+                      onRetry={handleRetry}
+                      onRated={fetchBatches}
+                      onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
       {lightbox && (
         <GridLightbox
           src={lightbox.src}
@@ -235,6 +283,38 @@ export function BatchRunsTab() {
         />
       )}
     </div>
+  );
+}
+
+/* ─── Multi-strategy label with tooltip ─── */
+
+function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: string }[] }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  return (
+    <span
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-purple-200 cursor-help">
+        Multi-Strategy Run
+      </span>
+      {showTooltip && (
+        <span className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+          <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-gray-400">
+            Strategies ({strategies.length})
+          </span>
+          {strategies.map((s) => (
+            <span key={s.id} className="block text-xs text-gray-700 py-0.5">
+              {s.name}
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -451,7 +531,7 @@ function MatrixView({
                       ) : (
                         <>
                           <Link href={`/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
-                            <StatusBadge status={firstRun.status} />
+                            <ReviewStatusBadge status={deriveRunReviewStatus(firstRun)} />
                           </Link>
                           {(firstRun.status === 'failed' || firstRun.status === 'skipped') && (
                             <button type="button" onClick={() => onRetry(firstRun.id)}
@@ -541,7 +621,7 @@ function CellGalleryModal({
                 </div>
               ) : (
                 <div className="flex aspect-square items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
-                  <StatusBadge status={run.status} />
+                  <ReviewStatusBadge status={deriveRunReviewStatus(run)} />
                 </div>
               )}
             </div>
@@ -600,7 +680,7 @@ function RunCell({
         ) : (
           <>
             <Link href={`/strategies/${run.strategyId}/runs/${run.id}`}>
-              <StatusBadge status={run.status} />
+              <ReviewStatusBadge status={deriveRunReviewStatus(run)} />
             </Link>
             {(run.status === 'failed' || run.status === 'skipped') && (
               <button type="button" onClick={() => onRetry(run.id)}
@@ -616,17 +696,17 @@ function RunCell({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-700',
-    running: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    failed: 'bg-red-100 text-red-700',
-    skipped: 'bg-amber-100 text-amber-700',
+function ReviewStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { style: string; label: string }> = {
+    running: { style: 'bg-blue-100 text-blue-700', label: 'Running' },
+    pending: { style: 'bg-gray-100 text-gray-700', label: 'Pending' },
+    in_progress: { style: 'bg-amber-100 text-amber-700', label: 'In Progress' },
+    reviewed: { style: 'bg-green-100 text-green-700', label: 'Reviewed' },
   };
+  const c = config[status] ?? config.pending;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
-      {status}
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}>
+      {c.label}
     </span>
   );
 }

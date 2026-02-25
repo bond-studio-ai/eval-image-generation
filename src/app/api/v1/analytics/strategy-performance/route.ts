@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { generation, strategy, strategyRun, strategyStepResult } from '@/db/schema';
 import { successResponse } from '@/lib/api-response';
-import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +11,27 @@ function pct(n: number, total: number) {
 }
 
 /** GET: list strategies with generation count, scene/product good/failed %, not-rated %, avg exec time. */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = request.nextUrl;
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    const model = searchParams.get('model');
+
+    const conditions = [isNull(strategy.deletedAt)];
+    if (model) conditions.push(eq(strategy.model, model));
+    if (from) conditions.push(gte(generation.createdAt, new Date(from)));
+    if (to) {
+      const endOfDay = new Date(to);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(generation.createdAt, endOfDay));
+    }
+
     const rows = await db
       .select({
         id: strategy.id,
         name: strategy.name,
+        model: strategy.model,
         generationCount: sql<number>`COUNT(${generation.id})::int`,
         sceneGoodCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'GOOD')::int`,
         sceneFailedCount: sql<number>`COUNT(*) FILTER (WHERE ${generation.sceneAccuracyRating} = 'FAILED')::int`,
@@ -37,27 +52,37 @@ export async function GET(_request: NextRequest) {
         ),
       )
       .leftJoin(generation, eq(generation.id, strategyStepResult.generationId))
-      .where(isNull(strategy.deletedAt))
-      .groupBy(strategy.id, strategy.name);
+      .where(and(...conditions))
+      .groupBy(strategy.id, strategy.name, strategy.model);
 
     const data = rows.map((r) => {
       const total = Number(r.generationCount ?? 0);
+      const sceneGood = Number(r.sceneGoodCount ?? 0);
+      const sceneFailed = Number(r.sceneFailedCount ?? 0);
+      const sceneRated = sceneGood + sceneFailed;
+      const productGood = Number(r.productGoodCount ?? 0);
+      const productFailed = Number(r.productFailedCount ?? 0);
+      const productRated = productGood + productFailed;
       return {
         id: r.id,
         name: r.name,
+        model: r.model,
         generationCount: total,
-        sceneGoodPct: pct(Number(r.sceneGoodCount ?? 0), total),
-        sceneFailedPct: pct(Number(r.sceneFailedCount ?? 0), total),
-        sceneUnsetPct: pct(Number(r.sceneUnsetCount ?? 0), total),
-        productGoodPct: pct(Number(r.productGoodCount ?? 0), total),
-        productFailedPct: pct(Number(r.productFailedCount ?? 0), total),
-        productUnsetPct: pct(Number(r.productUnsetCount ?? 0), total),
+        sceneRatedCount: sceneRated,
+        sceneGoodPct: pct(sceneGood, sceneRated),
+        sceneFailedPct: pct(sceneFailed, sceneRated),
+        productRatedCount: productRated,
+        productGoodPct: pct(productGood, productRated),
+        productFailedPct: pct(productFailed, productRated),
+        notRatedCount: Number(r.notRatedCount ?? 0),
         notRatedPct: pct(Number(r.notRatedCount ?? 0), total),
         avgExecTimeMs: r.avgExecTimeMs != null ? Number(r.avgExecTimeMs) : null,
       };
     });
 
-    return successResponse(data);
+    const models = [...new Set(rows.map((r) => r.model))].sort();
+
+    return successResponse({ rows: data, models });
   } catch (error) {
     console.error('Error fetching strategy performance:', error);
     throw error;

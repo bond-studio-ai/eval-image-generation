@@ -13,6 +13,18 @@ interface RunRow {
   inputPresetName: string | null;
   lastOutputUrl: string | null;
   lastOutputGenerationId: string | null;
+  totalGenerations?: number;
+  ratedGenerations?: number;
+}
+
+function deriveRunReviewStatus(run: RunRow): string {
+  if (run.status === 'running' || run.status === 'pending') return 'running';
+  const total = run.totalGenerations ?? 0;
+  const rated = run.ratedGenerations ?? 0;
+  if (total === 0) return 'pending';
+  if (rated === 0) return 'pending';
+  if (rated >= total) return 'reviewed';
+  return 'in_progress';
 }
 
 const POLL_INTERVAL = 5000;
@@ -117,7 +129,7 @@ export function IndividualExecutionsTab() {
                   {run.inputPresetName ?? '—'}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2">
-                  <StatusBadge status={run.status} />
+                  <StatusBadge status={deriveRunReviewStatus(run)} />
                 </td>
                 <td className="whitespace-nowrap px-4 py-2 text-sm text-gray-500">
                   {new Date(run.createdAt).toLocaleString()}
@@ -149,15 +161,16 @@ export function IndividualExecutionsTab() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-700',
-    running: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    failed: 'bg-red-100 text-red-700',
+  const config: Record<string, { style: string; label: string }> = {
+    running: { style: 'bg-blue-100 text-blue-700', label: 'Running' },
+    pending: { style: 'bg-gray-100 text-gray-700', label: 'Pending' },
+    in_progress: { style: 'bg-amber-100 text-amber-700', label: 'In Progress' },
+    reviewed: { style: 'bg-green-100 text-green-700', label: 'Reviewed' },
   };
+  const c = config[status] ?? config.pending;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
-      {status}
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}>
+      {c.label}
     </span>
   );
 }

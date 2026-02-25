@@ -1,5 +1,6 @@
 'use client';
 
+import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useState } from 'react';
@@ -7,13 +8,15 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 type StrategyRow = {
   id: string;
   name: string;
+  model: string;
   generationCount: number;
+  sceneRatedCount: number;
   sceneGoodPct: number;
   sceneFailedPct: number;
-  sceneUnsetPct: number;
+  productRatedCount: number;
   productGoodPct: number;
   productFailedPct: number;
-  productUnsetPct: number;
+  notRatedCount: number;
   notRatedPct: number;
   avgExecTimeMs: number | null;
 };
@@ -103,7 +106,15 @@ function IssueList({ title, items, total, colorClass }: { title: string; items: 
   );
 }
 
-export function StrategyPerformanceSection() {
+export function StrategyPerformanceSection({
+  from,
+  to,
+  model,
+}: {
+  from?: string;
+  to?: string;
+  model?: string;
+}) {
   const [rows, setRows] = useState<StrategyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -113,16 +124,21 @@ export function StrategyPerformanceSection() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const res = await fetch('/api/v1/analytics/strategy-performance', { cache: 'no-store' });
+        const params = new URLSearchParams();
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (model) params.set('model', model);
+        const res = await fetch(`/api/v1/analytics/strategy-performance?${params}`, { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
-        if (json.data && !cancelled) setRows(json.data);
+        if (json.data && !cancelled) setRows(json.data.rows ?? json.data);
       } catch { /* ignore */ }
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [from, to, model]);
 
   const fetchBreakdown = useCallback(async (strategyId: string) => {
     setLoadingIds((prev) => new Set(prev).add(strategyId));
@@ -175,7 +191,7 @@ export function StrategyPerformanceSection() {
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
       <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
       <p className="mt-1 text-sm text-gray-600">
-        Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue breakdown and failure reasons.
+        Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue breakdown, failure reasons, and product category rates.
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -190,14 +206,14 @@ export function StrategyPerformanceSection() {
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                 <span className="block">Scene</span>
-                <span className="font-normal normal-case text-gray-400">good / fail</span>
+                <span className="font-normal normal-case text-gray-400">good / fail (of rated)</span>
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                 <span className="block">Product</span>
-                <span className="font-normal normal-case text-gray-400">good / fail</span>
+                <span className="font-normal normal-case text-gray-400">good / fail (of rated)</span>
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Not rated
+                Unrated
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Avg time
@@ -239,16 +255,39 @@ export function StrategyPerformanceSection() {
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-700">{row.generationCount}</td>
                     <td className="px-4 py-3 text-right text-sm">
-                      <span className="text-green-600">{row.sceneGoodPct}%</span>
-                      <span className="text-gray-400"> / </span>
-                      <span className="text-orange-600">{row.sceneFailedPct}%</span>
+                      {row.sceneRatedCount > 0 ? (
+                        <>
+                          <span className="text-green-600">{row.sceneGoodPct}%</span>
+                          <span className="text-gray-400"> / </span>
+                          <span className="text-orange-600">{row.sceneFailedPct}%</span>
+                          <span className="block text-[10px] text-gray-400">{row.sceneRatedCount} rated</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
-                      <span className="text-green-600">{row.productGoodPct}%</span>
-                      <span className="text-gray-400"> / </span>
-                      <span className="text-orange-600">{row.productFailedPct}%</span>
+                      {row.productRatedCount > 0 ? (
+                        <>
+                          <span className="text-green-600">{row.productGoodPct}%</span>
+                          <span className="text-gray-400"> / </span>
+                          <span className="text-orange-600">{row.productFailedPct}%</span>
+                          <span className="block text-[10px] text-gray-400">{row.productRatedCount} rated</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-500">{row.notRatedPct}%</td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-500">
+                      {row.notRatedCount > 0 ? (
+                        <>
+                          {row.notRatedCount}
+                          <span className="text-[10px] text-gray-400"> ({row.notRatedPct}%)</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">0</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-700">
                       {row.avgExecTimeMs != null ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s` : '—'}
                     </td>
@@ -282,6 +321,17 @@ export function StrategyPerformanceSection() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Per-strategy product category rates */}
+                            <div className="lg:col-span-2">
+                              <ProductCategoryRates
+                                strategyId={row.id}
+                                from={from}
+                                to={to}
+                                model={model}
+                                compact
+                              />
+                            </div>
 
                             {/* Scene evaluation issues */}
                             <IssueList

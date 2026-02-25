@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
           columns: { id: true, status: true, outputUrl: true, generationId: true },
           with: {
             step: { columns: { stepOrder: true } },
+            generation: { columns: { id: true, sceneAccuracyRating: true, productAccuracyRating: true } },
           },
         },
         inputPresets: {
@@ -43,12 +44,21 @@ export async function GET(request: NextRequest) {
     );
 
     const data = runsForActiveStrategies.map((run) => {
-      const resultsWithOrder =       (run.stepResults ?? []).filter(
+      const resultsWithOrder = (run.stepResults ?? []).filter(
         (sr) => sr.step != null,
-      ) as { id: string; status: string; outputUrl: string | null; generationId: string | null; step: { stepOrder: number } }[];
+      ) as { id: string; status: string; outputUrl: string | null; generationId: string | null; step: { stepOrder: number }; generation: { id: string; sceneAccuracyRating: string | null; productAccuracyRating: string | null } | null }[];
       const lastResult = resultsWithOrder.length > 0
         ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
         : null;
+
+      const generations = resultsWithOrder
+        .map((sr) => sr.generation)
+        .filter((g): g is NonNullable<typeof g> => g != null);
+      const totalGenerations = generations.length;
+      const ratedGenerations = generations.filter(
+        (g) => g.sceneAccuracyRating != null || g.productAccuracyRating != null,
+      ).length;
+
       return {
         id: run.id,
         strategyId: run.strategyId,
@@ -60,6 +70,8 @@ export async function GET(request: NextRequest) {
         inputPresetName: run.inputPresets?.[0]?.inputPreset?.name ?? null,
         lastOutputUrl: lastResult?.outputUrl ?? null,
         lastOutputGenerationId: lastResult?.generationId ?? null,
+        totalGenerations,
+        ratedGenerations,
         stepsSummary: {
           completed: run.stepResults.filter((sr) => sr.status === 'completed').length,
           total: run.stepResults.length,
