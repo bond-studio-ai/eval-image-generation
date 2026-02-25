@@ -251,6 +251,7 @@ export function BatchRunsTab() {
                   ) : (
                     <ListView
                       runs={batch.runs}
+                      isSingleStrategy={!isMultiStrategy}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
                       onRated={fetchBatches}
@@ -322,12 +323,14 @@ function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: st
 
 function ListView({
   runs,
+  isSingleStrategy,
   retryingRunId,
   onRetry,
   onRated,
   onImageClick,
 }: {
   runs: RunRow[];
+  isSingleStrategy?: boolean;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
@@ -367,13 +370,15 @@ function ListView({
 
         return (
           <div key={stratId}>
-            <h3 className="mb-2 text-sm font-semibold text-gray-800">
-              <StrategyHoverCard strategyId={stratId}>
-                <Link href={`/strategies/${stratId}`} className="text-primary-600 hover:text-primary-500">
-                  {strategyLabels.get(stratId)}
-                </Link>
-              </StrategyHoverCard>
-            </h3>
+            {!isSingleStrategy && (
+              <h3 className="mb-2 text-sm font-semibold text-gray-800">
+                <StrategyHoverCard strategyId={stratId}>
+                  <Link href={`/strategies/${stratId}`} className="text-primary-600 hover:text-primary-500">
+                    {strategyLabels.get(stratId)}
+                  </Link>
+                </StrategyHoverCard>
+              </h3>
+            )}
             <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
               <table className="divide-y divide-gray-200" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead className="bg-gray-50">
