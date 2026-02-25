@@ -20,7 +20,7 @@ export interface FalGenerateResponse {
 const FAL_API_HOST = 'https://fal.run';
 
 const FAL_MODELS: Record<string, string> = {
-  'seedream-3.0': 'fal-ai/bytedance/seedream/v4.5/edit',
+  'seedream-4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
 };
 
 const MAX_RETRIES = 3;
