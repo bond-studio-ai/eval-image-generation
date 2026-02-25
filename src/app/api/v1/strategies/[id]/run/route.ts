@@ -186,7 +186,7 @@ async function executeSingleStep(
   const includeDollhouse = step.includeDollhouse ?? true;
   const includeRealPhoto = step.includeRealPhoto ?? true;
   const includeMoodBoard = step.includeMoodBoard ?? true;
-  const includeProducts = Array.isArray(step.includeProductCategories) ? step.includeProductCategories : [];
+
   for (const key of SCENE_KEYS) {
     if (key === 'dollhouse_view' && !includeDollhouse) continue;
     if (key === 'real_photo' && !includeRealPhoto) continue;
@@ -194,8 +194,10 @@ async function executeSingleStep(
     const val = presetData.sceneImages[key];
     if (val) sceneMap[key] = val;
   }
+
+  // Include ALL product categories available in the input preset so prompt tags
+  // are resolved based on the preset contents, not the strategy checkboxes.
   for (const key of PRODUCT_CATEGORIES) {
-    if (!includeProducts.includes(key)) continue;
     const urls = presetData.productImages[key];
     if (urls && urls.length > 0) productMap[key] = [...urls];
   }
@@ -213,7 +215,6 @@ async function executeSingleStep(
     if (url) sceneMap.mood_board = url;
   }
 
-  // Validate preset provides every input the step requires (no from-step override)
   const missingRequirements: string[] = [];
   if (includeDollhouse && step.dollhouseViewFromStep == null && !sceneMap.dollhouse_view) {
     missingRequirements.push('Dollhouse view');
@@ -223,12 +224,6 @@ async function executeSingleStep(
   }
   if (includeMoodBoard && step.moodBoardFromStep == null && !sceneMap.mood_board) {
     missingRequirements.push('Mood board');
-  }
-  for (const key of includeProducts) {
-    const urls = key in productMap ? productMap[key as keyof typeof productMap] : undefined;
-    if (!urls || urls.length === 0) {
-      missingRequirements.push(key in INPUT_KEY_LABELS ? INPUT_KEY_LABELS[key as keyof typeof INPUT_KEY_LABELS] : key);
-    }
   }
   if (missingRequirements.length > 0) {
     await db

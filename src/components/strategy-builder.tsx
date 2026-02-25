@@ -24,23 +24,6 @@ interface StepData {
   arbitrary_image_from_step: number | null;
 }
 
-const PRODUCT_CATEGORIES = [
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
-] as const;
-
-const PRODUCT_LABELS: Record<string, string> = {
-  faucets: 'Faucets', lightings: 'Lightings', lvps: 'LVPs', mirrors: 'Mirrors', paints: 'Paints',
-  robe_hooks: 'Robe hooks', shelves: 'Shelves', shower_glasses: 'Shower glasses', shower_systems: 'Shower systems',
-  floor_tiles: 'Floor tiles', wall_tiles: 'Wall tiles', shower_wall_tiles: 'Shower wall tiles',
-  shower_floor_tiles: 'Shower floor tiles', shower_curb_tiles: 'Shower curb tiles',
-  toilet_paper_holders: 'Toilet paper holders', toilets: 'Toilets', towel_bars: 'Towel bars',
-  towel_rings: 'Towel rings', tub_doors: 'Tub doors', tub_fillers: 'Tub fillers', tubs: 'Tubs',
-  vanities: 'Vanities', wallpapers: 'Wallpapers',
-};
 
 interface StrategySettings {
   model: string;
@@ -394,43 +377,7 @@ export function StrategyBuilder({
                         );
                       })}
                     </div>
-                    <div>
-                      <p className="mb-1 text-xs text-gray-600">Specific products to use</p>
-                      <div className="mb-2 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => updateStep(idx, { include_product_categories: [...PRODUCT_CATEGORIES] })}
-                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
-                        >
-                          Select all
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateStep(idx, { include_product_categories: [] })}
-                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
-                        >
-                          Deselect all
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
-                        {PRODUCT_CATEGORIES.map((key) => (
-                          <label key={key} className="flex cursor-pointer items-center gap-2 text-xs text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={step.include_product_categories.includes(key)}
-                              onChange={(e) => {
-                                const next = e.target.checked
-                                  ? [...step.include_product_categories, key]
-                                  : step.include_product_categories.filter((c) => c !== key);
-                                updateStep(idx, { include_product_categories: next });
-                              }}
-                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                            {PRODUCT_LABELS[key] ?? key}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    <p className="text-xs text-gray-400">Products are included automatically based on the input preset.</p>
                   </div>
                 </div>
 
