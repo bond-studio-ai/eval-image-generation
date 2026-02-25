@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(generation.promptVersionId, promptVersionId));
     }
     if (from) {
-      conditions.push(gte(generation.createdAt, new Date(from)));
+      conditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
     }
     if (to) {
-      conditions.push(lte(generation.createdAt, new Date(to)));
+      conditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
     }
 
     const whereClause = and(...conditions);
@@ -44,10 +44,10 @@ export async function GET(request: NextRequest) {
       unratedConditions.push(eq(generation.promptVersionId, promptVersionId));
     }
     if (from) {
-      unratedConditions.push(gte(generation.createdAt, new Date(from)));
+      unratedConditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
     }
     if (to) {
-      unratedConditions.push(lte(generation.createdAt, new Date(to)));
+      unratedConditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
     }
 
     const totalGenerationsResult = await db

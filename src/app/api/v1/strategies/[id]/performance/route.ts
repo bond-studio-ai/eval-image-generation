@@ -61,18 +61,22 @@ export async function GET(
     }
 
     const avgExecTimeMs = execTimeCount > 0 ? Math.round(execTimeSum / execTimeCount) : null;
+    const sceneRated = sceneGood + sceneFailed;
+    const productRated = productGood + productFailed;
 
     return successResponse({
       generation_count: total,
       scene_good_count: sceneGood,
       scene_failed_count: sceneFailed,
+      scene_rated_count: sceneRated,
       product_good_count: productGood,
       product_failed_count: productFailed,
+      product_rated_count: productRated,
       not_rated_count: notRated,
-      scene_good_pct: total > 0 ? Math.round((sceneGood / total) * 100) : 0,
-      scene_failed_pct: total > 0 ? Math.round((sceneFailed / total) * 100) : 0,
-      product_good_pct: total > 0 ? Math.round((productGood / total) * 100) : 0,
-      product_failed_pct: total > 0 ? Math.round((productFailed / total) * 100) : 0,
+      scene_good_pct: sceneRated > 0 ? Math.round((sceneGood / sceneRated) * 100) : 0,
+      scene_failed_pct: sceneRated > 0 ? Math.round((sceneFailed / sceneRated) * 100) : 0,
+      product_good_pct: productRated > 0 ? Math.round((productGood / productRated) * 100) : 0,
+      product_failed_pct: productRated > 0 ? Math.round((productFailed / productRated) * 100) : 0,
       not_rated_pct: total > 0 ? Math.round((notRated / total) * 100) : 0,
       avg_execution_time_ms: avgExecTimeMs,
     });

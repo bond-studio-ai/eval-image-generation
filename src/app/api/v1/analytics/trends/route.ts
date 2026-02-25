@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     const conditions = [
-      gte(generation.createdAt, new Date(from)),
-      lte(generation.createdAt, new Date(to)),
+      gte(generation.createdAt, new Date(from + 'T00:00:00')),
+      lte(generation.createdAt, new Date(to + 'T23:59:59.999')),
     ];
 
     const ratingMap = sql`CASE scene_accuracy_rating

@@ -13,10 +13,10 @@ export async function GET(request: NextRequest) {
 
     const conditions = [isNull(promptVersion.deletedAt)];
     if (from) {
-      conditions.push(gte(generation.createdAt, new Date(from)));
+      conditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
     }
     if (to) {
-      conditions.push(lte(generation.createdAt, new Date(to)));
+      conditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
     }
 
     const ratingMap = sql`CASE scene_accuracy_rating

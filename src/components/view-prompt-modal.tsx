@@ -5,10 +5,11 @@ import { useCallback, useEffect, useState } from 'react';
 interface ViewPromptModalProps {
   promptVersionId: string;
   promptVersionName: string | null;
+  processedUserPrompt?: string | null;
   onClose: () => void;
 }
 
-export function ViewPromptModal({ promptVersionId, promptVersionName, onClose }: ViewPromptModalProps) {
+export function ViewPromptModal({ promptVersionId, promptVersionName, processedUserPrompt, onClose }: ViewPromptModalProps) {
   const [data, setData] = useState<{ systemPrompt: string; userPrompt: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,9 +78,11 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, onClose }:
                 </pre>
               </div>
               <div className="flex flex-col">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">User prompt</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  User prompt{processedUserPrompt ? ' (processed)' : ''}
+                </h3>
                 <pre className="flex-1 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">
-                  {data.userPrompt || '(empty)'}
+                  {(processedUserPrompt || data.userPrompt) || '(empty)'}
                 </pre>
               </div>
             </div>

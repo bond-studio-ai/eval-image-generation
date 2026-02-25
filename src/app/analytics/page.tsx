@@ -186,12 +186,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const model = params.model;
 
   const dateConditions: any[] = [];
-  if (from) dateConditions.push(gte(generation.createdAt, new Date(from)));
-  if (to) {
-    const endOfDay = new Date(to);
-    endOfDay.setHours(23, 59, 59, 999);
-    dateConditions.push(lte(generation.createdAt, endOfDay));
-  }
+  if (from) dateConditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
+  if (to) dateConditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
   const modelCondition = model ? eq(strategy.model, model) : undefined;
 
   const [sceneDist, productDist, overview, models] = await Promise.all([

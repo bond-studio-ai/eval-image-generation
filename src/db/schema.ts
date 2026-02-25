@@ -397,6 +397,7 @@ export const strategyStepResult = pgTable(
     status: varchar('status', { length: 20 }).notNull().default('pending'),
     error: text('error'),
     executionTime: integer('execution_time'),
+    processedUserPrompt: text('processed_user_prompt'),
   },
   (table) => [
     index('idx_step_result_run').on(table.strategyRunId),

@@ -28,12 +28,8 @@ export async function GET(request: NextRequest) {
     const conditions = [isNotNull(strategyStepResult.generationId)];
     if (strategyId) conditions.push(eq(strategyRun.strategyId, strategyId));
     if (model) conditions.push(eq(strategy.model, model));
-    if (from) conditions.push(gte(generation.createdAt, new Date(from)));
-    if (to) {
-      const endOfDay = new Date(to);
-      endOfDay.setHours(23, 59, 59, 999);
-      conditions.push(lte(generation.createdAt, endOfDay));
-    }
+    if (from) conditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
+    if (to) conditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
 
     const evaluations = await db
       .select({

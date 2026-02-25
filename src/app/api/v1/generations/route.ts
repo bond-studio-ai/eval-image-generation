@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
       conditions.push(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating)));
     }
     if (from) {
-      conditions.push(gte(generation.createdAt, new Date(from)));
+      conditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
     }
     if (to) {
-      conditions.push(lte(generation.createdAt, new Date(to)));
+      conditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

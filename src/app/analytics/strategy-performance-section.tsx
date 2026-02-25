@@ -40,45 +40,42 @@ type BreakdownData = {
 };
 
 function RatingSummaryBar({ good, failed, unset, label }: { good: number; failed: number; unset: number; label: string }) {
-  const total = good + failed + unset;
-  if (total === 0) return null;
-  const pct = (n: number) => Math.round((n / total) * 100);
+  const rated = good + failed;
+  if (rated === 0 && unset === 0) return null;
+  const pct = (n: number) => rated > 0 ? Math.round((n / rated) * 100) : 0;
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-gray-600">{label}</p>
-      <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
-        {good > 0 && (
-          <div
-            className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
-            style={{ width: `${pct(good)}%` }}
-            title={`Good: ${good}`}
-          >
-            {pct(good) >= 12 ? `${pct(good)}%` : ''}
-          </div>
-        )}
-        {failed > 0 && (
-          <div
-            className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
-            style={{ width: `${pct(failed)}%` }}
-            title={`Failed: ${failed}`}
-          >
-            {pct(failed) >= 12 ? `${pct(failed)}%` : ''}
-          </div>
-        )}
-        {unset > 0 && (
-          <div
-            className="flex items-center justify-center bg-gray-300 text-[10px] font-medium text-gray-600"
-            style={{ width: `${pct(unset)}%` }}
-            title={`Unrated: ${unset}`}
-          >
-            {pct(unset) >= 12 ? `${pct(unset)}%` : ''}
-          </div>
-        )}
-      </div>
+      {rated > 0 ? (
+        <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
+          {good > 0 && (
+            <div
+              className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
+              style={{ width: `${pct(good)}%` }}
+              title={`Good: ${good}`}
+            >
+              {pct(good) >= 12 ? `${pct(good)}%` : ''}
+            </div>
+          )}
+          {failed > 0 && (
+            <div
+              className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
+              style={{ width: `${pct(failed)}%` }}
+              title={`Failed: ${failed}`}
+            >
+              {pct(failed) >= 12 ? `${pct(failed)}%` : ''}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex h-5 w-full items-center rounded-full bg-gray-100 px-3">
+          <span className="text-[10px] text-gray-400">No rated generations</span>
+        </div>
+      )}
       <div className="flex gap-3 text-[10px] text-gray-500">
         <span><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Good {good}</span>
         <span><span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> Failed {failed}</span>
-        <span><span className="inline-block h-2 w-2 rounded-full bg-gray-300" /> Unrated {unset}</span>
+        {unset > 0 && <span className="text-gray-400">({unset} unrated)</span>}
       </div>
     </div>
   );
@@ -292,7 +289,7 @@ export function StrategyPerformanceSection({
                   </tr>
                   {isExpanded && (
                     <tr key={`${row.id}-breakdown`}>
-                      <td colSpan={COL_SPAN} className="bg-gray-50/80 py-4 pl-10 pr-6">
+                      <td colSpan={COL_SPAN} className="bg-gray-50/80 py-6 pl-10 pr-6 border-b-2 border-gray-200">
                         {isLoadingBreakdown ? (
                           <p className="text-sm text-gray-500">Loading breakdown…</p>
                         ) : !rowBreakdown ? (

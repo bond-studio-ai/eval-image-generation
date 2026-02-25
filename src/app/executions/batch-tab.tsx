@@ -25,7 +25,6 @@ interface RunRow {
 
 interface BatchRow {
   id: string;
-  name: string | null;
   strategyId: string | null;
   strategies: { id: string; name: string }[];
   numberOfImages: number;
@@ -114,8 +113,8 @@ export function BatchRunsTab() {
     finally { setMarkingBatchId(null); }
   }, [fetchBatches]);
 
-  const handleDeleteBatch = useCallback(async (batchId: string, batchName: string | null) => {
-    if (!confirm(`Delete "${batchName ?? 'Untitled run'}"? This will permanently remove the batch and all its runs.`)) return;
+  const handleDeleteBatch = useCallback(async (batchId: string, displayName: string) => {
+    if (!confirm(`Delete "${displayName}"? This will permanently remove the batch and all its runs.`)) return;
     setDeletingBatchId(batchId);
     try {
       const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}`, { method: 'DELETE' });
@@ -184,16 +183,17 @@ export function BatchRunsTab() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                   <ReviewStatusBadge status={batch.status} />
-                  <span className="text-sm font-semibold text-gray-900">{batch.name ?? 'Untitled run'}</span>
                   {isMultiStrategy ? (
                     <MultiStrategyLabel strategies={batch.strategies} />
                   ) : batch.strategies.length === 1 ? (
                     <StrategyHoverCard strategyId={batch.strategies[0].id}>
-                      <span className="text-xs text-primary-600 hover:text-primary-500 cursor-help">
+                      <span className="text-sm font-semibold text-gray-900 cursor-help">
                         {batch.strategies[0].name}
                       </span>
                     </StrategyHoverCard>
-                  ) : null}
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-900">Untitled run</span>
+                  )}
                   <span className="text-sm text-gray-600">
                     {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
                     {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
@@ -215,7 +215,7 @@ export function BatchRunsTab() {
                   )}
                   <button
                     type="button"
-                    onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                    onClick={() => handleDeleteBatch(batch.id, isMultiStrategy ? 'Multi-Strategy Run' : batch.strategies[0]?.name ?? 'Untitled run')}
                     disabled={deletingBatchId === batch.id}
                     className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                     title="Delete run"

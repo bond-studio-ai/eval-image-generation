@@ -46,6 +46,31 @@ const SNAKE_TO_CAMEL: Record<string, string> = {
   wallpapers: 'wallpapers',
 };
 
+/**
+ * Process a user prompt template by resolving product category tags.
+ * Tags like `<faucets>Faucets,</faucets>` are kept (sans tags) if the product
+ * category is present, or stripped entirely if absent.
+ */
+function processPromptTags(
+  userPrompt: string,
+  presentCategories: Set<string>,
+): string {
+  const processed = userPrompt.replace(
+    /<([a-z][a-z0-9-]*)>([\s\S]*?)<\/\1>/g,
+    (_match, tagName: string, content: string) => {
+      const categoryKey = tagName.replace(/-/g, '_');
+      return presentCategories.has(categoryKey) ? content : '';
+    },
+  );
+
+  return processed
+    .replace(/,(\s*,)+/g, ',')     // collapse consecutive commas
+    .replace(/,\s*\./g, '.')       // remove trailing comma before period
+    .replace(/:\s*,/g, ':')       // remove leading comma after colon
+    .replace(/\s{2,}/g, ' ')      // collapse whitespace
+    .trim();
+}
+
 type StepRow = typeof strategyStep.$inferSelect;
 
 /** Strategy-level defaults for model settings (used when step does not override). */
@@ -241,6 +266,9 @@ async function executeSingleStep(
     }
   });
 
+  const presentCategories = new Set(Object.keys(productMap));
+  const processedUserPrompt = processPromptTags(pv.userPrompt, presentCategories);
+
   const model = strategyDefaults.model;
   const aspectRatio = strategyDefaults.aspectRatio;
   const outputResolution = strategyDefaults.outputResolution;
@@ -250,7 +278,7 @@ async function executeSingleStep(
 
   const geminiResult = await generateWithGemini({
     systemPrompt: pv.systemPrompt,
-    userPrompt: pv.userPrompt,
+    userPrompt: processedUserPrompt,
     model,
     inputImages: labeledImages,
     aspectRatio,
@@ -303,6 +331,7 @@ async function executeSingleStep(
       generationId,
       outputUrl,
       executionTime: Math.round(geminiResult.executionTimeMs),
+      processedUserPrompt,
     })
     .where(eq(strategyStepResult.id, stepResultId));
 
@@ -488,16 +517,13 @@ export async function POST(
     const numberOfImages = typeof body?.number_of_images === 'number'
       ? Math.max(1, Math.min(100, body.number_of_images))
       : 1;
-    const batchName = typeof body?.name === 'string' && body.name.trim()
-      ? body.name.trim()
-      : `Run ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 
     let batchRunId: string | null = null;
 
     if (isBatch) {
       const [batch] = await db
         .insert(strategyBatchRun)
-        .values({ name: batchName, strategyId: id, numberOfImages })
+        .values({ strategyId: id, numberOfImages })
         .returning();
       batchRunId = batch.id;
     }

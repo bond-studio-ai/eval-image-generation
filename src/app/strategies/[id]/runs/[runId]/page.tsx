@@ -68,6 +68,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
       error: sr.error,
       executionTime: sr.executionTime,
       generationId: sr.generationId,
+      processedUserPrompt: sr.processedUserPrompt,
       step: sr.step
         ? {
             stepOrder: sr.step.stepOrder,

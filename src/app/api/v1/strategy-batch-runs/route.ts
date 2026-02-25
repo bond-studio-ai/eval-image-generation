@@ -16,12 +16,8 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get('to');
 
     const dateConditions = [];
-    if (from) dateConditions.push(gte(strategyBatchRun.createdAt, new Date(from)));
-    if (to) {
-      const endOfDay = new Date(to);
-      endOfDay.setHours(23, 59, 59, 999);
-      dateConditions.push(lte(strategyBatchRun.createdAt, endOfDay));
-    }
+    if (from) dateConditions.push(gte(strategyBatchRun.createdAt, new Date(from + 'T00:00:00')));
+    if (to) dateConditions.push(lte(strategyBatchRun.createdAt, new Date(to + 'T23:59:59.999')));
     const whereClause = dateConditions.length > 0 ? and(...dateConditions) : undefined;
 
     const batches = await db.query.strategyBatchRun.findMany({
@@ -115,7 +111,6 @@ export async function GET(request: NextRequest) {
 
       return {
         id: batch.id,
-        name: batch.name,
         strategyId: batch.strategyId,
         strategies,
         numberOfImages: batch.numberOfImages,

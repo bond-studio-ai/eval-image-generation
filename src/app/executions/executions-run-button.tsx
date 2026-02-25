@@ -18,7 +18,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [runName, setRunName] = useState('');
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
   const [numberOfImages, setNumberOfImages] = useState(8);
@@ -83,7 +82,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: runName.trim() || undefined,
           strategy_ids: selectedStrategyIds,
           input_preset_ids: selectedPresetIds,
           number_of_images: count,
@@ -96,7 +94,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         return;
       }
       setShowModal(false);
-      setRunName('');
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
       setNumberOfImages(8);
@@ -109,7 +106,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     } finally {
       setSubmitting(false);
     }
-  }, [runName, selectedStrategyIds, selectedPresetIds, numberOfImages, onRunCreated]);
+  }, [selectedStrategyIds, selectedPresetIds, numberOfImages, onRunCreated]);
 
   const totalRuns = selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
 
@@ -150,13 +147,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 <p className="mt-1 text-sm text-gray-600">
                   Select strategies and input presets. This creates one batch: strategies × presets × images to generate.
                 </p>
-                <input
-                  type="text"
-                  value={runName}
-                  onChange={(e) => setRunName(e.target.value)}
-                  placeholder="Run name (optional — auto-generated if empty)"
-                  className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                />
               </div>
 
               {loading ? (

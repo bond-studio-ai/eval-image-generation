@@ -17,9 +17,6 @@ export async function POST(request: NextRequest) {
     const numberOfImages = typeof body?.number_of_images === 'number'
       ? Math.max(1, Math.min(100, body.number_of_images))
       : 1;
-    const batchName = typeof body?.name === 'string' && body.name.trim()
-      ? body.name.trim()
-      : `Run ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 
     if (!Array.isArray(rawStrategyIds) || rawStrategyIds.length === 0) {
       return errorResponse('VALIDATION_ERROR', 'At least one strategy is required');
@@ -63,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const [batch] = await db
       .insert(strategyBatchRun)
-      .values({ name: batchName, strategyId: null, numberOfImages })
+      .values({ strategyId: null, numberOfImages })
       .returning();
 
     if (!batch) return errorResponse('INTERNAL_ERROR', 'Failed to create batch');

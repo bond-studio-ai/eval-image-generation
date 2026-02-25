@@ -26,6 +26,7 @@ interface StepResult {
   error: string | null;
   executionTime: number | null;
   generationId: string | null;
+  processedUserPrompt: string | null;
   step: StepInfo | null;
 }
 
@@ -70,6 +71,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const [markingStatus, setMarkingStatus] = useState<'idle' | 'failed' | 'completed'>('idle');
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
   const [viewingPromptName, setViewingPromptName] = useState<string | null>(null);
+  const [viewingProcessedPrompt, setViewingProcessedPrompt] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isActive = data.status === 'running' || data.status === 'pending';
@@ -297,6 +299,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
                       onClick={() => {
                         setViewingPromptId(sr.step!.promptVersion!.id);
                         setViewingPromptName(sr.step!.promptVersion!.name);
+                        setViewingProcessedPrompt(sr.processedUserPrompt ?? null);
                       }}
                       className="text-xs text-gray-500 underline hover:text-gray-700"
                     >
@@ -379,7 +382,8 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         <ViewPromptModal
           promptVersionId={viewingPromptId}
           promptVersionName={viewingPromptName}
-          onClose={() => { setViewingPromptId(null); setViewingPromptName(null); }}
+          processedUserPrompt={viewingProcessedPrompt}
+          onClose={() => { setViewingPromptId(null); setViewingPromptName(null); setViewingProcessedPrompt(null); }}
         />
       )}
     </div>

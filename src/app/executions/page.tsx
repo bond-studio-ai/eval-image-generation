@@ -93,10 +93,10 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
     conditions.push(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating)));
   }
   if (params.from) {
-    conditions.push(gte(generation.createdAt, new Date(params.from)));
+    conditions.push(gte(generation.createdAt, new Date(params.from + 'T00:00:00')));
   }
   if (params.to) {
-    conditions.push(lte(generation.createdAt, new Date(params.to)));
+    conditions.push(lte(generation.createdAt, new Date(params.to + 'T23:59:59.999')));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
