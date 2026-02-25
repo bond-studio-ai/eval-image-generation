@@ -103,6 +103,22 @@ function IssueList({ title, items, total, colorClass }: { title: string; items: 
   );
 }
 
+type SortKey = 'name' | 'generationCount' | 'sceneGoodPct' | 'sceneFailedPct' | 'productGoodPct' | 'productFailedPct' | 'notRatedCount' | 'avgExecTimeMs';
+type SortDir = 'asc' | 'desc';
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  return (
+    <svg className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`} viewBox="0 0 10 14" fill="currentColor">
+      {dir === 'asc' || !active ? (
+        <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === 'asc' ? 1 : 0.3} />
+      ) : null}
+      {dir === 'desc' || !active ? (
+        <path d="M5 14L0 8H10L5 14Z" opacity={active && dir === 'desc' ? 1 : 0.3} />
+      ) : null}
+    </svg>
+  );
+}
+
 export function StrategyPerformanceSection({
   from,
   to,
@@ -117,6 +133,8 @@ export function StrategyPerformanceSection({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [breakdowns, setBreakdowns] = useState<Record<string, BreakdownData | null>>({});
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey>('generationCount');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     let cancelled = false;
@@ -173,6 +191,25 @@ export function StrategyPerformanceSection({
     );
   }
 
+  const toggleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return key;
+      }
+      setSortDir(key === 'name' ? 'asc' : 'desc');
+      return key;
+    });
+  }, []);
+
+  const sortedRows = [...rows].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortKey === 'name') return dir * a.name.localeCompare(b.name);
+    const av = a[sortKey] ?? -1;
+    const bv = b[sortKey] ?? -1;
+    return dir * ((av as number) - (bv as number));
+  });
+
   if (rows.length === 0) {
     return (
       <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -183,6 +220,7 @@ export function StrategyPerformanceSection({
   }
 
   const COL_SPAN = 8;
+  const thClass = 'px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors';
 
   return (
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -195,28 +233,28 @@ export function StrategyPerformanceSection({
           <thead>
             <tr>
               <th className="py-3 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase" style={{ width: 40 }} />
-              <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Strategy
+              <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
+                Strategy<SortIcon active={sortKey === 'name'} dir={sortDir} />
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Gens
+              <th className={thClass} onClick={() => toggleSort('generationCount')}>
+                Gens<SortIcon active={sortKey === 'generationCount'} dir={sortDir} />
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Scene
+              <th className={thClass} onClick={() => toggleSort('sceneGoodPct')}>
+                Scene<SortIcon active={sortKey === 'sceneGoodPct' || sortKey === 'sceneFailedPct'} dir={sortDir} />
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Product
+              <th className={thClass} onClick={() => toggleSort('productGoodPct')}>
+                Product<SortIcon active={sortKey === 'productGoodPct' || sortKey === 'productFailedPct'} dir={sortDir} />
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Unrated
+              <th className={thClass} onClick={() => toggleSort('notRatedCount')}>
+                Unrated<SortIcon active={sortKey === 'notRatedCount'} dir={sortDir} />
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Avg time
+              <th className={thClass} onClick={() => toggleSort('avgExecTimeMs')}>
+                Avg time<SortIcon active={sortKey === 'avgExecTimeMs'} dir={sortDir} />
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((row) => {
+            {sortedRows.map((row) => {
               const isExpanded = expandedIds.has(row.id);
               const rowBreakdown = breakdowns[row.id];
               const isLoadingBreakdown = loadingIds.has(row.id);

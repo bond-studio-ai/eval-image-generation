@@ -1,7 +1,6 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { GenerateContentConfig, GoogleGenAI, type Content } from '@google/genai';
-import { randomUUID } from 'crypto';
 import { withImageParams } from './image-utils';
+import { uploadBase64ToS3 } from './s3';
 
 // ------------------------------------
 // Types
@@ -33,20 +32,6 @@ export interface GeminiGenerateResponse {
   model: string;
   textResponse?: string;
 }
-
-// ------------------------------------
-// S3 client
-// ------------------------------------
-
-const s3 = new S3Client({
-  region: process.env.AWS_S3_REGION || 'us-west-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const BUCKET = process.env.AWS_S3_BUCKET!;
 
 // ------------------------------------
 // Helpers
@@ -139,26 +124,6 @@ async function urlToBase64(
     fetchUrl,
     bytes: buffer.byteLength,
   };
-}
-
-/**
- * Upload a base64 image to S3 and return the public URL.
- */
-async function uploadBase64ToS3(base64: string, mimeType: string): Promise<string> {
-  const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
-  const key = `evals/outputs/${randomUUID()}.${ext}`;
-  const buffer = Buffer.from(base64, 'base64');
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: mimeType,
-    }),
-  );
-
-  return `https://${BUCKET}.s3.${process.env.AWS_S3_REGION || 'us-west-2'}.amazonaws.com/${key}`;
 }
 
 // ------------------------------------

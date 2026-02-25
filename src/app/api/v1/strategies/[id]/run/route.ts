@@ -1,8 +1,11 @@
 import { db } from '@/db';
 import { generation, generationInput, generationResult, inputPreset, promptVersion, strategy, strategyBatchRun, strategyRun, strategyRunInputPreset, strategyStep, strategyStepResult } from '@/db/schema';
 import { errorResponse, successResponse } from '@/lib/api-response';
+import { generateWithFal } from '@/lib/fal';
 import { generateWithGemini } from '@/lib/gemini';
 import { uuidSchema } from '@/lib/validation';
+
+const FAL_MODELS = new Set(['seedream-3.0']);
 import { asc, eq, inArray } from 'drizzle-orm';
 import { after, NextRequest } from 'next/server';
 
@@ -276,20 +279,35 @@ async function executeSingleStep(
   const useGoogleSearch = strategyDefaults.useGoogleSearch;
   const tagImages = strategyDefaults.tagImages;
 
-  const geminiResult = await generateWithGemini({
-    systemPrompt: pv.systemPrompt,
-    userPrompt: processedUserPrompt,
-    model,
-    inputImages: labeledImages,
-    aspectRatio,
-    imageSize: outputResolution,
-    temperature: temperature ? Number(temperature) : undefined,
-    numberOfImages: 1,
-    useGoogleSearch,
-    tagImages,
-  });
+  let result: { outputUrls: string[]; executionTimeMs: number };
 
-  const outputUrl = geminiResult.outputUrls[0] ?? null;
+  if (FAL_MODELS.has(model)) {
+    result = await generateWithFal({
+      systemPrompt: pv.systemPrompt,
+      userPrompt: processedUserPrompt,
+      model,
+      inputImages: labeledImages,
+      aspectRatio,
+      imageSize: outputResolution,
+      numberOfImages: 1,
+      tagImages,
+    });
+  } else {
+    result = await generateWithGemini({
+      systemPrompt: pv.systemPrompt,
+      userPrompt: processedUserPrompt,
+      model,
+      inputImages: labeledImages,
+      aspectRatio,
+      imageSize: outputResolution,
+      temperature: temperature ? Number(temperature) : undefined,
+      numberOfImages: 1,
+      useGoogleSearch,
+      tagImages,
+    });
+  }
+
+  const outputUrl = result.outputUrls[0] ?? null;
 
   let generationId: string | null = null;
 
@@ -299,7 +317,7 @@ async function executeSingleStep(
       .values({
         promptVersionId: step.promptVersionId,
         inputPresetId: null,
-        executionTime: Math.round(geminiResult.executionTimeMs),
+        executionTime: Math.round(result.executionTimeMs),
       })
       .returning();
 
@@ -330,7 +348,7 @@ async function executeSingleStep(
       status: 'completed',
       generationId,
       outputUrl,
-      executionTime: Math.round(geminiResult.executionTimeMs),
+      executionTime: Math.round(result.executionTimeMs),
       processedUserPrompt,
     })
     .where(eq(strategyStepResult.id, stepResultId));

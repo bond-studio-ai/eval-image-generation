@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type CategoryRate = {
   name: string;
@@ -19,6 +19,19 @@ function formatCategoryName(name: string): string {
     .trim();
 }
 
+function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  return (
+    <svg className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`} viewBox="0 0 10 14" fill="currentColor">
+      {dir === 'asc' || !active ? (
+        <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === 'asc' ? 1 : 0.3} />
+      ) : null}
+      {dir === 'desc' || !active ? (
+        <path d="M5 14L0 8H10L5 14Z" opacity={active && dir === 'desc' ? 1 : 0.3} />
+      ) : null}
+    </svg>
+  );
+}
+
 export function ProductCategoryRates({
   from,
   to,
@@ -32,8 +45,24 @@ export function ProductCategoryRates({
   strategyId?: string;
   compact?: boolean;
 }) {
+  type ProdSortKey = 'name' | 'total' | 'successPct' | 'failurePct';
+  type ProdSortDir = 'asc' | 'desc';
+
   const [categories, setCategories] = useState<CategoryRate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<ProdSortKey>('total');
+  const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
+
+  const toggleSort = useCallback((key: ProdSortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return key;
+      }
+      setSortDir(key === 'name' ? 'asc' : 'desc');
+      return key;
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,22 +130,30 @@ export function ProductCategoryRates({
     );
   }
 
+  const sorted = [...categories].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortKey === 'name') return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+  });
+
+  const thBase = 'px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors';
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
-            <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-              Product Category
+            <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
+              Product Category<ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
             </th>
-            <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
-              Evaluated
+            <th className={thBase} onClick={() => toggleSort('total')}>
+              Evaluated<ProdSortIcon active={sortKey === 'total'} dir={sortDir} />
             </th>
-            <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
-              Success
+            <th className={thBase} onClick={() => toggleSort('successPct')}>
+              Success<ProdSortIcon active={sortKey === 'successPct'} dir={sortDir} />
             </th>
-            <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
-              Failure
+            <th className={thBase} onClick={() => toggleSort('failurePct')}>
+              Failure<ProdSortIcon active={sortKey === 'failurePct'} dir={sortDir} />
             </th>
             <th className="w-60 px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
               Rate
@@ -124,7 +161,7 @@ export function ProductCategoryRates({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {categories.map((cat) => (
+          {sorted.map((cat) => (
             <tr key={cat.name} className="hover:bg-gray-50/50">
               <td className="py-2 pr-4 text-sm font-medium text-gray-900">
                 {formatCategoryName(cat.name)}
