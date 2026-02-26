@@ -48,6 +48,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+function extractProductId(url: string): string | null {
+  const m = url.match(/\/products\/([0-9a-f-]{36})\//i);
+  return m?.[1] ?? null;
+}
+
 export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -62,6 +67,29 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
       })
       .catch(() => setLoadingProducts(false));
   }, []);
+
+  const productNameByUrl = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of products) {
+      if (p.featuredImage?.url) {
+        map.set(p.featuredImage.url, p.name);
+        const pid = p.id;
+        if (pid) map.set(pid, p.name);
+      }
+    }
+    return map;
+  }, [products]);
+
+  const getProductName = useCallback(
+    (url: string): string | null => {
+      const direct = productNameByUrl.get(url);
+      if (direct) return direct;
+      const pid = extractProductId(url);
+      if (pid) return productNameByUrl.get(pid) ?? null;
+      return null;
+    },
+    [productNameByUrl],
+  );
 
   const addCategoryImage = useCallback(
     (key: string, url: string) => {
@@ -153,25 +181,33 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
               {hasImages ? (
                 <div className="p-1.5">
                   <div className="grid grid-cols-2 gap-1">
-                    {images.map((url, idx) => (
-                      <div key={idx} className="group relative">
-                        <ImageWithSkeleton
-                          src={withImageParams(url)}
-                          alt={`${cat.label} ${idx + 1}`}
-                          loading="lazy"
-                          wrapperClassName="h-16 w-full rounded bg-gray-50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeCategoryImage(cat.key, idx)}
-                          className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                    {images.map((url, idx) => {
+                      const prodName = getProductName(url);
+                      return (
+                        <div key={idx} className="group relative" title={prodName ?? undefined}>
+                          <ImageWithSkeleton
+                            src={withImageParams(url)}
+                            alt={prodName ?? `${cat.label} ${idx + 1}`}
+                            loading="lazy"
+                            wrapperClassName="h-16 w-full rounded bg-gray-50"
+                          />
+                          {prodName && (
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b bg-black/60 px-1 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                              <p className="truncate text-[9px] font-medium text-white">{prodName}</p>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeCategoryImage(cat.key, idx)}
+                            className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
                     <button
                       type="button"
                       onClick={() => setActiveCategory(cat.key)}
@@ -220,6 +256,8 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
 // Category Picker Modal
 // ------------------------------------
 
+type ProductImage = { id: string; url: string };
+
 interface CategoryPickerModalProps {
   categoryKey: string;
   categoryLabel: string;
@@ -240,6 +278,9 @@ function CategoryPickerModal({
   const [mode, setMode] = useState<'catalog' | 'upload'>('catalog');
   const [search, setSearch] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [expandedImages, setExpandedImages] = useState<ProductImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const apiCategoryNames = useMemo(() => {
@@ -265,6 +306,28 @@ function CategoryPickerModal({
       })
       .slice(0, 50);
   }, [products, search, apiCategoryNames]);
+
+  const fetchProductImages = useCallback(async (productId: string) => {
+    if (expandedProductId === productId) {
+      setExpandedProductId(null);
+      return;
+    }
+    setExpandedProductId(productId);
+    setLoadingImages(true);
+    setExpandedImages([]);
+    try {
+      const res = await fetch(`https://api.bondxlowes.com/catalog/v3/products/${productId}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = await res.json();
+      const product = Array.isArray(json.data) ? json.data[0] : json.data;
+      const imgs: ProductImage[] = product?.images ?? [];
+      setExpandedImages(imgs);
+    } catch {
+      setExpandedImages([]);
+    } finally {
+      setLoadingImages(false);
+    }
+  }, [expandedProductId]);
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
@@ -349,38 +412,99 @@ function CategoryPickerModal({
               disabled={loadingProducts}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1 disabled:bg-gray-50"
             />
-            <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-gray-200">
+            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-gray-200">
               {filteredProducts.length === 0 && (
                 <div className="p-3 text-center text-sm text-gray-500">
                   {loadingProducts ? 'Loading...' : 'No products found'}
                 </div>
               )}
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => {
-                    if (product.featuredImage?.url) {
-                      onSelect(product.featuredImage.url);
-                    }
-                  }}
-                  className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left text-sm transition-colors last:border-0 hover:bg-gray-50"
-                >
-                  {product.featuredImage?.url && (
-                    <ImageWithSkeleton
-                      src={withImageParams(product.featuredImage.url)}
-                      alt={product.name}
-                      loading="lazy"
-                      wrapperClassName="h-10 w-10 shrink-0 rounded border border-gray-200"
-                      className="object-cover"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-gray-900">{product.name}</p>
-                    <p className="truncate text-xs text-gray-500">{product.category?.name ?? 'No category'}</p>
+              {filteredProducts.map((product) => {
+                const isExpanded = expandedProductId === product.id;
+                return (
+                  <div key={product.id} className="border-b border-gray-100 last:border-0">
+                    <div className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (product.featuredImage?.url) {
+                            onSelect(product.featuredImage.url);
+                          }
+                        }}
+                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:bg-gray-50 rounded -m-1 p-1"
+                      >
+                        {product.featuredImage?.url && (
+                          <ImageWithSkeleton
+                            src={withImageParams(product.featuredImage.url)}
+                            alt={product.name}
+                            loading="lazy"
+                            wrapperClassName="h-10 w-10 shrink-0 rounded border border-gray-200"
+                            className="object-cover"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-gray-900">{product.name}</p>
+                          <p className="truncate text-xs text-gray-500">{product.category?.name ?? 'No category'}</p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fetchProductImages(product.id)}
+                        className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                          isExpanded
+                            ? 'bg-primary-100 text-primary-700'
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                        }`}
+                        title="View all product images"
+                      >
+                        <svg className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                        </svg>
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
+                        {loadingImages ? (
+                          <p className="py-2 text-center text-xs text-gray-500">Loading images...</p>
+                        ) : expandedImages.length === 0 ? (
+                          <p className="py-2 text-center text-xs text-gray-500">No additional images available</p>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {expandedImages.map((img) => {
+                              const isFeatured = img.id === product.featuredImage?.id;
+                              return (
+                                <button
+                                  key={img.id}
+                                  type="button"
+                                  onClick={() => onSelect(img.url)}
+                                  className="group relative overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:border-primary-400 hover:shadow-sm"
+                                >
+                                  <ImageWithSkeleton
+                                    src={withImageParams(img.url)}
+                                    alt={product.name}
+                                    loading="lazy"
+                                    wrapperClassName="h-20 w-full"
+                                    className="object-cover"
+                                  />
+                                  {isFeatured && (
+                                    <span className="absolute top-0.5 left-0.5 rounded bg-primary-600 px-1 py-0.5 text-[8px] font-bold text-white leading-none">
+                                      MAIN
+                                    </span>
+                                  )}
+                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                                    <svg className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

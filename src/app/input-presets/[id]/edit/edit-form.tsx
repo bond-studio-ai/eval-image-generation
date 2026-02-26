@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageUpload } from '@/components/image-upload';
-import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
+import { PRODUCT_CATEGORIES, ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,8 +52,9 @@ export function InputPresetEditForm({ initialData }: { initialData: InitialData 
         real_photo: realPhoto || null,
         mood_board: moodBoard || null,
       };
-      for (const [key, urls] of Object.entries(productImages)) {
-        payload[key] = urls && urls.length > 0 ? urls : [];
+      for (const cat of PRODUCT_CATEGORIES) {
+        const urls = productImages[cat.key];
+        payload[cat.key] = urls && urls.length > 0 ? urls : [];
       }
       payload.arbitrary_images = arbitraryImages;
 
