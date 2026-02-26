@@ -1,6 +1,7 @@
 'use client';
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import Link from 'next/link';
@@ -63,6 +64,7 @@ interface InputPresetDetailProps {
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
+  const getProductName = useProductNameLookup();
   const productImages: { key: string; label: string; urls: string[] }[] = [];
   for (const k of PRODUCT_KEYS) {
     const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
@@ -230,22 +232,25 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                   </span>
                 </div>
                 {img.urls.length === 1 ? (
-                  <ImageWithSkeleton
-                    src={withImageParams(img.urls[0])}
-                    alt={img.label}
-                    loading="lazy"
-                    wrapperClassName="h-28 w-full bg-gray-50 p-1"
-                  />
+                  <ProductNamePopover imageUrl={img.urls[0]} getProductName={getProductName}>
+                    <ImageWithSkeleton
+                      src={withImageParams(img.urls[0])}
+                      alt={getProductName(img.urls[0]) ?? img.label}
+                      loading="lazy"
+                      wrapperClassName="h-28 w-full bg-gray-50 p-1"
+                    />
+                  </ProductNamePopover>
                 ) : (
                   <div className="grid grid-cols-2 gap-0.5 p-1">
                     {img.urls.map((url, i) => (
-                      <ImageWithSkeleton
-                        key={i}
-                        src={withImageParams(url)}
-                        alt={`${img.label} ${i + 1}`}
-                        loading="lazy"
-                        wrapperClassName="h-14 w-full rounded bg-gray-50"
-                      />
+                      <ProductNamePopover key={i} imageUrl={url} getProductName={getProductName}>
+                        <ImageWithSkeleton
+                          src={withImageParams(url)}
+                          alt={getProductName(url) ?? `${img.label} ${i + 1}`}
+                          loading="lazy"
+                          wrapperClassName="h-14 w-full rounded bg-gray-50"
+                        />
+                      </ProductNamePopover>
                     ))}
                   </div>
                 )}

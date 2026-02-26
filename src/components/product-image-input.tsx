@@ -1,6 +1,7 @@
 'use client';
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
 import { type CatalogProduct } from '@/components/product-picker';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -48,15 +49,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function extractProductId(url: string): string | null {
-  const m = url.match(/\/products\/([0-9a-f-]{36})\//i);
-  return m?.[1] ?? null;
-}
-
 export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const getProductName = useProductNameLookup();
 
   useEffect(() => {
     fetch('/api/v1/products')
@@ -67,29 +64,6 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
       })
       .catch(() => setLoadingProducts(false));
   }, []);
-
-  const productNameByUrl = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of products) {
-      if (p.featuredImage?.url) {
-        map.set(p.featuredImage.url, p.name);
-        const pid = p.id;
-        if (pid) map.set(pid, p.name);
-      }
-    }
-    return map;
-  }, [products]);
-
-  const getProductName = useCallback(
-    (url: string): string | null => {
-      const direct = productNameByUrl.get(url);
-      if (direct) return direct;
-      const pid = extractProductId(url);
-      if (pid) return productNameByUrl.get(pid) ?? null;
-      return null;
-    },
-    [productNameByUrl],
-  );
 
   const addCategoryImage = useCallback(
     (key: string, url: string) => {
@@ -181,33 +155,25 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
               {hasImages ? (
                 <div className="p-1.5">
                   <div className="grid grid-cols-2 gap-1">
-                    {images.map((url, idx) => {
-                      const prodName = getProductName(url);
-                      return (
-                        <div key={idx} className="group relative" title={prodName ?? undefined}>
-                          <ImageWithSkeleton
-                            src={withImageParams(url)}
-                            alt={prodName ?? `${cat.label} ${idx + 1}`}
-                            loading="lazy"
-                            wrapperClassName="h-16 w-full rounded bg-gray-50"
-                          />
-                          {prodName && (
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b bg-black/60 px-1 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                              <p className="truncate text-[9px] font-medium text-white">{prodName}</p>
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeCategoryImage(cat.key, idx)}
-                            className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
-                          >
-                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
+                    {images.map((url, idx) => (
+                      <ProductNamePopover key={idx} imageUrl={url} getProductName={getProductName} className="group relative">
+                        <ImageWithSkeleton
+                          src={withImageParams(url)}
+                          alt={getProductName(url) ?? `${cat.label} ${idx + 1}`}
+                          loading="lazy"
+                          wrapperClassName="h-16 w-full rounded bg-gray-50"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCategoryImage(cat.key, idx)}
+                          className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </ProductNamePopover>
+                    ))}
                     <button
                       type="button"
                       onClick={() => setActiveCategory(cat.key)}
