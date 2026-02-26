@@ -53,7 +53,7 @@ export function InputPresetEditForm({ initialData }: { initialData: InitialData 
         mood_board: moodBoard || null,
       };
       for (const [key, urls] of Object.entries(productImages)) {
-        if (urls && urls.length > 0) payload[key] = urls;
+        payload[key] = urls && urls.length > 0 ? urls : [];
       }
       payload.arbitrary_images = arbitraryImages;
 
