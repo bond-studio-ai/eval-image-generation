@@ -26,6 +26,20 @@ interface InputPresetsListProps {
 export function InputPresetsList({ data, page, totalPages, total }: InputPresetsListProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [cloningId, setCloningId] = useState<string | null>(null);
+
+  const handleClone = useCallback(async (id: string) => {
+    setCloningId(id);
+    try {
+      const res = await fetch(`/api/v1/input-presets/${id}/clone`, { method: 'POST' });
+      if (!res.ok) return;
+      const json = await res.json();
+      const newId = json.data?.id;
+      if (newId) router.push(`/input-presets/${newId}/edit`);
+    } finally {
+      setCloningId(null);
+    }
+  }, [router]);
 
   const activeItems = data.filter((ip) => !ip.deletedAt);
 
@@ -89,6 +103,9 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
               <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Status
               </th>
+              <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
@@ -133,6 +150,29 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
                     <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
                       Active
                     </span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-right text-sm whitespace-nowrap">
+                  {!ip.deletedAt && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); handleClone(ip.id); }}
+                      disabled={cloningId === ip.id}
+                      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                      title="Clone preset"
+                    >
+                      {cloningId === ip.id ? (
+                        <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                        </svg>
+                      )}
+                      Clone
+                    </button>
                   )}
                 </td>
               </tr>
