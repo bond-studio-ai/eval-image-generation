@@ -69,7 +69,9 @@ function defaultStep(promptVersionId: string): StepData {
 
 const MODELS = [
   { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+  { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
   { value: 'seedream-4.5', label: 'Seedream 4.5' },
+  { value: 'seedream-5', label: 'Seedream 5' },
 ];
 
 const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];

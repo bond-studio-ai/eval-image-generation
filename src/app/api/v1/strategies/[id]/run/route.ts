@@ -5,7 +5,7 @@ import { generateWithFal } from '@/lib/fal';
 import { generateWithGemini } from '@/lib/gemini';
 import { uuidSchema } from '@/lib/validation';
 
-const FAL_MODELS = new Set(['seedream-4.5']);
+const FAL_MODELS = new Set(['seedream-4.5', 'seedream-5']);
 import { asc, eq, inArray } from 'drizzle-orm';
 import { after, NextRequest } from 'next/server';
 

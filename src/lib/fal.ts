@@ -22,6 +22,7 @@ const FAL_API_HOST = 'https://fal.run';
 
 const FAL_MODELS: Record<string, string> = {
   'seedream-4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
+  'seedream-5': 'fal-ai/bytedance/seedream/v5/lite/edit',
 };
 
 const MAX_RETRIES = 3;

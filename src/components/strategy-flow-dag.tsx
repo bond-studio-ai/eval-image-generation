@@ -165,9 +165,10 @@ function truncate(s: string, max: number) {
 }
 
 const MODEL_LABELS: Record<string, string> = {
-  'gemini-2.5-flash-image': 'Flash',
   'gemini-3-pro-image-preview': 'Pro',
+  'gemini-3.1-flash-image-preview': 'Nano Banana 2',
   'seedream-4.5': 'Seedream 4.5',
+  'seedream-5': 'Seedream 5',
 };
 
 export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
