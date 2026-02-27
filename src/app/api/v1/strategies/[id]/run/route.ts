@@ -50,15 +50,16 @@ const SNAKE_TO_CAMEL: Record<string, string> = {
 };
 
 /**
- * Process a user prompt template by resolving product category tags.
+ * Process a prompt template by resolving product category tags.
  * Tags like `<faucets>Faucets,</faucets>` are kept (sans tags) if the product
  * category is present, or stripped entirely if absent.
+ * Works on both system and user prompts.
  */
 function processPromptTags(
-  userPrompt: string,
+  prompt: string,
   presentCategories: Set<string>,
 ): string {
-  const processed = userPrompt.replace(
+  const processed = prompt.replace(
     /<([a-z][a-z0-9-]*)>([\s\S]*?)<\/\1>/g,
     (_match, tagName: string, content: string) => {
       const categoryKey = tagName.replace(/-/g, '_');
@@ -266,6 +267,7 @@ async function executeSingleStep(
   });
 
   const presentCategories = new Set(Object.keys(productMap));
+  const processedSystemPrompt = processPromptTags(pv.systemPrompt ?? '', presentCategories);
   const processedUserPrompt = processPromptTags(pv.userPrompt, presentCategories);
 
   const model = strategyDefaults.model;
@@ -279,7 +281,7 @@ async function executeSingleStep(
 
   if (FAL_MODELS.has(model)) {
     result = await generateWithFal({
-      systemPrompt: pv.systemPrompt,
+      systemPrompt: processedSystemPrompt,
       userPrompt: processedUserPrompt,
       model,
       inputImages: labeledImages,
@@ -290,7 +292,7 @@ async function executeSingleStep(
     });
   } else {
     result = await generateWithGemini({
-      systemPrompt: pv.systemPrompt,
+      systemPrompt: processedSystemPrompt,
       userPrompt: processedUserPrompt,
       model,
       inputImages: labeledImages,
