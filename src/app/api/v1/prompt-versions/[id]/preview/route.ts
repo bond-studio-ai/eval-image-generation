@@ -6,6 +6,7 @@ import {
   PresetContextData,
   renderPromptTemplate,
 } from '@/lib/handlebars-prompt';
+import { enrichProductImages } from '@/lib/product-catalog';
 import { uuidSchema } from '@/lib/validation';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
@@ -145,21 +146,24 @@ export async function POST(
             .from(inputPreset)
             .where(isNull(inputPreset.deletedAt));
 
-    const previews = presets.map((preset) => {
-      const presetRow = preset as unknown as Record<string, unknown>;
-      const presetData = extractPresetData(presetRow);
-      const context = buildPresetContext(presetData);
+    const previews = await Promise.all(
+      presets.map(async (preset) => {
+        const presetRow = preset as unknown as Record<string, unknown>;
+        const presetData = extractPresetData(presetRow);
+        presetData.productItems = await enrichProductImages(presetData.productImages);
+        const context = buildPresetContext(presetData);
 
-      const renderedSystem = renderPromptTemplate(systemTemplate, context);
-      const renderedUser = renderPromptTemplate(userTemplate, context);
+        const renderedSystem = renderPromptTemplate(systemTemplate, context);
+        const renderedUser = renderPromptTemplate(userTemplate, context);
 
-      return {
-        preset_id: preset.id,
-        preset_name: preset.name ?? 'Untitled',
-        system_prompt: renderedSystem,
-        user_prompt: renderedUser,
-      };
-    });
+        return {
+          preset_id: preset.id,
+          preset_name: preset.name ?? 'Untitled',
+          system_prompt: renderedSystem,
+          user_prompt: renderedUser,
+        };
+      }),
+    );
 
     return successResponse({ previews });
   } catch (error) {

@@ -4,6 +4,7 @@ import { errorResponse, successResponse } from '@/lib/api-response';
 import { generateWithFal } from '@/lib/fal';
 import { generateWithGemini } from '@/lib/gemini';
 import { buildPresetContext, renderPromptTemplate } from '@/lib/handlebars-prompt';
+import { enrichProductImages } from '@/lib/product-catalog';
 import { uuidSchema } from '@/lib/validation';
 
 const FAL_MODELS = new Set(['seedream-4.5', 'seedream-5']);
@@ -246,6 +247,7 @@ async function executeSingleStep(
       SCENE_KEYS.map((k) => [k, sceneMap[k] ?? '']),
     ) as Record<string, string>,
     productImages: productMap,
+    productItems: await enrichProductImages(productMap),
     arbitrary: presetData.arbitrary,
   };
   const context = buildPresetContext(presetContextData);

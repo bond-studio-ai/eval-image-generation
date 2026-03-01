@@ -2,13 +2,15 @@
  * Handlebars-based prompt template rendering.
  * Used for both strategy runs and prompt version preview.
  *
- * Context variables (from input preset):
- * - Scene: dollhouse_view, real_photo, mood_board (URLs or empty)
- * - Products: faucets, lightings, lvps, mirrors, etc. (arrays of URLs)
+ * Context variables (from input preset, camelCase):
+ * - Scene: dollhouseView, realPhoto, moodBoard (URLs or empty)
+ * - Products: vanity, faucet, floorTile, etc. (singular, the selected product in the preset)
+ *   Each product has: url, name, id, type, category, productFamilyName, price, ourPrice, salePrice
  * - arbitrary: array of { url, tag }
- * - product_category_labels: comma-separated labels of present categories
+ * - productCategoryLabels: array of labels for present categories
+ * - productCategoryLabelsComma: comma-separated labels
  *
- * Handlebars syntax: {{variable}}, {{#if variable}}...{{/if}}, {{#each items}}...{{/each}}
+ * Handlebars syntax: {{variable}}, {{#if variable}}...{{/if}}
  *
  * Legacy: <tagname>content</tagname> is preprocessed to {{#if tagname}}content{{/if}}
  * for backward compatibility with existing prompts.
@@ -43,6 +45,39 @@ const PRODUCT_CATEGORIES = [
   'wallpapers',
 ] as const;
 
+/** Singular camelCase for each category - the selected product in the preset. */
+const TO_CAMEL_SINGULAR: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
+  faucets: 'faucet',
+  lightings: 'lighting',
+  lvps: 'lvp',
+  mirrors: 'mirror',
+  paints: 'paint',
+  robe_hooks: 'robeHook',
+  shelves: 'shelf',
+  shower_glasses: 'showerGlass',
+  shower_systems: 'showerSystem',
+  floor_tiles: 'floorTile',
+  wall_tiles: 'wallTile',
+  shower_wall_tiles: 'showerWallTile',
+  shower_floor_tiles: 'showerFloorTile',
+  shower_curb_tiles: 'showerCurbTile',
+  toilet_paper_holders: 'toiletPaperHolder',
+  toilets: 'toilet',
+  towel_bars: 'towelBar',
+  towel_rings: 'towelRing',
+  tub_doors: 'tubDoor',
+  tub_fillers: 'tubFiller',
+  tubs: 'tub',
+  vanities: 'vanity',
+  wallpapers: 'wallpaper',
+};
+
+const SCENE_TO_CAMEL: Record<string, string> = {
+  dollhouse_view: 'dollhouseView',
+  real_photo: 'realPhoto',
+  mood_board: 'moodBoard',
+};
+
 const PRODUCT_LABELS: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
   faucets: 'Faucet',
   lightings: 'Lighting',
@@ -69,21 +104,41 @@ const PRODUCT_LABELS: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
   wallpapers: 'Wallpaper',
 };
 
+/** Product data passed to templates. Open shape—each catalog/product type may have different attributes. */
+export type ProductItem = Record<string, unknown>;
+
 export interface PresetContextData {
   sceneImages: Record<string, string>;
   productImages: Record<string, string[]>;
+  /** Enriched product data from catalog. If provided, used for template context. */
+  productItems?: Record<string, ProductItem[]>;
   arbitrary: { url: string; tag?: string }[];
 }
 
+/** Convert snake_case to camelCase. */
+function toCamel(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/** Get the conditional key for a tag: singular camelCase for products, camelCase for scene. */
+function getConditionalKey(tagName: string): string {
+  const snakeKey = tagName.replace(/-/g, '_');
+  const singular = TO_CAMEL_SINGULAR[snakeKey as (typeof PRODUCT_CATEGORIES)[number]];
+  if (singular) return singular;
+  const sceneCamel = SCENE_TO_CAMEL[snakeKey];
+  if (sceneCamel) return sceneCamel;
+  return toCamel(snakeKey);
+}
+
 /**
- * Convert legacy <tagname>content</tagname> to {{#if tagname}}content{{/if}}.
- * Tag names with hyphens are converted to underscores for Handlebars keys.
+ * Convert legacy <tagname>content</tagname> to {{#if key}}content{{/if}}.
+ * Product categories use singular ({{#if vanity}}); scene uses camelCase ({{#if dollhouseView}}).
  */
 function legacyTagsToHandlebars(template: string): string {
   return template.replace(
     /<([a-z][a-z0-9-]*)>([\s\S]*?)<\/\1>/g,
     (_match, tagName: string, content: string) => {
-      const key = tagName.replace(/-/g, '_');
+      const key = getConditionalKey(tagName);
       return `{{#if ${key}}}${content}{{/if}}`;
     },
   );
@@ -96,12 +151,20 @@ export function buildPresetContext(data: PresetContextData): Record<string, unkn
   const ctx: Record<string, unknown> = {};
 
   for (const key of SCENE_KEYS) {
-    ctx[key] = data.sceneImages[key] ?? '';
+    ctx[SCENE_TO_CAMEL[key]] = data.sceneImages[key] ?? '';
   }
 
   for (const key of PRODUCT_CATEGORIES) {
-    const urls = data.productImages[key] ?? [];
-    ctx[key] = urls;
+    const items = data.productItems?.[key];
+    const camelSingular = TO_CAMEL_SINGULAR[key];
+    if (items && items.length > 0) {
+      ctx[camelSingular] = items[0];
+    } else {
+      const urls = data.productImages[key] ?? [];
+      if (urls.length > 0) {
+        ctx[camelSingular] = { url: urls[0], name: '' };
+      }
+    }
   }
 
   ctx.arbitrary = data.arbitrary;
@@ -109,7 +172,8 @@ export function buildPresetContext(data: PresetContextData): Record<string, unkn
   const presentLabels = PRODUCT_CATEGORIES.filter(
     (k) => (data.productImages[k]?.length ?? 0) > 0,
   ).map((k) => PRODUCT_LABELS[k]);
-  ctx.product_category_labels = presentLabels;
+  ctx.productCategoryLabels = presentLabels;
+  ctx.productCategoryLabelsComma = presentLabels.join(', ');
 
   return ctx;
 }
