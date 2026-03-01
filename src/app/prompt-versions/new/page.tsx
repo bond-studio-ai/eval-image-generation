@@ -117,7 +117,7 @@ export default function NewPromptVersionPage() {
             value={userPrompt}
             onChange={(e) => setUserPrompt(e.target.value)}
             rows={8}
-            placeholder="User-facing prompt template. Use {placeholders} for dynamic content."
+            placeholder="User-facing prompt template. Use Handlebars: {{variable}}, {{#if x}}...{{/if}}, {{#each items}}...{{/each}}"
             className={`mt-3 font-mono ${editableInput}`}
           />
         </div>

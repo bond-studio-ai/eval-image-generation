@@ -3,6 +3,7 @@ import { generation, generationInput, generationResult, inputPreset, promptVersi
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { generateWithFal } from '@/lib/fal';
 import { generateWithGemini } from '@/lib/gemini';
+import { buildPresetContext, renderPromptTemplate } from '@/lib/handlebars-prompt';
 import { uuidSchema } from '@/lib/validation';
 
 const FAL_MODELS = new Set(['seedream-4.5', 'seedream-5']);
@@ -48,32 +49,6 @@ const SNAKE_TO_CAMEL: Record<string, string> = {
   tub_doors: 'tubDoors', tub_fillers: 'tubFillers', tubs: 'tubs', vanities: 'vanities',
   wallpapers: 'wallpapers',
 };
-
-/**
- * Process a prompt template by resolving product category tags.
- * Tags like `<faucets>Faucets,</faucets>` are kept (sans tags) if the product
- * category is present, or stripped entirely if absent.
- * Works on both system and user prompts.
- */
-function processPromptTags(
-  prompt: string,
-  presentCategories: Set<string>,
-): string {
-  const processed = prompt.replace(
-    /<([a-z][a-z0-9-]*)>([\s\S]*?)<\/\1>/g,
-    (_match, tagName: string, content: string) => {
-      const categoryKey = tagName.replace(/-/g, '_');
-      return presentCategories.has(categoryKey) ? content : '';
-    },
-  );
-
-  return processed
-    .replace(/,(\s*,)+/g, ',')     // collapse consecutive commas
-    .replace(/,\s*\./g, '.')       // remove trailing comma before period
-    .replace(/:\s*,/g, ':')       // remove leading comma after colon
-    .replace(/\s{2,}/g, ' ')      // collapse whitespace
-    .trim();
-}
 
 type StepRow = typeof strategyStep.$inferSelect;
 
@@ -266,9 +241,19 @@ async function executeSingleStep(
     }
   });
 
-  const presentCategories = new Set(Object.keys(productMap));
-  const processedSystemPrompt = processPromptTags(pv.systemPrompt ?? '', presentCategories);
-  const processedUserPrompt = processPromptTags(pv.userPrompt, presentCategories);
+  const presetContextData = {
+    sceneImages: Object.fromEntries(
+      SCENE_KEYS.map((k) => [k, sceneMap[k] ?? '']),
+    ) as Record<string, string>,
+    productImages: productMap,
+    arbitrary: presetData.arbitrary,
+  };
+  const context = buildPresetContext(presetContextData);
+  const processedSystemPrompt = renderPromptTemplate(
+    pv.systemPrompt ?? '',
+    context,
+  );
+  const processedUserPrompt = renderPromptTemplate(pv.userPrompt, context);
 
   const model = strategyDefaults.model;
   const aspectRatio = strategyDefaults.aspectRatio;
