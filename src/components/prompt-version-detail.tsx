@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DeletePromptVersionButton } from './delete-prompt-version-button';
 import { RatingBadge } from './rating-badge';
 
@@ -33,18 +33,6 @@ interface Stats {
   ratedCount: number;
   avgRating: string | null;
   unratedCount: number;
-}
-
-interface InputPresetItem {
-  id: string;
-  name: string | null;
-}
-
-interface PreviewItem {
-  preset_id: string;
-  preset_name: string;
-  system_prompt: string;
-  user_prompt: string;
 }
 
 interface PromptVersionDetailProps {
@@ -78,12 +66,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   const [saving, setSaving] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [presets, setPresets] = useState<InputPresetItem[]>([]);
-  const [selectedPresetIds, setSelectedPresetIds] = useState<Set<string>>(new Set());
-  const [previews, setPreviews] = useState<PreviewItem[]>([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const isDirty = useMemo(() => {
     if (!isEditable) return false;
@@ -142,66 +124,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     setUserPrompt(baseline.userPrompt);
     setError(null);
   }
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const res = await fetch('/api/v1/input-presets?limit=100');
-        if (!res.ok) return;
-        const json = await res.json();
-        const items = Array.isArray(json.data) ? json.data : [];
-        if (!cancelled) {
-          setPresets(items.map((p: { id: string; name: string | null }) => ({ id: p.id, name: p.name })));
-        }
-      } catch {
-        // ignore
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
-
-  const fetchPreview = useCallback(async () => {
-    const ids = selectedPresetIds.size > 0 ? Array.from(selectedPresetIds) : presets.map((p) => p.id);
-    if (ids.length === 0) {
-      setPreviews([]);
-      return;
-    }
-    setPreviewLoading(true);
-    setPreviewError(null);
-    try {
-      const res = await fetch(`/api/v1/prompt-versions/${data.id}/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_prompt: systemPrompt,
-          user_prompt: userPrompt,
-          preset_ids: ids,
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || 'Failed to load preview');
-      }
-      const json = await res.json();
-      setPreviews(json.data?.previews ?? []);
-    } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : 'Preview failed');
-      setPreviews([]);
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, [data.id, systemPrompt, userPrompt, selectedPresetIds, presets]);
-
-  const togglePreset = (id: string) => {
-    setSelectedPresetIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   async function handleClone() {
     setCloning(true);
@@ -389,87 +311,6 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
             </pre>
           )}
         </div>
-      </div>
-
-      {/* Preset Preview */}
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Preview with input presets</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          See how your prompts render with each input preset. Uses Handlebars syntax:{' '}
-          <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">{'{{variable}}'}</code>,{' '}
-          <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">{'{{#if var}}...{{/if}}'}</code>.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap gap-2">
-            {presets.length === 0 ? (
-              <span className="text-sm text-gray-500">Loading presets…</span>
-            ) : (
-              presets.map((p) => (
-                <label
-                  key={p.id}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm transition-colors hover:bg-gray-50 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedPresetIds.size === 0 || selectedPresetIds.has(p.id)}
-                    onChange={() => togglePreset(p.id)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  {p.name || 'Untitled'}
-                </label>
-              ))
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={fetchPreview}
-            disabled={previewLoading || presets.length === 0}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
-          >
-            {previewLoading ? 'Loading…' : 'Preview'}
-          </button>
-        </div>
-        {previewError && (
-          <p className="mt-2 text-sm text-red-600">{previewError}</p>
-        )}
-        {previews.length > 0 && (
-          <div className="mt-4 space-y-4">
-            {previews.map((pr) => (
-              <details
-                key={pr.preset_id}
-                className="group rounded-lg border border-gray-200 bg-white shadow-xs"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-medium text-gray-900 hover:bg-gray-50">
-                  {pr.preset_name}
-                  <svg
-                    className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </summary>
-                <div className="border-t border-gray-200 px-4 py-3">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <h3 className="text-xs font-semibold uppercase text-gray-500">System prompt</h3>
-                      <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-gray-50 p-3 text-sm text-gray-700">
-                        {pr.system_prompt || '(empty)'}
-                      </pre>
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-semibold uppercase text-gray-500">User prompt</h3>
-                      <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-gray-50 p-3 text-sm text-gray-700">
-                        {pr.user_prompt || '(empty)'}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              </details>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Generations List */}
