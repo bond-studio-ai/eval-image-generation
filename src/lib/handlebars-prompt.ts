@@ -5,10 +5,7 @@
  * Context variables (from input preset, camelCase):
  * - Scene: dollhouseView, realPhoto, moodBoard (URLs or empty)
  * - Products: vanity, faucet, floorTile, etc. (singular, the selected product in the preset)
- *   Each product has: url, name, id, type, category, productFamilyName, price, ourPrice, salePrice
  * - arbitrary: array of { url, tag }
- * - productCategoryLabels: array of labels for present categories
- * - productCategoryLabelsComma: comma-separated labels
  *
  * Handlebars syntax: {{variable}}, {{#if variable}}...{{/if}}
  *
@@ -78,32 +75,6 @@ const SCENE_TO_CAMEL: Record<string, string> = {
   mood_board: 'moodBoard',
 };
 
-const PRODUCT_LABELS: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
-  faucets: 'Faucet',
-  lightings: 'Lighting',
-  lvps: 'LVP',
-  mirrors: 'Mirror',
-  paints: 'Paint',
-  robe_hooks: 'Robe hook',
-  shelves: 'Shelf',
-  shower_glasses: 'Shower glass',
-  shower_systems: 'Shower system',
-  floor_tiles: 'Floor tile',
-  wall_tiles: 'Wall tile',
-  shower_wall_tiles: 'Shower wall tile',
-  shower_floor_tiles: 'Shower floor tile',
-  shower_curb_tiles: 'Shower curb tile',
-  toilet_paper_holders: 'Toilet paper holder',
-  toilets: 'Toilet',
-  towel_bars: 'Towel bar',
-  towel_rings: 'Towel ring',
-  tub_doors: 'Tub door',
-  tub_fillers: 'Tub filler',
-  tubs: 'Tub',
-  vanities: 'Vanity',
-  wallpapers: 'Wallpaper',
-};
-
 /** Product data passed to templates. Open shape—each catalog/product type may have different attributes. */
 export type ProductItem = Record<string, unknown>;
 
@@ -168,12 +139,6 @@ export function buildPresetContext(data: PresetContextData): Record<string, unkn
   }
 
   ctx.arbitrary = data.arbitrary;
-
-  const presentLabels = PRODUCT_CATEGORIES.filter(
-    (k) => (data.productImages[k]?.length ?? 0) > 0,
-  ).map((k) => PRODUCT_LABELS[k]);
-  ctx.productCategoryLabels = presentLabels;
-  ctx.productCategoryLabelsComma = presentLabels.join(', ');
 
   return ctx;
 }
