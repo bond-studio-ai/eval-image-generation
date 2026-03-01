@@ -445,7 +445,7 @@ function CategoryPickerModal({
                                   className="group relative overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:border-primary-400 hover:shadow-sm"
                                 >
                                   <ImageWithSkeleton
-                                    src={withImageParams(img.url)}
+                                    src={withImageParams(img.url, 512)}
                                     alt={product.name}
                                     loading="lazy"
                                     wrapperClassName="h-20 w-full"

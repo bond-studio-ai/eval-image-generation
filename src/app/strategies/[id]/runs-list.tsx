@@ -34,7 +34,6 @@ export function StrategyRunsList({
   initialRuns: Run[];
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
-  const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -58,27 +57,6 @@ export function StrategyRunsList({
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [hasActiveRun, fetchRuns]);
-
-  const handleRetry = useCallback(async (runId: string) => {
-    setRetryingRunId(runId);
-    try {
-      const res = await fetch(`/api/v1/strategy-runs/${runId}/retry`, { method: 'POST' });
-      if (!res.ok) return;
-      await fetchRuns();
-    } catch { /* ignore */ }
-    finally { setRetryingRunId(null); }
-  }, [fetchRuns]);
-
-  const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
-  const handleMarkBatchFailed = useCallback(async (batchId: string) => {
-    setMarkingBatchId(batchId);
-    try {
-      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}/mark-failed`, { method: 'POST' });
-      if (!res.ok) return;
-      await fetchRuns();
-    } catch { /* ignore */ }
-    finally { setMarkingBatchId(null); }
-  }, [fetchRuns]);
 
   // Only batch runs count: build list of batch cards (omit individual runs)
   const items: ListItem[] = [];
@@ -139,36 +117,21 @@ export function StrategyRunsList({
               key={`batch-${item.id}`}
               batch={item}
               strategyId={strategyId}
-              retryingRunId={retryingRunId}
-              onRetry={handleRetry}
               onRated={fetchRuns}
-              onMarkBatchFailed={handleMarkBatchFailed}
-              markingBatchId={markingBatchId}
               onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
             />
           ))}
         </div>
       ) : (
-        <div className="mt-4 space-y-6">
+        <div className="mt-4 space-y-4">
           {items.map((item) => (
-            <div key={`batch-matrix-${item.id}`} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Batch · {new Date(item.createdAt).toLocaleString()}
-                </span>
-                <StatusBadge status={item.status} />
-              </div>
-              <div className="p-4">
-                <BatchMatrix
-                  runs={item.runs}
-                  strategyId={strategyId}
-                  retryingRunId={retryingRunId}
-                  onRetry={handleRetry}
-                  onRated={fetchRuns}
-                  onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                />
-              </div>
-            </div>
+            <CollapsibleBatchCard
+              key={`batch-matrix-${item.id}`}
+              batch={item}
+              strategyId={strategyId}
+              onRated={fetchRuns}
+              onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+            />
           ))}
         </div>
       )}
@@ -190,31 +153,36 @@ export function StrategyRunsList({
 function BatchRunCard({
   batch,
   strategyId,
-  retryingRunId,
-  onRetry,
   onRated,
-  onMarkBatchFailed,
-  markingBatchId,
   onImageClick,
 }: {
   batch: { id: string; runs: Run[]; status: string; createdAt: string };
   strategyId: string;
-  retryingRunId: string | null;
-  onRetry: (runId: string) => void;
   onRated?: () => void;
-  onMarkBatchFailed?: (batchId: string) => void;
-  markingBatchId: string | null;
   onImageClick: (run: Run) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
   const failedRuns = batch.runs.filter((r) => r.status === 'failed').length;
-  const isMarking = markingBatchId === batch.id;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-3 text-left hover:bg-gray-50/50"
+      >
         <div className="flex items-center gap-3">
+          <svg
+            className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
           <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
             batch
           </span>
@@ -227,26 +195,61 @@ function BatchRunCard({
             {completedRuns} completed{failedRuns > 0 ? `, ${failedRuns} failed` : ''}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          {onMarkBatchFailed && batch.status !== 'failed' && (
-            <button
-              type="button"
-              onClick={() => onMarkBatchFailed(batch.id)}
-              disabled={isMarking}
-              className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-            >
-              {isMarking ? '…' : 'Mark batch as failed'}
-            </button>
-          )}
-          <span className="text-xs text-gray-400">
-            {new Date(batch.createdAt).toLocaleString()}
-          </span>
-        </div>
-      </div>
+        <span className="text-xs text-gray-400">
+          {new Date(batch.createdAt).toLocaleString()}
+        </span>
+      </button>
 
-      <div className="p-4">
-        <BatchMatrix runs={batch.runs} strategyId={strategyId} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
-      </div>
+      {expanded && (
+        <div className="p-4">
+          <BatchMatrix runs={batch.runs} strategyId={strategyId} onRated={onRated} onImageClick={onImageClick} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CollapsibleBatchCard({
+  batch,
+  strategyId,
+  onRated,
+  onImageClick,
+}: {
+  batch: { id: string; runs: Run[]; status: string; createdAt: string };
+  strategyId: string;
+  onRated?: () => void;
+  onImageClick: (run: Run) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between border-b border-gray-100 px-4 py-2 text-left hover:bg-gray-50/50"
+      >
+        <span className="text-sm font-medium text-gray-700">
+          Batch · {new Date(batch.createdAt).toLocaleString()}
+        </span>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={batch.status} />
+          <svg
+            className={`h-5 w-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+      {expanded && (
+        <div className="p-4">
+          <BatchMatrix runs={batch.runs} strategyId={strategyId} onRated={onRated} onImageClick={onImageClick} />
+        </div>
+      )}
     </div>
   );
 }
@@ -256,15 +259,11 @@ function BatchRunCard({
 function BatchMatrix({
   runs,
   strategyId,
-  retryingRunId,
-  onRetry,
   onRated,
   onImageClick,
 }: {
   runs: Run[];
   strategyId: string;
-  retryingRunId: string | null;
-  onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
 }) {
@@ -340,18 +339,9 @@ function BatchMatrix({
                             )}
                           </div>
                         ) : (
-                          <>
-                            <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
-                              <StatusBadge status={run.status} />
-                            </Link>
-                            {run.status === 'failed' && (
-                              <button type="button" onClick={() => onRetry(run.id)}
-                                disabled={retryingRunId === run.id}
-                                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
-                                {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
-                              </button>
-                            )}
-                          </>
+                          <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
+                            <StatusBadge status={run.status} />
+                          </Link>
                         )}
                       </div>
                     </td>

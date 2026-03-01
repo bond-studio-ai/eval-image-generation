@@ -296,7 +296,7 @@ export function GridLightbox({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={expandedImage.src}
+            src={withImageParams(expandedImage.src, 512)}
             alt={expandedImage.alt}
             className="max-h-[90vh] max-w-full object-contain"
           />

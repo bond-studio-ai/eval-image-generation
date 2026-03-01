@@ -1,10 +1,11 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { db } from '@/db';
-import { strategy, strategyStep } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { strategy, strategyRun, strategyStep } from '@/db/schema';
+import { desc, eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StrategyPerformance } from './strategy-performance';
+import { StrategyRunsSection } from './runs-section';
 import { StrategySettingsPrompts } from './strategy-settings-prompts';
 
 export const dynamic = 'force-dynamic';
@@ -16,17 +17,33 @@ interface PageProps {
 export default async function StrategyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const result = await db.query.strategy.findFirst({
-    where: eq(strategy.id, id),
-    with: {
-      steps: {
-        orderBy: [strategyStep.stepOrder],
-        with: {
-          promptVersion: { columns: { id: true, name: true } },
+  const [result, runsData] = await Promise.all([
+    db.query.strategy.findFirst({
+      where: eq(strategy.id, id),
+      with: {
+        steps: {
+          orderBy: [strategyStep.stepOrder],
+          with: {
+            promptVersion: { columns: { id: true, name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    db.query.strategyRun.findMany({
+      where: eq(strategyRun.strategyId, id),
+      orderBy: [desc(strategyRun.createdAt)],
+      limit: 50,
+      with: {
+        stepResults: {
+          columns: { id: true, status: true, outputUrl: true, generationId: true },
+          with: { step: { columns: { stepOrder: true } } },
+        },
+        inputPresets: {
+          with: { inputPreset: { columns: { id: true, name: true } } },
+        },
+      },
+    }),
+  ]);
 
   if (!result) {
     notFound();
@@ -58,26 +75,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Strategy settings & prompts */}
-      <StrategySettingsPrompts
-        model={result.model}
-        aspectRatio={result.aspectRatio}
-        outputResolution={result.outputResolution}
-        temperature={result.temperature}
-        useGoogleSearch={result.useGoogleSearch}
-        tagImages={result.tagImages}
-        description={result.description}
-        steps={result.steps.map((s) => ({
-          stepOrder: s.stepOrder,
-          name: s.name,
-          promptVersionId: s.promptVersionId,
-          promptVersionName: s.promptVersion?.name ?? null,
-        }))}
-      />
-
-      <StrategyPerformance strategyId={result.id} />
-
-      {/* Flow Diagram */}
+      {/* Execution Flow */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Execution Flow</h2>
         {result.steps.length === 0 ? (
@@ -103,6 +101,52 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         )}
       </div>
 
+      {/* Strategy settings & prompts */}
+      <StrategySettingsPrompts
+        model={result.model}
+        aspectRatio={result.aspectRatio}
+        outputResolution={result.outputResolution}
+        temperature={result.temperature}
+        useGoogleSearch={result.useGoogleSearch}
+        tagImages={result.tagImages}
+        description={result.description}
+        steps={result.steps.map((s) => ({
+          stepOrder: s.stepOrder,
+          name: s.name,
+          promptVersionId: s.promptVersionId,
+          promptVersionName: s.promptVersion?.name ?? null,
+        }))}
+      />
+
+      <StrategyPerformance strategyId={result.id} />
+
+      {/* Runs section */}
+      <StrategyRunsSection
+        strategyId={result.id}
+        initialRuns={runsData.map((run) => {
+          const inputPresetName = run.inputPresets?.[0]?.inputPreset?.name ?? null;
+          const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as {
+            outputUrl: string | null;
+            generationId: string | null;
+            step: { stepOrder: number };
+          }[];
+          const lastResult =
+            resultsWithOrder.length > 0
+              ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
+              : null;
+          return {
+            id: run.id,
+            status: run.status,
+            createdAt: run.createdAt.toISOString(),
+            completedAt: run.completedAt?.toISOString() ?? null,
+            inputPresetName,
+            lastOutputUrl: lastResult?.outputUrl ?? null,
+            lastOutputGenerationId: lastResult?.generationId ?? null,
+            batchRunId: run.batchRunId ?? null,
+            stepResults: run.stepResults?.map((sr) => ({ id: sr.id, status: sr.status })) ?? [],
+          };
+        })}
+      />
     </div>
   );
 }
