@@ -198,7 +198,7 @@ export function PromptTemplateEditor({
       ref={containerRef}
       className={`flex flex-col gap-2 ${fillHeight ? 'min-h-0 flex-1' : ''}`}
     >
-      <div className="grid w-full shrink-0 grid-cols-2 gap-2">
+      <div className="flex shrink-0 flex-wrap gap-1.5">
         <div className="relative">
           <button
             type="button"
@@ -206,7 +206,7 @@ export function PromptTemplateEditor({
               setConditionalOpen(!conditionalOpen);
               setReferenceOpen(false);
             }}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium shadow-md transition-colors ${
+            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               conditionalOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
@@ -214,7 +214,7 @@ export function PromptTemplateEditor({
           >
             Conditional
             <svg
-              className={`h-4 w-4 text-gray-400 ${conditionalOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 text-gray-400 ${conditionalOpen ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -263,7 +263,7 @@ export function PromptTemplateEditor({
                 setAttrDropdownOpen(false);
               }
             }}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium shadow-md transition-colors ${
+            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               referenceOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
@@ -271,7 +271,7 @@ export function PromptTemplateEditor({
           >
             Reference
             <svg
-              className={`h-4 w-4 text-gray-400 ${referenceOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 text-gray-400 ${referenceOpen ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
