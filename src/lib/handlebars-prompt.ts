@@ -4,7 +4,7 @@
  *
  * Context variables (from input preset, camelCase):
  * - Scene: dollhouseView, realPhoto, moodBoard (URLs or empty)
- * - Products: vanity, faucet, floorTile, etc. (singular, the selected product in the preset)
+ * - Products: products.vanity, products.faucet, products.floorTile, etc. (e.g. {{products.vanity.type}})
  * - arbitrary: array of { url, tag }
  *
  * Handlebars syntax: {{variable}}, {{#if variable}}...{{/if}}
@@ -101,16 +101,23 @@ function getConditionalKey(tagName: string): string {
   return toCamel(snakeKey);
 }
 
+/** Check if tag is a product category (vs scene). */
+function isProductTag(tagName: string): boolean {
+  const snakeKey = tagName.replace(/-/g, '_');
+  return PRODUCT_CATEGORIES.includes(snakeKey as (typeof PRODUCT_CATEGORIES)[number]);
+}
+
 /**
  * Convert legacy <tagname>content</tagname> to {{#if key}}content{{/if}}.
- * Product categories use singular ({{#if vanity}}); scene uses camelCase ({{#if dollhouseView}}).
+ * Products use products.vanity, products.faucet, etc.; scene uses dollhouseView, etc.
  */
 function legacyTagsToHandlebars(template: string): string {
   return template.replace(
     /<([a-z][a-z0-9-]*)>([\s\S]*?)<\/\1>/g,
     (_match, tagName: string, content: string) => {
       const key = getConditionalKey(tagName);
-      return `{{#if ${key}}}${content}{{/if}}`;
+      const ifKey = isProductTag(tagName) ? `products.${key}` : key;
+      return `{{#if ${ifKey}}}${content}{{/if}}`;
     },
   );
 }
@@ -125,18 +132,20 @@ export function buildPresetContext(data: PresetContextData): Record<string, unkn
     ctx[SCENE_TO_CAMEL[key]] = data.sceneImages[key] ?? '';
   }
 
+  const products: Record<string, unknown> = {};
   for (const key of PRODUCT_CATEGORIES) {
     const items = data.productItems?.[key];
     const camelSingular = TO_CAMEL_SINGULAR[key];
     if (items && items.length > 0) {
-      ctx[camelSingular] = items[0];
+      products[camelSingular] = items[0];
     } else {
       const urls = data.productImages[key] ?? [];
       if (urls.length > 0) {
-        ctx[camelSingular] = { url: urls[0], name: '' };
+        products[camelSingular] = { url: urls[0], name: '' };
       }
     }
   }
+  ctx.products = products;
 
   ctx.arbitrary = data.arbitrary;
 

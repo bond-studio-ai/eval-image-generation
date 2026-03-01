@@ -76,7 +76,7 @@ async function fetchProduct(category: string, productId: string): Promise<Catalo
  * Enrich product images (Record<category, string[]>) with full catalog data.
  * Fetches only the products needed via /products/{category-kebab}/{id}.
  * Returns the API product as-is (no mapping). Fallback { url } when fetch fails.
- * Use in templates: {{vanity.name}}, {{faucet.category.name}}, {{#if vanity}}...{{/if}}
+ * Use in templates: {{products.vanity.name}}, {{products.faucet.type}}, {{#if products.vanity}}...{{/if}}
  */
 export async function enrichProductImages(
   productImages: Record<string, string[]>,
