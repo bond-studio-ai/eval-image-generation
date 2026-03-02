@@ -1,19 +1,18 @@
 'use client';
 
-import { authClient } from '@/lib/auth/client';
+import { useUser } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { AppShellSkeleton } from './loading-state';
 import { Sidebar } from './sidebar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const session = authClient.useSession();
+  const { isLoaded, isSignedIn } = useUser();
   const pathname = usePathname();
 
   const isAuthPage = pathname.startsWith('/auth');
-  const isSignedIn = !!session.data;
   const showSidebar = isSignedIn && !isAuthPage;
 
-  if (session.isPending) {
+  if (!isLoaded) {
     return <AppShellSkeleton />;
   }
 

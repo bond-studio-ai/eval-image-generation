@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import '@neondatabase/auth/ui/tailwind';
 
 @theme {
   --color-primary-50: #eff6ff;
@@ -34,8 +33,7 @@ button:disabled,
 }
 
 /*
- * Fix form control text color — the Neon Auth UI Tailwind layer
- * resets these to a very light color, making them nearly invisible.
+ * Fix form control text color for consistent visibility.
  */
 input:not([type='checkbox']):not([type='radio']),
 textarea,

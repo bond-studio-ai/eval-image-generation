@@ -1,6 +1,6 @@
 'use client';
 
-import { UserButton } from '@neondatabase/auth/react/ui';
+import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 

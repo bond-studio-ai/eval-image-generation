@@ -415,7 +415,7 @@ export const imageSelection = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
 
-    // Owner (Neon Auth user id)
+    // Owner (Clerk user id)
     userId: text('user_id').notNull(),
 
     // Scene images (S3 URLs)

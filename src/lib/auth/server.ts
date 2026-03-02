@@ -1,8 +1,2 @@
-import { createNeonAuth } from '@neondatabase/auth/next/server';
-
-export const auth = createNeonAuth({
-  baseUrl: process.env.NEON_AUTH_BASE_URL!,
-  cookies: {
-    secret: process.env.NEON_AUTH_COOKIE_SECRET!,
-  },
-});
+// Re-export Clerk's auth for server-side usage (API routes, server components)
+export { auth } from '@clerk/nextjs/server';

@@ -1,40 +1,36 @@
-import { auth } from '@/lib/auth/server';
-import { NextResponse } from 'next/server';
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+} from '@clerk/nextjs/server';
+import { NextFetchEvent } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const ALLOWED_DOMAIN = 'bondstudio.ai';
+const isProtectedRoute = createRouteMatcher([
+  '/',
+  '/executions(.*)',
+  '/strategies(.*)',
+  '/input-presets(.*)',
+  '/prompt-versions(.*)',
+  '/prompt-preview(.*)',
+]);
 
-const proxyHandler = auth.middleware({ loginUrl: '/auth/sign-in' });
-
-export async function proxy(request: NextRequest) {
-  // Run the auth middleware (handles session refresh, unauthenticated redirects to login)
-  const response = await proxyHandler(request);
-
-  // After auth middleware, check if user is authenticated with an allowed email domain
-  const { data: session } = await auth.getSession();
-
-  if (session?.user) {
-    const email = session.user.email;
-    const domain = email.split('@')[1];
-
-    if (domain !== ALLOWED_DOMAIN) {
-      // Sign out the unauthorized user
-      await auth.signOut();
-
-      // Redirect to sign-in with an error indicator
-      const signInUrl = new URL('/auth/sign-in', request.url);
-      signInUrl.searchParams.set('error', 'unauthorized_domain');
-      return NextResponse.redirect(signInUrl);
+const clerkWithProtection = clerkMiddleware(
+  async (auth, req) => {
+    if (isProtectedRoute(req)) {
+      await auth.protect({
+        unauthenticatedUrl: '/auth/sign-in',
+      });
     }
-  }
+  },
+  { signInUrl: '/auth/sign-in' },
+);
 
-  return response;
+export function proxy(request: NextRequest, event: NextFetchEvent) {
+  return clerkWithProtection(request, event);
 }
 
 export const config = {
-  // Exclude static assets, auth pages, and API routes from the proxy.
-  // API routes are excluded because the auth middleware issues HTML redirects
-  // that break client-side fetch calls. API routes are only called from
-  // authenticated pages, so they don't need the redirect-to-login behavior.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth|api).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|auth|api).*)',
+  ],
 };
