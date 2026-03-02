@@ -133,18 +133,18 @@ export async function POST(
     const presets =
       presetIds.length > 0
         ? await db
-            .select()
-            .from(inputPreset)
-            .where(
-              and(
-                inArray(inputPreset.id, presetIds),
-                isNull(inputPreset.deletedAt),
-              ),
-            )
+          .select()
+          .from(inputPreset)
+          .where(
+            and(
+              inArray(inputPreset.id, presetIds),
+              isNull(inputPreset.deletedAt),
+            ),
+          )
         : await db
-            .select()
-            .from(inputPreset)
-            .where(isNull(inputPreset.deletedAt));
+          .select()
+          .from(inputPreset)
+          .where(isNull(inputPreset.deletedAt));
 
     const previews = await Promise.all(
       presets.map(async (preset) => {

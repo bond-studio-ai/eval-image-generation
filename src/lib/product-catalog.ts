@@ -9,7 +9,7 @@ const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
 
 /** Query params to request full product data (renderAttributes, etc.) for templates. */
 const CATALOG_INCLUDE_PARAMS =
-  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image';
+  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes';
 
 type CatalogProduct = Record<string, unknown>;
 
@@ -63,6 +63,8 @@ async function fetchProduct(category: string, productId: string): Promise<Catalo
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 },
     });
+
+    console.log('[product-catalog] fetchProduct', url, res);
 
     if (!res.ok) return null;
 

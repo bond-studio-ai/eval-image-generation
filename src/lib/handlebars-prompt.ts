@@ -193,12 +193,7 @@ export function renderPromptTemplate(
     const rendered = compiled(context);
 
     // Clean up artifacts from conditional blocks (collapsed commas, etc.)
-    return rendered
-      .replace(/,(\s*,)+/g, ',')
-      .replace(/,\s*\./g, '.')
-      .replace(/:\s*,/g, ':')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
+    return rendered.trim();
   } catch (err) {
     console.error('[handlebars-prompt] Render error:', err);
     return template;
