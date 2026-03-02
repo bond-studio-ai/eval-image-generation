@@ -45,7 +45,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     setLoading(true);
     Promise.all([
       fetch('/api/v1/strategies?limit=100', { cache: 'no-store' }).then((r) => r.json()),
-      fetch('/api/v1/input-presets?limit=100', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('/api/v1/input-presets?limit=100&minimal=true', { cache: 'no-store' }).then((r) => r.json()),
     ])
       .then(([stratRes, presetRes]) => {
         if (cancelled) return;

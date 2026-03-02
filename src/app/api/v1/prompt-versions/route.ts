@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { generation, promptVersion } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createPromptVersionSchema, listPromptVersionsSchema } from '@/lib/validation';
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { page, limit, include_deleted, sort, order } = parsed.data;
+    const { page, limit, include_deleted, sort, order, minimal } = parsed.data;
     const offset = (page - 1) * limit;
 
     const conditions = include_deleted ? [] : [isNull(promptVersion.deletedAt)];
@@ -46,22 +46,30 @@ export async function GET(request: NextRequest) {
 
     const total = totalResult[0]?.count ?? 0;
 
-    // Fetch generation stats for each prompt version
-    const data = await Promise.all(
-      rows.map(async (pv) => {
-        const stats = await db
-          .select({ count: count() })
-          .from(generation)
-          .where(eq(generation.promptVersionId, pv.id));
+    if (minimal) {
+      return paginatedResponse(rows, { page, limit, total });
+    }
 
-        return {
-          ...pv,
-          stats: {
-            generation_count: stats[0]?.count ?? 0,
-          },
-        };
-      }),
-    );
+    const ids = rows.map((r) => r.id);
+    const countRows =
+      ids.length > 0
+        ? await db
+            .select({
+              promptVersionId: generation.promptVersionId,
+              count: count(),
+            })
+            .from(generation)
+            .where(inArray(generation.promptVersionId, ids))
+            .groupBy(generation.promptVersionId)
+        : [];
+    const countByPv = Object.fromEntries(countRows.map((r) => [r.promptVersionId, r.count]));
+
+    const data = rows.map((pv) => ({
+      ...pv,
+      stats: {
+        generation_count: countByPv[pv.id] ?? 0,
+      },
+    }));
 
     return paginatedResponse(data, { page, limit, total });
   } catch (error) {

@@ -38,6 +38,11 @@ export const listPromptVersionsSchema = paginationSchema.extend({
     .transform((v) => v === 'true'),
   sort: z.enum(['created_at', 'name']).default('created_at'),
   order: sortOrderSchema,
+  /** When true, skip per-row generation stats (faster for dropdowns). */
+  minimal: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 // ------------------------------------
@@ -149,6 +154,11 @@ export const listInputPresetsSchema = paginationSchema.extend({
     .transform((v) => v === 'true'),
   sort: z.enum(['created_at', 'name']).default('created_at'),
   order: sortOrderSchema,
+  /** When true, skip per-row generation stats (faster for dropdowns). */
+  minimal: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 // ------------------------------------

@@ -91,6 +91,31 @@ function toCamel(s: string): string {
   return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
+/** Title-case a string (e.g. "hello world" -> "Hello World"). Leaves URLs unchanged. */
+function toTitleCase(s: string): string {
+  if (typeof s !== 'string' || s.length === 0) return s;
+  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+  return s
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/** Recursively title-case all string values in an object (reference/product data). Skips URLs. */
+function titleCaseReferenceValues(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') return toTitleCase(obj);
+  if (Array.isArray(obj)) return obj.map(titleCaseReferenceValues);
+  if (typeof obj === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = titleCaseReferenceValues(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
 /** Get the conditional key for a tag: singular camelCase for products, camelCase for scene. */
 function getConditionalKey(tagName: string): string {
   const snakeKey = tagName.replace(/-/g, '_');
@@ -137,7 +162,7 @@ export function buildPresetContext(data: PresetContextData): Record<string, unkn
     const items = data.productItems?.[key];
     const camelSingular = TO_CAMEL_SINGULAR[key];
     if (items && items.length > 0) {
-      products[camelSingular] = items[0];
+      products[camelSingular] = titleCaseReferenceValues(items[0]);
     } else {
       const urls = data.productImages[key] ?? [];
       if (urls.length > 0) {

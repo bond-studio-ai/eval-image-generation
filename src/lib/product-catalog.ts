@@ -5,7 +5,11 @@
  * Exposes nested properties: name, type (category), category, id, url, etc.
  */
 
-const CATALOG_BASE = 'https://api.bondxlowes.com/catalog/v3/products';
+const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
+
+/** Query params to request full product data (renderAttributes, etc.) for templates. */
+const CATALOG_INCLUDE_PARAMS =
+  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image';
 
 type CatalogProduct = Record<string, unknown>;
 
@@ -25,6 +29,12 @@ export interface ProductItem extends Record<string, unknown> {
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 const productCache = new Map<string, { product: CatalogProduct; timestamp: number }>();
 
+/**
+ * Extract catalog product ID from a URL.
+ * input_preset currently stores only image URLs (per category), not product IDs, so we parse
+ * the ID from catalog-style URLs (e.g. containing /products/<uuid>/). If presets stored
+ * product IDs we could use those directly instead.
+ */
 function extractProductIdFromUrl(url: string): string | null {
   const m = url.match(/\/products\/([0-9a-f-]{36})\//i);
   return m?.[1] ?? null;
@@ -48,7 +58,7 @@ async function fetchProduct(category: string, productId: string): Promise<Catalo
 
   const segment = categoryToUrlSegment(category);
   try {
-    const url = `${CATALOG_BASE}/${segment}/${productId}`;
+    const url = `${CATALOG_BASE}/${segment}/${productId}?${CATALOG_INCLUDE_PARAMS}`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 },

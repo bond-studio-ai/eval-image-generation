@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { generation, inputPreset } from '@/db/schema';
 import { errorResponse, paginatedResponse, successResponse } from '@/lib/api-response';
 import { createInputPresetSchema, listInputPresetsSchema } from '@/lib/validation';
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { page, limit, include_deleted, sort, order } = parsed.data;
+    const { page, limit, include_deleted, sort, order, minimal } = parsed.data;
     const offset = (page - 1) * limit;
 
     const conditions = include_deleted ? [] : [isNull(inputPreset.deletedAt)];
@@ -46,21 +46,33 @@ export async function GET(request: NextRequest) {
 
     const total = totalResult[0]?.count ?? 0;
 
-    const data = await Promise.all(
-      rows.map(async (ip) => {
-        const stats = await db
-          .select({ count: count() })
-          .from(generation)
-          .where(eq(generation.inputPresetId, ip.id));
+    if (minimal) {
+      return paginatedResponse(rows, { page, limit, total });
+    }
 
-        return {
-          ...ip,
-          stats: {
-            generation_count: stats[0]?.count ?? 0,
-          },
-        };
-      }),
-    );
+    const ids = rows.map((r) => r.id);
+    const countRows =
+      ids.length > 0
+        ? await db
+            .select({
+              inputPresetId: generation.inputPresetId,
+              count: count(),
+            })
+            .from(generation)
+            .where(inArray(generation.inputPresetId, ids))
+            .groupBy(generation.inputPresetId)
+        : [];
+    const countByIp: Record<string, number> = {};
+    for (const r of countRows) {
+      if (r.inputPresetId != null) countByIp[r.inputPresetId] = r.count;
+    }
+
+    const data = rows.map((ip) => ({
+      ...ip,
+      stats: {
+        generation_count: countByIp[ip.id] ?? 0,
+      },
+    }));
 
     return paginatedResponse(data, { page, limit, total });
   } catch (error) {

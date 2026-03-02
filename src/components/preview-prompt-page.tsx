@@ -51,8 +51,8 @@ export function PreviewPromptPage({
     async function load() {
       try {
         const [pvRes, ipRes] = await Promise.all([
-          fetch('/api/v1/prompt-versions?limit=100'),
-          fetch('/api/v1/input-presets?limit=100'),
+          fetch('/api/v1/prompt-versions?limit=100&minimal=true'),
+          fetch('/api/v1/input-presets?limit=100&minimal=true'),
         ]);
         if (cancelled) return;
         const pvJson = await pvRes.json();

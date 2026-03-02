@@ -2,6 +2,10 @@ import { errorResponse, successResponse } from '@/lib/api-response';
 
 const CATALOG_BASE = 'https://api.bondxlowes.com/catalog/v3/products';
 
+/** Query params to get full product data so renderAttributes and other nested fields are available. */
+const CATALOG_INCLUDE_PARAMS =
+  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image';
+
 /** Known product categories (plural kebab-case for API). */
 const VALID_CATEGORIES = new Set([
   'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe-hooks', 'shelves',
@@ -10,17 +14,23 @@ const VALID_CATEGORIES = new Set([
   'towel-bars', 'towel-rings', 'tub-doors', 'tub-fillers', 'tubs', 'vanities', 'wallpapers',
 ]);
 
-/** Flatten nested objects with simple {id, name} or {id, url} shape to dot paths. */
+/** Flatten nested objects to dot paths. Expands renderAttributes so product.renderAttributes.<attr> appears in References. */
 function getAttributePaths(product: Record<string, unknown>): string[] {
   const paths = new Set<string>();
   for (const [key, val] of Object.entries(product)) {
-    if (['preferredRetailer', 'variants', 'images', 'renderAttributes'].includes(key)) continue;
+    if (['preferredRetailer', 'variants', 'images'].includes(key)) continue;
     paths.add(key);
     if (val && typeof val === 'object' && !Array.isArray(val)) {
       const v = val as Record<string, unknown>;
-      if (v.name !== undefined) paths.add(`${key}.name`);
-      if (v.id !== undefined) paths.add(`${key}.id`);
-      if (v.url !== undefined) paths.add(`${key}.url`);
+      if (key === 'renderAttributes') {
+        for (const subkey of Object.keys(v)) {
+          paths.add(`${key}.${subkey}`);
+        }
+      } else {
+        if (v.name !== undefined) paths.add(`${key}.name`);
+        if (v.id !== undefined) paths.add(`${key}.id`);
+        if (v.url !== undefined) paths.add(`${key}.url`);
+      }
     }
   }
   return Array.from(paths).sort();
@@ -37,7 +47,7 @@ export async function GET(
       return errorResponse('VALIDATION_ERROR', `Invalid category: ${category}`);
     }
 
-    const url = `${CATALOG_BASE}/${segment}?perPage=1`;
+    const url = `${CATALOG_BASE}/${segment}?perPage=1&${CATALOG_INCLUDE_PARAMS}`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 },
