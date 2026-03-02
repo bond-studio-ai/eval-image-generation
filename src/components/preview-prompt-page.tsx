@@ -41,9 +41,13 @@ export function PreviewPromptPage({
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadError(null);
+    setLoadingOptions(true);
     async function load() {
       try {
         const [pvRes, ipRes] = await Promise.all([
@@ -53,12 +57,26 @@ export function PreviewPromptPage({
         if (cancelled) return;
         const pvJson = await pvRes.json();
         const ipJson = await ipRes.json();
+
+        if (!pvRes.ok) {
+          setLoadError(pvJson?.error?.message ?? 'Failed to load prompt versions');
+          return;
+        }
+        if (!ipRes.ok) {
+          setLoadError(ipJson?.error?.message ?? 'Failed to load input presets');
+          return;
+        }
+
         const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
         const ipData = Array.isArray(ipJson.data) ? ipJson.data : [];
-        setPromptVersions(pvData.map((p: { id: string; name: string | null }) => ({ id: p.id, name: p.name })));
-        setPresets(ipData.map((p: { id: string; name: string | null }) => ({ id: p.id, name: p.name })));
-      } catch {
-        // ignore
+        setPromptVersions(pvData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null })));
+        setPresets(ipData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null })));
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : 'Failed to load options');
+        }
+      } finally {
+        if (!cancelled) setLoadingOptions(false);
       }
     }
     load();
@@ -221,9 +239,16 @@ export function PreviewPromptPage({
         </p>
       </div>
 
+      {loadError && (
+        <p className="mt-4 text-sm text-red-600">{loadError}</p>
+      )}
+
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Prompt version</label>
+          {loadingOptions ? (
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+          ) : (
           <DropdownWithSearch
             containerRef={promptRef}
             open={promptDropdownOpen}
@@ -236,9 +261,13 @@ export function PreviewPromptPage({
             onSelect={setSelectedPromptId}
             emptyMessage="No prompt versions"
           />
+          )}
         </div>
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
+          {loadingOptions ? (
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+          ) : (
           <DropdownWithSearch
             containerRef={presetRef}
             open={presetDropdownOpen}
@@ -251,6 +280,7 @@ export function PreviewPromptPage({
             onSelect={setSelectedPresetId}
             emptyMessage="No presets"
           />
+          )}
         </div>
       </div>
 

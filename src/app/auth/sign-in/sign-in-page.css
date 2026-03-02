@@ -1,0 +1,10 @@
+/* Hide sign-up link and "Secured by Clerk" - targets Clerk footer element class names */
+.auth-sign-in-page [class*='footer'],
+.auth-sign-in-page [class*='Footer'] {
+  display: none !important;
+}
+
+/* Hide the divider lines before/after the sign-up and footer sections */
+.auth-sign-in-page [class*='divider'] {
+  display: none !important;
+}

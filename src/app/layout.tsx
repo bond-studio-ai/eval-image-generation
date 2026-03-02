@@ -6,6 +6,15 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const clerkLocalization = {
+  signIn: {
+    start: {
+      title: 'Access Eval Image Generation',
+      subtitle: 'Sign in to continue',
+    },
+  },
+};
+
 export const metadata: Metadata = {
   title: 'AI Image Generator Admin',
   description: 'Quality assurance and testing platform for evaluating AI image generation results',
@@ -13,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider localization={clerkLocalization}>
       <html lang="en" suppressHydrationWarning>
         <body className={`${inter.className} bg-gray-50`}>
           <AppShell>{children}</AppShell>
