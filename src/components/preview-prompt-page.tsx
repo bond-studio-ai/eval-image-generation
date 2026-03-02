@@ -22,14 +22,19 @@ interface PreviewItem {
 interface PreviewPromptPageProps {
   initialPromptVersionId?: string | null;
   initialPresetId?: string | null;
+  /** When provided, dropdowns are populated on first paint (no client fetch). */
+  initialPromptVersions?: PromptVersionItem[];
+  initialPresets?: InputPresetItem[];
 }
 
 export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
+  initialPromptVersions,
+  initialPresets,
 }: PreviewPromptPageProps) {
-  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>([]);
-  const [presets, setPresets] = useState<InputPresetItem[]>([]);
+  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(initialPromptVersions ?? []);
+  const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
   const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
@@ -42,9 +47,11 @@ export function PreviewPromptPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loadingOptions, setLoadingOptions] = useState(true);
+  const hasInitialOptions = initialPromptVersions != null && initialPresets != null;
+  const [loadingOptions, setLoadingOptions] = useState(!hasInitialOptions);
 
   useEffect(() => {
+    if (hasInitialOptions) return;
     let cancelled = false;
     setLoadError(null);
     setLoadingOptions(true);
@@ -81,7 +88,7 @@ export function PreviewPromptPage({
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [hasInitialOptions]);
 
   const filteredPrompts = useMemo(() => {
     const q = promptSearch.trim().toLowerCase();

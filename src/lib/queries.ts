@@ -27,6 +27,24 @@ export interface PromptVersionDetail {
   };
 }
 
+/** Minimal item for dropdowns (id + name only, no stats). */
+export interface PromptVersionMinimalItem {
+  id: string;
+  name: string | null;
+}
+
+/**
+ * Fetch prompt versions for dropdowns (id + name only). Single query, no stats.
+ */
+export async function fetchPromptVersionsMinimal(limit = 100): Promise<PromptVersionMinimalItem[]> {
+  return db
+    .select({ id: promptVersion.id, name: promptVersion.name })
+    .from(promptVersion)
+    .where(isNull(promptVersion.deletedAt))
+    .orderBy(desc(promptVersion.createdAt))
+    .limit(limit);
+}
+
 /**
  * Fetch prompt versions list with generation counts.
  * Replicates the logic from GET /api/v1/prompt-versions.
@@ -240,6 +258,24 @@ export interface InputPresetDetail extends InputPresetRow {
   stats?: {
     generation_count: number;
   };
+}
+
+/** Minimal item for dropdowns (id + name only, no stats). */
+export interface InputPresetMinimalItem {
+  id: string;
+  name: string | null;
+}
+
+/**
+ * Fetch input presets for dropdowns (id + name only). Single query, no stats.
+ */
+export async function fetchInputPresetsMinimal(limit = 100): Promise<InputPresetMinimalItem[]> {
+  return db
+    .select({ id: inputPreset.id, name: inputPreset.name })
+    .from(inputPreset)
+    .where(isNull(inputPreset.deletedAt))
+    .orderBy(desc(inputPreset.createdAt))
+    .limit(limit);
 }
 
 export async function fetchInputPresets(limit = 100): Promise<InputPresetListItem[]> {
