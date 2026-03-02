@@ -2,11 +2,12 @@
  * One-off: convert product image columns from text to text[] in
  * generation_input, input_preset, and image_selection.
  * Run: npx tsx scripts/migrate-product-arrays.ts
- * Requires DATABASE_URL in .env.
+ * Requires PGHOST, PGUSER, PGPASSWORD, PGDATABASE in .env.
  */
 
 import 'dotenv/config';
-import { Pool } from '@neondatabase/serverless';
+import { Pool } from 'pg';
+import { getConnectionUrl } from '../src/lib/db/connection';
 
 const PRODUCT_COLUMNS = [
   'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
@@ -19,9 +20,11 @@ const PRODUCT_COLUMNS = [
 const TABLES = ['generation_input', 'input_preset', 'image_selection'];
 
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.error('DATABASE_URL is not set.');
+  let databaseUrl: string;
+  try {
+    databaseUrl = getConnectionUrl();
+  } catch (e) {
+    console.error((e as Error).message);
     process.exit(1);
   }
 

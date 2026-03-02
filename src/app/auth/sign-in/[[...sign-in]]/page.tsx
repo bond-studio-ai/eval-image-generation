@@ -7,10 +7,12 @@ export default function SignInPage() {
         appearance={{
           elements: {
             rootBox: 'mx-auto',
+            footer: 'hidden',
+            footerAction: 'hidden',
+            footerActionLink: 'hidden',
           },
         }}
         fallbackRedirectUrl="/"
-        signUpUrl="/auth/sign-up"
       />
     </div>
   );

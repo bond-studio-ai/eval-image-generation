@@ -4,7 +4,7 @@
 
 - Node.js 18+
 - [Yarn](https://yarnpkg.com/) package manager
-- A [Neon](https://neon.tech/) account (free tier available)
+- A PostgreSQL database (e.g. [Amazon RDS](https://aws.amazon.com/rds/))
 
 ---
 
@@ -23,11 +23,9 @@ cd ai-image-generator-admin
 yarn
 ```
 
-### 3. Set Up Neon Database
+### 3. Set Up Database
 
-1. Create a free account at [neon.tech](https://neon.tech/)
-2. Create a new project
-3. Copy the connection string from the dashboard
+Configure your PostgreSQL database (e.g. Amazon RDS). Ensure it accepts connections on port 5432 and supports SSL.
 
 ### 4. Configure Environment Variables
 
@@ -37,11 +35,18 @@ Create a `.env.local` file:
 cp .env.example .env.local
 ```
 
-Update the `DATABASE_URL` with your Neon connection string:
+Set the PG* environment variables from your database connection details:
 
 ```bash
-DATABASE_URL=postgresql://user:password@ep-example-123456.us-east-2.aws.neon.tech/ai_gen_admin?sslmode=require
+PGHOST=your-db-host.rds.amazonaws.com
+PGPORT=5432
+PGUSER=postgres
+PGPASSWORD=your_password
+PGDATABASE=eval_image_generation
+PGSSLMODE=require
 ```
+
+Using separate PG* vars supports password rotation—the app reads credentials on each connection.
 
 ### 5. Push Database Schema
 
@@ -49,7 +54,7 @@ DATABASE_URL=postgresql://user:password@ep-example-123456.us-east-2.aws.neon.tec
 yarn db:push
 ```
 
-This uses Drizzle Kit to push the schema defined in `src/db/schema.ts` directly to your Neon database.
+This uses Drizzle Kit to push the schema defined in `src/db/schema.ts` directly to your database.
 
 ### 6. Start Development Server
 
@@ -86,7 +91,7 @@ ai-image-generator-admin/
 │   │   └── loading-state.tsx       # Loading spinner
 │   ├── db/                         # Database layer
 │   │   ├── schema.ts              # Drizzle ORM schema definitions
-│   │   └── index.ts               # Database client (Neon + Drizzle)
+│   │   └── index.ts               # Database client (PostgreSQL + Drizzle)
 │   └── lib/                        # Shared utilities
 │       ├── api-response.ts         # Consistent API response helpers
 │       └── validation.ts           # Zod validation schemas
@@ -184,9 +189,9 @@ yarn format:check  # Check formatting
 
 ### Database Connection Issues
 
-- Verify your `DATABASE_URL` in `.env.local` includes `?sslmode=require`
-- Ensure your Neon project is active (free tier projects may pause after inactivity)
-- Check the Neon dashboard for connection limits
+- Verify PGHOST, PGUSER, PGPASSWORD, PGDATABASE are set and PGSSLMODE=require
+- Ensure the database is running and accepting connections
+- Check security groups / firewall allow connections from your IP
 
 ### Build Errors
 

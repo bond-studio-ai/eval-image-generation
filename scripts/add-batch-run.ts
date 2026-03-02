@@ -1,7 +1,8 @@
 import 'dotenv/config';
-import { Pool } from '@neondatabase/serverless';
+import { Pool } from 'pg';
+import { getConnectionUrl } from '../src/lib/db/connection';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: getConnectionUrl() });
 
 async function main() {
   const client = await pool.connect();

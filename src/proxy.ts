@@ -17,12 +17,15 @@ const isProtectedRoute = createRouteMatcher([
 const clerkWithProtection = clerkMiddleware(
   async (auth, req) => {
     if (isProtectedRoute(req)) {
+      const signInUrl = new URL('/auth/sign-in', req.url).toString();
       await auth.protect({
-        unauthenticatedUrl: '/auth/sign-in',
+        unauthenticatedUrl: signInUrl,
       });
     }
   },
-  { signInUrl: '/auth/sign-in' },
+  (req) => ({
+    signInUrl: new URL('/auth/sign-in', req.url).toString(),
+  }),
 );
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {

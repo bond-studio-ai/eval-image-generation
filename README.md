@@ -5,8 +5,8 @@ A quality assurance and testing platform for evaluating AI image generation resu
 ## Tech Stack
 
 - **Framework**: [Next.js](https://nextjs.org/) (App Router, TypeScript)
-- **Database**: [Neon](https://neon.tech/) (Serverless PostgreSQL)
-- **ORM**: [Drizzle](https://orm.drizzle.team/) with Neon Serverless Driver
+- **Database**: PostgreSQL (e.g. [Amazon RDS](https://aws.amazon.com/rds/))
+- **ORM**: [Drizzle](https://orm.drizzle.team/) with node-postgres
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Validation**: [Zod](https://zod.dev/)
 
@@ -16,7 +16,7 @@ A quality assurance and testing platform for evaluating AI image generation resu
 # Install dependencies
 yarn
 
-# Copy environment file and add your Neon connection string
+# Copy environment file and add your database connection string
 cp .env.example .env.local
 
 # Push schema to database

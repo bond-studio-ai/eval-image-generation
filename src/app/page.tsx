@@ -156,21 +156,19 @@ function TabNav({ active, searchParams }: { active: 'strategies' | 'products'; s
     <div className="mt-6 flex gap-1 border-b border-gray-200">
       <Link
         href={buildHref('strategies')}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-          active === 'strategies'
+        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === 'strategies'
             ? 'border-primary-600 text-primary-700'
             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-        }`}
+          }`}
       >
         Strategies
       </Link>
       <Link
         href={buildHref('products')}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-          active === 'products'
+        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === 'products'
             ? 'border-primary-600 text-primary-700'
             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-        }`}
+          }`}
       >
         Products
       </Link>

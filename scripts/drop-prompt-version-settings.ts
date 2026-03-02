@@ -1,16 +1,19 @@
 /**
  * One-off: drop model/output_type/aspect_ratio/output_resolution/temperature from prompt_version.
  * Run: npx tsx scripts/drop-prompt-version-settings.ts
- * Requires DATABASE_URL in .env.
+ * Requires PGHOST, PGUSER, PGPASSWORD, PGDATABASE in .env.
  */
 
 import 'dotenv/config';
-import { Pool } from '@neondatabase/serverless';
+import { Pool } from 'pg';
+import { getConnectionUrl } from '../src/lib/db/connection';
 
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.error('DATABASE_URL is not set.');
+  let databaseUrl: string;
+  try {
+    databaseUrl = getConnectionUrl();
+  } catch (e) {
+    console.error((e as Error).message);
     process.exit(1);
   }
 

@@ -13,11 +13,12 @@
  *   npx tsx scripts/cleanup-stuck-strategy-runs.ts --delete-orphans  # delete orphan runs instead of backfilling
  *   npx tsx scripts/cleanup-stuck-strategy-runs.ts --remove-backfilled  # delete runs that were backfilled (all steps have backfill error)
  *
- * Requires DATABASE_URL in .env.
+ * Requires PGHOST, PGUSER, PGPASSWORD, PGDATABASE in .env.
  */
 
 import 'dotenv/config';
-import { Pool } from '@neondatabase/serverless';
+import { Pool } from 'pg';
+import { getConnectionUrl } from '../src/lib/db/connection';
 
 const ORPHAN_STEP_ERROR = 'Never executed (run had no step results; backfilled by cleanup).';
 
@@ -47,9 +48,11 @@ function parseArgs(): {
 }
 
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.error('DATABASE_URL is not set.');
+  let databaseUrl: string;
+  try {
+    databaseUrl = getConnectionUrl();
+  } catch (e) {
+    console.error((e as Error).message);
     process.exit(1);
   }
 

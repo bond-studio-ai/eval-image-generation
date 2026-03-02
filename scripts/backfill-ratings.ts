@@ -7,7 +7,7 @@
  *   npm run backfill-ratings
  *   npx tsx scripts/backfill-ratings.ts
  *
- * Loads DATABASE_URL from .env when present.
+ * Loads PG* env vars from .env when present.
  */
 
 import 'dotenv/config';
@@ -17,8 +17,8 @@ import { generation } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set. Set it in .env or the environment.');
+  if (!process.env.PGHOST || !process.env.PGUSER || !process.env.PGPASSWORD || !process.env.PGDATABASE) {
+    console.error('PGHOST, PGUSER, PGPASSWORD, and PGDATABASE must be set.');
     process.exit(1);
   }
 
