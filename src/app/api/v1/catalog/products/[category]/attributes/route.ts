@@ -14,6 +14,14 @@ const VALID_CATEGORIES = new Set([
   'towel-bars', 'towel-rings', 'tub-doors', 'tub-fillers', 'tubs', 'vanities', 'wallpapers',
 ]);
 
+const TILE_CATEGORIES = new Set([
+  'floor-tiles', 'wall-tiles', 'shower-wall-tiles', 'shower-floor-tiles', 'shower-curb-tiles',
+]);
+
+function catalogSegment(category: string): string {
+  return TILE_CATEGORIES.has(category) ? 'tiles' : category;
+}
+
 const SKIP_KEYS = new Set(['preferredRetailer', 'variants', 'images']);
 
 /** Recursively collect all dot paths from a product object so nested props appear in References. */
@@ -49,7 +57,7 @@ export async function GET(
       return errorResponse('VALIDATION_ERROR', `Invalid category: ${category}`);
     }
 
-    const url = `${CATALOG_BASE}/${segment}?perPage=1&${CATALOG_INCLUDE_PARAMS}`;
+    const url = `${CATALOG_BASE}/${catalogSegment(segment)}?perPage=1&${CATALOG_INCLUDE_PARAMS}`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 },

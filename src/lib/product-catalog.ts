@@ -44,8 +44,13 @@ function getCacheKey(category: string, productId: string): string {
   return `${category}:${productId}`;
 }
 
+const TILE_CATEGORIES = new Set([
+  'floor_tiles', 'wall_tiles', 'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+]);
+
 /** Convert internal category (snake_case) to API URL segment (plural kebab-case). */
 function categoryToUrlSegment(category: string): string {
+  if (TILE_CATEGORIES.has(category)) return 'tiles';
   return category.replace(/_/g, '-');
 }
 
