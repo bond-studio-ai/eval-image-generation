@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 type CategoryRate = {
@@ -74,7 +75,7 @@ export function ProductCategoryRates({
         if (to) params.set('to', to);
         if (model) params.set('model', model);
         if (strategyId) params.set('strategy_id', strategyId);
-        const res = await fetch(`/api/v1/analytics/product-category-rates?${params}`, { cache: 'no-store' });
+        const res = await fetch(imageGenerationApiUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
         if (!cancelled) setCategories(json.data?.categories ?? []);

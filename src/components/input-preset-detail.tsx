@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
@@ -114,7 +115,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 onClick={async () => {
                   setCloning(true);
                   try {
-                    const res = await fetch(`/api/v1/input-presets/${data.id}/clone`, { method: 'POST' });
+                    const res = await fetch(imageGenerationApiUrl(`input-presets/${data.id}/clone`), { method: 'POST' });
                     if (!res.ok) throw new Error('Clone failed');
                     const json = await res.json();
                     const newId = json.data?.id;

@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -83,7 +84,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     setError(null);
 
     try {
-      const res = await fetch(`/api/v1/prompt-versions/${data.id}`, {
+      const res = await fetch(imageGenerationApiUrl(`prompt-versions/${data.id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -130,7 +131,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     setCloning(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/prompt-versions', {
+      const res = await fetch(imageGenerationApiUrl('prompt-versions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

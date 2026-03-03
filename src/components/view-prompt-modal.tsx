@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ViewPromptModalProps {
@@ -18,7 +19,7 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedU
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/prompt-versions/${promptVersionId}`);
+      const res = await fetch(imageGenerationApiUrl(`prompt-versions/${promptVersionId}`));
       if (!res.ok) {
         setError('Failed to load prompt');
         return;

@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { ImageUpload } from '@/components/image-upload';
 import { PRODUCT_CATEGORIES, ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
@@ -58,7 +59,7 @@ export function InputPresetEditForm({ initialData }: { initialData: InitialData 
       }
       payload.arbitrary_images = arbitraryImages;
 
-      const res = await fetch(`/api/v1/input-presets/${initialData.id}`, {
+      const res = await fetch(imageGenerationApiUrl(`input-presets/${initialData.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

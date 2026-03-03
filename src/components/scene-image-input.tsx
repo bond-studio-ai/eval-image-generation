@@ -1,5 +1,6 @@
 'use client';
 
+import { evalApiUrl } from '@/lib/api-base';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useRef, useState } from 'react';
@@ -31,7 +32,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       setError(null);
 
       try {
-        const res = await fetch('/api/v1/upload', {
+        const res = await fetch(evalApiUrl('upload'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

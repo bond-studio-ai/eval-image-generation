@@ -1,5 +1,6 @@
 'use client';
 
+import { evalApiUrl } from '@/lib/api-base';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
 import { type CatalogProduct } from '@/components/product-picker';
@@ -56,7 +57,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
   const getProductName = useProductNameLookup();
 
   useEffect(() => {
-    fetch('/api/v1/products')
+    fetch(evalApiUrl('products'))
       .then((r) => r.json())
       .then((r) => {
         setProducts(r.data ?? []);
@@ -298,7 +299,7 @@ function CategoryPickerModal({
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     try {
-      const res = await fetch('/api/v1/upload', {
+      const res = await fetch(evalApiUrl('upload'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

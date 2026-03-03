@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { GridLightbox } from '@/components/grid-lightbox';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,7 +39,7 @@ export function IndividualExecutionsTab() {
 
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/strategy-runs?limit=500', { cache: 'no-store' });
+      const res = await fetch(imageGenerationApiUrl('strategy-runs?limit=500'), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setRuns(json.data ?? []);

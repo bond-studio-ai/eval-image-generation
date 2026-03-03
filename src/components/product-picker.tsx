@@ -1,5 +1,6 @@
 'use client';
 
+import { evalApiUrl } from '@/lib/api-base';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,7 +36,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
 
   // Fetch products on mount
   useEffect(() => {
-    fetch('/api/v1/products')
+    fetch(evalApiUrl('products'))
       .then((r) => r.json())
       .then((r) => {
         setProducts(r.data ?? []);

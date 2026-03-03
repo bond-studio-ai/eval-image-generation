@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 interface PerformanceData {
@@ -25,7 +26,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/strategies/${strategyId}/performance`, { cache: 'no-store' });
+      const res = await fetch(imageGenerationApiUrl(`strategies/${strategyId}/performance`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setData(json.data ?? null);

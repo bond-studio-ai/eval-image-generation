@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -60,7 +61,7 @@ export function RatingForm({
   async function handleRate(payload: Record<string, string>) {
     setLoading(true);
     try {
-      await fetch(`/api/v1/generations/${generationId}/rating`, {
+      await fetch(imageGenerationApiUrl(`generations/${generationId}/rating`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

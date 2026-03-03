@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ export function MatrixTab() {
 
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/strategy-runs?limit=200', { cache: 'no-store' });
+      const res = await fetch(imageGenerationApiUrl('strategy-runs?limit=200'), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setRuns(json.data ?? []);

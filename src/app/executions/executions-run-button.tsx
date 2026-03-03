@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -44,8 +45,8 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      fetch('/api/v1/strategies?limit=100', { cache: 'no-store' }).then((r) => r.json()),
-      fetch('/api/v1/input-presets?limit=100&minimal=true', { cache: 'no-store' }).then((r) => r.json()),
+      fetch(imageGenerationApiUrl('strategies?limit=100'), { cache: 'no-store' }).then((r) => r.json()),
+      fetch(imageGenerationApiUrl('input-presets?limit=100&minimal=true'), { cache: 'no-store' }).then((r) => r.json()),
     ])
       .then(([stratRes, presetRes]) => {
         if (cancelled) return;
@@ -78,7 +79,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     const count = Math.max(1, Math.min(100, numberOfImages));
 
     try {
-      const res = await fetch('/api/v1/strategy-batch-runs/run', {
+      const res = await fetch(imageGenerationApiUrl('strategy-batch-runs/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -19,7 +20,7 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
     setError(null);
 
     try {
-      const res = await fetch(`/api/v1/prompt-versions/${id}`, {
+      const res = await fetch(imageGenerationApiUrl(`prompt-versions/${id}`), {
         method: 'DELETE',
       });
 

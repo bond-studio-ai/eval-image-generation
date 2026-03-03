@@ -42,7 +42,7 @@ PGHOST=your-db-host.rds.amazonaws.com
 PGPORT=5432
 PGUSER=postgres
 PGPASSWORD=your_password
-PGDATABASE=eval_image_generation
+PGDATABASE=image_generation
 PGSSLMODE=require
 ```
 

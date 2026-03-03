@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { ExpandableImage } from '@/components/expandable-image';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { ViewPromptModal } from '@/components/view-prompt-modal';
@@ -78,7 +79,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/strategy-runs/${runId}`, { cache: 'no-store' });
+      const res = await fetch(imageGenerationApiUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       if (json.data) setData(json.data);
@@ -98,7 +99,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const handleRetry = useCallback(async () => {
     setRetrying(true);
     try {
-      const res = await fetch(`/api/v1/strategy-runs/${runId}/retry`, { method: 'POST' });
+      const res = await fetch(imageGenerationApiUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
       if (!res.ok) return;
       await fetchData();
     } catch { /* ignore */ }
@@ -108,7 +109,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const handleMarkStatus = useCallback(async (status: 'failed' | 'completed') => {
     setMarkingStatus(status);
     try {
-      const res = await fetch(`/api/v1/strategy-runs/${runId}`, {
+      const res = await fetch(imageGenerationApiUrl(`strategy-runs/${runId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),

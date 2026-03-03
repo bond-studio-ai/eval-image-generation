@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { STRATEGY_PROPERTY_COLORS } from '@/lib/strategy-property-colors';
 import { ViewPromptModal } from '@/components/view-prompt-modal';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ export function StrategyHoverCard({
       return;
     }
     try {
-      const res = await fetch(`/api/v1/strategies/${strategyId}`);
+      const res = await fetch(imageGenerationApiUrl(`strategies/${strategyId}`));
       if (!res.ok) return;
       const json = await res.json();
       const d = json.data ?? json;

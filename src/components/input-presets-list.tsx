@@ -1,5 +1,6 @@
 'use client';
 
+import { imageGenerationApiUrl } from '@/lib/api-base';
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import { Pagination } from '@/components/pagination';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
   const handleClone = useCallback(async (id: string) => {
     setCloningId(id);
     try {
-      const res = await fetch(`/api/v1/input-presets/${id}/clone`, { method: 'POST' });
+      const res = await fetch(imageGenerationApiUrl(`input-presets/${id}/clone`), { method: 'POST' });
       if (!res.ok) return;
       const json = await res.json();
       const newId = json.data?.id;
@@ -61,7 +62,7 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch('/api/v1/input-presets/bulk-delete', {
+    const res = await fetch(imageGenerationApiUrl('input-presets/bulk-delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),

@@ -1,5 +1,6 @@
 'use client';
 
+import { evalApiUrl, imageGenerationApiUrl } from '@/lib/api-base';
 import {
   CONDITIONAL_OPTIONS,
   REFERENCE_OPTIONS,
@@ -111,7 +112,7 @@ export function PromptTemplateEditor({
     setAttributes([]);
     try {
       const segment = category.replace(/_/g, '-');
-      const res = await fetch(`/api/v1/catalog/products/${segment}/attributes`);
+      const res = await fetch(evalApiUrl(`catalog/products/${segment}/attributes`));
       const json = await res.json();
       const attrs = json.data?.attributes ?? [];
       setAttributes(attrs);
