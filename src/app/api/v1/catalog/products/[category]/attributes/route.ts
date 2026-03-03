@@ -14,25 +14,27 @@ const VALID_CATEGORIES = new Set([
   'towel-bars', 'towel-rings', 'tub-doors', 'tub-fillers', 'tubs', 'vanities', 'wallpapers',
 ]);
 
-/** Flatten nested objects to dot paths. Expands renderAttributes so product.renderAttributes.<attr> appears in References. */
-function getAttributePaths(product: Record<string, unknown>): string[] {
-  const paths = new Set<string>();
-  for (const [key, val] of Object.entries(product)) {
-    if (['preferredRetailer', 'variants', 'images'].includes(key)) continue;
-    paths.add(key);
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      const v = val as Record<string, unknown>;
-      if (key === 'renderAttributes') {
-        for (const subkey of Object.keys(v)) {
-          paths.add(`${key}.${subkey}`);
-        }
-      } else {
-        if (v.name !== undefined) paths.add(`${key}.name`);
-        if (v.id !== undefined) paths.add(`${key}.id`);
-        if (v.url !== undefined) paths.add(`${key}.url`);
-      }
+const SKIP_KEYS = new Set(['preferredRetailer', 'variants', 'images']);
+
+/** Recursively collect all dot paths from a product object so nested props appear in References. */
+function collectPaths(
+  obj: Record<string, unknown>,
+  paths: Set<string>,
+  prefix = '',
+): void {
+  for (const [key, val] of Object.entries(obj)) {
+    if (SKIP_KEYS.has(key)) continue;
+    const path = prefix ? `${prefix}.${key}` : key;
+    paths.add(path);
+    if (val != null && typeof val === 'object' && !Array.isArray(val)) {
+      collectPaths(val as Record<string, unknown>, paths, path);
     }
   }
+}
+
+function getAttributePaths(product: Record<string, unknown>): string[] {
+  const paths = new Set<string>();
+  collectPaths(product, paths);
   return Array.from(paths).sort();
 }
 

@@ -14,6 +14,7 @@
  */
 
 import Handlebars from 'handlebars';
+import { startCase } from 'lodash';
 
 const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
 const PRODUCT_CATEGORIES = [
@@ -91,14 +92,10 @@ function toCamel(s: string): string {
   return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
-/** Title-case a string (e.g. "hello world" -> "Hello World"). Leaves URLs unchanged. */
 function toTitleCase(s: string): string {
   if (typeof s !== 'string' || s.length === 0) return s;
   if (s.startsWith('http://') || s.startsWith('https://')) return s;
-  return s
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  return startCase(s);
 }
 
 /** Recursively title-case all string values in an object (reference/product data). Skips URLs. */
@@ -193,7 +190,7 @@ export function renderPromptTemplate(
     const rendered = compiled(context);
 
     // Clean up artifacts from conditional blocks (collapsed commas, etc.)
-    return rendered.trim();
+    return startCase(toCamel((rendered.trim())));
   } catch (err) {
     console.error('[handlebars-prompt] Render error:', err);
     return template;

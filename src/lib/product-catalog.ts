@@ -64,7 +64,6 @@ async function fetchProduct(category: string, productId: string): Promise<Catalo
       next: { revalidate: 600 },
     });
 
-    console.log('[product-catalog] fetchProduct', url, res);
 
     if (!res.ok) return null;
 
