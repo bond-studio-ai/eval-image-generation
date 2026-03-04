@@ -1,6 +1,6 @@
 import { errorResponse, successResponse } from '@/lib/api-response';
 
-const CATALOG_URL = 'https://api.bondxlowes.com/catalog/v3/products?perPage=100000';
+const CATALOG_URL = 'https://api.usedemo.io/catalog/v3/products?perPage=100000';
 
 // In-memory cache
 let cachedProducts: Product[] | null = null;

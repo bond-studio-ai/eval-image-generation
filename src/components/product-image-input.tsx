@@ -283,7 +283,7 @@ function CategoryPickerModal({
     setLoadingImages(true);
     setExpandedImages([]);
     try {
-      const res = await fetch(`https://api.bondxlowes.com/catalog/v3/products/${productId}`);
+      const res = await fetch(`https://api.usedemo.io/catalog/v3/products/${productId}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const json = await res.json();
       const product = Array.isArray(json.data) ? json.data[0] : json.data;

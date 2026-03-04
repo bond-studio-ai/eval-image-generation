@@ -1,6 +1,6 @@
 import { errorResponse, successResponse } from '@/lib/api-response';
 
-const CATALOG_BASE = 'https://api.bondxlowes.com/catalog/v3/products';
+const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
 
 /** Query params to get full product data so renderAttributes and other nested fields are available. */
 const CATALOG_INCLUDE_PARAMS =
