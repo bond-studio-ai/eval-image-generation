@@ -102,14 +102,15 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function computeImageCount(item: any): number {
   let count = 0;
-  for (const col of IMAGE_COLUMNS) {
-    const val = item[col];
-    if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) count++;
+  for (let i = 0; i < IMAGE_COLUMNS.length; i++) {
+    const val = item[IMAGE_COLUMNS[i]] ?? item[IMAGE_COLUMNS_SNAKE[i]];
+    if (Array.isArray(val)) {
+      count += val.filter((v: unknown) => typeof v === 'string' && v !== '').length;
+    } else if (typeof val === 'string' && val !== '') {
+      count += 1;
+    }
   }
-  if (count > 0) return count;
-  for (const col of IMAGE_COLUMNS_SNAKE) {
-    const val = item[col];
-    if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) count++;
-  }
+  const arbitrary = item.arbitraryImages ?? item.arbitrary_images;
+  if (Array.isArray(arbitrary)) count += arbitrary.length;
   return count;
 }
