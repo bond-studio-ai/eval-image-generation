@@ -20,8 +20,8 @@ interface GridLightboxProps {
 }
 
 interface GenerationData {
-  scene_accuracy_rating: string | null;
-  product_accuracy_rating: string | null;
+  sceneAccuracyRating: string | null;
+  productAccuracyRating: string | null;
   results: { id: string; url: string }[];
   input: Record<string, unknown> | null;
 }
@@ -49,8 +49,8 @@ export function GridLightbox({
       const data = json.data ?? json;
       const results = Array.isArray(data.results) ? data.results : [];
       setGeneration({
-        scene_accuracy_rating: data.scene_accuracy_rating ?? null,
-        product_accuracy_rating: data.product_accuracy_rating ?? null,
+        sceneAccuracyRating: data.sceneAccuracyRating ?? data.scene_accuracy_rating ?? null,
+        productAccuracyRating: data.productAccuracyRating ?? data.product_accuracy_rating ?? null,
         results: results.map((r: { id: string; url?: string }) => ({ id: r.id, url: r.url ?? '' })),
         input: data.input ?? null,
       });
@@ -268,8 +268,8 @@ export function GridLightbox({
                   {generation ? (
                     <RatingForm
                       generationId={generationId}
-                      currentSceneAccuracyRating={generation.scene_accuracy_rating}
-                      currentProductAccuracyRating={generation.product_accuracy_rating}
+                      currentSceneAccuracyRating={generation.sceneAccuracyRating}
+                      currentProductAccuracyRating={generation.productAccuracyRating}
                       onRated={handleRated}
                     />
                   ) : (

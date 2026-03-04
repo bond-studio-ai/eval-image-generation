@@ -122,13 +122,12 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
       .then((r) => r.json())
       .then((r) => {
         if (r.data) {
-          const pa = r.data.product_accuracy ?? {};
-          // Ensure each active category has an entry
+          const d = r.data;
+          const pa = d.productAccuracy ?? d.product_accuracy ?? {};
           const productAccuracy: Record<string, CategoryEval> = {};
           for (const cat of productCategories) {
             productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
           }
-          // Also include any categories that were saved but might not be in current productCategories
           for (const [key, val] of Object.entries(pa)) {
             if (!productAccuracy[key]) {
               productAccuracy[key] = val as CategoryEval;
@@ -137,8 +136,8 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
 
           setData({
             product_accuracy: productAccuracy,
-            scene_accuracy_issues: r.data.scene_accuracy_issues ?? [],
-            scene_accuracy_notes: r.data.scene_accuracy_notes ?? '',
+            scene_accuracy_issues: d.sceneAccuracyIssues ?? d.scene_accuracy_issues ?? [],
+            scene_accuracy_notes: d.sceneAccuracyNotes ?? d.scene_accuracy_notes ?? '',
           });
 
           // Keep sections collapsed by default (user opens when needed)
