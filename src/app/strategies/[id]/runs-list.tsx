@@ -163,9 +163,20 @@ function BatchRunCard({
   onImageClick: (run: Run) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
-  const failedRuns = batch.runs.filter((r) => r.status === 'failed').length;
+  const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
+
+  const handleRetryFailed = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRetrying(true);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), { method: 'POST' });
+      if (res.ok) onRated?.();
+    } catch { /* ignore */ }
+    finally { setRetrying(false); }
+  };
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -196,9 +207,32 @@ function BatchRunCard({
             {completedRuns} completed{failedRuns > 0 ? `, ${failedRuns} failed` : ''}
           </span>
         </div>
-        <span className="text-xs text-gray-400">
-          {new Date(batch.createdAt).toLocaleString()}
-        </span>
+        <div className="flex items-center gap-3">
+          {failedRuns > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={handleRetryFailed}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryFailed(e as unknown as React.MouseEvent); }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              {retrying ? (
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                </svg>
+              )}
+              Retry Failed ({failedRuns})
+            </span>
+          )}
+          <span className="text-xs text-gray-400">
+            {new Date(batch.createdAt).toLocaleString()}
+          </span>
+        </div>
       </button>
 
       {expanded && (
@@ -222,6 +256,18 @@ function CollapsibleBatchCard({
   onImageClick: (run: Run) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
+
+  const handleRetryFailed = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRetrying(true);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), { method: 'POST' });
+      if (res.ok) onRated?.();
+    } catch { /* ignore */ }
+    finally { setRetrying(false); }
+  };
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -234,6 +280,27 @@ function CollapsibleBatchCard({
           Batch · {new Date(batch.createdAt).toLocaleString()}
         </span>
         <div className="flex items-center gap-2">
+          {failedRuns > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={handleRetryFailed}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryFailed(e as unknown as React.MouseEvent); }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              {retrying ? (
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                </svg>
+              )}
+              Retry Failed ({failedRuns})
+            </span>
+          )}
           <StatusBadge status={batch.status} />
           <svg
             className={`h-5 w-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
