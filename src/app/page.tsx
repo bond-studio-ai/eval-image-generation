@@ -105,8 +105,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const sceneDist = sceneRatings.distribution;
   const productDist = productRatings.distribution;
   const overview = {
-    totalGenerations: sceneRatings.total_generations,
-    ratedGenerations: sceneRatings.rated_generations,
+    totalGenerations: sceneRatings.totalGenerations,
+    ratedGenerations: sceneRatings.ratedGenerations,
   };
   const models = perfData.models;
 

@@ -196,8 +196,8 @@ export async function fetchGenerationOutputs(params: Record<string, string>) {
 export async function fetchAnalyticsRatings(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
   return fetchService<{
-    total_generations: number;
-    rated_generations: number;
+    totalGenerations: number;
+    ratedGenerations: number;
     distribution: { rating: string; count: number; percentage: number }[];
   }>(`/analytics/ratings${qs ? `?${qs}` : ''}`);
 }
