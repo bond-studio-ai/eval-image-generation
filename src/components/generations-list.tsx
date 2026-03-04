@@ -26,10 +26,10 @@ interface GenerationsListProps {
   initialTotal: number;
   pageSize: number;
   filters: {
-    scene_accuracy_rating?: string;
-    product_accuracy_rating?: string;
+    sceneAccuracyRating?: string;
+    productAccuracyRating?: string;
     unrated?: string;
-    prompt_version_id?: string;
+    promptVersionId?: string;
     from?: string;
     to?: string;
     sort?: string;
@@ -92,10 +92,10 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
 
     const nextPage = page + 1;
     const params = new URLSearchParams({ page: String(nextPage), limit: String(pageSize) });
-    if (filters.scene_accuracy_rating) params.set('scene_accuracy_rating', filters.scene_accuracy_rating);
-    if (filters.product_accuracy_rating) params.set('product_accuracy_rating', filters.product_accuracy_rating);
+    if (filters.sceneAccuracyRating) params.set('sceneAccuracyRating', filters.sceneAccuracyRating);
+    if (filters.productAccuracyRating) params.set('productAccuracyRating', filters.productAccuracyRating);
     if (filters.unrated) params.set('unrated', filters.unrated);
-    if (filters.prompt_version_id) params.set('prompt_version_id', filters.prompt_version_id);
+    if (filters.promptVersionId) params.set('promptVersionId', filters.promptVersionId);
     if (filters.from) params.set('from', filters.from);
     if (filters.to) params.set('to', filters.to);
     if (filters.sort) params.set('sort', filters.sort);

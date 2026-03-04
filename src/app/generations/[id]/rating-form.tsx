@@ -80,13 +80,13 @@ export function RatingForm({
       <RatingRow
         label="Scene Accuracy"
         current={currentSceneAccuracyRating}
-        onRate={(v) => handleRate({ scene_accuracy_rating: v })}
+        onRate={(v) => handleRate({ sceneAccuracyRating: v })}
         disabled={loading}
       />
       <RatingRow
         label="Product Accuracy"
         current={currentProductAccuracyRating}
-        onRate={(v) => handleRate({ product_accuracy_rating: v })}
+        onRate={(v) => handleRate({ productAccuracyRating: v })}
         disabled={loading}
       />
     </div>

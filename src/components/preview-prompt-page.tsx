@@ -121,7 +121,7 @@ export function PreviewPromptPage({
       const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_preset_id: selectedPresetId }),
+        body: JSON.stringify({ inputPresetId: selectedPresetId }),
       });
       if (!res.ok) {
         const d = await res.json();

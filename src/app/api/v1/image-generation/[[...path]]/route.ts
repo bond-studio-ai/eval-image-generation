@@ -2,20 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_BASE = process.env.BASE_API_HOSTNAME ?? '';
 
-/** Recursively convert all snake_case keys to camelCase. */
-function toCamelCase(obj: unknown): unknown {
-  if (Array.isArray(obj)) return obj.map(toCamelCase);
-  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-    const out: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
-      const camel = key.replace(/_([a-z0-9])/g, (_, c) => (c as string).toUpperCase());
-      out[camel] = toCamelCase(val);
-    }
-    return out;
-  }
-  return obj;
-}
-
 async function proxy(request: NextRequest, pathSegments: string[]) {
   if (!BACKEND_BASE) {
     return NextResponse.json(
@@ -54,8 +40,7 @@ async function proxy(request: NextRequest, pathSegments: string[]) {
 
   if (isJson) {
     const json = await res.json();
-    const camelized = toCamelCase(json);
-    return NextResponse.json(camelized, { status: res.status });
+    return NextResponse.json(json, { status: res.status });
   }
 
   const responseHeaders = new Headers();

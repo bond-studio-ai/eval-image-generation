@@ -69,9 +69,9 @@ function TabNav({ active }: { active: 'batches' | 'generations' }) {
 
 async function GenerationsTab({ params }: { params: Record<string, string | undefined> }) {
   const queryParams: Record<string, string> = {};
-  if (params.prompt_version_id) queryParams.prompt_version_id = params.prompt_version_id;
-  if (params.scene_accuracy_rating) queryParams.scene_accuracy_rating = params.scene_accuracy_rating;
-  if (params.product_accuracy_rating) queryParams.product_accuracy_rating = params.product_accuracy_rating;
+  if (params.prompt_version_id) queryParams.promptVersionId = params.prompt_version_id;
+  if (params.scene_accuracy_rating) queryParams.sceneAccuracyRating = params.scene_accuracy_rating;
+  if (params.product_accuracy_rating) queryParams.productAccuracyRating = params.product_accuracy_rating;
   if (params.unrated) queryParams.unrated = params.unrated;
   if (params.from) queryParams.from = params.from;
   if (params.to) queryParams.to = params.to;
@@ -88,22 +88,22 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
 
   const initialData: GenerationRow[] = (json.data ?? []).map((row: Record<string, unknown>) => ({
     id: row.id as string,
-    promptVersionId: (row.promptVersionId ?? row.prompt_version_id) as string,
-    promptName: (row.promptName ?? row.prompt_name ?? null) as string | null,
-    sceneAccuracyRating: (row.sceneAccuracyRating ?? row.scene_accuracy_rating ?? null) as string | null,
-    productAccuracyRating: (row.productAccuracyRating ?? row.product_accuracy_rating ?? null) as string | null,
+    promptVersionId: row.promptVersionId as string,
+    promptName: (row.promptName ?? null) as string | null,
+    sceneAccuracyRating: (row.sceneAccuracyRating ?? null) as string | null,
+    productAccuracyRating: (row.productAccuracyRating ?? null) as string | null,
     notes: (row.notes ?? null) as string | null,
-    executionTime: (row.executionTime ?? row.execution_time ?? null) as number | null,
-    createdAt: (row.createdAt ?? row.created_at) as string,
-    resultUrls: (row.resultUrls ?? row.result_urls ?? []) as string[],
-    resultCount: (row.resultCount ?? row.result_count ?? 0) as number,
+    executionTime: (row.executionTime ?? null) as number | null,
+    createdAt: row.createdAt as string,
+    resultUrls: (row.resultUrls ?? []) as string[],
+    resultCount: (row.resultCount ?? 0) as number,
   }));
 
   const filters = {
-    scene_accuracy_rating: params.scene_accuracy_rating,
-    product_accuracy_rating: params.product_accuracy_rating,
+    sceneAccuracyRating: params.scene_accuracy_rating,
+    productAccuracyRating: params.product_accuracy_rating,
     unrated: params.unrated,
-    prompt_version_id: params.prompt_version_id,
+    promptVersionId: params.prompt_version_id,
     from: params.from,
     to: params.to,
     sort: params.sort ?? 'created_at',

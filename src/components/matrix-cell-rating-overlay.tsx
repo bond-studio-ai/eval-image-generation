@@ -31,8 +31,8 @@ export function MatrixCellRatingOverlay({
       .then((json) => {
         if (cancelled) return;
         const d = json.data ?? json;
-        const scene: Rating = d.sceneAccuracyRating ?? d.scene_accuracy_rating ?? null;
-        const product: Rating = d.productAccuracyRating ?? d.product_accuracy_rating ?? null;
+        const scene: Rating = d.sceneAccuracyRating ?? null;
+        const product: Rating = d.productAccuracyRating ?? null;
         setSceneRating(scene);
         setProductRating(product);
         ratingCache.set(generationId, { scene, product });
@@ -57,8 +57,8 @@ export function MatrixCellRatingOverlay({
 
       try {
         const body: Record<string, string> = {};
-        if (scene !== undefined) body.scene_accuracy_rating = scene;
-        if (product !== undefined) body.product_accuracy_rating = product;
+        if (scene !== undefined) body.sceneAccuracyRating = scene;
+        if (product !== undefined) body.productAccuracyRating = product;
         const res = await fetch(serviceUrl(`generations/${generationId}/rating`), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -67,8 +67,8 @@ export function MatrixCellRatingOverlay({
         if (res.ok) {
           const json = await res.json();
           const d = json.data ?? json;
-          const newScene: Rating = d.scene_accuracy_rating ?? nextScene;
-          const newProduct: Rating = d.product_accuracy_rating ?? nextProduct;
+          const newScene: Rating = d.sceneAccuracyRating ?? nextScene;
+          const newProduct: Rating = d.productAccuracyRating ?? nextProduct;
           setSceneRating(newScene);
           setProductRating(newProduct);
           ratingCache.set(generationId, { scene: newScene, product: newProduct });

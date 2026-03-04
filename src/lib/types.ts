@@ -5,7 +5,7 @@ export interface PromptVersionListItem {
   name: string | null;
   systemPrompt: string;
   userPrompt: string;
-  stats?: { generation_count: number };
+  stats?: { generationCount: number };
 }
 
 export interface StrategyListItem {
@@ -26,5 +26,5 @@ export interface InputPresetListItem {
   moodBoard: string | null;
   createdAt: string;
   imageCount: number;
-  stats?: { generation_count: number };
+  stats?: { generationCount: number };
 }

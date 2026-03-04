@@ -83,9 +83,9 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          strategy_ids: selectedStrategyIds,
-          input_preset_ids: selectedPresetIds,
-          number_of_images: count,
+          strategyIds: selectedStrategyIds,
+          inputPresetIds: selectedPresetIds,
+          numberOfImages: count,
         }),
       });
       const data = await res.json();

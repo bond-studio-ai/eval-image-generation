@@ -9,20 +9,6 @@ const getBase = () => {
   return `${base.replace(/\/$/, '')}/image-generation/v1`;
 };
 
-/** Recursively convert all snake_case keys to camelCase. */
-function toCamelCase(obj: unknown): unknown {
-  if (Array.isArray(obj)) return obj.map(toCamelCase);
-  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-    const out: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
-      const camel = key.replace(/_([a-z0-9])/g, (_, c) => (c as string).toUpperCase());
-      out[camel] = toCamelCase(val);
-    }
-    return out;
-  }
-  return obj;
-}
-
 async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${getBase()}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, { cache: 'no-store', ...init });
@@ -30,7 +16,7 @@ async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`Service ${res.status}: ${url}`);
   }
   const json = await res.json();
-  return toCamelCase(json.data) as T;
+  return json.data as T;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -113,7 +99,7 @@ export interface InputPresetListItemForBuilder {
   moodBoard: string | null;
   createdAt: string;
   imageCount: number;
-  stats?: { generation_count: number };
+  stats?: { generationCount: number };
 }
 
 // ─── Prompt Versions ─────────────────────────────────────────────────────────
@@ -181,7 +167,7 @@ export async function fetchGenerations(params: Record<string, string>) {
   const res = await fetch(`${base}${url}`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Service ${res.status}`);
   const json = await res.json();
-  return toCamelCase(json) as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
+  return json as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
 }
 
 // ─── Generation Outputs ──────────────────────────────────────────────────────

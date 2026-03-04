@@ -49,8 +49,8 @@ export function GridLightbox({
       const data = json.data ?? json;
       const results = Array.isArray(data.results) ? data.results : [];
       setGeneration({
-        sceneAccuracyRating: data.sceneAccuracyRating ?? data.scene_accuracy_rating ?? null,
-        productAccuracyRating: data.productAccuracyRating ?? data.product_accuracy_rating ?? null,
+        sceneAccuracyRating: data.sceneAccuracyRating ?? null,
+        productAccuracyRating: data.productAccuracyRating ?? null,
         results: results.map((r: { id: string; url?: string }) => ({ id: r.id, url: r.url ?? '' })),
         input: data.input ?? null,
       });

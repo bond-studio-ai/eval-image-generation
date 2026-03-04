@@ -145,28 +145,31 @@ export function StrategyBuilder({
         name: name.trim(),
         description: description.trim() || undefined,
         model: strategySettings.model,
-        aspect_ratio: strategySettings.aspect_ratio,
-        output_resolution: strategySettings.output_resolution,
+        aspectRatio: strategySettings.aspect_ratio,
+        outputResolution: strategySettings.output_resolution,
         temperature: strategySettings.temperature,
-        use_google_search: strategySettings.use_google_search,
-        tag_images: strategySettings.tag_images,
+        useGoogleSearch: strategySettings.use_google_search,
+        tagImages: strategySettings.tag_images,
         steps: steps.map((s, i) => ({
-          ...s,
           id: s.id ?? undefined,
           name: s.name.trim() || null,
-          step_order: i + 1,
+          stepOrder: i + 1,
+          promptVersionId: s.prompt_version_id,
           model: strategySettings.model,
-          aspect_ratio: strategySettings.aspect_ratio,
-          output_resolution: strategySettings.output_resolution,
+          aspectRatio: strategySettings.aspect_ratio,
+          outputResolution: strategySettings.output_resolution,
           temperature: strategySettings.temperature,
-          use_google_search: strategySettings.use_google_search,
-          tag_images: strategySettings.tag_images,
-          include_dollhouse: s.include_dollhouse,
-          include_real_photo: s.include_real_photo,
-          include_mood_board: s.include_mood_board,
-          include_product_images: s.include_product_images,
-          include_product_categories: s.include_product_categories ?? [],
-          arbitrary_image_from_step: s.arbitrary_image_from_step ?? null,
+          useGoogleSearch: strategySettings.use_google_search,
+          tagImages: strategySettings.tag_images,
+          dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
+          realPhotoFromStep: s.real_photo_from_step ?? null,
+          moodBoardFromStep: s.mood_board_from_step ?? null,
+          includeDollhouse: s.include_dollhouse,
+          includeRealPhoto: s.include_real_photo,
+          includeMoodBoard: s.include_mood_board,
+          includeProductImages: s.include_product_images,
+          includeProductCategories: s.include_product_categories ?? [],
+          arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
         })),
       };
 
@@ -575,8 +578,8 @@ function PromptVersionSelector({
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${pv.id === value ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-700'}`}
                 >
                   <span className="truncate">{pv.name || 'Untitled'}</span>
-                  {pv.stats?.generation_count ? (
-                    <span className="ml-auto shrink-0 text-xs text-gray-400">{pv.stats.generation_count} gen</span>
+                  {pv.stats?.generationCount ? (
+                    <span className="ml-auto shrink-0 text-xs text-gray-400">{pv.stats.generationCount} gen</span>
                   ) : null}
                 </button>
               ))}

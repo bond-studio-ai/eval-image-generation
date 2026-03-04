@@ -36,9 +36,9 @@ export function StrategyRunButton({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          input_preset_ids: [selectedId],
+          inputPresetIds: [selectedId],
           batch: true,
-          number_of_images: 8,
+          numberOfImages: 8,
         }),
       });
       const data = await res.json();
@@ -186,7 +186,7 @@ export function StrategyBatchRunButton({
       const res = await fetch(serviceUrl(`strategies/${strategyId}/run`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_preset_ids: inputPresetIds, batch: true, number_of_images: count }),
+        body: JSON.stringify({ inputPresetIds: inputPresetIds, batch: true, numberOfImages: count }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed to start batch'); return; }

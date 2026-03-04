@@ -27,9 +27,9 @@ interface CategoryEval {
 }
 
 interface EvaluationData {
-  product_accuracy: Record<string, CategoryEval>;
-  scene_accuracy_issues: string[];
-  scene_accuracy_notes: string;
+  productAccuracy: Record<string, CategoryEval>;
+  sceneAccuracyIssues: string[];
+  sceneAccuracyNotes: string;
 }
 
 interface ImageEvaluationFormProps {
@@ -107,9 +107,9 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
 
   // Evaluation data
   const [data, setData] = useState<EvaluationData>({
-    product_accuracy: {},
-    scene_accuracy_issues: [],
-    scene_accuracy_notes: '',
+    productAccuracy: {},
+    sceneAccuracyIssues: [],
+    sceneAccuracyNotes: '',
   });
 
   // Track whether the initial load has completed so we don't auto-save the
@@ -123,7 +123,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
       .then((r) => {
         if (r.data) {
           const d = r.data;
-          const pa = d.productAccuracy ?? d.product_accuracy ?? {};
+          const pa = d.productAccuracy ?? {};
           const productAccuracy: Record<string, CategoryEval> = {};
           for (const cat of productCategories) {
             productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
@@ -135,9 +135,9 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
           }
 
           setData({
-            product_accuracy: productAccuracy,
-            scene_accuracy_issues: d.sceneAccuracyIssues ?? d.scene_accuracy_issues ?? [],
-            scene_accuracy_notes: d.sceneAccuracyNotes ?? d.scene_accuracy_notes ?? '',
+            productAccuracy,
+            sceneAccuracyIssues: d.sceneAccuracyIssues ?? [],
+            sceneAccuracyNotes: d.sceneAccuracyNotes ?? '',
           });
 
           // Keep sections collapsed by default (user opens when needed)
@@ -147,7 +147,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
           for (const cat of productCategories) {
             productAccuracy[cat] = { issues: [], notes: '' };
           }
-          setData((prev) => ({ ...prev, product_accuracy: productAccuracy }));
+          setData((prev) => ({ ...prev, productAccuracy }));
         }
         setLoading(false);
         // Mark loaded after a tick so the auto-save effect skips the initial state.
@@ -162,10 +162,10 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     (category: string, field: 'issues' | 'notes', value: string[] | string) => {
       setData((prev) => ({
         ...prev,
-        product_accuracy: {
-          ...prev.product_accuracy,
+        productAccuracy: {
+          ...prev.productAccuracy,
           [category]: {
-            ...prev.product_accuracy[category],
+            ...prev.productAccuracy[category],
             [field]: value,
           },
         },
@@ -185,7 +185,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
         const res = await fetch(serviceUrl('evaluations'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ result_id: resultId, ...payload }),
+          body: JSON.stringify({ resultId, ...payload }),
         });
 
         if (!res.ok) {
@@ -216,18 +216,18 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
   }, [data, save]);
 
   // Count total issues
-  const totalProductIssues = Object.values(data.product_accuracy).reduce(
+  const totalProductIssues = Object.values(data.productAccuracy).reduce(
     (sum, cat) => sum + cat.issues.length,
     0,
   );
-  const totalSceneIssues = data.scene_accuracy_issues.length;
+  const totalSceneIssues = data.sceneAccuracyIssues.length;
 
   // Collect all active issue labels for the tag strip
   const allIssueTags: { label: string; color: 'red' | 'amber' }[] = [];
-  for (const issue of data.scene_accuracy_issues) {
+  for (const issue of data.sceneAccuracyIssues) {
     allIssueTags.push({ label: issue, color: 'red' });
   }
-  for (const [category, catData] of Object.entries(data.product_accuracy)) {
+  for (const [category, catData] of Object.entries(data.productAccuracy)) {
     const catLabel = CATEGORY_LABELS[category] ?? category;
     for (const issue of catData.issues) {
       allIssueTags.push({ label: `${catLabel}: ${issue}`, color: 'amber' });
@@ -243,7 +243,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
     );
   }
 
-  const activeCategories = Object.keys(data.product_accuracy);
+  const activeCategories = Object.keys(data.productAccuracy);
 
   return (
     <div className="space-y-2">
@@ -295,14 +295,14 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
           <div className="space-y-3 border-t border-gray-200 px-3 py-3">
             <IssueCheckboxGroup
               options={SCENE_ACCURACY_ISSUES}
-              selected={data.scene_accuracy_issues}
-              onChange={(v) => setData({ ...data, scene_accuracy_issues: v })}
+              selected={data.sceneAccuracyIssues}
+              onChange={(v) => setData({ ...data, sceneAccuracyIssues: v })}
             />
             <div>
               <p className="mb-1 text-xs font-medium text-gray-600">Notes</p>
               <textarea
-                value={data.scene_accuracy_notes}
-                onChange={(e) => setData({ ...data, scene_accuracy_notes: e.target.value })}
+                value={data.sceneAccuracyNotes}
+                onChange={(e) => setData({ ...data, sceneAccuracyNotes: e.target.value })}
                 placeholder="Provide more detail about what was incorrect..."
                 rows={2}
                 className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
@@ -333,7 +333,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
           <div className="space-y-4 border-t border-gray-200 px-3 py-3">
             {activeCategories.length > 0 ? (
               activeCategories.map((category) => {
-                const catData = data.product_accuracy[category] ?? { issues: [], notes: '' };
+                const catData = data.productAccuracy[category] ?? { issues: [], notes: '' };
                 const label = CATEGORY_LABELS[category] ?? category;
                 return (
                   <div key={category} className="rounded border border-gray-100 bg-gray-50/50 p-3">

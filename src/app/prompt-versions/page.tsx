@@ -29,18 +29,18 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
 
   const total: number = json.pagination.total;
   const totalPages: number =
-    json.pagination.totalPages ?? json.pagination.total_pages ?? Math.ceil(total / limit);
+    json.pagination.totalPages ?? Math.ceil(total / limit);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: PromptVersionRow[] = json.data.map((item: any) => ({
     id: item.id,
     name: item.name ?? null,
     description: item.description ?? null,
-    systemPrompt: item.systemPrompt ?? item.system_prompt,
-    userPrompt: item.userPrompt ?? item.user_prompt,
-    generationCount: item.generationCount ?? item.stats?.generation_count ?? 0,
-    createdAt: item.createdAt ?? item.created_at,
-    deletedAt: item.deletedAt ?? item.deleted_at ?? null,
+    systemPrompt: item.systemPrompt,
+    userPrompt: item.userPrompt,
+    generationCount: item.generationCount ?? 0,
+    createdAt: item.createdAt,
+    deletedAt: item.deletedAt ?? null,
   }));
 
   return (

@@ -53,14 +53,14 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = data as any;
 
-  const promptVersion = result.promptVersion ?? result.prompt_version;
+  const promptVersion = result.promptVersion;
   const inputData = result.input as Record<string, unknown> | null;
   const results: { id: string; url: string }[] = result.results ?? [];
 
   const activeProductCategories: string[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const urls = toUrlArray(inputData[camelKey] ?? inputData[snakeKey]);
+      const urls = toUrlArray(inputData[camelKey]);
       if (urls.length > 0) activeProductCategories.push(snakeKey);
     }
   }
@@ -68,7 +68,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const productImages: { key: string; label: string; urls: string[] }[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const urls = toUrlArray(inputData[camelKey] ?? inputData[snakeKey]);
+      const urls = toUrlArray(inputData[camelKey]);
       if (urls.length > 0) {
         productImages.push({
           key: snakeKey,
@@ -79,15 +79,15 @@ export default async function GenerationDetailPage({ params }: PageProps) {
     }
   }
 
-  const sceneAccuracyRating = result.sceneAccuracyRating ?? result.scene_accuracy_rating ?? null;
-  const productAccuracyRating = result.productAccuracyRating ?? result.product_accuracy_rating ?? null;
-  const executionTime = result.executionTime ?? result.execution_time ?? null;
-  const createdAt = result.createdAt ?? result.created_at;
+  const sceneAccuracyRating = result.sceneAccuracyRating ?? null;
+  const productAccuracyRating = result.productAccuracyRating ?? null;
+  const executionTime = result.executionTime ?? null;
+  const createdAt = result.createdAt;
   const notes = result.notes ?? null;
 
-  const dollhouseView = (inputData?.dollhouseView ?? inputData?.dollhouse_view) as string | undefined;
-  const realPhoto = (inputData?.realPhoto ?? inputData?.real_photo) as string | undefined;
-  const moodBoard = (inputData?.moodBoard ?? inputData?.mood_board) as string | undefined;
+  const dollhouseView = inputData?.dollhouseView as string | undefined;
+  const realPhoto = inputData?.realPhoto as string | undefined;
+  const moodBoard = inputData?.moodBoard as string | undefined;
 
   const hasNotes = !!notes;
   const hasSceneImages = !!(dollhouseView || realPhoto || moodBoard);
@@ -338,13 +338,13 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="text-sm font-semibold text-gray-900 uppercase">System Prompt</h2>
           <pre className="mt-3 text-sm whitespace-pre-wrap text-gray-700">
-            {promptVersion?.systemPrompt ?? promptVersion?.system_prompt}
+            {promptVersion?.systemPrompt}
           </pre>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="text-sm font-semibold text-gray-900 uppercase">User Prompt</h2>
           <pre className="mt-3 text-sm whitespace-pre-wrap text-gray-700">
-            {promptVersion?.userPrompt ?? promptVersion?.user_prompt}
+            {promptVersion?.userPrompt}
           </pre>
         </div>
       </div>

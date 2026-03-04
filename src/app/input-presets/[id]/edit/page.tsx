@@ -13,30 +13,6 @@ const PRODUCT_KEYS = [
   'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
-const PRODUCT_KEYS_SNAKE = [
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
-] as const;
-
-const CAMEL_TO_SNAKE: Record<string, string> = {
-  robeHooks: 'robe_hooks',
-  showerGlasses: 'shower_glasses',
-  showerSystems: 'shower_systems',
-  floorTiles: 'floor_tiles',
-  wallTiles: 'wall_tiles',
-  showerWallTiles: 'shower_wall_tiles',
-  showerFloorTiles: 'shower_floor_tiles',
-  showerCurbTiles: 'shower_curb_tiles',
-  toiletPaperHolders: 'toilet_paper_holders',
-  towelBars: 'towel_bars',
-  towelRings: 'towel_rings',
-  tubDoors: 'tub_doors',
-  tubFillers: 'tub_fillers',
-};
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -51,7 +27,7 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   const preset = presetData as any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = preset.stats as Record<string, any> | undefined;
-  const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
+  const generationCount = stats?.generationCount ?? 0;
 
   if (generationCount > 0) {
     return (
@@ -76,25 +52,22 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   }
 
   const productImages: Record<string, string[]> = {};
-  for (let i = 0; i < PRODUCT_KEYS.length; i++) {
-    const camelKey = PRODUCT_KEYS[i];
-    const snakeKey = PRODUCT_KEYS_SNAKE[i];
-    const val = preset[camelKey] ?? preset[snakeKey];
+  for (const key of PRODUCT_KEYS) {
+    const val = preset[key];
     const urls = Array.isArray(val) ? val.filter((v: unknown): v is string => typeof v === 'string' && !!v) : [];
     if (urls.length > 0) {
-      const outKey = CAMEL_TO_SNAKE[camelKey] ?? camelKey;
-      productImages[outKey] = urls;
+      productImages[key] = urls;
     }
   }
 
-  const arbitraryImages = preset.arbitraryImages ?? preset.arbitrary_images;
+  const arbitraryImages = preset.arbitraryImages;
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
     description: preset.description ?? '',
-    dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
-    realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
-    moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
+    dollhouseView: preset.dollhouseView ?? null,
+    realPhoto: preset.realPhoto ?? null,
+    moodBoard: preset.moodBoard ?? null,
     productImages,
     arbitraryImages: Array.isArray(arbitraryImages)
       ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))

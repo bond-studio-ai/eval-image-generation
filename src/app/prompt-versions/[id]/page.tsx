@@ -19,7 +19,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = pv.stats as Record<string, any> | undefined;
 
-  const genResult = await fetchGenerations({ prompt_version_id: id, limit: '100' });
+  const genResult = await fetchGenerations({ promptVersionId: id, limit: '100' });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generations = (genResult.data ?? []) as any[];
 
@@ -27,30 +27,29 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     id: pv.id,
     name: pv.name ?? null,
     description: pv.description ?? null,
-    systemPrompt: pv.systemPrompt ?? pv.system_prompt,
-    userPrompt: pv.userPrompt ?? pv.user_prompt,
-    deletedAt: pv.deletedAt ?? pv.deleted_at ?? null,
+    systemPrompt: pv.systemPrompt,
+    userPrompt: pv.userPrompt,
+    deletedAt: pv.deletedAt ?? null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const serializedGenerations = generations.map((g: any) => ({
     id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating ?? g.scene_accuracy_rating ?? null,
-    productAccuracyRating: g.productAccuracyRating ?? g.product_accuracy_rating ?? null,
-    createdAt: g.createdAt ?? g.created_at,
+    sceneAccuracyRating: g.sceneAccuracyRating ?? null,
+    productAccuracyRating: g.productAccuracyRating ?? null,
+    createdAt: g.createdAt,
     inputImageCount: 0,
-    outputImageCount: g.resultCount ?? g.result_count ?? 0,
+    outputImageCount: g.resultCount ?? 0,
   }));
 
   const generationCount =
-    stats?.generationCount ?? stats?.generation_count ?? generations.length;
+    stats?.generationCount ?? generations.length;
   const ratedCount =
     stats?.ratedCount ??
-    stats?.rated_count ??
     serializedGenerations.filter(
       (g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null,
     ).length;
-  const avgRating = stats?.avgRatingScore ?? stats?.avg_rating_score ?? null;
+  const avgRating = stats?.avgRatingScore ?? null;
 
   return (
     <PromptVersionDetail

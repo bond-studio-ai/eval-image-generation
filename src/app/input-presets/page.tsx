@@ -17,15 +17,6 @@ const IMAGE_COLUMNS = [
   'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
-const IMAGE_COLUMNS_SNAKE = [
-  'dollhouse_view', 'real_photo', 'mood_board',
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
-] as const;
-
 export default async function InputPresetsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = parseInt(params.page || '1', 10);
@@ -47,17 +38,17 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
 
   const total: number = json.pagination.total;
   const totalPages: number =
-    json.pagination.totalPages ?? json.pagination.total_pages ?? Math.ceil(total / limit);
+    json.pagination.totalPages ?? Math.ceil(total / limit);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: InputPresetRow[] = json.data.map((item: any) => ({
     id: item.id,
     name: item.name ?? null,
     description: item.description ?? null,
-    imageCount: item.imageCount ?? item.image_count ?? computeImageCount(item),
-    generationCount: item.generationCount ?? item.stats?.generation_count ?? 0,
-    createdAt: item.createdAt ?? item.created_at,
-    deletedAt: item.deletedAt ?? item.deleted_at ?? null,
+    imageCount: item.imageCount ?? computeImageCount(item),
+    generationCount: item.generationCount ?? 0,
+    createdAt: item.createdAt,
+    deletedAt: item.deletedAt ?? null,
   }));
 
   return (
@@ -103,14 +94,14 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
 function computeImageCount(item: any): number {
   let count = 0;
   for (let i = 0; i < IMAGE_COLUMNS.length; i++) {
-    const val = item[IMAGE_COLUMNS[i]] ?? item[IMAGE_COLUMNS_SNAKE[i]];
+    const val = item[IMAGE_COLUMNS[i]];
     if (Array.isArray(val)) {
       count += val.filter((v: unknown) => typeof v === 'string' && v !== '').length;
     } else if (typeof val === 'string' && val !== '') {
       count += 1;
     }
   }
-  const arbitrary = item.arbitraryImages ?? item.arbitrary_images;
+  const arbitrary = item.arbitraryImages;
   if (Array.isArray(arbitrary)) count += arbitrary.length;
   return count;
 }
