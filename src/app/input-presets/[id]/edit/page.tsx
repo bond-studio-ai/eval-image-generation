@@ -1,6 +1,4 @@
-import { db } from '@/db';
-import { generation, inputPreset } from '@/db/schema';
-import { count, eq } from 'drizzle-orm';
+import { fetchInputPresetById } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
@@ -13,6 +11,14 @@ const PRODUCT_KEYS = [
   'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
   'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
   'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
+] as const;
+
+const PRODUCT_KEYS_SNAKE = [
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
 const CAMEL_TO_SNAKE: Record<string, string> = {
@@ -38,19 +44,14 @@ interface PageProps {
 export default async function InputPresetEditPage({ params }: PageProps) {
   const { id } = await params;
 
-  const preset = await db.query.inputPreset.findFirst({
-    where: eq(inputPreset.id, id),
-  });
+  const presetData = await fetchInputPresetById(id).catch(() => null);
+  if (!presetData) notFound();
 
-  if (!preset) {
-    notFound();
-  }
-
-  const genResult = await db
-    .select({ count: count() })
-    .from(generation)
-    .where(eq(generation.inputPresetId, id));
-  const generationCount = genResult[0]?.count ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const preset = presetData as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stats = preset.stats as Record<string, any> | undefined;
+  const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 
   if (generationCount > 0) {
     return (
@@ -75,26 +76,28 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   }
 
   const productImages: Record<string, string[]> = {};
-  const rec = preset as Record<string, unknown>;
-  for (const k of PRODUCT_KEYS) {
-    const val = rec[k];
-    const urls = Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string' && !!v) : [];
+  for (let i = 0; i < PRODUCT_KEYS.length; i++) {
+    const camelKey = PRODUCT_KEYS[i];
+    const snakeKey = PRODUCT_KEYS_SNAKE[i];
+    const val = preset[camelKey] ?? preset[snakeKey];
+    const urls = Array.isArray(val) ? val.filter((v: unknown): v is string => typeof v === 'string' && !!v) : [];
     if (urls.length > 0) {
-      const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
-      productImages[snakeKey] = urls;
+      const outKey = CAMEL_TO_SNAKE[camelKey] ?? camelKey;
+      productImages[outKey] = urls;
     }
   }
 
+  const arbitraryImages = preset.arbitraryImages ?? preset.arbitrary_images;
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
     description: preset.description ?? '',
-    dollhouseView: preset.dollhouseView ?? null,
-    realPhoto: preset.realPhoto ?? null,
-    moodBoard: preset.moodBoard ?? null,
+    dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
+    realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
+    moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
     productImages,
-    arbitraryImages: Array.isArray(preset.arbitraryImages)
-      ? (preset.arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))
+    arbitraryImages: Array.isArray(arbitraryImages)
+      ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))
       : [],
   };
 

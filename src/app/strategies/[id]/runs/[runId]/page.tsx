@@ -1,6 +1,4 @@
-import { db } from '@/db';
-import { strategyRun, strategyStepResult } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { fetchStrategyRunById } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 import { RunDetail } from './run-detail';
 
@@ -13,55 +11,61 @@ interface PageProps {
 export default async function StrategyRunPage({ params }: PageProps) {
   const { id, runId } = await params;
 
-  const run = await db.query.strategyRun.findFirst({
-    where: eq(strategyRun.id, runId),
-    with: {
-      strategy: {
-        columns: {
-          id: true,
-          name: true,
-          model: true,
-          aspectRatio: true,
-          outputResolution: true,
-          temperature: true,
-          useGoogleSearch: true,
-          tagImages: true,
-        },
-      },
-      stepResults: {
-        orderBy: [strategyStepResult.strategyStepId],
-        with: {
-          step: {
-            columns: { stepOrder: true, name: true, model: true, aspectRatio: true, outputResolution: true, temperature: true, dollhouseViewFromStep: true, realPhotoFromStep: true, moodBoardFromStep: true },
-            with: {
-              promptVersion: { columns: { id: true, name: true } },
-            },
-          },
-        },
-      },
-    },
-  });
+  const run = await fetchStrategyRunById(runId);
 
-  if (!run || run.strategy.id !== id) {
+  if (!run || (run.strategy as { id: string } | undefined)?.id !== id) {
     notFound();
   }
 
+  const strategy = run.strategy as {
+    id: string;
+    name: string;
+    model: string;
+    aspectRatio: string;
+    outputResolution: string;
+    temperature: string | null;
+    useGoogleSearch: boolean;
+    tagImages: boolean;
+  };
+
+  const stepResults = run.stepResults as {
+    id: string;
+    status: string;
+    outputUrl: string | null;
+    error: string | null;
+    executionTime: number | null;
+    generationId: string | null;
+    processedUserPrompt: string | null;
+    step: {
+      stepOrder: number;
+      name: string | null;
+      model: string | null;
+      aspectRatio: string | null;
+      outputResolution: string | null;
+      temperature: string | null;
+      dollhouseViewFromStep: number | null;
+      realPhotoFromStep: number | null;
+      moodBoardFromStep: number | null;
+      promptVersion: { id: string; name: string | null } | null;
+    } | null;
+  }[];
+
   const initialData = {
-    id: run.id,
-    status: run.status,
-    createdAt: run.createdAt.toISOString(),
-    completedAt: run.completedAt?.toISOString() ?? null,
+    id: run.id as string,
+    status: run.status as string,
+    createdAt: run.createdAt as string,
+    completedAt: (run.completedAt as string) ?? null,
     strategy: {
-      id: run.strategy.id,
-      name: run.strategy.name,
-      model: run.strategy.model,
-      aspectRatio: run.strategy.aspectRatio,
-      outputResolution: run.strategy.outputResolution,
-      temperature: run.strategy.temperature,
-      useGoogleSearch: run.strategy.useGoogleSearch,
-      tagImages: run.strategy.tagImages,
+      id: strategy.id,
+      name: strategy.name,
+      model: strategy.model,
+      aspectRatio: strategy.aspectRatio,
+      outputResolution: strategy.outputResolution,
+      temperature: strategy.temperature,
+      useGoogleSearch: strategy.useGoogleSearch,
+      tagImages: strategy.tagImages,
     },
-    stepResults: run.stepResults.map((sr) => ({
+    stepResults: stepResults.map((sr) => ({
       id: sr.id,
       status: sr.status,
       outputUrl: sr.outputUrl,
@@ -73,10 +77,10 @@ export default async function StrategyRunPage({ params }: PageProps) {
         ? {
             stepOrder: sr.step.stepOrder,
             name: sr.step.name,
-            model: sr.step.model,
-            aspectRatio: sr.step.aspectRatio,
-            outputResolution: sr.step.outputResolution,
-            temperature: sr.step.temperature,
+            model: sr.step.model ?? strategy.model,
+            aspectRatio: sr.step.aspectRatio ?? strategy.aspectRatio,
+            outputResolution: sr.step.outputResolution ?? strategy.outputResolution,
+            temperature: sr.step.temperature ?? strategy.temperature,
             dollhouseViewFromStep: sr.step.dollhouseViewFromStep,
             realPhotoFromStep: sr.step.realPhotoFromStep,
             moodBoardFromStep: sr.step.moodBoardFromStep,

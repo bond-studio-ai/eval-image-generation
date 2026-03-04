@@ -1,5 +1,5 @@
 import { PreviewPromptPage } from '@/components/preview-prompt-page';
-import { fetchInputPresetsMinimal, fetchPromptVersionsMinimal } from '@/lib/queries';
+import { fetchInputPresetsMinimal, fetchPromptVersionsMinimal } from '@/lib/service-client';
 
 export const dynamic = 'force-dynamic';
 

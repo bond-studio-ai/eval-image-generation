@@ -1,10 +1,7 @@
 import { EmptyState } from '@/components/empty-state';
 import { GenerationsList, type GenerationRow } from '@/components/generations-list';
-import { db } from '@/db';
-import { generation, generationResult, promptVersion } from '@/db/schema';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { fetchGenerations, fetchPromptVersions } from '@/lib/service-client';
 import Link from 'next/link';
-import { fetchPromptVersions } from '@/lib/queries';
 import { GenerationsFilters } from '@/app/generations/generations-filters';
 import { ExecutionsPageHeader } from './executions-page-header';
 import { ExecutionsTabs } from './executions-tabs';
@@ -71,88 +68,36 @@ function TabNav({ active }: { active: 'batches' | 'generations' }) {
 }
 
 async function GenerationsTab({ params }: { params: Record<string, string | undefined> }) {
-  const order = params.order === 'asc' ? 'asc' : 'desc';
+  const queryParams: Record<string, string> = {};
+  if (params.prompt_version_id) queryParams.prompt_version_id = params.prompt_version_id;
+  if (params.scene_accuracy_rating) queryParams.scene_accuracy_rating = params.scene_accuracy_rating;
+  if (params.product_accuracy_rating) queryParams.product_accuracy_rating = params.product_accuracy_rating;
+  if (params.unrated) queryParams.unrated = params.unrated;
+  if (params.from) queryParams.from = params.from;
+  if (params.to) queryParams.to = params.to;
+  queryParams.order = params.order === 'asc' ? 'asc' : 'desc';
+  queryParams.limit = String(PAGE_SIZE);
+  if (params.page) queryParams.page = params.page;
 
-  const conditions = [];
-  if (params.prompt_version_id) {
-    conditions.push(eq(generation.promptVersionId, params.prompt_version_id));
-  }
-  if (params.scene_accuracy_rating) {
-    conditions.push(
-      eq(generation.sceneAccuracyRating, params.scene_accuracy_rating as 'FAILED' | 'GOOD'),
-    );
-  }
-  if (params.product_accuracy_rating) {
-    conditions.push(
-      eq(generation.productAccuracyRating, params.product_accuracy_rating as 'FAILED' | 'GOOD'),
-    );
-  }
-  if (params.unrated === 'true') {
-    conditions.push(and(isNull(generation.sceneAccuracyRating), isNull(generation.productAccuracyRating)));
-  }
-  if (params.from) {
-    conditions.push(gte(generation.createdAt, new Date(params.from + 'T00:00:00')));
-  }
-  if (params.to) {
-    conditions.push(lte(generation.createdAt, new Date(params.to + 'T23:59:59.999')));
-  }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-  const orderBy = order === 'asc' ? asc(generation.createdAt) : desc(generation.createdAt);
-
-  const [rows, totalResult, promptVersions] = await Promise.all([
-    db
-      .select({
-        id: generation.id,
-        promptVersionId: generation.promptVersionId,
-        promptName: promptVersion.name,
-        sceneAccuracyRating: generation.sceneAccuracyRating,
-        productAccuracyRating: generation.productAccuracyRating,
-        notes: generation.notes,
-        executionTime: generation.executionTime,
-        createdAt: generation.createdAt,
-      })
-      .from(generation)
-      .innerJoin(promptVersion, eq(promptVersion.id, generation.promptVersionId))
-      .where(whereClause)
-      .orderBy(orderBy)
-      .limit(PAGE_SIZE),
-    db.select({ count: count() }).from(generation).where(whereClause),
+  const [json, promptVersions] = await Promise.all([
+    fetchGenerations(queryParams),
     fetchPromptVersions(200),
   ]);
 
-  const total = totalResult[0]?.count ?? 0;
+  const total = Number(json.pagination?.total ?? 0);
 
-  const genIds = rows.map((r) => r.id);
-  const allResults = genIds.length > 0
-    ? await db
-        .select({ generationId: generationResult.generationId, url: generationResult.url })
-        .from(generationResult)
-        .where(inArray(generationResult.generationId, genIds))
-    : [];
-
-  const resultsByGenId = new Map<string, string[]>();
-  for (const r of allResults) {
-    const list = resultsByGenId.get(r.generationId) ?? [];
-    list.push(r.url);
-    resultsByGenId.set(r.generationId, list);
-  }
-
-  const initialData: GenerationRow[] = rows.map((row) => {
-    const urls = resultsByGenId.get(row.id) ?? [];
-    return {
-      id: row.id,
-      promptVersionId: row.promptVersionId,
-      promptName: row.promptName,
-      sceneAccuracyRating: row.sceneAccuracyRating,
-      productAccuracyRating: row.productAccuracyRating,
-      notes: row.notes,
-      executionTime: row.executionTime,
-      createdAt: row.createdAt.toISOString(),
-      resultUrls: urls,
-      resultCount: urls.length,
-    };
-  });
+  const initialData: GenerationRow[] = (json.data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    promptVersionId: (row.promptVersionId ?? row.prompt_version_id) as string,
+    promptName: (row.promptName ?? row.prompt_name ?? null) as string | null,
+    sceneAccuracyRating: (row.sceneAccuracyRating ?? row.scene_accuracy_rating ?? null) as string | null,
+    productAccuracyRating: (row.productAccuracyRating ?? row.product_accuracy_rating ?? null) as string | null,
+    notes: (row.notes ?? null) as string | null,
+    executionTime: (row.executionTime ?? row.execution_time ?? null) as number | null,
+    createdAt: (row.createdAt ?? row.created_at) as string,
+    resultUrls: (row.resultUrls ?? row.result_urls ?? []) as string[],
+    resultCount: (row.resultCount ?? row.result_count ?? 0) as number,
+  }));
 
   const filters = {
     scene_accuracy_rating: params.scene_accuracy_rating,

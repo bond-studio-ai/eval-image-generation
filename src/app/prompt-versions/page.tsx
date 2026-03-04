@@ -1,8 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
 import { PromptVersionsList, type PromptVersionRow } from '@/components/prompt-versions-list';
-import { db } from '@/db';
-import { generation, promptVersion } from '@/db/schema';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -16,45 +13,35 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
   const page = parseInt(params.page || '1', 10);
   const limit = 20;
   const includeDeleted = params.include_deleted === 'true';
-  const offset = (page - 1) * limit;
 
-  const conditions = includeDeleted ? [] : [isNull(promptVersion.deletedAt)];
+  const base = process.env.BASE_API_HOSTNAME;
+  if (!base) throw new Error('BASE_API_HOSTNAME is not set');
 
-  const [rows, totalResult] = await Promise.all([
-    db
-      .select()
-      .from(promptVersion)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(promptVersion.createdAt))
-      .limit(limit)
-      .offset(offset),
-    db
-      .select({ count: count() })
-      .from(promptVersion)
-      .where(conditions.length > 0 ? and(...conditions) : undefined),
-  ]);
+  const qs = new URLSearchParams({ limit: String(limit), page: String(page) });
+  if (includeDeleted) qs.set('include_deleted', 'true');
 
-  const total = totalResult[0]?.count ?? 0;
-  const totalPages = Math.ceil(total / limit);
-
-  const data: PromptVersionRow[] = await Promise.all(
-    rows.map(async (pv) => {
-      const genCount = await db
-        .select({ count: count() })
-        .from(generation)
-        .where(eq(generation.promptVersionId, pv.id));
-      return {
-        id: pv.id,
-        name: pv.name,
-        description: pv.description,
-        systemPrompt: pv.systemPrompt,
-        userPrompt: pv.userPrompt,
-        generationCount: genCount[0]?.count ?? 0,
-        createdAt: pv.createdAt.toISOString(),
-        deletedAt: pv.deletedAt?.toISOString() ?? null,
-      };
-    }),
+  const res = await fetch(
+    `${base.replace(/\/$/, '')}/image-generation/v1/prompt-versions?${qs}`,
+    { cache: 'no-store' },
   );
+  if (!res.ok) throw new Error(`Service ${res.status}`);
+  const json = await res.json();
+
+  const total: number = json.pagination.total;
+  const totalPages: number =
+    json.pagination.totalPages ?? json.pagination.total_pages ?? Math.ceil(total / limit);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: PromptVersionRow[] = json.data.map((item: any) => ({
+    id: item.id,
+    name: item.name ?? null,
+    description: item.description ?? null,
+    systemPrompt: item.systemPrompt ?? item.system_prompt,
+    userPrompt: item.userPrompt ?? item.user_prompt,
+    generationCount: item.generationCount ?? item.stats?.generation_count ?? 0,
+    createdAt: item.createdAt ?? item.created_at,
+    deletedAt: item.deletedAt ?? item.deleted_at ?? null,
+  }));
 
   return (
     <div>

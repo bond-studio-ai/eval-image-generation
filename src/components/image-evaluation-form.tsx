@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -117,7 +118,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
 
   // Load existing evaluation
   useEffect(() => {
-    fetch(`/api/v1/evaluations/${resultId}`)
+    fetch(serviceUrl(`evaluations/${resultId}`))
       .then((r) => r.json())
       .then((r) => {
         if (r.data) {
@@ -182,7 +183,7 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
       setError(null);
 
       try {
-        const res = await fetch('/api/v1/evaluations', {
+        const res = await fetch(serviceUrl('evaluations'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ result_id: resultId, ...payload }),

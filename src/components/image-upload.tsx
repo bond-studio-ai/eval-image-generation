@@ -1,6 +1,7 @@
 'use client';
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { localUrl } from '@/lib/api-base';
 import { useCallback, useRef, useState } from 'react';
 
 interface UploadedImage {
@@ -38,7 +39,7 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
 
     try {
       // Try S3 upload via presigned URL
-      const res = await fetch('/api/v1/upload', {
+      const res = await fetch(localUrl('upload'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

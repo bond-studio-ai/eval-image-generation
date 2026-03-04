@@ -1,5 +1,5 @@
 import { StrategyBuilder } from '@/components/strategy-builder';
-import { fetchInputPresets, fetchPromptVersions, fetchStrategyById } from '@/lib/queries';
+import { fetchInputPresets, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 

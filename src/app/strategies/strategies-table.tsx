@@ -1,6 +1,7 @@
 'use client';
 
-import type { StrategyListItem } from '@/lib/queries';
+import { serviceUrl } from '@/lib/api-base';
+import type { StrategyListItem } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -14,7 +15,7 @@ export function StrategiesTable({ strategies }: { strategies: StrategyListItem[]
       if (!confirm(`Delete strategy "${name}"? This will soft-delete the strategy.`)) return;
       setDeletingId(id);
       try {
-        const res = await fetch(`/api/v1/strategies/${id}`, { method: 'DELETE' });
+        const res = await fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' });
         if (!res.ok) return;
         router.refresh();
       } catch {

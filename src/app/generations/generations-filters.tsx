@@ -1,6 +1,6 @@
 'use client';
 
-import type { PromptVersionListItem } from '@/lib/queries';
+import type { PromptVersionListItem } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';

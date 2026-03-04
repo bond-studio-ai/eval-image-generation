@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import { Pagination } from '@/components/pagination';
 import Link from 'next/link';
@@ -48,7 +49,7 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch('/api/v1/prompt-versions/bulk-delete', {
+    const res = await fetch(serviceUrl('prompt-versions/bulk-delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
@@ -64,7 +65,7 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
   const handleClone = useCallback(async (pv: PromptVersionRow) => {
     setCloningId(pv.id);
     try {
-      const res = await fetch('/api/v1/prompt-versions', {
+      const res = await fetch(serviceUrl('prompt-versions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

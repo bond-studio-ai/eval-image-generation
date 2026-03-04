@@ -4,6 +4,7 @@ import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -114,7 +115,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 onClick={async () => {
                   setCloning(true);
                   try {
-                    const res = await fetch(`/api/v1/input-presets/${data.id}/clone`, { method: 'POST' });
+                    const res = await fetch(serviceUrl(`input-presets/${data.id}/clone`), { method: 'POST' });
                     if (!res.ok) throw new Error('Clone failed');
                     const json = await res.json();
                     const newId = json.data?.id;

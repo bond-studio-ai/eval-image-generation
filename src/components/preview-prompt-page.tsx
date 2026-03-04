@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface PromptVersionItem {
@@ -13,10 +14,8 @@ interface InputPresetItem {
 }
 
 interface PreviewItem {
-  preset_id: string;
-  preset_name: string;
-  system_prompt: string;
-  user_prompt: string;
+  systemPrompt: string;
+  userPrompt: string;
 }
 
 interface PreviewPromptPageProps {
@@ -58,8 +57,8 @@ export function PreviewPromptPage({
     async function load() {
       try {
         const [pvRes, ipRes] = await Promise.all([
-          fetch('/api/v1/prompt-versions?limit=100&minimal=true'),
-          fetch('/api/v1/input-presets?limit=100&minimal=true'),
+          fetch(serviceUrl('prompt-versions?limit=100&minimal=true')),
+          fetch(serviceUrl('input-presets?limit=100&minimal=true')),
         ]);
         if (cancelled) return;
         const pvJson = await pvRes.json();
@@ -119,17 +118,18 @@ export function PreviewPromptPage({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/prompt-versions/${selectedPromptId}/preview`, {
+      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset_ids: [selectedPresetId] }),
+        body: JSON.stringify({ input_preset_id: selectedPresetId }),
       });
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.error?.message || 'Failed to load preview');
       }
       const json = await res.json();
-      setPreviews(json.data?.previews ?? []);
+      const preview = json.data;
+      setPreviews(preview ? [preview] : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Preview failed');
       setPreviews([]);
@@ -299,13 +299,13 @@ export function PreviewPromptPage({
           <div className="flex min-h-0 min-w-0 flex-col">
             <h2 className="mb-2 shrink-0 text-sm font-semibold uppercase text-gray-500">System prompt</h2>
             <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
-              {previews[0]?.system_prompt || '(empty)'}
+              {previews[0]?.systemPrompt || '(empty)'}
             </pre>
           </div>
           <div className="flex min-h-0 min-w-0 flex-col">
             <h2 className="mb-2 shrink-0 text-sm font-semibold uppercase text-gray-500">User prompt</h2>
             <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
-              {previews[0]?.user_prompt || '(empty)'}
+              {previews[0]?.userPrompt || '(empty)'}
             </pre>
           </div>
         </div>

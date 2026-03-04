@@ -3,6 +3,7 @@
 import { ImageUpload } from '@/components/image-upload';
 import { PRODUCT_CATEGORIES, ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -58,7 +59,7 @@ export function InputPresetEditForm({ initialData }: { initialData: InitialData 
       }
       payload.arbitrary_images = arbitraryImages;
 
-      const res = await fetch(`/api/v1/input-presets/${initialData.id}`, {
+      const res = await fetch(serviceUrl(`input-presets/${initialData.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

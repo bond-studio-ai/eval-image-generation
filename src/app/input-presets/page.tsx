@@ -1,8 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
 import { InputPresetsList, type InputPresetRow } from '@/components/input-presets-list';
-import { db } from '@/db';
-import { generation, inputPreset } from '@/db/schema';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -20,54 +17,48 @@ const IMAGE_COLUMNS = [
   'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
+const IMAGE_COLUMNS_SNAKE = [
+  'dollhouse_view', 'real_photo', 'mood_board',
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
+] as const;
+
 export default async function InputPresetsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = parseInt(params.page || '1', 10);
   const limit = 20;
   const includeDeleted = params.include_deleted === 'true';
-  const offset = (page - 1) * limit;
 
-  const conditions = includeDeleted ? [] : [isNull(inputPreset.deletedAt)];
+  const base = process.env.BASE_API_HOSTNAME;
+  if (!base) throw new Error('BASE_API_HOSTNAME is not set');
 
-  const [rows, totalResult] = await Promise.all([
-    db
-      .select()
-      .from(inputPreset)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(inputPreset.createdAt))
-      .limit(limit)
-      .offset(offset),
-    db
-      .select({ count: count() })
-      .from(inputPreset)
-      .where(conditions.length > 0 ? and(...conditions) : undefined),
-  ]);
+  const qs = new URLSearchParams({ limit: String(limit), page: String(page) });
+  if (includeDeleted) qs.set('include_deleted', 'true');
 
-  const total = totalResult[0]?.count ?? 0;
-  const totalPages = Math.ceil(total / limit);
-
-  const data: InputPresetRow[] = await Promise.all(
-    rows.map(async (ip) => {
-      const genCount = await db
-        .select({ count: count() })
-        .from(generation)
-        .where(eq(generation.inputPresetId, ip.id));
-
-      const imageCount = IMAGE_COLUMNS.filter(
-        (col) => (ip as Record<string, unknown>)[col] != null,
-      ).length;
-
-      return {
-        id: ip.id,
-        name: ip.name,
-        description: ip.description,
-        imageCount,
-        generationCount: genCount[0]?.count ?? 0,
-        createdAt: ip.createdAt.toISOString(),
-        deletedAt: ip.deletedAt?.toISOString() ?? null,
-      };
-    }),
+  const res = await fetch(
+    `${base.replace(/\/$/, '')}/image-generation/v1/input-presets?${qs}`,
+    { cache: 'no-store' },
   );
+  if (!res.ok) throw new Error(`Service ${res.status}`);
+  const json = await res.json();
+
+  const total: number = json.pagination.total;
+  const totalPages: number =
+    json.pagination.totalPages ?? json.pagination.total_pages ?? Math.ceil(total / limit);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: InputPresetRow[] = json.data.map((item: any) => ({
+    id: item.id,
+    name: item.name ?? null,
+    description: item.description ?? null,
+    imageCount: item.imageCount ?? item.image_count ?? computeImageCount(item),
+    generationCount: item.generationCount ?? item.stats?.generation_count ?? 0,
+    createdAt: item.createdAt ?? item.created_at,
+    deletedAt: item.deletedAt ?? item.deleted_at ?? null,
+  }));
 
   return (
     <div>
@@ -106,4 +97,19 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
       )}
     </div>
   );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function computeImageCount(item: any): number {
+  let count = 0;
+  for (const col of IMAGE_COLUMNS) {
+    const val = item[col];
+    if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) count++;
+  }
+  if (count > 0) return count;
+  for (const col of IMAGE_COLUMNS_SNAKE) {
+    const val = item[col];
+    if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) count++;
+  }
+  return count;
 }

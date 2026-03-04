@@ -1,5 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
-import { fetchStrategies } from '@/lib/queries';
+import { fetchStrategies } from '@/lib/service-client';
 import Link from 'next/link';
 import { StrategiesTable } from './strategies-table';
 

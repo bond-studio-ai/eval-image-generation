@@ -3,11 +3,9 @@ import { ExpandableImage } from '@/components/expandable-image';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { RatingBadge } from '@/components/rating-badge';
-import { db } from '@/db';
-import { generation } from '@/db/schema';
+import { fetchGenerationById } from '@/lib/service-client';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { CATEGORY_LABELS } from '@/lib/validation';
-import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RatingForm } from './rating-form';
@@ -49,25 +47,20 @@ const PRODUCT_COLUMN_KEYS: { camelKey: string; snakeKey: string }[] = [
 export default async function GenerationDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const result = await db.query.generation.findFirst({
-    where: eq(generation.id, id),
-    with: {
-      promptVersion: true,
-      input: true,
-      results: true,
-    },
-  });
+  const data = await fetchGenerationById(id).catch(() => null);
+  if (!data) notFound();
 
-  if (!result) {
-    notFound();
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = data as any;
 
-  // Extract active product categories from input for evaluation form
-  const inputData = result.input;
+  const promptVersion = result.promptVersion ?? result.prompt_version;
+  const inputData = result.input as Record<string, unknown> | null;
+  const results: { id: string; url: string }[] = result.results ?? [];
+
   const activeProductCategories: string[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const urls = toUrlArray((inputData as Record<string, unknown>)[camelKey]);
+      const urls = toUrlArray(inputData[camelKey] ?? inputData[snakeKey]);
       if (urls.length > 0) activeProductCategories.push(snakeKey);
     }
   }
@@ -75,7 +68,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const productImages: { key: string; label: string; urls: string[] }[] = [];
   if (inputData) {
     for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
-      const urls = toUrlArray((inputData as Record<string, unknown>)[camelKey]);
+      const urls = toUrlArray(inputData[camelKey] ?? inputData[snakeKey]);
       if (urls.length > 0) {
         productImages.push({
           key: snakeKey,
@@ -86,8 +79,18 @@ export default async function GenerationDetailPage({ params }: PageProps) {
     }
   }
 
-  const hasNotes = !!result.notes;
-  const hasSceneImages = !!(inputData && (inputData.dollhouseView || inputData.realPhoto || inputData.moodBoard));
+  const sceneAccuracyRating = result.sceneAccuracyRating ?? result.scene_accuracy_rating ?? null;
+  const productAccuracyRating = result.productAccuracyRating ?? result.product_accuracy_rating ?? null;
+  const executionTime = result.executionTime ?? result.execution_time ?? null;
+  const createdAt = result.createdAt ?? result.created_at;
+  const notes = result.notes ?? null;
+
+  const dollhouseView = (inputData?.dollhouseView ?? inputData?.dollhouse_view) as string | undefined;
+  const realPhoto = (inputData?.realPhoto ?? inputData?.real_photo) as string | undefined;
+  const moodBoard = (inputData?.moodBoard ?? inputData?.mood_board) as string | undefined;
+
+  const hasNotes = !!notes;
+  const hasSceneImages = !!(dollhouseView || realPhoto || moodBoard);
   const hasProductImages = productImages.length > 0;
 
   const navSections: { id: string; label: string; icon: React.ReactNode }[] = [
@@ -142,10 +145,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           <p className="mt-1 text-sm text-gray-500">
             Prompt Version:{' '}
             <Link
-              href={`/prompt-versions/${result.promptVersion.id}`}
+              href={`/prompt-versions/${promptVersion?.id}`}
               className="text-primary-600 hover:text-primary-500 inline-flex items-center gap-1"
             >
-              {result.promptVersion.name || 'Untitled'}
+              {promptVersion?.name || 'Untitled'}
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
@@ -153,8 +156,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <RatingBadge rating={result.sceneAccuracyRating} label="Scene" />
-          <RatingBadge rating={result.productAccuracyRating} label="Product" />
+          <RatingBadge rating={sceneAccuracyRating} label="Scene" />
+          <RatingBadge rating={productAccuracyRating} label="Product" />
           <DeleteGenerationButton generationId={result.id} />
         </div>
       </div>
@@ -165,8 +168,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         <div className="mt-3">
           <RatingForm
             generationId={result.id}
-            currentSceneAccuracyRating={result.sceneAccuracyRating}
-            currentProductAccuracyRating={result.productAccuracyRating}
+            currentSceneAccuracyRating={sceneAccuracyRating}
+            currentProductAccuracyRating={productAccuracyRating}
           />
         </div>
       </div>
@@ -174,11 +177,11 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       {/* Output Images with Evaluations */}
       <div id="section-output" className="mt-8 scroll-mt-6">
         <h2 className="text-lg font-semibold text-gray-900">Output Images</h2>
-        {result.results.length === 0 ? (
+        {results.length === 0 ? (
           <p className="mt-4 text-sm text-gray-600">No output images for this generation.</p>
         ) : (
           <div className="mt-4 space-y-6">
-            {result.results.map((img, idx) => (
+            {results.map((img, idx) => (
               <div
                 key={img.id}
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
@@ -215,40 +218,40 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-gray-600">Created</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
-            {new Date(result.createdAt).toLocaleString()}
+            {new Date(createdAt).toLocaleString()}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-gray-600">Execution Time</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
-            {result.executionTime ? `${(result.executionTime / 1000).toFixed(1)}s` : 'Not recorded'}
+            {executionTime ? `${(executionTime / 1000).toFixed(1)}s` : 'Not recorded'}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-gray-600">Results</p>
           <p className="mt-1 text-sm font-medium text-gray-900">
-            {result.results.length} output image{result.results.length !== 1 ? 's' : ''}
+            {results.length} output image{results.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
 
       {/* Notes */}
-      {result.notes && (
+      {notes && (
         <div id="section-notes" className="mt-6 scroll-mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="text-sm font-semibold text-gray-900 uppercase">Notes</h2>
-          <p className="mt-2 text-sm text-gray-700">{result.notes}</p>
+          <p className="mt-2 text-sm text-gray-700">{notes}</p>
         </div>
       )}
 
       {/* Scene Images */}
-      {inputData && (inputData.dollhouseView || inputData.realPhoto || inputData.moodBoard) && (
+      {(dollhouseView || realPhoto || moodBoard) && (
         <div id="section-scene" className="mt-8 scroll-mt-6">
           <h2 className="text-lg font-semibold text-gray-900">Scene Images</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {inputData.dollhouseView && (
+            {dollhouseView && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(inputData.dollhouseView)}
+                  src={withImageParams(dollhouseView as string)}
                   alt="Dollhouse View"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -258,10 +261,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 </div>
               </div>
             )}
-            {inputData.realPhoto && (
+            {realPhoto && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(inputData.realPhoto)}
+                  src={withImageParams(realPhoto as string)}
                   alt="Real Photo"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -271,10 +274,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 </div>
               </div>
             )}
-            {inputData.moodBoard && (
+            {moodBoard && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(inputData.moodBoard)}
+                  src={withImageParams(moodBoard as string)}
                   alt="Mood Board"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -335,13 +338,13 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="text-sm font-semibold text-gray-900 uppercase">System Prompt</h2>
           <pre className="mt-3 text-sm whitespace-pre-wrap text-gray-700">
-            {result.promptVersion.systemPrompt}
+            {promptVersion?.systemPrompt ?? promptVersion?.system_prompt}
           </pre>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="text-sm font-semibold text-gray-900 uppercase">User Prompt</h2>
           <pre className="mt-3 text-sm whitespace-pre-wrap text-gray-700">
-            {result.promptVersion.userPrompt}
+            {promptVersion?.userPrompt ?? promptVersion?.user_prompt}
           </pre>
         </div>
       </div>

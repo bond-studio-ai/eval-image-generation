@@ -1,7 +1,5 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
-import { db } from '@/db';
-import { strategy, strategyRun, strategyStep } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StrategyPerformance } from './strategy-performance';
@@ -17,32 +15,9 @@ interface PageProps {
 export default async function StrategyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [result, runsData] = await Promise.all([
-    db.query.strategy.findFirst({
-      where: eq(strategy.id, id),
-      with: {
-        steps: {
-          orderBy: [strategyStep.stepOrder],
-          with: {
-            promptVersion: { columns: { id: true, name: true } },
-          },
-        },
-      },
-    }),
-    db.query.strategyRun.findMany({
-      where: eq(strategyRun.strategyId, id),
-      orderBy: [desc(strategyRun.createdAt)],
-      limit: 50,
-      with: {
-        stepResults: {
-          columns: { id: true, status: true, outputUrl: true, generationId: true },
-          with: { step: { columns: { stepOrder: true } } },
-        },
-        inputPresets: {
-          with: { inputPreset: { columns: { id: true, name: true } } },
-        },
-      },
-    }),
+  const [result, runsRaw] = await Promise.all([
+    fetchStrategyById(id),
+    fetchStrategyRuns(id, 50),
   ]);
 
   if (!result) {
@@ -90,7 +65,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                 aspectRatio: step.aspectRatio ?? result.aspectRatio,
                 outputResolution: step.outputResolution ?? result.outputResolution,
                 temperature: step.temperature ?? result.temperature,
-                promptName: step.promptVersion?.name,
+                promptName: step.promptVersionName,
                 dollhouseViewFromStep: step.dollhouseViewFromStep,
                 realPhotoFromStep: step.realPhotoFromStep,
                 moodBoardFromStep: step.moodBoardFromStep,
@@ -114,7 +89,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           stepOrder: s.stepOrder,
           name: s.name,
           promptVersionId: s.promptVersionId,
-          promptVersionName: s.promptVersion?.name ?? null,
+          promptVersionName: s.promptVersionName,
         }))}
       />
 
@@ -123,27 +98,24 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        initialRuns={runsData.map((run) => {
-          const inputPresetName = run.inputPresets?.[0]?.inputPreset?.name ?? null;
-          const resultsWithOrder = (run.stepResults ?? []).filter((sr) => sr.step != null) as {
-            outputUrl: string | null;
-            generationId: string | null;
-            step: { stepOrder: number };
-          }[];
-          const lastResult =
-            resultsWithOrder.length > 0
-              ? resultsWithOrder.reduce((a, b) => (a.step.stepOrder > b.step.stepOrder ? a : b))
-              : null;
+        initialRuns={runsRaw.map((run) => {
+          const inputPresetName =
+            (run.inputPresetName as string) ??
+            (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
+            null;
           return {
-            id: run.id,
-            status: run.status,
-            createdAt: run.createdAt.toISOString(),
-            completedAt: run.completedAt?.toISOString() ?? null,
+            id: run.id as string,
+            status: run.status as string,
+            createdAt: run.createdAt as string,
+            completedAt: (run.completedAt as string) ?? null,
             inputPresetName,
-            lastOutputUrl: lastResult?.outputUrl ?? null,
-            lastOutputGenerationId: lastResult?.generationId ?? null,
-            batchRunId: run.batchRunId ?? null,
-            stepResults: run.stepResults?.map((sr) => ({ id: sr.id, status: sr.status })) ?? [],
+            lastOutputUrl: (run.lastOutputUrl as string) ?? null,
+            lastOutputGenerationId: (run.lastOutputGenerationId as string) ?? null,
+            batchRunId: (run.batchRunId as string) ?? null,
+            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
+              id: sr.id,
+              status: sr.status,
+            })),
           };
         })}
       />

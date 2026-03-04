@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 type Rating = 'GOOD' | 'FAILED' | null;
@@ -25,7 +26,7 @@ export function MatrixCellRatingOverlay({
   useEffect(() => {
     if (fetched) return;
     let cancelled = false;
-    fetch(`/api/v1/generations/${generationId}`, { cache: 'no-store' })
+    fetch(serviceUrl(`generations/${generationId}`), { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;
@@ -58,7 +59,7 @@ export function MatrixCellRatingOverlay({
         const body: Record<string, string> = {};
         if (scene !== undefined) body.scene_accuracy_rating = scene;
         if (product !== undefined) body.product_accuracy_rating = product;
-        const res = await fetch(`/api/v1/generations/${generationId}/rating`, {
+        const res = await fetch(serviceUrl(`generations/${generationId}/rating`), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),

@@ -1,6 +1,7 @@
 'use client';
 
-import type { InputPresetListItem, PromptVersionListItem } from '@/lib/queries';
+import { serviceUrl } from '@/lib/api-base';
+import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
@@ -170,8 +171,8 @@ export function StrategyBuilder({
       };
 
       const url = isEditing
-        ? `/api/v1/strategies/${strategyId}`
-        : '/api/v1/strategies';
+        ? serviceUrl(`strategies/${strategyId}`)
+        : serviceUrl('strategies');
       const method = isEditing ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {

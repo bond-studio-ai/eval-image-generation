@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
@@ -17,7 +18,7 @@ export function DeleteGenerationButton({ generationId, variant = 'button' }: Del
   const handleDelete = useCallback(async () => {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/v1/generations/${generationId}`, {
+      const res = await fetch(serviceUrl(`generations/${generationId}`), {
         method: 'DELETE',
       });
 

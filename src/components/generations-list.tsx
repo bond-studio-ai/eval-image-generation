@@ -4,6 +4,7 @@ import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { GenerationThumbnails } from '@/components/generation-thumbnails';
 import { RatingBadge } from '@/components/rating-badge';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -73,7 +74,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch('/api/v1/generations/bulk-delete', {
+    const res = await fetch(serviceUrl('generations/bulk-delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
@@ -101,7 +102,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     if (filters.order) params.set('order', filters.order);
 
     try {
-      const res = await fetch(`/api/v1/generations?${params}`);
+      const res = await fetch(serviceUrl(`generations?${params}`));
       const json = await res.json();
 
       if (json.data) {

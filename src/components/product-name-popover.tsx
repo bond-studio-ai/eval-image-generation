@@ -1,6 +1,7 @@
 'use client';
 
 import { type CatalogProduct } from '@/components/product-picker';
+import { localUrl } from '@/lib/api-base';
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -15,7 +16,7 @@ let fetchPromise: Promise<CatalogProduct[]> | null = null;
 function fetchProductsCached(): Promise<CatalogProduct[]> {
   if (cachedProducts) return Promise.resolve(cachedProducts);
   if (fetchPromise) return fetchPromise;
-  fetchPromise = fetch('/api/v1/products')
+  fetchPromise = fetch(localUrl('products'))
     .then((r) => r.json())
     .then((r) => {
       cachedProducts = r.data ?? [];

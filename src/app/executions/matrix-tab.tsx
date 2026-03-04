@@ -2,6 +2,7 @@
 
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -31,7 +32,7 @@ export function MatrixTab() {
 
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/strategy-runs?limit=200', { cache: 'no-store' });
+      const res = await fetch(serviceUrl('strategy-runs?limit=200'), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setRuns(json.data ?? []);

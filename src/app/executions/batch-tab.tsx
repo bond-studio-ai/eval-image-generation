@@ -4,6 +4,7 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -65,10 +66,21 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       const params = new URLSearchParams();
       if (appliedFrom) params.set('from', appliedFrom);
       if (appliedTo) params.set('to', appliedTo);
-      const res = await fetch(`/api/v1/strategy-batch-runs?${params}`, { cache: 'no-store' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      setBatches(json.data ?? []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (json.data ?? []) as any[];
+      setBatches(raw.map((b) => ({
+        ...b,
+        runs: (b.runs ?? []).map((r: Record<string, unknown>) => ({
+          ...r,
+          inputPresetName:
+            r.inputPresetName ??
+            (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
+            null,
+        })),
+      })));
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, [appliedFrom, appliedTo]);
@@ -96,7 +108,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const handleRetry = useCallback(async (runId: string) => {
     setRetryingRunId(runId);
     try {
-      const res = await fetch(`/api/v1/strategy-runs/${runId}/retry`, { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
       if (!res.ok) return;
       await fetchBatches();
     } catch { /* ignore */ }
@@ -106,7 +118,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const handleMarkBatchFailed = useCallback(async (batchId: string) => {
     setMarkingBatchId(batchId);
     try {
-      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}/mark-failed`, { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/mark-failed`), { method: 'POST' });
       if (!res.ok) return;
       await fetchBatches();
     } catch { /* ignore */ }
@@ -117,7 +129,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
     if (!confirm(`Delete "${displayName}"? This will permanently remove the batch and all its runs.`)) return;
     setDeletingBatchId(batchId);
     try {
-      const res = await fetch(`/api/v1/strategy-batch-runs/${batchId}`, { method: 'DELETE' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}`), { method: 'DELETE' });
       if (!res.ok) return;
       setExpandedIds((prev) => { const next = new Set(prev); next.delete(batchId); return next; });
       await fetchBatches();

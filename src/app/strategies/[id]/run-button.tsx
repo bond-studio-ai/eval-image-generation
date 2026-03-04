@@ -1,6 +1,7 @@
 'use client';
 
-import type { InputPresetListItem } from '@/lib/queries';
+import { serviceUrl } from '@/lib/api-base';
+import type { InputPresetListItem } from '@/lib/types';
 import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -31,7 +32,7 @@ export function StrategyRunButton({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/strategies/${strategyId}/run`, {
+      const res = await fetch(serviceUrl(`strategies/${strategyId}/run`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +183,7 @@ export function StrategyBatchRunButton({
     const inputPresetIds = Array.from({ length: count }, () => selectedIds).flat();
 
     try {
-      const res = await fetch(`/api/v1/strategies/${strategyId}/run`, {
+      const res = await fetch(serviceUrl(`strategies/${strategyId}/run`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input_preset_ids: inputPresetIds, batch: true, number_of_images: count }),

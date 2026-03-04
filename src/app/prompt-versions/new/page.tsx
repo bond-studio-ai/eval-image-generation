@@ -1,5 +1,6 @@
 'use client';
 
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -24,7 +25,7 @@ export default function NewPromptVersionPage() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/prompt-versions', {
+      const res = await fetch(serviceUrl('prompt-versions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

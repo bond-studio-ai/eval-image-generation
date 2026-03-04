@@ -1,9 +1,7 @@
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
-import { db } from '@/db';
-import { generation, strategy, strategyRun, strategyStepResult } from '@/db/schema';
-import { and, count, eq, gte, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
+import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance } from '@/lib/service-client';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -18,96 +16,6 @@ interface PageProps {
 }
 
 type DistEntry = { rating: string; count: number; percentage: number };
-
-async function getDistributionFor(
-  column: typeof generation.sceneAccuracyRating | typeof generation.productAccuracyRating,
-  dateConditions: ReturnType<typeof and>[],
-  modelCondition: ReturnType<typeof eq> | undefined,
-): Promise<DistEntry[]> {
-  const conditions = [isNotNull(column), ...dateConditions];
-
-  let query;
-  if (modelCondition) {
-    query = db
-      .select({ rating: column, count: count() })
-      .from(generation)
-      .innerJoin(strategyStepResult, and(eq(strategyStepResult.generationId, generation.id), isNotNull(strategyStepResult.generationId)))
-      .innerJoin(strategyRun, eq(strategyRun.id, strategyStepResult.strategyRunId))
-      .innerJoin(strategy, eq(strategy.id, strategyRun.strategyId))
-      .where(and(...conditions, modelCondition))
-      .groupBy(column);
-  } else {
-    query = db
-      .select({ rating: column, count: count() })
-      .from(generation)
-      .where(and(...conditions))
-      .groupBy(column);
-  }
-
-  const results = await query;
-  const total = results.reduce((sum, r) => sum + r.count, 0);
-  const ratingOrder = ['GOOD', 'FAILED'];
-
-  return ratingOrder.map((rating) => {
-    const entry = results.find((r) => r.rating === rating);
-    const ratingCount = entry?.count ?? 0;
-    return {
-      rating,
-      count: ratingCount,
-      percentage: total > 0 ? Math.round((ratingCount / total) * 100) : 0,
-    };
-  });
-}
-
-async function getOverviewStats(
-  dateConditions: ReturnType<typeof and>[],
-  modelCondition: ReturnType<typeof eq> | undefined,
-) {
-  if (modelCondition) {
-    const [totalGens, ratedGens] = await Promise.all([
-      db
-        .select({ count: count() })
-        .from(generation)
-        .innerJoin(strategyStepResult, and(eq(strategyStepResult.generationId, generation.id), isNotNull(strategyStepResult.generationId)))
-        .innerJoin(strategyRun, eq(strategyRun.id, strategyStepResult.strategyRunId))
-        .innerJoin(strategy, eq(strategy.id, strategyRun.strategyId))
-        .where(and(...dateConditions, modelCondition)),
-      db
-        .select({ count: count() })
-        .from(generation)
-        .innerJoin(strategyStepResult, and(eq(strategyStepResult.generationId, generation.id), isNotNull(strategyStepResult.generationId)))
-        .innerJoin(strategyRun, eq(strategyRun.id, strategyStepResult.strategyRunId))
-        .innerJoin(strategy, eq(strategy.id, strategyRun.strategyId))
-        .where(and(...dateConditions, modelCondition, or(isNotNull(generation.sceneAccuracyRating), isNotNull(generation.productAccuracyRating)))),
-    ]);
-    return {
-      totalGenerations: totalGens[0]?.count ?? 0,
-      ratedGenerations: ratedGens[0]?.count ?? 0,
-    };
-  }
-
-  const [totalGens, ratedGens] = await Promise.all([
-    db.select({ count: count() }).from(generation).where(and(...dateConditions)),
-    db
-      .select({ count: count() })
-      .from(generation)
-      .where(and(...dateConditions, or(isNotNull(generation.sceneAccuracyRating), isNotNull(generation.productAccuracyRating)))),
-  ]);
-
-  return {
-    totalGenerations: totalGens[0]?.count ?? 0,
-    ratedGenerations: ratedGens[0]?.count ?? 0,
-  };
-}
-
-async function getAvailableModels(): Promise<string[]> {
-  const rows = await db
-    .select({ model: strategy.model })
-    .from(strategy)
-    .where(isNull(strategy.deletedAt))
-    .groupBy(strategy.model);
-  return rows.map((r) => r.model).sort();
-}
 
 const ratingColors: Record<string, string> = {
   GOOD: 'bg-green-500',
@@ -183,17 +91,24 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const to = params.to;
   const model = params.model;
 
-  const dateConditions: any[] = [];
-  if (from) dateConditions.push(gte(generation.createdAt, new Date(from + 'T00:00:00')));
-  if (to) dateConditions.push(lte(generation.createdAt, new Date(to + 'T23:59:59.999')));
-  const modelCondition = model ? eq(strategy.model, model) : undefined;
+  const ratingParams: Record<string, string> = {};
+  if (from) ratingParams.from = from;
+  if (to) ratingParams.to = to;
+  if (model) ratingParams.model = model;
 
-  const [sceneDist, productDist, overview, models] = await Promise.all([
-    getDistributionFor(generation.sceneAccuracyRating, dateConditions, modelCondition),
-    getDistributionFor(generation.productAccuracyRating, dateConditions, modelCondition),
-    getOverviewStats(dateConditions, modelCondition),
-    getAvailableModels(),
+  const [sceneRatings, productRatings, perfData] = await Promise.all([
+    fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
+    fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
+    fetchAnalyticsStrategyPerformance(ratingParams),
   ]);
+
+  const sceneDist = sceneRatings.distribution;
+  const productDist = productRatings.distribution;
+  const overview = {
+    totalGenerations: sceneRatings.total_generations,
+    ratedGenerations: sceneRatings.rated_generations,
+  };
+  const models = perfData.models;
 
   return (
     <div>

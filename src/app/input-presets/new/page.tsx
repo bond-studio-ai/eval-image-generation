@@ -3,6 +3,7 @@
 import { ImageUpload } from '@/components/image-upload';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -48,7 +49,7 @@ export default function NewInputPresetPage() {
       }
       if (arbitraryImages.length > 0) payload.arbitrary_images = arbitraryImages;
 
-      const res = await fetch('/api/v1/input-presets', {
+      const res = await fetch(serviceUrl('input-presets'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

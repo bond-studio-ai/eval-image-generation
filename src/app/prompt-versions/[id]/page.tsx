@@ -1,7 +1,5 @@
 import { PromptVersionDetail } from '@/components/prompt-version-detail';
-import { db } from '@/db';
-import { promptVersion } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { fetchGenerations, fetchPromptVersionById } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -13,64 +11,56 @@ interface PageProps {
 export default async function PromptVersionDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const result = await db.query.promptVersion.findFirst({
-    where: eq(promptVersion.id, id),
-    with: {
-      generations: {
-        orderBy: (g, { desc }) => [desc(g.createdAt)],
-        with: {
-          results: true,
-        },
-      },
-    },
-  });
+  const pvData = await fetchPromptVersionById(id).catch(() => null);
+  if (!pvData) notFound();
 
-  if (!result) {
-    notFound();
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pv = pvData as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stats = pv.stats as Record<string, any> | undefined;
 
-  const generations = result.generations;
-  const rated = generations.filter((g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null);
-  const ratingMap: Record<string, number> = {
-    FAILED: 0,
-    GOOD: 1,
-  };
+  const genResult = await fetchGenerations({ prompt_version_id: id, limit: '100' });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generations = (genResult.data ?? []) as any[];
 
-  const avgRating =
-    rated.length > 0
-      ? (
-          rated.reduce((sum: number, g: { sceneAccuracyRating: string | null }) => sum + (ratingMap[g.sceneAccuracyRating!] ?? 0), 0) / rated.length
-        ).toFixed(2)
-      : null;
-
-  // Serialize for client component
   const serializedData = {
-    id: result.id,
-    name: result.name,
-    description: result.description,
-    systemPrompt: result.systemPrompt,
-    userPrompt: result.userPrompt,
-    deletedAt: result.deletedAt?.toISOString() ?? null,
+    id: pv.id,
+    name: pv.name ?? null,
+    description: pv.description ?? null,
+    systemPrompt: pv.systemPrompt ?? pv.system_prompt,
+    userPrompt: pv.userPrompt ?? pv.user_prompt,
+    deletedAt: pv.deletedAt ?? pv.deleted_at ?? null,
   };
 
-  const serializedGenerations = generations.map((g) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const serializedGenerations = generations.map((g: any) => ({
     id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating,
-    productAccuracyRating: g.productAccuracyRating,
-    createdAt: g.createdAt.toISOString(),
-    inputImageCount: 0, // Input is now structured, not a count
-    outputImageCount: g.results.length,
+    sceneAccuracyRating: g.sceneAccuracyRating ?? g.scene_accuracy_rating ?? null,
+    productAccuracyRating: g.productAccuracyRating ?? g.product_accuracy_rating ?? null,
+    createdAt: g.createdAt ?? g.created_at,
+    inputImageCount: 0,
+    outputImageCount: g.resultCount ?? g.result_count ?? 0,
   }));
+
+  const generationCount =
+    stats?.generationCount ?? stats?.generation_count ?? generations.length;
+  const ratedCount =
+    stats?.ratedCount ??
+    stats?.rated_count ??
+    serializedGenerations.filter(
+      (g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null,
+    ).length;
+  const avgRating = stats?.avgRatingScore ?? stats?.avg_rating_score ?? null;
 
   return (
     <PromptVersionDetail
       data={serializedData}
       generations={serializedGenerations}
       stats={{
-        generationCount: generations.length,
-        ratedCount: rated.length,
-        avgRating,
-        unratedCount: generations.length - rated.length,
+        generationCount,
+        ratedCount,
+        avgRating: avgRating !== null ? String(avgRating) : null,
+        unratedCount: generationCount - ratedCount,
       }}
     />
   );

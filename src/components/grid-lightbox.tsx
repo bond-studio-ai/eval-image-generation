@@ -3,6 +3,7 @@
 import { RatingForm } from '@/app/generations/[id]/rating-form';
 import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
+import { serviceUrl } from '@/lib/api-base';
 import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
 import { withImageParams } from '@/lib/image-utils';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ export function GridLightbox({
 
   const fetchGeneration = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/generations/${id}`);
+      const res = await fetch(serviceUrl(`generations/${id}`));
       if (!res.ok) return;
       const json = await res.json();
       const data = json.data ?? json;

@@ -2,6 +2,7 @@
 
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
@@ -145,7 +146,7 @@ export function StrategyPerformanceSection({
         if (from) params.set('from', from);
         if (to) params.set('to', to);
         if (model) params.set('model', model);
-        const res = await fetch(`/api/v1/analytics/strategy-performance?${params}`, { cache: 'no-store' });
+        const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
         if (json.data && !cancelled) setRows(json.data.rows ?? json.data);
@@ -158,7 +159,7 @@ export function StrategyPerformanceSection({
   const fetchBreakdown = useCallback(async (strategyId: string) => {
     setLoadingIds((prev) => new Set(prev).add(strategyId));
     try {
-      const res = await fetch(`/api/v1/analytics/strategy-errors?strategy_id=${encodeURIComponent(strategyId)}`, { cache: 'no-store' });
+      const res = await fetch(serviceUrl(`analytics/strategy-errors?strategy_id=${encodeURIComponent(strategyId)}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       setBreakdowns((prev) => ({ ...prev, [strategyId]: json.data ?? null }));
