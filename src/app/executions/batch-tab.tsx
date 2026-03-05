@@ -38,6 +38,7 @@ interface BatchRow {
 }
 
 const POLL_INTERVAL = 5000;
+const BATCH_PAGE_SIZE = 20;
 
 function deriveRunReviewStatus(run: RunRow): string {
   if (run.status === 'running' || run.status === 'pending') return 'running';
@@ -47,13 +48,28 @@ function deriveRunReviewStatus(run: RunRow): string {
   return 'in_progress';
 }
 
+function normalizeBatch(b: Record<string, unknown>): BatchRow {
+  const runs = (Array.isArray(b.runs) ? b.runs : []).map((r: Record<string, unknown>) => ({
+    ...r,
+    inputPresetName:
+      r.inputPresetName ??
+      (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
+      null,
+  }));
+  return { ...b, runs } as BatchRow;
+}
+
 export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPageSize, setLastPageSize] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
+  const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
   const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
@@ -61,11 +77,18 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [appliedFrom, setAppliedFrom] = useState('');
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchBatches = useCallback(async () => {
-    setFetchError(null);
+  const hasMore = lastPageSize >= BATCH_PAGE_SIZE;
+
+  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
+    const replace = opts.replace ?? true;
+    const pageToFetch = opts.pageToFetch ?? 1;
+    const limit = replace && batches.length > 0 ? Math.max(BATCH_PAGE_SIZE, batches.length) : BATCH_PAGE_SIZE;
+    if (replace) setFetchError(null);
+    else setLoadingMore(true);
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
       if (appliedFrom) params.set('from', appliedFrom);
       if (appliedTo) params.set('to', appliedTo);
       const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
@@ -78,23 +101,44 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       const json = await res.json();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const raw = (json.data ?? []) as any[];
-      setBatches(raw.map((b) => ({
-        ...b,
-        runs: (b.runs ?? []).map((r: Record<string, unknown>) => ({
-          ...r,
-          inputPresetName:
-            r.inputPresetName ??
-            (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
-            null,
-        })),
-      })));
+      const normalized = raw.map((b) => normalizeBatch(b));
+      setLastPageSize(raw.length);
+      if (replace) {
+        setBatches(normalized);
+        setPage(1);
+      } else {
+        setBatches((prev) => [...prev, ...normalized]);
+        setPage(pageToFetch);
+      }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
     }
-    finally { setLoading(false); }
-  }, [appliedFrom, appliedTo]);
+    finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [appliedFrom, appliedTo, batches.length]);
 
-  useEffect(() => { fetchBatches(); }, [fetchBatches, refreshKey]);
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    fetchBatches({ replace: false, pageToFetch: page + 1 });
+  }, [hasMore, loadingMore, page, fetchBatches]);
+
+  useEffect(() => {
+    fetchBatches({ replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedFrom, appliedTo, refreshKey]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loadingMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) loadMore(); },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const hasActive = batches.some((b) => b.status === 'running');
   useEffect(() => {
@@ -122,6 +166,16 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       await fetchBatches();
     } catch { /* ignore */ }
     finally { setRetryingRunId(null); }
+  }, [fetchBatches]);
+
+  const handleRetryFailed = useCallback(async (batchId: string) => {
+    setRetryingBatchId(batchId);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-failed`), { method: 'POST' });
+      if (!res.ok) return;
+      await fetchBatches();
+    } catch { /* ignore */ }
+    finally { setRetryingBatchId(null); }
   }, [fetchBatches]);
 
   const handleMarkBatchFailed = useCallback(async (batchId: string) => {
@@ -193,14 +247,15 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         </div>
       </div>
 
-      {batches.length === 0 ? (
+      {batches.length === 0 && !loading ? (
         <p className="text-sm text-gray-600">
           {appliedFrom || appliedTo
             ? 'No runs match the selected date range.'
             : 'No runs yet. Use \u201cRun\u201d to create one.'}
         </p>
       ) : (
-        batches.map((batch) => {
+        <div className="space-y-4">
+        {batches.map((batch) => {
           const isExpanded = expandedIds.has(batch.id);
           const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
           const isMultiStrategy = batch.strategies.length > 1;
@@ -242,10 +297,30 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {batch.failedRuns > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleRetryFailed(batch.id); }}
+                      disabled={retryingBatchId === batch.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      {retryingBatchId === batch.id ? (
+                        <>
+                          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Retrying…
+                        </>
+                      ) : (
+                        <>Retry failed ({batch.failedRuns})</>
+                      )}
+                    </button>
+                  )}
                   {batch.status !== 'reviewed' && (
                     <button
                       type="button"
-                      onClick={() => handleMarkBatchFailed(batch.id)}
+                      onClick={(e) => { e.stopPropagation(); handleMarkBatchFailed(batch.id); }}
                       disabled={markingBatchId === batch.id}
                       className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
                     >
@@ -302,6 +377,13 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
             </div>
           );
         })
+      }
+      {hasMore && (
+        <div ref={sentinelRef} className="py-4 text-center text-sm text-gray-500">
+          {loadingMore ? 'Loading more…' : '\u00a0'}
+        </div>
+      )}
+        </div>
       )}
       {lightbox && (
         <GridLightbox

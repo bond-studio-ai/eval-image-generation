@@ -29,19 +29,31 @@ function deriveRunReviewStatus(run: RunRow): string {
 }
 
 const POLL_INTERVAL = 5000;
+const PAGE_SIZE = 50;
 const THUMB_SIZE = 72;
 
 export function IndividualExecutionsTab() {
   const [runs, setRuns] = useState<RunRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
 
-  const fetchRuns = useCallback(async () => {
-    setFetchError(null);
+  const hasMore = runs.length < total;
+
+  const fetchRuns = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; limit?: number } = {}) => {
+    const replace = opts.replace ?? false;
+    const pageToFetch = opts.pageToFetch ?? 1;
+    const limit = opts.limit ?? (replace && runs.length > 0 ? Math.max(PAGE_SIZE, runs.length) : PAGE_SIZE);
+    if (replace) setFetchError(null);
+    else setLoadingMore(true);
     try {
-      const res = await fetch(serviceUrl('strategy-runs?limit=500'), { cache: 'no-store' });
+      const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
+      const res = await fetch(serviceUrl(`strategy-runs?${params}`), { cache: 'no-store' });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
@@ -49,22 +61,57 @@ export function IndividualExecutionsTab() {
         return;
       }
       const json = await res.json();
-      setRuns(json.data ?? []);
+      const data = (json.data ?? []) as RunRow[];
+      const paginationTotal = Number(json.pagination?.total ?? 0);
+      if (replace) {
+        setRuns(data);
+        setTotal(paginationTotal);
+        setPage(1);
+      } else {
+        setRuns((prev) => [...prev, ...data]);
+        setTotal(paginationTotal);
+        setPage(pageToFetch);
+      }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
     }
-    finally { setLoading(false); }
+    finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [runs.length]);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    fetchRuns({ replace: false, pageToFetch: page + 1, limit: PAGE_SIZE });
+  }, [hasMore, loadingMore, page, fetchRuns]);
+
+  useEffect(() => {
+    fetchRuns({ replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { fetchRuns(); }, [fetchRuns]);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loadingMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) loadMore(); },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const hasActive = runs.some((r) => r.status === 'running' || r.status === 'pending');
+  const refreshRuns = useCallback(() => {
+    fetchRuns({ replace: true, limit: runs.length || PAGE_SIZE });
+  }, [fetchRuns, runs.length]);
   useEffect(() => {
     if (hasActive) {
-      intervalRef.current = setInterval(fetchRuns, POLL_INTERVAL);
+      intervalRef.current = setInterval(refreshRuns, POLL_INTERVAL);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [hasActive, fetchRuns]);
+  }, [hasActive, refreshRuns]);
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading executions…</p>;
@@ -170,6 +217,13 @@ export function IndividualExecutionsTab() {
                 </td>
               </tr>
             ))}
+            {hasMore && (
+              <tr ref={sentinelRef} className="bg-gray-50/50">
+                <td colSpan={6} className="px-4 py-3 text-center text-sm text-gray-500">
+                  {loadingMore ? 'Loading more…' : '\u00a0'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
