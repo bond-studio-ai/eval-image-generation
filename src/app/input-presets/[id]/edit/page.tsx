@@ -1,5 +1,5 @@
-import { PRODUCT_CATEGORIES } from '@/components/product-image-input';
 import { fetchInputPresetById } from '@/lib/service-client';
+import { PRODUCT_CATEGORIES } from '@/lib/validation';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
@@ -20,7 +20,7 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   const preset = presetData as any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = preset.stats as Record<string, any> | undefined;
-  const generationCount = stats?.generation_count ?? stats?.generationCount ?? 0;
+  const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 
   if (generationCount > 0) {
     return (
@@ -45,22 +45,23 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   }
 
   const productImages: Record<string, string[]> = {};
-  for (const cat of PRODUCT_CATEGORIES) {
-    const val = preset[cat.key];
+  for (const key of PRODUCT_CATEGORIES) {
+    const camelKey = key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+    const val = preset[camelKey] ?? preset[key];
     const urls = Array.isArray(val) ? val.filter((v: unknown): v is string => typeof v === 'string' && !!v) : [];
     if (urls.length > 0) {
-      productImages[cat.key] = urls;
+      productImages[key] = urls;
     }
   }
 
-  const arbitraryImages = preset.arbitrary_images ?? preset.arbitraryImages;
+  const arbitraryImages = preset.arbitraryImages ?? preset.arbitrary_images;
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
     description: preset.description ?? '',
-    dollhouseView: preset.dollhouse_view ?? preset.dollhouseView ?? null,
-    realPhoto: preset.real_photo ?? preset.realPhoto ?? null,
-    moodBoard: preset.mood_board ?? preset.moodBoard ?? null,
+    dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
+    realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
+    moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
     productImages,
     arbitraryImages: Array.isArray(arbitraryImages)
       ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))

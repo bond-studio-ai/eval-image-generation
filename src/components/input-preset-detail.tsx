@@ -18,6 +18,10 @@ const PRODUCT_KEYS_SNAKE = [
   'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
+function snakeToCamel(s: string): string {
+  return s.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+}
+
 interface InputPresetData {
   id: string;
   name: string | null;
@@ -52,7 +56,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const getProductName = useProductNameLookup();
   const productImages: { key: string; label: string; urls: string[] }[] = [];
   for (const snakeKey of PRODUCT_KEYS_SNAKE) {
-    const val = data[snakeKey];
+    const camelKey = snakeToCamel(snakeKey);
+    const val = (data as Record<string, unknown>)[camelKey] ?? (data as Record<string, unknown>)[snakeKey];
     const urls = toUrlArray(val);
     if (urls.length > 0) {
       productImages.push({ key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, urls });
@@ -82,17 +87,15 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             </span>
           ) : (
             <>
-              {stats.generationCount === 0 && (
-                <Link
-                  href={`/input-presets/${data.id}/edit`}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-                  </svg>
-                  Edit
-                </Link>
-              )}
+              <Link
+                href={`/input-presets/${data.id}/edit`}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                </svg>
+                Edit
+              </Link>
               <button
                 type="button"
                 onClick={async () => {
@@ -150,10 +153,11 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Scene Images */}
       {(() => {
+        const d = data as Record<string, unknown>;
         const scenes = [
-          { label: 'Dollhouse View', url: (data.dollhouse_view ?? data.dollhouseView) as string | null },
-          { label: 'Real Photo', url: (data.real_photo ?? data.realPhoto) as string | null },
-          { label: 'Mood Board', url: (data.mood_board ?? data.moodBoard) as string | null },
+          { label: 'Dollhouse View', url: (d.dollhouseView ?? d.dollhouse_view) as string | null },
+          { label: 'Real Photo', url: (d.realPhoto ?? d.real_photo) as string | null },
+          { label: 'Mood Board', url: (d.moodBoard ?? d.mood_board) as string | null },
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (
@@ -180,7 +184,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Arbitrary Images */}
       {(() => {
-        const arbitrary = data.arbitrary_images ?? data.arbitraryImages;
+        const arbitrary = (data as Record<string, unknown>).arbitraryImages ?? (data as Record<string, unknown>).arbitrary_images;
         return Array.isArray(arbitrary) && arbitrary.length > 0 ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>

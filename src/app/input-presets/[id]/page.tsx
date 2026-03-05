@@ -5,12 +5,12 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 const IMAGE_COLUMNS = [
-  'dollhouse_view', 'real_photo', 'mood_board',
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
+  'dollhouseView', 'realPhoto', 'moodBoard',
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robeHooks',
+  'shelves', 'showerGlasses', 'showerSystems', 'floorTiles', 'wallTiles',
+  'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
+  'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
+  'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
 interface PageProps {
@@ -38,14 +38,14 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     const val = ipData[col];
     if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) keyedImageCount++;
   }
-  const arbitraryImages = ipData.arbitrary_images ?? ipData.arbitraryImages;
+  const arbitraryImages = ipData.arbitraryImages ?? ipData.arbitrary_images;
   const arbitraryCount = Array.isArray(arbitraryImages) ? arbitraryImages.length : 0;
   const imageCount = keyedImageCount + arbitraryCount;
 
   const serializedData = {
     ...ipData,
-    createdAt: ipData.created_at ?? ipData.createdAt,
-    deletedAt: ipData.deleted_at ?? ipData.deletedAt ?? null,
+    createdAt: ipData.createdAt ?? ipData.created_at,
+    deletedAt: ipData.deletedAt ?? ipData.deleted_at ?? null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,7 +59,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   }));
 
   const generationCount =
-    stats?.generation_count ?? stats?.generationCount ?? generations.length;
+    stats?.generationCount ?? stats?.generation_count ?? generations.length;
 
   return (
     <InputPresetDetail
