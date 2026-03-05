@@ -10,29 +10,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { RatingBadge } from './rating-badge';
 
-const CAMEL_TO_SNAKE: Record<string, string> = {
-  robeHooks: 'robe_hooks',
-  showerGlasses: 'shower_glasses',
-  showerSystems: 'shower_systems',
-  floorTiles: 'floor_tiles',
-  wallTiles: 'wall_tiles',
-  showerWallTiles: 'shower_wall_tiles',
-  showerFloorTiles: 'shower_floor_tiles',
-  showerCurbTiles: 'shower_curb_tiles',
-  toiletPaperHolders: 'toilet_paper_holders',
-  towelBars: 'towel_bars',
-  towelRings: 'towel_rings',
-  tubDoors: 'tub_doors',
-  tubFillers: 'tub_fillers',
-};
-
-const PRODUCT_KEYS = [
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robeHooks',
-  'shelves', 'showerGlasses', 'showerSystems', 'floorTiles', 'wallTiles',
-  'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
-  'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
-  'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
-];
+const PRODUCT_KEYS_SNAKE = [
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
+] as const;
 
 interface InputPresetData {
   id: string;
@@ -67,9 +51,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const [cloning, setCloning] = useState(false);
   const getProductName = useProductNameLookup();
   const productImages: { key: string; label: string; urls: string[] }[] = [];
-  for (const k of PRODUCT_KEYS) {
-    const snakeKey = CAMEL_TO_SNAKE[k] ?? k;
-    const val = data[k];
+  for (const snakeKey of PRODUCT_KEYS_SNAKE) {
+    const val = data[snakeKey];
     const urls = toUrlArray(val);
     if (urls.length > 0) {
       productImages.push({ key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, urls });
@@ -168,9 +151,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {/* Scene Images */}
       {(() => {
         const scenes = [
-          { label: 'Dollhouse View', url: data.dollhouseView as string | null },
-          { label: 'Real Photo', url: data.realPhoto as string | null },
-          { label: 'Mood Board', url: data.moodBoard as string | null },
+          { label: 'Dollhouse View', url: (data.dollhouse_view ?? data.dollhouseView) as string | null },
+          { label: 'Real Photo', url: (data.real_photo ?? data.realPhoto) as string | null },
+          { label: 'Mood Board', url: (data.mood_board ?? data.moodBoard) as string | null },
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (
@@ -196,11 +179,13 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       })()}
 
       {/* Arbitrary Images */}
-      {Array.isArray(data.arbitraryImages) && data.arbitraryImages.length > 0 && (
+      {(() => {
+        const arbitrary = data.arbitrary_images ?? data.arbitraryImages;
+        return Array.isArray(arbitrary) && arbitrary.length > 0 ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {data.arbitraryImages.map((item: { url: string; tag?: string }, i: number) => (
+            {arbitrary.map((item: { url: string; tag?: string }, i: number) => (
               <div key={i} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
                   src={withImageParams(item.url)}
@@ -217,7 +202,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             ))}
           </div>
         </div>
-      )}
+      ) : null;
+      })()}
 
       {/* Product Images */}
       {productImages.length > 0 && (

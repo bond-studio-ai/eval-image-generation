@@ -5,12 +5,12 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 const IMAGE_COLUMNS = [
-  'dollhouseView', 'realPhoto', 'moodBoard',
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robeHooks',
-  'shelves', 'showerGlasses', 'showerSystems', 'floorTiles', 'wallTiles',
-  'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
-  'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
-  'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
+  'dollhouse_view', 'real_photo', 'mood_board',
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
 interface PageProps {
@@ -38,14 +38,14 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     const val = ipData[col];
     if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) keyedImageCount++;
   }
-  const arbitraryImages = ipData.arbitraryImages;
+  const arbitraryImages = ipData.arbitrary_images ?? ipData.arbitraryImages;
   const arbitraryCount = Array.isArray(arbitraryImages) ? arbitraryImages.length : 0;
   const imageCount = keyedImageCount + arbitraryCount;
 
   const serializedData = {
     ...ipData,
-    createdAt: ipData.createdAt,
-    deletedAt: ipData.deletedAt ?? null,
+    createdAt: ipData.created_at ?? ipData.createdAt,
+    deletedAt: ipData.deleted_at ?? ipData.deletedAt ?? null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,7 +59,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   }));
 
   const generationCount =
-    stats?.generationCount ?? generations.length;
+    stats?.generation_count ?? stats?.generationCount ?? generations.length;
 
   return (
     <InputPresetDetail

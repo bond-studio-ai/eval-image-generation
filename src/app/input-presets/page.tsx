@@ -9,12 +9,12 @@ interface PageProps {
 }
 
 const IMAGE_COLUMNS = [
-  'dollhouseView', 'realPhoto', 'moodBoard',
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robeHooks',
-  'shelves', 'showerGlasses', 'showerSystems', 'floorTiles', 'wallTiles',
-  'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
-  'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
-  'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
+  'dollhouse_view', 'real_photo', 'mood_board',
+  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
+  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
+  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
 export default async function InputPresetsPage({ searchParams }: PageProps) {
@@ -46,9 +46,9 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
     name: item.name ?? null,
     description: item.description ?? null,
     imageCount: item.imageCount ?? computeImageCount(item),
-    generationCount: item.generationCount ?? 0,
-    createdAt: item.createdAt,
-    deletedAt: item.deletedAt ?? null,
+    generationCount: item.stats?.generation_count ?? item.generationCount ?? 0,
+    createdAt: item.created_at ?? item.createdAt,
+    deletedAt: item.deleted_at ?? item.deletedAt ?? null,
   }));
 
   return (
@@ -101,7 +101,7 @@ function computeImageCount(item: any): number {
       count += 1;
     }
   }
-  const arbitrary = item.arbitraryImages;
+  const arbitrary = item.arbitrary_images ?? item.arbitraryImages;
   if (Array.isArray(arbitrary)) count += arbitrary.length;
   return count;
 }
