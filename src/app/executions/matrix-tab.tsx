@@ -24,6 +24,7 @@ const IMG = CELL - 20;
 export function MatrixTab() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
 
@@ -31,12 +32,20 @@ export function MatrixTab() {
   const [strategyFilter, setStrategyFilter] = useState<Set<string> | null>(null);
 
   const fetchRuns = useCallback(async () => {
+    setFetchError(null);
     try {
       const res = await fetch(serviceUrl('strategy-runs?limit=200'), { cache: 'no-store' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = (err as { error?: { message?: string } })?.error?.message;
+        setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
+        return;
+      }
       const json = await res.json();
       setRuns(json.data ?? []);
-    } catch { /* ignore */ }
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -110,6 +119,22 @@ export function MatrixTab() {
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading…</p>;
+  }
+
+  if (fetchError) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <p className="text-sm text-amber-800">{fetchError}</p>
+        <p className="mt-1 text-xs text-amber-700">Ensure BASE_API_HOSTNAME points to the image-generation backend.</p>
+        <button
+          type="button"
+          onClick={() => { setLoading(true); fetchRuns(); }}
+          className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (runs.length === 0) {

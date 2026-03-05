@@ -50,6 +50,7 @@ function deriveRunReviewStatus(run: RunRow): string {
 export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
@@ -62,12 +63,18 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchBatches = useCallback(async () => {
+    setFetchError(null);
     try {
       const params = new URLSearchParams();
       if (appliedFrom) params.set('from', appliedFrom);
       if (appliedTo) params.set('to', appliedTo);
       const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = (err as { error?: { message?: string } })?.error?.message;
+        setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
+        return;
+      }
       const json = await res.json();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const raw = (json.data ?? []) as any[];
@@ -81,7 +88,9 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
             null,
         })),
       })));
-    } catch { /* ignore */ }
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
+    }
     finally { setLoading(false); }
   }, [appliedFrom, appliedTo]);
 
@@ -138,6 +147,22 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   }, [fetchBatches]);
 
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
+
+  if (fetchError) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <p className="text-sm text-amber-800">{fetchError}</p>
+        <p className="mt-1 text-xs text-amber-700">Ensure BASE_API_HOSTNAME points to the image-generation backend.</p>
+        <button
+          type="button"
+          onClick={() => { setLoading(true); fetchBatches(); }}
+          className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
