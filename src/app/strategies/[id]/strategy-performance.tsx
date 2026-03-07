@@ -4,20 +4,20 @@ import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 interface PerformanceData {
-  generation_count: number;
-  scene_good_count: number;
-  scene_failed_count: number;
-  scene_rated_count: number;
-  product_good_count: number;
-  product_failed_count: number;
-  product_rated_count: number;
-  not_rated_count: number;
-  scene_good_pct: number;
-  scene_failed_pct: number;
-  product_good_pct: number;
-  product_failed_pct: number;
-  not_rated_pct: number;
-  avg_execution_time_ms: number | null;
+  generationCount: number;
+  sceneGoodCount: number;
+  sceneFailedCount: number;
+  sceneRatedCount: number;
+  productGoodCount: number;
+  productFailedCount: number;
+  productRatedCount: number;
+  notRatedCount: number;
+  sceneGoodPct: number;
+  sceneFailedPct: number;
+  productGoodPct: number;
+  productFailedPct: number;
+  notRatedPct: number;
+  avgExecutionTimeMs: number | null;
 }
 
 export function StrategyPerformance({ strategyId }: { strategyId: string }) {
@@ -52,8 +52,8 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
   }
 
   const {
-    generation_count, scene_good_pct, scene_failed_pct, product_good_pct, product_failed_pct,
-    not_rated_count, scene_rated_count, product_rated_count, avg_execution_time_ms,
+    generationCount, sceneGoodPct, sceneFailedPct, productGoodPct, productFailedPct,
+    notRatedCount, sceneRatedCount, productRatedCount, avgExecutionTimeMs,
   } = data;
 
   return (
@@ -62,34 +62,34 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
         <div>
           <p className="text-xs font-medium text-gray-500">Generations</p>
-          <p className="mt-0.5 text-xl font-semibold text-gray-900">{generation_count}</p>
+          <p className="mt-0.5 text-xl font-semibold text-gray-900">{generationCount}</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Good (scene)</p>
-          <p className="mt-0.5 text-xl font-semibold text-green-600">{scene_good_pct}%</p>
-          <p className="text-[10px] text-gray-400">{scene_rated_count} rated</p>
+          <p className="mt-0.5 text-xl font-semibold text-green-600">{sceneGoodPct}%</p>
+          <p className="text-[10px] text-gray-400">{sceneRatedCount} rated</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Bad (scene)</p>
-          <p className="mt-0.5 text-xl font-semibold text-orange-600">{scene_failed_pct}%</p>
+          <p className="mt-0.5 text-xl font-semibold text-orange-600">{sceneFailedPct}%</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Good (product)</p>
-          <p className="mt-0.5 text-xl font-semibold text-green-600">{product_good_pct}%</p>
-          <p className="text-[10px] text-gray-400">{product_rated_count} rated</p>
+          <p className="mt-0.5 text-xl font-semibold text-green-600">{productGoodPct}%</p>
+          <p className="text-[10px] text-gray-400">{productRatedCount} rated</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Bad (product)</p>
-          <p className="mt-0.5 text-xl font-semibold text-orange-600">{product_failed_pct}%</p>
+          <p className="mt-0.5 text-xl font-semibold text-orange-600">{productFailedPct}%</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Not rated</p>
-          <p className="mt-0.5 text-xl font-semibold text-gray-600">{not_rated_count}</p>
+          <p className="mt-0.5 text-xl font-semibold text-gray-600">{notRatedCount}</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Avg exec time</p>
           <p className="mt-0.5 text-xl font-semibold text-gray-900">
-            {avg_execution_time_ms != null ? `${(avg_execution_time_ms / 1000).toFixed(1)}s` : '—'}
+            {avgExecutionTimeMs != null ? `${(avgExecutionTimeMs / 1000).toFixed(1)}s` : '—'}
           </p>
         </div>
       </div>
