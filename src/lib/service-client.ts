@@ -41,6 +41,7 @@ export interface StrategyListItem {
   id: string;
   name: string;
   description: string | null;
+  isActive: boolean;
   createdAt: string;
   stepCount: number;
   runCount: number;
@@ -73,6 +74,7 @@ export interface StrategyDetailItem {
   id: string;
   name: string;
   description: string | null;
+  isActive: boolean;
   createdAt: string;
   deletedAt: string | null;
   model: string;
@@ -125,6 +127,14 @@ export async function fetchStrategies(limit = 100): Promise<StrategyListItem[]> 
 export async function fetchStrategyById(id: string): Promise<StrategyDetailItem | null> {
   try {
     return await fetchService<StrategyDetailItem>(`/strategies/${id}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchActiveStrategy(): Promise<StrategyDetailItem | null> {
+  try {
+    return await fetchService<StrategyDetailItem>('/strategies/active');
   } catch {
     return null;
   }

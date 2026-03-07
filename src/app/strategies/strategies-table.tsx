@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 export function StrategiesTable({ strategies }: { strategies: StrategyListItem[] }) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
@@ -27,16 +28,34 @@ export function StrategiesTable({ strategies }: { strategies: StrategyListItem[]
     [router],
   );
 
+  const handleToggleActive = useCallback(
+    async (id: string, currentlyActive: boolean) => {
+      setTogglingId(id);
+      try {
+        const action = currentlyActive ? 'deactivate' : 'activate';
+        const res = await fetch(serviceUrl(`strategies/${id}/${action}`), { method: 'POST' });
+        if (!res.ok) return;
+        router.refresh();
+      } catch {
+        // ignore
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [router],
+  );
+
   return (
     <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Name</th>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Steps</th>
             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Runs</th>
             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Created</th>
-            <th className="relative w-12 px-6 py-3">
+            <th className="relative w-20 px-6 py-3">
               <span className="sr-only">Actions</span>
             </th>
           </tr>
@@ -51,6 +70,26 @@ export function StrategiesTable({ strategies }: { strategies: StrategyListItem[]
                 {s.description && (
                   <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">{s.description}</p>
                 )}
+              </td>
+              <td className="whitespace-nowrap px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => handleToggleActive(s.id, s.isActive)}
+                  disabled={togglingId === s.id}
+                  className="group flex items-center gap-1.5 disabled:opacity-50"
+                  title={s.isActive ? 'Deactivate strategy' : 'Activate strategy'}
+                >
+                  {s.isActive ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-600" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-gray-300 ring-inset opacity-60 group-hover:opacity-100 transition-opacity">
+                      Inactive
+                    </span>
+                  )}
+                </button>
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
                 {s.stepCount} step{s.stepCount !== 1 ? 's' : ''}
