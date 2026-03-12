@@ -19,7 +19,7 @@ interface InitialData {
   arbitraryImages: { url: string; tag?: string }[];
 }
 
-export function InputPresetEditForm({ initialData }: { initialData: InitialData }) {
+export function InputPresetEditForm({ initialData, force }: { initialData: InitialData; force?: boolean }) {
   const router = useRouter();
 
   const [name, setName] = useState(initialData.name);
@@ -59,7 +59,8 @@ export function InputPresetEditForm({ initialData }: { initialData: InitialData 
       }
       payload.arbitrary_images = arbitraryImages;
 
-      const res = await fetch(serviceUrl(`input-presets/${initialData.id}`), {
+      const url = serviceUrl(`input-presets/${initialData.id}`) + (force ? '?force=true' : '');
+      const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

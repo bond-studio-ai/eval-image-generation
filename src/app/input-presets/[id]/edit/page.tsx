@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function InputPresetEditPage({ params }: PageProps) {
+export default async function InputPresetEditPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const query = await searchParams;
+  const force = query.force === 'true';
 
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
@@ -22,7 +25,7 @@ export default async function InputPresetEditPage({ params }: PageProps) {
   const stats = preset.stats as Record<string, any> | undefined;
   const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 
-  if (generationCount > 0) {
+  if (generationCount > 0 && !force) {
     return (
       <div>
         <Link href={`/input-presets/${id}`} className="text-sm text-gray-600 hover:text-gray-900">
@@ -68,5 +71,5 @@ export default async function InputPresetEditPage({ params }: PageProps) {
       : [],
   };
 
-  return <InputPresetEditForm initialData={initialData} />;
+  return <InputPresetEditForm initialData={initialData} force={force} />;
 }
