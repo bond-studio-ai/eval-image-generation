@@ -84,6 +84,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
               judge={result.judgeType && result.judgeModel ? {
                 type: result.judgeType,
                 model: result.judgeModel,
+                promptName: judgePromptName,
               } : null}
             />
           </div>
