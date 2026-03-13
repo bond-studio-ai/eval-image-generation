@@ -673,10 +673,10 @@ function SearchableSelect({
                   key={o.value}
                   type="button"
                   onClick={() => { onChange(o.value); setOpen(false); setSearch(''); }}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${o.value === value ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-700'}`}
+                  className={`flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-gray-50 ${o.value === value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}
                 >
-                  <span className="truncate">{o.label}</span>
-                  <span className="ml-auto shrink-0 font-mono text-xs text-gray-400">{o.value}</span>
+                  <span className={`text-sm ${o.value === value ? 'font-medium' : ''}`}>{o.label}</span>
+                  <span className="font-mono text-xs text-gray-400">{o.value}</span>
                 </button>
               ))}
             </div>
