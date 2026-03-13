@@ -271,15 +271,11 @@ export function StrategyBuilder({
         <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
-            <select
+            <SearchableSelect
               value={strategySettings.model}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, model: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            >
-              {generationModels.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
+              options={generationModels}
+              onChange={(v) => setStrategySettings((s) => ({ ...s, model: v }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Aspect Ratio</label>
@@ -400,15 +396,11 @@ export function StrategyBuilder({
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">Judge Model</label>
-                <select
+                <SearchableSelect
                   value={judgeSettings.judge_model}
-                  onChange={(e) => setJudgeSettings((s) => ({ ...s, judge_model: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-                >
-                  {judgeModels.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
+                  options={judgeModels}
+                  onChange={(v) => setJudgeSettings((s) => ({ ...s, judge_model: v }))}
+                />
               </div>
 
               <div>
@@ -611,6 +603,86 @@ export function StrategyBuilder({
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+function SearchableSelect({
+  value,
+  options,
+  onChange,
+  placeholder = '-- Select --',
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const selectedLabel = useMemo(
+    () => options.find((o) => o.value === value)?.label ?? null,
+    [options, value],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return options;
+    return options.filter(
+      (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+    );
+  }, [options, search]);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+      >
+        <span className={selectedLabel ? 'truncate text-gray-900' : 'text-gray-400'}>
+          {selectedLabel || placeholder}
+        </span>
+        <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40 cursor-pointer" onClick={() => { setOpen(false); setSearch(''); }} />
+          <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="p-2">
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search models..."
+                className="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+              />
+            </div>
+            <div className="max-h-56 overflow-y-auto border-t border-gray-100">
+              {filtered.length === 0 && (
+                <div className="px-3 py-3 text-center text-sm text-gray-400">No matches</div>
+              )}
+              {filtered.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => { onChange(o.value); setOpen(false); setSearch(''); }}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${o.value === value ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-700'}`}
+                >
+                  <span className="truncate">{o.label}</span>
+                  <span className="ml-auto shrink-0 font-mono text-xs text-gray-400">{o.value}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
