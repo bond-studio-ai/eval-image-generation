@@ -107,6 +107,23 @@ export interface InputPresetListItemForBuilder {
   stats?: { generationCount: number };
 }
 
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+export interface ModelInfo {
+  id: string;
+  name: string;
+  provider: 'gemini' | 'openai' | 'fal';
+}
+
+export interface ModelListing {
+  generation: ModelInfo[];
+  judge: ModelInfo[];
+}
+
+export async function fetchModels(): Promise<ModelListing> {
+  return fetchService<ModelListing>('/models');
+}
+
 // ─── Prompt Versions ─────────────────────────────────────────────────────────
 
 export async function fetchPromptVersions(limit = 100): Promise<PromptVersionListItem[]> {

@@ -1,5 +1,5 @@
 import { StrategyBuilder } from '@/components/strategy-builder';
-import { fetchInputPresets, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
+import { fetchInputPresets, fetchModels, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -12,10 +12,11 @@ interface PageProps {
 export default async function EditStrategyPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [strat, promptVersions, inputPresets] = await Promise.all([
+  const [strat, promptVersions, inputPresets, models] = await Promise.all([
     fetchStrategyById(id),
     fetchPromptVersions(100),
     fetchInputPresets(100),
+    fetchModels(),
   ]);
 
   if (!strat) {
@@ -68,6 +69,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}
+          models={models}
         />
       </div>
     </div>

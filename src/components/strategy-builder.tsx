@@ -1,6 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
+import type { ModelListing } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -51,6 +52,7 @@ interface StrategyBuilderProps {
   initialSteps?: StepData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
+  models?: ModelListing;
 }
 
 function defaultStep(promptVersionId: string): StepData {
@@ -75,22 +77,8 @@ function defaultStep(promptVersionId: string): StepData {
   };
 }
 
-const MODELS = [
-  { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-  { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
-  { value: 'seedream-4.5', label: 'Seedream 4.5' },
-  { value: 'seedream-5', label: 'Seedream 5' },
-];
-
 const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
 const RESOLUTIONS = ['1K', '2K', '4K'];
-
-const JUDGE_MODELS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-];
 
 const JUDGE_TYPES: { value: 'batch' | 'individual'; label: string; description: string }[] = [
   { value: 'batch', label: 'Batch', description: 'Send all results in one request, pick the best' },
@@ -121,7 +109,17 @@ export function StrategyBuilder({
   initialSteps,
   promptVersions,
   inputPresets,
+  models,
 }: StrategyBuilderProps) {
+  const generationModels = useMemo(
+    () => (models?.generation ?? []).map((m) => ({ value: m.id, label: m.name })),
+    [models],
+  );
+
+  const judgeModels = useMemo(
+    () => (models?.judge ?? []).map((m) => ({ value: m.id, label: m.name })),
+    [models],
+  );
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
@@ -278,7 +276,7 @@ export function StrategyBuilder({
               onChange={(e) => setStrategySettings((s) => ({ ...s, model: e.target.value }))}
               className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
             >
-              {MODELS.map((m) => (
+              {generationModels.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
@@ -407,7 +405,7 @@ export function StrategyBuilder({
                   onChange={(e) => setJudgeSettings((s) => ({ ...s, judge_model: e.target.value }))}
                   className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
                 >
-                  {JUDGE_MODELS.map((m) => (
+                  {judgeModels.map((m) => (
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </select>
