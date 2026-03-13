@@ -26,6 +26,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     temperature: string | null;
     useGoogleSearch: boolean;
     tagImages: boolean;
+    judgeType: string | null;
   };
 
   const stepResults = run.stepResults as {
@@ -66,6 +67,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
       temperature: strategy.temperature,
       useGoogleSearch: strategy.useGoogleSearch,
       tagImages: strategy.tagImages,
+      hasJudge: !!strategy.judgeType,
     },
     stepResults: stepResults.map((sr) => ({
       id: sr.id,

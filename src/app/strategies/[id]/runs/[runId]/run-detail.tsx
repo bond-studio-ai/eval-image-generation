@@ -47,6 +47,7 @@ interface RunData {
     temperature?: string | null;
     useGoogleSearch?: boolean;
     tagImages?: boolean;
+    hasJudge?: boolean;
   };
   stepResults: StepResult[];
 }
@@ -210,7 +211,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
             </>
           )}
           <StatusBadge status={data.status} />
-          {data.judgeScore != null && (
+          {data.judgeScore != null ? (
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${data.isJudgeSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
               {data.isJudgeSelected && (
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -219,7 +220,12 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
               )}
               Score: {data.judgeScore}
             </span>
-          )}
+          ) : data.strategy.hasJudge && data.status === 'completed' && sorted.some((sr) => sr.outputUrl) ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+              Judge failed
+            </span>
+          ) : null}
         </div>
       </div>
 
