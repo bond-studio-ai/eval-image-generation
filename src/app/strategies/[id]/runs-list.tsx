@@ -21,6 +21,8 @@ interface Run {
   lastOutputGenerationId?: string | null;
   batchRunId?: string | null;
   stepResults: StepResult[];
+  judgeScore?: number | null;
+  isJudgeSelected?: boolean;
 }
 
 type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string };
@@ -395,13 +397,18 @@ function BatchMatrix({
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={run.lastOutputUrl} alt=""
-                              className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                               style={{ width: CELL - 20, height: CELL - 20 }} />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                               <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                               </svg>
                             </div>
+                            {run.judgeScore != null && (
+                              <span className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}>
+                                {run.judgeScore}
+                              </span>
+                            )}
                             {run.lastOutputGenerationId && (
                               <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
                             )}

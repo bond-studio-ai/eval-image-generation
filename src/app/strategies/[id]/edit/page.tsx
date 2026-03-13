@@ -41,6 +41,11 @@ export default async function EditStrategyPage({ params }: PageProps) {
             use_google_search: strat.useGoogleSearch,
             tag_images: strat.tagImages,
           }}
+          initialJudgeSettings={{
+            judge_type: strat.judgeType ?? null,
+            judge_model: strat.judgeModel ?? 'gemini-2.5-flash',
+            judge_prompt_version_id: strat.judgePromptVersionId ?? '',
+          }}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
             name: s.name ?? '',

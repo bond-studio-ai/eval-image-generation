@@ -114,6 +114,8 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             lastOutputUrl: (run.lastOutputUrl as string) ?? null,
             lastOutputGenerationId: (run.lastOutputGenerationId as string) ?? null,
             batchRunId: (run.batchRunId as string) ?? null,
+            judgeScore: (run.judgeScore as number) ?? null,
+            isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
             stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
               id: sr.id,
               status: sr.status,

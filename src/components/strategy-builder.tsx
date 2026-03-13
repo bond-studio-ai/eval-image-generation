@@ -36,11 +36,18 @@ interface StrategySettings {
   tag_images: boolean;
 }
 
+interface JudgeSettings {
+  judge_type: 'batch' | 'individual' | null;
+  judge_model: string;
+  judge_prompt_version_id: string;
+}
+
 interface StrategyBuilderProps {
   strategyId?: string;
   initialName?: string;
   initialDescription?: string;
   initialStrategySettings?: StrategySettings;
+  initialJudgeSettings?: JudgeSettings;
   initialSteps?: StepData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
@@ -78,6 +85,24 @@ const MODELS = [
 const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
 const RESOLUTIONS = ['1K', '2K', '4K'];
 
+const JUDGE_MODELS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { value: 'gpt-4o', label: 'GPT-4o' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+];
+
+const JUDGE_TYPES: { value: 'batch' | 'individual'; label: string; description: string }[] = [
+  { value: 'batch', label: 'Batch', description: 'Send all results in one request, pick the best' },
+  { value: 'individual', label: 'Individual', description: 'Score each result 1-100 in parallel' },
+];
+
+const defaultJudgeSettings: JudgeSettings = {
+  judge_type: null,
+  judge_model: 'gemini-2.5-flash',
+  judge_prompt_version_id: '',
+};
+
 const defaultStrategySettings: StrategySettings = {
   model: 'gemini-3-pro-image-preview',
   aspect_ratio: '1:1',
@@ -92,6 +117,7 @@ export function StrategyBuilder({
   initialName = '',
   initialDescription = '',
   initialStrategySettings,
+  initialJudgeSettings,
   initialSteps,
   promptVersions,
   inputPresets,
@@ -101,6 +127,9 @@ export function StrategyBuilder({
   const [description, setDescription] = useState(initialDescription);
   const [strategySettings, setStrategySettings] = useState<StrategySettings>(
     initialStrategySettings ?? defaultStrategySettings,
+  );
+  const [judgeSettings, setJudgeSettings] = useState<JudgeSettings>(
+    initialJudgeSettings ?? defaultJudgeSettings,
   );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
@@ -150,6 +179,9 @@ export function StrategyBuilder({
         temperature: strategySettings.temperature,
         useGoogleSearch: strategySettings.use_google_search,
         tagImages: strategySettings.tag_images,
+        judgeType: judgeSettings.judge_type,
+        judgeModel: judgeSettings.judge_type ? judgeSettings.judge_model : null,
+        judgePromptVersionId: judgeSettings.judge_type ? judgeSettings.judge_prompt_version_id || null : null,
         steps: steps.map((s, i) => ({
           id: s.id ?? undefined,
           name: s.name.trim() || null,
@@ -198,7 +230,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, judgeSettings, steps, isEditing, strategyId, router]);
 
   return (
     <div className="space-y-6">
@@ -308,6 +340,90 @@ export function StrategyBuilder({
             Google Search
           </label>
         </div>
+      </div>
+
+      {/* Judge System */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 uppercase">Judge System</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Automatically evaluate and select the best result when generating multiple images.
+            </p>
+          </div>
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input
+              type="checkbox"
+              checked={judgeSettings.judge_type !== null}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setJudgeSettings((s) => ({ ...s, judge_type: 'individual' }));
+                } else {
+                  setJudgeSettings(defaultJudgeSettings);
+                }
+              }}
+              className="peer sr-only"
+            />
+            <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300" />
+          </label>
+        </div>
+
+        {judgeSettings.judge_type !== null && (
+          <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Type</label>
+                <div className="space-y-2">
+                  {JUDGE_TYPES.map((jt) => (
+                    <label
+                      key={jt.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                        judgeSettings.judge_type === jt.value
+                          ? 'border-primary-300 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="judge_type"
+                        value={jt.value}
+                        checked={judgeSettings.judge_type === jt.value}
+                        onChange={() => setJudgeSettings((s) => ({ ...s, judge_type: jt.value }))}
+                        className="mt-0.5 text-primary-600 focus:ring-primary-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{jt.label}</span>
+                        <p className="text-xs text-gray-500">{jt.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Model</label>
+                <select
+                  value={judgeSettings.judge_model}
+                  onChange={(e) => setJudgeSettings((s) => ({ ...s, judge_model: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                >
+                  {JUDGE_MODELS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Prompt</label>
+                <PromptVersionSelector
+                  value={judgeSettings.judge_prompt_version_id}
+                  promptVersions={promptVersions}
+                  onChange={(id) => setJudgeSettings((s) => ({ ...s, judge_prompt_version_id: id }))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Steps */}
