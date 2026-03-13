@@ -143,12 +143,20 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   }, [hasMore, loadingMore, loadMore]);
 
   const hasActive = batches.some((b) => b.status === 'running');
+  const hasAwaitingJudge = batches.some((b) => {
+    if (b.numberOfImages <= 1 || b.runs.length < 2) return false;
+    const allDone = b.runs.every((r) => r.status === 'completed' || r.status === 'failed');
+    if (!allDone) return false;
+    const withOutput = b.runs.filter((r) => r.lastOutputUrl);
+    return withOutput.length >= 2 && b.runs.every((r) => r.judgeScore == null);
+  });
+  const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
-    if (hasActive) {
+    if (shouldPoll) {
       intervalRef.current = setInterval(fetchBatches, POLL_INTERVAL);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [hasActive, fetchBatches]);
+  }, [shouldPoll, fetchBatches]);
 
   const handleDateChange = useCallback((from: string, to: string) => {
     setAppliedFrom(from);
@@ -358,6 +366,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   {viewMode === 'matrix' ? (
                     <MatrixView
                       runs={batch.runs}
+                      numberOfImages={batch.numberOfImages}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
                       onRated={fetchBatches}
@@ -367,6 +376,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   ) : (
                     <ListView
                       runs={batch.runs}
+                      numberOfImages={batch.numberOfImages}
                       isSingleStrategy={!isMultiStrategy}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
@@ -446,6 +456,7 @@ function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: st
 
 function ListView({
   runs,
+  numberOfImages,
   isSingleStrategy,
   retryingRunId,
   onRetry,
@@ -453,12 +464,14 @@ function ListView({
   onImageClick,
 }: {
   runs: RunRow[];
+  numberOfImages: number;
   isSingleStrategy?: boolean;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
 }) {
+  const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
   const strategyOrder: string[] = [];
   const strategyLabels = new Map<string, string>();
   for (const run of runs) {
@@ -530,7 +543,7 @@ function ListView({
                           <span className="block break-words">{presetName}</span>
                         </td>
                         {Array.from({ length: maxExec }, (_, i) => (
-                          <RunCell key={i} run={presetRuns[i]} cellSize={CELL} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
+                          <RunCell key={i} run={presetRuns[i]} cellSize={CELL} awaitingJudge={awaitingJudge} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
                         ))}
                       </tr>
                     );
@@ -547,8 +560,17 @@ function ListView({
 
 /* ─── Matrix view: preset rows × strategy columns, first image only, click to expand ─── */
 
+function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
+  if (numberOfImages <= 1 || runs.length < 2) return false;
+  const allDone = runs.every((r) => r.status === 'completed' || r.status === 'failed');
+  if (!allDone) return false;
+  const withOutput = runs.filter((r) => r.lastOutputUrl);
+  return withOutput.length >= 2 && runs.every((r) => r.judgeScore == null);
+}
+
 function MatrixView({
   runs,
+  numberOfImages,
   retryingRunId,
   onRetry,
   onRated,
@@ -556,12 +578,14 @@ function MatrixView({
   onCellClick,
 }: {
   runs: RunRow[];
+  numberOfImages: number;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
   onCellClick: (cellRuns: RunRow[]) => void;
 }) {
+  const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
   const strategyNames: string[] = [];
   const strategyIds: string[] = [];
   const seen = new Set<string>();
@@ -766,6 +790,7 @@ function CellGalleryModal({
 function RunCell({
   run,
   cellSize,
+  awaitingJudge,
   retryingRunId,
   onRetry,
   onRated,
@@ -773,6 +798,7 @@ function RunCell({
 }: {
   run: RunRow | undefined;
   cellSize: number;
+  awaitingJudge?: boolean;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
@@ -801,11 +827,16 @@ function RunCell({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
               </svg>
             </div>
-            {run.judgeScore != null && (
+            {run.judgeScore != null ? (
               <span className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}>
                 {run.judgeScore}
               </span>
-            )}
+            ) : awaitingJudge ? (
+              <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                <svg className="h-2.5 w-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                Judging
+              </span>
+            ) : null}
             {run.lastOutputGenerationId && (
               <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
             )}

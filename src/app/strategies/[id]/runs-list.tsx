@@ -25,15 +25,25 @@ interface Run {
   isJudgeSelected?: boolean;
 }
 
-type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string };
+type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
 
 const POLL_INTERVAL = 3000;
 
+function isAwaitingJudge(batchRuns: Run[], hasJudge?: boolean): boolean {
+  if (!hasJudge || batchRuns.length < 2) return false;
+  const allDone = batchRuns.every((r) => r.status === 'completed' || r.status === 'failed');
+  if (!allDone) return false;
+  const hasOutputs = batchRuns.filter((r) => r.lastOutputUrl).length >= 2;
+  return hasOutputs && batchRuns.every((r) => r.judgeScore == null);
+}
+
 export function StrategyRunsList({
   strategyId,
+  hasJudge,
   initialRuns,
 }: {
   strategyId: string;
+  hasJudge?: boolean;
   initialRuns: Run[];
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
@@ -42,6 +52,16 @@ export function StrategyRunsList({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
+
+  const batchGroups = new Map<string, Run[]>();
+  for (const run of runs) {
+    if (run.batchRunId) {
+      if (!batchGroups.has(run.batchRunId)) batchGroups.set(run.batchRunId, []);
+      batchGroups.get(run.batchRunId)!.push(run);
+    }
+  }
+  const hasAwaitingJudge = hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
+  const shouldPoll = hasActiveRun || !!hasAwaitingJudge;
 
   const fetchRuns = useCallback(async () => {
     try {
@@ -53,26 +73,17 @@ export function StrategyRunsList({
   }, [strategyId]);
 
   useEffect(() => {
-    if (hasActiveRun) {
+    if (shouldPoll) {
       intervalRef.current = setInterval(fetchRuns, POLL_INTERVAL);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [hasActiveRun, fetchRuns]);
+  }, [shouldPoll, fetchRuns]);
 
-  // Only batch runs count: build list of batch cards (omit individual runs)
   const items: ListItem[] = [];
-  const batchMap = new Map<string, Run[]>();
 
-  for (const run of runs) {
-    if (run.batchRunId) {
-      if (!batchMap.has(run.batchRunId)) batchMap.set(run.batchRunId, []);
-      batchMap.get(run.batchRunId)!.push(run);
-    }
-  }
-
-  for (const [batchId, batchRuns] of batchMap) {
+  for (const [batchId, batchRuns] of batchGroups) {
     const sorted = [...batchRuns].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     const allStatuses = sorted.map((r) => r.status);
     const status = allStatuses.every((s) => s === 'completed')
@@ -82,7 +93,7 @@ export function StrategyRunsList({
         : allStatuses.some((s) => s === 'failed')
           ? 'failed'
           : 'pending';
-    items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '' });
+    items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '', awaitingJudge: isAwaitingJudge(sorted, hasJudge) });
   }
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -159,7 +170,7 @@ function BatchRunCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string };
+  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -239,7 +250,7 @@ function BatchRunCard({
 
       {expanded && (
         <div className="p-4">
-          <BatchMatrix runs={batch.runs} strategyId={strategyId} onRated={onRated} onImageClick={onImageClick} />
+          <BatchMatrix runs={batch.runs} strategyId={strategyId} awaitingJudge={batch.awaitingJudge} onRated={onRated} onImageClick={onImageClick} />
         </div>
       )}
     </div>
@@ -252,7 +263,7 @@ function CollapsibleBatchCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string };
+  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -317,7 +328,7 @@ function CollapsibleBatchCard({
       </button>
       {expanded && (
         <div className="p-4">
-          <BatchMatrix runs={batch.runs} strategyId={strategyId} onRated={onRated} onImageClick={onImageClick} />
+          <BatchMatrix runs={batch.runs} strategyId={strategyId} awaitingJudge={batch.awaitingJudge} onRated={onRated} onImageClick={onImageClick} />
         </div>
       )}
     </div>
@@ -329,11 +340,13 @@ function CollapsibleBatchCard({
 function BatchMatrix({
   runs,
   strategyId,
+  awaitingJudge,
   onRated,
   onImageClick,
 }: {
   runs: Run[];
   strategyId: string;
+  awaitingJudge?: boolean;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
 }) {
@@ -404,11 +417,16 @@ function BatchMatrix({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                               </svg>
                             </div>
-                            {run.judgeScore != null && (
+                            {run.judgeScore != null ? (
                               <span className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}>
                                 {run.judgeScore}
                               </span>
-                            )}
+                            ) : awaitingJudge ? (
+                              <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                                <svg className="h-2.5 w-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                Judging
+                              </span>
+                            ) : null}
                             {run.lastOutputGenerationId && (
                               <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
                             )}

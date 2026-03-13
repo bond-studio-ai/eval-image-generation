@@ -119,6 +119,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
+        hasJudge={!!result.judgeType}
         initialRuns={runsRaw.map((run) => {
           const inputPresetName =
             (run.inputPresetName as string) ??
