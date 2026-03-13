@@ -12,6 +12,13 @@ interface StepWithPrompt {
   promptVersionName: string | null;
 }
 
+interface JudgeConfig {
+  judgeType: 'batch' | 'individual' | null;
+  judgeModel: string | null;
+  judgePromptVersionId: string | null;
+  judgePromptVersionName: string | null;
+}
+
 interface StrategySettingsPromptsProps {
   model: string;
   aspectRatio: string;
@@ -21,6 +28,7 @@ interface StrategySettingsPromptsProps {
   tagImages: boolean;
   description: string | null;
   steps: StepWithPrompt[];
+  judge?: JudgeConfig;
 }
 
 export function StrategySettingsPrompts({
@@ -32,6 +40,7 @@ export function StrategySettingsPrompts({
   tagImages,
   description,
   steps,
+  judge,
 }: StrategySettingsPromptsProps) {
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
   const viewingStep = viewingPromptId ? steps.find((s) => s.promptVersionId === viewingPromptId) : null;
@@ -66,6 +75,35 @@ export function StrategySettingsPrompts({
             Google Search: {useGoogleSearch ? 'Yes' : 'No'}
           </span>
         </div>
+        {judge?.judgeType && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <h3 className="text-sm font-medium text-amber-800">Judge System</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                Mode: {judge.judgeType === 'batch' ? 'Batch' : 'Individual'}
+              </span>
+              {judge.judgeModel && (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  Model: {judge.judgeModel}
+                </span>
+              )}
+              {judge.judgePromptVersionName && (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  Prompt: {judge.judgePromptVersionName}
+                </span>
+              )}
+              {judge.judgePromptVersionId && !judge.judgePromptVersionName && (
+                <Link
+                  href={`/prompt-versions/${judge.judgePromptVersionId}`}
+                  className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+                >
+                  View judge prompt
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mt-4">
           <h3 className="text-sm font-medium text-gray-700">Prompts by step</h3>
           <ul className="mt-2 space-y-2">

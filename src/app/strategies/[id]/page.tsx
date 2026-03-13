@@ -1,5 +1,5 @@
-import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
-import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
+import { StrategyFlowDag, type DagStep, type DagJudge } from '@/components/strategy-flow-dag';
+import { fetchPromptVersionById, fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActiveToggleButton } from './active-toggle-button';
@@ -23,6 +23,14 @@ export default async function StrategyDetailPage({ params }: PageProps) {
 
   if (!result) {
     notFound();
+  }
+
+  let judgePromptName: string | null = null;
+  if (result.judgePromptVersionId) {
+    try {
+      const pv = await fetchPromptVersionById(result.judgePromptVersionId);
+      judgePromptName = (pv?.name as string) ?? null;
+    } catch { /* prompt may have been deleted */ }
   }
 
   return (
@@ -73,6 +81,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                 moodBoardFromStep: step.moodBoardFromStep,
                 arbitraryImageFromStep: step.arbitraryImageFromStep,
               }))}
+              judge={result.judgeType && result.judgeModel ? {
+                type: result.judgeType,
+                model: result.judgeModel,
+              } : null}
             />
           </div>
         )}
@@ -93,6 +105,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           promptVersionId: s.promptVersionId,
           promptVersionName: s.promptVersionName,
         }))}
+        judge={{
+          judgeType: result.judgeType,
+          judgeModel: result.judgeModel,
+          judgePromptVersionId: result.judgePromptVersionId,
+          judgePromptVersionName: judgePromptName,
+        }}
       />
 
       <StrategyPerformance strategyId={result.id} />

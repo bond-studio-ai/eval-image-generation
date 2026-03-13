@@ -171,19 +171,47 @@ const MODEL_LABELS: Record<string, string> = {
   'seedream-5': 'Seedream 5',
 };
 
-export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
+export interface DagJudge {
+  type: 'batch' | 'individual';
+  model: string;
+}
+
+export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: DagJudge | null }) {
   if (steps.length === 0) return null;
 
-  const { positions, width, height } = computeLayout(steps);
+  const { positions, width: baseWidth, height } = computeLayout(steps);
 
   const allEdges: Edge[] = [];
   for (const step of steps) {
     allEdges.push(...getEdges(step));
   }
 
+  const JUDGE_NODE_ORDER = -999;
+  let judgePos: NodePosition | null = null;
+  const judgeEdges: { fromPos: NodePosition }[] = [];
+
+  if (judge) {
+    const maxLevel = Math.max(...computeLevels(steps).values(), 0);
+    const lastLevelSteps = steps.filter(
+      (s) => computeLevels(steps).get(s.stepOrder) === maxLevel,
+    );
+
+    const judgeX = PADDING + (maxLevel + 1) * (NODE_WIDTH + LEVEL_GAP_X);
+    const judgeY = PADDING + (height - 2 * PADDING - NODE_HEIGHT) / 2;
+    judgePos = { x: judgeX, y: judgeY };
+    positions.set(JUDGE_NODE_ORDER, judgePos);
+
+    for (const step of lastLevelSteps) {
+      const fromPos = positions.get(step.stepOrder);
+      if (fromPos) judgeEdges.push({ fromPos });
+    }
+  }
+
+  const totalWidth = judge ? baseWidth + NODE_WIDTH + LEVEL_GAP_X : baseWidth;
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50/50">
-      <svg width={width} height={height} className="block">
+      <svg width={totalWidth} height={height} className="block">
         <defs>
           <marker
             id="arrowhead"
@@ -328,6 +356,55 @@ export function StrategyFlowDag({ steps }: { steps: DagStep[] }) {
             </foreignObject>
           );
         })}
+
+        {judgePos && judge && (
+          <>
+            {judgeEdges.map((edge, i) => {
+              const x1 = edge.fromPos.x + NODE_WIDTH;
+              const y1 = edge.fromPos.y + NODE_HEIGHT / 2;
+              const x2 = judgePos!.x;
+              const y2 = judgePos!.y + NODE_HEIGHT / 2;
+              const midX = (x1 + x2) / 2;
+              const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+              return (
+                <path
+                  key={`judge-edge-${i}`}
+                  d={path}
+                  fill="none"
+                  className="stroke-amber-300"
+                  strokeWidth="2"
+                  strokeDasharray="6 3"
+                  markerEnd="url(#arrowhead)"
+                />
+              );
+            })}
+            <foreignObject
+              x={judgePos.x}
+              y={judgePos.y}
+              width={NODE_WIDTH}
+              height={NODE_HEIGHT}
+            >
+              <div className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-amber-400 bg-amber-50 shadow-sm">
+                <div className="flex items-center justify-between bg-amber-100 px-3 py-2">
+                  <span className="text-xs font-semibold text-amber-800">Judge</span>
+                  <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </div>
+                <div className="flex flex-1 flex-col gap-1 px-3 py-2">
+                  <div className="text-[11px] text-amber-700">
+                    {judge.type === 'batch' ? 'Batch comparison' : 'Individual scoring'}
+                  </div>
+                  <div className="mt-auto flex flex-wrap items-center gap-1.5">
+                    <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                      {truncate(judge.model, 24)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </foreignObject>
+          </>
+        )}
       </svg>
     </div>
   );
