@@ -1,6 +1,5 @@
 import { errorResponse, successResponse } from '@/lib/api-response';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
 const s3 = new S3Client({
@@ -9,7 +8,6 @@ const s3 = new S3Client({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
-  requestChecksumCalculation: 'WHEN_REQUIRED',
 });
 
 const BUCKET = process.env.AWS_S3_BUCKET!;
@@ -18,43 +16,41 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { filename, contentType, size } = body as {
-      filename: string;
-      contentType: string;
-      size: number;
-    };
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
 
-    if (!filename || !contentType) {
-      return errorResponse('VALIDATION_ERROR', 'filename and contentType are required');
+    if (!file) {
+      return errorResponse('VALIDATION_ERROR', 'file is required');
     }
 
-    if (!ALLOWED_TYPES.includes(contentType)) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
       return errorResponse('VALIDATION_ERROR', `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`);
     }
 
-    if (size && size > MAX_SIZE) {
+    if (file.size > MAX_SIZE) {
       return errorResponse('VALIDATION_ERROR', 'File too large. Maximum size is 10MB');
     }
 
-    // Generate unique S3 key
-    const ext = filename.split('.').pop() || 'jpg';
+    const ext = file.name.split('.').pop() || 'jpg';
     const key = `evals/uploads/${randomUUID()}.${ext}`;
 
-    // Generate presigned upload URL
-    const command = new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      ContentType: contentType,
-      ACL: 'public-read',
-    });
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 min expiry
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+        ACL: 'public-read',
+      }),
+    );
+
     const publicUrl = `https://${BUCKET}.s3.${process.env.AWS_S3_REGION || 'us-west-2'}.amazonaws.com/${key}`;
 
-    return successResponse({ uploadUrl, publicUrl, key });
+    return successResponse({ publicUrl, key });
   } catch (error) {
-    console.error('Error generating upload URL:', error);
-    return errorResponse('INTERNAL_ERROR', 'Failed to generate upload URL');
+    console.error('Error uploading file:', error);
+    return errorResponse('INTERNAL_ERROR', 'Failed to upload file');
   }
 }

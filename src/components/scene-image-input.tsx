@@ -23,31 +23,18 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       setError(null);
 
       try {
+        const formData = new FormData();
+        formData.append('file', file);
+
         const res = await fetch(localUrl('upload'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type,
-            size: file.size,
-          }),
+          body: formData,
         });
 
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error?.message || `Upload failed (${res.status})`);
-        }
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error?.message || `Upload failed (${res.status})`);
 
-        const { uploadUrl, publicUrl } = await res.json().then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
-
-        const s3Res = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type },
-          body: file,
-        });
-
-        if (!s3Res.ok) throw new Error('Failed to upload file to storage');
-        onChange(publicUrl);
+        onChange(json.data.publicUrl);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to upload image');
       } finally {

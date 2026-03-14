@@ -28,34 +28,18 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
     const previewUrl = URL.createObjectURL(file);
 
+    const formData = new FormData();
+    formData.append('file', file);
+
     const res = await fetch(localUrl('upload'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: file.name,
-        contentType: file.type,
-        size: file.size,
-      }),
+      body: formData,
     });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      throw new Error(body?.error?.message || `Upload failed (${res.status})`);
-    }
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error?.message || `Upload failed (${res.status})`);
 
-    const { uploadUrl, publicUrl } = await res.json().then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
-
-    const s3Res = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type },
-      body: file,
-    });
-
-    if (!s3Res.ok) {
-      throw new Error('Failed to upload file to storage');
-    }
-
-    return { url: publicUrl, name: file.name, previewUrl };
+    return { url: json.data.publicUrl, name: file.name, previewUrl };
   };
 
   const handleFiles = useCallback(
