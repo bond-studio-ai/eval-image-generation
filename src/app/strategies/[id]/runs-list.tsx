@@ -25,6 +25,8 @@ interface Run {
   judgeScore?: number | null;
   isJudgeSelected?: boolean;
   judgeReasoning?: string | null;
+  judgeSystemPrompt?: string | null;
+  judgeUserPrompt?: string | null;
 }
 
 type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
@@ -423,6 +425,8 @@ function BatchMatrix({
                               judgeScore={run.judgeScore}
                               isJudgeSelected={run.isJudgeSelected}
                               judgeReasoning={run.judgeReasoning}
+                              judgeSystemPrompt={run.judgeSystemPrompt}
+                              judgeUserPrompt={run.judgeUserPrompt}
                               awaitingJudge={awaitingJudge}
                             />
                             {run.lastOutputGenerationId && (

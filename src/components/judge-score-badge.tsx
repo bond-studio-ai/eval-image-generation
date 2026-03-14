@@ -6,29 +6,46 @@ interface JudgeScoreBadgeProps {
   judgeScore: number | null | undefined;
   isJudgeSelected?: boolean;
   judgeReasoning?: string | null;
+  judgeSystemPrompt?: string | null;
+  judgeUserPrompt?: string | null;
   awaitingJudge?: boolean;
 }
 
 function ReasoningModal({
   score,
   reasoning,
+  systemPrompt,
+  userPrompt,
   isSelected,
   isFailed,
   onClose,
 }: {
   score: number;
   reasoning: string;
+  systemPrompt?: string | null;
+  userPrompt?: string | null;
   isSelected?: boolean;
   isFailed: boolean;
   onClose: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'reasoning' | 'system' | 'user'>('reasoning');
+  const hasPrompts = !!systemPrompt || !!userPrompt;
+
+  const tabs = [
+    { id: 'reasoning' as const, label: 'Reasoning' },
+    ...(systemPrompt ? [{ id: 'system' as const, label: 'System Prompt' }] : []),
+    ...(userPrompt ? [{ id: 'user' as const, label: 'User Prompt' }] : []),
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+        className="mx-4 flex w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl"
+        style={{ maxHeight: 'calc(100vh - 4rem)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 pt-5 pb-4">
           <div className="flex items-center gap-2.5">
             {isFailed ? (
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
@@ -42,7 +59,7 @@ function ReasoningModal({
               </span>
             )}
             <h3 className="text-base font-semibold text-gray-900">
-              {isFailed ? 'Judge Error' : 'Judge Reasoning'}
+              {isFailed ? 'Judge Error' : 'Judge Details'}
             </h3>
             {!isFailed && isSelected && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
@@ -63,9 +80,41 @@ function ReasoningModal({
             </svg>
           </button>
         </div>
-        <p className={`mt-4 text-sm leading-relaxed ${isFailed ? 'text-red-700' : 'text-gray-700'}`}>
-          {reasoning}
-        </p>
+
+        {/* Tabs */}
+        {hasPrompts && (
+          <div className="flex gap-1 border-b border-gray-200 px-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          {activeTab === 'reasoning' && (
+            <p className={`text-sm leading-relaxed ${isFailed ? 'text-red-700' : 'text-gray-700'}`}>
+              {reasoning}
+            </p>
+          )}
+          {activeTab === 'system' && systemPrompt && (
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{systemPrompt}</pre>
+          )}
+          {activeTab === 'user' && userPrompt && (
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{userPrompt}</pre>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -75,12 +124,16 @@ export function JudgeScoreBadge({
   judgeScore,
   isJudgeSelected,
   judgeReasoning,
+  judgeSystemPrompt,
+  judgeUserPrompt,
   awaitingJudge,
 }: JudgeScoreBadgeProps) {
   const [showModal, setShowModal] = useState(false);
 
+  const hasDetail = !!judgeReasoning || !!judgeSystemPrompt || !!judgeUserPrompt;
+
   const handleClick = (e: React.MouseEvent) => {
-    if (!judgeReasoning) return;
+    if (!hasDetail) return;
     e.stopPropagation();
     e.preventDefault();
     setShowModal(true);
@@ -90,15 +143,17 @@ export function JudgeScoreBadge({
     return (
       <>
         <span
-          className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${judgeReasoning ? 'cursor-help' : ''} ${isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}
+          className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? 'cursor-help' : ''} ${isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}
           onClick={handleClick}
         >
           {judgeScore}
         </span>
-        {showModal && judgeReasoning && (
+        {showModal && hasDetail && (
           <ReasoningModal
             score={judgeScore}
-            reasoning={judgeReasoning}
+            reasoning={judgeReasoning || 'No reasoning provided'}
+            systemPrompt={judgeSystemPrompt}
+            userPrompt={judgeUserPrompt}
             isSelected={isJudgeSelected}
             isFailed={false}
             onClose={() => setShowModal(false)}
@@ -112,7 +167,7 @@ export function JudgeScoreBadge({
     return (
       <>
         <span
-          className={`absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm ${judgeReasoning ? 'cursor-help' : ''}`}
+          className={`absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm ${hasDetail ? 'cursor-help' : ''}`}
           onClick={handleClick}
         >
           <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -124,6 +179,8 @@ export function JudgeScoreBadge({
           <ReasoningModal
             score={0}
             reasoning={judgeReasoning || 'Judge failed'}
+            systemPrompt={judgeSystemPrompt}
+            userPrompt={judgeUserPrompt}
             isFailed
             onClose={() => setShowModal(false)}
           />
