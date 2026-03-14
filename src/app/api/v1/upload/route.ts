@@ -42,7 +42,6 @@ export async function POST(request: Request) {
         Key: key,
         Body: buffer,
         ContentType: file.type,
-        ACL: 'public-read',
       }),
     );
 
