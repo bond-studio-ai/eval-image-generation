@@ -23,6 +23,7 @@ interface Run {
   stepResults: StepResult[];
   judgeScore?: number | null;
   isJudgeSelected?: boolean;
+  judgeReasoning?: string | null;
 }
 
 type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
@@ -418,7 +419,10 @@ function BatchMatrix({
                               </svg>
                             </div>
                             {run.judgeScore != null ? (
-                              <span className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}>
+                              <span
+                                className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}
+                                title={run.judgeReasoning || undefined}
+                              >
                                 {run.judgeScore}
                               </span>
                             ) : awaitingJudge ? (
