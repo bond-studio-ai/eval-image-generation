@@ -11,15 +11,6 @@ interface SceneImageInputProps {
   onChange: (url: string | null) => void;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function SceneImageInput({ label, value, onChange }: SceneImageInputProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -42,7 +33,10 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           }),
         });
 
-        if (!res.ok) throw new Error('S3 upload API unavailable');
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error?.message || `Upload failed (${res.status})`);
+        }
 
         const { uploadUrl, publicUrl } = await res.json().then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
 
@@ -52,15 +46,10 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           body: file,
         });
 
-        if (!s3Res.ok) throw new Error('S3 PUT failed');
+        if (!s3Res.ok) throw new Error('Failed to upload file to storage');
         onChange(publicUrl);
-      } catch {
-        try {
-          const dataUrl = await fileToDataUrl(file);
-          onChange(dataUrl);
-        } catch {
-          setError('Failed to upload image');
-        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload image');
       } finally {
         setUploading(false);
       }

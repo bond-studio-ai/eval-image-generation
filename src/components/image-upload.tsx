@@ -19,15 +19,6 @@ interface ImageUploadProps {
   renderAboveImage?: (index: number, image: UploadedImage) => React.ReactNode;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function ImageUpload({ label, images, onImagesChange, maxImages = 10, renderAboveImage }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -37,46 +28,34 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
     const previewUrl = URL.createObjectURL(file);
 
-    try {
-      // Try S3 upload via presigned URL
-      const res = await fetch(localUrl('upload'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          size: file.size,
-        }),
-      });
+    const res = await fetch(localUrl('upload'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        size: file.size,
+      }),
+    });
 
-      if (!res.ok) {
-        throw new Error('S3 upload API unavailable');
-      }
-
-      const { uploadUrl, publicUrl } = await res.json().then((r) => r.data);
-
-      // Upload directly to S3
-      const s3Res = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-
-      if (!s3Res.ok) {
-        throw new Error('S3 PUT failed');
-      }
-
-      return { url: publicUrl, name: file.name, previewUrl };
-    } catch {
-      // Fallback: store as data URL (works without S3 configured)
-      try {
-        const dataUrl = await fileToDataUrl(file);
-        return { url: dataUrl, name: file.name, previewUrl };
-      } catch (fallbackErr) {
-        console.error('Upload error:', fallbackErr);
-        return null;
-      }
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message || `Upload failed (${res.status})`);
     }
+
+    const { uploadUrl, publicUrl } = await res.json().then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
+
+    const s3Res = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+
+    if (!s3Res.ok) {
+      throw new Error('Failed to upload file to storage');
+    }
+
+    return { url: publicUrl, name: file.name, previewUrl };
   };
 
   const handleFiles = useCallback(
@@ -88,17 +67,33 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
       if (toUpload.length === 0) return;
 
       setUploading(true);
-
       setError(null);
-      const results = await Promise.all(toUpload.map(uploadFile));
-      const successful = results.filter((r): r is UploadedImage => r !== null);
 
-      if (successful.length < toUpload.length) {
-        setError(`${toUpload.length - successful.length} file(s) failed to upload.`);
+      try {
+        const results = await Promise.allSettled(toUpload.map(uploadFile));
+        const successful: UploadedImage[] = [];
+        const errors: string[] = [];
+
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value) {
+            successful.push(result.value);
+          } else if (result.status === 'rejected') {
+            errors.push(result.reason instanceof Error ? result.reason.message : 'Upload failed');
+          }
+        }
+
+        if (errors.length > 0) {
+          setError(errors[0]);
+        }
+
+        if (successful.length > 0) {
+          onImagesChange([...images, ...successful]);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Upload failed');
+      } finally {
+        setUploading(false);
       }
-
-      onImagesChange([...images, ...successful]);
-      setUploading(false);
     },
     [images, maxImages, onImagesChange],
   );
