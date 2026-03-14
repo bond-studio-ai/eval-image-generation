@@ -2,6 +2,7 @@
 
 import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
+import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
@@ -24,6 +25,7 @@ interface RunRow {
   ratedGenerations: number;
   judgeScore: number | null;
   isJudgeSelected: boolean;
+  judgeReasoning: string | null;
 }
 
 interface BatchRow {
@@ -827,16 +829,12 @@ function RunCell({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
               </svg>
             </div>
-            {run.judgeScore != null ? (
-              <span className={`absolute top-1 left-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${run.isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}>
-                {run.judgeScore}
-              </span>
-            ) : awaitingJudge ? (
-              <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <svg className="h-2.5 w-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                Judging
-              </span>
-            ) : null}
+            <JudgeScoreBadge
+              judgeScore={run.judgeScore}
+              isJudgeSelected={run.isJudgeSelected}
+              judgeReasoning={run.judgeReasoning}
+              awaitingJudge={awaitingJudge}
+            />
             {run.lastOutputGenerationId && (
               <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
             )}

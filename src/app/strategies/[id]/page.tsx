@@ -136,6 +136,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             batchRunId: (run.batchRunId as string) ?? null,
             judgeScore: (run.judgeScore as number) ?? null,
             isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
+            judgeReasoning: (run.judgeReasoning as string) ?? null,
             stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
               id: sr.id,
               status: sr.status,
