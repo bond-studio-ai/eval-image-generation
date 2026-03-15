@@ -59,6 +59,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     judgeScore: (run.judgeScore as number) ?? null,
     isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
     judgeReasoning: (run.judgeReasoning as string) ?? null,
+    judgeOutput: (run.judgeOutput as string) ?? null,
     strategy: {
       id: strategy.id,
       name: strategy.name,

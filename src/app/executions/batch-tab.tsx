@@ -26,6 +26,7 @@ interface RunRow {
   judgeScore: number | null;
   isJudgeSelected: boolean;
   judgeReasoning: string | null;
+  judgeOutput: string | null;
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
 }
@@ -835,6 +836,7 @@ function RunCell({
               judgeScore={run.judgeScore}
               isJudgeSelected={run.isJudgeSelected}
               judgeReasoning={run.judgeReasoning}
+              judgeOutput={run.judgeOutput}
               judgeSystemPrompt={run.judgeSystemPrompt}
               judgeUserPrompt={run.judgeUserPrompt}
               awaitingJudge={awaitingJudge}

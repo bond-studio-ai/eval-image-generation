@@ -6,6 +6,7 @@ interface JudgeScoreBadgeProps {
   judgeScore: number | null | undefined;
   isJudgeSelected?: boolean;
   judgeReasoning?: string | null;
+  judgeOutput?: string | null;
   judgeSystemPrompt?: string | null;
   judgeUserPrompt?: string | null;
   awaitingJudge?: boolean;
@@ -14,6 +15,7 @@ interface JudgeScoreBadgeProps {
 function ReasoningModal({
   score,
   reasoning,
+  output,
   systemPrompt,
   userPrompt,
   isSelected,
@@ -22,17 +24,19 @@ function ReasoningModal({
 }: {
   score: number;
   reasoning: string;
+  output?: string | null;
   systemPrompt?: string | null;
   userPrompt?: string | null;
   isSelected?: boolean;
   isFailed: boolean;
   onClose: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'reasoning' | 'system' | 'user'>('reasoning');
-  const hasPrompts = !!systemPrompt || !!userPrompt;
+  const [activeTab, setActiveTab] = useState<'reasoning' | 'output' | 'system' | 'user'>('reasoning');
+  const hasExtra = !!output || !!systemPrompt || !!userPrompt;
 
   const tabs = [
     { id: 'reasoning' as const, label: 'Reasoning' },
+    ...(output ? [{ id: 'output' as const, label: 'Output' }] : []),
     ...(systemPrompt ? [{ id: 'system' as const, label: 'System Prompt' }] : []),
     ...(userPrompt ? [{ id: 'user' as const, label: 'User Prompt' }] : []),
   ];
@@ -82,7 +86,7 @@ function ReasoningModal({
         </div>
 
         {/* Tabs */}
-        {hasPrompts && (
+        {hasExtra && (
           <div className="flex gap-1 border-b border-gray-200 px-6">
             {tabs.map((tab) => (
               <button
@@ -108,6 +112,9 @@ function ReasoningModal({
               {reasoning}
             </p>
           )}
+          {activeTab === 'output' && output && (
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{output}</pre>
+          )}
           {activeTab === 'system' && systemPrompt && (
             <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{systemPrompt}</pre>
           )}
@@ -124,13 +131,14 @@ export function JudgeScoreBadge({
   judgeScore,
   isJudgeSelected,
   judgeReasoning,
+  judgeOutput,
   judgeSystemPrompt,
   judgeUserPrompt,
   awaitingJudge,
 }: JudgeScoreBadgeProps) {
   const [showModal, setShowModal] = useState(false);
 
-  const hasDetail = !!judgeReasoning || !!judgeSystemPrompt || !!judgeUserPrompt;
+  const hasDetail = !!judgeReasoning || !!judgeOutput || !!judgeSystemPrompt || !!judgeUserPrompt;
 
   const handleClick = (e: React.MouseEvent) => {
     if (!hasDetail) return;
@@ -152,6 +160,7 @@ export function JudgeScoreBadge({
           <ReasoningModal
             score={judgeScore}
             reasoning={judgeReasoning || 'No reasoning provided'}
+            output={judgeOutput}
             systemPrompt={judgeSystemPrompt}
             userPrompt={judgeUserPrompt}
             isSelected={isJudgeSelected}
@@ -179,6 +188,7 @@ export function JudgeScoreBadge({
           <ReasoningModal
             score={0}
             reasoning={judgeReasoning || 'Judge failed'}
+            output={judgeOutput}
             systemPrompt={judgeSystemPrompt}
             userPrompt={judgeUserPrompt}
             isFailed

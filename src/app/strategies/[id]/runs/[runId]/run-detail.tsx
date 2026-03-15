@@ -39,6 +39,7 @@ interface RunData {
   judgeScore: number | null;
   isJudgeSelected: boolean;
   judgeReasoning: string | null;
+  judgeOutput: string | null;
   strategy: {
     id: string;
     name: string;
@@ -314,6 +315,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
           </div>
         );
       })()}
+
+      {/* Judge output */}
+      {data.judgeOutput && (
+        <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <p className="text-sm font-medium text-gray-800">Judge Output</p>
+          <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{data.judgeOutput}</pre>
+        </div>
+      )}
 
       {/* DAG visualization */}
       {dagSteps.length > 0 && (
