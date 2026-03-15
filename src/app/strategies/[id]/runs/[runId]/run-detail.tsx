@@ -198,47 +198,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function CompareButton({ runId }: { runId: string }) {
-  const [open, setOpen] = useState(false);
-  const [otherRunId, setOtherRunId] = useState('');
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-        </svg>
-        Compare
-      </button>
-      {open && (
-        <div className="absolute right-0 z-10 mt-1 w-80 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-          <p className="text-xs font-medium text-gray-600">Enter the other Run ID to compare:</p>
-          <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              value={otherRunId}
-              onChange={(e) => setOtherRunId(e.target.value.trim())}
-              placeholder="Paste run ID..."
-              className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-            <Link
-              href={otherRunId ? `/audit/compare?left=${runId}&right=${otherRunId}` : '#'}
-              onClick={(e) => { if (!otherRunId) e.preventDefault(); }}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ${otherRunId ? 'bg-primary-600 text-white hover:bg-primary-500' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-            >
-              Go
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function RunDetail({ strategyId, runId, initialData }: { strategyId: string; runId: string; initialData: RunData }) {
   const [data, setData] = useState<RunData>(initialData);
   const [retrying, setRetrying] = useState(false);
@@ -380,7 +339,6 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
               </button>
             </>
           )}
-          <CompareButton runId={runId} />
           <SourceBadge source={data.source} />
           <StatusBadge status={data.status} />
           {data.judgeScore != null && data.judgeScore > 0 ? (
