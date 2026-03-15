@@ -183,6 +183,7 @@ function BatchRunCard({
   const [expanded, setExpanded] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryingJudge, setRetryingJudge] = useState(false);
+  const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
   const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
@@ -206,10 +207,25 @@ function BatchRunCard({
   const handleRetryJudge = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setRetryingJudge(true);
+    setJudgeRetryError(null);
     try {
       const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), { method: 'POST' });
-      if (res.ok) onRated?.();
-    } catch { /* ignore */ }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError(msg);
+      } else {
+        const body = await res.json().catch(() => null);
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
+        if (data?.failedGroups && data.failedGroups > 0) {
+          setJudgeRetryError(data.errors?.[0] ?? 'Judge failed during retry');
+        }
+      }
+      onRated?.();
+    } catch (err) {
+      setJudgeRetryError(err instanceof Error ? err.message : 'Network error');
+      onRated?.();
+    }
     finally { setRetryingJudge(false); }
   };
 
@@ -290,6 +306,12 @@ function BatchRunCard({
           </span>
         </div>
       </button>
+      {judgeRetryError && (
+        <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-5 py-2">
+          <span className="text-xs text-red-700">{judgeRetryError}</span>
+          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
+        </div>
+      )}
 
       {expanded && (
         <div className="p-4">
@@ -314,6 +336,7 @@ function CollapsibleBatchCard({
   const [expanded, setExpanded] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryingJudge, setRetryingJudge] = useState(false);
+  const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
   const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
 
   const showRetryJudge = (() => {
@@ -335,10 +358,25 @@ function CollapsibleBatchCard({
   const handleRetryJudge = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setRetryingJudge(true);
+    setJudgeRetryError(null);
     try {
       const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), { method: 'POST' });
-      if (res.ok) onRated?.();
-    } catch { /* ignore */ }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError(msg);
+      } else {
+        const body = await res.json().catch(() => null);
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
+        if (data?.failedGroups && data.failedGroups > 0) {
+          setJudgeRetryError(data.errors?.[0] ?? 'Judge failed during retry');
+        }
+      }
+      onRated?.();
+    } catch (err) {
+      setJudgeRetryError(err instanceof Error ? err.message : 'Network error');
+      onRated?.();
+    }
     finally { setRetryingJudge(false); }
   };
 
@@ -407,6 +445,12 @@ function CollapsibleBatchCard({
           </svg>
         </div>
       </button>
+      {judgeRetryError && (
+        <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-2">
+          <span className="text-xs text-red-700">{judgeRetryError}</span>
+          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
+        </div>
+      )}
       {expanded && (
         <div className="p-4">
           <BatchMatrix runs={batch.runs} strategyId={strategyId} awaitingJudge={batch.awaitingJudge} onRated={onRated} onImageClick={onImageClick} />

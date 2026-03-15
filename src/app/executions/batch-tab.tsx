@@ -80,6 +80,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [retryingJudgeBatchId, setRetryingJudgeBatchId] = useState<string | null>(null);
+  const [judgeRetryError, setJudgeRetryError] = useState<{ batchId: string; message: string } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [cellGallery, setCellGallery] = useState<RunRow[] | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
@@ -218,11 +219,25 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
 
   const handleRetryJudge = useCallback(async (batchId: string) => {
     setRetryingJudgeBatchId(batchId);
+    setJudgeRetryError(null);
     try {
       const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-judge`), { method: 'POST' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError({ batchId, message: msg });
+      } else {
+        const body = await res.json().catch(() => null);
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
+        if (data?.failedGroups && data.failedGroups > 0) {
+          setJudgeRetryError({ batchId, message: data.errors?.[0] ?? 'Judge failed during retry' });
+        }
+      }
       await fetchBatches();
-    } catch { /* ignore */ }
+    } catch (err) {
+      setJudgeRetryError({ batchId, message: err instanceof Error ? err.message : 'Network error' });
+      await fetchBatches().catch(() => {});
+    }
     finally { setRetryingJudgeBatchId(null); }
   }, [fetchBatches]);
 
@@ -396,6 +411,13 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   </span>
                 </div>
               </div>
+
+              {judgeRetryError?.batchId === batch.id && (
+                <div className="flex items-center justify-between border-t border-red-100 bg-red-50 px-4 py-2">
+                  <span className="text-xs text-red-700">{judgeRetryError.message}</span>
+                  <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
+                </div>
+              )}
 
               {isExpanded && (
                 <div className="border-t border-gray-100 p-4">
