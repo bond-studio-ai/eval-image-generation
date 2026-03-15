@@ -3,6 +3,7 @@
 import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 import { CompareView } from './compare-view';
+import { SingleRunAuditView } from './single-run-audit-view';
 
 interface RunListItem {
   id: string;
@@ -175,9 +176,9 @@ export function AuditComparePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Audit Compare</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Audit</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Select two runs to compare their full audit data side by side.
+        Select one run to inspect its audit data, or two runs to compare side by side.
       </p>
 
       {/* Picker section */}
@@ -250,7 +251,7 @@ export function AuditComparePage() {
         </div>
       </div>
 
-      {/* Comparison results */}
+      {/* Results */}
       {canCompare && (
         <div className="mt-8">
           <CompareView leftId={leftId} rightId={rightId} />
@@ -258,8 +259,8 @@ export function AuditComparePage() {
       )}
 
       {!canCompare && (leftId || rightId) && (
-        <div className="mt-8 flex items-center justify-center rounded-lg border border-dashed border-gray-300 py-12 text-sm text-gray-500">
-          Select one more run to start comparing.
+        <div className="mt-8">
+          <SingleRunAuditView runId={(leftId ?? rightId)!} />
         </div>
       )}
     </div>

@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
-  { name: 'Audit Compare', href: '/audit/compare', icon: AuditCompareIcon },
+  { name: 'Audit', href: '/audit/compare', icon: AuditCompareIcon },
 ];
 
 export function Sidebar() {
