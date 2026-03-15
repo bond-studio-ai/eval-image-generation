@@ -2,6 +2,7 @@
 
 import { ExpandableImage } from '@/components/expandable-image';
 import { serviceUrl } from '@/lib/api-base';
+import { withImageParams } from '@/lib/image-utils';
 import { diffWords, type Change } from 'diff';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -142,7 +143,7 @@ function ImageCompare({ left, right }: { left: InputImage[] | null; right: Input
               <div className="aspect-square w-20 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
                 {lUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={lUrl} alt={label} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={withImageParams(lUrl)} alt={label} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[10px] text-gray-400">N/A</div>
                 )}
@@ -150,7 +151,7 @@ function ImageCompare({ left, right }: { left: InputImage[] | null; right: Input
               <div className="aspect-square w-20 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
                 {rUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={rUrl} alt={label} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={withImageParams(rUrl)} alt={label} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[10px] text-gray-400">N/A</div>
                 )}
@@ -329,7 +330,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       <div>
                         {ls?.outputUrl ? (
-                          <ExpandableImage src={ls.outputUrl} alt="Left output" wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50" />
+                          <ExpandableImage src={withImageParams(ls.outputUrl, 1024)} alt="Left output" wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50" />
                         ) : (
                           <div className="flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-400">No output</div>
                         )}
@@ -337,7 +338,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
                       </div>
                       <div>
                         {rs?.outputUrl ? (
-                          <ExpandableImage src={rs.outputUrl} alt="Right output" wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50" />
+                          <ExpandableImage src={withImageParams(rs.outputUrl, 1024)} alt="Right output" wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50" />
                         ) : (
                           <div className="flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-400">No output</div>
                         )}

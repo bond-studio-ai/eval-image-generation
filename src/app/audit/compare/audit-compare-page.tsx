@@ -1,6 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
+import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
@@ -49,7 +50,7 @@ function RunPickerCard({
         {run.lastOutputUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={run.lastOutputUrl}
+            src={withImageParams(run.lastOutputUrl, 96)}
             alt=""
             width={THUMB}
             height={THUMB}

@@ -2,6 +2,7 @@
 
 import { ExpandableImage } from '@/components/expandable-image';
 import { serviceUrl } from '@/lib/api-base';
+import { withImageParams } from '@/lib/image-utils';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -72,7 +73,7 @@ function ImageGrid({ images }: { images: InputImage[] }) {
         <div key={i}>
           <div className="aspect-square overflow-hidden rounded-md border border-gray-200 bg-gray-50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img.url} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
+            <img src={withImageParams(img.url)} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
           </div>
           <p className="mt-0.5 truncate text-[10px] text-gray-500" title={img.label}>{img.label}</p>
         </div>
@@ -227,7 +228,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
                     <SectionHeader title="Output" />
                     <div className="mt-2">
                       <ExpandableImage
-                        src={sr.outputUrl}
+                        src={withImageParams(sr.outputUrl, 1024)}
                         alt={`${stepName} output`}
                         wrapperClassName="relative block h-64 w-full max-w-xl rounded-lg border border-gray-200 bg-gray-50"
                       />
