@@ -137,6 +137,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             judgeScore: (run.judgeScore as number) ?? null,
             isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
             judgeReasoning: (run.judgeReasoning as string) ?? null,
+            judgeOutput: (run.judgeOutput as string) ?? null,
             judgeSystemPrompt: (run.judgeSystemPrompt as string) ?? null,
             judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
             stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({

@@ -11,6 +11,7 @@ const navigation = [
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
+  { name: 'Audit Compare', href: '/audit/compare', icon: AuditCompareIcon },
 ];
 
 export function Sidebar() {
@@ -141,6 +142,24 @@ function PreviewPromptIcon({ className }: { className?: string }) {
         d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
       />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function AuditCompareIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
+      />
     </svg>
   );
 }

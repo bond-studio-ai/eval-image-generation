@@ -79,6 +79,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
   const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
+  const [retryingJudgeBatchId, setRetryingJudgeBatchId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [cellGallery, setCellGallery] = useState<RunRow[] | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
@@ -215,6 +216,16 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
     finally { setDeletingBatchId(null); }
   }, [fetchBatches]);
 
+  const handleRetryJudge = useCallback(async (batchId: string) => {
+    setRetryingJudgeBatchId(batchId);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-judge`), { method: 'POST' });
+      if (!res.ok) return;
+      await fetchBatches();
+    } catch { /* ignore */ }
+    finally { setRetryingJudgeBatchId(null); }
+  }, [fetchBatches]);
+
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
 
   if (fetchError) {
@@ -329,6 +340,26 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                         </>
                       ) : (
                         <>Retry failed ({batch.failedRuns})</>
+                      )}
+                    </button>
+                  )}
+                  {needsJudgeRetry(batch.runs) && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleRetryJudge(batch.id); }}
+                      disabled={retryingJudgeBatchId === batch.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-50"
+                    >
+                      {retryingJudgeBatchId === batch.id ? (
+                        <>
+                          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Retrying…
+                        </>
+                      ) : (
+                        <>Retry Judge</>
                       )}
                     </button>
                   )}
@@ -571,6 +602,13 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   if (!allDone) return false;
   const withOutput = runs.filter((r) => r.lastOutputUrl);
   return withOutput.length >= 2 && runs.every((r) => r.judgeScore == null);
+}
+
+function needsJudgeRetry(runs: RunRow[]): boolean {
+  const completed = runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
+  if (completed.length < 2) return false;
+  return completed.some((r) => r.judgeScore === 0) ||
+    completed.every((r) => r.judgeScore == null);
 }
 
 function MatrixView({
