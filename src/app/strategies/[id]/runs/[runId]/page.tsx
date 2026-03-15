@@ -37,6 +37,9 @@ export default async function StrategyRunPage({ params }: PageProps) {
     executionTime: number | null;
     generationId: string | null;
     processedUserPrompt: string | null;
+    processedSystemPrompt: string | null;
+    inputImages: { url: string; label: string }[] | null;
+    requestConfig: Record<string, unknown> | null;
     step: {
       stepOrder: number;
       name: string | null;
@@ -60,6 +63,10 @@ export default async function StrategyRunPage({ params }: PageProps) {
     isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
     judgeReasoning: (run.judgeReasoning as string) ?? null,
     judgeOutput: (run.judgeOutput as string) ?? null,
+    source: (run.source as string) ?? null,
+    judgeSystemPrompt: (run.judgeSystemPrompt as string) ?? null,
+    judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
+    judgeInputImages: (run.judgeInputImages as { url: string; label: string }[]) ?? null,
     strategy: {
       id: strategy.id,
       name: strategy.name,
@@ -79,6 +86,9 @@ export default async function StrategyRunPage({ params }: PageProps) {
       executionTime: sr.executionTime,
       generationId: sr.generationId,
       processedUserPrompt: sr.processedUserPrompt,
+      processedSystemPrompt: sr.processedSystemPrompt,
+      inputImages: sr.inputImages,
+      requestConfig: sr.requestConfig,
       step: sr.step
         ? {
             stepOrder: sr.step.stepOrder,

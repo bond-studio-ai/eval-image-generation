@@ -42,6 +42,25 @@ export function IndividualExecutionsTab() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLTableRowElement | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= 2) {
+          const first = next.values().next().value!;
+          next.delete(first);
+        }
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectedArr = [...selected];
 
   const hasMore = runs.length < total;
 
@@ -138,11 +157,33 @@ export function IndividualExecutionsTab() {
   }
 
   return (
+    <div className="space-y-2">
+      {selectedArr.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2">
+          <span className="text-sm text-primary-700">
+            {selectedArr.length === 1 ? '1 run selected — select one more to compare' : '2 runs selected'}
+          </span>
+          {selectedArr.length === 2 && (
+            <Link
+              href={`/audit/compare?left=${selectedArr[0]}&right=${selectedArr[1]}`}
+              className="rounded-md bg-primary-600 px-3 py-1 text-xs font-medium text-white hover:bg-primary-500"
+            >
+              Compare
+            </Link>
+          )}
+          <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-xs text-primary-600 hover:text-primary-500">
+            Clear
+          </button>
+        </div>
+      )}
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="w-10 px-3 py-3">
+                <span className="sr-only">Select</span>
+              </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
                 Last output
               </th>
@@ -163,7 +204,15 @@ export function IndividualExecutionsTab() {
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {runs.map((run) => (
-              <tr key={run.id} className="hover:bg-gray-50/60">
+              <tr key={run.id} className={`hover:bg-gray-50/60 ${selected.has(run.id) ? 'bg-primary-50/50' : ''}`}>
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(run.id)}
+                    onChange={() => toggleSelected(run.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </td>
                 <td className="whitespace-nowrap px-4 py-2">
                   {run.lastOutputUrl ? (
                     <button
@@ -219,7 +268,7 @@ export function IndividualExecutionsTab() {
             ))}
             {hasMore && (
               <tr ref={sentinelRef} className="bg-gray-50/50">
-                <td colSpan={6} className="px-4 py-3 text-center text-sm text-gray-500">
+                <td colSpan={7} className="px-4 py-3 text-center text-sm text-gray-500">
                   {loadingMore ? 'Loading more…' : '\u00a0'}
                 </td>
               </tr>
@@ -236,6 +285,7 @@ export function IndividualExecutionsTab() {
           onClose={() => setLightbox(null)}
         />
       )}
+    </div>
     </div>
   );
 }

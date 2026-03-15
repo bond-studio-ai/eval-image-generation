@@ -20,6 +20,11 @@ interface StepInfo {
   promptVersion: { id: string; name: string | null } | null;
 }
 
+interface InputImage {
+  url: string;
+  label: string;
+}
+
 interface StepResult {
   id: string;
   status: string;
@@ -28,6 +33,9 @@ interface StepResult {
   executionTime: number | null;
   generationId: string | null;
   processedUserPrompt: string | null;
+  processedSystemPrompt: string | null;
+  inputImages: InputImage[] | null;
+  requestConfig: Record<string, unknown> | null;
   step: StepInfo | null;
 }
 
@@ -40,6 +48,10 @@ interface RunData {
   isJudgeSelected: boolean;
   judgeReasoning: string | null;
   judgeOutput: string | null;
+  source: string | null;
+  judgeSystemPrompt: string | null;
+  judgeUserPrompt: string | null;
+  judgeInputImages: InputImage[] | null;
   strategy: {
     id: string;
     name: string;
@@ -56,6 +68,121 @@ interface RunData {
 
 const POLL_INTERVAL = 3000;
 
+const SOURCE_LABELS: Record<string, string> = {
+  preset: 'Preset Run',
+  raw_input: 'API (Raw Input)',
+  batch: 'Batch Run',
+  retry: 'Retry',
+};
+
+const CONFIG_LABELS: Record<string, string> = {
+  model: 'Model',
+  aspect_ratio: 'Aspect Ratio',
+  output_resolution: 'Resolution',
+  temperature: 'Temperature',
+  use_google_search: 'Google Search',
+  tag_images: 'Tag Images',
+};
+
+function SourceBadge({ source }: { source: string | null }) {
+  if (!source) return null;
+  const colors: Record<string, string> = {
+    preset: 'bg-blue-100 text-blue-700',
+    raw_input: 'bg-purple-100 text-purple-700',
+    batch: 'bg-teal-100 text-teal-700',
+    retry: 'bg-orange-100 text-orange-700',
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[source] ?? 'bg-gray-100 text-gray-700'}`}>
+      {SOURCE_LABELS[source] ?? source}
+    </span>
+  );
+}
+
+function AuditImageGrid({ images }: { images: InputImage[] }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+      {images.map((img, i) => (
+        <div key={i} className="group relative">
+          <div className="aspect-square overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img.url} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
+          </div>
+          <p className="mt-1 truncate text-[10px] leading-tight text-gray-500" title={img.label}>
+            {img.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, defaultOpen, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  return (
+    <div className="border-t border-gray-100">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs font-medium text-gray-600 hover:bg-gray-50"
+      >
+        <svg className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+        {title}
+      </button>
+      {open && <div className="px-4 pb-3">{children}</div>}
+    </div>
+  );
+}
+
+function StepAudit({ sr }: { sr: StepResult }) {
+  const hasAudit = sr.processedSystemPrompt || sr.processedUserPrompt || sr.inputImages || sr.requestConfig;
+  if (!hasAudit) return null;
+
+  return (
+    <CollapsibleSection title="Audit Details">
+      <div className="space-y-3">
+        {sr.requestConfig && (
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Request Config</p>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(sr.requestConfig).map(([key, val]) => (
+                <span key={key} className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
+                  <span className="font-medium text-gray-500">{CONFIG_LABELS[key] ?? key}:</span>&nbsp;{String(val ?? 'null')}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sr.processedSystemPrompt && (
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">System Prompt</p>
+            <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">{sr.processedSystemPrompt}</pre>
+          </div>
+        )}
+
+        {sr.processedUserPrompt && (
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">User Prompt</p>
+            <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">{sr.processedUserPrompt}</pre>
+          </div>
+        )}
+
+        {sr.inputImages && sr.inputImages.length > 0 && (
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              Input Images ({sr.inputImages.length})
+            </p>
+            <AuditImageGrid images={sr.inputImages} />
+          </div>
+        )}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending: 'bg-gray-100 text-gray-700',
@@ -68,6 +195,47 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
       {status}
     </span>
+  );
+}
+
+function CompareButton({ runId }: { runId: string }) {
+  const [open, setOpen] = useState(false);
+  const [otherRunId, setOtherRunId] = useState('');
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+        </svg>
+        Compare
+      </button>
+      {open && (
+        <div className="absolute right-0 z-10 mt-1 w-80 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+          <p className="text-xs font-medium text-gray-600">Enter the other Run ID to compare:</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              type="text"
+              value={otherRunId}
+              onChange={(e) => setOtherRunId(e.target.value.trim())}
+              placeholder="Paste run ID..."
+              className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+            <Link
+              href={otherRunId ? `/audit/compare?left=${runId}&right=${otherRunId}` : '#'}
+              onClick={(e) => { if (!otherRunId) e.preventDefault(); }}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${otherRunId ? 'bg-primary-600 text-white hover:bg-primary-500' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+            >
+              Go
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -212,6 +380,8 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
               </button>
             </>
           )}
+          <CompareButton runId={runId} />
+          <SourceBadge source={data.source} />
           <StatusBadge status={data.status} />
           {data.judgeScore != null && data.judgeScore > 0 ? (
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${data.isJudgeSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
@@ -324,6 +494,36 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         </div>
       )}
 
+      {/* Judge audit */}
+      {(data.judgeSystemPrompt || data.judgeUserPrompt || data.judgeInputImages) && (
+        <div className="mt-4 rounded-lg border border-gray-200 bg-white shadow-xs">
+          <CollapsibleSection title="Judge Audit Details">
+            <div className="space-y-3">
+              {data.judgeSystemPrompt && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Judge System Prompt</p>
+                  <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">{data.judgeSystemPrompt}</pre>
+                </div>
+              )}
+              {data.judgeUserPrompt && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Judge User Prompt</p>
+                  <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">{data.judgeUserPrompt}</pre>
+                </div>
+              )}
+              {data.judgeInputImages && data.judgeInputImages.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                    Judge Input Images ({data.judgeInputImages.length})
+                  </p>
+                  <AuditImageGrid images={data.judgeInputImages} />
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+        </div>
+      )}
+
       {/* DAG visualization */}
       {dagSteps.length > 0 && (
         <div className="mt-6">
@@ -432,6 +632,8 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
                 <p className="py-4 text-sm text-gray-400">Pending</p>
               )}
             </div>
+
+            <StepAudit sr={sr} />
           </div>
         ))}
       </div>
