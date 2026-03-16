@@ -67,6 +67,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     judgeSystemPrompt: (run.judgeSystemPrompt as string) ?? null,
     judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
     judgeInputImages: (run.judgeInputImages as { url: string; label: string }[]) ?? null,
+    judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
     strategy: {
       id: strategy.id,
       name: strategy.name,

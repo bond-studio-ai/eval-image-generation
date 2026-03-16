@@ -29,6 +29,7 @@ interface RunRow {
   judgeOutput: string | null;
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
+  judgeTypeUsed: string | null;
 }
 
 interface BatchRow {
@@ -899,6 +900,7 @@ function RunCell({
               judgeOutput={run.judgeOutput}
               judgeSystemPrompt={run.judgeSystemPrompt}
               judgeUserPrompt={run.judgeUserPrompt}
+              judgeTypeUsed={run.judgeTypeUsed}
               awaitingJudge={awaitingJudge}
             />
             {run.lastOutputGenerationId && (

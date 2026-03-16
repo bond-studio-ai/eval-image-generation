@@ -52,6 +52,7 @@ interface RunData {
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
   judgeInputImages: InputImage[] | null;
+  judgeTypeUsed: string | null;
   strategy: {
     id: string;
     name: string;
@@ -457,6 +458,18 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         <div className="mt-4 rounded-lg border border-gray-200 bg-white shadow-xs">
           <CollapsibleSection title="Judge Audit Details">
             <div className="space-y-3">
+              {data.judgeTypeUsed && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Judge Mode</p>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    data.judgeTypeUsed === 'batch'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {data.judgeTypeUsed === 'batch' ? 'Batch (all images in one request)' : 'Individual (one image per request)'}
+                  </span>
+                </div>
+              )}
               {data.judgeSystemPrompt && (
                 <div>
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Judge System Prompt</p>
