@@ -3,6 +3,7 @@ import { fetchPromptVersionById, fetchStrategyById, fetchStrategyRuns } from '@/
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActiveToggleButton } from './active-toggle-button';
+import { CloneButton } from './clone-button';
 import { StrategyPerformance } from './strategy-performance';
 import { StrategyRunsSection } from './runs-section';
 import { StrategySettingsPrompts } from './strategy-settings-prompts';
@@ -48,6 +49,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <ActiveToggleButton strategyId={result.id} isActive={result.isActive} />
+          <CloneButton strategyId={result.id} />
           <Link
             href={`/strategies/${result.id}/edit`}
             className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors"
