@@ -150,13 +150,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   }, [hasMore, loadingMore, loadMore]);
 
   const hasActive = batches.some((b) => b.status === 'running');
-  const hasAwaitingJudge = batches.some((b) => {
-    if (b.numberOfImages <= 1 || b.runs.length < 2) return false;
-    const allDone = b.runs.every((r) => r.status === 'completed' || r.status === 'failed');
-    if (!allDone) return false;
-    const withOutput = b.runs.filter((r) => r.lastOutputUrl);
-    return withOutput.length >= 2 && b.runs.every((r) => r.judgeScore == null);
-  });
+  const hasAwaitingJudge = batches.some((b) => isAwaitingJudgeBatch(b.runs, b.numberOfImages));
   const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
     if (shouldPoll) {
@@ -618,12 +612,18 @@ function ListView({
 
 /* ─── Matrix view: preset rows × strategy columns, first image only, click to expand ─── */
 
+const JUDGE_TIMEOUT_MS = 5 * 60 * 1000;
+
 function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   if (numberOfImages <= 1 || runs.length < 2) return false;
   const allDone = runs.every((r) => r.status === 'completed' || r.status === 'failed');
   if (!allDone) return false;
   const withOutput = runs.filter((r) => r.lastOutputUrl);
-  return withOutput.length >= 2 && runs.every((r) => r.judgeScore == null);
+  if (withOutput.length < 2 || !runs.every((r) => r.judgeScore == null)) return false;
+
+  const completedTimes = runs.filter((r) => r.completedAt).map((r) => new Date(r.completedAt!).getTime());
+  if (completedTimes.length === 0) return false;
+  return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }
 
 function needsJudgeRetry(runs: RunRow[]): boolean {
