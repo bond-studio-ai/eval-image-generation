@@ -99,10 +99,10 @@ const defaultJudgeSettings: JudgeSettings = {
 
 const defaultPreviewSettings: PreviewSettings = {
   preview_model: null,
-  preview_resolution: '512',
+  preview_resolution: '0.5K',
 };
 
-const PREVIEW_RESOLUTIONS = ['256', '512', '1K'];
+const PREVIEW_RESOLUTIONS = ['0.5K', '1K'];
 
 const defaultStrategySettings: StrategySettings = {
   model: 'gemini-3-pro-image-preview',
@@ -370,7 +370,7 @@ export function StrategyBuilder({
               checked={previewSettings.preview_model !== null}
               onChange={(e) => {
                 if (e.target.checked) {
-                  setPreviewSettings({ preview_model: 'gemini-3.1-flash-image-preview', preview_resolution: '512' });
+                  setPreviewSettings({ preview_model: 'gemini-3.1-flash-image-preview', preview_resolution: '0.5K' });
                 } else {
                   setPreviewSettings(defaultPreviewSettings);
                 }
