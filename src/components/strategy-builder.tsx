@@ -355,6 +355,58 @@ export function StrategyBuilder({
         </div>
       </div>
 
+      {/* Preview Generation */}
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 uppercase">Preview Generation</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Generate a fast, low-resolution preview in parallel with the main run. Sends an early callback before the full result.
+            </p>
+          </div>
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input
+              type="checkbox"
+              checked={previewSettings.preview_model !== null}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setPreviewSettings({ preview_model: 'gemini-3.1-flash-image-preview', preview_resolution: '512' });
+                } else {
+                  setPreviewSettings(defaultPreviewSettings);
+                }
+              }}
+              className="peer sr-only"
+            />
+            <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300" />
+          </label>
+        </div>
+
+        {previewSettings.preview_model !== null && (
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Model</label>
+              <SearchableSelect
+                value={previewSettings.preview_model}
+                options={generationModels}
+                onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Resolution</label>
+              <select
+                value={previewSettings.preview_resolution}
+                onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+              >
+                {PREVIEW_RESOLUTIONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Judge System */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between">
@@ -430,58 +482,6 @@ export function StrategyBuilder({
                   onChange={(id) => setJudgeSettings((s) => ({ ...s, judge_prompt_version_id: id }))}
                 />
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Preview Generation */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 uppercase">Preview Generation</h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Generate a fast, low-resolution preview in parallel with the main run. Sends an early callback before the full result.
-            </p>
-          </div>
-          <label className="relative inline-flex cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={previewSettings.preview_model !== null}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setPreviewSettings({ preview_model: 'gemini-3.1-flash-image-preview', preview_resolution: '512' });
-                } else {
-                  setPreviewSettings(defaultPreviewSettings);
-                }
-              }}
-              className="peer sr-only"
-            />
-            <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300" />
-          </label>
-        </div>
-
-        {previewSettings.preview_model !== null && (
-          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Model</label>
-              <SearchableSelect
-                value={previewSettings.preview_model}
-                options={generationModels}
-                onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Resolution</label>
-              <select
-                value={previewSettings.preview_resolution}
-                onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
-                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-              >
-                {PREVIEW_RESOLUTIONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
             </div>
           </div>
         )}
