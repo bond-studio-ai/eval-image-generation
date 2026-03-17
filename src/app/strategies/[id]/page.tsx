@@ -114,6 +114,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           judgePromptVersionId: result.judgePromptVersionId,
           judgePromptVersionName: judgePromptName,
         }}
+        preview={{
+          previewModel: result.previewModel,
+          previewResolution: result.previewResolution,
+        }}
       />
 
       <StrategyPerformance strategyId={result.id} />

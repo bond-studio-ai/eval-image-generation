@@ -19,6 +19,11 @@ interface JudgeConfig {
   judgePromptVersionName: string | null;
 }
 
+interface PreviewConfig {
+  previewModel: string | null;
+  previewResolution: string | null;
+}
+
 interface StrategySettingsPromptsProps {
   model: string;
   aspectRatio: string;
@@ -29,6 +34,7 @@ interface StrategySettingsPromptsProps {
   description: string | null;
   steps: StepWithPrompt[];
   judge?: JudgeConfig;
+  preview?: PreviewConfig;
 }
 
 export function StrategySettingsPrompts({
@@ -41,6 +47,7 @@ export function StrategySettingsPrompts({
   description,
   steps,
   judge,
+  preview,
 }: StrategySettingsPromptsProps) {
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
   const viewingStep = viewingPromptId ? steps.find((s) => s.promptVersionId === viewingPromptId) : null;
@@ -99,6 +106,21 @@ export function StrategySettingsPrompts({
                 >
                   View judge prompt
                 </Link>
+              )}
+            </div>
+          </div>
+        )}
+        {preview?.previewModel && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <h3 className="text-sm font-medium text-blue-800">Preview Generation</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                Model: {preview.previewModel}
+              </span>
+              {preview.previewResolution && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                  Resolution: {preview.previewResolution}
+                </span>
               )}
             </div>
           </div>

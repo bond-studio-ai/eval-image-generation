@@ -47,6 +47,10 @@ export default async function EditStrategyPage({ params }: PageProps) {
             judge_model: strat.judgeModel ?? 'gemini-2.5-flash',
             judge_prompt_version_id: strat.judgePromptVersionId ?? '',
           }}
+          initialPreviewSettings={{
+            preview_model: strat.previewModel ?? null,
+            preview_resolution: strat.previewResolution ?? '512',
+          }}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
             name: s.name ?? '',
