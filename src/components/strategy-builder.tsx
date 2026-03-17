@@ -43,12 +43,18 @@ interface JudgeSettings {
   judge_prompt_version_id: string;
 }
 
+interface PreviewSettings {
+  preview_model: string | null;
+  preview_resolution: string;
+}
+
 interface StrategyBuilderProps {
   strategyId?: string;
   initialName?: string;
   initialDescription?: string;
   initialStrategySettings?: StrategySettings;
   initialJudgeSettings?: JudgeSettings;
+  initialPreviewSettings?: PreviewSettings;
   initialSteps?: StepData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
@@ -91,6 +97,13 @@ const defaultJudgeSettings: JudgeSettings = {
   judge_prompt_version_id: '',
 };
 
+const defaultPreviewSettings: PreviewSettings = {
+  preview_model: null,
+  preview_resolution: '512',
+};
+
+const PREVIEW_RESOLUTIONS = ['256', '512', '1K'];
+
 const defaultStrategySettings: StrategySettings = {
   model: 'gemini-3-pro-image-preview',
   aspect_ratio: '1:1',
@@ -106,6 +119,7 @@ export function StrategyBuilder({
   initialDescription = '',
   initialStrategySettings,
   initialJudgeSettings,
+  initialPreviewSettings,
   initialSteps,
   promptVersions,
   inputPresets,
@@ -128,6 +142,9 @@ export function StrategyBuilder({
   );
   const [judgeSettings, setJudgeSettings] = useState<JudgeSettings>(
     initialJudgeSettings ?? defaultJudgeSettings,
+  );
+  const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(
+    initialPreviewSettings ?? defaultPreviewSettings,
   );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
@@ -180,6 +197,8 @@ export function StrategyBuilder({
         judgeType: judgeSettings.judge_type,
         judgeModel: judgeSettings.judge_type ? judgeSettings.judge_model : null,
         judgePromptVersionId: judgeSettings.judge_type ? judgeSettings.judge_prompt_version_id || null : null,
+        previewModel: previewSettings.preview_model,
+        previewResolution: previewSettings.preview_model ? previewSettings.preview_resolution : null,
         steps: steps.map((s, i) => ({
           id: s.id ?? undefined,
           name: s.name.trim() || null,
@@ -228,7 +247,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, judgeSettings, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, judgeSettings, previewSettings, steps, isEditing, strategyId, router]);
 
   return (
     <div className="space-y-6">

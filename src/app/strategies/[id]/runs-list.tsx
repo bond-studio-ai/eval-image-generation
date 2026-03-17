@@ -496,7 +496,7 @@ function BatchMatrix({
         <thead className="bg-gray-50">
           <tr>
             <th
-              className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
+              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
               style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
@@ -514,7 +514,7 @@ function BatchMatrix({
             const presetRuns = byPreset.get(presetName)!;
             return (
               <tr key={presetName} className="hover:bg-gray-50/50">
-                <td className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
+                <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
                   style={{ minWidth: 200, maxWidth: 200 }}>
                   <span className="block break-words">{presetName}</span>
                 </td>

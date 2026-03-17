@@ -86,6 +86,8 @@ export interface StrategyDetailItem {
   judgeType: 'batch' | 'individual' | null;
   judgeModel: string | null;
   judgePromptVersionId: string | null;
+  previewModel: string | null;
+  previewResolution: string | null;
   steps: StrategyStepItem[];
   runCount: number;
 }
