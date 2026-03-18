@@ -9,6 +9,8 @@ import { useEffect, useState } from 'react';
 interface InputImage {
   url: string;
   label: string;
+  isComposite?: boolean;
+  sourceImages?: { url: string; label: string }[];
 }
 
 interface StepResult {
@@ -67,17 +69,53 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 function ImageGrid({ images }: { images: InputImage[] }) {
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
+
   return (
-    <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-      {images.map((img, i) => (
-        <div key={i}>
-          <div className="aspect-square overflow-hidden rounded-md border border-gray-200 bg-gray-50">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={withImageParams(img.url)} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
+    <div className="space-y-2">
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+        {images.map((img, i) => (
+          <div key={i}>
+            <div
+              className={`aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? 'border-violet-400 ring-1 ring-violet-200 cursor-pointer' : 'border-gray-200'}`}
+              {...(img.isComposite ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) } : {})}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={withImageParams(img.url)} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
+            </div>
+            <div className="mt-0.5 flex items-center gap-1">
+              {img.isComposite && (
+                <span className="inline-flex shrink-0 items-center rounded bg-violet-100 px-1 py-px text-[9px] font-semibold text-violet-700">
+                  Group
+                </span>
+              )}
+              <p className="truncate text-[10px] text-gray-500" title={img.label}>{img.label}</p>
+            </div>
           </div>
-          <p className="mt-0.5 truncate text-[10px] text-gray-500" title={img.label}>{img.label}</p>
+        ))}
+      </div>
+
+      {expandedGroup != null && images[expandedGroup]?.isComposite && images[expandedGroup].sourceImages && (
+        <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-violet-800">
+              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length} source images
+            </p>
+            <button onClick={() => setExpandedGroup(null)} className="text-xs text-violet-600 hover:text-violet-800">Close</button>
+          </div>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+            {images[expandedGroup].sourceImages!.map((src, j) => (
+              <div key={j}>
+                <div className="aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={withImageParams(src.url)} alt={src.label} className="h-full w-full object-cover" loading="lazy" />
+                </div>
+                <p className="mt-0.5 truncate text-[10px] text-violet-700" title={src.label}>{src.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }

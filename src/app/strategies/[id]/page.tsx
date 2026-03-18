@@ -101,6 +101,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         temperature={result.temperature}
         useGoogleSearch={result.useGoogleSearch}
         tagImages={result.tagImages}
+        groupProductImages={result.groupProductImages}
         description={result.description}
         steps={result.steps.map((s) => ({
           stepOrder: s.stepOrder,

@@ -31,6 +31,7 @@ interface StrategySettingsPromptsProps {
   temperature: string | null;
   useGoogleSearch: boolean;
   tagImages: boolean;
+  groupProductImages?: boolean;
   description: string | null;
   steps: StepWithPrompt[];
   judge?: JudgeConfig;
@@ -44,6 +45,7 @@ export function StrategySettingsPrompts({
   temperature,
   useGoogleSearch,
   tagImages,
+  groupProductImages,
   description,
   steps,
   judge,
@@ -80,6 +82,9 @@ export function StrategySettingsPrompts({
           </span>
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STRATEGY_PROPERTY_COLORS.googleSearch.bg} ${STRATEGY_PROPERTY_COLORS.googleSearch.text}`}>
             Google Search: {useGoogleSearch ? 'Yes' : 'No'}
+          </span>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STRATEGY_PROPERTY_COLORS.groupImages.bg} ${STRATEGY_PROPERTY_COLORS.groupImages.text}`}>
+            Group images: {groupProductImages ? 'Yes' : 'No'}
           </span>
         </div>
         {judge?.judgeType && (

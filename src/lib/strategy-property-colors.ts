@@ -9,6 +9,7 @@ export const STRATEGY_PROPERTY_COLORS = {
   resolution:      { bg: 'bg-emerald-100', text: 'text-emerald-700' },
   temperature:     { bg: 'bg-amber-100',   text: 'text-amber-700' },
   tagImages:       { bg: 'bg-cyan-100',    text: 'text-cyan-700' },
+  groupImages:     { bg: 'bg-violet-100',  text: 'text-violet-700' },
   googleSearch:    { bg: 'bg-rose-100',    text: 'text-rose-700' },
 } as const;
 
