@@ -83,6 +83,7 @@ export interface StrategyDetailItem {
   temperature: string | null;
   useGoogleSearch: boolean;
   tagImages: boolean;
+  groupProductImages: boolean;
   judgeType: 'batch' | 'individual' | null;
   judgeModel: string | null;
   judgePromptVersionId: string | null;

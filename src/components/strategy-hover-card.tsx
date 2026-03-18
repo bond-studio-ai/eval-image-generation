@@ -17,6 +17,7 @@ interface StrategyData {
   temperature: string | null;
   useGoogleSearch: boolean;
   tagImages: boolean;
+  groupProductImages?: boolean;
   steps: { stepOrder: number; name: string | null; promptVersion?: { id: string; name: string | null } | null }[];
 }
 
@@ -135,6 +136,7 @@ export function StrategyHoverCard({
                 {data.temperature && <Badge color="temperature">Temp {data.temperature}</Badge>}
                 {data.tagImages && <Badge color="tagImages">Tags</Badge>}
                 {data.useGoogleSearch && <Badge color="googleSearch">Search</Badge>}
+                {data.groupProductImages && <Badge color="tagImages">Grouped</Badge>}
               </div>
               {data.steps.length > 0 && (
                 <div>

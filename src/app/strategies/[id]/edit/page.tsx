@@ -41,6 +41,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
             temperature: strat.temperature ? Number(strat.temperature) : 1.0,
             use_google_search: strat.useGoogleSearch,
             tag_images: strat.tagImages,
+            group_product_images: strat.groupProductImages ?? false,
           }}
           initialJudgeSettings={{
             judge_type: strat.judgeType ?? null,

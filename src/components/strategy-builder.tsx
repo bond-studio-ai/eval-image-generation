@@ -35,6 +35,7 @@ interface StrategySettings {
   temperature: number;
   use_google_search: boolean;
   tag_images: boolean;
+  group_product_images: boolean;
 }
 
 interface JudgeSettings {
@@ -111,6 +112,7 @@ const defaultStrategySettings: StrategySettings = {
   temperature: 1.0,
   use_google_search: false,
   tag_images: true,
+  group_product_images: false,
 };
 
 export function StrategyBuilder({
@@ -194,6 +196,7 @@ export function StrategyBuilder({
         temperature: strategySettings.temperature,
         useGoogleSearch: strategySettings.use_google_search,
         tagImages: strategySettings.tag_images,
+        groupProductImages: strategySettings.group_product_images,
         judgeType: judgeSettings.judge_type,
         judgeModel: judgeSettings.judge_type ? judgeSettings.judge_model : null,
         judgePromptVersionId: judgeSettings.judge_type ? judgeSettings.judge_prompt_version_id || null : null,
@@ -210,6 +213,7 @@ export function StrategyBuilder({
           temperature: strategySettings.temperature,
           useGoogleSearch: strategySettings.use_google_search,
           tagImages: strategySettings.tag_images,
+          groupProductImages: strategySettings.group_product_images,
           dollhouseViewFromStep: s.dollhouse_view_from_step ?? null,
           realPhotoFromStep: s.real_photo_from_step ?? null,
           moodBoardFromStep: s.mood_board_from_step ?? null,
@@ -351,6 +355,15 @@ export function StrategyBuilder({
               className="rounded border-gray-300"
             />
             Google Search
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={strategySettings.group_product_images}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, group_product_images: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            Group product images
           </label>
         </div>
       </div>
