@@ -63,7 +63,31 @@ export const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
   mood_board: 'moodBoard',
 };
 
-/** Display labels for conditionals: product categories + scene */
+/**
+ * Design-only paths for conditionals: fields not covered by `products.*` (see TO_CAMEL_SINGULAR /
+ * REFERENCE_OPTIONS). Patterns, placements, visibility, niche/short-wall/curb slots where the
+ * product key differs (e.g. design.curbTile vs products.showerCurbTile).
+ */
+export const DESIGN_PROMPT_PATHS = [
+  'design.floorTilePattern',
+  'design.nicheTile',
+  'design.nicheTilePattern',
+  'design.showerFloorTilePattern',
+  'design.curbTile',
+  'design.curbTilePattern',
+  'design.showerWallTilePattern',
+  'design.showerShortWallTile',
+  'design.showerShortWallTilePattern',
+  'design.wallpaperPlacement',
+  'design.wallTilePlacement',
+  'design.wallTilePattern',
+  'design.mirrorPlacement',
+  'design.lightingPlacement',
+  'design.isShowerGlassVisible',
+  'design.isTubDoorVisible',
+] as const;
+
+/** Display labels for conditionals: product categories + scene + design */
 export const CONDITIONAL_OPTIONS: { value: string; label: string; isProduct: boolean }[] = [
   ...PRODUCT_CATEGORIES.map((k) => ({
     value: TO_CAMEL_SINGULAR[k],
@@ -75,6 +99,14 @@ export const CONDITIONAL_OPTIONS: { value: string; label: string; isProduct: boo
     label: toTitleCase(SCENE_TO_CAMEL[k].replace(/([A-Z])/g, ' $1').trim()),
     isProduct: false,
   })),
+  ...DESIGN_PROMPT_PATHS.map((path) => {
+    const field = path.slice('design.'.length);
+    return {
+      value: path,
+      label: `Design: ${toTitleCase(field)}`,
+      isProduct: false,
+    };
+  }),
 ];
 
 /** Display labels for reference: product categories only */
