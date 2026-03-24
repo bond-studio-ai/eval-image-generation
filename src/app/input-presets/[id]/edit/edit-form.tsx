@@ -1,14 +1,14 @@
 'use client';
 
+import {
+  DesignSettingsEditor,
+  designSettingsHasValues,
+  type DesignSettingsValue,
+} from '@/components/design-settings-editor';
 import { ImageUpload } from '@/components/image-upload';
 import { PRODUCT_CATEGORIES, ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
-import {
-  designSettingsToFormText,
-  hasDesignSettingsKeys,
-  parseDesignSettingsPayload,
-} from '@/lib/design-settings-json';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -35,9 +35,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const [moodBoard, setMoodBoard] = useState<string | null>(initialData.moodBoard);
   const [productImages, setProductImages] = useState<ProductImagesState>(initialData.productImages);
   const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>(initialData.arbitraryImages);
-  const [designSettingsText, setDesignSettingsText] = useState(() =>
-    designSettingsToFormText(initialData.designSettings),
-  );
+  const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(initialData.designSettings);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +45,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
     Object.values(productImages).some((arr) => arr && arr.length > 0) ||
     arbitraryImages.length > 0;
 
-  const designPayload = parseDesignSettingsPayload(designSettingsText);
-  const hasDesignSettings = designPayload.ok && hasDesignSettingsKeys(designPayload.value);
-  const trimmedDesign = designSettingsText.trim();
-  const designTextMeaningful = trimmedDesign !== '' && trimmedDesign !== '{}';
-  const designJsonOk = !designTextMeaningful || designPayload.ok;
-
-  const canSave = name.trim() && designJsonOk && (hasAnyImage || hasDesignSettings);
+  const canSave = name.trim() && (hasAnyImage || designSettingsHasValues(designSettings));
 
   async function handleSave() {
     if (!canSave) return;
@@ -61,20 +53,13 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
     setError(null);
 
     try {
-      const dsg = parseDesignSettingsPayload(designSettingsText);
-      if (!dsg.ok) {
-        setError(dsg.error);
-        setSaving(false);
-        return;
-      }
-
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim() || null,
         dollhouse_view: dollhouseView || null,
         real_photo: realPhoto || null,
         mood_board: moodBoard || null,
-        design_settings: dsg.value,
+        design_settings: designSettings,
       };
       for (const cat of PRODUCT_CATEGORIES) {
         const urls = productImages[cat.key];
@@ -180,27 +165,8 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         />
       </div>
 
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-2 text-sm font-semibold text-gray-900 uppercase">Design settings</h2>
-        <p className="mb-3 text-sm text-gray-600">
-          Optional JSON object with the same <code className="rounded bg-gray-100 px-1">adapters_Design</code> shape as
-          strategy runs (camelCase keys: product UUID slots,{' '}
-          <code className="rounded bg-gray-100 px-1">wallTilePattern</code>,{' '}
-          <code className="rounded bg-gray-100 px-1">isShowerGlassVisible</code>, etc.). Merged into prompt context as{' '}
-          <code className="rounded bg-gray-100 px-1">design</code> and used with product images for catalog resolution.
-          Use <code className="rounded bg-gray-100 px-1">{'{}'}</code> or clear to remove.
-        </p>
-        <textarea
-          value={designSettingsText}
-          onChange={(e) => setDesignSettingsText(e.target.value)}
-          spellCheck={false}
-          rows={12}
-          className="font-mono block w-full rounded-md border border-gray-300 px-3 py-2 text-xs text-gray-900 shadow-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-          placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000"\n}'}
-        />
-        {!designPayload.ok && (
-          <p className="mt-2 text-sm text-red-600">{designPayload.error}</p>
-        )}
+      <div className="mt-6">
+        <DesignSettingsEditor value={designSettings} onChange={setDesignSettings} />
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-lg backdrop-blur">
@@ -210,9 +176,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
               <p className="text-sm text-gray-500">
                 {!name.trim()
                   ? 'Give this preset a name.'
-                  : !designJsonOk
-                    ? 'Fix design settings JSON or clear it to {}.'
-                    : 'Add at least one image or non-empty design settings JSON to save.'}
+                  : 'Add at least one image or design setting to save.'}
               </p>
             )}
             {canSave && <p className="text-sm font-medium text-gray-700">Ready to save</p>}
