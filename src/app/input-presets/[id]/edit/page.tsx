@@ -58,6 +58,12 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   }
 
   const arbitraryImages = preset.arbitraryImages ?? preset.arbitrary_images;
+  const designSettingsRaw = preset.designSettings ?? preset.design_settings;
+  const designSettings =
+    designSettingsRaw != null && typeof designSettingsRaw === 'object' && !Array.isArray(designSettingsRaw)
+      ? (designSettingsRaw as Record<string, unknown>)
+      : null;
+
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
@@ -69,6 +75,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     arbitraryImages: Array.isArray(arbitraryImages)
       ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))
       : [],
+    designSettings,
   };
 
   return <InputPresetEditForm initialData={initialData} force={force} />;

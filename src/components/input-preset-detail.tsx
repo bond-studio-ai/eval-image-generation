@@ -151,6 +151,27 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       </div>
 
+      {/* Design settings (adapters_Design) */}
+      {(() => {
+        const d = data as Record<string, unknown>;
+        const ds = d.designSettings ?? d.design_settings;
+        if (!ds || typeof ds !== 'object' || Array.isArray(ds) || Object.keys(ds as object).length === 0) {
+          return null;
+        }
+        return (
+          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="mb-2 text-sm font-semibold text-gray-900 uppercase">Design settings</h2>
+            <p className="mb-3 text-sm text-gray-600">
+              Product UUIDs and placement fields included in runs as prompt context{' '}
+              <code className="rounded bg-gray-100 px-1">design</code>.
+            </p>
+            <pre className="max-h-96 overflow-auto rounded-md border border-gray-100 bg-gray-50 p-4 font-mono text-xs text-gray-800">
+              {JSON.stringify(ds, null, 2)}
+            </pre>
+          </div>
+        );
+      })()}
+
       {/* Scene Images */}
       {(() => {
         const d = data as Record<string, unknown>;

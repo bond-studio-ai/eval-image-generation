@@ -4,6 +4,10 @@ import { ImageUpload } from '@/components/image-upload';
 import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
+import {
+  hasDesignSettingsKeys,
+  parseDesignSettingsPayload,
+} from '@/lib/design-settings-json';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -19,6 +23,7 @@ export default function NewInputPresetPage() {
   const [moodBoard, setMoodBoard] = useState<string | null>(null);
   const [productImages, setProductImages] = useState<ProductImagesState>({});
   const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>([]);
+  const [designSettingsText, setDesignSettingsText] = useState('{}');
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +33,13 @@ export default function NewInputPresetPage() {
     Object.values(productImages).some((arr) => arr && arr.length > 0) ||
     arbitraryImages.length > 0;
 
-  const canCreate = name.trim() && hasAnyImage;
+  const designPayload = parseDesignSettingsPayload(designSettingsText);
+  const hasDesignSettings = designPayload.ok && hasDesignSettingsKeys(designPayload.value);
+  const trimmedDesign = designSettingsText.trim();
+  const designTextMeaningful = trimmedDesign !== '' && trimmedDesign !== '{}';
+  const designJsonOk = !designTextMeaningful || designPayload.ok;
+
+  const canCreate = name.trim() && designJsonOk && (hasAnyImage || hasDesignSettings);
 
   async function handleCreate() {
     if (!canCreate) return;
@@ -36,10 +47,19 @@ export default function NewInputPresetPage() {
     setError(null);
 
     try {
+      const dsg = parseDesignSettingsPayload(designSettingsText);
+      if (!dsg.ok) {
+        setError(dsg.error);
+        setCreating(false);
+        return;
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim() || undefined,
       };
+
+      if (dsg.value) payload.design_settings = dsg.value;
 
       if (dollhouseView) payload.dollhouse_view = dollhouseView;
       if (realPhoto) payload.real_photo = realPhoto;
@@ -151,6 +171,25 @@ export default function NewInputPresetPage() {
         />
       </div>
 
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900 uppercase">Design settings</h2>
+        <p className="mb-3 text-sm text-gray-600">
+          Optional <code className="rounded bg-gray-100 px-1">adapters_Design</code> JSON (camelCase). Passed to prompts as{' '}
+          <code className="rounded bg-gray-100 px-1">design</code> and combined with product image URLs for catalog resolution.
+        </p>
+        <textarea
+          value={designSettingsText}
+          onChange={(e) => setDesignSettingsText(e.target.value)}
+          spellCheck={false}
+          rows={12}
+          className="font-mono block w-full rounded-md border border-gray-300 px-3 py-2 text-xs text-gray-900 shadow-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+          placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000"\n}'}
+        />
+        {!designPayload.ok && (
+          <p className="mt-2 text-sm text-red-600">{designPayload.error}</p>
+        )}
+      </div>
+
       {/* Sticky create bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-lg backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
@@ -159,7 +198,9 @@ export default function NewInputPresetPage() {
               <p className="text-sm text-gray-500">
                 {!name.trim()
                   ? 'Give this preset a name.'
-                  : 'Add at least one image to create.'}
+                  : !designJsonOk
+                    ? 'Fix design settings JSON or clear it to {}.'
+                    : 'Add at least one image or non-empty design settings JSON to create.'}
               </p>
             )}
             {canCreate && (
