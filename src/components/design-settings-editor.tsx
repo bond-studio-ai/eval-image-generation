@@ -2,133 +2,74 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-// ── Schema definition ──────────────────────────────────────────────
+// ── Field definitions ──────────────────────────────────────────────
 
-type FieldType = 'uuid' | 'string' | 'boolean';
+type FieldType = 'select' | 'boolean';
 
-interface FieldDef {
+interface SelectFieldDef {
   key: string;
   label: string;
-  type: FieldType;
-  placeholder?: string;
+  type: 'select';
+  options: { value: string; label: string }[];
 }
 
-interface GroupDef {
-  id: string;
+interface BooleanFieldDef {
+  key: string;
   label: string;
-  fields: FieldDef[];
+  type: 'boolean';
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+type FieldDef = SelectFieldDef | BooleanFieldDef;
 
-function uuid(key: string, label: string): FieldDef {
-  return { key, label, type: 'uuid', placeholder: '00000000-0000-4000-8000-000000000000' };
-}
-function str(key: string, label: string, placeholder?: string): FieldDef {
-  return { key, label, type: 'string', placeholder };
-}
-function bool(key: string, label: string): FieldDef {
-  return { key, label, type: 'boolean' };
-}
-
-const GROUPS: GroupDef[] = [
+const FIELDS: FieldDef[] = [
   {
-    id: 'general',
-    label: 'General',
-    fields: [
-      uuid('paint', 'Paint'),
-      uuid('wallpaper', 'Wallpaper'),
-      str('wallpaperPlacement', 'Wallpaper Placement', 'e.g. AccentWall'),
+    key: 'wallpaperPlacement',
+    label: 'Wallpaper Placement',
+    type: 'select',
+    options: [
+      { value: 'None', label: 'None' },
+      { value: 'AllWalls', label: 'All Walls' },
+      { value: 'VanityWall', label: 'Vanity Wall' },
     ],
   },
   {
-    id: 'floor',
-    label: 'Floor',
-    fields: [
-      uuid('floorTile', 'Floor Tile'),
-      str('floorTilePattern', 'Floor Tile Pattern', 'e.g. Herringbone'),
+    key: 'wallTilePlacement',
+    label: 'Wall Tile Placement',
+    type: 'select',
+    options: [
+      { value: 'None', label: 'None' },
+      { value: 'FullWall', label: 'Full Wall' },
+      { value: 'HalfWall', label: 'Half Wall' },
+      { value: 'VanityFullWall', label: 'Vanity Full Wall' },
+      { value: 'VanityHalfWall', label: 'Vanity Half Wall' },
     ],
   },
   {
-    id: 'wall',
-    label: 'Wall',
-    fields: [
-      uuid('wallTile', 'Wall Tile'),
-      str('wallTilePlacement', 'Wall Tile Placement', 'e.g. VanityHalfWall'),
-      str('wallTilePattern', 'Wall Tile Pattern', 'e.g. Stacked'),
+    key: 'lightingPlacement',
+    label: 'Lighting Placement',
+    type: 'select',
+    options: [
+      { value: 'Above', label: 'Above' },
+      { value: 'Side', label: 'Side' },
+      { value: 'Ceiling', label: 'Ceiling' },
     ],
   },
   {
-    id: 'vanity',
-    label: 'Vanity & Mirror',
-    fields: [
-      uuid('vanity', 'Vanity'),
-      uuid('faucet', 'Faucet'),
-      uuid('mirror', 'Mirror'),
-      str('mirrorPlacement', 'Mirror Placement'),
+    key: 'mirrorPlacement',
+    label: 'Mirror Placement',
+    type: 'select',
+    options: [
+      { value: 'CenterOnVanity', label: 'Center on Vanity' },
+      { value: 'CenterOnSink', label: 'Center on Sink' },
     ],
   },
-  {
-    id: 'lighting',
-    label: 'Lighting',
-    fields: [
-      uuid('lighting', 'Lighting'),
-      str('lightingPlacement', 'Lighting Placement'),
-    ],
-  },
-  {
-    id: 'shower',
-    label: 'Shower',
-    fields: [
-      uuid('showerWallTile', 'Shower Wall Tile'),
-      str('showerWallTilePattern', 'Shower Wall Tile Pattern', 'e.g. Stacked'),
-      uuid('showerShortWallTile', 'Shower Short Wall Tile'),
-      str('showerShortWallTilePattern', 'Short Wall Tile Pattern'),
-      uuid('showerFloorTile', 'Shower Floor Tile'),
-      str('showerFloorTilePattern', 'Shower Floor Tile Pattern'),
-      uuid('curbTile', 'Curb Tile'),
-      str('curbTilePattern', 'Curb Tile Pattern'),
-      uuid('nicheTile', 'Niche Tile'),
-      str('nicheTilePattern', 'Niche Tile Pattern'),
-      uuid('showerSystem', 'Shower System'),
-      uuid('showerGlass', 'Shower Glass'),
-      bool('isShowerGlassVisible', 'Shower Glass Visible'),
-    ],
-  },
-  {
-    id: 'tub',
-    label: 'Tub',
-    fields: [
-      uuid('tub', 'Tub'),
-      uuid('tubDoor', 'Tub Door'),
-      bool('isTubDoorVisible', 'Tub Door Visible'),
-      uuid('tubFiller', 'Tub Filler'),
-    ],
-  },
-  {
-    id: 'accessories',
-    label: 'Accessories',
-    fields: [
-      uuid('toilet', 'Toilet'),
-      uuid('toiletPaperHolder', 'Toilet Paper Holder'),
-      uuid('robeHook', 'Robe Hook'),
-      uuid('towelBar', 'Towel Bar'),
-      uuid('towelRing', 'Towel Ring'),
-      uuid('shelves', 'Shelves'),
-    ],
-  },
+  { key: 'isShowerGlassVisible', label: 'Shower Glass Visible', type: 'boolean' },
+  { key: 'isTubDoorVisible', label: 'Tub Door Visible', type: 'boolean' },
 ];
 
-const ALL_FIELD_KEYS = new Set(GROUPS.flatMap((g) => g.fields.map((f) => f.key)));
+const ALL_FIELD_KEYS = new Set(FIELDS.map((f) => f.key));
 
-// ── Component ──────────────────────────────────────────────────────
-
-export type DesignSettingsValue = Record<string, unknown> | null;
-
-interface DesignSettingsEditorProps {
-  value: DesignSettingsValue;
-  onChange: (value: DesignSettingsValue) => void;
-}
+// ── Helpers ────────────────────────────────────────────────────────
 
 function isNonEmpty(v: unknown): boolean {
   if (v == null) return false;
@@ -137,32 +78,31 @@ function isNonEmpty(v: unknown): boolean {
   return false;
 }
 
+export type DesignSettingsValue = Record<string, unknown> | null;
+
 export function designSettingsHasValues(v: DesignSettingsValue): boolean {
   if (!v) return false;
   return Object.values(v).some(isNonEmpty);
+}
+
+// ── Editor ─────────────────────────────────────────────────────────
+
+interface DesignSettingsEditorProps {
+  value: DesignSettingsValue;
+  onChange: (value: DesignSettingsValue) => void;
 }
 
 export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorProps) {
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
-    if (!value) return new Set<string>();
-    const open = new Set<string>();
-    for (const g of GROUPS) {
-      if (g.fields.some((f) => isNonEmpty(value[f.key]))) {
-        open.add(g.id);
-      }
-    }
-    return open;
-  });
 
   const data = value ?? {};
 
   const setField = useCallback(
     (key: string, v: unknown) => {
       const next = { ...data };
-      if (v == null || v === '' || v === false) {
+      if (v == null || v === '') {
         delete next[key];
       } else {
         next[key] = v;
@@ -172,43 +112,12 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
     [data, onChange],
   );
 
-  const filledCount = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const g of GROUPS) {
-      m.set(g.id, g.fields.filter((f) => isNonEmpty(data[f.key])).length);
-    }
-    return m;
-  }, [data]);
-
-  const totalFilled = useMemo(() => {
-    let n = 0;
-    filledCount.forEach((c) => (n += c));
-    return n;
-  }, [filledCount]);
-
-  const toggleGroup = useCallback((id: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const clearAll = useCallback(() => {
-    onChange(null);
-  }, [onChange]);
-
-  const clearGroup = useCallback(
-    (groupId: string) => {
-      const group = GROUPS.find((g) => g.id === groupId);
-      if (!group) return;
-      const next = { ...data };
-      for (const f of group.fields) delete next[f.key];
-      onChange(Object.keys(next).length === 0 ? null : next);
-    },
-    [data, onChange],
+  const filledCount = useMemo(
+    () => FIELDS.filter((f) => isNonEmpty(data[f.key])).length,
+    [data],
   );
+
+  const clearAll = useCallback(() => onChange(null), [onChange]);
 
   const switchToJson = useCallback(() => {
     const obj = value ?? {};
@@ -258,9 +167,10 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
     }
   }, [jsonText, onChange]);
 
-  const extraKeys = useMemo(() => {
-    return Object.keys(data).filter((k) => !ALL_FIELD_KEYS.has(k) && isNonEmpty(data[k]));
-  }, [data]);
+  const extraKeys = useMemo(
+    () => Object.keys(data).filter((k) => !ALL_FIELD_KEYS.has(k) && isNonEmpty(data[k])),
+    [data],
+  );
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -268,14 +178,14 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold uppercase text-gray-900">Design Settings</h2>
-          {totalFilled > 0 && (
+          {filledCount > 0 && (
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
-              {totalFilled} field{totalFilled !== 1 ? 's' : ''}
+              {filledCount} set
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {totalFilled > 0 && mode === 'form' && (
+          {filledCount > 0 && mode === 'form' && (
             <button
               type="button"
               onClick={clearAll}
@@ -289,9 +199,7 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
               type="button"
               onClick={mode === 'json' ? switchToForm : undefined}
               className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                mode === 'form'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                mode === 'form' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Form
@@ -300,9 +208,7 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
               type="button"
               onClick={mode === 'form' ? switchToJson : undefined}
               className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                mode === 'json'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                mode === 'json' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               JSON
@@ -312,77 +218,35 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
       </div>
 
       {mode === 'form' ? (
-        <div className="divide-y divide-gray-100">
-          {totalFilled === 0 && expandedGroups.size === 0 && (
-            <p className="px-5 py-6 text-center text-sm text-gray-400">
-              Click a section below to add design properties.
-            </p>
-          )}
-          {GROUPS.map((group) => {
-            const count = filledCount.get(group.id) ?? 0;
-            const isOpen = expandedGroups.has(group.id);
-
-            return (
-              <div key={group.id}>
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.id)}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-gray-50"
-                >
-                  <svg
-                    className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-800">{group.label}</span>
-                  {count > 0 && (
-                    <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-200">
-                      {count}
-                    </span>
-                  )}
-                </button>
-
-                {isOpen && (
-                  <div className="border-t border-gray-50 bg-gray-50/50 px-5 pb-4 pt-3">
-                    <div className="space-y-3">
-                      {group.fields.map((field) => (
-                        <FieldInput
-                          key={field.key}
-                          field={field}
-                          value={data[field.key]}
-                          onChange={(v) => setField(field.key, v)}
-                        />
-                      ))}
-                    </div>
-                    {count > 0 && (
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => clearGroup(group.id)}
-                          className="rounded px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
-                        >
-                          Clear {group.label.toLowerCase()}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+            {FIELDS.map((field) =>
+              field.type === 'select' ? (
+                <SelectField
+                  key={field.key}
+                  field={field}
+                  value={data[field.key]}
+                  onChange={(v) => setField(field.key, v)}
+                />
+              ) : (
+                <BooleanField
+                  key={field.key}
+                  field={field}
+                  value={data[field.key]}
+                  onChange={(v) => setField(field.key, v)}
+                />
+              ),
+            )}
+          </div>
 
           {extraKeys.length > 0 && (
-            <div className="px-5 py-3">
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="mb-2 text-xs font-medium text-amber-700">
-                Additional fields (not in schema — switch to JSON to edit):
+                Additional fields (switch to JSON to edit):
               </p>
               <div className="space-y-1">
                 {extraKeys.map((k) => (
-                  <div key={k} className="flex items-center justify-between rounded bg-amber-50 px-3 py-1.5">
+                  <div key={k} className="flex items-center justify-between">
                     <span className="font-mono text-xs text-amber-800">{k}</span>
                     <span className="font-mono text-xs text-amber-600">{JSON.stringify(data[k])}</span>
                   </div>
@@ -403,9 +267,9 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
               setJsonError(null);
             }}
             spellCheck={false}
-            rows={16}
+            rows={12}
             className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000"\n}'}
+            placeholder={'{\n  "wallTilePlacement": "VanityHalfWall",\n  "isShowerGlassVisible": true\n}'}
           />
           {jsonError && <p className="mt-2 text-xs text-red-600">{jsonError}</p>}
           <div className="mt-3 flex justify-end">
@@ -425,76 +289,47 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
 
 // ── Field renderers ────────────────────────────────────────────────
 
-function FieldInput({
+function SelectField({
   field,
   value,
   onChange,
 }: {
-  field: FieldDef;
+  field: SelectFieldDef;
   value: unknown;
-  onChange: (v: unknown) => void;
-}) {
-  if (field.type === 'boolean') {
-    return <BooleanField field={field} value={value} onChange={onChange} />;
-  }
-  return <TextFieldInput field={field} value={value} onChange={onChange} />;
-}
-
-function TextFieldInput({
-  field,
-  value,
-  onChange,
-}: {
-  field: FieldDef;
-  value: unknown;
-  onChange: (v: unknown) => void;
+  onChange: (v: string | null) => void;
 }) {
   const strVal = typeof value === 'string' ? value : '';
-  const [touched, setTouched] = useState(false);
-  const isUuid = field.type === 'uuid';
-  const hasError = touched && isUuid && strVal.length > 0 && !UUID_RE.test(strVal);
 
   return (
     <div>
-      <label className="mb-1 flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-700">{field.label}</span>
-        {isUuid && (
-          <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 ring-1 ring-inset ring-violet-200">
-            UUID
-          </span>
-        )}
-      </label>
-      <div className="relative">
-        <input
-          type="text"
-          value={strVal}
-          onChange={(e) => onChange(e.target.value || null)}
-          onBlur={() => setTouched(true)}
-          placeholder={field.placeholder}
-          className={`block w-full rounded-md border px-3 py-1.5 text-sm shadow-xs transition-colors focus:outline-none focus:ring-1 ${
-            isUuid ? 'font-mono text-xs' : ''
-          } ${
-            hasError
-              ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500'
-              : 'border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500'
+      <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
+      <div className="flex gap-1.5 flex-wrap">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+            !strVal
+              ? 'border-gray-300 bg-gray-100 text-gray-700 shadow-sm'
+              : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600'
           }`}
-        />
-        {strVal && (
+        >
+          Not set
+        </button>
+        {field.options.map((opt) => (
           <button
+            key={opt.value}
             type="button"
-            onClick={() => onChange(null)}
-            className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
-            tabIndex={-1}
+            onClick={() => onChange(opt.value)}
+            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+              strVal === opt.value
+                ? 'border-blue-300 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            {opt.label}
           </button>
-        )}
+        ))}
       </div>
-      {hasError && (
-        <p className="mt-1 text-xs text-red-500">Not a valid UUID format</p>
-      )}
     </div>
   );
 }
@@ -504,68 +339,50 @@ function BooleanField({
   value,
   onChange,
 }: {
-  field: FieldDef;
+  field: BooleanFieldDef;
   value: unknown;
-  onChange: (v: unknown) => void;
+  onChange: (v: boolean | null) => void;
 }) {
   const boolVal = typeof value === 'boolean' ? value : null;
 
   return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-xs font-medium text-gray-700">{field.label}</span>
-      <div className="flex items-center gap-2">
-        {boolVal !== null && (
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="text-xs text-gray-400 hover:text-gray-600"
-            tabIndex={-1}
-          >
-            clear
-          </button>
-        )}
-        <ThreeWayToggle value={boolVal} onChange={onChange} />
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+            boolVal === null
+              ? 'border-gray-300 bg-gray-100 text-gray-700 shadow-sm'
+              : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600'
+          }`}
+        >
+          Not set
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+            boolVal === true
+              ? 'border-green-300 bg-green-50 text-green-700 shadow-sm ring-1 ring-green-200'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Yes
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+            boolVal === false
+              ? 'border-red-300 bg-red-50 text-red-700 shadow-sm ring-1 ring-red-200'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          No
+        </button>
       </div>
-    </div>
-  );
-}
-
-function ThreeWayToggle({
-  value,
-  onChange,
-}: {
-  value: boolean | null;
-  onChange: (v: boolean | null) => void;
-}) {
-  return (
-    <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
-      <button
-        type="button"
-        onClick={() => onChange(null)}
-        className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
-          value === null ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-        }`}
-      >
-        —
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange(true)}
-        className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
-          value === true ? 'bg-green-100 text-green-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-        }`}
-      >
-        Yes
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange(false)}
-        className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
-          value === false ? 'bg-red-100 text-red-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-        }`}
-      >
-        No
-      </button>
     </div>
   );
 }
@@ -576,19 +393,20 @@ interface DesignSettingsDisplayProps {
   value: Record<string, unknown>;
 }
 
-const FIELD_LABELS: Map<string, { label: string; type: FieldType }> = new Map();
-for (const g of GROUPS) {
-  for (const f of g.fields) {
-    FIELD_LABELS.set(f.key, { label: f.label, type: f.type });
+const FIELD_MAP = new Map<string, FieldDef>();
+for (const f of FIELDS) FIELD_MAP.set(f.key, f);
+
+const SELECT_OPTION_LABELS = new Map<string, Map<string, string>>();
+for (const f of FIELDS) {
+  if (f.type === 'select') {
+    const m = new Map<string, string>();
+    for (const o of f.options) m.set(o.value, o.label);
+    SELECT_OPTION_LABELS.set(f.key, m);
   }
 }
 
 export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
-  const populated = GROUPS.map((g) => ({
-    ...g,
-    fields: g.fields.filter((f) => isNonEmpty(value[f.key])),
-  })).filter((g) => g.fields.length > 0);
-
+  const populated = FIELDS.filter((f) => isNonEmpty(value[f.key]));
   const extraKeys = Object.keys(value).filter((k) => !ALL_FIELD_KEYS.has(k) && isNonEmpty(value[k]));
 
   if (populated.length === 0 && extraKeys.length === 0) return null;
@@ -598,28 +416,21 @@ export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
       <div className="border-b border-gray-100 px-5 py-3">
         <h2 className="text-sm font-semibold uppercase text-gray-900">Design Settings</h2>
       </div>
-      <div className="divide-y divide-gray-50">
-        {populated.map((g) => (
-          <div key={g.id} className="px-5 py-3">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{g.label}</h3>
-            <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 sm:grid-cols-2">
-              {g.fields.map((f) => (
-                <DisplayField key={f.key} field={f} value={value[f.key]} />
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="px-5 py-4">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+          {populated.map((f) => (
+            <DisplayField key={f.key} field={f} value={value[f.key]} />
+          ))}
+        </div>
         {extraKeys.length > 0 && (
-          <div className="px-5 py-3">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600">Other</h3>
-            <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 sm:grid-cols-2">
-              {extraKeys.map((k) => (
-                <div key={k} className="flex items-center justify-between rounded py-0.5">
-                  <span className="text-xs text-gray-600">{k}</span>
-                  <span className="font-mono text-xs text-gray-800">{JSON.stringify(value[k])}</span>
-                </div>
-              ))}
-            </div>
+          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="mb-1 text-xs font-medium text-amber-700">Other</p>
+            {extraKeys.map((k) => (
+              <div key={k} className="flex items-center justify-between py-0.5">
+                <span className="font-mono text-xs text-amber-800">{k}</span>
+                <span className="font-mono text-xs text-amber-600">{JSON.stringify(value[k])}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -631,11 +442,13 @@ function DisplayField({ field, value }: { field: FieldDef; value: unknown }) {
   if (field.type === 'boolean') {
     const b = value as boolean;
     return (
-      <div className="flex items-center justify-between rounded py-0.5">
-        <span className="text-xs text-gray-600">{field.label}</span>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-600">{field.label}</span>
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-            b ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-200' : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200'
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            b
+              ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-200'
+              : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200'
           }`}
         >
           {b ? 'Yes' : 'No'}
@@ -645,18 +458,14 @@ function DisplayField({ field, value }: { field: FieldDef; value: unknown }) {
   }
 
   const strVal = String(value);
-  const isUuid = field.type === 'uuid';
+  const optionLabel = SELECT_OPTION_LABELS.get(field.key)?.get(strVal) ?? strVal;
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded py-0.5">
-      <span className="shrink-0 text-xs text-gray-600">{field.label}</span>
-      {isUuid ? (
-        <code className="truncate rounded bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-700 ring-1 ring-inset ring-violet-200">
-          {strVal}
-        </code>
-      ) : (
-        <span className="truncate font-mono text-xs text-gray-800">{strVal}</span>
-      )}
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-gray-600">{field.label}</span>
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+        {optionLabel}
+      </span>
     </div>
   );
 }
