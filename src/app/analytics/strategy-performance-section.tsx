@@ -162,7 +162,18 @@ export function StrategyPerformanceSection({
       const res = await fetch(serviceUrl(`analytics/strategy-errors?strategy_id=${encodeURIComponent(strategyId)}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      setBreakdowns((prev) => ({ ...prev, [strategyId]: json.data ?? null }));
+      const raw = json.data;
+      if (!raw) {
+        setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
+        return;
+      }
+      const normalized: BreakdownData = {
+        execution_errors: Array.isArray(raw.execution_errors) ? raw.execution_errors : [],
+        scene_issues: Array.isArray(raw.scene_issues) ? raw.scene_issues : [],
+        product_issues: Array.isArray(raw.product_issues) ? raw.product_issues : [],
+        rating_summary: raw.rating_summary ?? null,
+      };
+      setBreakdowns((prev) => ({ ...prev, [strategyId]: normalized }));
     } catch {
       setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
     } finally {
@@ -173,14 +184,11 @@ export function StrategyPerformanceSection({
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        if (!breakdowns[id]) fetchBreakdown(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
+    if (!breakdowns[id]) fetchBreakdown(id);
   }, [fetchBreakdown, breakdowns]);
 
   const toggleSort = useCallback((key: SortKey) => {
@@ -220,7 +228,7 @@ export function StrategyPerformanceSection({
     );
   }
 
-  const COL_SPAN = 8;
+  const COL_SPAN = 7;
   const thClass = 'px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors';
 
   return (
