@@ -5,6 +5,7 @@ import {
   CONDITIONAL_OPTIONS,
   REFERENCE_OPTIONS,
 } from '@/lib/prompt-template-constants';
+import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface PromptTemplateEditorProps {
@@ -68,6 +69,18 @@ export function PromptTemplateEditor({
   const [attributesLoading, setAttributesLoading] = useState(false);
   const [refDropdownOpen, setRefDropdownOpen] = useState(false);
   const [attrDropdownOpen, setAttrDropdownOpen] = useState(false);
+
+  const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
+  const hasErrors = errors.length > 0;
+
+  const textareaClass = useMemo(() => {
+    if (!hasErrors) return className;
+    return className
+      .replace(/\bborder-gray-200\b/, 'border-red-300')
+      .replace(/\bhover:border-gray-300\b/, 'hover:border-red-400')
+      .replace(/\bfocus:border-primary-500\b/, 'focus:border-red-500')
+      .replace(/\bfocus:ring-primary-500\b/, 'focus:ring-red-500');
+  }, [className, hasErrors]);
 
   const focusTextarea = useCallback(() => {
     textareaRef.current?.focus();
@@ -183,14 +196,17 @@ export function PromptTemplateEditor({
 
   if (!showPicker) {
     return (
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className={className}
-      />
+      <div className={fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}>
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : textareaClass}
+        />
+        <TemplateErrors errors={errors} />
+      </div>
     );
   }
 
@@ -349,9 +365,49 @@ export function PromptTemplateEditor({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className={`min-h-0 flex-1 resize-none ${className}`}
+          className={`min-h-0 flex-1 resize-none ${textareaClass}`}
         />
       </div>
+      <TemplateErrors errors={errors} />
+    </div>
+  );
+}
+
+const MAX_VISIBLE_ERRORS = 5;
+
+function TemplateErrors({ errors }: { errors: { line: number; message: string }[] }) {
+  if (errors.length === 0) return null;
+
+  const visible = errors.slice(0, MAX_VISIBLE_ERRORS);
+  const remaining = errors.length - visible.length;
+
+  return (
+    <div className="mt-1.5 shrink-0 rounded-md bg-red-50 px-3 py-2">
+      <div className="space-y-0.5">
+        {visible.map((err, i) => (
+          <p key={i} className="flex items-start gap-1.5 text-xs text-red-700">
+            <svg
+              className="mt-0.5 h-3 w-3 shrink-0 text-red-500"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>
+              <span className="font-semibold">Line {err.line}:</span> {err.message}
+            </span>
+          </p>
+        ))}
+      </div>
+      {remaining > 0 && (
+        <p className="mt-1 text-[10px] text-red-500">
+          and {remaining} more {remaining === 1 ? 'error' : 'errors'}
+        </p>
+      )}
     </div>
   );
 }
