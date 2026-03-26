@@ -108,6 +108,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           weight: j.weight,
           toleranceThreshold: j.toleranceThreshold,
           judgePromptVersionId: j.judgePromptVersionId,
+          judgePromptVersionName: j.judgePromptVersionName,
         }))}
         preview={{
           previewModel: result.previewModel,

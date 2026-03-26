@@ -23,6 +23,7 @@ interface JudgeItem {
   weight: number;
   toleranceThreshold: number;
   judgePromptVersionId: string;
+  judgePromptVersionName?: string | null;
 }
 
 interface StrategySettingsPromptsProps {
@@ -138,7 +139,7 @@ export function StrategySettingsPrompts({
                           href={`/prompt-versions/${j.judgePromptVersionId}`}
                           className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200"
                         >
-                          Prompt
+                          {j.judgePromptVersionName || 'View prompt'}
                         </Link>
                       )}
                     </div>
