@@ -2,7 +2,7 @@
 
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
 
@@ -26,6 +26,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const THUMB = 48;
+const PAGE_SIZE = 50;
 
 function RunPickerCard({
   run,
@@ -116,36 +117,100 @@ function RunPickerCard({
   );
 }
 
+function toIsoStart(date: string): string {
+  return new Date(date + 'T00:00:00Z').toISOString();
+}
+
+function toIsoEnd(date: string): string {
+  return new Date(date + 'T23:59:59.999Z').toISOString();
+}
+
 export function AuditComparePage() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leftId, setLeftId] = useState<string | null>(null);
   const [rightId, setRightId] = useState<string | null>(null);
   const [filterText, setFilterText] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchRuns = useCallback(async () => {
-    try {
-      const res = await fetch(
-        serviceUrl('strategy-runs?limit=200&individual_only=false'),
-        { cache: 'no-store' },
-      );
-      if (!res.ok) {
-        setError(`Failed to load runs (${res.status})`);
-        return;
+  const hasMore = runs.length < total;
+
+  const fetchRuns = useCallback(
+    async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
+      const replace = opts.replace ?? false;
+      const pageToFetch = opts.pageToFetch ?? 1;
+      if (replace) setError(null);
+      else setLoadingMore(true);
+
+      try {
+        const params = new URLSearchParams({
+          page: String(pageToFetch),
+          limit: String(PAGE_SIZE),
+          individual_only: 'false',
+        });
+        if (dateFrom) params.set('from', toIsoStart(dateFrom));
+        if (dateTo) params.set('to', toIsoEnd(dateTo));
+
+        const res = await fetch(serviceUrl(`strategy-runs?${params}`), {
+          cache: 'no-store',
+        });
+        if (!res.ok) {
+          setError(`Failed to load runs (${res.status})`);
+          return;
+        }
+        const json = await res.json();
+        const data = (json.data ?? []) as RunListItem[];
+        const paginationTotal = Number(json.pagination?.total ?? 0);
+
+        if (replace) {
+          setRuns(data);
+          setTotal(paginationTotal);
+          setPage(1);
+        } else {
+          setRuns((prev) => [...prev, ...data]);
+          setTotal(paginationTotal);
+          setPage(pageToFetch);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      const json = await res.json();
-      setRuns((json.data ?? []) as RunListItem[]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [dateFrom, dateTo],
+  );
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    fetchRuns({ replace: false, pageToFetch: page + 1 });
+  }, [hasMore, loadingMore, page, fetchRuns]);
 
   useEffect(() => {
-    fetchRuns();
+    setLoading(true);
+    fetchRuns({ replace: true });
   }, [fetchRuns]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    const root = scrollRef.current;
+    if (!el || !root || !hasMore || loadingMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { root, rootMargin: '200px', threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const toggle = (id: string) => {
     if (leftId === id) {
@@ -214,13 +279,46 @@ export function AuditComparePage() {
         </div>
 
         <div className="p-4">
-          <input
-            type="text"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            placeholder="Filter by strategy name, preset, source, or run ID..."
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          />
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-0 flex-1">
+              <input
+                type="text"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                placeholder="Filter by strategy name, preset, source, or run ID..."
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-medium text-gray-500">From</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-medium text-gray-500">To</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </label>
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  className="mt-3.5 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Clear dates
+                </button>
+              )}
+            </div>
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -232,22 +330,37 @@ export function AuditComparePage() {
           ) : error ? (
             <p className="py-4 text-center text-sm text-red-600">{error}</p>
           ) : (
-            <div className="mt-3 max-h-80 space-y-1.5 overflow-y-auto">
-              {filtered.length === 0 ? (
-                <p className="py-4 text-center text-sm text-gray-400">
-                  {filterText ? 'No runs match your filter.' : 'No runs found.'}
-                </p>
-              ) : (
-                filtered.map((run) => (
-                  <RunPickerCard
-                    key={run.id}
-                    run={run}
-                    isSelected={run.id === leftId || run.id === rightId}
-                    onSelect={() => toggle(run.id)}
-                  />
-                ))
-              )}
-            </div>
+            <>
+              <p className="mt-2 text-[11px] text-gray-400">
+                Showing {filtered.length} of {total} runs
+              </p>
+              <div ref={scrollRef} className="mt-2 max-h-[28rem] space-y-1.5 overflow-y-auto">
+                {filtered.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-gray-400">
+                    {filterText ? 'No runs match your filter.' : 'No runs found.'}
+                  </p>
+                ) : (
+                  filtered.map((run) => (
+                    <RunPickerCard
+                      key={run.id}
+                      run={run}
+                      isSelected={run.id === leftId || run.id === rightId}
+                      onSelect={() => toggle(run.id)}
+                    />
+                  ))
+                )}
+                {hasMore && (
+                  <div ref={sentinelRef} className="flex items-center justify-center py-3">
+                    {loadingMore && (
+                      <svg className="h-4 w-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
