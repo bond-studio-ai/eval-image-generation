@@ -88,6 +88,21 @@ export function StrategySettingsPrompts({
             Group images: {groupProductImages ? 'Yes' : 'No'}
           </span>
         </div>
+        {preview?.previewModel && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <h3 className="text-sm font-medium text-blue-800">Preview Generation</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                Model: {preview.previewModel}
+              </span>
+              {preview.previewResolution && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                  Resolution: {preview.previewResolution}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {judges && judges.length > 0 && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex items-center gap-2">
@@ -130,21 +145,6 @@ export function StrategySettingsPrompts({
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
-        {preview?.previewModel && (
-          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <h3 className="text-sm font-medium text-blue-800">Preview Generation</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                Model: {preview.previewModel}
-              </span>
-              {preview.previewResolution && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                  Resolution: {preview.previewResolution}
-                </span>
-              )}
             </div>
           </div>
         )}
