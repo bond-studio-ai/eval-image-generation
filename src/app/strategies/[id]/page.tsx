@@ -115,6 +115,13 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           judgePromptVersionId: result.judgePromptVersionId,
           judgePromptVersionName: judgePromptName,
         }}
+        judges={(result.judges ?? []).map((j) => ({
+          judgeModel: j.judgeModel,
+          judgeType: j.judgeType,
+          weight: j.weight,
+          toleranceThreshold: j.toleranceThreshold,
+          judgePromptVersionId: j.judgePromptVersionId,
+        }))}
         preview={{
           previewModel: result.previewModel,
           previewResolution: result.previewResolution,
@@ -126,7 +133,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        hasJudge={!!result.judgeType}
+        hasJudge={!!result.judgeType || (result.judges ?? []).length > 0}
         initialRuns={runsRaw.map((run) => {
           const inputPresetName =
             (run.inputPresetName as string) ??

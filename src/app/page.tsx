@@ -1,5 +1,6 @@
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
+import { ReliabilityTab } from '@/app/analytics/reliability-tab';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
 import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance } from '@/lib/service-client';
 import Link from 'next/link';
@@ -49,7 +50,9 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
   );
 }
 
-function TabNav({ active, searchParams }: { active: 'strategies' | 'products'; searchParams: Record<string, string | undefined> }) {
+type TabName = 'strategies' | 'products' | 'reliability';
+
+function TabNav({ active, searchParams }: { active: TabName; searchParams: Record<string, string | undefined> }) {
   const buildHref = (tab: string) => {
     const params = new URLSearchParams();
     if (tab !== 'strategies') params.set('tab', tab);
@@ -60,33 +63,34 @@ function TabNav({ active, searchParams }: { active: 'strategies' | 'products'; s
     return `/${qs ? `?${qs}` : ''}`;
   };
 
+  const tabs: { key: TabName; label: string }[] = [
+    { key: 'strategies', label: 'Strategies' },
+    { key: 'products', label: 'Products' },
+    { key: 'reliability', label: 'Reliability' },
+  ];
+
   return (
     <div className="mt-6 flex gap-1 border-b border-gray-200">
-      <Link
-        href={buildHref('strategies')}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === 'strategies'
-            ? 'border-primary-600 text-primary-700'
-            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-          }`}
-      >
-        Strategies
-      </Link>
-      <Link
-        href={buildHref('products')}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === 'products'
-            ? 'border-primary-600 text-primary-700'
-            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-          }`}
-      >
-        Products
-      </Link>
+      {tabs.map((tab) => (
+        <Link
+          key={tab.key}
+          href={buildHref(tab.key)}
+          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === tab.key
+              ? 'border-primary-600 text-primary-700'
+              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+        >
+          {tab.label}
+        </Link>
+      ))}
     </div>
   );
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const activeTab = params.tab === 'products' ? 'products' : 'strategies';
+  const activeTab: TabName =
+    params.tab === 'products' ? 'products' : params.tab === 'reliability' ? 'reliability' : 'strategies';
   const from = params.from;
   const to = params.to;
   const model = params.model;
@@ -138,7 +142,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {activeTab === 'strategies' ? (
+      {activeTab === 'strategies' && (
         <>
           {/* Rating Distributions */}
           <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -149,7 +153,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           {/* Strategy performance and error breakdown */}
           <StrategyPerformanceSection from={from} to={to} model={model} />
         </>
-      ) : (
+      )}
+
+      {activeTab === 'products' && (
         <>
           {/* Product Category Rates */}
           <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -162,6 +168,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             </div>
           </div>
         </>
+      )}
+
+      {activeTab === 'reliability' && (
+        <ReliabilityTab from={from} to={to} model={model} />
       )}
     </div>
   );

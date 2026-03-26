@@ -52,6 +52,14 @@ export default async function EditStrategyPage({ params }: PageProps) {
             preview_model: strat.previewModel ?? null,
             preview_resolution: strat.previewResolution ?? '512',
           }}
+          initialJudges={(strat.judges ?? []).map((j) => ({
+            id: j.id,
+            judge_model: j.judgeModel,
+            judge_type: j.judgeType as 'batch' | 'individual',
+            judge_prompt_version_id: j.judgePromptVersionId,
+            weight: j.weight,
+            tolerance_threshold: j.toleranceThreshold,
+          }))}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
             name: s.name ?? '',

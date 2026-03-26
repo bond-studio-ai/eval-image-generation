@@ -70,6 +70,19 @@ export interface StrategyStepItem {
   arbitraryImageFromStep: number | null;
 }
 
+export interface StrategyJudgeItem {
+  id: string;
+  strategyId: string;
+  judgeModel: string;
+  judgeType: 'batch' | 'individual';
+  judgePromptVersionId: string;
+  weight: number;
+  toleranceThreshold: number;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StrategyDetailItem {
   id: string;
   name: string;
@@ -90,6 +103,7 @@ export interface StrategyDetailItem {
   previewModel: string | null;
   previewResolution: string | null;
   steps: StrategyStepItem[];
+  judges?: StrategyJudgeItem[];
   runCount: number;
 }
 
@@ -226,4 +240,40 @@ export async function fetchAnalyticsStrategyPerformance(params: Record<string, s
   return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(
     `/analytics/strategy-performance${qs ? `?${qs}` : ''}`,
   );
+}
+
+export interface ReliabilityData {
+  summary: {
+    totalRuns: number;
+    completedRuns: number;
+    failedRuns: number;
+    skippedRuns: number;
+    failureRate: number;
+  };
+  generationErrors: {
+    totalSteps: number;
+    failedSteps: number;
+    timedOutSteps: number;
+    failureRate: number;
+    timeoutRate: number;
+    errorBreakdown: { reason: string; count: number }[];
+  };
+  judgeErrors: {
+    totalJudged: number;
+    failedJudges: number;
+    judgeFailureRate: number;
+    errorBreakdown: { reason: string; count: number }[];
+  };
+  trends: {
+    period: string;
+    totalRuns: number;
+    failedRuns: number;
+    timedOutSteps: number;
+    judgeFailures: number;
+  }[];
+}
+
+export async function fetchAnalyticsReliability(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  return fetchService<ReliabilityData>(`/analytics/reliability${qs ? `?${qs}` : ''}`);
 }

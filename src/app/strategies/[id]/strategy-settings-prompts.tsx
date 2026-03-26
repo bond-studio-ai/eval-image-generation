@@ -24,6 +24,14 @@ interface PreviewConfig {
   previewResolution: string | null;
 }
 
+interface JudgeItem {
+  judgeModel: string;
+  judgeType: 'batch' | 'individual';
+  weight: number;
+  toleranceThreshold: number;
+  judgePromptVersionId: string;
+}
+
 interface StrategySettingsPromptsProps {
   model: string;
   aspectRatio: string;
@@ -35,6 +43,7 @@ interface StrategySettingsPromptsProps {
   description: string | null;
   steps: StepWithPrompt[];
   judge?: JudgeConfig;
+  judges?: JudgeItem[];
   preview?: PreviewConfig;
 }
 
@@ -49,6 +58,7 @@ export function StrategySettingsPrompts({
   description,
   steps,
   judge,
+  judges,
   preview,
 }: StrategySettingsPromptsProps) {
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
@@ -112,6 +122,37 @@ export function StrategySettingsPrompts({
                   View judge prompt
                 </Link>
               )}
+            </div>
+          </div>
+        )}
+        {judges && judges.length > 0 && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <h3 className="text-sm font-medium text-amber-800">Judges ({judges.length})</h3>
+            <div className="mt-2 space-y-2">
+              {judges.map((j, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    #{i + 1} {j.judgeType === 'batch' ? 'Batch' : 'Individual'}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    {j.judgeModel}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    Weight: {j.weight}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    Threshold: {j.toleranceThreshold}
+                  </span>
+                  {j.judgePromptVersionId && (
+                    <Link
+                      href={`/prompt-versions/${j.judgePromptVersionId}`}
+                      className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+                    >
+                      View prompt
+                    </Link>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

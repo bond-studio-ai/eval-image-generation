@@ -44,6 +44,15 @@ interface JudgeSettings {
   judge_prompt_version_id: string;
 }
 
+interface JudgeData {
+  id?: string;
+  judge_model: string;
+  judge_type: 'batch' | 'individual';
+  judge_prompt_version_id: string;
+  weight: number;
+  tolerance_threshold: number;
+}
+
 interface PreviewSettings {
   preview_model: string | null;
   preview_resolution: string;
@@ -57,6 +66,7 @@ interface StrategyBuilderProps {
   initialJudgeSettings?: JudgeSettings;
   initialPreviewSettings?: PreviewSettings;
   initialSteps?: StepData[];
+  initialJudges?: JudgeData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
   models?: ModelListing;
@@ -123,6 +133,7 @@ export function StrategyBuilder({
   initialJudgeSettings,
   initialPreviewSettings,
   initialSteps,
+  initialJudges,
   promptVersions,
   inputPresets,
   models,
@@ -148,6 +159,29 @@ export function StrategyBuilder({
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(
     initialPreviewSettings ?? defaultPreviewSettings,
   );
+  const [judges, setJudges] = useState<JudgeData[]>(initialJudges ?? []);
+
+  const addJudge = useCallback(() => {
+    setJudges((prev) => [
+      ...prev,
+      {
+        judge_model: 'gemini-2.5-flash',
+        judge_type: 'individual',
+        judge_prompt_version_id: '',
+        weight: 50,
+        tolerance_threshold: 1,
+      },
+    ]);
+  }, []);
+
+  const removeJudge = useCallback((idx: number) => {
+    setJudges((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const updateJudge = useCallback((idx: number, partial: Partial<JudgeData>) => {
+    setJudges((prev) => prev.map((j, i) => (i === idx ? { ...j, ...partial } : j)));
+  }, []);
+
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
       ? initialSteps
@@ -200,6 +234,17 @@ export function StrategyBuilder({
         judgeType: judgeSettings.judge_type,
         judgeModel: judgeSettings.judge_type ? judgeSettings.judge_model : null,
         judgePromptVersionId: judgeSettings.judge_type ? judgeSettings.judge_prompt_version_id || null : null,
+        judges: judges.length > 0
+          ? judges.map((j, i) => ({
+              id: j.id,
+              judgeModel: j.judge_model,
+              judgeType: j.judge_type,
+              judgePromptVersionId: j.judge_prompt_version_id,
+              weight: j.weight,
+              toleranceThreshold: j.tolerance_threshold,
+              position: i + 1,
+            }))
+          : undefined,
         previewModel: previewSettings.preview_model,
         previewResolution: previewSettings.preview_model ? previewSettings.preview_resolution : null,
         steps: steps.map((s, i) => ({
@@ -251,7 +296,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, judgeSettings, previewSettings, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, judgeSettings, previewSettings, judges, steps, isEditing, strategyId, router]);
 
   return (
     <div className="space-y-6">
@@ -426,77 +471,129 @@ export function StrategyBuilder({
           <div>
             <h2 className="text-sm font-semibold text-gray-900 uppercase">Judge System</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Automatically evaluate and select the best result when generating multiple images.
+              Automatically evaluate and select the best result when generating multiple images. Add multiple judges for weighted aggregation.
             </p>
           </div>
-          <label className="relative inline-flex cursor-pointer items-center">
-            <input
-              type="checkbox"
-              checked={judgeSettings.judge_type !== null}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setJudgeSettings((s) => ({ ...s, judge_type: 'individual' }));
-                } else {
-                  setJudgeSettings(defaultJudgeSettings);
-                }
-              }}
-              className="peer sr-only"
-            />
-            <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300" />
-          </label>
+          <button
+            type="button"
+            onClick={addJudge}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Judge
+          </button>
         </div>
 
-        {judgeSettings.judge_type !== null && (
+        {judges.length > 0 && (
           <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Type</label>
-                <div className="space-y-2">
-                  {JUDGE_TYPES.map((jt) => (
-                    <label
-                      key={jt.value}
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                        judgeSettings.judge_type === jt.value
-                          ? 'border-primary-300 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="judge_type"
-                        value={jt.value}
-                        checked={judgeSettings.judge_type === jt.value}
-                        onChange={() => setJudgeSettings((s) => ({ ...s, judge_type: jt.value }))}
-                        className="mt-0.5 text-primary-600 focus:ring-primary-500"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">{jt.label}</span>
-                        <p className="text-xs text-gray-500">{jt.description}</p>
-                      </div>
+            {judges.map((judge, jIdx) => (
+              <div key={jIdx} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-700 uppercase">Judge {jIdx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeJudge(jIdx)}
+                    className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">Judge Type</label>
+                    <div className="flex gap-2">
+                      {JUDGE_TYPES.map((jt) => (
+                        <label
+                          key={jt.value}
+                          className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
+                            judge.judge_type === jt.value
+                              ? 'border-primary-300 bg-primary-50 text-primary-700 font-medium'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`judge_type_${jIdx}`}
+                            value={jt.value}
+                            checked={judge.judge_type === jt.value}
+                            onChange={() => updateJudge(jIdx, { judge_type: jt.value })}
+                            className="sr-only"
+                          />
+                          {jt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
+                    <SearchableSelect
+                      value={judge.judge_model}
+                      options={judgeModels}
+                      onChange={(v) => updateJudge(jIdx, { judge_model: v })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">Prompt</label>
+                    <PromptVersionSelector
+                      value={judge.judge_prompt_version_id}
+                      promptVersions={promptVersions}
+                      onChange={(id) => updateJudge(jIdx, { judge_prompt_version_id: id })}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                      <span>Weight</span>
+                      <span className="font-mono text-gray-400">{judge.weight}</span>
                     </label>
-                  ))}
+                    <input
+                      type="range"
+                      min={1}
+                      max={100}
+                      value={judge.weight}
+                      onChange={(e) => updateJudge(jIdx, { weight: Number(e.target.value) })}
+                      className="w-full accent-primary-600"
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400">
+                      <span>1</span>
+                      <span>100</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                      <span>Tolerance Threshold</span>
+                      <span className="font-mono text-gray-400">{judge.tolerance_threshold}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={100}
+                      value={judge.tolerance_threshold}
+                      onChange={(e) => updateJudge(jIdx, { tolerance_threshold: Number(e.target.value) })}
+                      className="w-full accent-primary-600"
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400">
+                      <span>1</span>
+                      <span>100</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Model</label>
-                <SearchableSelect
-                  value={judgeSettings.judge_model}
-                  options={judgeModels}
-                  onChange={(v) => setJudgeSettings((s) => ({ ...s, judge_model: v }))}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Judge Prompt</label>
-                <PromptVersionSelector
-                  value={judgeSettings.judge_prompt_version_id}
-                  promptVersions={promptVersions}
-                  onChange={(id) => setJudgeSettings((s) => ({ ...s, judge_prompt_version_id: id }))}
-                />
-              </div>
-            </div>
+            ))}
           </div>
+        )}
+
+        {judges.length === 0 && (
+          <p className="mt-3 text-xs text-gray-400">No judges configured. Click &quot;Add Judge&quot; to enable evaluation.</p>
         )}
       </div>
 
