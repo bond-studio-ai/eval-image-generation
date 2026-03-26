@@ -38,12 +38,6 @@ interface StrategySettings {
   group_product_images: boolean;
 }
 
-interface JudgeSettings {
-  judge_type: 'batch' | 'individual' | null;
-  judge_model: string;
-  judge_prompt_version_id: string;
-}
-
 interface JudgeData {
   id?: string;
   judge_model: string;
@@ -63,7 +57,6 @@ interface StrategyBuilderProps {
   initialName?: string;
   initialDescription?: string;
   initialStrategySettings?: StrategySettings;
-  initialJudgeSettings?: JudgeSettings;
   initialPreviewSettings?: PreviewSettings;
   initialSteps?: StepData[];
   initialJudges?: JudgeData[];
@@ -102,12 +95,6 @@ const JUDGE_TYPES: { value: 'batch' | 'individual'; label: string; description: 
   { value: 'individual', label: 'Individual', description: 'Score each result 1-100 in parallel' },
 ];
 
-const defaultJudgeSettings: JudgeSettings = {
-  judge_type: null,
-  judge_model: 'gemini-2.5-flash',
-  judge_prompt_version_id: '',
-};
-
 const defaultPreviewSettings: PreviewSettings = {
   preview_model: null,
   preview_resolution: '512',
@@ -130,7 +117,6 @@ export function StrategyBuilder({
   initialName = '',
   initialDescription = '',
   initialStrategySettings,
-  initialJudgeSettings,
   initialPreviewSettings,
   initialSteps,
   initialJudges,
@@ -152,9 +138,6 @@ export function StrategyBuilder({
   const [description, setDescription] = useState(initialDescription);
   const [strategySettings, setStrategySettings] = useState<StrategySettings>(
     initialStrategySettings ?? defaultStrategySettings,
-  );
-  const [judgeSettings, setJudgeSettings] = useState<JudgeSettings>(
-    initialJudgeSettings ?? defaultJudgeSettings,
   );
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(
     initialPreviewSettings ?? defaultPreviewSettings,
@@ -231,9 +214,6 @@ export function StrategyBuilder({
         useGoogleSearch: strategySettings.use_google_search,
         tagImages: strategySettings.tag_images,
         groupProductImages: strategySettings.group_product_images,
-        judgeType: judgeSettings.judge_type,
-        judgeModel: judgeSettings.judge_type ? judgeSettings.judge_model : null,
-        judgePromptVersionId: judgeSettings.judge_type ? judgeSettings.judge_prompt_version_id || null : null,
         judges: judges.length > 0
           ? judges.map((j, i) => ({
               id: j.id,
@@ -296,7 +276,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, judgeSettings, previewSettings, judges, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, previewSettings, judges, steps, isEditing, strategyId, router]);
 
   return (
     <div className="space-y-6">
@@ -471,13 +451,14 @@ export function StrategyBuilder({
           <div>
             <h2 className="text-sm font-semibold text-gray-900 uppercase">Judge System</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Automatically evaluate and select the best result when generating multiple images. Add multiple judges for weighted aggregation.
+              When generating multiple concurrent runs, judges evaluate results and pick the best one.
+              {judges.length > 1 && ' Scores are aggregated using a weighted average across all judges.'}
             </p>
           </div>
           <button
             type="button"
             onClick={addJudge}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -486,34 +467,50 @@ export function StrategyBuilder({
           </button>
         </div>
 
-        {judges.length > 0 && (
-          <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
-            {judges.map((judge, jIdx) => (
-              <div key={jIdx} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700 uppercase">Judge {jIdx + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeJudge(jIdx)}
-                    className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  </button>
-                </div>
+        {judges.length === 0 && (
+          <div className="mt-4 flex flex-col items-center rounded-lg border-2 border-dashed border-gray-200 py-8 text-center">
+            <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
+            </svg>
+            <p className="mt-2 text-sm font-medium text-gray-500">No judges configured</p>
+            <p className="mt-1 max-w-xs text-xs text-gray-400">
+              Without a judge, all concurrent runs are returned as-is. Add a judge to automatically evaluate and select the best result.
+            </p>
+            <button
+              type="button"
+              onClick={addJudge}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add your first judge
+            </button>
+          </div>
+        )}
 
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Judge Type</label>
-                    <div className="flex gap-2">
+        {judges.length > 0 && (
+          <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+            {judges.map((judge, jIdx) => {
+              const totalWeight = judges.reduce((sum, j) => sum + j.weight, 0);
+              const weightPct = totalWeight > 0 ? Math.round((judge.weight / totalWeight) * 100) : 0;
+
+              return (
+                <div key={jIdx} className="rounded-lg border border-gray-200 bg-gray-50/80 transition-shadow hover:shadow-sm">
+                  {/* Judge header */}
+                  <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                      {jIdx + 1}
+                    </span>
+                    <div className="flex flex-1 items-center gap-2">
                       {JUDGE_TYPES.map((jt) => (
                         <label
                           key={jt.value}
-                          className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
+                          title={jt.description}
+                          className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${
                             judge.judge_type === jt.value
-                              ? 'border-primary-300 bg-primary-50 text-primary-700 font-medium'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                              ? 'border-amber-300 bg-amber-50 font-medium text-amber-800'
+                              : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
                           }`}
                         >
                           <input
@@ -525,75 +522,98 @@ export function StrategyBuilder({
                             className="sr-only"
                           />
                           {jt.label}
+                          <span className="ml-1 hidden text-[10px] font-normal opacity-70 sm:inline">
+                            &mdash; {jt.description}
+                          </span>
                         </label>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => removeJudge(jIdx)}
+                      className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                      title="Remove judge"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
-                    <SearchableSelect
-                      value={judge.judge_model}
-                      options={judgeModels}
-                      onChange={(v) => updateJudge(jIdx, { judge_model: v })}
-                    />
-                  </div>
+                  {/* Judge body */}
+                  <div className="px-4 py-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
+                        <SearchableSelect
+                          value={judge.judge_model}
+                          options={judgeModels}
+                          onChange={(v) => updateJudge(jIdx, { judge_model: v })}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">Prompt</label>
+                        <PromptVersionSelector
+                          value={judge.judge_prompt_version_id}
+                          promptVersions={promptVersions}
+                          onChange={(id) => updateJudge(jIdx, { judge_prompt_version_id: id })}
+                        />
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Prompt</label>
-                    <PromptVersionSelector
-                      value={judge.judge_prompt_version_id}
-                      promptVersions={promptVersions}
-                      onChange={(id) => updateJudge(jIdx, { judge_prompt_version_id: id })}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                      <span>Weight</span>
-                      <span className="font-mono text-gray-400">{judge.weight}</span>
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={100}
-                      value={judge.weight}
-                      onChange={(e) => updateJudge(jIdx, { weight: Number(e.target.value) })}
-                      className="w-full accent-primary-600"
-                    />
-                    <div className="flex justify-between text-[10px] text-gray-400">
-                      <span>1</span>
-                      <span>100</span>
+                    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                          <span title="How much this judge influences the final aggregated score relative to other judges">
+                            Weight
+                          </span>
+                          <span className="tabular-nums text-gray-900">
+                            {judge.weight}
+                            {judges.length > 1 && (
+                              <span className="ml-1 text-gray-400">({weightPct}%)</span>
+                            )}
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={100}
+                          value={judge.weight}
+                          onChange={(e) => updateJudge(jIdx, { weight: Number(e.target.value) })}
+                          className="w-full accent-amber-500"
+                        />
+                        <p className="mt-0.5 text-[10px] leading-tight text-gray-400">
+                          Relative influence on the final score
+                        </p>
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                          <span title="Minimum score the best candidate must achieve for this judge's results to count. Below this threshold, this judge is excluded from aggregation.">
+                            Tolerance
+                          </span>
+                          <span className="tabular-nums text-gray-900">
+                            {judge.tolerance_threshold}
+                            <span className="ml-0.5 text-gray-400">/100</span>
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={100}
+                          value={judge.tolerance_threshold}
+                          onChange={(e) => updateJudge(jIdx, { tolerance_threshold: Number(e.target.value) })}
+                          className="w-full accent-amber-500"
+                        />
+                        <p className="mt-0.5 text-[10px] leading-tight text-gray-400">
+                          Min score to include this judge in aggregation
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                      <span>Tolerance Threshold</span>
-                      <span className="font-mono text-gray-400">{judge.tolerance_threshold}</span>
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={100}
-                      value={judge.tolerance_threshold}
-                      onChange={(e) => updateJudge(jIdx, { tolerance_threshold: Number(e.target.value) })}
-                      className="w-full accent-primary-600"
-                    />
-                    <div className="flex justify-between text-[10px] text-gray-400">
-                      <span>1</span>
-                      <span>100</span>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        )}
-
-        {judges.length === 0 && (
-          <p className="mt-3 text-xs text-gray-400">No judges configured. Click &quot;Add Judge&quot; to enable evaluation.</p>
         )}
       </div>
 

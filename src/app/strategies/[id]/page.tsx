@@ -1,5 +1,5 @@
 import { StrategyFlowDag, type DagStep, type DagJudge } from '@/components/strategy-flow-dag';
-import { fetchPromptVersionById, fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
+import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActiveToggleButton } from './active-toggle-button';
@@ -26,13 +26,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  let judgePromptName: string | null = null;
-  if (result.judgePromptVersionId) {
-    try {
-      const pv = await fetchPromptVersionById(result.judgePromptVersionId);
-      judgePromptName = (pv?.name as string) ?? null;
-    } catch { /* prompt may have been deleted */ }
-  }
+  
 
   return (
     <div>
@@ -83,11 +77,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                 moodBoardFromStep: step.moodBoardFromStep,
                 arbitraryImageFromStep: step.arbitraryImageFromStep,
               }))}
-              judge={result.judgeType && result.judgeModel ? {
-                type: result.judgeType,
-                model: result.judgeModel,
-                promptName: judgePromptName,
-              } : null}
+              judges={(result.judges ?? []).map((j) => ({
+                type: j.judgeType as 'batch' | 'individual',
+                model: j.judgeModel,
+              }))}
             />
           </div>
         )}
@@ -109,12 +102,6 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           promptVersionId: s.promptVersionId,
           promptVersionName: s.promptVersionName,
         }))}
-        judge={{
-          judgeType: result.judgeType,
-          judgeModel: result.judgeModel,
-          judgePromptVersionId: result.judgePromptVersionId,
-          judgePromptVersionName: judgePromptName,
-        }}
         judges={(result.judges ?? []).map((j) => ({
           judgeModel: j.judgeModel,
           judgeType: j.judgeType,
@@ -133,7 +120,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        hasJudge={!!result.judgeType || (result.judges ?? []).length > 0}
+        hasJudge={(result.judges ?? []).length > 0}
         initialRuns={runsRaw.map((run) => {
           const inputPresetName =
             (run.inputPresetName as string) ??

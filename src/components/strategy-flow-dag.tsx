@@ -177,7 +177,7 @@ export interface DagJudge {
   promptName?: string | null;
 }
 
-export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: DagJudge | null }) {
+export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; judge?: DagJudge | null; judges?: DagJudge[] }) {
   if (steps.length === 0) return null;
 
   const { positions, width: baseWidth, height } = computeLayout(steps);
@@ -190,8 +190,10 @@ export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: Da
   const JUDGE_NODE_ORDER = -999;
   let judgePos: NodePosition | null = null;
   const judgeEdges: { fromPos: NodePosition }[] = [];
+  const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
+  const hasJudge = effectiveJudges.length > 0;
 
-  if (judge) {
+  if (hasJudge) {
     const maxLevel = Math.max(...computeLevels(steps).values(), 0);
     const lastLevelSteps = steps.filter(
       (s) => computeLevels(steps).get(s.stepOrder) === maxLevel,
@@ -208,7 +210,7 @@ export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: Da
     }
   }
 
-  const totalWidth = judge ? baseWidth + NODE_WIDTH + LEVEL_GAP_X : baseWidth;
+  const totalWidth = hasJudge ? baseWidth + NODE_WIDTH + LEVEL_GAP_X : baseWidth;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50/50">
@@ -358,7 +360,7 @@ export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: Da
           );
         })}
 
-        {judgePos && judge && (
+        {judgePos && hasJudge && (
           <>
             {judgeEdges.map((edge, i) => {
               const x1 = edge.fromPos.x + NODE_WIDTH;
@@ -387,28 +389,24 @@ export function StrategyFlowDag({ steps, judge }: { steps: DagStep[]; judge?: Da
             >
               <div className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-amber-400 bg-amber-50 shadow-sm">
                 <div className="flex items-center justify-between bg-amber-100 px-3 py-2">
-                  <span className="text-xs font-semibold text-amber-800">Judge</span>
+                  <span className="text-xs font-semibold text-amber-800">
+                    {effectiveJudges.length === 1 ? 'Judge' : `Judges (${effectiveJudges.length})`}
+                  </span>
                   <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
-                  {judge.promptName && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-amber-700">
-                      <svg className="h-3 w-3 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-                      </svg>
-                      <span className="truncate">{truncate(judge.promptName, 28)}</span>
+                  {effectiveJudges.map((j, ji) => (
+                    <div key={ji} className="flex flex-wrap items-center gap-1 text-[10px]">
+                      <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700">
+                        {MODEL_LABELS[j.model] ?? truncate(j.model, 16)}
+                      </span>
+                      <span className="text-amber-500">
+                        {j.type === 'batch' ? 'B' : 'I'}
+                      </span>
                     </div>
-                  )}
-                  <div className="mt-auto flex flex-wrap items-center gap-1.5">
-                    <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-                      {truncate(judge.model, 24)}
-                    </span>
-                    <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] text-amber-600">
-                      {judge.type === 'batch' ? 'Batch' : 'Individual'}
-                    </span>
-                  </div>
+                  ))}
                 </div>
               </div>
             </foreignObject>

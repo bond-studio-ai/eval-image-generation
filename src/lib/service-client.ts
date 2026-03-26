@@ -97,9 +97,6 @@ export interface StrategyDetailItem {
   useGoogleSearch: boolean;
   tagImages: boolean;
   groupProductImages: boolean;
-  judgeType: 'batch' | 'individual' | null;
-  judgeModel: string | null;
-  judgePromptVersionId: string | null;
   previewModel: string | null;
   previewResolution: string | null;
   steps: StrategyStepItem[];

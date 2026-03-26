@@ -43,11 +43,6 @@ export default async function EditStrategyPage({ params }: PageProps) {
             tag_images: strat.tagImages,
             group_product_images: strat.groupProductImages ?? false,
           }}
-          initialJudgeSettings={{
-            judge_type: strat.judgeType ?? null,
-            judge_model: strat.judgeModel ?? 'gemini-2.5-flash',
-            judge_prompt_version_id: strat.judgePromptVersionId ?? '',
-          }}
           initialPreviewSettings={{
             preview_model: strat.previewModel ?? null,
             preview_resolution: strat.previewResolution ?? '512',
