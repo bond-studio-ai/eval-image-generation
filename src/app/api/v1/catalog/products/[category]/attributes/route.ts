@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from '@/lib/api-response';
+import { PRODUCT_CATEGORIES } from '@/lib/prompt-template-constants';
 
 const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
 
@@ -6,20 +7,51 @@ const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
 const CATALOG_INCLUDE_PARAMS =
   'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image';
 
-/** Known product categories (plural kebab-case for API). */
-const VALID_CATEGORIES = new Set([
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe-hooks', 'shelves',
-  'shower-glasses', 'shower-systems', 'floor-tiles', 'wall-tiles', 'shower-wall-tiles',
-  'shower-floor-tiles', 'shower-curb-tiles', 'toilet-paper-holders', 'toilets',
-  'towel-bars', 'towel-rings', 'tub-doors', 'tub-fillers', 'tubs', 'vanities', 'wallpapers',
-]);
+/** Kebab-case URL segments; kept in sync with Reference picker (`PRODUCT_CATEGORIES`). */
+const VALID_CATEGORY_SEGMENTS = new Set(
+  PRODUCT_CATEGORIES.map((k) => k.replace(/_/g, '-')),
+);
 
-const TILE_CATEGORIES = new Set([
-  'floor-tiles', 'wall-tiles', 'shower-wall-tiles', 'shower-floor-tiles', 'shower-curb-tiles',
-]);
+const TILE_SNAKE = new Set([
+  'floor_tiles',
+  'wall_tiles',
+  'shower_wall_tiles',
+  'shower_floor_tiles',
+  'shower_curb_tiles',
+] as const satisfies ReadonlyArray<(typeof PRODUCT_CATEGORIES)[number]>);
 
-function catalogSegment(category: string): string {
-  return TILE_CATEGORIES.has(category) ? 'tiles' : category;
+const TILE_SEGMENTS = new Set([...TILE_SNAKE].map((k) => k.replace(/_/g, '-')));
+
+function catalogSegment(segment: string): string {
+  return TILE_SEGMENTS.has(segment) ? 'tiles' : segment;
+}
+
+/**
+ * Normalize catalog JSON to a list of product objects (handles paginator / wrapper shapes).
+ */
+function extractProductRecords(json: unknown): Record<string, unknown>[] {
+  if (!json || typeof json !== 'object') return [];
+  const root = json as Record<string, unknown>;
+  let node: unknown = root.data ?? root;
+
+  if (Array.isArray(node)) {
+    return node.filter((p): p is Record<string, unknown> => !!p && typeof p === 'object');
+  }
+
+  if (node && typeof node === 'object' && !Array.isArray(node)) {
+    const o = node as Record<string, unknown>;
+    if (Array.isArray(o.data)) {
+      return o.data.filter((p): p is Record<string, unknown> => !!p && typeof p === 'object');
+    }
+    for (const key of ['items', 'products', 'results'] as const) {
+      const v = o[key];
+      if (Array.isArray(v)) {
+        return v.filter((p): p is Record<string, unknown> => !!p && typeof p === 'object');
+      }
+    }
+  }
+
+  return [];
 }
 
 const SKIP_KEYS = new Set(['preferredRetailer', 'variants', 'images']);
@@ -52,8 +84,8 @@ export async function GET(
 ) {
   try {
     const { category } = await params;
-    const segment = category.replace(/_/g, '-');
-    if (!VALID_CATEGORIES.has(segment)) {
+    const segment = decodeURIComponent(category).replace(/_/g, '-');
+    if (!VALID_CATEGORY_SEGMENTS.has(segment)) {
       return errorResponse('VALIDATION_ERROR', `Invalid category: ${category}`);
     }
 
@@ -67,26 +99,15 @@ export async function GET(
       return errorResponse('INTERNAL_ERROR', `Catalog API returned ${res.status}`);
     }
 
-    const json = await res.json();
-    let data: unknown = json.data ?? json;
-    // Some catalog responses nest the list again, e.g. { data: { data: [...] } }
-    if (
-      data &&
-      typeof data === 'object' &&
-      !Array.isArray(data) &&
-      'data' in data &&
-      Array.isArray((data as { data: unknown }).data)
-    ) {
-      data = (data as { data: unknown[] }).data;
-    }
-    const products = Array.isArray(data) ? data : [data];
+    const json: unknown = await res.json();
+    const products = extractProductRecords(json);
     const product = products[0];
 
-    if (!product || typeof product !== 'object') {
-      return successResponse({ attributes: [] });
+    if (!product) {
+      return successResponse({ attributes: [] as string[] });
     }
 
-    const attributes = getAttributePaths(product as Record<string, unknown>);
+    const attributes = getAttributePaths(product);
     return successResponse({ attributes });
   } catch (err) {
     console.error('[catalog attributes] Error:', err);
