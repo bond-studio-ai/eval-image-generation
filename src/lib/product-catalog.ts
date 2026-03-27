@@ -35,8 +35,13 @@ const productCache = new Map<string, { product: CatalogProduct; timestamp: numbe
  * the ID from catalog-style URLs (e.g. containing /products/<uuid>/). If presets stored
  * product IDs we could use those directly instead.
  */
+/**
+ * Pull catalog product id from preset / CDN image URLs (see service-image-generation product-catalog).
+ */
 function extractProductIdFromUrl(url: string): string | null {
-  const m = url.match(/\/products\/([0-9a-f-]{36})\//i);
+  const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const re = new RegExp(`/(?:images/)?products/(${uuid})(?=/|[.?#]|$)`, 'i');
+  const m = url.match(re);
   return m?.[1] ?? null;
 }
 
