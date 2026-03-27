@@ -68,7 +68,17 @@ export async function GET(
     }
 
     const json = await res.json();
-    const data = json.data ?? json;
+    let data: unknown = json.data ?? json;
+    // Some catalog responses nest the list again, e.g. { data: { data: [...] } }
+    if (
+      data &&
+      typeof data === 'object' &&
+      !Array.isArray(data) &&
+      'data' in data &&
+      Array.isArray((data as { data: unknown }).data)
+    ) {
+      data = (data as { data: unknown[] }).data;
+    }
     const products = Array.isArray(data) ? data : [data];
     const product = products[0];
 

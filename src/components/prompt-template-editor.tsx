@@ -67,8 +67,7 @@ export function PromptTemplateEditor({
   const [referenceCategory, setReferenceCategory] = useState<string | null>(null);
   const [attributes, setAttributes] = useState<string[]>([]);
   const [attributesLoading, setAttributesLoading] = useState(false);
-  const [refDropdownOpen, setRefDropdownOpen] = useState(false);
-  const [attrDropdownOpen, setAttrDropdownOpen] = useState(false);
+  const [attributesError, setAttributesError] = useState<string | null>(null);
 
   const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
   const hasErrors = errors.length > 0;
@@ -123,13 +122,23 @@ export function PromptTemplateEditor({
   const fetchAttributes = useCallback(async (category: string) => {
     setAttributesLoading(true);
     setAttributes([]);
+    setAttributesError(null);
     try {
       const segment = category.replace(/_/g, '-');
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
-      const json = await res.json();
-      const attrs = json.data?.attributes ?? [];
+      const json: {
+        data?: { attributes?: unknown };
+        error?: { message?: string };
+      } = await res.json();
+      if (!res.ok) {
+        setAttributesError(json.error?.message ?? `Could not load attributes (${res.status})`);
+        return;
+      }
+      const raw = json.data?.attributes;
+      const attrs = Array.isArray(raw) ? (raw as string[]) : [];
       setAttributes(attrs);
     } catch {
+      setAttributesError('Failed to load attributes');
       setAttributes([]);
     } finally {
       setAttributesLoading(false);
@@ -139,9 +148,7 @@ export function PromptTemplateEditor({
   const handleReferenceCategorySelect = useCallback(
     (cat: (typeof REFERENCE_OPTIONS)[number]) => {
       setReferenceCategory(cat.value);
-      setRefDropdownOpen(false);
       fetchAttributes(cat.value);
-      setAttrDropdownOpen(true);
     },
     [fetchAttributes],
   );
@@ -150,9 +157,9 @@ export function PromptTemplateEditor({
     (attr: string, singular: string) => {
       const ref = `{{products.${singular}.${attr}}}`;
       handleInsert(ref);
-      setAttrDropdownOpen(false);
       setReferenceCategory(null);
       setReferenceOpen(false);
+      setAttributesError(null);
     },
     [handleInsert],
   );
@@ -161,7 +168,7 @@ export function PromptTemplateEditor({
     setConditionalOpen(false);
     setReferenceOpen(false);
     setReferenceCategory(null);
-    setAttrDropdownOpen(false);
+    setAttributesError(null);
     setConditionalSearch('');
     setReferenceSearch('');
   }, []);
@@ -277,7 +284,7 @@ export function PromptTemplateEditor({
               setConditionalOpen(false);
               if (!referenceOpen) {
                 setReferenceCategory(null);
-                setAttrDropdownOpen(false);
+                setAttributesError(null);
               }
             }}
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
@@ -297,8 +304,9 @@ export function PromptTemplateEditor({
             </svg>
           </button>
           {referenceOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 flex gap-1">
-                <div className="w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+              {!referenceCategory ? (
+                <>
                   <div className="border-b border-gray-200 p-2">
                     <input
                       type="text"
@@ -308,52 +316,74 @@ export function PromptTemplateEditor({
                       className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
-                  <div className="max-h-48 overflow-auto py-1">
-                  {filteredReferenceOptions.map((cat) => (
-                    <button
-                      key={cat.value}
-                      type="button"
-                      onClick={() => handleReferenceCategorySelect(cat)}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                  {filteredReferenceOptions.length === 0 && (
-                    <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
-                  )}
-                  </div>
-                </div>
-                {referenceCategory && (
-                  <div className="w-56 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                    <p className="border-b border-gray-100 px-3 py-2 text-xs font-medium text-gray-500">
-                      Pick attribute
-                    </p>
-                    {attributesLoading ? (
-                      <p className="px-3 py-4 text-sm text-gray-500">Loading…</p>
-                    ) : attributes.length === 0 ? (
-                      <p className="px-3 py-4 text-sm text-gray-500">No attributes</p>
-                    ) : (
-                      <div className="max-h-48 overflow-auto">
-                        {attributes.map((attr) => {
-                          const opt = REFERENCE_OPTIONS.find((o) => o.value === referenceCategory);
-                          const singular = opt?.singular ?? referenceCategory;
-                          return (
-                            <button
-                              key={attr}
-                              type="button"
-                              onClick={() => handleAttributeSelect(attr, singular)}
-                              className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                            >
-                              {attr}
-                            </button>
-                          );
-                        })}
-                      </div>
+                  <div className="max-h-60 overflow-auto py-1">
+                    {filteredReferenceOptions.map((cat) => (
+                      <button
+                        key={cat.value}
+                        type="button"
+                        onClick={() => handleReferenceCategorySelect(cat)}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                    {filteredReferenceOptions.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
                     )}
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReferenceCategory(null);
+                        setAttributes([]);
+                        setAttributesError(null);
+                      }}
+                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
+                    >
+                      ← Back
+                    </button>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
+                      {REFERENCE_OPTIONS.find((o) => o.value === referenceCategory)?.label ??
+                        referenceCategory}
+                    </span>
+                  </div>
+                  <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
+                    Pick a field to insert{' '}
+                    <code className="rounded bg-gray-100 px-0.5">
+                      {`{{products.${REFERENCE_OPTIONS.find((o) => o.value === referenceCategory)?.singular ?? referenceCategory}.…}}`}
+                    </code>
+                  </p>
+                  {attributesLoading ? (
+                    <p className="px-3 py-4 text-sm text-gray-500">Loading…</p>
+                  ) : attributesError ? (
+                    <p className="px-3 py-4 text-sm text-red-600">{attributesError}</p>
+                  ) : attributes.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-gray-500">No attributes</p>
+                  ) : (
+                    <div className="max-h-60 overflow-auto py-1">
+                      {attributes.map((attr) => {
+                        const opt = REFERENCE_OPTIONS.find((o) => o.value === referenceCategory);
+                        const singular = opt?.singular ?? referenceCategory;
+                        return (
+                          <button
+                            key={attr}
+                            type="button"
+                            onClick={() => handleAttributeSelect(attr, singular)}
+                            className="w-full px-3 py-2 text-left font-mono text-xs text-gray-900 hover:bg-gray-50"
+                          >
+                            {attr}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
