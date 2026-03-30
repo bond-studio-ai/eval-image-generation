@@ -86,7 +86,6 @@ export function RunJudgeEvaluationsSection({
             <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2">
               <span className="font-mono text-xs font-medium text-gray-900">{j.judgeModel}</span>
               <span className="text-[10px] text-gray-500">pos {j.position}</span>
-              <span className="text-[10px] text-gray-500">w {j.judgeWeight}</span>
               <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
                 j.judgeType === 'batch' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
               }`}>

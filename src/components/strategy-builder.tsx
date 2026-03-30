@@ -43,7 +43,6 @@ interface JudgeData {
   judge_model: string;
   judge_type: 'batch' | 'individual';
   judge_prompt_version_id: string;
-  weight: number;
   tolerance_threshold: number;
 }
 
@@ -151,7 +150,6 @@ export function StrategyBuilder({
         judge_model: 'gemini-2.5-flash',
         judge_type: 'individual',
         judge_prompt_version_id: '',
-        weight: 50,
         tolerance_threshold: 1,
       },
     ]);
@@ -220,7 +218,6 @@ export function StrategyBuilder({
               judgeModel: j.judge_model,
               judgeType: j.judge_type,
               judgePromptVersionId: j.judge_prompt_version_id,
-              weight: j.weight,
               toleranceThreshold: j.tolerance_threshold,
               position: i + 1,
             }))
@@ -452,7 +449,7 @@ export function StrategyBuilder({
             <h2 className="text-sm font-semibold text-gray-900 uppercase">Judge System</h2>
             <p className="mt-1 text-xs text-gray-500">
               When generating multiple concurrent runs, judges evaluate results and pick the best one.
-              {judges.length > 1 && ' Scores are aggregated using a weighted average across all judges.'}
+              {judges.length > 1 && ' Scores are averaged across all judges (excluding below-threshold scores).'}
             </p>
           </div>
           <button
@@ -492,9 +489,6 @@ export function StrategyBuilder({
         {judges.length > 0 && (
           <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
             {judges.map((judge, jIdx) => {
-              const totalWeight = judges.reduce((sum, j) => sum + j.weight, 0);
-              const weightPct = totalWeight > 0 ? Math.round((judge.weight / totalWeight) * 100) : 0;
-
               return (
                 <div key={jIdx} className="rounded-lg border border-gray-200 bg-gray-50/80 transition-shadow hover:shadow-sm">
                   {/* Judge header */}
@@ -561,34 +555,10 @@ export function StrategyBuilder({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="mt-3">
                       <div>
                         <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                          <span title="How much this judge influences the final aggregated score relative to other judges">
-                            Weight
-                          </span>
-                          <span className="tabular-nums text-gray-900">
-                            {judge.weight}
-                            {judges.length > 1 && (
-                              <span className="ml-1 text-gray-400">({weightPct}%)</span>
-                            )}
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={1}
-                          max={100}
-                          value={judge.weight}
-                          onChange={(e) => updateJudge(jIdx, { weight: Number(e.target.value) })}
-                          className="w-full accent-amber-500"
-                        />
-                        <p className="mt-0.5 text-[10px] leading-tight text-gray-400">
-                          Relative influence on the final score
-                        </p>
-                      </div>
-                      <div>
-                        <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                          <span title="Minimum score the best candidate must achieve for this judge's results to count. Below this threshold, this judge is excluded from aggregation.">
+                          <span title="Minimum score a run must get from this judge to count in the average. Below this threshold, the score is excluded.">
                             Tolerance
                           </span>
                           <span className="tabular-nums text-gray-900">
@@ -605,7 +575,7 @@ export function StrategyBuilder({
                           className="w-full accent-amber-500"
                         />
                         <p className="mt-0.5 text-[10px] leading-tight text-gray-400">
-                          Min score to include this judge in aggregation
+                          Min score to include in the per-run average
                         </p>
                       </div>
                     </div>

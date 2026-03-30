@@ -93,7 +93,6 @@ export interface StrategyRunJudgeResultEntry {
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
   position: number;
-  judgeWeight: number;
   judgeType: 'batch' | 'individual';
   judgeScore: number | null;
   judgeReasoning: string | null;
@@ -217,7 +216,6 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       judgePromptVersionId: r.judgePromptVersionId != null ? String(r.judgePromptVersionId) : '',
       judgePromptVersionName: r.judgePromptVersionName != null ? String(r.judgePromptVersionName) : null,
       position: typeof r.position === 'number' ? r.position : Number(r.position) || 0,
-      judgeWeight: typeof r.judgeWeight === 'number' ? r.judgeWeight : Number(r.judgeWeight) || 0,
       judgeType: r.judgeType === 'individual' ? 'individual' : 'batch',
       judgeScore: typeof r.judgeScore === 'number' ? r.judgeScore : r.judgeScore != null ? Number(r.judgeScore) : null,
       judgeReasoning: r.judgeReasoning != null ? String(r.judgeReasoning) : null,

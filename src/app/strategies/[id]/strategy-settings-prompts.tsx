@@ -20,7 +20,6 @@ interface PreviewConfig {
 interface JudgeItem {
   judgeModel: string;
   judgeType: 'batch' | 'individual';
-  weight: number;
   toleranceThreshold: number;
   judgePromptVersionId: string;
   judgePromptVersionName?: string | null;
