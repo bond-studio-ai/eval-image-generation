@@ -77,7 +77,6 @@ export interface StrategyJudgeItem {
   judgeType: 'batch' | 'individual';
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
-  weight: number;
   toleranceThreshold: number;
   position: number;
   createdAt: string;

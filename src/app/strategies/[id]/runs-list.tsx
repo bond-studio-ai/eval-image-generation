@@ -200,7 +200,10 @@ function BatchRunCard({
   const showRetryJudge = (() => {
     const completed = batch.runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
     if (completed.length < 2) return false;
-    return completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    if (hasFailedOrMissing) return true;
+    const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
+    return missingPerJudge;
   })();
 
   const handleRetryFailed = async (e: React.MouseEvent) => {
@@ -351,7 +354,10 @@ function CollapsibleBatchCard({
   const showRetryJudge = (() => {
     const completed = batch.runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
     if (completed.length < 2) return false;
-    return completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    if (hasFailedOrMissing) return true;
+    const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
+    return missingPerJudge;
   })();
 
   const handleRetryFailed = async (e: React.MouseEvent) => {
