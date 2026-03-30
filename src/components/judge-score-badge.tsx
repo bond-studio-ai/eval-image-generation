@@ -17,7 +17,7 @@ interface JudgeScoreBadgeProps {
   awaitingJudge?: boolean;
 }
 
-type DetailPanel = {
+export type DetailPanel = {
   key: string;
   shortLabel: string;
   judgeModel: string;
@@ -32,7 +32,7 @@ type DetailPanel = {
   userPrompt: string | null;
 };
 
-function buildPanels(
+export function buildPanels(
   judgeResults: StrategyRunJudgeResultEntry[] | null | undefined,
   agg: {
     judgeReasoning?: string | null;
@@ -86,7 +86,7 @@ function panelHasContent(p: DetailPanel): boolean {
   );
 }
 
-function ReasoningModal({
+export function ReasoningModal({
   aggregateScore,
   panels,
   isSelected,
