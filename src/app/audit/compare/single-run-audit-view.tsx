@@ -303,7 +303,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
           {run.judgeResults.length > 1 &&
             (run.judgeScore != null || run.judgeReasoning || run.judgeOutput) && (
             <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (weighted)</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (average)</h3>
               {run.judgeScore != null && (
                 <p className="mt-2 text-lg font-bold text-gray-800">{run.judgeScore}</p>
               )}

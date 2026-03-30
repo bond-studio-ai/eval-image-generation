@@ -52,7 +52,6 @@ export default async function EditStrategyPage({ params }: PageProps) {
             judge_model: j.judgeModel,
             judge_type: j.judgeType as 'batch' | 'individual',
             judge_prompt_version_id: j.judgePromptVersionId,
-            weight: j.weight,
             tolerance_threshold: j.toleranceThreshold,
           }))}
           initialSteps={strat.steps.map((s) => ({

@@ -77,7 +77,7 @@ export function RunJudgeEvaluationsSection({
       <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">
         <span className="text-sm font-semibold text-indigo-800">{title}</span>
         <p className="mt-0.5 text-[11px] text-indigo-700/80">
-          One block per judge configuration; scores are raw scores from that judge before weighting.
+          One block per judge configuration; scores are raw per-judge scores before averaging.
         </p>
       </div>
       <div className="space-y-4 p-4">

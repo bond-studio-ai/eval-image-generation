@@ -426,7 +426,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
             <>
               {!(left.judgeResults.length === 1 && right.judgeResults.length === 1) && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (weighted)</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (average)</h3>
                   <div className="mt-2 grid grid-cols-2 gap-4">
                     <div className="rounded-md bg-white p-3 ring-1 ring-amber-200/60">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Left score</p>

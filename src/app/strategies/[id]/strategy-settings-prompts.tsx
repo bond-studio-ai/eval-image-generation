@@ -114,10 +114,7 @@ export function StrategySettingsPrompts({
               </h3>
             </div>
             <div className="mt-3 divide-y divide-amber-200/60">
-              {judges.map((j, i) => {
-                const totalWeight = judges.reduce((sum, jj) => sum + jj.weight, 0);
-                const pct = totalWeight > 0 ? Math.round((j.weight / totalWeight) * 100) : 0;
-                return (
+              {judges.map((j, i) => (
                   <div key={i} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
                     <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">
                       {i + 1}
@@ -129,9 +126,6 @@ export function StrategySettingsPrompts({
                       <span className="text-xs text-amber-700">{j.judgeModel}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-amber-700">
-                      <span title="Weight">
-                        W: {j.weight}{judges.length > 1 && <span className="text-amber-500"> ({pct}%)</span>}
-                      </span>
                       <span title="Tolerance threshold">T: {j.toleranceThreshold}/100</span>
                       {j.judgePromptVersionId && (
                         <Link
@@ -143,8 +137,7 @@ export function StrategySettingsPrompts({
                       )}
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
           </div>
         )}

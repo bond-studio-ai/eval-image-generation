@@ -144,7 +144,7 @@ function ReasoningModal({
                 {isFailed ? 'Judge Error' : 'Judge Details'}
               </h3>
               {multiJudge && !isFailed && (
-                <p className="text-[11px] text-gray-500">Weighted aggregate score shown; per-judge raw scores below.</p>
+                <p className="text-[11px] text-gray-500">Average score shown; per-judge raw scores below.</p>
               )}
             </div>
             {!isFailed && isSelected && (
