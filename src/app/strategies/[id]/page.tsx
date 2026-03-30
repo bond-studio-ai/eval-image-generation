@@ -1,5 +1,5 @@
 import { StrategyFlowDag, type DagStep, type DagJudge } from '@/components/strategy-flow-dag';
-import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
+import { fetchStrategyById, fetchStrategyRuns, parseStrategyRunJudgeResults } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActiveToggleButton } from './active-toggle-button';
@@ -142,6 +142,8 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             judgeOutput: (run.judgeOutput as string) ?? null,
             judgeSystemPrompt: (run.judgeSystemPrompt as string) ?? null,
             judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
+            judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
+            judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
             stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
               id: sr.id,
               status: sr.status,

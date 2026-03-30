@@ -1,8 +1,10 @@
 'use client';
 
 import { ExpandableImage } from '@/components/expandable-image';
+import { RunJudgeEvaluationsSection } from '@/components/run-judge-evaluations-section';
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
+import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -38,9 +40,11 @@ interface RunData {
   judgeScore: number | null;
   isJudgeSelected: boolean;
   judgeReasoning: string | null;
+  judgeOutput: string | null;
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
   judgeInputImages: InputImage[] | null;
+  judgeResults: StrategyRunJudgeResultEntry[];
   strategy: {
     id: string;
     name: string;
@@ -134,7 +138,11 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
           return;
         }
         const json = await res.json();
-        setRun(json.data);
+        const raw = json.data as Record<string, unknown>;
+        setRun({
+          ...(json.data as RunData),
+          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Unknown error');
       } finally {
@@ -290,7 +298,27 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
       </div>
 
       {/* Judge audit */}
-      {(run.judgeScore != null || run.judgeSystemPrompt || run.judgeUserPrompt || run.judgeInputImages) && (
+      {run.judgeResults.length > 0 && (
+        <div className="mt-6 space-y-4">
+          {(run.judgeScore != null || run.judgeReasoning || run.judgeOutput) && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (weighted)</h3>
+              {run.judgeScore != null && (
+                <p className="mt-2 text-lg font-bold text-gray-800">{run.judgeScore}</p>
+              )}
+              {run.isJudgeSelected && <p className="text-xs text-amber-700">This run was selected</p>}
+              {run.judgeReasoning && <p className="mt-2 text-sm text-gray-700">{run.judgeReasoning}</p>}
+              {run.judgeOutput && (
+                <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-amber-200 bg-white p-2 text-xs text-gray-700">{run.judgeOutput}</pre>
+              )}
+            </div>
+          )}
+          <RunJudgeEvaluationsSection judgeResults={run.judgeResults} />
+        </div>
+      )}
+
+      {run.judgeResults.length === 0 &&
+        (run.judgeScore != null || run.judgeSystemPrompt || run.judgeUserPrompt || run.judgeInputImages || run.judgeReasoning || run.judgeOutput) && (
         <div className="mt-6 rounded-lg border border-indigo-200 bg-white shadow-xs">
           <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">
             <span className="text-sm font-semibold text-indigo-800">Judge</span>
@@ -302,6 +330,13 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
                 <p className="mt-1 text-lg font-bold text-gray-800">{run.judgeScore}</p>
                 {run.isJudgeSelected && <p className="text-xs text-amber-600">Selected</p>}
                 {run.judgeReasoning && <p className="mt-1 text-xs text-gray-600">{run.judgeReasoning}</p>}
+              </div>
+            )}
+
+            {run.judgeOutput && (
+              <div>
+                <SectionHeader title="Judge parsed output" />
+                <pre className="mt-2 max-h-64 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">{run.judgeOutput}</pre>
               </div>
             )}
 

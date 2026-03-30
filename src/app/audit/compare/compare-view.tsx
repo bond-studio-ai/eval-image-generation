@@ -3,6 +3,7 @@
 import { ExpandableImage } from '@/components/expandable-image';
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
+import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import { diffWords, type Change } from 'diff';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -39,9 +40,11 @@ interface RunData {
   judgeScore: number | null;
   isJudgeSelected: boolean;
   judgeReasoning: string | null;
+  judgeOutput: string | null;
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
   judgeInputImages: InputImage[] | null;
+  judgeResults: StrategyRunJudgeResultEntry[];
   strategy: {
     id: string;
     name: string;
@@ -90,6 +93,19 @@ function DiffText({ left, right }: { left: string; right: string }) {
       </pre>
     </div>
   );
+}
+
+function orderedJudgeIds(left: StrategyRunJudgeResultEntry[], right: StrategyRunJudgeResultEntry[]): string[] {
+  const byId = new Map<string, number>();
+  for (const j of left) {
+    const p = j.position;
+    if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!) byId.set(j.strategyJudgeId, p);
+  }
+  for (const j of right) {
+    const p = j.position;
+    if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!) byId.set(j.strategyJudgeId, p);
+  }
+  return [...byId.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id);
 }
 
 function ConfigDiff({ left, right }: { left: Record<string, unknown> | null; right: Record<string, unknown> | null }) {
@@ -244,8 +260,16 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
           return;
         }
         const json = await res.json();
-        setLeft(json.data.left);
-        setRight(json.data.right);
+        const rawL = json.data.left as Record<string, unknown>;
+        const rawR = json.data.right as Record<string, unknown>;
+        setLeft({
+          ...(json.data.left as RunData),
+          judgeResults: parseStrategyRunJudgeResults(rawL.judgeResults),
+        });
+        setRight({
+          ...(json.data.right as RunData),
+          judgeResults: parseStrategyRunJudgeResults(rawR.judgeResults),
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Unknown error');
       } finally {

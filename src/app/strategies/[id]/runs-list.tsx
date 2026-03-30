@@ -4,6 +4,7 @@ import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { serviceUrl } from '@/lib/api-base';
+import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -29,6 +30,7 @@ interface Run {
   judgeSystemPrompt?: string | null;
   judgeUserPrompt?: string | null;
   judgeTypeUsed?: string | null;
+  judgeResults?: StrategyRunJudgeResultEntry[] | null;
 }
 
 type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
@@ -74,7 +76,13 @@ export function StrategyRunsList({
       const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      setRuns(json.data ?? []);
+      const raw = (json.data ?? []) as Record<string, unknown>[];
+      setRuns(
+        raw.map((row) => ({
+          ...(row as unknown as Run),
+          judgeResults: parseStrategyRunJudgeResults(row.judgeResults),
+        })),
+      );
     } catch { /* ignore */ }
   }, [strategyId]);
 
@@ -551,6 +559,7 @@ function BatchMatrix({
                               judgeSystemPrompt={run.judgeSystemPrompt}
                               judgeUserPrompt={run.judgeUserPrompt}
                               judgeTypeUsed={run.judgeTypeUsed}
+                              judgeResults={run.judgeResults ?? null}
                               awaitingJudge={awaitingJudge}
                             />
                             {run.lastOutputGenerationId && (
