@@ -126,7 +126,7 @@ export function StrategySettingsPrompts({
                       <span className="text-xs text-amber-700">{j.judgeModel}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-amber-700">
-                      <span title="Tolerance threshold">T: {j.toleranceThreshold}/100</span>
+                      <span title="Runs below this score are excluded from winner selection">Tolerance: {j.toleranceThreshold}/100</span>
                       {j.judgePromptVersionId && (
                         <Link
                           href={`/prompt-versions/${j.judgePromptVersionId}`}

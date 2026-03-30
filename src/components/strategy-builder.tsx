@@ -449,7 +449,7 @@ export function StrategyBuilder({
             <h2 className="text-sm font-semibold text-gray-900 uppercase">Judge System</h2>
             <p className="mt-1 text-xs text-gray-500">
               When generating multiple concurrent runs, judges evaluate results and pick the best one.
-              {judges.length > 1 && ' Scores are averaged across all judges (excluding below-threshold scores).'}
+              {judges.length > 1 && ' Final score = sum of all judge scores / number of judges. Runs below any judge\'s tolerance are excluded from winner selection.'}
             </p>
           </div>
           <button
@@ -558,7 +558,7 @@ export function StrategyBuilder({
                     <div className="mt-3">
                       <div>
                         <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                          <span title="Minimum score a run must get from this judge to count in the average. Below this threshold, the score is excluded.">
+                          <span title="Runs scoring below this on this judge are excluded from winner selection.">
                             Tolerance
                           </span>
                           <span className="tabular-nums text-gray-900">
@@ -575,7 +575,7 @@ export function StrategyBuilder({
                           className="w-full accent-amber-500"
                         />
                         <p className="mt-0.5 text-[10px] leading-tight text-gray-400">
-                          Min score to include in the per-run average
+                          Runs below this score won&apos;t be selected as winner
                         </p>
                       </div>
                     </div>
