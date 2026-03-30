@@ -1,9 +1,11 @@
 'use client';
 
 import { ExpandableImage } from '@/components/expandable-image';
+import { RunJudgeEvaluationsSection } from '@/components/run-judge-evaluations-section';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { ViewPromptModal } from '@/components/view-prompt-modal';
 import { serviceUrl } from '@/lib/api-base';
+import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -55,6 +57,7 @@ interface RunData {
   judgeUserPrompt: string | null;
   judgeInputImages: InputImage[] | null;
   judgeTypeUsed: string | null;
+  judgeResults: StrategyRunJudgeResultEntry[];
   strategy: {
     id: string;
     name: string;
@@ -260,7 +263,13 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      if (json.data) setData(json.data);
+      if (json.data) {
+        const raw = json.data as Record<string, unknown>;
+        setData({
+          ...(json.data as RunData),
+          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+        });
+      }
     } catch { /* ignore */ }
   }, [runId]);
 
@@ -461,8 +470,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         </div>
       )}
 
-      {/* Judge reasoning */}
-      {data.judgeReasoning && (() => {
+      {data.judgeResults.length > 0 && (
+        <div className="mt-4">
+          <RunJudgeEvaluationsSection judgeResults={data.judgeResults} />
+        </div>
+      )}
+
+      {/* Judge reasoning (skip when a single per-judge row already shows the same in RunJudgeEvaluationsSection) */}
+      {data.judgeResults.length !== 1 && data.judgeReasoning && (() => {
         const isFailed = data.judgeScore === 0;
         return (
           <div className={`mt-4 rounded-lg border p-4 ${isFailed ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50'}`}>
@@ -490,16 +505,17 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         );
       })()}
 
-      {/* Judge output */}
-      {data.judgeOutput && (
+      {/* Judge output (aggregated; omitted when exactly one per-judge row holds the same) */}
+      {data.judgeResults.length !== 1 && data.judgeOutput && (
         <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
           <p className="text-sm font-medium text-gray-800">Judge Output</p>
           <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-gray-700">{data.judgeOutput}</pre>
         </div>
       )}
 
-      {/* Judge audit */}
-      {(data.judgeSystemPrompt || data.judgeUserPrompt || data.judgeInputImages) && (
+      {/* Judge audit (legacy single-judge snapshot on strategy_run) */}
+      {data.judgeResults.length === 0 &&
+        (data.judgeSystemPrompt || data.judgeUserPrompt || data.judgeInputImages) && (
         <div className="mt-4 rounded-lg border border-gray-200 bg-white shadow-xs">
           <CollapsibleSection title="Judge Audit Details">
             <div className="space-y-3">

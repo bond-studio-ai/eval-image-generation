@@ -1,4 +1,4 @@
-import { StrategyFlowDag, type DagStep, type DagJudge } from '@/components/strategy-flow-dag';
+import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { fetchStrategyById, fetchStrategyRuns, parseStrategyRunJudgeResults } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -25,8 +25,6 @@ export default async function StrategyDetailPage({ params }: PageProps) {
   if (!result) {
     notFound();
   }
-
-  
 
   return (
     <div>

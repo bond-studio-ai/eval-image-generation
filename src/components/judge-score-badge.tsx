@@ -310,12 +310,7 @@ export function JudgeScoreBadge({
     [judgeResults, judgeReasoning, judgeOutput, judgeSystemPrompt, judgeUserPrompt, judgeTypeUsed, judgeScore],
   );
 
-  const hasDetail =
-    panels.some(panelHasContent) ||
-    !!judgeReasoning ||
-    !!judgeOutput ||
-    !!judgeSystemPrompt ||
-    !!judgeUserPrompt;
+  const hasDetail = panels.some(panelHasContent);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!hasDetail) return;

@@ -1,4 +1,4 @@
-import { fetchStrategyRunById } from '@/lib/service-client';
+import { fetchStrategyRunById, parseStrategyRunJudgeResults } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 import { RunDetail } from './run-detail';
 
@@ -67,6 +67,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
     judgeInputImages: (run.judgeInputImages as { url: string; label: string }[]) ?? null,
     judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
+    judgeResults: parseStrategyRunJudgeResults((run as Record<string, unknown>).judgeResults),
     strategy: {
       id: strategy.id,
       name: strategy.name,
