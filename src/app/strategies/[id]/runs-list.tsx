@@ -558,6 +558,7 @@ function BatchMatrix({
                               </svg>
                             </div>
                             <JudgeScoreBadge
+                              runId={run.id}
                               judgeScore={run.judgeScore}
                               isJudgeSelected={run.isJudgeSelected}
                               judgeReasoning={run.judgeReasoning}

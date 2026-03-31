@@ -1,10 +1,12 @@
 'use client';
 
-import type { StrategyRunJudgeResultEntry } from '@/lib/service-client';
+import { serviceUrl } from '@/lib/api-base';
+import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 interface JudgeScoreBadgeProps {
+  runId?: string | null;
   judgeScore: number | null | undefined;
   isJudgeSelected?: boolean;
   judgeReasoning?: string | null;
@@ -288,6 +290,7 @@ export function ReasoningModal({
 }
 
 export function JudgeScoreBadge({
+  runId,
   judgeScore,
   isJudgeSelected,
   judgeReasoning,
@@ -299,27 +302,62 @@ export function JudgeScoreBadge({
   awaitingJudge,
 }: JudgeScoreBadgeProps) {
   const [showModal, setShowModal] = useState(false);
+  const [fetchedDetail, setFetchedDetail] = useState<{
+    judgeScore: number | null;
+    isJudgeSelected?: boolean;
+    judgeReasoning?: string | null;
+    judgeOutput?: string | null;
+    judgeSystemPrompt?: string | null;
+    judgeUserPrompt?: string | null;
+    judgeTypeUsed?: string | null;
+    judgeResults: StrategyRunJudgeResultEntry[];
+  } | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const panels = useMemo(
     () =>
-      buildPanels(judgeResults ?? null, {
-        judgeReasoning,
-        judgeOutput,
-        judgeSystemPrompt,
-        judgeUserPrompt,
-        judgeTypeUsed,
-        judgeScore: judgeScore ?? null,
+      buildPanels(fetchedDetail?.judgeResults ?? judgeResults ?? null, {
+        judgeReasoning: fetchedDetail?.judgeReasoning ?? judgeReasoning,
+        judgeOutput: fetchedDetail?.judgeOutput ?? judgeOutput,
+        judgeSystemPrompt: fetchedDetail?.judgeSystemPrompt ?? judgeSystemPrompt,
+        judgeUserPrompt: fetchedDetail?.judgeUserPrompt ?? judgeUserPrompt,
+        judgeTypeUsed: fetchedDetail?.judgeTypeUsed ?? judgeTypeUsed,
+        judgeScore: fetchedDetail?.judgeScore ?? judgeScore ?? null,
       }),
-    [judgeResults, judgeReasoning, judgeOutput, judgeSystemPrompt, judgeUserPrompt, judgeTypeUsed, judgeScore],
+    [fetchedDetail, judgeResults, judgeReasoning, judgeOutput, judgeSystemPrompt, judgeUserPrompt, judgeTypeUsed, judgeScore],
   );
 
   const hasDetail = panels.some(panelHasContent);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     if (!hasDetail) return;
     e.stopPropagation();
     e.preventDefault();
     setShowModal(true);
+    if (!runId) return;
+    if (isLoadingDetail) return;
+    if ((judgeResults?.length ?? 0) > 1 && fetchedDetail) return;
+    try {
+      setIsLoadingDetail(true);
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      const raw = (json.data ?? {}) as Record<string, unknown>;
+      setFetchedDetail({
+        judgeScore: raw.judgeScore != null ? Number(raw.judgeScore) : null,
+        isJudgeSelected: Boolean(raw.isJudgeSelected),
+        judgeReasoning: raw.judgeReasoning != null ? String(raw.judgeReasoning) : null,
+        judgeOutput: raw.judgeOutput != null ? String(raw.judgeOutput) : null,
+        judgeSystemPrompt: raw.judgeSystemPrompt != null ? String(raw.judgeSystemPrompt) : null,
+        judgeUserPrompt: raw.judgeUserPrompt != null ? String(raw.judgeUserPrompt) : null,
+        judgeTypeUsed: raw.judgeTypeUsed != null ? String(raw.judgeTypeUsed) : null,
+        judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+      });
+    } catch {
+      // Keep the fallback data already shown in the modal.
+    } finally {
+      setIsLoadingDetail(false);
+    }
   };
 
   if (judgeScore != null && judgeScore > 0) {
@@ -333,9 +371,9 @@ export function JudgeScoreBadge({
         </span>
         {showModal && hasDetail && (
           <ReasoningModal
-            aggregateScore={judgeScore}
+            aggregateScore={fetchedDetail?.judgeScore ?? judgeScore}
             panels={panels}
-            isSelected={isJudgeSelected}
+            isSelected={fetchedDetail?.isJudgeSelected ?? isJudgeSelected}
             isFailed={false}
             onClose={() => setShowModal(false)}
           />
