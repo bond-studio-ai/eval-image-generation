@@ -142,40 +142,40 @@ export function ReasoningModal({
         style={{ maxHeight: 'calc(100vh - 4rem)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 pt-5 pb-4">
-          <div className="min-w-0 flex flex-1 flex-wrap items-center gap-2.5">
-            {isFailed ? (
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-                </svg>
-              </span>
-            ) : (
-              <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
-                {aggregateScore}
-              </span>
-            )}
-            <div className="min-w-0">
+        <div className="relative border-b border-gray-200 px-6 pt-5 pb-4">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {isFailed ? (
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100">
+                  <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                  </svg>
+                </span>
+              ) : (
+                <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
+                  {aggregateScore}
+                </span>
+              )}
               <h3 className="text-base font-semibold text-gray-900">
                 {isFailed ? 'Judge Error' : 'Judge Details'}
               </h3>
-              {multiJudge && !isFailed && (
-                <p className="text-[11px] text-gray-500">Average score shown; per-judge raw scores below.</p>
+              {!isFailed && isSelected && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  Selected
+                </span>
               )}
             </div>
-            {!isFailed && isSelected && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                Selected
-              </span>
+            {multiJudge && !isFailed && (
+              <p className="text-[11px] text-gray-500">Average score shown; per-judge raw scores below.</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
