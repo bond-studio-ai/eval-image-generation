@@ -73,6 +73,7 @@ export interface StrategyStepItem {
 export interface StrategyJudgeItem {
   id: string;
   strategyId: string;
+  name: string | null;
   judgeModel: string;
   judgeType: 'batch' | 'individual';
   judgePromptVersionId: string;
@@ -89,6 +90,7 @@ export interface StrategyRunJudgeResultEntry {
   strategyRunId: string;
   strategyJudgeId: string;
   judgeModel: string;
+  judgeName: string | null;
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
   position: number;
@@ -212,6 +214,7 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       strategyRunId: r.strategyRunId != null ? String(r.strategyRunId) : '',
       strategyJudgeId: r.strategyJudgeId != null ? String(r.strategyJudgeId) : '',
       judgeModel: r.judgeModel != null ? String(r.judgeModel) : '',
+      judgeName: r.judgeName != null ? String(r.judgeName) : null,
       judgePromptVersionId: r.judgePromptVersionId != null ? String(r.judgePromptVersionId) : '',
       judgePromptVersionName: r.judgePromptVersionName != null ? String(r.judgePromptVersionName) : null,
       position: typeof r.position === 'number' ? r.position : Number(r.position) || 0,

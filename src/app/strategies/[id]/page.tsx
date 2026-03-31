@@ -101,6 +101,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           promptVersionName: s.promptVersionName,
         }))}
         judges={(result.judges ?? []).map((j) => ({
+          name: j.name,
           judgeModel: j.judgeModel,
           judgeType: j.judgeType,
           toleranceThreshold: j.toleranceThreshold,

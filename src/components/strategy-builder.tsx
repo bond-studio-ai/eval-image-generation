@@ -40,6 +40,7 @@ interface StrategySettings {
 
 interface JudgeData {
   id?: string;
+  name?: string;
   judge_model: string;
   judge_type: 'batch' | 'individual';
   judge_prompt_version_id: string;
@@ -147,6 +148,7 @@ export function StrategyBuilder({
     setJudges((prev) => [
       ...prev,
       {
+        name: '',
         judge_model: 'gemini-2.5-flash',
         judge_type: 'individual',
         judge_prompt_version_id: '',
@@ -215,6 +217,7 @@ export function StrategyBuilder({
         judges: judges.length > 0
           ? judges.map((j, i) => ({
               id: j.id,
+              name: j.name || null,
               judgeModel: j.judge_model,
               judgeType: j.judge_type,
               judgePromptVersionId: j.judge_prompt_version_id,
@@ -536,6 +539,16 @@ export function StrategyBuilder({
 
                   {/* Judge body */}
                   <div className="px-4 py-3">
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs font-medium text-gray-600">Name (optional)</label>
+                      <input
+                        type="text"
+                        value={judge.name ?? ''}
+                        onChange={(e) => updateJudge(jIdx, { name: e.target.value })}
+                        placeholder="e.g. Scene Accuracy"
+                        className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>

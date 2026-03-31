@@ -461,7 +461,8 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
               {orderedJudgeIds(left.judgeResults, right.judgeResults).map((judgeId) => {
                 const lj = left.judgeResults.find((j) => j.strategyJudgeId === judgeId);
                 const rj = right.judgeResults.find((j) => j.strategyJudgeId === judgeId);
-                const label = lj?.judgeModel || rj?.judgeModel || judgeId.slice(0, 8);
+                const name = lj?.judgeName || rj?.judgeName;
+                const label = name || lj?.judgeModel || rj?.judgeModel || judgeId.slice(0, 8);
                 return (
                   <div key={judgeId} className="rounded-lg border border-indigo-200 bg-white shadow-xs">
                     <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">

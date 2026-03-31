@@ -84,6 +84,7 @@ export function RunJudgeEvaluationsSection({
         {judgeResults.map((j) => (
           <div key={j.id} className="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
             <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2">
+              {j.judgeName && <span className="text-xs font-semibold text-gray-900">{j.judgeName}</span>}
               <span className="font-mono text-xs font-medium text-gray-900">{j.judgeModel}</span>
               <span className="text-[10px] text-gray-500">pos {j.position}</span>
               <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${

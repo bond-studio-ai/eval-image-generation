@@ -18,6 +18,7 @@ interface PreviewConfig {
 }
 
 interface JudgeItem {
+  name?: string | null;
   judgeModel: string;
   judgeType: 'batch' | 'individual';
   toleranceThreshold: number;
@@ -120,6 +121,7 @@ export function StrategySettingsPrompts({
                       {i + 1}
                     </span>
                     <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                      {j.name && <span className="text-xs font-semibold text-amber-900">{j.name}</span>}
                       <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                         {j.judgeType === 'batch' ? 'Batch' : 'Individual'}
                       </span>

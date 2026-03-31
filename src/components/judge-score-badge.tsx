@@ -20,6 +20,7 @@ interface JudgeScoreBadgeProps {
 export type DetailPanel = {
   key: string;
   shortLabel: string;
+  judgeName: string | null;
   judgeModel: string;
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
@@ -46,7 +47,8 @@ export function buildPanels(
   if (judgeResults && judgeResults.length > 0) {
     return judgeResults.map((j, i) => ({
       key: j.id,
-      shortLabel: `#${i + 1}`,
+      shortLabel: j.judgeName || `#${i + 1}`,
+      judgeName: j.judgeName ?? null,
       judgeModel: j.judgeModel,
       judgePromptVersionId: j.judgePromptVersionId,
       judgePromptVersionName: j.judgePromptVersionName,
@@ -63,6 +65,7 @@ export function buildPanels(
     {
       key: 'aggregate',
       shortLabel: 'Judge',
+      judgeName: null,
       judgeModel: '',
       judgePromptVersionId: '',
       judgePromptVersionName: null,
@@ -181,8 +184,8 @@ export function ReasoningModal({
                   judgeIdx === i ? 'bg-white text-primary-700 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-white/80'
                 }`}
               >
-                <span className="text-gray-400">{p.shortLabel}</span>{' '}
-                <span className="font-mono text-[10px] text-gray-700">{p.judgeModel}</span>
+                <span className={p.judgeName ? 'text-gray-700' : 'text-gray-400'}>{p.shortLabel}</span>
+                {!p.judgeName && <>{' '}<span className="font-mono text-[10px] text-gray-700">{p.judgeModel}</span></>}
                 {p.rawScore != null && (
                   <span className="ml-1 text-[10px] text-indigo-600">· {p.rawScore}</span>
                 )}
