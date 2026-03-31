@@ -300,20 +300,6 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
       {/* Judge audit */}
       {run.judgeResults.length > 0 && (
         <div className="mt-6 space-y-4">
-          {run.judgeResults.length > 1 &&
-            (run.judgeScore != null || run.judgeReasoning || run.judgeOutput) && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-900">Aggregated (average)</h3>
-              {run.judgeScore != null && (
-                <p className="mt-2 text-lg font-bold text-gray-800">{run.judgeScore}</p>
-              )}
-              {run.isJudgeSelected && <p className="text-xs text-amber-700">This run was selected</p>}
-              {run.judgeReasoning && <p className="mt-2 text-sm text-gray-700">{run.judgeReasoning}</p>}
-              {run.judgeOutput && (
-                <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-amber-200 bg-white p-2 text-xs text-gray-700">{run.judgeOutput}</pre>
-              )}
-            </div>
-          )}
           <RunJudgeEvaluationsSection judgeResults={run.judgeResults} />
         </div>
       )}

@@ -174,7 +174,10 @@ const MODEL_LABELS: Record<string, string> = {
 export interface DagJudge {
   type: 'batch' | 'individual';
   model: string;
+  name?: string | null;
   promptName?: string | null;
+  toleranceThreshold?: number | null;
+  position?: number | null;
 }
 
 export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; judge?: DagJudge | null; judges?: DagJudge[] }) {
@@ -192,6 +195,10 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
   const judgeEdges: { fromPos: NodePosition }[] = [];
   const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
   const hasJudge = effectiveJudges.length > 0;
+  const judgeNodeHeight = Math.max(
+    NODE_HEIGHT,
+    68 + effectiveJudges.length * 44,
+  );
 
   if (hasJudge) {
     const maxLevel = Math.max(...computeLevels(steps).values(), 0);
@@ -200,7 +207,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
     );
 
     const judgeX = PADDING + (maxLevel + 1) * (NODE_WIDTH + LEVEL_GAP_X);
-    const judgeY = PADDING + (height - 2 * PADDING - NODE_HEIGHT) / 2;
+    const judgeY = PADDING + (height - 2 * PADDING - judgeNodeHeight) / 2;
     judgePos = { x: judgeX, y: judgeY };
     positions.set(JUDGE_NODE_ORDER, judgePos);
 
@@ -366,7 +373,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
               const x1 = edge.fromPos.x + NODE_WIDTH;
               const y1 = edge.fromPos.y + NODE_HEIGHT / 2;
               const x2 = judgePos!.x;
-              const y2 = judgePos!.y + NODE_HEIGHT / 2;
+              const y2 = judgePos!.y + judgeNodeHeight / 2;
               const midX = (x1 + x2) / 2;
               const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
               return (
@@ -385,7 +392,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
               x={judgePos.x}
               y={judgePos.y}
               width={NODE_WIDTH}
-              height={NODE_HEIGHT}
+              height={judgeNodeHeight}
             >
               <div className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-amber-400 bg-amber-50 shadow-sm">
                 <div className="flex items-center justify-between bg-amber-100 px-3 py-2">
@@ -398,13 +405,35 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
                 </div>
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
                   {effectiveJudges.map((j, ji) => (
-                    <div key={ji} className="flex flex-wrap items-center gap-1 text-[10px]">
-                      <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700">
-                        {MODEL_LABELS[j.model] ?? truncate(j.model, 16)}
-                      </span>
-                      <span className="text-amber-500">
-                        {j.type === 'batch' ? 'B' : 'I'}
-                      </span>
+                    <div key={ji} className="rounded bg-amber-100/70 px-2 py-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700">
+                          {j.position ?? ji + 1}
+                        </span>
+                        {j.name && (
+                          <span className="truncate font-semibold text-amber-900" title={j.name}>
+                            {truncate(j.name, 16)}
+                          </span>
+                        )}
+                        <span className="rounded bg-white/70 px-1 py-0.5 text-amber-700">
+                          {j.type === 'batch' ? 'Batch' : 'Individual'}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+                        <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700" title={j.model}>
+                          {MODEL_LABELS[j.model] ?? truncate(j.model, 16)}
+                        </span>
+                        {j.toleranceThreshold != null && (
+                          <span className="text-amber-700">
+                            tol {j.toleranceThreshold}
+                          </span>
+                        )}
+                      </div>
+                      {j.promptName && (
+                        <div className="mt-1 text-[10px] text-amber-800" title={j.promptName}>
+                          {truncate(j.promptName, 28)}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

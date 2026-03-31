@@ -330,6 +330,16 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       error: sr.error,
     }));
 
+  const dagJudges = [...data.judgeResults]
+    .sort((a, b) => a.position - b.position)
+    .map((j) => ({
+      name: j.judgeName,
+      type: j.judgeType,
+      model: j.judgeModel,
+      promptName: j.judgePromptVersionName,
+      position: j.position,
+    }));
+
   return (
     <div>
       <Link href={`/strategies/${strategyId}`} className="text-sm text-gray-600 hover:text-gray-900">
@@ -604,7 +614,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       {/* DAG visualization */}
       {dagSteps.length > 0 && (
         <div className="mt-6">
-          <StrategyFlowDag steps={dagSteps} />
+          <StrategyFlowDag steps={dagSteps} judges={dagJudges} />
         </div>
       )}
 

@@ -76,8 +76,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                 arbitraryImageFromStep: step.arbitraryImageFromStep,
               }))}
               judges={(result.judges ?? []).map((j) => ({
+                name: j.name,
                 type: j.judgeType as 'batch' | 'individual',
                 model: j.judgeModel,
+                promptName: j.judgePromptVersionName,
+                toleranceThreshold: j.toleranceThreshold,
+                position: j.position,
               }))}
             />
           </div>
