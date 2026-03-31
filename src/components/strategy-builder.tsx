@@ -404,11 +404,6 @@ export function StrategyBuilder({
             Check scene accuracy
           </label>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
-          Compares each candidate to the scene reference (dollhouse, then real photo, then mood board) before judging.
-          If none pass drift thresholds, the service regenerates the full candidate set (repeat count is controlled by
-          the SCENE_ACCURACY_MAX_REGENERATIONS env var on the image-generation service, default 1).
-        </p>
       </div>
 
       {/* Preview Generation */}
