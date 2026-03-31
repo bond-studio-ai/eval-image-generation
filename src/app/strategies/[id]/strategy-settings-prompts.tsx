@@ -34,6 +34,8 @@ interface StrategySettingsPromptsProps {
   useGoogleSearch: boolean;
   tagImages: boolean;
   groupProductImages?: boolean;
+  /** Strategy check_scene_accuracy — scene drift vs reference before judge; may regenerate candidates. */
+  checkSceneAccuracy?: boolean;
   description: string | null;
   steps: StepWithPrompt[];
   judges?: JudgeItem[];
@@ -48,6 +50,7 @@ export function StrategySettingsPrompts({
   useGoogleSearch,
   tagImages,
   groupProductImages,
+  checkSceneAccuracy,
   description,
   steps,
   judges,
@@ -87,6 +90,9 @@ export function StrategySettingsPrompts({
           </span>
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STRATEGY_PROPERTY_COLORS.groupImages.bg} ${STRATEGY_PROPERTY_COLORS.groupImages.text}`}>
             Group images: {groupProductImages ? 'Yes' : 'No'}
+          </span>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STRATEGY_PROPERTY_COLORS.sceneAccuracy.bg} ${STRATEGY_PROPERTY_COLORS.sceneAccuracy.text}`}>
+            Check scene accuracy: {checkSceneAccuracy ? 'Yes' : 'No'}
           </span>
         </div>
         {preview?.previewModel && (

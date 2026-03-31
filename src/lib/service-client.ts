@@ -118,6 +118,8 @@ export interface StrategyDetailItem {
   useGoogleSearch: boolean;
   tagImages: boolean;
   groupProductImages: boolean;
+  /** When true, service runs scene-accuracy vs scene reference before judging; may regenerate candidates if none pass. */
+  checkSceneAccuracy?: boolean;
   previewModel: string | null;
   previewResolution: string | null;
   steps: StrategyStepItem[];

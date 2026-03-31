@@ -42,6 +42,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
             use_google_search: strat.useGoogleSearch,
             tag_images: strat.tagImages,
             group_product_images: strat.groupProductImages ?? false,
+            check_scene_accuracy: strat.checkSceneAccuracy ?? false,
           }}
           initialPreviewSettings={{
             preview_model: strat.previewModel ?? null,

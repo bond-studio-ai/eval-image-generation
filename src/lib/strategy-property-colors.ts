@@ -11,6 +11,7 @@ export const STRATEGY_PROPERTY_COLORS = {
   tagImages:       { bg: 'bg-cyan-100',    text: 'text-cyan-700' },
   groupImages:     { bg: 'bg-violet-100',  text: 'text-violet-700' },
   googleSearch:    { bg: 'bg-rose-100',    text: 'text-rose-700' },
+  sceneAccuracy:   { bg: 'bg-teal-100',    text: 'text-teal-800' },
 } as const;
 
 export type PropertyKey = keyof typeof STRATEGY_PROPERTY_COLORS;

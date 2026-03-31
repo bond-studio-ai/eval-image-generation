@@ -36,6 +36,8 @@ interface StrategySettings {
   use_google_search: boolean;
   tag_images: boolean;
   group_product_images: boolean;
+  /** Maps to API checkSceneAccuracy / DB check_scene_accuracy */
+  check_scene_accuracy: boolean;
 }
 
 interface JudgeData {
@@ -110,6 +112,7 @@ const defaultStrategySettings: StrategySettings = {
   use_google_search: false,
   tag_images: true,
   group_product_images: false,
+  check_scene_accuracy: false,
 };
 
 export function StrategyBuilder({
@@ -214,6 +217,7 @@ export function StrategyBuilder({
         useGoogleSearch: strategySettings.use_google_search,
         tagImages: strategySettings.tag_images,
         groupProductImages: strategySettings.group_product_images,
+        checkSceneAccuracy: strategySettings.check_scene_accuracy,
         judges: judges.length > 0
           ? judges.map((j, i) => ({
               id: j.id,
@@ -390,7 +394,21 @@ export function StrategyBuilder({
             />
             Group product images
           </label>
+          <label className="flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={strategySettings.check_scene_accuracy}
+              onChange={(e) => setStrategySettings((s) => ({ ...s, check_scene_accuracy: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            Check scene accuracy
+          </label>
         </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Compares each candidate to the scene reference (dollhouse, then real photo, then mood board) before judging.
+          If none pass drift thresholds, the service regenerates the full candidate set (repeat count is controlled by
+          the SCENE_ACCURACY_MAX_REGENERATIONS env var on the image-generation service, default 1).
+        </p>
       </div>
 
       {/* Preview Generation */}
