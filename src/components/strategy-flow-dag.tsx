@@ -32,6 +32,8 @@ const NODE_HEIGHT = 120;
 const LEVEL_GAP_X = 100;
 const NODE_GAP_Y = 32;
 const PADDING = 32;
+const JUDGE_HEADER_HEIGHT = 40;
+const JUDGE_ROW_HEIGHT = 72;
 
 function getDeps(step: DagStep): number[] {
   const deps: number[] = [];
@@ -183,7 +185,11 @@ export interface DagJudge {
 export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; judge?: DagJudge | null; judges?: DagJudge[] }) {
   if (steps.length === 0) return null;
 
-  const { positions, width: baseWidth, height } = computeLayout(steps);
+  const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
+  const hasJudge = effectiveJudges.length > 0;
+  const judgeNodeHeight = Math.max(NODE_HEIGHT, JUDGE_HEADER_HEIGHT + effectiveJudges.length * JUDGE_ROW_HEIGHT + 16);
+  const { positions, width: baseWidth, height: baseHeight } = computeLayout(steps);
+  const height = Math.max(baseHeight, judgeNodeHeight + PADDING * 2);
 
   const allEdges: Edge[] = [];
   for (const step of steps) {
@@ -193,12 +199,6 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
   const JUDGE_NODE_ORDER = -999;
   let judgePos: NodePosition | null = null;
   const judgeEdges: { fromPos: NodePosition }[] = [];
-  const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
-  const hasJudge = effectiveJudges.length > 0;
-  const judgeNodeHeight = Math.max(
-    NODE_HEIGHT,
-    68 + effectiveJudges.length * 44,
-  );
 
   if (hasJudge) {
     const maxLevel = Math.max(...computeLevels(steps).values(), 0);
