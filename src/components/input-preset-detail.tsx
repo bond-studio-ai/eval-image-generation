@@ -2,34 +2,14 @@
 
 import { DesignSettingsDisplay } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { ProductNamePopover, useProductNameLookup } from '@/components/product-name-popover';
-import { toUrlArray, withImageParams } from '@/lib/image-utils';
-import { CATEGORY_LABELS } from '@/lib/validation';
+import { withImageParams } from '@/lib/image-utils';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import type { InputPresetDetailItem } from '@/lib/service-client';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { RatingBadge } from './rating-badge';
-
-const PRODUCT_KEYS_SNAKE = [
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robe_hooks',
-  'shelves', 'shower_glasses', 'shower_systems', 'floor_tiles', 'wall_tiles',
-  'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wallpapers',
-] as const;
-
-function snakeToCamel(s: string): string {
-  return s.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-}
-
-interface InputPresetData {
-  id: string;
-  name: string | null;
-  description: string | null;
-  deletedAt: string | null;
-  [key: string]: unknown;
-}
 
 interface SerializedGeneration {
   id: string;
@@ -46,7 +26,7 @@ interface Stats {
 }
 
 interface InputPresetDetailProps {
-  data: InputPresetData;
+  data: InputPresetDetailItem;
   generations: SerializedGeneration[];
   stats: Stats;
 }
@@ -54,16 +34,6 @@ interface InputPresetDetailProps {
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
-  const getProductName = useProductNameLookup();
-  const productImages: { key: string; label: string; urls: string[] }[] = [];
-  for (const snakeKey of PRODUCT_KEYS_SNAKE) {
-    const camelKey = snakeToCamel(snakeKey);
-    const val = (data as Record<string, unknown>)[camelKey] ?? (data as Record<string, unknown>)[snakeKey];
-    const urls = toUrlArray(val);
-    if (urls.length > 0) {
-      productImages.push({ key: snakeKey, label: CATEGORY_LABELS[snakeKey] ?? snakeKey, urls });
-    }
-  }
 
   return (
     <div>
@@ -152,27 +122,39 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       </div>
 
+      {(() => {
+        const layoutTypeId = data.layoutTypeId ?? null;
+        if (!layoutTypeId) return null;
+        return (
+          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+            <p className="text-sm font-medium text-gray-600">Room preset layout type</p>
+            <p className="mt-1 font-mono text-sm text-gray-900">{layoutTypeId}</p>
+          </div>
+        );
+      })()}
+
       {/* Design settings (adapters_Design) */}
       {(() => {
-        const d = data as Record<string, unknown>;
-        const ds = d.designSettings ?? d.design_settings;
-        if (!ds || typeof ds !== 'object' || Array.isArray(ds) || Object.keys(ds as object).length === 0) {
+        const entries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
+          const value = data[key];
+          return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
+        });
+        if (entries.length === 0) {
           return null;
         }
         return (
           <div className="mt-6">
-            <DesignSettingsDisplay value={ds as Record<string, unknown>} />
+            <DesignSettingsDisplay value={Object.fromEntries(entries)} />
           </div>
         );
       })()}
 
       {/* Scene Images */}
       {(() => {
-        const d = data as Record<string, unknown>;
         const scenes = [
-          { label: 'Dollhouse View', url: (d.dollhouseView ?? d.dollhouse_view) as string | null },
-          { label: 'Real Photo', url: (d.realPhoto ?? d.real_photo) as string | null },
-          { label: 'Mood Board', url: (d.moodBoard ?? d.mood_board) as string | null },
+          { label: 'Dollhouse View', url: data.dollhouseView },
+          { label: 'Real Photo', url: data.realPhoto },
+          { label: 'Mood Board', url: data.moodBoard },
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (
@@ -199,7 +181,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Arbitrary Images */}
       {(() => {
-        const arbitrary = (data as Record<string, unknown>).arbitraryImages ?? (data as Record<string, unknown>).arbitrary_images;
+        const arbitrary = data.arbitraryImages ?? [];
         return Array.isArray(arbitrary) && arbitrary.length > 0 ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
@@ -223,48 +205,6 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       ) : null;
       })()}
-
-      {/* Product Images */}
-      {productImages.length > 0 && (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {productImages.map((img) => (
-              <div key={img.key} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                <div className="border-b border-gray-100 px-2.5 py-1.5">
-                  <span className="truncate text-xs font-semibold text-gray-700">
-                    {img.label}
-                    {img.urls.length > 1 && <span className="ml-1 text-gray-400">({img.urls.length})</span>}
-                  </span>
-                </div>
-                {img.urls.length === 1 ? (
-                  <ProductNamePopover imageUrl={img.urls[0]} getProductName={getProductName}>
-                    <ImageWithSkeleton
-                      src={withImageParams(img.urls[0])}
-                      alt={getProductName(img.urls[0]) ?? img.label}
-                      loading="lazy"
-                      wrapperClassName="h-28 w-full bg-gray-50 p-1"
-                    />
-                  </ProductNamePopover>
-                ) : (
-                  <div className="grid grid-cols-2 gap-0.5 p-1">
-                    {img.urls.map((url, i) => (
-                      <ProductNamePopover key={i} imageUrl={url} getProductName={getProductName}>
-                        <ImageWithSkeleton
-                          src={withImageParams(url)}
-                          alt={getProductName(url) ?? `${img.label} ${i + 1}`}
-                          loading="lazy"
-                          wrapperClassName="h-14 w-full rounded bg-gray-50"
-                        />
-                      </ProductNamePopover>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Generations List */}
       <div className="mt-8">

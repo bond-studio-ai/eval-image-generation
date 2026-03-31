@@ -1,5 +1,5 @@
+import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
-import { PRODUCT_CATEGORIES } from '@/lib/validation';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
@@ -47,31 +47,20 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     );
   }
 
-  const productImages: Record<string, string[]> = {};
-  for (const key of PRODUCT_CATEGORIES) {
-    const camelKey = key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-    const val = preset[camelKey] ?? preset[key];
-    const urls = Array.isArray(val) ? val.filter((v: unknown): v is string => typeof v === 'string' && !!v) : [];
-    if (urls.length > 0) {
-      productImages[key] = urls;
-    }
-  }
-
-  const arbitraryImages = preset.arbitraryImages ?? preset.arbitrary_images;
-  const designSettingsRaw = preset.designSettings ?? preset.design_settings;
-  const designSettings =
-    designSettingsRaw != null && typeof designSettingsRaw === 'object' && !Array.isArray(designSettingsRaw)
-      ? (designSettingsRaw as Record<string, unknown>)
-      : null;
+  const arbitraryImages = preset.arbitraryImages ?? [];
+  const designSettingsEntries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
+    const value = preset[key];
+    return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
+  });
+  const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
 
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
     description: preset.description ?? '',
-    dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
-    realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
-    moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
-    productImages,
+    layoutTypeId: preset.layoutTypeId ?? null,
+    realPhoto: preset.realPhoto ?? null,
+    moodBoard: preset.moodBoard ?? null,
     arbitraryImages: Array.isArray(arbitraryImages)
       ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))
       : [],

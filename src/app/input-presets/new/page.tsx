@@ -6,9 +6,9 @@ import {
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
 import { ImageUpload } from '@/components/image-upload';
-import { ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -19,10 +19,9 @@ export default function NewInputPresetPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const [dollhouseView, setDollhouseView] = useState<string | null>(null);
+  const [layoutTypeId, setLayoutTypeId] = useState('');
   const [realPhoto, setRealPhoto] = useState<string | null>(null);
   const [moodBoard, setMoodBoard] = useState<string | null>(null);
-  const [productImages, setProductImages] = useState<ProductImagesState>({});
   const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>([]);
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(null);
 
@@ -30,11 +29,10 @@ export default function NewInputPresetPage() {
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    !!dollhouseView || !!realPhoto || !!moodBoard ||
-    Object.values(productImages).some((arr) => arr && arr.length > 0) ||
-    arbitraryImages.length > 0;
+    !!realPhoto || !!moodBoard || arbitraryImages.length > 0;
 
-  const canCreate = name.trim() && (hasAnyImage || designSettingsHasValues(designSettings));
+  const canCreate =
+    name.trim() && (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
 
   async function handleCreate() {
     if (!canCreate) return;
@@ -47,14 +45,15 @@ export default function NewInputPresetPage() {
         description: description.trim() || undefined,
       };
 
-      if (designSettings) payload.design_settings = designSettings;
-
-      if (dollhouseView) payload.dollhouse_view = dollhouseView;
+      if (designSettings) {
+        for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
+          const value = designSettings[key];
+          if (value !== undefined) payload[key] = value;
+        }
+      }
+      if (layoutTypeId.trim()) payload.layout_type_id = layoutTypeId.trim();
       if (realPhoto) payload.real_photo = realPhoto;
       if (moodBoard) payload.mood_board = moodBoard;
-      for (const [key, urls] of Object.entries(productImages)) {
-        if (urls && urls.length > 0) payload[key] = urls;
-      }
       if (arbitraryImages.length > 0) payload.arbitrary_images = arbitraryImages;
 
       const res = await fetch(serviceUrl('input-presets'), {
@@ -111,20 +110,28 @@ export default function NewInputPresetPage() {
         </div>
       </div>
 
-      {/* Scene Images */}
+      {/* Room preset and scene images */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset & Scene Images</h2>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
+          <div>
+            <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
+              Layout Type ID
+            </label>
+            <input
+              type="text"
+              value={layoutTypeId}
+              onChange={(e) => setLayoutTypeId(e.target.value)}
+              placeholder="Room preset layout_type_id"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Saved instead of a dollhouse image upload. Runtime will resolve the layout from this room preset.
+            </p>
+          </div>
           <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
           <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
         </div>
-      </div>
-
-      {/* Product Images */}
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
-        <ProductImageInput value={productImages} onChange={setProductImages} />
       </div>
 
       {/* Arbitrary images (not tied to a specific attribute) */}
@@ -171,7 +178,7 @@ export default function NewInputPresetPage() {
               <p className="text-sm text-gray-500">
                 {!name.trim()
                   ? 'Give this preset a name.'
-                  : 'Add at least one image or design setting to create.'}
+                  : 'Add a layout type, image, or design setting to create.'}
               </p>
             )}
             {canCreate && (

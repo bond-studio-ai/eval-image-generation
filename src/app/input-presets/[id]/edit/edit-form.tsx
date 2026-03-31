@@ -6,9 +6,9 @@ import {
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
 import { ImageUpload } from '@/components/image-upload';
-import { PRODUCT_CATEGORIES, ProductImageInput, type ProductImagesState } from '@/components/product-image-input';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -17,10 +17,9 @@ interface InitialData {
   id: string;
   name: string;
   description: string;
-  dollhouseView: string | null;
+  layoutTypeId: string | null;
   realPhoto: string | null;
   moodBoard: string | null;
-  productImages: ProductImagesState;
   arbitraryImages: { url: string; tag?: string }[];
   designSettings: Record<string, unknown> | null;
 }
@@ -30,10 +29,9 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
 
   const [name, setName] = useState(initialData.name);
   const [description, setDescription] = useState(initialData.description);
-  const [dollhouseView, setDollhouseView] = useState<string | null>(initialData.dollhouseView);
+  const [layoutTypeId, setLayoutTypeId] = useState(initialData.layoutTypeId ?? '');
   const [realPhoto, setRealPhoto] = useState<string | null>(initialData.realPhoto);
   const [moodBoard, setMoodBoard] = useState<string | null>(initialData.moodBoard);
-  const [productImages, setProductImages] = useState<ProductImagesState>(initialData.productImages);
   const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>(initialData.arbitraryImages);
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(initialData.designSettings);
 
@@ -41,11 +39,10 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    !!dollhouseView || !!realPhoto || !!moodBoard ||
-    Object.values(productImages).some((arr) => arr && arr.length > 0) ||
-    arbitraryImages.length > 0;
+    !!realPhoto || !!moodBoard || arbitraryImages.length > 0;
 
-  const canSave = name.trim() && (hasAnyImage || designSettingsHasValues(designSettings));
+  const canSave =
+    name.trim() && (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
 
   async function handleSave() {
     if (!canSave) return;
@@ -56,14 +53,15 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim() || null,
-        dollhouse_view: dollhouseView || null,
+        layout_type_id: layoutTypeId.trim() || null,
         real_photo: realPhoto || null,
         mood_board: moodBoard || null,
-        design_settings: designSettings,
       };
-      for (const cat of PRODUCT_CATEGORIES) {
-        const urls = productImages[cat.key];
-        payload[cat.key] = urls && urls.length > 0 ? urls : [];
+      if (designSettings) {
+        for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
+          const value = designSettings[key];
+          if (value !== undefined) payload[key] = value;
+        }
       }
       payload.arbitrary_images = arbitraryImages;
 
@@ -121,17 +119,26 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       </div>
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset & Scene Images</h2>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
+          <div>
+            <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
+              Layout Type ID
+            </label>
+            <input
+              type="text"
+              value={layoutTypeId}
+              onChange={(e) => setLayoutTypeId(e.target.value)}
+              placeholder="Room preset layout_type_id"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Saved instead of a dollhouse image upload. Runtime will resolve the layout from this room preset.
+            </p>
+          </div>
           <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
           <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
         </div>
-      </div>
-
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
-        <ProductImageInput value={productImages} onChange={setProductImages} />
       </div>
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -176,7 +183,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
               <p className="text-sm text-gray-500">
                 {!name.trim()
                   ? 'Give this preset a name.'
-                  : 'Add at least one image or design setting to save.'}
+                  : 'Add a layout type, image, or design setting to save.'}
               </p>
             )}
             {canSave && <p className="text-sm font-medium text-gray-700">Ready to save</p>}

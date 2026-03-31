@@ -1,27 +1,76 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { localUrl } from '@/lib/api-base';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-// ── Field definitions ──────────────────────────────────────────────
+type FieldType = 'select' | 'boolean' | 'product';
 
-type FieldType = 'select' | 'boolean';
-
-interface SelectFieldDef {
+interface BaseFieldDef {
   key: string;
   label: string;
+  type: FieldType;
+}
+
+interface SelectFieldDef extends BaseFieldDef {
   type: 'select';
   options: { value: string; label: string }[];
 }
 
-interface BooleanFieldDef {
-  key: string;
-  label: string;
+interface BooleanFieldDef extends BaseFieldDef {
   type: 'boolean';
 }
 
-type FieldDef = SelectFieldDef | BooleanFieldDef;
+interface ProductFieldDef extends BaseFieldDef {
+  type: 'product';
+  apiCategories: string[];
+}
 
-const FIELDS: FieldDef[] = [
+type FieldDef = SelectFieldDef | BooleanFieldDef | ProductFieldDef;
+type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet';
+
+interface CatalogProduct {
+  id: string;
+  name: string;
+  category: { id: string; name: string } | null;
+  productFamilyName: string | null;
+  featuredImage: { id: string; url: string } | null;
+}
+
+const PRODUCT_FIELDS: ProductFieldDef[] = [
+  { key: 'vanity', label: 'Vanity', type: 'product', apiCategories: ['Vanities', 'Linen Cabinets'] },
+  { key: 'faucet', label: 'Faucet', type: 'product', apiCategories: ['Faucets', 'Faucet Accessories'] },
+  { key: 'mirror', label: 'Mirror', type: 'product', apiCategories: ['Mirror'] },
+  { key: 'lighting', label: 'Lighting', type: 'product', apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'] },
+  { key: 'toilet', label: 'Toilet', type: 'product', apiCategories: ['Toilet', 'Toilet Accessories'] },
+  { key: 'robeHook', label: 'Robe Hook', type: 'product', apiCategories: ['Robe Hooks'] },
+  { key: 'toiletPaperHolder', label: 'Toilet Paper Holder', type: 'product', apiCategories: ['Toilet Paper Holders'] },
+  { key: 'towelBar', label: 'Towel Bar', type: 'product', apiCategories: ['Towel Bars'] },
+  { key: 'towelRing', label: 'Towel Ring', type: 'product', apiCategories: ['Towel Rings'] },
+  { key: 'floorTile', label: 'Floor Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'wallTile', label: 'Wall Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'nicheTile', label: 'Niche Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'showerWallTile', label: 'Shower Wall Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'showerShortWallTile', label: 'Shower Short Wall Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'showerFloorTile', label: 'Shower Floor Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'curbTile', label: 'Curb Tile', type: 'product', apiCategories: ['Tile'] },
+  { key: 'paint', label: 'Paint', type: 'product', apiCategories: ['Paint'] },
+  { key: 'shelves', label: 'Shelves', type: 'product', apiCategories: ['Shelves'] },
+  { key: 'showerSystem', label: 'Shower System', type: 'product', apiCategories: ['Shower Systems', 'Shower System Components'] },
+  { key: 'showerGlass', label: 'Shower Glass', type: 'product', apiCategories: ['Shower Glass'] },
+  { key: 'tub', label: 'Tub', type: 'product', apiCategories: ['Tubs', 'Tub Accessories', 'Tub Drains'] },
+  { key: 'tubDoor', label: 'Tub Door', type: 'product', apiCategories: ['Tub Doors'] },
+  { key: 'tubFiller', label: 'Tub Filler', type: 'product', apiCategories: ['Tub Filler'] },
+  { key: 'wallpaper', label: 'Wallpaper', type: 'product', apiCategories: ['Wallpaper', 'Wallpaper Accessories'] },
+];
+
+const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string }> = [
+  { value: 'featured-image', label: 'Featured Image' },
+  { value: 'line-drawing', label: 'Line Drawing' },
+  { value: 'tear-sheet', label: 'Tear Sheet' },
+];
+
+const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
   {
     key: 'wallpaperPlacement',
     label: 'Wallpaper Placement',
@@ -67,25 +116,63 @@ const FIELDS: FieldDef[] = [
   { key: 'isTubDoorVisible', label: 'Tub Door Visible', type: 'boolean' },
 ];
 
-const ALL_FIELD_KEYS = new Set(FIELDS.map((f) => f.key));
+const FIELDS: FieldDef[] = [...PRODUCT_FIELDS, ...SETTING_FIELDS];
+const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}ImageType`);
+const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
 
-// ── Helpers ────────────────────────────────────────────────────────
+function getProductImageTypeKey(slotKey: string): string {
+  return `${slotKey}ImageType`;
+}
 
-function isNonEmpty(v: unknown): boolean {
-  if (v == null) return false;
-  if (typeof v === 'string') return v.length > 0;
-  if (typeof v === 'boolean') return true;
+function readProductImageType(value: unknown): ProductImageType | null {
+  return value === 'featured-image' || value === 'line-drawing' || value === 'tear-sheet'
+    ? value
+    : null;
+}
+
+function isNonEmpty(value: unknown): boolean {
+  if (value == null) return false;
+  if (typeof value === 'string') return value.length > 0;
+  if (typeof value === 'boolean') return true;
   return false;
 }
 
 export type DesignSettingsValue = Record<string, unknown> | null;
 
-export function designSettingsHasValues(v: DesignSettingsValue): boolean {
-  if (!v) return false;
-  return Object.values(v).some(isNonEmpty);
+export function designSettingsHasValues(value: DesignSettingsValue): boolean {
+  if (!value) return false;
+  return Object.values(value).some(isNonEmpty);
 }
 
-// ── Editor ─────────────────────────────────────────────────────────
+function useCatalogProducts() {
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(localUrl('products'))
+      .then((r) => r.json())
+      .then((r) => {
+        if (cancelled) return;
+        setProducts(Array.isArray(r.data) ? (r.data as CatalogProduct[]) : []);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const byId = useMemo(() => {
+    const map = new Map<string, CatalogProduct>();
+    for (const product of products) map.set(product.id, product);
+    return map;
+  }, [products]);
+
+  return { products, byId, loaded };
+}
 
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
@@ -96,24 +183,22 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
-
+  const { products, byId, loaded } = useCatalogProducts();
   const data = value ?? {};
 
   const setField = useCallback(
-    (key: string, v: unknown) => {
+    (key: string, nextValue: unknown) => {
       const next = { ...data };
-      if (v == null || v === '') {
-        delete next[key];
-      } else {
-        next[key] = v;
-      }
+      if (nextValue == null || nextValue === '') delete next[key];
+      else next[key] = nextValue;
       onChange(Object.keys(next).length === 0 ? null : next);
     },
     [data, onChange],
   );
 
-  const filledCount = useMemo(
-    () => FIELDS.filter((f) => isNonEmpty(data[f.key])).length,
+  const filledCount = useMemo(() => FIELDS.filter((field) => isNonEmpty(data[field.key])).length, [data]);
+  const extraKeys = useMemo(
+    () => Object.keys(data).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(data[key])),
     [data],
   );
 
@@ -167,14 +252,8 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
     }
   }, [jsonText, onChange]);
 
-  const extraKeys = useMemo(
-    () => Object.keys(data).filter((k) => !ALL_FIELD_KEYS.has(k) && isNonEmpty(data[k])),
-    [data],
-  );
-
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold uppercase text-gray-900">Design Settings</h2>
@@ -219,36 +298,60 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
 
       {mode === 'form' ? (
         <div className="px-5 py-4">
-          <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-            {FIELDS.map((field) =>
-              field.type === 'select' ? (
-                <SelectField
-                  key={field.key}
-                  field={field}
-                  value={data[field.key]}
-                  onChange={(v) => setField(field.key, v)}
-                />
-              ) : (
-                <BooleanField
-                  key={field.key}
-                  field={field}
-                  value={data[field.key]}
-                  onChange={(v) => setField(field.key, v)}
-                />
-              ),
-            )}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Products</h3>
+              <div className="space-y-4">
+                {PRODUCT_FIELDS.map((field) => (
+                  <ProductField
+                    key={field.key}
+                    field={field}
+                    value={data[field.key]}
+                    imageTypeValue={data[getProductImageTypeKey(field.key)]}
+                    loaded={loaded}
+                    products={products}
+                    selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
+                    onChange={(nextValue) => setField(field.key, nextValue)}
+                    onImageTypeChange={(nextValue) =>
+                      setField(getProductImageTypeKey(field.key), nextValue)
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
+              <div className="space-y-4">
+                {SETTING_FIELDS.map((field) =>
+                  field.type === 'select' ? (
+                    <SelectField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => setField(field.key, nextValue)}
+                    />
+                  ) : (
+                    <BooleanField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => setField(field.key, nextValue)}
+                    />
+                  ),
+                )}
+              </div>
+            </div>
           </div>
 
           {extraKeys.length > 0 && (
             <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="mb-2 text-xs font-medium text-amber-700">
-                Additional fields (switch to JSON to edit):
-              </p>
+              <p className="mb-2 text-xs font-medium text-amber-700">Additional fields (switch to JSON to edit):</p>
               <div className="space-y-1">
-                {extraKeys.map((k) => (
-                  <div key={k} className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-amber-800">{k}</span>
-                    <span className="font-mono text-xs text-amber-600">{JSON.stringify(data[k])}</span>
+                {extraKeys.map((key) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="font-mono text-xs text-amber-800">{key}</span>
+                    <span className="font-mono text-xs text-amber-600">{JSON.stringify(data[key])}</span>
                   </div>
                 ))}
               </div>
@@ -257,9 +360,7 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
         </div>
       ) : (
         <div className="p-5">
-          <p className="mb-2 text-xs text-gray-500">
-            Raw JSON with camelCase keys. Switch back to Form to use the structured editor.
-          </p>
+          <p className="mb-2 text-xs text-gray-500">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
           <textarea
             value={jsonText}
             onChange={(e) => {
@@ -267,9 +368,9 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
               setJsonError(null);
             }}
             spellCheck={false}
-            rows={12}
+            rows={14}
             className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            placeholder={'{\n  "wallTilePlacement": "VanityHalfWall",\n  "isShowerGlassVisible": true\n}'}
+            placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
           />
           {jsonError && <p className="mt-2 text-xs text-red-600">{jsonError}</p>}
           <div className="mt-3 flex justify-end">
@@ -287,8 +388,6 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
   );
 }
 
-// ── Field renderers ────────────────────────────────────────────────
-
 function SelectField({
   field,
   value,
@@ -296,37 +395,36 @@ function SelectField({
 }: {
   field: SelectFieldDef;
   value: unknown;
-  onChange: (v: string | null) => void;
+  onChange: (value: string | null) => void;
 }) {
-  const strVal = typeof value === 'string' ? value : '';
-
+  const currentValue = typeof value === 'string' ? value : '';
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => onChange(null)}
           className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            !strVal
+            !currentValue
               ? 'border-gray-300 bg-gray-100 text-gray-700 shadow-sm'
               : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600'
           }`}
         >
           Not set
         </button>
-        {field.options.map((opt) => (
+        {field.options.map((option) => (
           <button
-            key={opt.value}
+            key={option.value}
             type="button"
-            onClick={() => onChange(opt.value)}
+            onClick={() => onChange(option.value)}
             className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-              strVal === opt.value
+              currentValue === option.value
                 ? 'border-blue-300 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200'
                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {opt.label}
+            {option.label}
           </button>
         ))}
       </div>
@@ -341,10 +439,9 @@ function BooleanField({
 }: {
   field: BooleanFieldDef;
   value: unknown;
-  onChange: (v: boolean | null) => void;
+  onChange: (value: boolean | null) => void;
 }) {
-  const boolVal = typeof value === 'boolean' ? value : null;
-
+  const currentValue = typeof value === 'boolean' ? value : null;
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
@@ -353,7 +450,7 @@ function BooleanField({
           type="button"
           onClick={() => onChange(null)}
           className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            boolVal === null
+            currentValue === null
               ? 'border-gray-300 bg-gray-100 text-gray-700 shadow-sm'
               : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600'
           }`}
@@ -364,7 +461,7 @@ function BooleanField({
           type="button"
           onClick={() => onChange(true)}
           className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            boolVal === true
+            currentValue === true
               ? 'border-green-300 bg-green-50 text-green-700 shadow-sm ring-1 ring-green-200'
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
           }`}
@@ -375,7 +472,7 @@ function BooleanField({
           type="button"
           onClick={() => onChange(false)}
           className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            boolVal === false
+            currentValue === false
               ? 'border-red-300 bg-red-50 text-red-700 shadow-sm ring-1 ring-red-200'
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
           }`}
@@ -387,27 +484,169 @@ function BooleanField({
   );
 }
 
-// ── Detail display ─────────────────────────────────────────────────
+function ProductField({
+  field,
+  value,
+  imageTypeValue,
+  loaded,
+  products,
+  selectedProduct,
+  onChange,
+  onImageTypeChange,
+}: {
+  field: ProductFieldDef;
+  value: unknown;
+  imageTypeValue: unknown;
+  loaded: boolean;
+  products: CatalogProduct[];
+  selectedProduct: CatalogProduct | null;
+  onChange: (value: string | null) => void;
+  onImageTypeChange: (value: ProductImageType | null) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const selectedId = typeof value === 'string' ? value : '';
+  const selectedImageType = readProductImageType(imageTypeValue);
+
+  const filteredProducts = useMemo(() => {
+    const query = search.toLowerCase().trim();
+    return products
+      .filter((product) => {
+        const categoryName = product.category?.name ?? '';
+        if (!field.apiCategories.includes(categoryName)) return false;
+        if (!query) return true;
+        return (
+          product.name.toLowerCase().includes(query) ||
+          categoryName.toLowerCase().includes(query) ||
+          product.id.toLowerCase().includes(query) ||
+          product.productFamilyName?.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 30);
+  }, [field.apiCategories, products, search]);
+
+  return (
+    <div className="rounded-md border border-gray-200 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-700">{field.label}</label>
+          <p className="mt-1 text-[11px] text-gray-500">
+            {selectedProduct ? selectedProduct.name : selectedId || 'Not set'}
+          </p>
+          <p className="mt-1 text-[11px] text-gray-400">
+            Send: {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === selectedImageType)?.label ?? 'Featured Image'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedId && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange(null);
+                onImageTypeChange(null);
+                setSearch('');
+              }}
+              className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((current) => !current)}
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {open ? 'Close' : 'Choose'}
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-3 border-t border-gray-100 pt-3">
+          <div className="mb-3">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onImageTypeChange(option.value)}
+                  className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                    (selectedImageType ?? 'featured-image') === option.value
+                      ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
+            disabled={!loaded}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+          />
+          <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-gray-200">
+            {!loaded ? (
+              <p className="px-3 py-2 text-xs text-gray-500">Loading products...</p>
+            ) : filteredProducts.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-gray-500">No matching products.</p>
+            ) : (
+              filteredProducts.map((product) => {
+                const isSelected = product.id === selectedId;
+                return (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(product.id);
+                      setOpen(false);
+                      setSearch('');
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-3 py-2 text-left text-xs last:border-b-0 ${
+                      isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{product.name}</span>
+                      <span className="block truncate text-[11px] text-gray-500">
+                        {product.category?.name ?? 'No category'} • {product.id}
+                      </span>
+                    </span>
+                    {isSelected && <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">Selected</span>}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface DesignSettingsDisplayProps {
   value: Record<string, unknown>;
 }
 
-const FIELD_MAP = new Map<string, FieldDef>();
-for (const f of FIELDS) FIELD_MAP.set(f.key, f);
-
 const SELECT_OPTION_LABELS = new Map<string, Map<string, string>>();
-for (const f of FIELDS) {
-  if (f.type === 'select') {
-    const m = new Map<string, string>();
-    for (const o of f.options) m.set(o.value, o.label);
-    SELECT_OPTION_LABELS.set(f.key, m);
+for (const field of SETTING_FIELDS) {
+  if (field.type === 'select') {
+    const optionMap = new Map<string, string>();
+    for (const option of field.options) optionMap.set(option.value, option.label);
+    SELECT_OPTION_LABELS.set(field.key, optionMap);
   }
 }
 
 export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
-  const populated = FIELDS.filter((f) => isNonEmpty(value[f.key]));
-  const extraKeys = Object.keys(value).filter((k) => !ALL_FIELD_KEYS.has(k) && isNonEmpty(value[k]));
+  const { byId } = useCatalogProducts();
+  const populated = FIELDS.filter((field) => isNonEmpty(value[field.key]));
+  const extraKeys = Object.keys(value).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(value[key]));
 
   if (populated.length === 0 && extraKeys.length === 0) return null;
 
@@ -418,17 +657,23 @@ export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
       </div>
       <div className="px-5 py-4">
         <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-          {populated.map((f) => (
-            <DisplayField key={f.key} field={f} value={value[f.key]} />
+          {populated.map((field) => (
+            <DisplayField
+              key={field.key}
+              field={field}
+              value={value[field.key]}
+              allValues={value}
+              productById={byId}
+            />
           ))}
         </div>
         {extraKeys.length > 0 && (
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="mb-1 text-xs font-medium text-amber-700">Other</p>
-            {extraKeys.map((k) => (
-              <div key={k} className="flex items-center justify-between py-0.5">
-                <span className="font-mono text-xs text-amber-800">{k}</span>
-                <span className="font-mono text-xs text-amber-600">{JSON.stringify(value[k])}</span>
+            {extraKeys.map((key) => (
+              <div key={key} className="flex items-center justify-between py-0.5">
+                <span className="font-mono text-xs text-amber-800">{key}</span>
+                <span className="font-mono text-xs text-amber-600">{JSON.stringify(value[key])}</span>
               </div>
             ))}
           </div>
@@ -438,33 +683,58 @@ export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
   );
 }
 
-function DisplayField({ field, value }: { field: FieldDef; value: unknown }) {
+function DisplayField({
+  field,
+  value,
+  allValues,
+  productById,
+}: {
+  field: FieldDef;
+  value: unknown;
+  allValues: Record<string, unknown>;
+  productById: Map<string, CatalogProduct>;
+}) {
   if (field.type === 'boolean') {
-    const b = value as boolean;
+    const boolValue = value as boolean;
     return (
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-600">{field.label}</span>
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            b
+            boolValue
               ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-200'
               : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200'
           }`}
         >
-          {b ? 'Yes' : 'No'}
+          {boolValue ? 'Yes' : 'No'}
         </span>
       </div>
     );
   }
 
-  const strVal = String(value);
-  const optionLabel = SELECT_OPTION_LABELS.get(field.key)?.get(strVal) ?? strVal;
+  if (field.type === 'product') {
+    const productId = String(value);
+    const product = productById.get(productId);
+    const imageType = readProductImageType(allValues[getProductImageTypeKey(field.key)]);
+    const imageTypeLabel =
+      PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === imageType)?.label ?? 'Featured Image';
+    return (
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-gray-600">{field.label}</span>
+        <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+          {`${product?.name ?? productId} · ${imageTypeLabel}`}
+        </span>
+      </div>
+    );
+  }
 
+  const rawValue = String(value);
+  const label = SELECT_OPTION_LABELS.get(field.key)?.get(rawValue) ?? rawValue;
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-600">{field.label}</span>
       <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
-        {optionLabel}
+        {label}
       </span>
     </div>
   );

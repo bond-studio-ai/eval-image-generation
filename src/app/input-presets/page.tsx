@@ -10,11 +10,6 @@ interface PageProps {
 
 const IMAGE_COLUMNS = [
   'dollhouseView', 'realPhoto', 'moodBoard',
-  'faucets', 'lightings', 'lvps', 'mirrors', 'paints', 'robeHooks',
-  'shelves', 'showerGlasses', 'showerSystems', 'floorTiles', 'wallTiles',
-  'showerWallTiles', 'showerFloorTiles', 'showerCurbTiles',
-  'toiletPaperHolders', 'toilets', 'towelBars', 'towelRings',
-  'tubDoors', 'tubFillers', 'tubs', 'vanities', 'wallpapers',
 ] as const;
 
 export default async function InputPresetsPage({ searchParams }: PageProps) {

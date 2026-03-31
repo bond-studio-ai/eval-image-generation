@@ -47,6 +47,8 @@ export interface StrategyListItem {
   runCount: number;
 }
 
+import type { InputPresetDesignFields } from './input-preset-design';
+
 export interface StrategyStepItem {
   id: string;
   stepOrder: number;
@@ -136,12 +138,31 @@ export interface InputPresetListItemForBuilder {
   id: string;
   name: string | null;
   description: string | null;
+  layoutTypeId?: string | null;
   dollhouseView: string | null;
   realPhoto: string | null;
   moodBoard: string | null;
   createdAt: string;
   imageCount: number;
   stats?: { generationCount: number };
+}
+
+export interface InputPresetDetailItem extends InputPresetDesignFields {
+  id: string;
+  name: string | null;
+  description: string | null;
+  layoutTypeId?: string | null;
+  layout_type_id?: string | null;
+  dollhouseView: string | null;
+  dollhouse_view?: string | null;
+  realPhoto: string | null;
+  real_photo?: string | null;
+  moodBoard: string | null;
+  mood_board?: string | null;
+  arbitraryImages?: Array<{ url: string; tag?: string }>;
+  arbitrary_images?: Array<{ url: string; tag?: string }>;
+  deletedAt: string | null;
+  createdAt: string;
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -249,8 +270,8 @@ export async function fetchInputPresetsMinimal(limit = 100): Promise<InputPreset
   return fetchService<InputPresetMinimalItem[]>(`/input-presets?limit=${limit}&minimal=true`);
 }
 
-export async function fetchInputPresetById(id: string) {
-  return fetchService<Record<string, unknown>>(`/input-presets/${id}`);
+export async function fetchInputPresetById(id: string): Promise<InputPresetDetailItem> {
+  return fetchService<InputPresetDetailItem>(`/input-presets/${id}`);
 }
 
 // ─── Generations ─────────────────────────────────────────────────────────────
