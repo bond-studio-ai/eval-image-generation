@@ -35,6 +35,8 @@ export type DetailPanel = {
   userPrompt: string | null;
 };
 
+type ModalTabId = 'reasoning' | 'output' | 'system' | 'user';
+
 export function buildPanels(
   judgeResults: StrategyRunJudgeResultEntry[] | null | undefined,
   agg: {
@@ -91,6 +93,15 @@ function panelHasContent(p: DetailPanel): boolean {
   );
 }
 
+function getAvailableTabs(panel: DetailPanel): ModalTabId[] {
+  return [
+    'reasoning',
+    ...(panel.output?.trim() ? ['output' as const] : []),
+    ...(panel.systemPrompt?.trim() ? ['system' as const] : []),
+    ...(panel.userPrompt?.trim() ? ['user' as const] : []),
+  ];
+}
+
 export function ReasoningModal({
   aggregateScore,
   panels,
@@ -105,7 +116,7 @@ export function ReasoningModal({
   onClose: () => void;
 }) {
   const [judgeIdx, setJudgeIdx] = useState(0);
-  const [activeTab, setActiveTab] = useState<'reasoning' | 'output' | 'system' | 'user'>('reasoning');
+  const [activeTab, setActiveTab] = useState<ModalTabId>('reasoning');
 
   const panel = panels[judgeIdx] ?? panels[0];
   const multiJudge = panels.length > 1;
@@ -173,26 +184,44 @@ export function ReasoningModal({
         </div>
 
         {multiJudge && (
-          <div className="flex flex-wrap gap-1 border-b border-gray-200 bg-gray-50/80 px-4 py-2">
+          <div className="border-b border-gray-200 bg-gray-50/80 px-4 py-3">
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">Judges</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {panels.map((p, i) => (
               <button
                 key={p.key}
                 type="button"
                 onClick={() => {
+                  const nextPanel = panels[i] ?? panels[0];
                   setJudgeIdx(i);
-                  setActiveTab('reasoning');
+                  setActiveTab((currentTab) =>
+                    getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : 'reasoning',
+                  );
                 }}
-                className={`rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
-                  judgeIdx === i ? 'bg-white text-primary-700 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-white/80'
+                className={`rounded-xl border px-3 py-2 text-left transition-all ${
+                  judgeIdx === i
+                    ? 'border-primary-200 bg-white text-primary-700 shadow-sm ring-1 ring-primary-100'
+                    : 'border-transparent bg-white/70 text-gray-700 hover:border-gray-200 hover:bg-white'
                 }`}
               >
-                <span className={p.judgeName ? 'text-gray-700' : 'text-gray-400'}>{p.shortLabel}</span>
-                {!p.judgeName && <>{' '}<span className="font-mono text-[10px] text-gray-700">{p.judgeModel}</span></>}
-                {p.rawScore != null && (
-                  <span className="ml-1 text-[10px] text-indigo-600">· {p.rawScore}</span>
-                )}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`truncate text-xs font-semibold ${judgeIdx === i ? 'text-primary-700' : 'text-gray-800'}`}>
+                      {p.shortLabel}
+                    </p>
+                    <p className="truncate font-mono text-[10px] text-gray-500">{p.judgeModel}</p>
+                  </div>
+                  {p.rawScore != null && (
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      judgeIdx === i ? 'bg-primary-50 text-primary-700' : 'bg-indigo-50 text-indigo-600'
+                    }`}>
+                      {p.rawScore}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
+          </div>
           </div>
         )}
 
