@@ -1,14 +1,20 @@
 'use client';
 
-import { DesignSettingsDisplay } from '@/components/design-settings-editor';
+import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
-import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import {
+  getInputPresetStoredImages,
+  INPUT_PRESET_DESIGN_FIELD_KEYS,
+  INPUT_PRESET_SLOT_LABELS,
+  INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
+  readInputPresetValue,
+} from '@/lib/input-preset-design';
 import type { InputPresetDetailItem } from '@/lib/service-client';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RatingBadge } from './rating-badge';
 
 interface SerializedGeneration {
@@ -35,6 +41,53 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
   const rawData = data as unknown as Record<string, unknown>;
+  const { byId } = useCatalogProducts();
+  const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
+  const storedImagesBySlot = useMemo(
+    () => new Map(storedImages.map((image) => [image.slot, image])),
+    [storedImages]
+  );
+  const productCards = useMemo(() => {
+    const imageTypeLabels: Record<string, string> = {
+      'featured-image': 'Featured Image',
+      'line-drawing': 'Line Drawing',
+      'tear-sheet': 'Tear Sheet',
+      arbitrary: 'Arbitrary',
+    };
+
+    return Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).flatMap((slot) => {
+      const storedImage = storedImagesBySlot.get(slot) ?? null;
+      const slotValue = readInputPresetValue(rawData, slot);
+      const productId = typeof slotValue === 'string' && slotValue.length > 0 ? slotValue : null;
+
+      if (!productId && !storedImage) return [];
+
+      const product = productId ? byId.get(productId) ?? null : null;
+      const imageTypeValue = readInputPresetValue(rawData, `${slot}ImageType`);
+      const imageTypeLabel =
+        typeof imageTypeValue === 'string' && imageTypeLabels[imageTypeValue]
+          ? imageTypeLabels[imageTypeValue]
+          : 'Tear Sheet';
+
+      return [
+        {
+          slot,
+          label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
+          previewUrl: storedImage?.url ?? product?.featuredImage?.url ?? null,
+          title:
+            product?.name ??
+            (storedImage?.isArbitrary ? 'Arbitrary image' : productId ?? 'Saved image'),
+          subtitle: product
+            ? `${product.category?.name ?? 'Selected product'} · ${imageTypeLabel}`
+            : storedImage?.isArbitrary
+              ? `URL-only attachment · ${imageTypeLabel}`
+              : imageTypeLabel,
+          url: storedImage?.url ?? null,
+          isArbitrary: storedImage?.isArbitrary ?? false,
+        },
+      ];
+    });
+  }, [byId, rawData, storedImagesBySlot]);
 
   return (
     <div>
@@ -146,7 +199,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         }
         return (
           <div className="mt-6">
-            <DesignSettingsDisplay value={Object.fromEntries(entries)} />
+            <DesignSettingsDisplay value={Object.fromEntries(entries)} hideProductFields />
           </div>
         );
       })()}
@@ -181,28 +234,41 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         );
       })()}
 
-      {/* Saved Product Images */}
+      {/* Product Images */}
       {(() => {
-        const storedImages = getInputPresetStoredImages(rawData);
-        return storedImages.length > 0 ? (
+        return productCards.length > 0 ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Saved Product Images</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {storedImages.map((item, i: number) => (
+            {productCards.map((item, i: number) => (
               <div key={i} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                <ImageWithSkeleton
-                  src={withImageParams(item.url)}
-                  alt={item.label}
-                  loading="lazy"
-                  wrapperClassName="h-32 w-full bg-gray-50 p-1"
-                />
+                {item.previewUrl ? (
+                  <ImageWithSkeleton
+                    src={withImageParams(item.previewUrl)}
+                    alt={item.label}
+                    loading="lazy"
+                    wrapperClassName="h-32 w-full bg-gray-50 p-1"
+                  />
+                ) : (
+                  <div className="flex h-32 items-center justify-center bg-gray-50 text-xs text-gray-400">
+                    No preview
+                  </div>
+                )}
                 <div className="border-t border-gray-100 px-2 py-1.5">
                   <p className="truncate text-xs font-medium text-gray-700" title={item.label}>
                     {item.label}
                   </p>
-                  <p className="truncate text-[11px] text-gray-500" title={item.url}>
-                    {item.url}
+                  <p className="truncate text-[11px] text-gray-600" title={item.title}>
+                    {item.title}
                   </p>
+                  <p className="truncate text-[11px] text-gray-500" title={item.subtitle}>
+                    {item.subtitle}
+                  </p>
+                  {item.url ? (
+                    <p className="truncate text-[11px] text-gray-500" title={item.url}>
+                      {item.url}
+                    </p>
+                  ) : null}
                   {item.isArbitrary ? (
                     <span className="mt-1 inline-flex rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
                       Arbitrary

@@ -150,7 +150,7 @@ export function designSettingsHasValues(value: DesignSettingsValue): boolean {
   return Object.values(value).some(isNonEmpty);
 }
 
-function useCatalogProducts() {
+export function useCatalogProducts() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -889,6 +889,7 @@ function ProductSelectionModal({
 
 interface DesignSettingsDisplayProps {
   value: Record<string, unknown>;
+  hideProductFields?: boolean;
 }
 
 const SELECT_OPTION_LABELS = new Map<string, Map<string, string>>();
@@ -900,9 +901,9 @@ for (const field of SETTING_FIELDS) {
   }
 }
 
-export function DesignSettingsDisplay({ value }: DesignSettingsDisplayProps) {
+export function DesignSettingsDisplay({ value, hideProductFields = false }: DesignSettingsDisplayProps) {
   const { byId } = useCatalogProducts();
-  const populated = FIELDS.filter((field) => isNonEmpty(value[field.key]));
+  const populated = FIELDS.filter((field) => isNonEmpty(value[field.key]) && (!hideProductFields || field.type !== 'product'));
   const extraKeys = Object.keys(value).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(value[key]));
 
   if (populated.length === 0 && extraKeys.length === 0) return null;
