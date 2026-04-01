@@ -5,10 +5,9 @@ import {
   designSettingsHasValues,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
-import { ImageUpload } from '@/components/image-upload';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -22,14 +21,14 @@ export default function NewInputPresetPage() {
   const [layoutTypeId, setLayoutTypeId] = useState('');
   const [realPhoto, setRealPhoto] = useState<string | null>(null);
   const [moodBoard, setMoodBoard] = useState<string | null>(null);
-  const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>([]);
+  const [arbitraryImage, setArbitraryImage] = useState<{ url: string; slot: string } | null>(null);
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(null);
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    !!realPhoto || !!moodBoard || arbitraryImages.length > 0;
+    !!realPhoto || !!moodBoard || !!arbitraryImage;
 
   const canCreate =
     name.trim() && (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
@@ -54,7 +53,11 @@ export default function NewInputPresetPage() {
       if (layoutTypeId.trim()) payload.layout_type_id = layoutTypeId.trim();
       if (realPhoto) payload.real_photo = realPhoto;
       if (moodBoard) payload.mood_board = moodBoard;
-      if (arbitraryImages.length > 0) payload.arbitrary_images = arbitraryImages;
+      for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
+        if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
+          payload[urlColumn] = arbitraryImage?.slot === slot ? arbitraryImage.url : null;
+        }
+      }
 
       const res = await fetch(serviceUrl('input-presets'), {
         method: 'POST',
@@ -134,40 +137,13 @@ export default function NewInputPresetPage() {
         </div>
       </div>
 
-      {/* Arbitrary images (not tied to a specific attribute) */}
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Optional images to include with this preset. You can tag each image so the tag is sent to the model as context.
-        </p>
-        <ImageUpload
-          label=""
-          maxImages={10}
-          images={arbitraryImages.map((a, i) => ({ url: a.url, name: a.tag || `Image ${i + 1}`, previewUrl: a.url }))}
-          onImagesChange={(imgs) =>
-            setArbitraryImages(imgs.map((img) => ({
-              url: img.url,
-              tag: arbitraryImages.find((a) => a.url === img.url)?.tag,
-            })))
-          }
-          renderAboveImage={(idx) => (
-            <input
-              type="text"
-              value={arbitraryImages[idx]?.tag ?? ''}
-              onChange={(e) =>
-                setArbitraryImages((prev) =>
-                  prev.map((a, i) => (i === idx ? { ...a, tag: e.target.value || undefined } : a)),
-                )
-              }
-              placeholder="Tag (optional)"
-              className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            />
-          )}
-        />
-      </div>
-
       <div className="mt-6">
-        <DesignSettingsEditor value={designSettings} onChange={setDesignSettings} />
+        <DesignSettingsEditor
+          value={designSettings}
+          onChange={setDesignSettings}
+          arbitraryImage={arbitraryImage}
+          onArbitraryImageChange={setArbitraryImage}
+        />
       </div>
 
       {/* Sticky create bar */}

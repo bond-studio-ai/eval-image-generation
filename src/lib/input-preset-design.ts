@@ -67,3 +67,30 @@ export type InputPresetDesignFieldValue = string | boolean | null
 export type InputPresetDesignFields = Partial<
   Record<InputPresetDesignFieldKey, InputPresetDesignFieldValue>
 >
+
+export const INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY: Record<string, string> = {
+  vanity: 'vanities_url',
+  faucet: 'faucets_url',
+  mirror: 'mirrors_url',
+  lighting: 'lightings_url',
+  toilet: 'toilets_url',
+  robeHook: 'robe_hooks_url',
+  toiletPaperHolder: 'toilet_paper_holders_url',
+  towelBar: 'towel_bars_url',
+  towelRing: 'towel_rings_url',
+  floorTile: 'floor_tiles_url',
+  wallTile: 'wall_tiles_url',
+  nicheTile: 'shower_wall_tiles_url',
+  showerWallTile: 'shower_wall_tiles_url',
+  showerShortWallTile: 'shower_wall_tiles_url',
+  showerFloorTile: 'shower_floor_tiles_url',
+  curbTile: 'shower_curb_tiles_url',
+  paint: 'paints_url',
+  shelves: 'shelves_url',
+  showerSystem: 'shower_systems_url',
+  showerGlass: 'shower_glasses_url',
+  tub: 'tubs_url',
+  tubDoor: 'tub_doors_url',
+  tubFiller: 'tub_fillers_url',
+  wallpaper: 'wallpapers_url',
+}

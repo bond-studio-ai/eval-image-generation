@@ -159,8 +159,6 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   real_photo?: string | null;
   moodBoard: string | null;
   mood_board?: string | null;
-  arbitraryImages?: Array<{ url: string; tag?: string }>;
-  arbitrary_images?: Array<{ url: string; tag?: string }>;
   deletedAt: string | null;
   createdAt: string;
 }

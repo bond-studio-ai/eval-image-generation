@@ -3,7 +3,7 @@
 import { DesignSettingsDisplay } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import type { InputPresetDetailItem } from '@/lib/service-client';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
@@ -34,6 +34,7 @@ interface InputPresetDetailProps {
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
+  const rawData = data as unknown as Record<string, unknown>;
 
   return (
     <div>
@@ -181,22 +182,32 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Arbitrary Images */}
       {(() => {
-        const arbitrary = data.arbitraryImages ?? [];
-        return Array.isArray(arbitrary) && arbitrary.length > 0 ? (
+        const arbitrarySlot = Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).find(
+          (slot) => rawData[`${slot}ImageType`] === 'arbitrary'
+        );
+        const arbitraryColumn = arbitrarySlot ? INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY[arbitrarySlot] : null;
+        const arbitraryValue = arbitraryColumn ? rawData[arbitraryColumn] : null;
+        const arbitraryUrl =
+          typeof arbitraryValue === 'string' && arbitraryValue.length > 0
+            ? arbitraryValue
+            : Array.isArray(arbitraryValue)
+              ? arbitraryValue.find((value): value is string => typeof value === 'string' && value.length > 0) ?? null
+              : null;
+        return arbitrarySlot && arbitraryUrl ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {arbitrary.map((item: { url: string; tag?: string }, i: number) => (
+          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Attached Arbitrary Image</h2>
+          <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
+            {[{ url: arbitraryUrl, slot: arbitrarySlot }].map((item, i: number) => (
               <div key={i} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
                   src={withImageParams(item.url)}
-                  alt={item.tag || `Additional image ${i + 1}`}
+                  alt={item.slot || `Attached image ${i + 1}`}
                   loading="lazy"
                   wrapperClassName="h-28 w-full bg-gray-50 p-1"
                 />
-                {item.tag && (
-                  <p className="truncate border-t border-gray-100 px-2 py-1 text-xs text-gray-600" title={item.tag}>
-                    {item.tag}
+                {item.slot && (
+                  <p className="truncate border-t border-gray-100 px-2 py-1 text-xs text-gray-600" title={item.slot}>
+                    Attached to {item.slot}
                   </p>
                 )}
               </div>

@@ -1,4 +1,4 @@
-import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -47,12 +47,27 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     );
   }
 
-  const arbitraryImages = preset.arbitraryImages ?? [];
   const designSettingsEntries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
     const value = preset[key];
     return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
   });
   const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
+  const arbitrarySlot = Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).find(
+    (slot) => preset[`${slot}ImageType`] === 'arbitrary'
+  );
+  const arbitraryUrlColumn = arbitrarySlot ? INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY[arbitrarySlot] : null;
+  const arbitraryUrlValue = arbitraryUrlColumn ? preset[arbitraryUrlColumn] : null;
+  const arbitraryImageUrl = Array.isArray(arbitraryUrlValue)
+    ? arbitraryUrlValue.find((value: unknown): value is string => typeof value === 'string' && value.length > 0) ?? null
+    : typeof arbitraryUrlValue === 'string' && arbitraryUrlValue.length > 0
+      ? arbitraryUrlValue
+      : null;
+  const productUrlValues = Object.fromEntries(
+    Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).map((column) => {
+      const value = preset[column];
+      return [column, typeof value === 'string' && value.length > 0 ? value : null];
+    })
+  );
 
   const initialData = {
     id: preset.id,
@@ -61,10 +76,9 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     layoutTypeId: preset.layoutTypeId ?? null,
     realPhoto: preset.realPhoto ?? null,
     moodBoard: preset.moodBoard ?? null,
-    arbitraryImages: Array.isArray(arbitraryImages)
-      ? (arbitraryImages as { url: string; tag?: string }[]).map((a) => ({ url: a.url, tag: a.tag }))
-      : [],
+    arbitraryImage: arbitrarySlot && arbitraryImageUrl ? { url: arbitraryImageUrl, slot: arbitrarySlot } : null,
     designSettings,
+    productUrlValues,
   };
 
   return <InputPresetEditForm initialData={initialData} force={force} />;

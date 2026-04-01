@@ -2,6 +2,7 @@
 
 import { localUrl } from '@/lib/api-base';
 import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { SceneImageInput } from '@/components/scene-image-input';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
@@ -27,7 +28,8 @@ interface ProductFieldDef extends BaseFieldDef {
 }
 
 type FieldDef = SelectFieldDef | BooleanFieldDef | ProductFieldDef;
-type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet';
+type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet' | 'arbitrary';
+type ArbitraryImageAttachment = { url: string; slot: string } | null;
 
 interface CatalogProduct {
   id: string;
@@ -68,6 +70,7 @@ const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string
   { value: 'featured-image', label: 'Featured Image' },
   { value: 'line-drawing', label: 'Line Drawing' },
   { value: 'tear-sheet', label: 'Tear Sheet' },
+  { value: 'arbitrary', label: 'Arbitrary' },
 ];
 
 const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
@@ -125,7 +128,7 @@ function getProductImageTypeKey(slotKey: string): string {
 }
 
 function readProductImageType(value: unknown): ProductImageType | null {
-  return value === 'featured-image' || value === 'line-drawing' || value === 'tear-sheet'
+  return value === 'featured-image' || value === 'line-drawing' || value === 'tear-sheet' || value === 'arbitrary'
     ? value
     : null;
 }
@@ -177,9 +180,16 @@ function useCatalogProducts() {
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
   onChange: (value: DesignSettingsValue) => void;
+  arbitraryImage: ArbitraryImageAttachment;
+  onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
 }
 
-export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorProps) {
+export function DesignSettingsEditor({
+  value,
+  onChange,
+  arbitraryImage,
+  onArbitraryImageChange,
+}: DesignSettingsEditorProps) {
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -196,13 +206,43 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
     [data, onChange],
   );
 
+  const setProductImageType = useCallback(
+    (slotKey: string, nextValue: ProductImageType | null) => {
+      const next = { ...data };
+      const imageTypeKey = getProductImageTypeKey(slotKey);
+      if (nextValue == null) delete next[imageTypeKey];
+      else next[imageTypeKey] = nextValue;
+
+      if (nextValue === 'arbitrary') {
+        for (const field of PRODUCT_FIELDS) {
+          if (field.key === slotKey) continue;
+          const otherImageTypeKey = getProductImageTypeKey(field.key);
+          if (next[otherImageTypeKey] === 'arbitrary') {
+            delete next[otherImageTypeKey];
+          }
+        }
+        if (arbitraryImage?.slot && arbitraryImage.slot !== slotKey) {
+          onArbitraryImageChange(null);
+        }
+      } else if (arbitraryImage?.slot === slotKey) {
+        onArbitraryImageChange(null);
+      }
+
+      onChange(Object.keys(next).length === 0 ? null : next);
+    },
+    [arbitraryImage, data, onArbitraryImageChange, onChange],
+  );
+
   const filledCount = useMemo(() => FIELDS.filter((field) => isNonEmpty(data[field.key])).length, [data]);
   const extraKeys = useMemo(
     () => Object.keys(data).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(data[key])),
     [data],
   );
 
-  const clearAll = useCallback(() => onChange(null), [onChange]);
+  const clearAll = useCallback(() => {
+    onChange(null);
+    onArbitraryImageChange(null);
+  }, [onArbitraryImageChange, onChange]);
 
   const switchToJson = useCallback(() => {
     const obj = value ?? {};
@@ -224,13 +264,19 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
         setJsonError('Must be a JSON object.');
         return;
       }
+      if (
+        arbitraryImage &&
+        (parsed as Record<string, unknown>)[getProductImageTypeKey(arbitraryImage.slot)] !== 'arbitrary'
+      ) {
+        onArbitraryImageChange(null);
+      }
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
       setMode('form');
     } catch {
       setJsonError('Invalid JSON.');
     }
-  }, [jsonText, onChange]);
+  }, [arbitraryImage, jsonText, onArbitraryImageChange, onChange]);
 
   const applyJson = useCallback(() => {
     const trimmed = jsonText.trim();
@@ -245,12 +291,18 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
         setJsonError('Must be a JSON object.');
         return;
       }
+      if (
+        arbitraryImage &&
+        (parsed as Record<string, unknown>)[getProductImageTypeKey(arbitraryImage.slot)] !== 'arbitrary'
+      ) {
+        onArbitraryImageChange(null);
+      }
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
     } catch {
       setJsonError('Invalid JSON.');
     }
-  }, [jsonText, onChange]);
+  }, [arbitraryImage, jsonText, onArbitraryImageChange, onChange]);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -311,10 +363,10 @@ export function DesignSettingsEditor({ value, onChange }: DesignSettingsEditorPr
                     loaded={loaded}
                     products={products}
                     selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
+                    arbitraryImage={arbitraryImage}
                     onChange={(nextValue) => setField(field.key, nextValue)}
-                    onImageTypeChange={(nextValue) =>
-                      setField(getProductImageTypeKey(field.key), nextValue)
-                    }
+                    onImageTypeChange={(nextValue) => setProductImageType(field.key, nextValue)}
+                    onArbitraryImageChange={onArbitraryImageChange}
                   />
                 ))}
               </div>
@@ -491,8 +543,10 @@ function ProductField({
   loaded,
   products,
   selectedProduct,
+  arbitraryImage,
   onChange,
   onImageTypeChange,
+  onArbitraryImageChange,
 }: {
   field: ProductFieldDef;
   value: unknown;
@@ -500,13 +554,16 @@ function ProductField({
   loaded: boolean;
   products: CatalogProduct[];
   selectedProduct: CatalogProduct | null;
+  arbitraryImage: ArbitraryImageAttachment;
   onChange: (value: string | null) => void;
   onImageTypeChange: (value: ProductImageType | null) => void;
+  onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
 }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
+  const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
 
   const filteredProducts = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -544,6 +601,7 @@ function ProductField({
               onClick={() => {
                 onChange(null);
                 onImageTypeChange(null);
+                if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
                 setSearch('');
               }}
               className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
@@ -570,18 +628,39 @@ function ProductField({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => onImageTypeChange(option.value)}
+                  onClick={() => {
+                    if (option.value === 'arbitrary' && !selectedId) return;
+                    onImageTypeChange(option.value);
+                  }}
+                  disabled={option.value === 'arbitrary' && !selectedId}
                   className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
                     (selectedImageType ?? 'featured-image') === option.value
                       ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
+                  } ${option.value === 'arbitrary' && !selectedId ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
+            {!selectedId && (
+              <p className="mt-1 text-[11px] text-gray-500">
+                Select a product before attaching an arbitrary image.
+              </p>
+            )}
           </div>
+
+          {selectedImageType === 'arbitrary' && (
+            <div className="mb-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
+              <SceneImageInput
+                label="Attached arbitrary image"
+                value={attachedArbitraryUrl}
+                onChange={(url) =>
+                  onArbitraryImageChange(url ? { url, slot: field.key } : null)
+                }
+              />
+            </div>
+          )}
 
           <input
             type="text"

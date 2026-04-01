@@ -5,10 +5,9 @@ import {
   designSettingsHasValues,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
-import { ImageUpload } from '@/components/image-upload';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -20,8 +19,9 @@ interface InitialData {
   layoutTypeId: string | null;
   realPhoto: string | null;
   moodBoard: string | null;
-  arbitraryImages: { url: string; tag?: string }[];
+  arbitraryImage: { url: string; slot: string } | null;
   designSettings: Record<string, unknown> | null;
+  productUrlValues: Record<string, string | null>;
 }
 
 export function InputPresetEditForm({ initialData, force }: { initialData: InitialData; force?: boolean }) {
@@ -32,14 +32,14 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const [layoutTypeId, setLayoutTypeId] = useState(initialData.layoutTypeId ?? '');
   const [realPhoto, setRealPhoto] = useState<string | null>(initialData.realPhoto);
   const [moodBoard, setMoodBoard] = useState<string | null>(initialData.moodBoard);
-  const [arbitraryImages, setArbitraryImages] = useState<{ url: string; tag?: string }[]>(initialData.arbitraryImages);
+  const [arbitraryImage, setArbitraryImage] = useState<{ url: string; slot: string } | null>(initialData.arbitraryImage);
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(initialData.designSettings);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    !!realPhoto || !!moodBoard || arbitraryImages.length > 0;
+    !!realPhoto || !!moodBoard || !!arbitraryImage;
 
   const canSave =
     name.trim() && (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
@@ -63,7 +63,16 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
           if (value !== undefined) payload[key] = value;
         }
       }
-      payload.arbitrary_images = arbitraryImages;
+      for (const urlColumn of Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
+        payload[urlColumn] = initialData.productUrlValues[urlColumn] ?? null;
+      }
+      for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
+        if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
+          payload[urlColumn] = arbitraryImage?.slot === slot ? arbitraryImage.url : null;
+        } else if (initialData.arbitraryImage?.slot === slot) {
+          payload[urlColumn] = null;
+        }
+      }
 
       const url = serviceUrl(`input-presets/${initialData.id}`) + (force ? '?force=true' : '');
       const res = await fetch(url, {
@@ -141,39 +150,13 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Arbitrary Images</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Optional images to include with this preset. You can tag each image so the tag is sent to the model as context.
-        </p>
-        <ImageUpload
-          label=""
-          maxImages={10}
-          images={arbitraryImages.map((a, i) => ({ url: a.url, name: a.tag || `Image ${i + 1}`, previewUrl: a.url }))}
-          onImagesChange={(imgs) =>
-            setArbitraryImages(imgs.map((img) => ({
-              url: img.url,
-              tag: arbitraryImages.find((a) => a.url === img.url)?.tag,
-            })))
-          }
-          renderAboveImage={(idx) => (
-            <input
-              type="text"
-              value={arbitraryImages[idx]?.tag ?? ''}
-              onChange={(e) =>
-                setArbitraryImages((prev) =>
-                  prev.map((a, i) => (i === idx ? { ...a, tag: e.target.value || undefined } : a)),
-                )
-              }
-              placeholder="Tag (optional)"
-              className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            />
-          )}
-        />
-      </div>
-
       <div className="mt-6">
-        <DesignSettingsEditor value={designSettings} onChange={setDesignSettings} />
+        <DesignSettingsEditor
+          value={designSettings}
+          onChange={setDesignSettings}
+          arbitraryImage={arbitraryImage}
+          onArbitraryImageChange={setArbitraryImage}
+        />
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-lg backdrop-blur">

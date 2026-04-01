@@ -111,6 +111,31 @@ export const listStrategiesSchema = paginationSchema.extend({
 // ------------------------------------
 
 const productUrlArray = z.array(z.string().min(1)).optional().default([]);
+const inputPresetProductUrlFields = {
+  faucets_url: z.string().min(1).nullable().optional(),
+  lightings_url: z.string().min(1).nullable().optional(),
+  lvps_url: z.string().min(1).nullable().optional(),
+  mirrors_url: z.string().min(1).nullable().optional(),
+  paints_url: z.string().min(1).nullable().optional(),
+  robe_hooks_url: z.string().min(1).nullable().optional(),
+  shelves_url: z.string().min(1).nullable().optional(),
+  shower_glasses_url: z.string().min(1).nullable().optional(),
+  shower_systems_url: z.string().min(1).nullable().optional(),
+  floor_tiles_url: z.string().min(1).nullable().optional(),
+  wall_tiles_url: z.string().min(1).nullable().optional(),
+  shower_wall_tiles_url: z.string().min(1).nullable().optional(),
+  shower_floor_tiles_url: z.string().min(1).nullable().optional(),
+  shower_curb_tiles_url: z.string().min(1).nullable().optional(),
+  toilet_paper_holders_url: z.string().min(1).nullable().optional(),
+  toilets_url: z.string().min(1).nullable().optional(),
+  towel_bars_url: z.string().min(1).nullable().optional(),
+  towel_rings_url: z.string().min(1).nullable().optional(),
+  tub_doors_url: z.string().min(1).nullable().optional(),
+  tub_fillers_url: z.string().min(1).nullable().optional(),
+  tubs_url: z.string().min(1).nullable().optional(),
+  vanities_url: z.string().min(1).nullable().optional(),
+  wallpapers_url: z.string().min(1).nullable().optional(),
+};
 
 export const createInputPresetSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -141,10 +166,7 @@ export const createInputPresetSchema = z.object({
   tubs: productUrlArray,
   vanities: productUrlArray,
   wallpapers: productUrlArray,
-  arbitrary_images: z
-    .array(z.object({ url: z.string().min(1), tag: z.string().max(500).optional() }))
-    .optional()
-    .default([]),
+  ...inputPresetProductUrlFields,
 });
 
 export const listInputPresetsSchema = paginationSchema.extend({
