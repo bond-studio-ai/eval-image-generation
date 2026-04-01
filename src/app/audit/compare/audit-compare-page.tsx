@@ -2,7 +2,7 @@
 
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
 
@@ -25,8 +25,29 @@ const SOURCE_LABELS: Record<string, string> = {
   retry: 'Retry',
 };
 
+const SOURCE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All runs' },
+  { value: 'preset', label: 'Preset runs' },
+  { value: 'raw_input', label: 'Raw input runs' },
+] as const;
+
+type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]['value'];
+type RunGroupKey = 'preset' | 'raw_input' | 'other';
+
+const RUN_GROUP_LABELS: Record<RunGroupKey, string> = {
+  preset: 'Input Preset Runs',
+  raw_input: 'Raw Input Runs',
+  other: 'Other Runs',
+};
+
 const THUMB = 48;
 const PAGE_SIZE = 50;
+
+function getRunGroupKey(run: RunListItem): RunGroupKey {
+  if (run.source === 'raw_input') return 'raw_input';
+  if (run.source === 'preset' || run.inputPresetName) return 'preset';
+  return 'other';
+}
 
 function RunPickerCard({
   run,
@@ -137,6 +158,12 @@ export function AuditComparePage() {
   const [filterText, setFilterText] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<RunGroupKey, boolean>>({
+    preset: false,
+    raw_input: false,
+    other: true,
+  });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -226,7 +253,7 @@ export function AuditComparePage() {
     }
   };
 
-  const filtered = filterText
+  const filteredByText = filterText
     ? runs.filter((r) => {
         const t = filterText.toLowerCase();
         return (
@@ -237,6 +264,18 @@ export function AuditComparePage() {
         );
       })
     : runs;
+  const filtered = filteredByText.filter((run) =>
+    sourceFilter === 'all' ? true : getRunGroupKey(run) === sourceFilter
+  );
+  const groupedRuns = useMemo(() => {
+    const groups: Record<RunGroupKey, RunListItem[]> = {
+      preset: [],
+      raw_input: [],
+      other: [],
+    };
+    for (const run of filtered) groups[getRunGroupKey(run)].push(run);
+    return groups;
+  }, [filtered]);
 
   const canCompare = leftId && rightId;
 
@@ -289,6 +328,22 @@ export function AuditComparePage() {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
+            <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
+              {SOURCE_FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSourceFilter(option.value)}
+                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    sourceFilter === option.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-2">
               <label className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-medium text-gray-500">From</span>
@@ -340,14 +395,54 @@ export function AuditComparePage() {
                     {filterText ? 'No runs match your filter.' : 'No runs found.'}
                   </p>
                 ) : (
-                  filtered.map((run) => (
-                    <RunPickerCard
-                      key={run.id}
-                      run={run}
-                      isSelected={run.id === leftId || run.id === rightId}
-                      onSelect={() => toggle(run.id)}
-                    />
-                  ))
+                  (Object.entries(groupedRuns) as Array<[RunGroupKey, RunListItem[]]>)
+                    .filter(([, groupRuns]) => groupRuns.length > 0)
+                    .map(([groupKey, groupRuns]) => (
+                      <div key={groupKey} className="rounded-lg border border-gray-200 bg-gray-50/40">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCollapsedGroups((prev) => ({
+                              ...prev,
+                              [groupKey]: !prev[groupKey],
+                            }))
+                          }
+                          className="flex w-full items-center justify-between px-3 py-2 text-left"
+                        >
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                            {RUN_GROUP_LABELS[groupKey]}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500 ring-1 ring-inset ring-gray-200">
+                              {groupRuns.length}
+                            </span>
+                            <svg
+                              className={`h-4 w-4 text-gray-400 transition-transform ${
+                                collapsedGroups[groupKey] ? '' : 'rotate-180'
+                              }`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </span>
+                        </button>
+                        {!collapsedGroups[groupKey] ? (
+                          <div className="space-y-1.5 border-t border-gray-200 bg-white p-2">
+                            {groupRuns.map((run) => (
+                              <RunPickerCard
+                                key={run.id}
+                                run={run}
+                                isSelected={run.id === leftId || run.id === rightId}
+                                onSelect={() => toggle(run.id)}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
                 )}
                 {hasMore && (
                   <div ref={sentinelRef} className="flex items-center justify-center py-3">

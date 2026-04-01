@@ -41,7 +41,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
   const rawData = data as unknown as Record<string, unknown>;
-  const { byId } = useCatalogProducts();
+  const { byId, loaded } = useCatalogProducts();
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
   const storedImagesBySlot = useMemo(
     () => new Map(storedImages.map((image) => [image.slot, image])),
@@ -82,12 +82,13 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             : storedImage?.isArbitrary
               ? `URL-only attachment · ${imageTypeLabel}`
               : imageTypeLabel,
+          isLoadingPreview: !!productId && !product && !storedImage?.url && !loaded,
           url: storedImage?.url ?? null,
           isArbitrary: storedImage?.isArbitrary ?? false,
         },
       ];
     });
-  }, [byId, rawData, storedImagesBySlot]);
+  }, [byId, loaded, rawData, storedImagesBySlot]);
 
   return (
     <div>
@@ -249,6 +250,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                     loading="lazy"
                     wrapperClassName="h-32 w-full bg-gray-50 p-1"
                   />
+                ) : item.isLoadingPreview ? (
+                  <div className="h-32 w-full animate-pulse bg-gray-200" aria-hidden />
                 ) : (
                   <div className="flex h-32 items-center justify-center bg-gray-50 text-xs text-gray-400">
                     No preview

@@ -612,6 +612,8 @@ function ProductField({
               loading="lazy"
               wrapperClassName="h-24 w-full bg-gray-50 p-1"
             />
+          ) : selectedId && !loaded ? (
+            <div className="h-24 w-full animate-pulse bg-gray-200" aria-hidden />
           ) : (
             <div className="flex h-24 items-center justify-center text-[11px] text-gray-400">
               No preview
