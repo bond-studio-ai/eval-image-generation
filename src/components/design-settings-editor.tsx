@@ -357,13 +357,18 @@ export function DesignSettingsEditor({
         <div className="px-5 py-4">
           <div className="space-y-6">
             <section className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Product Selection</h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Choose products and decide which image variant should be sent for each one.
-                </p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Product Selection</h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Configure each slot from its modal picker.
+                  </p>
+                </div>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                  {PRODUCT_FIELDS.length} slots
+                </span>
               </div>
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                 {PRODUCT_FIELDS.map((field) => (
                   <ProductField
                     key={field.key}
@@ -583,105 +588,78 @@ function ProductField({
   const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
   const previewUrl = attachedArbitraryUrl ?? savedImageUrl ?? selectedProduct?.featuredImage?.url ?? null;
   const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
+  const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
+  const imageTypeLabel =
+    PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === effectiveImageType)?.label ?? 'Tear Sheet';
+  const summaryText = selectedProduct
+    ? selectedProduct.name
+    : attachedArbitraryUrl || savedImageUrl
+      ? 'URL-only attachment'
+      : 'Not set';
 
   return (
-    <div className="rounded-md border border-gray-200 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <label className="block text-xs font-medium text-gray-700">{field.label}</label>
-          <p className="mt-1 text-[11px] text-gray-500">
-            {selectedProduct
-              ? selectedProduct.name
-              : attachedArbitraryUrl || savedImageUrl
-                ? 'URL-only attachment'
-                : selectedId || 'Not set'}
-          </p>
-          {!selectedId && savedImageUrl ? (
-            <p className="mt-1 text-[11px] text-amber-600">Saved image URL will still be used.</p>
-          ) : null}
-          <p className="mt-1 text-[11px] text-gray-400">
-            Send: {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === (selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE))?.label ?? 'Tear Sheet'}
-          </p>
-        </div>
-        {previewUrl ? (
-          <div className="shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white">
+    <div className="rounded-md border border-gray-200 bg-white p-2.5">
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="block w-full text-left"
+      >
+        <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+          {previewUrl ? (
             <ImageWithSkeleton
               src={withImageParams(previewUrl)}
               alt={field.label}
               loading="lazy"
-              wrapperClassName="h-14 w-14 bg-gray-50 p-1"
+              wrapperClassName="h-24 w-full bg-gray-50 p-1"
             />
-          </div>
-        ) : null}
-        <div className="flex items-center gap-2">
-          {hasSelection && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange(null);
-                onImageTypeChange(null);
-                if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
-              }}
-              className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
-            >
-              Clear
-            </button>
+          ) : (
+            <div className="flex h-24 items-center justify-center text-[11px] text-gray-400">
+              No preview
+            </div>
           )}
+        </div>
+        <div className="mt-2 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <label className="truncate text-xs font-semibold text-gray-800">{field.label}</label>
+            <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+              {imageTypeLabel}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-[11px] text-gray-600" title={summaryText}>
+            {summaryText}
+          </p>
+          <p className="mt-1 truncate text-[10px] text-gray-400">
+            {selectedProduct
+              ? selectedProduct.category?.name ?? selectedId
+              : savedImageUrl
+                ? 'Uses saved URL'
+                : attachedArbitraryUrl
+                  ? 'Uses arbitrary URL'
+                  : 'Open modal to configure'}
+          </p>
+        </div>
+      </button>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+        >
+          {hasSelection ? 'Edit' : 'Choose'}
+        </button>
+        {hasSelection ? (
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+            onClick={() => {
+              onChange(null);
+              onImageTypeChange(null);
+              if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
+            }}
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
           >
-            {selectedId ? 'Change' : 'Choose'}
+            Clear
           </button>
-        </div>
-      </div>
-
-      <div className="mt-3 border-t border-gray-100 pt-3">
-        <div className="mb-3">
-          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
-          <div className="flex flex-wrap gap-1.5">
-            {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onImageTypeChange(option.value)}
-                className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                  (selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE) === option.value
-                    ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {selectedImageType === 'arbitrary' && (
-          <div className="mb-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
-            <SceneImageInput
-              label="Attached arbitrary image"
-              value={attachedArbitraryUrl}
-              onChange={(url) =>
-                onArbitraryImageChange(url ? { url, slot: field.key } : null)
-              }
-            />
-          </div>
-        )}
-
-        <div className="rounded-md border border-dashed border-gray-200 bg-gray-50/60 px-3 py-2">
-          <p className="text-[11px] font-medium text-gray-600">
-            {selectedProduct ? selectedProduct.name : 'No product selected'}
-          </p>
-          <p className="mt-1 text-[11px] text-gray-500">
-            {selectedProduct
-              ? `${selectedProduct.category?.name ?? 'No category'} • ${selectedId}`
-              : savedImageUrl
-                ? 'Saved URL-only image will still be used at runtime.'
-                : 'Optional when using an arbitrary image URL.'}
-          </p>
-        </div>
+        ) : null}
       </div>
 
       {pickerOpen ? (
@@ -690,13 +668,21 @@ function ProductField({
           products={products}
           loaded={loaded}
           selectedId={selectedId}
+          selectedProduct={selectedProduct}
+          imageTypeValue={effectiveImageType}
+          arbitraryUrl={attachedArbitraryUrl}
+          savedImageUrl={savedImageUrl}
           onSelect={(productId) => {
             onChange(productId);
-            setPickerOpen(false);
           }}
+          onImageTypeChange={onImageTypeChange}
+          onArbitraryImageChange={(url) =>
+            onArbitraryImageChange(url ? { url, slot: field.key } : null)
+          }
           onClear={() => {
             onChange(null);
-            setPickerOpen(false);
+            onImageTypeChange(null);
+            if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
           }}
           onClose={() => setPickerOpen(false)}
         />
@@ -710,7 +696,13 @@ function ProductSelectionModal({
   products,
   loaded,
   selectedId,
+  selectedProduct,
+  imageTypeValue,
+  arbitraryUrl,
+  savedImageUrl,
   onSelect,
+  onImageTypeChange,
+  onArbitraryImageChange,
   onClear,
   onClose,
 }: {
@@ -718,7 +710,13 @@ function ProductSelectionModal({
   products: CatalogProduct[];
   loaded: boolean;
   selectedId: string;
+  selectedProduct: CatalogProduct | null;
+  imageTypeValue: ProductImageType;
+  arbitraryUrl: string | null;
+  savedImageUrl: string | null;
   onSelect: (productId: string) => void;
+  onImageTypeChange: (value: ProductImageType | null) => void;
+  onArbitraryImageChange: (value: string | null) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
@@ -779,7 +777,56 @@ function ProductSelectionModal({
             </button>
           </div>
         </div>
-        <div className="border-b border-gray-100 p-4">
+        <div className="space-y-4 border-b border-gray-100 p-4">
+          <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current selection</p>
+                <p className="mt-1 truncate text-sm font-medium text-gray-800">
+                  {selectedProduct ? selectedProduct.name : arbitraryUrl || savedImageUrl ? 'URL-only attachment' : 'Not set'}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {selectedProduct
+                    ? `${selectedProduct.category?.name ?? 'No category'} • ${selectedId}`
+                    : savedImageUrl
+                      ? 'Saved URL still available even without a product.'
+                      : 'Choose a catalog product or use an arbitrary image URL.'}
+                </p>
+              </div>
+              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+                {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === imageTypeValue)?.label ?? 'Tear Sheet'}
+              </span>
+            </div>
+            <div className="mt-3">
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onImageTypeChange(option.value)}
+                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                      imageTypeValue === option.value
+                        ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {imageTypeValue === 'arbitrary' ? (
+              <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
+                <SceneImageInput
+                  label="Attached arbitrary image"
+                  value={arbitraryUrl}
+                  onChange={onArbitraryImageChange}
+                />
+              </div>
+            ) : null}
+          </div>
+
           <input
             autoFocus
             type="text"
