@@ -8,7 +8,6 @@ import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 interface RunRow {
   id: string;
@@ -48,6 +47,12 @@ interface BatchRow {
 const POLL_INTERVAL = 5000;
 const BATCH_PAGE_SIZE = 20;
 
+function getMatrixCellColumns(count: number): number {
+  if (count <= 1) return 1;
+  if (count <= 4) return 2;
+  return 3;
+}
+
 function deriveRunReviewStatus(run: RunRow): string {
   if (run.status === 'running' || run.status === 'pending') return 'running';
   if (run.totalGenerations === 0) return 'pending';
@@ -83,7 +88,6 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [retryingJudgeBatchId, setRetryingJudgeBatchId] = useState<string | null>(null);
   const [judgeRetryError, setJudgeRetryError] = useState<{ batchId: string; message: string } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
-  const [cellGallery, setCellGallery] = useState<RunRow[] | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -109,8 +113,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         return;
       }
       const json = await res.json();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (json.data ?? []) as any[];
+      const raw = (json.data ?? []) as Record<string, unknown>[];
       const normalized = raw.map((b) => normalizeBatch(b));
       setLastPageSize(raw.length);
       if (replace) {
@@ -419,12 +422,10 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   {viewMode === 'matrix' ? (
                     <MatrixView
                       runs={batch.runs}
-                      numberOfImages={batch.numberOfImages}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
                       onRated={fetchBatches}
                       onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                      onCellClick={(cellRuns) => setCellGallery(cellRuns)}
                     />
                   ) : (
                     <ListView
@@ -457,16 +458,6 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
           generationId={lightbox.generationId}
           onRated={() => fetchBatches()}
           onClose={() => setLightbox(null)}
-        />
-      )}
-      {cellGallery && (
-        <CellGalleryModal
-          runs={cellGallery}
-          onImageClick={(run) => {
-            setCellGallery(null);
-            setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null });
-          }}
-          onClose={() => setCellGallery(null)}
         />
       )}
     </div>
@@ -636,22 +627,17 @@ function needsJudgeRetry(runs: RunRow[]): boolean {
 
 function MatrixView({
   runs,
-  numberOfImages,
   retryingRunId,
   onRetry,
   onRated,
   onImageClick,
-  onCellClick,
 }: {
   runs: RunRow[];
-  numberOfImages: number;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
-  onCellClick: (cellRuns: RunRow[]) => void;
 }) {
-  const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
   const strategyNames: string[] = [];
   const strategyIds: string[] = [];
   const seen = new Set<string>();
@@ -713,19 +699,51 @@ function MatrixView({
               {strategyIds.map((stratId) => {
                 const cellRuns = grid.get(`${presetName}\0${stratId}`) ?? [];
                 const firstRun = cellRuns[0];
-                const hasMultiple = cellRuns.length > 1;
+                const outputRuns = cellRuns.filter(
+                  (run): run is RunRow & { lastOutputUrl: string } => !!run.lastOutputUrl
+                );
                 return (
                   <td key={stratId} className="border-l border-gray-100 p-1.5 text-center align-middle"
                     style={{ width: CELL, height: CELL, minWidth: CELL }}>
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                       {!firstRun ? (
                         <span className="text-gray-200">&mdash;</span>
+                      ) : outputRuns.length > 1 ? (
+                        <div
+                          className="grid gap-1"
+                          style={{
+                            width: CELL - 20,
+                            gridTemplateColumns: `repeat(${getMatrixCellColumns(outputRuns.length)}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {outputRuns.map((run) => (
+                            <button
+                              key={run.id}
+                              type="button"
+                              onClick={() => onImageClick(run)}
+                              className="group relative block cursor-pointer"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={run.lastOutputUrl} alt=""
+                                className="w-full rounded-md border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                                style={{ aspectRatio: '1' }} />
+                              <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
+                                <svg className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                </svg>
+                              </div>
+                              {run.lastOutputGenerationId && (
+                                <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       ) : firstRun.lastOutputUrl ? (
                         <div
                           role="button"
                           tabIndex={0}
-                          onClick={() => hasMultiple ? onCellClick(cellRuns) : onImageClick(firstRun)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') hasMultiple ? onCellClick(cellRuns) : onImageClick(firstRun); }}
+                          onClick={() => onImageClick(firstRun)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(firstRun); }}
                           className="group relative block cursor-pointer"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -737,11 +755,6 @@ function MatrixView({
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                             </svg>
                           </div>
-                          {hasMultiple && (
-                            <span className="absolute top-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                              {cellRuns.length}
-                            </span>
-                          )}
                           {firstRun.lastOutputGenerationId && (
                             <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} onRated={onRated} />
                           )}
@@ -769,85 +782,6 @@ function MatrixView({
         </tbody>
       </table>
     </div>
-  );
-}
-
-/* ─── Cell gallery modal: shows all images in a cell when numberOfImages > 1 ─── */
-
-function CellGalleryModal({
-  runs,
-  onImageClick,
-  onClose,
-}: {
-  runs: RunRow[];
-  onImageClick: (run: RunRow) => void;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9998] flex cursor-pointer items-center justify-center bg-black/60 p-6"
-      onClick={onClose}
-    >
-      <div
-        className="relative max-h-[80vh] w-full max-w-3xl cursor-default overflow-auto rounded-xl bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">{runs.length} images</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {runs.map((run) => (
-            <div key={run.id} className="relative">
-              {run.lastOutputUrl ? (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onImageClick(run)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
-                  className="group relative cursor-pointer"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={run.lastOutputUrl}
-                    alt=""
-                    className="w-full rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
-                    style={{ aspectRatio: '1' }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                    <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                    </svg>
-                  </div>
-                  {run.lastOutputGenerationId && (
-                    <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} />
-                  )}
-                </div>
-              ) : (
-                <div className="flex aspect-square items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
-                  <ReviewStatusBadge status={deriveRunReviewStatus(run)} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
 
