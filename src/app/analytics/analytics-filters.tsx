@@ -4,6 +4,12 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 
+const SOURCE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All runs' },
+  { value: 'preset', label: 'Preset runs' },
+  { value: 'raw_input', label: 'Raw input runs' },
+] as const;
+
 function formatDisplay(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -16,6 +22,7 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
   const from = searchParams.get('from') ?? '';
   const to = searchParams.get('to') ?? '';
   const model = searchParams.get('model') ?? '';
+  const source = searchParams.get('source') ?? 'all';
 
   const applyFilters = useCallback(
     (overrides: Record<string, string>) => {
@@ -35,7 +42,7 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
   }, [router, searchParams]);
 
   const hasDateFilter = !!(from || to);
-  const hasAnyFilter = hasDateFilter || !!model;
+  const hasAnyFilter = hasDateFilter || !!model || source !== 'all';
 
   return (
     <div className="mt-6 flex flex-col gap-3">
@@ -76,6 +83,25 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
             </div>
           </div>
         )}
+
+        <div className="h-6 w-px bg-gray-200" />
+
+        <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
+          {SOURCE_FILTER_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => applyFilters({ source: option.value })}
+              className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                source === option.value
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
 
         {/* Clear all */}
         {hasAnyFilter && (
@@ -129,6 +155,23 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
                 type="button"
                 onClick={() => applyFilters({ model: '' })}
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-violet-200/60"
+              >
+                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          )}
+          {source !== 'all' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/60">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+              </svg>
+              {SOURCE_FILTER_OPTIONS.find((option) => option.value === source)?.label ?? source}
+              <button
+                type="button"
+                onClick={() => applyFilters({ source: 'all' })}
+                className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-blue-200/60"
               >
                 <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

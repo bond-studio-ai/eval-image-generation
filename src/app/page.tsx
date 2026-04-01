@@ -13,6 +13,7 @@ interface PageProps {
     from?: string;
     to?: string;
     model?: string;
+    source?: string;
   }>;
 }
 
@@ -59,6 +60,7 @@ function TabNav({ active, searchParams }: { active: TabName; searchParams: Recor
     if (searchParams.from) params.set('from', searchParams.from);
     if (searchParams.to) params.set('to', searchParams.to);
     if (searchParams.model) params.set('model', searchParams.model);
+    if (searchParams.source && searchParams.source !== 'all') params.set('source', searchParams.source);
     const qs = params.toString();
     return `/${qs ? `?${qs}` : ''}`;
   };
@@ -94,11 +96,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const from = params.from;
   const to = params.to;
   const model = params.model;
+  const source = params.source;
 
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams.from = from;
   if (to) ratingParams.to = to;
   if (model) ratingParams.model = model;
+  if (source && source !== 'all') ratingParams.source = source;
 
   const [sceneRatings, productRatings, perfData] = await Promise.all([
     fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
@@ -151,7 +155,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </div>
 
           {/* Strategy performance and error breakdown */}
-          <StrategyPerformanceSection from={from} to={to} model={model} />
+          <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
         </>
       )}
 
@@ -164,14 +168,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               Success and failure rates for each product category based on evaluation data.
             </p>
             <div className="mt-4">
-              <ProductCategoryRates from={from} to={to} model={model} />
+              <ProductCategoryRates from={from} to={to} model={model} source={source} />
             </div>
           </div>
         </>
       )}
 
       {activeTab === 'reliability' && (
-        <ReliabilityTab from={from} to={to} model={model} />
+        <ReliabilityTab from={from} to={to} model={model} source={source} />
       )}
     </div>
   );

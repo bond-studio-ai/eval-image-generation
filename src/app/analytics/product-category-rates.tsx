@@ -37,12 +37,14 @@ export function ProductCategoryRates({
   from,
   to,
   model,
+  source,
   strategyId,
   compact,
 }: {
   from?: string;
   to?: string;
   model?: string;
+  source?: string;
   strategyId?: string;
   compact?: boolean;
 }) {
@@ -74,6 +76,7 @@ export function ProductCategoryRates({
         if (from) params.set('from', from);
         if (to) params.set('to', to);
         if (model) params.set('model', model);
+        if (source && source !== 'all') params.set('source', source);
         if (strategyId) params.set('strategy_id', strategyId);
         const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
@@ -83,7 +86,7 @@ export function ProductCategoryRates({
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [from, to, model, strategyId]);
+  }, [from, to, model, source, strategyId]);
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading product rates…</p>;

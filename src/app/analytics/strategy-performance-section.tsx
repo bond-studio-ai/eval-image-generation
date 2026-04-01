@@ -124,10 +124,12 @@ export function StrategyPerformanceSection({
   from,
   to,
   model,
+  source,
 }: {
   from?: string;
   to?: string;
   model?: string;
+  source?: string;
 }) {
   const [rows, setRows] = useState<StrategyRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +148,7 @@ export function StrategyPerformanceSection({
         if (from) params.set('from', from);
         if (to) params.set('to', to);
         if (model) params.set('model', model);
+        if (source && source !== 'all') params.set('source', source);
         const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
@@ -154,12 +157,14 @@ export function StrategyPerformanceSection({
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [from, to, model]);
+  }, [from, to, model, source]);
 
   const fetchBreakdown = useCallback(async (strategyId: string) => {
     setLoadingIds((prev) => new Set(prev).add(strategyId));
     try {
-      const res = await fetch(serviceUrl(`analytics/strategy-errors?strategy_id=${encodeURIComponent(strategyId)}`), { cache: 'no-store' });
+      const params = new URLSearchParams({ strategy_id: strategyId });
+      if (source && source !== 'all') params.set('source', source);
+      const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
       const raw = json.data;
@@ -179,7 +184,7 @@ export function StrategyPerformanceSection({
     } finally {
       setLoadingIds((prev) => { const next = new Set(prev); next.delete(strategyId); return next; });
     }
-  }, []);
+  }, [source]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {
@@ -371,6 +376,7 @@ export function StrategyPerformanceSection({
                                 from={from}
                                 to={to}
                                 model={model}
+                                source={source}
                                 compact
                               />
                             </div>

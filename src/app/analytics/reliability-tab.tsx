@@ -8,6 +8,7 @@ interface ReliabilityTabProps {
   from?: string;
   to?: string;
   model?: string;
+  source?: string;
 }
 
 function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext?: string }) {
@@ -109,7 +110,7 @@ function TrendChart({ trends }: { trends: ReliabilityData['trends'] }) {
   );
 }
 
-export function ReliabilityTab({ from, to, model }: ReliabilityTabProps) {
+export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps) {
   const [data, setData] = useState<ReliabilityData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +121,7 @@ export function ReliabilityTab({ from, to, model }: ReliabilityTabProps) {
       if (from) params.set('from', from);
       if (to) params.set('to', to);
       if (model) params.set('model', model);
+      if (source && source !== 'all') params.set('source', source);
       const qs = params.toString();
       const res = await fetch(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ''}`), {
         cache: 'no-store',
@@ -132,7 +134,7 @@ export function ReliabilityTab({ from, to, model }: ReliabilityTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [from, to, model]);
+  }, [from, to, model, source]);
 
   useEffect(() => {
     fetchData();
