@@ -576,29 +576,12 @@ function ProductField({
   onImageTypeChange: (value: ProductImageType | null) => void;
   onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
 }) {
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
   const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
   const previewUrl = attachedArbitraryUrl ?? savedImageUrl ?? selectedProduct?.featuredImage?.url ?? null;
-
-  const filteredProducts = useMemo(() => {
-    const query = search.toLowerCase().trim();
-    return products
-      .filter((product) => {
-        const categoryName = product.category?.name ?? '';
-        if (!field.apiCategories.includes(categoryName)) return false;
-        if (!query) return true;
-        return (
-          product.name.toLowerCase().includes(query) ||
-          categoryName.toLowerCase().includes(query) ||
-          product.id.toLowerCase().includes(query) ||
-          product.productFamilyName?.toLowerCase().includes(query)
-        );
-      })
-      .slice(0, 30);
-  }, [field.apiCategories, products, search]);
+  const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
 
   return (
     <div className="rounded-md border border-gray-200 p-3">
@@ -606,7 +589,11 @@ function ProductField({
         <div className="min-w-0 flex-1">
           <label className="block text-xs font-medium text-gray-700">{field.label}</label>
           <p className="mt-1 text-[11px] text-gray-500">
-            {selectedProduct ? selectedProduct.name : selectedId || 'Not set'}
+            {selectedProduct
+              ? selectedProduct.name
+              : attachedArbitraryUrl || savedImageUrl
+                ? 'URL-only attachment'
+                : selectedId || 'Not set'}
           </p>
           {!selectedId && savedImageUrl ? (
             <p className="mt-1 text-[11px] text-amber-600">Saved image URL will still be used.</p>
@@ -626,14 +613,13 @@ function ProductField({
           </div>
         ) : null}
         <div className="flex items-center gap-2">
-          {selectedId && (
+          {hasSelection && (
             <button
               type="button"
               onClick={() => {
                 onChange(null);
                 onImageTypeChange(null);
                 if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
-                setSearch('');
               }}
               className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
             >
@@ -642,116 +628,222 @@ function ProductField({
           )}
           <button
             type="button"
-            onClick={() => setOpen((current) => !current)}
+            onClick={() => setPickerOpen(true)}
             className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
           >
-            {open ? 'Close' : 'Choose'}
+            {selectedId ? 'Change' : 'Choose'}
           </button>
         </div>
       </div>
 
-      {open && (
-        <div className="mt-3 border-t border-gray-100 pt-3">
-          <div className="mb-3">
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    if (option.value === 'arbitrary' && !selectedId) return;
-                    onImageTypeChange(option.value);
-                  }}
-                  disabled={option.value === 'arbitrary' && !selectedId}
-                  className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                    (selectedImageType ?? 'featured-image') === option.value
-                      ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                  } ${option.value === 'arbitrary' && !selectedId ? 'cursor-not-allowed opacity-50' : ''}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            {!selectedId && (
-              <p className="mt-1 text-[11px] text-gray-500">
-                Select a product before attaching an arbitrary image.
-              </p>
-            )}
+      <div className="mt-3 border-t border-gray-100 pt-3">
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="text-[11px] font-medium text-primary-600 hover:text-primary-700"
+            >
+              Browse catalog
+            </button>
           </div>
+          <div className="flex flex-wrap gap-1.5">
+            {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onImageTypeChange(option.value)}
+                className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                  (selectedImageType ?? 'featured-image') === option.value
+                    ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {selectedImageType === 'arbitrary' && (
-            <div className="mb-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
-              <SceneImageInput
-                label="Attached arbitrary image"
-                value={attachedArbitraryUrl}
-                onChange={(url) =>
-                  onArbitraryImageChange(url ? { url, slot: field.key } : null)
-                }
-              />
-            </div>
-          )}
+        {selectedImageType === 'arbitrary' && (
+          <div className="mb-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
+            <SceneImageInput
+              label="Attached arbitrary image"
+              value={attachedArbitraryUrl}
+              onChange={(url) =>
+                onArbitraryImageChange(url ? { url, slot: field.key } : null)
+              }
+            />
+          </div>
+        )}
 
+        <div className="rounded-md border border-dashed border-gray-200 bg-gray-50/60 px-3 py-2">
+          <p className="text-[11px] font-medium text-gray-600">
+            {selectedProduct ? selectedProduct.name : 'No product selected'}
+          </p>
+          <p className="mt-1 text-[11px] text-gray-500">
+            {selectedProduct
+              ? `${selectedProduct.category?.name ?? 'No category'} • ${selectedId}`
+              : savedImageUrl
+                ? 'Saved URL-only image will still be used at runtime.'
+                : 'Optional when using an arbitrary image URL.'}
+          </p>
+        </div>
+      </div>
+
+      {pickerOpen ? (
+        <ProductSelectionModal
+          field={field}
+          products={products}
+          loaded={loaded}
+          selectedId={selectedId}
+          onSelect={(productId) => {
+            onChange(productId);
+            setPickerOpen(false);
+          }}
+          onClear={() => {
+            onChange(null);
+            setPickerOpen(false);
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ProductSelectionModal({
+  field,
+  products,
+  loaded,
+  selectedId,
+  onSelect,
+  onClear,
+  onClose,
+}: {
+  field: ProductFieldDef;
+  products: CatalogProduct[];
+  loaded: boolean;
+  selectedId: string;
+  onSelect: (productId: string) => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const filteredProducts = useMemo(() => {
+    const query = search.toLowerCase().trim();
+    return products
+      .filter((product) => {
+        const categoryName = product.category?.name ?? '';
+        if (!field.apiCategories.includes(categoryName)) return false;
+        if (!query) return true;
+        return (
+          product.name.toLowerCase().includes(query) ||
+          categoryName.toLowerCase().includes(query) ||
+          product.id.toLowerCase().includes(query) ||
+          product.productFamilyName?.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 50);
+  }, [field.apiCategories, products, search]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/35 px-4 py-6">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-sm font-semibold uppercase text-gray-900">{field.label}</h3>
+            <p className="mt-1 text-xs text-gray-500">Search by product name, category, family, or ID.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedId ? (
+              <button
+                type="button"
+                onClick={onClear}
+                className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Clear selection
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="border-b border-gray-100 p-4">
           <input
+            autoFocus
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
             disabled={!loaded}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
           />
-          <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-gray-200">
-            {!loaded ? (
-              <p className="px-3 py-2 text-xs text-gray-500">Loading products...</p>
-            ) : filteredProducts.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-gray-500">No matching products.</p>
-            ) : (
-              filteredProducts.map((product) => {
-                const isSelected = product.id === selectedId;
-                return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => {
-                      onChange(product.id);
-                      setOpen(false);
-                      setSearch('');
-                    }}
-                    className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-3 py-2 text-left text-xs last:border-b-0 ${
-                      isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    <span className="flex min-w-0 flex-1 items-center gap-3">
-                      <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
-                        {product.featuredImage?.url ? (
-                          <ImageWithSkeleton
-                            src={withImageParams(product.featuredImage.url)}
-                            alt={product.name}
-                            loading="lazy"
-                            wrapperClassName="h-12 w-12 bg-gray-50 p-1"
-                          />
-                        ) : (
-                          <span className="flex h-12 w-12 items-center justify-center text-[10px] text-gray-400">
-                            No image
-                          </span>
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">{product.name}</span>
-                        <span className="block truncate text-[11px] text-gray-500">
-                          {product.category?.name ?? 'No category'} • {product.id}
+        </div>
+        <div className="overflow-y-auto">
+          {!loaded ? (
+            <p className="px-4 py-6 text-sm text-gray-500">Loading products...</p>
+          ) : filteredProducts.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
+          ) : (
+            filteredProducts.map((product) => {
+              const isSelected = product.id === selectedId;
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => onSelect(product.id)}
+                  className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left last:border-b-0 transition-colors ${
+                    isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
+                      {product.featuredImage?.url ? (
+                        <ImageWithSkeleton
+                          src={withImageParams(product.featuredImage.url)}
+                          alt={product.name}
+                          loading="lazy"
+                          wrapperClassName="h-12 w-12 bg-gray-50 p-1"
+                        />
+                      ) : (
+                        <span className="flex h-12 w-12 items-center justify-center text-[10px] text-gray-400">
+                          No image
                         </span>
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{product.name}</span>
+                      <span className="block truncate text-[11px] text-gray-500">
+                        {product.category?.name ?? 'No category'} • {product.id}
                       </span>
                     </span>
-                    {isSelected && <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">Selected</span>}
-                  </button>
-                );
-              })
-            )}
-          </div>
+                  </span>
+                  {isSelected ? <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
+                </button>
+              );
+            })
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
