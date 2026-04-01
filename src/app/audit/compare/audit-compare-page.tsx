@@ -21,15 +21,15 @@ interface RunListItem {
 
 const SOURCE_LABELS: Record<string, string> = {
   preset: 'Preset',
-  raw_input: 'API',
+  raw_input: 'Real Input',
   batch: 'Batch',
-  retry: 'Retry',
+  retry: 'Preset',
 };
 
 const SOURCE_FILTER_OPTIONS = [
   { value: 'all', label: 'All runs' },
   { value: 'preset', label: 'Preset runs' },
-  { value: 'raw_input', label: 'Raw input runs' },
+  { value: 'raw_input', label: 'Real Input runs' },
 ] as const;
 
 type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]['value'];

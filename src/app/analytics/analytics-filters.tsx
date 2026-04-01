@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 const SOURCE_FILTER_OPTIONS = [
   { value: 'all', label: 'All runs' },
   { value: 'preset', label: 'Preset runs' },
-  { value: 'raw_input', label: 'Raw input runs' },
+  { value: 'raw_input', label: 'Real Input runs' },
 ] as const;
 
 function formatDisplay(iso: string): string {

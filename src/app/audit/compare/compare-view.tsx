@@ -54,9 +54,9 @@ interface RunData {
 
 const SOURCE_LABELS: Record<string, string> = {
   preset: 'Preset Run',
-  raw_input: 'API (Raw Input)',
+  raw_input: 'Real Input',
   batch: 'Batch Run',
-  retry: 'Retry',
+  retry: 'Preset Run',
 };
 
 const CONFIG_LABELS: Record<string, string> = {
