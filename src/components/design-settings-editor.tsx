@@ -638,16 +638,7 @@ function ProductField({
 
       <div className="mt-3 border-t border-gray-100 pt-3">
         <div className="mb-3">
-          <div className="mb-1.5 flex items-center justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(true)}
-              className="text-[11px] font-medium text-primary-600 hover:text-primary-700"
-            >
-              Browse catalog
-            </button>
-          </div>
+          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
           <div className="flex flex-wrap gap-1.5">
             {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
               <button

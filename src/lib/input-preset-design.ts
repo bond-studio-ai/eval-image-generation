@@ -130,6 +130,29 @@ export interface InputPresetStoredImage {
   isArbitrary: boolean
 }
 
+function snakeToCamel(value: string): string {
+  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase())
+}
+
+function camelToSnake(value: string): string {
+  return value.replace(/([A-Z])/g, '_$1').toLowerCase()
+}
+
+export function readInputPresetValue(
+  data: Record<string, unknown>,
+  key: string
+): unknown {
+  if (key in data) return data[key]
+
+  const snakeKey = camelToSnake(key)
+  if (snakeKey in data) return data[snakeKey]
+
+  const camelKey = snakeToCamel(key)
+  if (camelKey in data) return data[camelKey]
+
+  return undefined
+}
+
 function readStoredUrl(value: unknown): string | null {
   if (typeof value === 'string' && value.length > 0) return value
   if (Array.isArray(value)) {
@@ -142,12 +165,13 @@ export function getInputPresetStoredImages(data: Record<string, unknown>): Input
   const entries = new Map<string, InputPresetStoredImage>()
 
   for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
-    const url = readStoredUrl(data[urlColumn])
+    const url = readStoredUrl(readInputPresetValue(data, urlColumn))
     if (!url) continue
 
     const existing = entries.get(urlColumn)
-    const isArbitrary = data[`${slot}ImageType`] === 'arbitrary'
-    const hasProductId = typeof data[slot] === 'string' && data[slot].length > 0
+    const isArbitrary = readInputPresetValue(data, `${slot}ImageType`) === 'arbitrary'
+    const slotValue = readInputPresetValue(data, slot)
+    const hasProductId = typeof slotValue === 'string' && slotValue.length > 0
 
     if (!existing) {
       entries.set(urlColumn, {
