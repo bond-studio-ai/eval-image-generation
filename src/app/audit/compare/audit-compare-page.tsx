@@ -8,6 +8,7 @@ import { SingleRunAuditView } from './single-run-audit-view';
 
 interface RunListItem {
   id: string;
+  batchRunId: string | null;
   strategyId: string;
   strategyName: string | null;
   status: string;
@@ -32,6 +33,14 @@ const SOURCE_FILTER_OPTIONS = [
 ] as const;
 
 type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]['value'];
+type AuditRunGroup = {
+  id: string;
+  batchRunId: string | null;
+  runs: RunListItem[];
+  createdAt: string;
+  strategyName: string | null;
+  source: string | null;
+};
 
 const THUMB = 48;
 const PAGE_SIZE = 50;
@@ -254,7 +263,34 @@ export function AuditComparePage() {
         ? run.source === 'preset' || !!run.inputPresetName
         : run.source === 'raw_input'
   );
-  const orderedRuns = useMemo(() => filtered, [filtered]);
+  const runGroups = useMemo<AuditRunGroup[]>(() => {
+    const groups = new Map<string, AuditRunGroup>();
+    for (const run of filtered) {
+      const groupId = run.batchRunId ?? run.id;
+      const existing = groups.get(groupId);
+      if (existing) {
+        existing.runs.push(run);
+        continue;
+      }
+      groups.set(groupId, {
+        id: groupId,
+        batchRunId: run.batchRunId,
+        runs: [run],
+        createdAt: run.createdAt,
+        strategyName: run.strategyName,
+        source: run.source,
+      });
+    }
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        runs: [...group.runs].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        ),
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [filtered]);
 
   const canCompare = leftId && rightId;
 
@@ -374,32 +410,35 @@ export function AuditComparePage() {
                     {filterText ? 'No runs match your filter.' : 'No runs found.'}
                   </p>
                 ) : (
-                  orderedRuns.map((run) => {
-                    const isExpanded = expandedRuns[run.id] ?? false;
+                  runGroups.map((group) => {
+                    const isExpanded = expandedRuns[group.id] ?? false;
                     return (
-                      <div key={run.id} className="rounded-lg border border-gray-200 bg-gray-50/40">
+                      <div key={group.id} className="rounded-lg border border-gray-200 bg-gray-50/40">
                         <button
                           type="button"
                           onClick={() =>
                             setExpandedRuns((prev) => ({
                               ...prev,
-                              [run.id]: !isExpanded,
+                              [group.id]: !isExpanded,
                             }))
                           }
                           className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
                         >
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold uppercase tracking-wide text-gray-600">
-                              Run {run.id.slice(0, 8)}
+                              {group.batchRunId ? `Batch ${group.id.slice(0, 8)}` : `Run ${group.id.slice(0, 8)}`}
                             </span>
                             <span className="mt-0.5 block truncate text-xs text-gray-500">
-                              {run.strategyName ?? 'Unknown strategy'} · {new Date(run.createdAt).toLocaleString()}
+                              {group.strategyName ?? 'Unknown strategy'} · {new Date(group.createdAt).toLocaleString()}
                             </span>
                           </span>
                           <span className="flex items-center gap-2">
-                            {run.source ? (
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500 ring-1 ring-inset ring-gray-200">
+                              {group.runs.length} run{group.runs.length === 1 ? '' : 's'}
+                            </span>
+                            {group.source ? (
                               <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
-                                {SOURCE_LABELS[run.source] ?? run.source}
+                                {SOURCE_LABELS[group.source] ?? group.source}
                               </span>
                             ) : null}
                             <svg
@@ -416,12 +455,15 @@ export function AuditComparePage() {
                           </span>
                         </button>
                         {isExpanded ? (
-                          <div className="border-t border-gray-200 bg-white p-2">
-                            <RunPickerCard
-                              run={run}
-                              isSelected={run.id === leftId || run.id === rightId}
-                              onSelect={() => toggle(run.id)}
-                            />
+                          <div className="space-y-1.5 border-t border-gray-200 bg-white p-2">
+                            {group.runs.map((run) => (
+                              <RunPickerCard
+                                key={run.id}
+                                run={run}
+                                isSelected={run.id === leftId || run.id === rightId}
+                                onSelect={() => toggle(run.id)}
+                              />
+                            ))}
                           </div>
                         ) : null}
                       </div>
