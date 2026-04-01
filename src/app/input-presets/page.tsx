@@ -1,4 +1,4 @@
-import { INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
+import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { EmptyState } from '@/components/empty-state';
 import { InputPresetsList, type InputPresetRow } from '@/components/input-presets-list';
 import Link from 'next/link';
@@ -97,17 +97,6 @@ function computeImageCount(item: any): number {
       count += 1;
     }
   }
-  const arbitrarySlot = Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).find(
-    (slot) => item[`${slot}ImageType`] === 'arbitrary'
-  );
-  const arbitraryColumn = arbitrarySlot ? INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY[arbitrarySlot] : null;
-  const arbitraryValue = arbitraryColumn ? item[arbitraryColumn] : null;
-  if (
-    (typeof arbitraryValue === 'string' && arbitraryValue !== '') ||
-    (Array.isArray(arbitraryValue) &&
-      arbitraryValue.some((v: unknown) => typeof v === 'string' && v !== ''))
-  ) {
-    count += 1;
-  }
+  count += getInputPresetStoredImages(item as Record<string, unknown>).length;
   return count;
 }

@@ -5,7 +5,7 @@ import {
   designSettingsHasValues,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
-import { SceneImageInput } from '@/components/scene-image-input';
+import { LayoutPresetSelect } from '@/components/layout-preset-select';
 import { serviceUrl } from '@/lib/api-base';
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ interface InitialData {
   arbitraryImage: { url: string; slot: string } | null;
   designSettings: Record<string, unknown> | null;
   productUrlValues: Record<string, string | null>;
+  savedImageUrlsBySlot: Record<string, string | null>;
 }
 
 export function InputPresetEditForm({ initialData, force }: { initialData: InitialData; force?: boolean }) {
@@ -30,16 +31,13 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const [name, setName] = useState(initialData.name);
   const [description, setDescription] = useState(initialData.description);
   const [layoutTypeId, setLayoutTypeId] = useState(initialData.layoutTypeId ?? '');
-  const [realPhoto, setRealPhoto] = useState<string | null>(initialData.realPhoto);
-  const [moodBoard, setMoodBoard] = useState<string | null>(initialData.moodBoard);
   const [arbitraryImage, setArbitraryImage] = useState<{ url: string; slot: string } | null>(initialData.arbitraryImage);
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(initialData.designSettings);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hasAnyImage =
-    !!realPhoto || !!moodBoard || !!arbitraryImage;
+  const hasAnyImage = !!arbitraryImage || !!initialData.realPhoto || !!initialData.moodBoard;
 
   const canSave =
     name.trim() && (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
@@ -54,8 +52,6 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         name: name.trim(),
         description: description.trim() || null,
         layout_type_id: layoutTypeId.trim() || null,
-        real_photo: realPhoto || null,
-        mood_board: moodBoard || null,
       };
       if (designSettings) {
         for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
@@ -128,26 +124,8 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       </div>
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset & Scene Images</h2>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div>
-            <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
-              Layout Type ID
-            </label>
-            <input
-              type="text"
-              value={layoutTypeId}
-              onChange={(e) => setLayoutTypeId(e.target.value)}
-              placeholder="Room preset layout_type_id"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              Saved instead of a dollhouse image upload. Runtime will resolve the layout from this room preset.
-            </p>
-          </div>
-          <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
-          <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
-        </div>
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset</h2>
+        <LayoutPresetSelect value={layoutTypeId} onChange={setLayoutTypeId} />
       </div>
 
       <div className="mt-6">
@@ -156,6 +134,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
           onChange={setDesignSettings}
           arbitraryImage={arbitraryImage}
           onArbitraryImageChange={setArbitraryImage}
+          savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
         />
       </div>
 
@@ -166,7 +145,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
               <p className="text-sm text-gray-500">
                 {!name.trim()
                   ? 'Give this preset a name.'
-                  : 'Add a layout type, image, or design setting to save.'}
+                  : 'Add a layout, product image, or design setting to save.'}
               </p>
             )}
             {canSave && <p className="text-sm font-medium text-gray-700">Ready to save</p>}

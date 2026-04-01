@@ -1,4 +1,8 @@
-import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
+import {
+  getInputPresetStoredImages,
+  INPUT_PRESET_DESIGN_FIELD_KEYS,
+  INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
+} from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -52,33 +56,29 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
   });
   const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
-  const arbitrarySlot = Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).find(
-    (slot) => preset[`${slot}ImageType`] === 'arbitrary'
-  );
-  const arbitraryUrlColumn = arbitrarySlot ? INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY[arbitrarySlot] : null;
-  const arbitraryUrlValue = arbitraryUrlColumn ? preset[arbitraryUrlColumn] : null;
-  const arbitraryImageUrl = Array.isArray(arbitraryUrlValue)
-    ? arbitraryUrlValue.find((value: unknown): value is string => typeof value === 'string' && value.length > 0) ?? null
-    : typeof arbitraryUrlValue === 'string' && arbitraryUrlValue.length > 0
-      ? arbitraryUrlValue
-      : null;
+  const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
+  const arbitraryImage = storedImages.find((image) => image.isArbitrary) ?? null;
   const productUrlValues = Object.fromEntries(
     Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).map((column) => {
       const value = preset[column];
       return [column, typeof value === 'string' && value.length > 0 ? value : null];
     })
   );
+  const savedImageUrlsBySlot = Object.fromEntries(
+    storedImages.map((image) => [image.slot, image.url])
+  );
 
   const initialData = {
     id: preset.id,
     name: preset.name ?? '',
     description: preset.description ?? '',
-    layoutTypeId: preset.layoutTypeId ?? null,
-    realPhoto: preset.realPhoto ?? null,
-    moodBoard: preset.moodBoard ?? null,
-    arbitraryImage: arbitrarySlot && arbitraryImageUrl ? { url: arbitraryImageUrl, slot: arbitrarySlot } : null,
+    layoutTypeId: preset.layoutTypeId ?? preset.layout_type_id ?? null,
+    realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
+    moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
+    arbitraryImage: arbitraryImage ? { url: arbitraryImage.url, slot: arbitraryImage.slot } : null,
     designSettings,
     productUrlValues,
+    savedImageUrlsBySlot,
   };
 
   return <InputPresetEditForm initialData={initialData} force={force} />;

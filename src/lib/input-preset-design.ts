@@ -94,3 +94,82 @@ export const INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY: Record<string, string> = {
   tubFiller: 'tub_fillers_url',
   wallpaper: 'wallpapers_url',
 }
+
+export const INPUT_PRESET_SLOT_LABELS: Record<string, string> = {
+  vanity: 'Vanity',
+  faucet: 'Faucet',
+  mirror: 'Mirror',
+  lighting: 'Lighting',
+  toilet: 'Toilet',
+  robeHook: 'Robe Hook',
+  toiletPaperHolder: 'Toilet Paper Holder',
+  towelBar: 'Towel Bar',
+  towelRing: 'Towel Ring',
+  floorTile: 'Floor Tile',
+  wallTile: 'Wall Tile',
+  nicheTile: 'Niche Tile',
+  showerWallTile: 'Shower Wall Tile',
+  showerShortWallTile: 'Shower Short Wall Tile',
+  showerFloorTile: 'Shower Floor Tile',
+  curbTile: 'Curb Tile',
+  paint: 'Paint',
+  shelves: 'Shelves',
+  showerSystem: 'Shower System',
+  showerGlass: 'Shower Glass',
+  tub: 'Tub',
+  tubDoor: 'Tub Door',
+  tubFiller: 'Tub Filler',
+  wallpaper: 'Wallpaper',
+}
+
+export interface InputPresetStoredImage {
+  slot: string
+  label: string
+  urlColumn: string
+  url: string
+  isArbitrary: boolean
+}
+
+function readStoredUrl(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) return value
+  if (Array.isArray(value)) {
+    return value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0) ?? null
+  }
+  return null
+}
+
+export function getInputPresetStoredImages(data: Record<string, unknown>): InputPresetStoredImage[] {
+  const entries = new Map<string, InputPresetStoredImage>()
+
+  for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
+    const url = readStoredUrl(data[urlColumn])
+    if (!url) continue
+
+    const existing = entries.get(urlColumn)
+    const isArbitrary = data[`${slot}ImageType`] === 'arbitrary'
+    const hasProductId = typeof data[slot] === 'string' && data[slot].length > 0
+
+    if (!existing) {
+      entries.set(urlColumn, {
+        slot,
+        label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
+        urlColumn,
+        url,
+        isArbitrary,
+      })
+      continue
+    }
+
+    if (!existing.isArbitrary && (isArbitrary || hasProductId)) {
+      entries.set(urlColumn, {
+        slot,
+        label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
+        urlColumn,
+        url,
+        isArbitrary,
+      })
+    }
+  }
+
+  return Array.from(entries.values())
+}

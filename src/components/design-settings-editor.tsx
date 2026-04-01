@@ -2,7 +2,9 @@
 
 import { localUrl } from '@/lib/api-base';
 import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
+import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
@@ -182,6 +184,7 @@ interface DesignSettingsEditorProps {
   onChange: (value: DesignSettingsValue) => void;
   arbitraryImage: ArbitraryImageAttachment;
   onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
+  savedImageUrlsBySlot?: Record<string, string | null>;
 }
 
 export function DesignSettingsEditor({
@@ -189,6 +192,7 @@ export function DesignSettingsEditor({
   onChange,
   arbitraryImage,
   onArbitraryImageChange,
+  savedImageUrlsBySlot,
 }: DesignSettingsEditorProps) {
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonText, setJsonText] = useState('');
@@ -350,10 +354,15 @@ export function DesignSettingsEditor({
 
       {mode === 'form' ? (
         <div className="px-5 py-4">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Products</h3>
-              <div className="space-y-4">
+          <div className="space-y-6">
+            <section className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Product Selection</h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose products and decide which image variant should be sent for each one.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 {PRODUCT_FIELDS.map((field) => (
                   <ProductField
                     key={field.key}
@@ -364,17 +373,23 @@ export function DesignSettingsEditor({
                     products={products}
                     selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
                     arbitraryImage={arbitraryImage}
+                    savedImageUrl={savedImageUrlsBySlot?.[field.key] ?? null}
                     onChange={(nextValue) => setField(field.key, nextValue)}
                     onImageTypeChange={(nextValue) => setProductImageType(field.key, nextValue)}
                     onArbitraryImageChange={onArbitraryImageChange}
                   />
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
-              <div className="space-y-4">
+            <section className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Configure placement, patterns, and visibility settings separately from product selection.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {SETTING_FIELDS.map((field) =>
                   field.type === 'select' ? (
                     <SelectField
@@ -393,7 +408,7 @@ export function DesignSettingsEditor({
                   ),
                 )}
               </div>
-            </div>
+            </section>
           </div>
 
           {extraKeys.length > 0 && (
@@ -544,6 +559,7 @@ function ProductField({
   products,
   selectedProduct,
   arbitraryImage,
+  savedImageUrl,
   onChange,
   onImageTypeChange,
   onArbitraryImageChange,
@@ -555,6 +571,7 @@ function ProductField({
   products: CatalogProduct[];
   selectedProduct: CatalogProduct | null;
   arbitraryImage: ArbitraryImageAttachment;
+  savedImageUrl: string | null;
   onChange: (value: string | null) => void;
   onImageTypeChange: (value: ProductImageType | null) => void;
   onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
@@ -564,6 +581,7 @@ function ProductField({
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
   const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
+  const previewUrl = attachedArbitraryUrl ?? savedImageUrl ?? selectedProduct?.featuredImage?.url ?? null;
 
   const filteredProducts = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -585,15 +603,28 @@ function ProductField({
   return (
     <div className="rounded-md border border-gray-200 p-3">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <label className="block text-xs font-medium text-gray-700">{field.label}</label>
           <p className="mt-1 text-[11px] text-gray-500">
             {selectedProduct ? selectedProduct.name : selectedId || 'Not set'}
           </p>
+          {!selectedId && savedImageUrl ? (
+            <p className="mt-1 text-[11px] text-amber-600">Saved image URL will still be used.</p>
+          ) : null}
           <p className="mt-1 text-[11px] text-gray-400">
             Send: {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === selectedImageType)?.label ?? 'Featured Image'}
           </p>
         </div>
+        {previewUrl ? (
+          <div className="shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white">
+            <ImageWithSkeleton
+              src={withImageParams(previewUrl)}
+              alt={field.label}
+              loading="lazy"
+              wrapperClassName="h-14 w-14 bg-gray-50 p-1"
+            />
+          </div>
+        ) : null}
         <div className="flex items-center gap-2">
           {selectedId && (
             <button
@@ -691,10 +722,26 @@ function ProductField({
                       isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{product.name}</span>
-                      <span className="block truncate text-[11px] text-gray-500">
-                        {product.category?.name ?? 'No category'} • {product.id}
+                    <span className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
+                        {product.featuredImage?.url ? (
+                          <ImageWithSkeleton
+                            src={withImageParams(product.featuredImage.url)}
+                            alt={product.name}
+                            loading="lazy"
+                            wrapperClassName="h-12 w-12 bg-gray-50 p-1"
+                          />
+                        ) : (
+                          <span className="flex h-12 w-12 items-center justify-center text-[10px] text-gray-400">
+                            No image
+                          </span>
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{product.name}</span>
+                        <span className="block truncate text-[11px] text-gray-500">
+                          {product.category?.name ?? 'No category'} • {product.id}
+                        </span>
                       </span>
                     </span>
                     {isSelected && <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">Selected</span>}

@@ -3,7 +3,7 @@
 import { DesignSettingsDisplay } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
 import type { InputPresetDetailItem } from '@/lib/service-client';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
@@ -124,7 +124,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       </div>
 
       {(() => {
-        const layoutTypeId = data.layoutTypeId ?? null;
+        const layoutTypeId =
+          data.layoutTypeId ?? (typeof rawData.layout_type_id === 'string' ? rawData.layout_type_id : null);
         if (!layoutTypeId) return null;
         return (
           <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
@@ -180,36 +181,34 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         );
       })()}
 
-      {/* Arbitrary Images */}
+      {/* Saved Product Images */}
       {(() => {
-        const arbitrarySlot = Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).find(
-          (slot) => rawData[`${slot}ImageType`] === 'arbitrary'
-        );
-        const arbitraryColumn = arbitrarySlot ? INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY[arbitrarySlot] : null;
-        const arbitraryValue = arbitraryColumn ? rawData[arbitraryColumn] : null;
-        const arbitraryUrl =
-          typeof arbitraryValue === 'string' && arbitraryValue.length > 0
-            ? arbitraryValue
-            : Array.isArray(arbitraryValue)
-              ? arbitraryValue.find((value): value is string => typeof value === 'string' && value.length > 0) ?? null
-              : null;
-        return arbitrarySlot && arbitraryUrl ? (
+        const storedImages = getInputPresetStoredImages(rawData);
+        return storedImages.length > 0 ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Attached Arbitrary Image</h2>
-          <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
-            {[{ url: arbitraryUrl, slot: arbitrarySlot }].map((item, i: number) => (
+          <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Saved Product Images</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {storedImages.map((item, i: number) => (
               <div key={i} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
                   src={withImageParams(item.url)}
-                  alt={item.slot || `Attached image ${i + 1}`}
+                  alt={item.label}
                   loading="lazy"
-                  wrapperClassName="h-28 w-full bg-gray-50 p-1"
+                  wrapperClassName="h-32 w-full bg-gray-50 p-1"
                 />
-                {item.slot && (
-                  <p className="truncate border-t border-gray-100 px-2 py-1 text-xs text-gray-600" title={item.slot}>
-                    Attached to {item.slot}
+                <div className="border-t border-gray-100 px-2 py-1.5">
+                  <p className="truncate text-xs font-medium text-gray-700" title={item.label}>
+                    {item.label}
                   </p>
-                )}
+                  <p className="truncate text-[11px] text-gray-500" title={item.url}>
+                    {item.url}
+                  </p>
+                  {item.isArbitrary ? (
+                    <span className="mt-1 inline-flex rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
+                      Arbitrary
+                    </span>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
