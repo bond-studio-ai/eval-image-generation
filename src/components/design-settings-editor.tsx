@@ -124,6 +124,7 @@ const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
 const FIELDS: FieldDef[] = [...PRODUCT_FIELDS, ...SETTING_FIELDS];
 const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}ImageType`);
 const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
+const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'tear-sheet';
 
 function getProductImageTypeKey(slotKey: string): string {
   return `${slotKey}ImageType`;
@@ -599,7 +600,7 @@ function ProductField({
             <p className="mt-1 text-[11px] text-amber-600">Saved image URL will still be used.</p>
           ) : null}
           <p className="mt-1 text-[11px] text-gray-400">
-            Send: {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === selectedImageType)?.label ?? 'Featured Image'}
+            Send: {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === (selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE))?.label ?? 'Tear Sheet'}
           </p>
         </div>
         {previewUrl ? (
@@ -646,7 +647,7 @@ function ProductField({
                 type="button"
                 onClick={() => onImageTypeChange(option.value)}
                 className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                  (selectedImageType ?? 'featured-image') === option.value
+                  (selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE) === option.value
                     ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                 }`}
