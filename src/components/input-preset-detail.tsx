@@ -14,7 +14,7 @@ import type { InputPresetDetailItem } from '@/lib/service-client';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RatingBadge } from './rating-badge';
 
 interface SerializedGeneration {
@@ -37,9 +37,15 @@ interface InputPresetDetailProps {
   stats: Stats;
 }
 
+interface LayoutPresetOption {
+  id: string;
+  name: string;
+}
+
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
+  const [layoutPresetOptions, setLayoutPresetOptions] = useState<LayoutPresetOption[]>([]);
   const rawData = data as unknown as Record<string, unknown>;
   const { byId, loaded } = useCatalogProducts();
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
@@ -89,6 +95,33 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       ];
     });
   }, [byId, loaded, rawData, storedImagesBySlot]);
+  const layoutTypeId =
+    data.layoutTypeId ?? (typeof rawData.layout_type_id === 'string' ? rawData.layout_type_id : null);
+  const selectedLayoutPreset = useMemo(
+    () => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null,
+    [layoutPresetOptions, layoutTypeId]
+  );
+
+  useEffect(() => {
+    if (!layoutTypeId) return;
+
+    let cancelled = false;
+
+    fetch(serviceUrl('layout-presets'))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
+        const json = (await res.json()) as { data?: LayoutPresetOption[] };
+        if (cancelled) return;
+        setLayoutPresetOptions(Array.isArray(json.data) ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setLayoutPresetOptions([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [layoutTypeId]);
 
   return (
     <div>
@@ -177,17 +210,12 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       </div>
 
-      {(() => {
-        const layoutTypeId =
-          data.layoutTypeId ?? (typeof rawData.layout_type_id === 'string' ? rawData.layout_type_id : null);
-        if (!layoutTypeId) return null;
-        return (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-sm font-medium text-gray-600">Room preset layout type</p>
-            <p className="mt-1 font-mono text-sm text-gray-900">{layoutTypeId}</p>
-          </div>
-        );
-      })()}
+      {layoutTypeId ? (
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+          <p className="text-sm font-medium text-gray-600">Room preset layout type</p>
+          <p className="mt-1 text-sm text-gray-900">{selectedLayoutPreset?.name ?? layoutTypeId}</p>
+        </div>
+      ) : null}
 
       {/* Design settings (adapters_Design) */}
       {(() => {
