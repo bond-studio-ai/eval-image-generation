@@ -72,13 +72,18 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
   for (const [slot, urlKey] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
     const url = readUrl(readInputPresetValue(data, urlKey));
     if (!url) continue;
+    const slotValue = readInputPresetValue(data, slot);
     const categoryKey = urlKey.replace(/_url$/, '');
+    const imageType = readInputPresetValue(data, `${slot}ImageType`);
+
+    if (typeof slotValue === 'string' && slotValue.length > 0 && imageType !== 'arbitrary') {
+      continue;
+    }
+
     const existing = product_images[categoryKey] ?? [];
     if (!existing.includes(url)) product_images[categoryKey] = [...existing, url];
-    const imageType = readInputPresetValue(data, `${slot}ImageType`);
     if (imageType === 'arbitrary') {
-      // Keep arbitrary-tagged slot URLs in the same normalized map so preset execution
-      // behaves the same as the old server-side preset expansion path.
+      // Preserve arbitrary attachments as explicit input images.
       continue;
     }
   }
