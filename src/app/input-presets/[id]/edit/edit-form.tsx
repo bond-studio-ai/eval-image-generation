@@ -8,6 +8,7 @@ import {
 import { LayoutPresetSelect } from '@/components/layout-preset-select';
 import { serviceUrl } from '@/lib/api-base';
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
+import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -135,6 +136,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
           arbitraryImage={arbitraryImage}
           onArbitraryImageChange={setArbitraryImage}
           savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
+          retailerId={INPUT_PRESET_RETAILER_ID}
         />
       </div>
 

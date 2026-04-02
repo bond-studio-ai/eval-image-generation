@@ -150,13 +150,14 @@ export function designSettingsHasValues(value: DesignSettingsValue): boolean {
   return Object.values(value).some(isNonEmpty);
 }
 
-export function useCatalogProducts() {
+export function useCatalogProducts(retailerId?: string) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(localUrl('products'))
+    const query = retailerId ? `?retailerId=${encodeURIComponent(retailerId)}` : '';
+    fetch(localUrl(`products${query}`))
       .then((r) => r.json())
       .then((r) => {
         if (cancelled) return;
@@ -169,7 +170,7 @@ export function useCatalogProducts() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retailerId]);
 
   const byId = useMemo(() => {
     const map = new Map<string, CatalogProduct>();
@@ -186,6 +187,7 @@ interface DesignSettingsEditorProps {
   arbitraryImage: ArbitraryImageAttachment;
   onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
   savedImageUrlsBySlot?: Record<string, string | null>;
+  retailerId?: string;
 }
 
 export function DesignSettingsEditor({
@@ -194,11 +196,12 @@ export function DesignSettingsEditor({
   arbitraryImage,
   onArbitraryImageChange,
   savedImageUrlsBySlot,
+  retailerId,
 }: DesignSettingsEditorProps) {
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
-  const { products, byId, loaded } = useCatalogProducts();
+  const { products, byId, loaded } = useCatalogProducts(retailerId);
   const data = value ?? {};
 
   const setField = useCallback(

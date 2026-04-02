@@ -1,10 +1,14 @@
 import { errorResponse, successResponse } from '@/lib/api-response';
 
-const CATALOG_URL = 'https://api.usedemo.io/catalog/v3/products?perPage=100000';
+const RETAILER_ID_QUERY_KEY = 'retailerId';
+const baseHostname = process.env.BASE_API_HOSTNAME;
+const API_BASE = baseHostname
+  ? `https://${baseHostname.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+  : null;
 
-// In-memory cache
-let cachedProducts: Product[] | null = null;
-let cacheTimestamp = 0;
+// In-memory cache keyed by retailer filter
+const cachedProducts = new Map<string, Product[]>();
+const cacheTimestamps = new Map<string, number>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 interface Product {
@@ -30,17 +34,32 @@ interface Product {
   } | null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const now = Date.now();
+    const url = new URL(request.url);
+    const retailerId = url.searchParams.get(RETAILER_ID_QUERY_KEY)?.trim() ?? '';
+    const cacheKey = retailerId || '__all__';
 
     // Return cached data if fresh
-    if (cachedProducts && now - cacheTimestamp < CACHE_TTL) {
-      return successResponse(cachedProducts);
+    const cached = cachedProducts.get(cacheKey);
+    const cachedAt = cacheTimestamps.get(cacheKey) ?? 0;
+    if (cached && now - cachedAt < CACHE_TTL) {
+      return successResponse(cached);
+    }
+
+    if (!API_BASE) {
+      return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
+    }
+
+    const catalogUrl = new URL('/catalog/v3/products', API_BASE);
+    catalogUrl.searchParams.set('perPage', '100000');
+    if (retailerId) {
+      catalogUrl.searchParams.set(RETAILER_ID_QUERY_KEY, retailerId);
     }
 
     // Fetch from catalog API
-    const res = await fetch(CATALOG_URL, {
+    const res = await fetch(catalogUrl.toString(), {
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 }, // Next.js fetch cache: 10 minutes
     });
@@ -48,8 +67,8 @@ export async function GET() {
     if (!res.ok) {
       console.error(`Catalog API returned ${res.status}`);
       // Return stale cache if available
-      if (cachedProducts) {
-        return successResponse(cachedProducts);
+      if (cached) {
+        return successResponse(cached);
       }
       return errorResponse('INTERNAL_ERROR', `Catalog API returned ${res.status}`);
     }
@@ -58,15 +77,19 @@ export async function GET() {
     const products: Product[] = json.data ?? json;
 
     // Update cache
-    cachedProducts = products;
-    cacheTimestamp = now;
+    cachedProducts.set(cacheKey, products);
+    cacheTimestamps.set(cacheKey, now);
 
     return successResponse(products);
   } catch (error) {
     console.error('Error fetching products:', error);
     // Return stale cache on network error
-    if (cachedProducts) {
-      return successResponse(cachedProducts);
+    const url = new URL(request.url);
+    const retailerId = url.searchParams.get(RETAILER_ID_QUERY_KEY)?.trim() ?? '';
+    const cacheKey = retailerId || '__all__';
+    const cached = cachedProducts.get(cacheKey);
+    if (cached) {
+      return successResponse(cached);
     }
     return errorResponse('INTERNAL_ERROR', 'Failed to fetch products from catalog');
   }

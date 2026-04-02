@@ -3,6 +3,7 @@
 import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
+import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
@@ -47,7 +48,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const [cloning, setCloning] = useState(false);
   const [layoutPresetOptions, setLayoutPresetOptions] = useState<LayoutPresetOption[]>([]);
   const rawData = data as unknown as Record<string, unknown>;
-  const { byId, loaded } = useCatalogProducts();
+  const { byId, loaded } = useCatalogProducts(INPUT_PRESET_RETAILER_ID);
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
   const storedImagesBySlot = useMemo(
     () => new Map(storedImages.map((image) => [image.slot, image])),
