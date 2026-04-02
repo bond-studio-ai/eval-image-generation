@@ -359,6 +359,34 @@ export function DesignSettingsEditor({
       {mode === 'form' ? (
         <div className="px-5 py-4">
           <div className="space-y-6">
+            <section className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Configure placement, patterns, and visibility settings separately from product selection.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {SETTING_FIELDS.map((field) =>
+                  field.type === 'select' ? (
+                    <SelectField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => setField(field.key, nextValue)}
+                    />
+                  ) : (
+                    <BooleanField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => setField(field.key, nextValue)}
+                    />
+                  ),
+                )}
+              </div>
+            </section>
+
             <section className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -420,34 +448,6 @@ export function DesignSettingsEditor({
                     }}
                   />
                 ))}
-              </div>
-            </section>
-
-            <section className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Configure placement, patterns, and visibility settings separately from product selection.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {SETTING_FIELDS.map((field) =>
-                  field.type === 'select' ? (
-                    <SelectField
-                      key={field.key}
-                      field={field}
-                      value={data[field.key]}
-                      onChange={(nextValue) => setField(field.key, nextValue)}
-                    />
-                  ) : (
-                    <BooleanField
-                      key={field.key}
-                      field={field}
-                      value={data[field.key]}
-                      onChange={(nextValue) => setField(field.key, nextValue)}
-                    />
-                  ),
-                )}
               </div>
             </section>
           </div>
@@ -774,8 +774,11 @@ function ProductSelectionModal({
     () => products.find((product) => product.id === draftSelectedId) ?? null,
     [products, draftSelectedId]
   );
+  const isArbitraryMode = draftImageType === 'arbitrary';
+  const canAccept = !isArbitraryMode || !!draftArbitraryUrl;
 
   const handleAccept = () => {
+    if (!canAccept) return;
     onAccept({
       productId: draftSelectedId || null,
       imageType: draftImageType,
@@ -807,7 +810,11 @@ function ProductSelectionModal({
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
             <h3 className="text-sm font-semibold uppercase text-gray-900">{field.label}</h3>
-            <p className="mt-1 text-xs text-gray-500">Search by product name, category, family, or ID.</p>
+            <p className="mt-1 text-xs text-gray-500">
+              {isArbitraryMode
+                ? 'Upload a custom image for this slot.'
+                : 'Search by product name, category, family, or ID.'}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {selectedId ? (
@@ -884,25 +891,26 @@ function ProductSelectionModal({
             ) : null}
           </div>
 
-          <input
-            autoFocus
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
-            disabled={!loaded}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
-          />
+          {!isArbitraryMode ? (
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
+              disabled={!loaded}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+            />
+          ) : null}
         </div>
-        <div className="overflow-y-auto">
-          {!loaded ? (
-            <p className="px-4 py-6 text-sm text-gray-500">Loading products...</p>
-          ) : filteredProducts.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
-          ) : (
-            filteredProducts.map((product) => {
-              const isSelected = product.id === selectedId;
-              return (
+        {!isArbitraryMode ? (
+          <div className="overflow-y-auto">
+            {!loaded ? (
+              <p className="px-4 py-6 text-sm text-gray-500">Loading products...</p>
+            ) : filteredProducts.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
+            ) : (
+              filteredProducts.map((product) => (
                 <button
                   key={product.id}
                   type="button"
@@ -941,10 +949,10 @@ function ProductSelectionModal({
                     </span>
                   ) : null}
                 </button>
-              );
-            })
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        ) : null}
         <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
           <button
             type="button"
@@ -956,7 +964,8 @@ function ProductSelectionModal({
           <button
             type="button"
             onClick={handleAccept}
-            className="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            disabled={!canAccept}
+            className="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Accept
           </button>

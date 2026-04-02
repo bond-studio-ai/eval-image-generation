@@ -1,14 +1,8 @@
 'use client';
 
 import { localUrl } from '@/lib/api-base';
+import type { DesignPackageOption } from '@/lib/design-package';
 import { useEffect, useMemo, useState } from 'react';
-
-export interface DesignPackageOption {
-  id: string;
-  title?: string | null;
-  name?: string | null;
-  style?: string | null;
-}
 
 function optionLabel(option: DesignPackageOption): string {
   return option.title?.trim() || option.name?.trim() || option.id;
@@ -20,7 +14,7 @@ export function DesignPackageSelect({
   retailerId,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, option?: DesignPackageOption | null) => void;
   retailerId?: string;
 }) {
   const [options, setOptions] = useState<DesignPackageOption[]>([]);
@@ -150,7 +144,7 @@ export function DesignPackageSelect({
               <button
                 type="button"
                 onClick={() => {
-                  onChange('');
+                  onChange('', null);
                   setOpen(false);
                   setSearch('');
                 }}
@@ -169,7 +163,7 @@ export function DesignPackageSelect({
                     key={option.id}
                     type="button"
                     onClick={() => {
-                      onChange(option.id);
+                      onChange(option.id, option);
                       setOpen(false);
                       setSearch('');
                     }}

@@ -9,6 +9,7 @@ import { DesignPackageSelect } from '@/components/design-package-select';
 import { LayoutPresetSelect } from '@/components/layout-preset-select';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
+import { designSettingsFromPackage, type DesignPackageOption } from '@/lib/design-package';
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import Link from 'next/link';
@@ -40,6 +41,13 @@ export default function NewInputPresetPage() {
     name.trim() &&
     hasValidLayoutConfig &&
     (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
+
+  function handlePackageChange(nextPkgId: string, pkg?: DesignPackageOption | null) {
+    setPkgId(nextPkgId);
+    if (!pkg) return;
+    setArbitraryImage(null);
+    setDesignSettings(designSettingsFromPackage(pkg));
+  }
 
   async function handleCreate() {
     if (!canCreate) return;
@@ -130,7 +138,7 @@ export default function NewInputPresetPage() {
         <div className="mt-4">
           <DesignPackageSelect
             value={pkgId}
-            onChange={setPkgId}
+            onChange={handlePackageChange}
             retailerId={INPUT_PRESET_RETAILER_ID}
           />
         </div>
