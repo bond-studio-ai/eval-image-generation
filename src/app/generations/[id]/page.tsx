@@ -251,7 +251,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {dollhouseView && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(dollhouseView as string)}
+                  src={withImageParams(dollhouseView as string, 1024)}
                   alt="Dollhouse View"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -264,7 +264,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {realPhoto && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(realPhoto as string)}
+                  src={withImageParams(realPhoto as string, 1024)}
                   alt="Real Photo"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -277,7 +277,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {moodBoard && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(moodBoard as string)}
+                  src={withImageParams(moodBoard as string, 1024)}
                   alt="Mood Board"
                   loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
@@ -303,7 +303,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               >
                 {img.urls.length === 1 ? (
                   <ImageWithSkeleton
-                    src={withImageParams(img.urls[0])}
+                    src={withImageParams(img.urls[0], 1024)}
                     alt={img.label}
                     loading="lazy"
                     wrapperClassName="h-44 w-full bg-gray-50"

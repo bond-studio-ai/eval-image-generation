@@ -607,7 +607,7 @@ function ProductField({
         <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
           {previewUrl ? (
             <ImageWithSkeleton
-              src={withImageParams(previewUrl)}
+              src={withImageParams(previewUrl, 1024)}
               alt={field.label}
               loading="lazy"
               wrapperClassName="h-24 w-full bg-gray-50 p-1"

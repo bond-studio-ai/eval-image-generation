@@ -70,7 +70,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       {value ? (
         <div className="group relative">
           <ImageWithSkeleton
-            src={withImageParams(value)}
+            src={withImageParams(value, 1024)}
             alt={label}
             loading="lazy"
             wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50"
