@@ -139,6 +139,8 @@ export interface InputPresetListItemForBuilder {
   name: string | null;
   description: string | null;
   layoutTypeId?: string | null;
+  pkgId?: string | null;
+  pkg_id?: string | null;
   dollhouseView: string | null;
   realPhoto: string | null;
   moodBoard: string | null;
@@ -153,6 +155,8 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   description: string | null;
   layoutTypeId?: string | null;
   layout_type_id?: string | null;
+  pkgId?: string | null;
+  pkg_id?: string | null;
   dollhouseView: string | null;
   dollhouse_view?: string | null;
   realPhoto: string | null;

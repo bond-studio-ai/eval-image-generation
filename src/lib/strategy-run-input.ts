@@ -10,6 +10,7 @@ import {
 
 export type StrategyRunInputPayload = {
   layout_type_id?: string | null;
+  pkg_id?: string | null;
   scene_images: {
     dollhouse_view?: string;
     real_photo?: string;
@@ -31,7 +32,7 @@ export type StrategyRunDollhouseCapturePayload = {
   };
 };
 
-export type CreateStrategyRunRequest = StrategyRunInputPayload & {
+export type CreateStrategyRunRequest = Omit<StrategyRunInputPayload, 'pkg_id'> & {
   preset_id?: string;
   batch?: boolean;
   number_of_images: number;
@@ -89,10 +90,12 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
   }
 
   const layoutTypeId = readInputPresetValue(data, 'layoutTypeId');
+  const pkgId = readInputPresetValue(data, 'pkgId');
   return {
     ...(typeof layoutTypeId === 'string' || layoutTypeId === null
       ? { layout_type_id: layoutTypeId as string | null }
       : {}),
+    ...(typeof pkgId === 'string' || pkgId === null ? { pkg_id: pkgId as string | null } : {}),
     scene_images,
     product_images,
     arbitrary_images: [],
@@ -102,11 +105,12 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
 
 async function bootstrapLayoutPreset(
   layoutTypeId: string,
+  pkgId: string,
 ): Promise<LayoutBootstrapResponse> {
   const res = await fetch(localUrl('layout-presets/bootstrap'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ layout_type_id: layoutTypeId }),
+    body: JSON.stringify({ layout_type_id: layoutTypeId, pkg_id: pkgId }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -141,7 +145,10 @@ export async function buildPresetRunRequest(
 ): Promise<CreateStrategyRunRequest> {
   let dollhouseCapture: StrategyRunDollhouseCapturePayload | undefined;
   if (!input.scene_images.dollhouse_view && input.layout_type_id) {
-    const bootstrap = await bootstrapLayoutPreset(input.layout_type_id);
+    if (!input.pkg_id) {
+      throw new Error(`Preset ${options.preset_id} has layout_type_id but no pkg_id`);
+    }
+    const bootstrap = await bootstrapLayoutPreset(input.layout_type_id, input.pkg_id);
     const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
     const designMaterials = await buildDesignMaterials({
       design: input.design,
@@ -159,7 +166,11 @@ export async function buildPresetRunRequest(
   }
 
   return {
-    ...input,
+    layout_type_id: input.layout_type_id,
+    scene_images: input.scene_images,
+    product_images: input.product_images,
+    arbitrary_images: input.arbitrary_images,
+    design: input.design,
     preset_id: options.preset_id,
     number_of_images: options.number_of_images,
     ...(options.batch !== undefined ? { batch: options.batch } : {}),

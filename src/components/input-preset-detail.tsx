@@ -4,6 +4,7 @@ import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-s
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { withImageParams } from '@/lib/image-utils';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
+import { localUrl, serviceUrl } from '@/lib/api-base';
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
@@ -12,7 +13,6 @@ import {
   readInputPresetValue,
 } from '@/lib/input-preset-design';
 import type { InputPresetDetailItem } from '@/lib/service-client';
-import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -43,10 +43,24 @@ interface LayoutPresetOption {
   name: string;
 }
 
+interface DesignPackageOption {
+  id: string;
+  title?: string | null;
+  name?: string | null;
+  style?: string | null;
+}
+
+function getDesignPackageLabel(option: DesignPackageOption | null, pkgId: string | null): string | null {
+  if (!pkgId) return null;
+  if (!option) return pkgId;
+  return option.title?.trim() || option.name?.trim() || pkgId;
+}
+
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
   const [layoutPresetOptions, setLayoutPresetOptions] = useState<LayoutPresetOption[]>([]);
+  const [designPackageOptions, setDesignPackageOptions] = useState<DesignPackageOption[]>([]);
   const rawData = data as unknown as Record<string, unknown>;
   const { byId, loaded } = useCatalogProducts(INPUT_PRESET_RETAILER_ID);
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
@@ -102,6 +116,11 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
     () => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null,
     [layoutPresetOptions, layoutTypeId]
   );
+  const pkgId = data.pkgId ?? (typeof rawData.pkg_id === 'string' ? rawData.pkg_id : null);
+  const selectedDesignPackage = useMemo(
+    () => designPackageOptions.find((option) => option.id === pkgId) ?? null,
+    [designPackageOptions, pkgId]
+  );
 
   useEffect(() => {
     if (!layoutTypeId) return;
@@ -123,6 +142,29 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       cancelled = true;
     };
   }, [layoutTypeId]);
+
+  useEffect(() => {
+    if (!pkgId) return;
+
+    let cancelled = false;
+    const url = new URL(localUrl('design-packages'), window.location.origin);
+    url.searchParams.set('retailerId', INPUT_PRESET_RETAILER_ID);
+
+    fetch(url.toString())
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
+        const json = (await res.json()) as { data?: DesignPackageOption[] };
+        if (cancelled) return;
+        setDesignPackageOptions(Array.isArray(json.data) ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setDesignPackageOptions([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pkgId]);
 
   return (
     <div>
@@ -218,6 +260,18 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         </div>
       ) : null}
 
+      {pkgId ? (
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+          <p className="text-sm font-medium text-gray-600">Design package</p>
+          <p className="mt-1 text-sm text-gray-900">
+            {getDesignPackageLabel(selectedDesignPackage, pkgId)}
+          </p>
+          {selectedDesignPackage?.style ? (
+            <p className="mt-1 text-xs text-gray-500">{selectedDesignPackage.style}</p>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Design settings (adapters_Design) */}
       {(() => {
         const entries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
@@ -237,9 +291,20 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {/* Scene Images */}
       {(() => {
         const scenes = [
-          { label: 'Dollhouse View', url: data.dollhouseView },
-          { label: 'Real Photo', url: data.realPhoto },
-          { label: 'Mood Board', url: data.moodBoard },
+          {
+            label: 'Dollhouse View',
+            url:
+              data.dollhouseView ??
+              (typeof rawData.dollhouse_view === 'string' ? rawData.dollhouse_view : null),
+          },
+          {
+            label: 'Real Photo',
+            url: data.realPhoto ?? (typeof rawData.real_photo === 'string' ? rawData.real_photo : null),
+          },
+          {
+            label: 'Mood Board',
+            url: data.moodBoard ?? (typeof rawData.mood_board === 'string' ? rawData.mood_board : null),
+          },
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (

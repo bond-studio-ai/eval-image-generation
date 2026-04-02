@@ -16,48 +16,8 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function getPresetId(rec: Record<string, unknown>): string {
-  return typeof rec.id === 'string' ? rec.id.trim() : '';
-}
-
-function getLayoutTypeId(rec: Record<string, unknown>): string {
-  return typeof rec.layoutTypeId === 'string' ? rec.layoutTypeId.trim() : '';
-}
-
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchRawLayoutPresets(): Promise<Record<string, unknown>[]> {
-  if (!SPATIAL_BASE) {
-    throw new Error('BASE_API_HOSTNAME is not set');
-  }
-  const res = await fetch(`${SPATIAL_BASE}/presets`, {
-    headers: { Accept: 'application/json' },
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Spatial preset request failed: ${res.status}`);
-  }
-  const json = (await res.json()) as unknown;
-  const rows = Array.isArray(json)
-    ? json
-    : Array.isArray(asRecord(json)?.data)
-      ? ((asRecord(json)?.data as unknown[]) ?? [])
-      : [];
-  return rows.map((row) => asRecord(row)).filter((row): row is Record<string, unknown> => !!row);
-}
-
-async function resolveSpatialPresetId(layoutTypeIdOrPresetId: string): Promise<string> {
-  const input = layoutTypeIdOrPresetId.trim();
-  const rows = await fetchRawLayoutPresets();
-  const match = rows.find((row) => {
-    const presetId = getPresetId(row);
-    const layoutTypeId = getLayoutTypeId(row);
-    return presetId === input || layoutTypeId === input;
-  });
-  if (!match) throw new Error(`Spatial preset not found for ${layoutTypeIdOrPresetId}`);
-  return getPresetId(match);
 }
 
 async function readProjectIdFromCreateResponse(res: Response): Promise<string> {
@@ -118,16 +78,23 @@ export async function POST(request: Request) {
     if (!PROJECTS_BASE || !SPATIAL_BASE) {
       return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
     }
-    const body = (await request.json().catch(() => ({}))) as { layout_type_id?: unknown };
+    const body = (await request.json().catch(() => ({}))) as {
+      layout_type_id?: unknown;
+      pkg_id?: unknown;
+    };
     const layoutTypeId =
       typeof body.layout_type_id === 'string' && body.layout_type_id.trim()
         ? body.layout_type_id.trim()
         : null;
+    const pkgId =
+      typeof body.pkg_id === 'string' && body.pkg_id.trim() ? body.pkg_id.trim() : null;
     if (!layoutTypeId) {
       return errorResponse('VALIDATION_ERROR', 'layout_type_id is required');
     }
+    if (!pkgId) {
+      return errorResponse('VALIDATION_ERROR', 'pkg_id is required');
+    }
 
-    const presetId = await resolveSpatialPresetId(layoutTypeId);
     const createProjectRes = await fetch(PROJECTS_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -139,14 +106,20 @@ export async function POST(request: Request) {
     }
     const projectId = await readProjectIdFromCreateResponse(createProjectRes);
 
-    const createRoomRes = await fetch(`${SPATIAL_BASE}/presets/${encodeURIComponent(presetId)}/rooms`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId }),
-      cache: 'no-store',
-    });
-    if (!createRoomRes.ok) {
-      return errorResponse('INTERNAL_ERROR', `Preset room creation failed: ${createRoomRes.status}`);
+    const initProjectRes = await fetch(
+      `${PROJECTS_BASE}/${encodeURIComponent(projectId)}/actions?type=Init`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pkgId, bathroomTypeId: layoutTypeId }),
+        cache: 'no-store',
+      }
+    );
+    if (!initProjectRes.ok) {
+      return errorResponse(
+        'INTERNAL_ERROR',
+        `Project initialization failed: ${initProjectRes.status}`
+      );
     }
 
     const room = await waitForSettledRoomByProjectId(projectId);

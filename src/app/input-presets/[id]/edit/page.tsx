@@ -74,6 +74,8 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     name: preset.name ?? '',
     description: preset.description ?? '',
     layoutTypeId: preset.layoutTypeId ?? preset.layout_type_id ?? null,
+    pkgId: preset.pkgId ?? preset.pkg_id ?? null,
+    dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
     realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
     moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
     arbitraryImage: arbitraryImage ? { url: arbitraryImage.url, slot: arbitraryImage.slot } : null,
