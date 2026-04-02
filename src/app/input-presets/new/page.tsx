@@ -27,13 +27,17 @@ export default function NewInputPresetPage() {
   const [dollhouseView, setDollhouseView] = useState<string | null>(null);
   const [realPhoto, setRealPhoto] = useState<string | null>(null);
   const [moodBoard, setMoodBoard] = useState<string | null>(null);
-  const [arbitraryImage, setArbitraryImage] = useState<{ url: string; slot: string } | null>(null);
+  const [arbitraryImagesBySlot, setArbitraryImagesBySlot] = useState<Record<string, string | null>>({});
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(null);
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hasAnyImage = !!arbitraryImage || !!dollhouseView || !!realPhoto || !!moodBoard;
+  const hasAnyImage =
+    Object.values(arbitraryImagesBySlot).some((url) => !!url) ||
+    !!dollhouseView ||
+    !!realPhoto ||
+    !!moodBoard;
   const layoutRequiresPackage = layoutTypeId.trim().length > 0;
   const hasValidLayoutConfig = !layoutRequiresPackage || pkgId.trim().length > 0;
 
@@ -45,7 +49,7 @@ export default function NewInputPresetPage() {
   function handlePackageChange(nextPkgId: string, pkg?: DesignPackageOption | null) {
     setPkgId(nextPkgId);
     if (!pkg) return;
-    setArbitraryImage(null);
+    setArbitraryImagesBySlot({});
     setDesignSettings(designSettingsFromPackage(pkg));
   }
 
@@ -73,7 +77,7 @@ export default function NewInputPresetPage() {
       if (moodBoard) payload.mood_board = moodBoard;
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
-          payload[urlColumn] = arbitraryImage?.slot === slot ? arbitraryImage.url : null;
+          payload[urlColumn] = arbitraryImagesBySlot[slot] ?? null;
         }
       }
 
@@ -176,8 +180,8 @@ export default function NewInputPresetPage() {
         <DesignSettingsEditor
           value={designSettings}
           onChange={setDesignSettings}
-          arbitraryImage={arbitraryImage}
-          onArbitraryImageChange={setArbitraryImage}
+          arbitraryImagesBySlot={arbitraryImagesBySlot}
+          onArbitraryImagesBySlotChange={setArbitraryImagesBySlot}
           savedImageUrlsBySlot={{}}
           retailerId={INPUT_PRESET_RETAILER_ID}
         />

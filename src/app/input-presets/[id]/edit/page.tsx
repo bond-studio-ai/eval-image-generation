@@ -58,7 +58,9 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   });
   const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
   const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
-  const arbitraryImage = storedImages.find((image) => image.isArbitrary) ?? null;
+  const arbitraryImagesBySlot = Object.fromEntries(
+    storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url])
+  );
   const productUrlValues = Object.fromEntries(
     Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).map((column) => {
       const value = readInputPresetValue(preset as Record<string, unknown>, column);
@@ -78,7 +80,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
     realPhoto: preset.realPhoto ?? preset.real_photo ?? null,
     moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
-    arbitraryImage: arbitraryImage ? { url: arbitraryImage.url, slot: arbitraryImage.slot } : null,
+    arbitraryImagesBySlot,
     designSettings,
     productUrlValues,
     savedImageUrlsBySlot,

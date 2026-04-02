@@ -31,7 +31,7 @@ interface ProductFieldDef extends BaseFieldDef {
 
 type FieldDef = SelectFieldDef | BooleanFieldDef | ProductFieldDef;
 type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet' | 'arbitrary';
-type ArbitraryImageAttachment = { url: string; slot: string } | null;
+type ArbitraryImageMap = Record<string, string | null>;
 
 interface CatalogProduct {
   id: string;
@@ -184,8 +184,8 @@ export function useCatalogProducts(retailerId?: string) {
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
   onChange: (value: DesignSettingsValue) => void;
-  arbitraryImage: ArbitraryImageAttachment;
-  onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
+  arbitraryImagesBySlot: ArbitraryImageMap;
+  onArbitraryImagesBySlotChange: (value: ArbitraryImageMap) => void;
   savedImageUrlsBySlot?: Record<string, string | null>;
   retailerId?: string;
 }
@@ -193,8 +193,8 @@ interface DesignSettingsEditorProps {
 export function DesignSettingsEditor({
   value,
   onChange,
-  arbitraryImage,
-  onArbitraryImageChange,
+  arbitraryImagesBySlot,
+  onArbitraryImagesBySlotChange,
   savedImageUrlsBySlot,
   retailerId,
 }: DesignSettingsEditorProps) {
@@ -221,24 +221,15 @@ export function DesignSettingsEditor({
       if (nextValue == null) delete next[imageTypeKey];
       else next[imageTypeKey] = nextValue;
 
-      if (nextValue === 'arbitrary') {
-        for (const field of PRODUCT_FIELDS) {
-          if (field.key === slotKey) continue;
-          const otherImageTypeKey = getProductImageTypeKey(field.key);
-          if (next[otherImageTypeKey] === 'arbitrary') {
-            delete next[otherImageTypeKey];
-          }
-        }
-        if (arbitraryImage?.slot && arbitraryImage.slot !== slotKey) {
-          onArbitraryImageChange(null);
-        }
-      } else if (arbitraryImage?.slot === slotKey) {
-        onArbitraryImageChange(null);
+      if (nextValue !== 'arbitrary' && arbitraryImagesBySlot[slotKey]) {
+        const nextImages = { ...arbitraryImagesBySlot };
+        delete nextImages[slotKey];
+        onArbitraryImagesBySlotChange(nextImages);
       }
 
       onChange(Object.keys(next).length === 0 ? null : next);
     },
-    [arbitraryImage, data, onArbitraryImageChange, onChange],
+    [arbitraryImagesBySlot, data, onArbitraryImagesBySlotChange, onChange],
   );
 
   const filledCount = useMemo(() => FIELDS.filter((field) => isNonEmpty(data[field.key])).length, [data]);
@@ -249,8 +240,8 @@ export function DesignSettingsEditor({
 
   const clearAll = useCallback(() => {
     onChange(null);
-    onArbitraryImageChange(null);
-  }, [onArbitraryImageChange, onChange]);
+    onArbitraryImagesBySlotChange({});
+  }, [onArbitraryImagesBySlotChange, onChange]);
 
   const switchToJson = useCallback(() => {
     const obj = value ?? {};
@@ -272,19 +263,20 @@ export function DesignSettingsEditor({
         setJsonError('Must be a JSON object.');
         return;
       }
-      if (
-        arbitraryImage &&
-        (parsed as Record<string, unknown>)[getProductImageTypeKey(arbitraryImage.slot)] !== 'arbitrary'
-      ) {
-        onArbitraryImageChange(null);
-      }
+      const nextImages = Object.fromEntries(
+        Object.entries(arbitraryImagesBySlot).filter(
+          ([slot, url]) =>
+            !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary'
+        )
+      );
+      onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
       setMode('form');
     } catch {
       setJsonError('Invalid JSON.');
     }
-  }, [arbitraryImage, jsonText, onArbitraryImageChange, onChange]);
+  }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
 
   const applyJson = useCallback(() => {
     const trimmed = jsonText.trim();
@@ -299,18 +291,19 @@ export function DesignSettingsEditor({
         setJsonError('Must be a JSON object.');
         return;
       }
-      if (
-        arbitraryImage &&
-        (parsed as Record<string, unknown>)[getProductImageTypeKey(arbitraryImage.slot)] !== 'arbitrary'
-      ) {
-        onArbitraryImageChange(null);
-      }
+      const nextImages = Object.fromEntries(
+        Object.entries(arbitraryImagesBySlot).filter(
+          ([slot, url]) =>
+            !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary'
+        )
+      );
+      onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
     } catch {
       setJsonError('Invalid JSON.');
     }
-  }, [arbitraryImage, jsonText, onArbitraryImageChange, onChange]);
+  }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -409,7 +402,7 @@ export function DesignSettingsEditor({
                     loaded={loaded}
                     products={products}
                     selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
-                    arbitraryImage={arbitraryImage}
+                    arbitraryImagesBySlot={arbitraryImagesBySlot}
                     savedImageUrl={savedImageUrlsBySlot?.[field.key] ?? null}
                     onApplySelection={({ productId, imageType, arbitraryUrl }) => {
                       const next = { ...data };
@@ -421,18 +414,14 @@ export function DesignSettingsEditor({
                       else next[imageTypeKey] = imageType;
 
                       if (imageType === 'arbitrary') {
-                        for (const otherField of PRODUCT_FIELDS) {
-                          if (otherField.key === field.key) continue;
-                          const otherImageTypeKey = getProductImageTypeKey(otherField.key);
-                          if (next[otherImageTypeKey] === 'arbitrary') {
-                            delete next[otherImageTypeKey];
-                          }
-                        }
-                        onArbitraryImageChange(
-                          arbitraryUrl ? { url: arbitraryUrl, slot: field.key } : null
-                        );
-                      } else if (arbitraryImage?.slot === field.key) {
-                        onArbitraryImageChange(null);
+                        onArbitraryImagesBySlotChange({
+                          ...arbitraryImagesBySlot,
+                          [field.key]: arbitraryUrl,
+                        });
+                      } else if (arbitraryImagesBySlot[field.key]) {
+                        const nextImages = { ...arbitraryImagesBySlot };
+                        delete nextImages[field.key];
+                        onArbitraryImagesBySlotChange(nextImages);
                       }
 
                       onChange(Object.keys(next).length === 0 ? null : next);
@@ -441,8 +430,10 @@ export function DesignSettingsEditor({
                       const next = { ...data };
                       delete next[field.key];
                       delete next[getProductImageTypeKey(field.key)];
-                      if (arbitraryImage?.slot === field.key) {
-                        onArbitraryImageChange(null);
+                      if (arbitraryImagesBySlot[field.key]) {
+                        const nextImages = { ...arbitraryImagesBySlot };
+                        delete nextImages[field.key];
+                        onArbitraryImagesBySlotChange(nextImages);
                       }
                       onChange(Object.keys(next).length === 0 ? null : next);
                     }}
@@ -599,7 +590,7 @@ function ProductField({
   loaded,
   products,
   selectedProduct,
-  arbitraryImage,
+  arbitraryImagesBySlot,
   savedImageUrl,
   onApplySelection,
   onClearSelection,
@@ -610,7 +601,7 @@ function ProductField({
   loaded: boolean;
   products: CatalogProduct[];
   selectedProduct: CatalogProduct | null;
-  arbitraryImage: ArbitraryImageAttachment;
+  arbitraryImagesBySlot: ArbitraryImageMap;
   savedImageUrl: string | null;
   onApplySelection: (value: {
     productId: string | null;
@@ -622,7 +613,7 @@ function ProductField({
   const [pickerOpen, setPickerOpen] = useState(false);
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
-  const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
+  const attachedArbitraryUrl = arbitraryImagesBySlot[field.key] ?? null;
   const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
   const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;

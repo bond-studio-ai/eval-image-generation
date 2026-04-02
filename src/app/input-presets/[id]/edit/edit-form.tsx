@@ -25,7 +25,7 @@ interface InitialData {
   dollhouseView: string | null;
   realPhoto: string | null;
   moodBoard: string | null;
-  arbitraryImage: { url: string; slot: string } | null;
+  arbitraryImagesBySlot: Record<string, string | null>;
   designSettings: Record<string, unknown> | null;
   productUrlValues: Record<string, string | null>;
   savedImageUrlsBySlot: Record<string, string | null>;
@@ -41,13 +41,19 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const [dollhouseView, setDollhouseView] = useState(initialData.dollhouseView);
   const [realPhoto, setRealPhoto] = useState(initialData.realPhoto);
   const [moodBoard, setMoodBoard] = useState(initialData.moodBoard);
-  const [arbitraryImage, setArbitraryImage] = useState<{ url: string; slot: string } | null>(initialData.arbitraryImage);
+  const [arbitraryImagesBySlot, setArbitraryImagesBySlot] = useState<Record<string, string | null>>(
+    initialData.arbitraryImagesBySlot
+  );
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(initialData.designSettings);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hasAnyImage = !!arbitraryImage || !!dollhouseView || !!realPhoto || !!moodBoard;
+  const hasAnyImage =
+    Object.values(arbitraryImagesBySlot).some((url) => !!url) ||
+    !!dollhouseView ||
+    !!realPhoto ||
+    !!moodBoard;
   const layoutRequiresPackage = layoutTypeId.trim().length > 0;
   const hasValidLayoutConfig = !layoutRequiresPackage || pkgId.trim().length > 0;
 
@@ -59,7 +65,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   function handlePackageChange(nextPkgId: string, pkg?: DesignPackageOption | null) {
     setPkgId(nextPkgId);
     if (!pkg) return;
-    setArbitraryImage(null);
+    setArbitraryImagesBySlot({});
     setDesignSettings(designSettingsFromPackage(pkg));
   }
 
@@ -89,8 +95,8 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       }
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
-          payload[urlColumn] = arbitraryImage?.slot === slot ? arbitraryImage.url : null;
-        } else if (initialData.arbitraryImage?.slot === slot) {
+          payload[urlColumn] = arbitraryImagesBySlot[slot] ?? null;
+        } else if (initialData.arbitraryImagesBySlot[slot]) {
           payload[urlColumn] = null;
         }
       }
@@ -192,8 +198,8 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         <DesignSettingsEditor
           value={designSettings}
           onChange={setDesignSettings}
-          arbitraryImage={arbitraryImage}
-          onArbitraryImageChange={setArbitraryImage}
+          arbitraryImagesBySlot={arbitraryImagesBySlot}
+          onArbitraryImagesBySlotChange={setArbitraryImagesBySlot}
           savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
           retailerId={INPUT_PRESET_RETAILER_ID}
         />

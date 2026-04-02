@@ -69,6 +69,7 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
   if (typeof moodBoard === 'string' && moodBoard) scene_images.mood_board = moodBoard;
 
   const product_images: Record<string, string[]> = {};
+  const arbitrary_images: StrategyRunInputPayload['arbitrary_images'] = [];
   for (const [slot, urlKey] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
     const url = readUrl(readInputPresetValue(data, urlKey));
     if (!url) continue;
@@ -76,16 +77,17 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
     const categoryKey = urlKey.replace(/_url$/, '');
     const imageType = readInputPresetValue(data, `${slot}ImageType`);
 
+    if (imageType === 'arbitrary') {
+      arbitrary_images.push({ url, slot, tag: slot });
+      continue;
+    }
+
     if (typeof slotValue === 'string' && slotValue.length > 0 && imageType !== 'arbitrary') {
       continue;
     }
 
     const existing = product_images[categoryKey] ?? [];
     if (!existing.includes(url)) product_images[categoryKey] = [...existing, url];
-    if (imageType === 'arbitrary') {
-      // Preserve arbitrary attachments as explicit input images.
-      continue;
-    }
   }
 
   const design: Record<string, unknown> = {};
@@ -103,7 +105,7 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
     ...(typeof pkgId === 'string' || pkgId === null ? { pkg_id: pkgId as string | null } : {}),
     scene_images,
     product_images,
-    arbitrary_images: [],
+    arbitrary_images,
     design,
   };
 }
