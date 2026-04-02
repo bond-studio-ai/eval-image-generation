@@ -589,7 +589,7 @@ function ProductField({
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
   const attachedArbitraryUrl = arbitraryImage?.slot === field.key ? arbitraryImage.url : null;
-  const previewUrl = attachedArbitraryUrl ?? savedImageUrl ?? selectedProduct?.featuredImage?.url ?? null;
+  const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
   const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
   const imageTypeLabel =
@@ -677,17 +677,17 @@ function ProductField({
           imageTypeValue={effectiveImageType}
           arbitraryUrl={attachedArbitraryUrl}
           savedImageUrl={savedImageUrl}
-          onSelect={(productId) => {
+          onAccept={({ productId, imageType, arbitraryUrl }) => {
             onChange(productId);
+            onImageTypeChange(imageType);
+            onArbitraryImageChange(arbitraryUrl ? { url: arbitraryUrl, slot: field.key } : null);
+            setPickerOpen(false);
           }}
-          onImageTypeChange={onImageTypeChange}
-          onArbitraryImageChange={(url) =>
-            onArbitraryImageChange(url ? { url, slot: field.key } : null)
-          }
           onClear={() => {
             onChange(null);
             onImageTypeChange(null);
             if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
+            setPickerOpen(false);
           }}
           onClose={() => setPickerOpen(false)}
         />
@@ -705,9 +705,7 @@ function ProductSelectionModal({
   imageTypeValue,
   arbitraryUrl,
   savedImageUrl,
-  onSelect,
-  onImageTypeChange,
-  onArbitraryImageChange,
+  onAccept,
   onClear,
   onClose,
 }: {
@@ -719,13 +717,24 @@ function ProductSelectionModal({
   imageTypeValue: ProductImageType;
   arbitraryUrl: string | null;
   savedImageUrl: string | null;
-  onSelect: (productId: string) => void;
-  onImageTypeChange: (value: ProductImageType | null) => void;
-  onArbitraryImageChange: (value: string | null) => void;
+  onAccept: (value: {
+    productId: string | null;
+    imageType: ProductImageType | null;
+    arbitraryUrl: string | null;
+  }) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
+  const [draftSelectedId, setDraftSelectedId] = useState(selectedId);
+  const [draftImageType, setDraftImageType] = useState<ProductImageType>(imageTypeValue);
+  const [draftArbitraryUrl, setDraftArbitraryUrl] = useState<string | null>(arbitraryUrl);
+
+  useEffect(() => {
+    setDraftSelectedId(selectedId);
+    setDraftImageType(imageTypeValue);
+    setDraftArbitraryUrl(arbitraryUrl);
+  }, [selectedId, imageTypeValue, arbitraryUrl]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -734,6 +743,19 @@ function ProductSelectionModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const draftSelectedProduct = useMemo(
+    () => products.find((product) => product.id === draftSelectedId) ?? null,
+    [products, draftSelectedId]
+  );
+
+  const handleAccept = () => {
+    onAccept({
+      productId: draftSelectedId || null,
+      imageType: draftImageType,
+      arbitraryUrl: draftImageType === 'arbitrary' ? draftArbitraryUrl : null,
+    });
+  };
 
   const filteredProducts = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -788,18 +810,22 @@ function ProductSelectionModal({
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current selection</p>
                 <p className="mt-1 truncate text-sm font-medium text-gray-800">
-                  {selectedProduct ? selectedProduct.name : arbitraryUrl || savedImageUrl ? 'URL-only attachment' : 'Not set'}
+                  {draftSelectedProduct
+                    ? draftSelectedProduct.name
+                    : draftArbitraryUrl || savedImageUrl
+                      ? 'URL-only attachment'
+                      : 'Not set'}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  {selectedProduct
-                    ? `${selectedProduct.category?.name ?? 'No category'} • ${selectedId}`
+                  {draftSelectedProduct
+                    ? `${draftSelectedProduct.category?.name ?? 'No category'} • ${draftSelectedId}`
                     : savedImageUrl
                       ? 'Saved URL still available even without a product.'
                       : 'Choose a catalog product or use an arbitrary image URL.'}
                 </p>
               </div>
               <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-                {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === imageTypeValue)?.label ?? 'Tear Sheet'}
+                {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === draftImageType)?.label ?? 'Tear Sheet'}
               </span>
             </div>
             <div className="mt-3">
@@ -809,9 +835,9 @@ function ProductSelectionModal({
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => onImageTypeChange(option.value)}
+                    onClick={() => setDraftImageType(option.value)}
                     className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                      imageTypeValue === option.value
+                      draftImageType === option.value
                         ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
                         : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                     }`}
@@ -821,12 +847,12 @@ function ProductSelectionModal({
                 ))}
               </div>
             </div>
-            {imageTypeValue === 'arbitrary' ? (
+            {draftImageType === 'arbitrary' ? (
               <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
                 <SceneImageInput
                   label="Attached arbitrary image"
-                  value={arbitraryUrl}
-                  onChange={onArbitraryImageChange}
+                  value={draftArbitraryUrl}
+                  onChange={setDraftArbitraryUrl}
                 />
               </div>
             ) : null}
@@ -854,9 +880,11 @@ function ProductSelectionModal({
                 <button
                   key={product.id}
                   type="button"
-                  onClick={() => onSelect(product.id)}
+                  onClick={() => setDraftSelectedId(product.id)}
                   className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left last:border-b-0 transition-colors ${
-                    isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
+                    product.id === draftSelectedId
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <span className="flex min-w-0 flex-1 items-center gap-3">
@@ -881,11 +909,31 @@ function ProductSelectionModal({
                       </span>
                     </span>
                   </span>
-                  {isSelected ? <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
+                  {product.id === draftSelectedId ? (
+                    <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">
+                      Selected
+                    </span>
+                  ) : null}
                 </button>
               );
             })
           )}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleAccept}
+            className="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            Accept
+          </button>
         </div>
       </div>
     </div>
