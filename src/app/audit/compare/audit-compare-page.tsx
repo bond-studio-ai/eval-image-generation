@@ -9,6 +9,7 @@ import { SingleRunAuditView } from './single-run-audit-view';
 interface RunListItem {
   id: string;
   batchRunId: string | null;
+  groupId: string | null;
   strategyId: string;
   strategyName: string | null;
   status: string;
@@ -36,6 +37,7 @@ type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]['value'];
 type AuditRunGroup = {
   id: string;
   batchRunId: string | null;
+  groupId: string | null;
   runs: RunListItem[];
   createdAt: string;
   strategyName: string | null;
@@ -266,15 +268,16 @@ export function AuditComparePage() {
   const runGroups = useMemo<AuditRunGroup[]>(() => {
     const groups = new Map<string, AuditRunGroup>();
     for (const run of filtered) {
-      const groupId = run.batchRunId ?? run.id;
-      const existing = groups.get(groupId);
+      const groupingId = run.groupId ?? run.batchRunId ?? run.id;
+      const existing = groups.get(groupingId);
       if (existing) {
         existing.runs.push(run);
         continue;
       }
-      groups.set(groupId, {
-        id: groupId,
+      groups.set(groupingId, {
+        id: groupingId,
         batchRunId: run.batchRunId,
+        groupId: run.groupId,
         runs: [run],
         createdAt: run.createdAt,
         strategyName: run.strategyName,
@@ -426,7 +429,9 @@ export function AuditComparePage() {
                         >
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold uppercase tracking-wide text-gray-600">
-                              {group.batchRunId ? `Batch ${group.id.slice(0, 8)}` : `Run ${group.id.slice(0, 8)}`}
+                              {group.groupId || group.batchRunId
+                                ? `Group ${group.id.slice(0, 8)}`
+                                : `Run ${group.id.slice(0, 8)}`}
                             </span>
                             <span className="mt-0.5 block truncate text-xs text-gray-500">
                               {group.strategyName ?? 'Unknown strategy'} · {new Date(group.createdAt).toLocaleString()}

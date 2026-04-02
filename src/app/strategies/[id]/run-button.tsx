@@ -1,6 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
+import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import type { InputPresetListItem } from '@/lib/types';
 import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -32,14 +33,15 @@ export function StrategyRunButton({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}/run`), {
+      const [requestBody] = await fetchPresetRunRequests([selectedId], {
+        batch: true,
+        number_of_images: 8,
+      });
+      if (!requestBody) throw new Error('Failed to build run request');
+      const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputPresetIds: [selectedId],
-          batch: true,
-          numberOfImages: 8,
-        }),
+        body: JSON.stringify(requestBody),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
@@ -180,16 +182,43 @@ export function StrategyBatchRunButton({
     setError(null);
 
     const count = Math.max(1, Math.min(100, numberOfImages));
-    const inputPresetIds = Array.from({ length: count }, () => selectedIds).flat();
 
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}/run`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputPresetIds: inputPresetIds, batch: true, numberOfImages: count }),
+      const groupId = crypto.randomUUID();
+      const requests = await fetchPresetRunRequests(selectedIds, {
+        batch: true,
+        number_of_images: count,
+        group_id: groupId,
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed to start batch'); return; }
+      const results = await Promise.allSettled(
+        requests.map(async (requestBody) => {
+          const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(
+              (data as { error?: { message?: string } }).error?.message || 'Failed to start batch',
+            );
+          }
+          return data;
+        }),
+      );
+      const failures = results.filter(
+        (result): result is PromiseRejectedResult => result.status === 'rejected',
+      );
+      if (failures.length > 0) {
+        const succeeded = results.length - failures.length;
+        setError(
+          `${failures[0]?.reason instanceof Error ? failures[0].reason.message : 'Failed to start batch'}${
+            succeeded > 0 ? ' Some runs were still created.' : ''
+          }`,
+        );
+        if (succeeded > 0) onRunCreated?.();
+        return;
+      }
       setShowModal(false);
       setSelectedIds([]);
       setSearch('');

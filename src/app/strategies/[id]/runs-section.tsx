@@ -11,6 +11,7 @@ interface Run {
   lastOutputUrl?: string | null;
   lastOutputGenerationId?: string | null;
   batchRunId?: string | null;
+  groupId?: string | null;
   stepResults: { id: string; status: string }[];
 }
 

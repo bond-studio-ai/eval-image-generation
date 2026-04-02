@@ -1,6 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
+import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -77,20 +78,43 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     setSubmitting(true);
     setError(null);
     const count = Math.max(1, Math.min(100, numberOfImages));
+    const groupId = crypto.randomUUID();
 
     try {
-      const res = await fetch(serviceUrl('strategy-batch-runs/run'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategyIds: selectedStrategyIds,
-          inputPresetIds: selectedPresetIds,
-          numberOfImages: count,
-        }),
+      const requests = await fetchPresetRunRequests(selectedPresetIds, {
+        batch: true,
+        number_of_images: count,
+        group_id: groupId,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error?.message || 'Failed to start run');
+      const results = await Promise.allSettled(
+        selectedStrategyIds.flatMap((strategyId) =>
+          requests.map(async (requestBody) => {
+          const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(
+              (data as { error?: { message?: string } }).error?.message || 'Failed to start run',
+            );
+          }
+          return data;
+          }),
+        ),
+      );
+      const failures = results.filter(
+        (result): result is PromiseRejectedResult => result.status === 'rejected',
+      );
+      if (failures.length > 0) {
+        const succeeded = results.length - failures.length;
+        setError(
+          `${failures[0]?.reason instanceof Error ? failures[0].reason.message : 'Failed to start run'}${
+            succeeded > 0 ? ' Some runs were still created.' : ''
+          }`,
+        );
+        if (succeeded > 0) onRunCreated?.();
         setSubmitting(false);
         return;
       }

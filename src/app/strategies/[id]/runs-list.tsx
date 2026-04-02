@@ -22,6 +22,7 @@ interface Run {
   lastOutputUrl?: string | null;
   lastOutputGenerationId?: string | null;
   batchRunId?: string | null;
+  groupId?: string | null;
   stepResults: StepResult[];
   judgeScore?: number | null;
   isJudgeSelected?: boolean;
@@ -63,9 +64,10 @@ export function StrategyRunsList({
 
   const batchGroups = new Map<string, Run[]>();
   for (const run of runs) {
-    if (run.batchRunId) {
-      if (!batchGroups.has(run.batchRunId)) batchGroups.set(run.batchRunId, []);
-      batchGroups.get(run.batchRunId)!.push(run);
+    const runGroupId = run.groupId ?? run.batchRunId;
+    if (runGroupId) {
+      if (!batchGroups.has(runGroupId)) batchGroups.set(runGroupId, []);
+      batchGroups.get(runGroupId)!.push(run);
     }
   }
   const hasAwaitingJudge = hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
