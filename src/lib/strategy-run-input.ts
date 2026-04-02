@@ -45,6 +45,11 @@ type LayoutBootstrapResponse = {
   room_data: Record<string, unknown>;
 };
 
+type UpsertProjectDesignResponse = {
+  room_data: Record<string, unknown>;
+  design?: Record<string, unknown>;
+};
+
 function readUrl(value: unknown): string | null {
   if (typeof value === 'string' && value.length > 0) return value;
   if (Array.isArray(value)) {
@@ -112,6 +117,24 @@ async function bootstrapLayoutPreset(
   return (json as { data?: LayoutBootstrapResponse }).data as LayoutBootstrapResponse;
 }
 
+async function upsertProjectDesign(
+  projectId: string,
+  design: Record<string, unknown>,
+): Promise<UpsertProjectDesignResponse> {
+  const res = await fetch(localUrl(`projects/${projectId}/design`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ design }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      (json as { error?: { message?: string } }).error?.message || 'Failed to persist project design',
+    );
+  }
+  return (json as { data?: UpsertProjectDesignResponse }).data as UpsertProjectDesignResponse;
+}
+
 export async function buildPresetRunRequest(
   input: StrategyRunInputPayload,
   options: { preset_id: string; number_of_images: number; batch?: boolean; group_id?: string },
@@ -119,9 +142,10 @@ export async function buildPresetRunRequest(
   let dollhouseCapture: StrategyRunDollhouseCapturePayload | undefined;
   if (!input.scene_images.dollhouse_view && input.layout_type_id) {
     const bootstrap = await bootstrapLayoutPreset(input.layout_type_id);
+    const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
     const designMaterials = await buildDesignMaterials({
       design: input.design,
-      roomData: bootstrap.room_data,
+      roomData: persisted.room_data,
       projectId: bootstrap.project_id,
     });
     if (!designMaterials) {
@@ -129,7 +153,7 @@ export async function buildPresetRunRequest(
     }
     dollhouseCapture = {
       project_id: bootstrap.project_id,
-      room_data: bootstrap.room_data,
+      room_data: persisted.room_data,
       design_materials: designMaterials,
     };
   }
