@@ -33,6 +33,7 @@ interface RunRow {
 
 interface BatchRow {
   id: string;
+  name?: string | null;
   strategyId: string | null;
   strategies: { id: string; name: string }[];
   numberOfImages: number;
@@ -316,17 +317,18 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                   <ReviewStatusBadge status={batch.status} />
+                  <span className="text-sm font-semibold text-gray-900">
+                    {batch.name ?? 'Untitled batch'}
+                  </span>
                   {isMultiStrategy ? (
                     <MultiStrategyLabel strategies={batch.strategies} />
                   ) : batch.strategies.length === 1 ? (
                     <StrategyHoverCard strategyId={batch.strategies[0].id}>
-                      <span className="text-sm font-semibold text-gray-900 cursor-help">
+                      <span className="text-xs font-medium text-gray-500 cursor-help">
                         {batch.strategies[0].name}
                       </span>
                     </StrategyHoverCard>
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-900">Untitled run</span>
-                  )}
+                  ) : null}
                   <span className="text-sm text-gray-600">
                     {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
                     {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
@@ -388,7 +390,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
                   )}
                   <button
                     type="button"
-                    onClick={() => handleDeleteBatch(batch.id, isMultiStrategy ? 'Multi-Strategy Run' : batch.strategies[0]?.name ?? 'Untitled run')}
+                    onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
                     disabled={deletingBatchId === batch.id}
                     className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                     title="Delete run"
