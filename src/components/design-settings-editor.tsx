@@ -383,9 +383,41 @@ export function DesignSettingsEditor({
                     selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
                     arbitraryImage={arbitraryImage}
                     savedImageUrl={savedImageUrlsBySlot?.[field.key] ?? null}
-                    onChange={(nextValue) => setField(field.key, nextValue)}
-                    onImageTypeChange={(nextValue) => setProductImageType(field.key, nextValue)}
-                    onArbitraryImageChange={onArbitraryImageChange}
+                    onApplySelection={({ productId, imageType, arbitraryUrl }) => {
+                      const next = { ...data };
+                      if (productId == null || productId === '') delete next[field.key];
+                      else next[field.key] = productId;
+
+                      const imageTypeKey = getProductImageTypeKey(field.key);
+                      if (imageType == null) delete next[imageTypeKey];
+                      else next[imageTypeKey] = imageType;
+
+                      if (imageType === 'arbitrary') {
+                        for (const otherField of PRODUCT_FIELDS) {
+                          if (otherField.key === field.key) continue;
+                          const otherImageTypeKey = getProductImageTypeKey(otherField.key);
+                          if (next[otherImageTypeKey] === 'arbitrary') {
+                            delete next[otherImageTypeKey];
+                          }
+                        }
+                        onArbitraryImageChange(
+                          arbitraryUrl ? { url: arbitraryUrl, slot: field.key } : null
+                        );
+                      } else if (arbitraryImage?.slot === field.key) {
+                        onArbitraryImageChange(null);
+                      }
+
+                      onChange(Object.keys(next).length === 0 ? null : next);
+                    }}
+                    onClearSelection={() => {
+                      const next = { ...data };
+                      delete next[field.key];
+                      delete next[getProductImageTypeKey(field.key)];
+                      if (arbitraryImage?.slot === field.key) {
+                        onArbitraryImageChange(null);
+                      }
+                      onChange(Object.keys(next).length === 0 ? null : next);
+                    }}
                   />
                 ))}
               </div>
@@ -569,9 +601,8 @@ function ProductField({
   selectedProduct,
   arbitraryImage,
   savedImageUrl,
-  onChange,
-  onImageTypeChange,
-  onArbitraryImageChange,
+  onApplySelection,
+  onClearSelection,
 }: {
   field: ProductFieldDef;
   value: unknown;
@@ -581,9 +612,12 @@ function ProductField({
   selectedProduct: CatalogProduct | null;
   arbitraryImage: ArbitraryImageAttachment;
   savedImageUrl: string | null;
-  onChange: (value: string | null) => void;
-  onImageTypeChange: (value: ProductImageType | null) => void;
-  onArbitraryImageChange: (value: ArbitraryImageAttachment) => void;
+  onApplySelection: (value: {
+    productId: string | null;
+    imageType: ProductImageType | null;
+    arbitraryUrl: string | null;
+  }) => void;
+  onClearSelection: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const selectedId = typeof value === 'string' ? value : '';
@@ -655,11 +689,7 @@ function ProductField({
         {hasSelection ? (
           <button
             type="button"
-            onClick={() => {
-              onChange(null);
-              onImageTypeChange(null);
-              if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
-            }}
+            onClick={onClearSelection}
             className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
           >
             Clear
@@ -678,15 +708,11 @@ function ProductField({
           arbitraryUrl={attachedArbitraryUrl}
           savedImageUrl={savedImageUrl}
           onAccept={({ productId, imageType, arbitraryUrl }) => {
-            onChange(productId);
-            onImageTypeChange(imageType);
-            onArbitraryImageChange(arbitraryUrl ? { url: arbitraryUrl, slot: field.key } : null);
+            onApplySelection({ productId, imageType, arbitraryUrl });
             setPickerOpen(false);
           }}
           onClear={() => {
-            onChange(null);
-            onImageTypeChange(null);
-            if (arbitraryImage?.slot === field.key) onArbitraryImageChange(null);
+            onClearSelection();
             setPickerOpen(false);
           }}
           onClose={() => setPickerOpen(false)}
