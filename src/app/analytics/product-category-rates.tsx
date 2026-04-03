@@ -1,7 +1,9 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+
+type CategoryIssueCount = { issue: string; count: number };
 
 type CategoryRate = {
   name: string;
@@ -10,7 +12,37 @@ type CategoryRate = {
   failure: number;
   successPct: number;
   failurePct: number;
+  issues: CategoryIssueCount[];
 };
+
+function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CategoryIssueCount[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    if (typeof o.issue !== 'string' || typeof o.count !== 'number') continue;
+    if (!Number.isFinite(o.count)) continue;
+    out.push({ issue: o.issue, count: o.count });
+  }
+  return out;
+}
+
+function normalizeCategoryRows(raw: unknown): CategoryRate[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((c) => {
+    const row = c as Record<string, unknown>;
+    return {
+      name: typeof row.name === 'string' ? row.name : String(row.name ?? ''),
+      total: Number(row.total) || 0,
+      success: Number(row.success) || 0,
+      failure: Number(row.failure) || 0,
+      successPct: Number(row.successPct) || 0,
+      failurePct: Number(row.failurePct) || 0,
+      issues: normalizeIssueItems(row.issues),
+    };
+  });
+}
 
 function formatCategoryName(name: string): string {
   return name
@@ -32,6 +64,45 @@ function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' })
     </svg>
   );
 }
+
+function CategoryIssueBreakdown({
+  items,
+  totalEvaluated,
+}: {
+  items: CategoryIssueCount[];
+  totalEvaluated: number;
+}) {
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-gray-500">
+        No flagged product accuracy issues in this category for the selected filters.
+      </p>
+    );
+  }
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">Flagged issues</p>
+      <ul className="space-y-1">
+        {items.map((item) => {
+          const pctVal = totalEvaluated > 0 ? Math.round((item.count / totalEvaluated) * 100) : 0;
+          return (
+            <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate text-gray-700" title={item.issue}>
+                {item.issue}
+              </span>
+              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                {item.count}
+                <span className="text-amber-600"> ({pctVal}%)</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+const COL_SPAN = 6;
 
 export function ProductCategoryRates({
   from,
@@ -55,6 +126,7 @@ export function ProductCategoryRates({
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<ProdSortKey>('total');
   const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleSort = useCallback((key: ProdSortKey) => {
     setSortKey((prev) => {
@@ -64,6 +136,15 @@ export function ProductCategoryRates({
       }
       setSortDir(key === 'name' ? 'asc' : 'desc');
       return key;
+    });
+  }, []);
+
+  const toggleExpand = useCallback((categoryKey: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryKey)) next.delete(categoryKey);
+      else next.add(categoryKey);
+      return next;
     });
   }, []);
 
@@ -81,7 +162,10 @@ export function ProductCategoryRates({
         const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
-        if (!cancelled) setCategories(json.data?.categories ?? []);
+        if (!cancelled) {
+          setCategories(normalizeCategoryRows(json.data?.categories));
+          setExpandedIds(new Set());
+        }
       } catch { /* ignore */ }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -177,6 +261,7 @@ export function ProductCategoryRates({
       <table className="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
+            <th className="w-10 py-2 pr-0" aria-hidden />
             <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
               Product Category<ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
             </th>
@@ -195,40 +280,72 @@ export function ProductCategoryRates({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {sorted.map((cat) => (
-            <tr key={cat.name} className="hover:bg-gray-50/50">
-              <td className="py-2 pr-4 text-sm font-medium text-gray-900">
-                {formatCategoryName(cat.name)}
-              </td>
-              <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
-              <td className="px-4 py-2 text-right text-sm text-green-600">
-                {cat.success} ({cat.successPct}%)
-              </td>
-              <td className="px-4 py-2 text-right text-sm text-orange-600">
-                {cat.failure} ({cat.failurePct}%)
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
-                  {cat.success > 0 && (
-                    <div
-                      className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
-                      style={{ width: `${cat.successPct}%` }}
+          {sorted.map((cat) => {
+            const isExpanded = expandedIds.has(cat.name);
+            return (
+              <Fragment key={cat.name}>
+                <tr className="hover:bg-gray-50/50">
+                  <td className="py-2 pr-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(cat.name)}
+                      className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? 'Collapse issues' : 'Expand issues'}
                     >
-                      {cat.successPct >= 12 ? `${cat.successPct}%` : ''}
+                      <svg
+                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </button>
+                  </td>
+                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">{formatCategoryName(cat.name)}</td>
+                  <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
+                  <td className="px-4 py-2 text-right text-sm text-green-600">
+                    {cat.success} ({cat.successPct}%)
+                  </td>
+                  <td className="px-4 py-2 text-right text-sm text-orange-600">
+                    {cat.failure} ({cat.failurePct}%)
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
+                      {cat.success > 0 && (
+                        <div
+                          className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
+                          style={{ width: `${cat.successPct}%` }}
+                        >
+                          {cat.successPct >= 12 ? `${cat.successPct}%` : ''}
+                        </div>
+                      )}
+                      {cat.failure > 0 && (
+                        <div
+                          className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
+                          style={{ width: `${cat.failurePct}%` }}
+                        >
+                          {cat.failurePct >= 12 ? `${cat.failurePct}%` : ''}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {cat.failure > 0 && (
-                    <div
-                      className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
-                      style={{ width: `${cat.failurePct}%` }}
+                  </td>
+                </tr>
+                {isExpanded && (
+                  <tr>
+                    <td
+                      colSpan={COL_SPAN}
+                      className="border-b-2 border-gray-200 bg-gray-50/80 py-4 pl-10 pr-6"
                     >
-                      {cat.failurePct >= 12 ? `${cat.failurePct}%` : ''}
-                    </div>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
+                      <CategoryIssueBreakdown items={cat.issues} totalEvaluated={cat.total} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
