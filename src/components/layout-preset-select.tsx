@@ -12,9 +12,11 @@ export interface LayoutPresetOption {
 export function LayoutPresetSelect({
   value,
   onChange,
+  onResolvedOptionChange,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, option?: LayoutPresetOption | null) => void;
+  onResolvedOptionChange?: (option: LayoutPresetOption | null) => void;
 }) {
   const [options, setOptions] = useState<LayoutPresetOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,10 @@ export function LayoutPresetSelect({
     () => options.find((option) => option.id === value) ?? null,
     [options, value]
   );
+
+  useEffect(() => {
+    onResolvedOptionChange?.(selectedOption);
+  }, [onResolvedOptionChange, selectedOption]);
   const filteredOptions = useMemo(() => {
     const query = search.toLowerCase().trim();
     const base = !hasCurrentValue && value
@@ -131,7 +137,7 @@ export function LayoutPresetSelect({
               <button
                 type="button"
                 onClick={() => {
-                  onChange('');
+                  onChange('', null);
                   setOpen(false);
                   setSearch('');
                 }}
@@ -150,7 +156,7 @@ export function LayoutPresetSelect({
                     key={option.id}
                     type="button"
                     onClick={() => {
-                      onChange(option.id);
+                      onChange(option.id, option);
                       setOpen(false);
                       setSearch('');
                     }}
