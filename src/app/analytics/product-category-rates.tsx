@@ -44,6 +44,10 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   });
 }
 
+function cn(...parts: Array<string | undefined | false>) {
+  return parts.filter(Boolean).join(' ');
+}
+
 function formatCategoryName(name: string): string {
   return name
     .replace(/([A-Z])/g, ' $1')
@@ -65,44 +69,101 @@ function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' })
   );
 }
 
-function CategoryIssueBreakdown({
-  items,
-  totalEvaluated,
-}: {
-  items: CategoryIssueCount[];
-  totalEvaluated: number;
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm text-gray-500">
-        No flagged product accuracy issues in this category for the selected filters.
-      </p>
-    );
-  }
+function FlaggedIssueInlineBar({ count, failureCount }: { count: number; failureCount: number }) {
+  const pct = failureCount > 0 ? Math.min(100, (count / failureCount) * 100) : 0;
+  const pctRounded = Math.round(pct);
   return (
-    <div>
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">Flagged issues</p>
-      <ul className="space-y-1">
-        {items.map((item) => {
-          const pctVal = totalEvaluated > 0 ? Math.round((item.count / totalEvaluated) * 100) : 0;
-          return (
-            <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate text-gray-700" title={item.issue}>
-                {item.issue}
-              </span>
-              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                {item.count}
-                <span className="text-amber-600"> ({pctVal}%)</span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+    <div
+      className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-orange-100"
+      title={`${pctRounded}% of ${failureCount} failures`}
+    >
+      <div className="absolute inset-y-0 right-0 bg-orange-500" style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-const COL_SPAN = 6;
+const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
+  'w-10',     // Expand (chevron)
+  '',         // Product category
+  'w-[7rem]', // Evaluated
+  'w-[7rem]', // Success
+  'w-[7rem]', // Failure
+  'w-60',     // Rate
+] as const;
+const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
+
+const ISSUE_BREAKDOWN_TR = '!border-0';
+const ISSUE_ROW_PY = 'py-0.5';
+const ISSUE_ROW_LAST_PY = 'pt-0.5 pb-3';
+const ISSUE_ROW_LAST_TD = 'border-b border-gray-100';
+
+function CategoryIssueBreakdownRows({
+  items,
+  totalEvaluated,
+  failureCount,
+}: {
+  items: CategoryIssueCount[];
+  totalEvaluated: number;
+  failureCount: number;
+}) {
+  if (totalEvaluated === 0) {
+    return (
+      <tr className={ISSUE_BREAKDOWN_TR}>
+        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-sm text-gray-500">
+          No evaluations in this category for the selected filters.
+        </td>
+      </tr>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <tr className={ISSUE_BREAKDOWN_TR}>
+        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-xs text-gray-500">
+          No individual checklist flags recorded for failing evaluations.
+        </td>
+      </tr>
+    );
+  }
+
+  return items.map((item, index) => {
+    const pctOfFailures =
+      failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
+    const isLast = index === items.length - 1;
+    const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
+    return (
+      <tr key={item.issue} className={ISSUE_BREAKDOWN_TR}>
+        <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} />
+        <td
+          className={cn(
+            'min-w-0',
+            rowPy,
+            'pr-4 text-xs leading-tight text-gray-700',
+            isLast && ISSUE_ROW_LAST_TD,
+          )}
+          title={item.issue}
+        >
+          <span className="block truncate">{item.issue}</span>
+        </td>
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+        <td
+          className={cn(
+            'px-4',
+            rowPy,
+            'text-right text-xs leading-tight tabular-nums font-normal text-orange-600',
+            isLast && ISSUE_ROW_LAST_TD,
+          )}
+        >
+          {item.count} ({pctOfFailures}%)
+        </td>
+        <td className={cn('px-4', rowPy, 'align-middle', isLast && ISSUE_ROW_LAST_TD)}>
+          <FlaggedIssueInlineBar count={item.count} failureCount={failureCount} />
+        </td>
+      </tr>
+    );
+  });
+}
 
 export function ProductCategoryRates({
   from,
@@ -258,7 +319,12 @@ export function ProductCategoryRates({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
+      <table className="min-w-full table-fixed divide-y divide-gray-200">
+        <colgroup>
+          {PRODUCT_CATEGORY_TABLE_COL_CLASSES.map((colClass, i) => (
+            <col key={i} className={colClass || undefined} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             <th className="w-10 py-2 pr-0" aria-hidden />
@@ -279,12 +345,12 @@ export function ProductCategoryRates({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody>
           {sorted.map((cat) => {
             const isExpanded = expandedIds.has(cat.name);
             return (
               <Fragment key={cat.name}>
-                <tr className="hover:bg-gray-50/50">
+                <tr className="border-t border-gray-100 hover:bg-gray-50/50">
                   <td className="py-2 pr-0">
                     <button
                       type="button"
@@ -334,14 +400,11 @@ export function ProductCategoryRates({
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr>
-                    <td
-                      colSpan={COL_SPAN}
-                      className="border-b-2 border-gray-200 bg-gray-50/80 py-4 pl-10 pr-6"
-                    >
-                      <CategoryIssueBreakdown items={cat.issues} totalEvaluated={cat.total} />
-                    </td>
-                  </tr>
+                  <CategoryIssueBreakdownRows
+                    items={cat.issues}
+                    totalEvaluated={cat.total}
+                    failureCount={cat.failure}
+                  />
                 )}
               </Fragment>
             );
