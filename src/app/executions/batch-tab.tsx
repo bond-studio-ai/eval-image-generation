@@ -94,12 +94,13 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
-    const replace = opts.replace ?? true;
-    const pageToFetch = opts.pageToFetch ?? 1;
+  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
+    const mergeFirstPage = opts.mergeFirstPage === true;
+    const replace = mergeFirstPage ? false : (opts.replace ?? true);
+    const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
     const limit = BATCH_PAGE_SIZE;
-    if (replace) setFetchError(null);
-    else setLoadingMore(true);
+    if (replace && !mergeFirstPage) setFetchError(null);
+    else if (!replace && !mergeFirstPage) setLoadingMore(true);
     try {
       const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
       if (appliedFrom) params.set('from', appliedFrom);
@@ -109,13 +110,19 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
         setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
-        setHasMore(false);
+        if (!mergeFirstPage) setHasMore(false);
         return;
       }
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
       const normalized = raw.map((b) => normalizeBatch(b));
-      if (replace) {
+      if (mergeFirstPage) {
+        setBatches((prev) => {
+          const topIds = new Set(normalized.map((b) => b.id));
+          const tail = prev.filter((b) => !topIds.has(b.id));
+          return [...normalized, ...tail];
+        });
+      } else if (replace) {
         setBatches(normalized);
         setPage(1);
         setHasMore(raw.length > 0);
@@ -126,7 +133,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
-      setHasMore(false);
+      if (!mergeFirstPage) setHasMore(false);
     }
     finally {
       setLoading(false);
@@ -160,7 +167,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
     if (shouldPoll) {
-      intervalRef.current = setInterval(fetchBatches, POLL_INTERVAL);
+      intervalRef.current = setInterval(() => fetchBatches({ mergeFirstPage: true }), POLL_INTERVAL);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [shouldPoll, fetchBatches]);
