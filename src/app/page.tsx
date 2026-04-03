@@ -166,7 +166,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
             <p className="mt-1 text-sm text-gray-600">
               Success and failure rates for each product category based on evaluation data. Expand a row to see
-              evaluation issue breakdown; one eval can add to several issue counts.
+              checklist issue counts and freeform notes from failing evaluations; one eval can add to several issue
+              counts.
             </p>
             <div className="mt-4">
               <ProductCategoryRates from={from} to={to} model={model} source={source} />
