@@ -103,6 +103,19 @@ function FlaggedIssueInlineBar({ count, failureCount }: { count: number; failure
   );
 }
 
+function NoteInlineBar({ count, failureCount }: { count: number; failureCount: number }) {
+  const pct = failureCount > 0 ? Math.min(100, (count / failureCount) * 100) : 0;
+  const pctRounded = Math.round(pct);
+  return (
+    <div
+      className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-slate-200"
+      title={`${pctRounded}% of ${failureCount} failures`}
+    >
+      <div className="absolute inset-y-0 right-0 bg-slate-500" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
 const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
   'w-10',     // Expand (chevron)
   '',         // Product category
@@ -112,6 +125,7 @@ const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
   'w-60',     // Rate
 ] as const;
 const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
+const PRODUCT_CATEGORY_BODY_COLSPAN = PRODUCT_CATEGORY_TABLE_COL_COUNT - 1;
 
 const ISSUE_BREAKDOWN_TR = '!border-0';
 const ISSUE_ROW_PY = 'py-0.5';
@@ -130,7 +144,11 @@ function CategoryIssueBreakdownRows({
   if (totalEvaluated === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-sm text-gray-500">
+        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
+        <td
+          colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
+          className={cn('py-2 pr-6 text-sm text-gray-500', ISSUE_ROW_LAST_TD)}
+        >
           No evaluations in this category for the selected filters.
         </td>
       </tr>
@@ -140,7 +158,11 @@ function CategoryIssueBreakdownRows({
   if (items.length === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-xs text-gray-500">
+        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
+        <td
+          colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
+          className={cn('py-2 pr-6 text-xs text-gray-500', ISSUE_ROW_LAST_TD)}
+        >
           No individual checklist flags recorded for failing evaluations.
         </td>
       </tr>
@@ -184,6 +206,99 @@ function CategoryIssueBreakdownRows({
       </tr>
     );
   });
+}
+
+const NOTE_PREVIEW_CHARS = 72;
+
+function CategoryNoteBreakdownRows({
+  items,
+  failureCount,
+  notesTruncated,
+}: {
+  items: CategoryNoteCount[];
+  failureCount: number;
+  notesTruncated: boolean;
+}) {
+  if (failureCount <= 0 || items.length === 0) return null;
+
+  const notesTotalCount = items.reduce((sum, x) => sum + x.count, 0);
+
+  const headerRow = (
+    <tr className={ISSUE_BREAKDOWN_TR}>
+      <td className="border-t border-gray-100 pt-3 pb-1 pr-0" aria-hidden />
+      <td
+        colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
+        className="border-t border-gray-100 pt-3 pb-1 pr-6 text-xs font-medium uppercase tracking-wider text-gray-500"
+      >
+        Freeform notes ({notesTotalCount})
+      </td>
+    </tr>
+  );
+
+  return (
+    <>
+      {headerRow}
+      {items.map((item, index) => {
+        const pctOfFailures =
+          failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
+        const isLast = index === items.length - 1 && !notesTruncated;
+        const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
+        const preview =
+          item.text.length > NOTE_PREVIEW_CHARS
+            ? `${item.text.slice(0, NOTE_PREVIEW_CHARS)}…`
+            : item.text;
+        return (
+          <tr key={`note-${index}`} className={ISSUE_BREAKDOWN_TR}>
+            <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} />
+            <td
+              className={cn(
+                'min-w-0',
+                rowPy,
+                'pr-4 text-xs leading-tight text-slate-700',
+                isLast && ISSUE_ROW_LAST_TD,
+              )}
+              title={item.text}
+            >
+              <span className="block truncate">{preview}</span>
+            </td>
+            <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+            <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+            <td
+              className={cn(
+                'px-4',
+                rowPy,
+                'text-right text-xs leading-tight tabular-nums font-normal text-slate-600',
+                isLast && ISSUE_ROW_LAST_TD,
+              )}
+            >
+              {item.count} ({pctOfFailures}%)
+            </td>
+            <td className={cn('px-4', rowPy, 'align-middle', isLast && ISSUE_ROW_LAST_TD)}>
+              <NoteInlineBar count={item.count} failureCount={failureCount} />
+            </td>
+          </tr>
+        );
+      })}
+      {notesTruncated ? (
+        <tr className={ISSUE_BREAKDOWN_TR}>
+          <td
+            className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)}
+            aria-hidden
+          />
+          <td
+            colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
+            className={cn(
+              ISSUE_ROW_LAST_PY,
+              ISSUE_ROW_LAST_TD,
+              'border-t-0 pr-6 text-xs text-gray-500',
+            )}
+          >
+            … and several more.
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
 }
 
 export function ProductCategoryRates({
@@ -378,7 +493,7 @@ export function ProductCategoryRates({
                       onClick={() => toggleExpand(cat.name)}
                       className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
                       aria-expanded={isExpanded}
-                      aria-label={isExpanded ? 'Collapse issues' : 'Expand issues'}
+                      aria-label={isExpanded ? 'Collapse breakdown' : 'Expand breakdown'}
                     >
                       <svg
                         className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -421,11 +536,18 @@ export function ProductCategoryRates({
                   </td>
                 </tr>
                 {isExpanded && (
-                  <CategoryIssueBreakdownRows
-                    items={cat.issues}
-                    totalEvaluated={cat.total}
-                    failureCount={cat.failure}
-                  />
+                  <>
+                    <CategoryIssueBreakdownRows
+                      items={cat.issues}
+                      totalEvaluated={cat.total}
+                      failureCount={cat.failure}
+                    />
+                    <CategoryNoteBreakdownRows
+                      items={cat.notes}
+                      failureCount={cat.failure}
+                      notesTruncated={cat.notesTruncated}
+                    />
+                  </>
                 )}
               </Fragment>
             );
