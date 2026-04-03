@@ -76,7 +76,7 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
 export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [page, setPage] = useState(1);
-  const [lastPageSize, setLastPageSize] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -94,12 +94,10 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const hasMore = lastPageSize >= BATCH_PAGE_SIZE;
-
   const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
     const replace = opts.replace ?? true;
     const pageToFetch = opts.pageToFetch ?? 1;
-    const limit = replace && batches.length > 0 ? Math.max(BATCH_PAGE_SIZE, batches.length) : BATCH_PAGE_SIZE;
+    const limit = BATCH_PAGE_SIZE;
     if (replace) setFetchError(null);
     else setLoadingMore(true);
     try {
@@ -111,27 +109,30 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
         setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
+        setHasMore(false);
         return;
       }
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
       const normalized = raw.map((b) => normalizeBatch(b));
-      setLastPageSize(raw.length);
       if (replace) {
         setBatches(normalized);
         setPage(1);
+        setHasMore(raw.length > 0);
       } else {
         setBatches((prev) => [...prev, ...normalized]);
         setPage(pageToFetch);
+        setHasMore(raw.length > 0);
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
+      setHasMore(false);
     }
     finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [appliedFrom, appliedTo, batches.length]);
+  }, [appliedFrom, appliedTo]);
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
