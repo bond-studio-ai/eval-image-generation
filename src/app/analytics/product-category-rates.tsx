@@ -21,9 +21,10 @@ function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
   for (const x of raw) {
     if (!x || typeof x !== 'object') continue;
     const o = x as Record<string, unknown>;
-    if (typeof o.issue !== 'string' || typeof o.count !== 'number') continue;
-    if (!Number.isFinite(o.count)) continue;
-    out.push({ issue: o.issue, count: o.count });
+    if (typeof o.issue !== 'string') continue;
+    const count = Number(o.count);
+    if (!Number.isFinite(count)) continue;
+    out.push({ issue: o.issue, count });
   }
   return out;
 }
@@ -85,9 +86,9 @@ function FlaggedIssueInlineBar({ count, failureCount }: { count: number; failure
 const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
   'w-10',     // Expand (chevron)
   '',         // Product category
-  'w-[7rem]', // Evaluated
-  'w-[7rem]', // Success
-  'w-[7rem]', // Failure
+  'w-[11rem]', // Evaluated
+  'w-[11rem]', // Success
+  'w-[11rem]', // Failure
   'w-60',     // Rate
 ] as const;
 const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
