@@ -116,6 +116,13 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
       const normalized = raw.map((b) => normalizeBatch(b));
+      // Pagination — hasMore uses non-empty pages, not "full" pages (raw.length === limit).
+      // The strategy-batch-runs backend often returns fewer than `limit` rows for a given page
+      // even when later pages still have data, so page fullness is not a reliable indicator of
+      // "more results exist". Using raw.length > 0 keeps loading until a page returns zero
+      // rows; that trades one possible extra empty request on the true last page for correct
+      // behavior when the API under-fills pages. A proper fix would be server-side pagination
+      // metadata (e.g. total / hasNext) on the list response.
       if (mergeFirstPage) {
         setBatches((prev) => {
           const topIds = new Set(normalized.map((b) => b.id));
