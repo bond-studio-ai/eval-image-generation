@@ -5,6 +5,8 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 
 type CategoryIssueCount = { issue: string; count: number };
 
+type CategoryNoteCount = { text: string; count: number };
+
 type CategoryRate = {
   name: string;
   total: number;
@@ -13,6 +15,8 @@ type CategoryRate = {
   successPct: number;
   failurePct: number;
   issues: CategoryIssueCount[];
+  notes: CategoryNoteCount[];
+  notesTruncated: boolean; // True when the API omitted some note buckets (e.g. cap exceeded)
 };
 
 function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
@@ -29,6 +33,20 @@ function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
   return out;
 }
 
+function normalizeNoteItems(raw: unknown): CategoryNoteCount[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CategoryNoteCount[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    if (typeof o.text !== 'string') continue;
+    const count = Number(o.count);
+    if (!Number.isFinite(count)) continue;
+    out.push({ text: o.text, count });
+  }
+  return out;
+}
+
 function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((c) => {
@@ -41,6 +59,8 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
       successPct: Number(row.successPct) || 0,
       failurePct: Number(row.failurePct) || 0,
       issues: normalizeIssueItems(row.issues),
+      notes: normalizeNoteItems(row.notes),
+      notesTruncated: row.notesTruncated === true,
     };
   });
 }
