@@ -1,7 +1,9 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+
+type CategoryIssueCount = { issue: string; count: number };
 
 type CategoryRate = {
   name: string;
@@ -10,7 +12,42 @@ type CategoryRate = {
   failure: number;
   successPct: number;
   failurePct: number;
+  issues: CategoryIssueCount[];
 };
+
+function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CategoryIssueCount[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    if (typeof o.issue !== 'string') continue;
+    const count = Number(o.count);
+    if (!Number.isFinite(count)) continue;
+    out.push({ issue: o.issue, count });
+  }
+  return out;
+}
+
+function normalizeCategoryRows(raw: unknown): CategoryRate[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((c) => {
+    const row = c as Record<string, unknown>;
+    return {
+      name: typeof row.name === 'string' ? row.name : String(row.name ?? ''),
+      total: Number(row.total) || 0,
+      success: Number(row.success) || 0,
+      failure: Number(row.failure) || 0,
+      successPct: Number(row.successPct) || 0,
+      failurePct: Number(row.failurePct) || 0,
+      issues: normalizeIssueItems(row.issues),
+    };
+  });
+}
+
+function cn(...parts: Array<string | undefined | false>) {
+  return parts.filter(Boolean).join(' ');
+}
 
 function formatCategoryName(name: string): string {
   return name
@@ -31,6 +68,102 @@ function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' })
       ) : null}
     </svg>
   );
+}
+
+function FlaggedIssueInlineBar({ count, failureCount }: { count: number; failureCount: number }) {
+  const pct = failureCount > 0 ? Math.min(100, (count / failureCount) * 100) : 0;
+  const pctRounded = Math.round(pct);
+  return (
+    <div
+      className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-orange-100"
+      title={`${pctRounded}% of ${failureCount} failures`}
+    >
+      <div className="absolute inset-y-0 right-0 bg-orange-500" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
+  'w-10',     // Expand (chevron)
+  '',         // Product category
+  'w-[11rem]', // Evaluated
+  'w-[11rem]', // Success
+  'w-[11rem]', // Failure
+  'w-60',     // Rate
+] as const;
+const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
+
+const ISSUE_BREAKDOWN_TR = '!border-0';
+const ISSUE_ROW_PY = 'py-0.5';
+const ISSUE_ROW_LAST_PY = 'pt-0.5 pb-3';
+const ISSUE_ROW_LAST_TD = 'border-b border-gray-100';
+
+function CategoryIssueBreakdownRows({
+  items,
+  totalEvaluated,
+  failureCount,
+}: {
+  items: CategoryIssueCount[];
+  totalEvaluated: number;
+  failureCount: number;
+}) {
+  if (totalEvaluated === 0) {
+    return (
+      <tr className={ISSUE_BREAKDOWN_TR}>
+        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-sm text-gray-500">
+          No evaluations in this category for the selected filters.
+        </td>
+      </tr>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <tr className={ISSUE_BREAKDOWN_TR}>
+        <td colSpan={PRODUCT_CATEGORY_TABLE_COL_COUNT} className="py-2 pl-10 pr-6 text-xs text-gray-500">
+          No individual checklist flags recorded for failing evaluations.
+        </td>
+      </tr>
+    );
+  }
+
+  return items.map((item, index) => {
+    const pctOfFailures =
+      failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
+    const isLast = index === items.length - 1;
+    const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
+    return (
+      <tr key={item.issue} className={ISSUE_BREAKDOWN_TR}>
+        <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} />
+        <td
+          className={cn(
+            'min-w-0',
+            rowPy,
+            'pr-4 text-xs leading-tight text-gray-700',
+            isLast && ISSUE_ROW_LAST_TD,
+          )}
+          title={item.issue}
+        >
+          <span className="block truncate">{item.issue}</span>
+        </td>
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+        <td
+          className={cn(
+            'px-4',
+            rowPy,
+            'text-right text-xs leading-tight tabular-nums font-normal text-orange-600',
+            isLast && ISSUE_ROW_LAST_TD,
+          )}
+        >
+          {item.count} ({pctOfFailures}%)
+        </td>
+        <td className={cn('px-4', rowPy, 'align-middle', isLast && ISSUE_ROW_LAST_TD)}>
+          <FlaggedIssueInlineBar count={item.count} failureCount={failureCount} />
+        </td>
+      </tr>
+    );
+  });
 }
 
 export function ProductCategoryRates({
@@ -55,6 +188,7 @@ export function ProductCategoryRates({
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<ProdSortKey>('total');
   const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleSort = useCallback((key: ProdSortKey) => {
     setSortKey((prev) => {
@@ -64,6 +198,15 @@ export function ProductCategoryRates({
       }
       setSortDir(key === 'name' ? 'asc' : 'desc');
       return key;
+    });
+  }, []);
+
+  const toggleExpand = useCallback((categoryKey: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryKey)) next.delete(categoryKey);
+      else next.add(categoryKey);
+      return next;
     });
   }, []);
 
@@ -81,7 +224,10 @@ export function ProductCategoryRates({
         const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
-        if (!cancelled) setCategories(json.data?.categories ?? []);
+        if (!cancelled) {
+          setCategories(normalizeCategoryRows(json.data?.categories));
+          setExpandedIds(new Set());
+        }
       } catch { /* ignore */ }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -174,9 +320,15 @@ export function ProductCategoryRates({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
+      <table className="min-w-full table-fixed divide-y divide-gray-200">
+        <colgroup>
+          {PRODUCT_CATEGORY_TABLE_COL_CLASSES.map((colClass, i) => (
+            <col key={i} className={colClass || undefined} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
+            <th className="w-10 py-2 pr-0" aria-hidden />
             <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
               Product Category<ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
             </th>
@@ -194,41 +346,70 @@ export function ProductCategoryRates({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
-          {sorted.map((cat) => (
-            <tr key={cat.name} className="hover:bg-gray-50/50">
-              <td className="py-2 pr-4 text-sm font-medium text-gray-900">
-                {formatCategoryName(cat.name)}
-              </td>
-              <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
-              <td className="px-4 py-2 text-right text-sm text-green-600">
-                {cat.success} ({cat.successPct}%)
-              </td>
-              <td className="px-4 py-2 text-right text-sm text-orange-600">
-                {cat.failure} ({cat.failurePct}%)
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
-                  {cat.success > 0 && (
-                    <div
-                      className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
-                      style={{ width: `${cat.successPct}%` }}
+        <tbody>
+          {sorted.map((cat) => {
+            const isExpanded = expandedIds.has(cat.name);
+            return (
+              <Fragment key={cat.name}>
+                <tr className="border-t border-gray-100 hover:bg-gray-50/50">
+                  <td className="py-2 pr-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(cat.name)}
+                      className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? 'Collapse issues' : 'Expand issues'}
                     >
-                      {cat.successPct >= 12 ? `${cat.successPct}%` : ''}
+                      <svg
+                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </button>
+                  </td>
+                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">{formatCategoryName(cat.name)}</td>
+                  <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
+                  <td className="px-4 py-2 text-right text-sm text-green-600">
+                    {cat.success} ({cat.successPct}%)
+                  </td>
+                  <td className="px-4 py-2 text-right text-sm text-orange-600">
+                    {cat.failure} ({cat.failurePct}%)
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
+                      {cat.success > 0 && (
+                        <div
+                          className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
+                          style={{ width: `${cat.successPct}%` }}
+                        >
+                          {cat.successPct >= 12 ? `${cat.successPct}%` : ''}
+                        </div>
+                      )}
+                      {cat.failure > 0 && (
+                        <div
+                          className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
+                          style={{ width: `${cat.failurePct}%` }}
+                        >
+                          {cat.failurePct >= 12 ? `${cat.failurePct}%` : ''}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {cat.failure > 0 && (
-                    <div
-                      className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
-                      style={{ width: `${cat.failurePct}%` }}
-                    >
-                      {cat.failurePct >= 12 ? `${cat.failurePct}%` : ''}
-                    </div>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
+                  </td>
+                </tr>
+                {isExpanded && (
+                  <CategoryIssueBreakdownRows
+                    items={cat.issues}
+                    totalEvaluated={cat.total}
+                    failureCount={cat.failure}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
