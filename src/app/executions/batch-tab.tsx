@@ -124,6 +124,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
       // behavior when the API under-fills pages. A proper fix would be server-side pagination
       // metadata (e.g. total / hasNext) on the list response.
       if (mergeFirstPage) {
+        setFetchError(null);
         setBatches((prev) => {
           const topIds = new Set(normalized.map((b) => b.id));
           const tail = prev.filter((b) => !topIds.has(b.id));
