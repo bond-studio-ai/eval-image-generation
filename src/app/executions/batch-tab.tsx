@@ -127,6 +127,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
           const tail = prev.filter((b) => !topIds.has(b.id));
           return [...normalized, ...tail];
         });
+        setHasMore(raw.length > 0);
       } else if (replace) {
         // Pagination — hasMore uses non-empty pages, not "full" pages (raw.length === limit).
         // The strategy-batch-runs backend often returns fewer than `limit` rows for a given page
