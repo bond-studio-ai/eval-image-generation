@@ -151,15 +151,15 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         setHasMore(raw.length > 0);
         lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
       } else {
-        let appendedNew = 0;
+        // hasMore from non-empty page only (like replace). Do not require new ids: after a
+        // poll merge, the next page can overlap entirely with the list while deeper pages exist.
         setBatches((prev) => {
           const existingIds = new Set(prev.map((b) => b.id));
           const added = normalized.filter((b) => !existingIds.has(b.id));
-          appendedNew = added.length;
           return [...prev, ...added];
         });
         setPage(pageToFetch);
-        setHasMore(raw.length > 0 && appendedNew > 0);
+        setHasMore(raw.length > 0);
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
