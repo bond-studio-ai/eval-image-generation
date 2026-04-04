@@ -93,6 +93,8 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  /** Prior page-1 id set; merge drops head rows missing from the refreshed first page. */
+  const lastFetchedFirstPageIdsRef = useRef<Set<string>>(new Set());
 
   const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
     const mergeFirstPage = opts.mergeFirstPage === true;
@@ -124,14 +126,20 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         // multiplies requests by the number of pages the user has scrolled into.
         // We do not reset `page` here (would thrash during polling); the append path dedupes by
         // batch id so loadMore after top-of-list insertions does not duplicate tail rows.
+        const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
+        const topIds = new Set(normalized.map((b) => b.id));
         let mergeIncludesNewBatchId = false;
         setBatches((prev) => {
           const prevIds = new Set(prev.map((b) => b.id));
           mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
-          const topIds = new Set(normalized.map((b) => b.id));
-          const tail = prev.filter((b) => !topIds.has(b.id));
+          const tail = prev.filter((b) => {
+            if (topIds.has(b.id)) return false;
+            if (priorFirstPageIds.has(b.id)) return false;
+            return true;
+          });
           return [...normalized, ...tail];
         });
+        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
         setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
       } else if (replace) {
         // Initial fetch: keep paging while the page is non-empty. The batch-runs list often
@@ -141,6 +149,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         setBatches(normalized);
         setPage(1);
         setHasMore(raw.length > 0);
+        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
       } else {
         let appendedNew = 0;
         setBatches((prev) => {
