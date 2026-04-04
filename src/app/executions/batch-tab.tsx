@@ -122,6 +122,8 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         // Known gap: tail batch status can stay stale (and shouldPoll may stay true) until a
         // full replace or refetch. Refreshing all loaded pages each interval would fix it but
         // multiplies requests by the number of pages the user has scrolled into.
+        // We do not reset `page` here (would thrash during polling); the append path dedupes by
+        // batch id so loadMore after top-of-list insertions does not duplicate tail rows.
         setBatches((prev) => {
           const topIds = new Set(normalized.map((b) => b.id));
           const tail = prev.filter((b) => !topIds.has(b.id));
@@ -140,9 +142,15 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         setPage(1);
         setHasMore(raw.length > 0);
       } else {
-        setBatches((prev) => [...prev, ...normalized]);
+        let appendedNew = 0;
+        setBatches((prev) => {
+          const existingIds = new Set(prev.map((b) => b.id));
+          const added = normalized.filter((b) => !existingIds.has(b.id));
+          appendedNew = added.length;
+          return [...prev, ...added];
+        });
         setPage(pageToFetch);
-        setHasMore(raw.length > 0);
+        setHasMore(raw.length > 0 && appendedNew > 0);
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
