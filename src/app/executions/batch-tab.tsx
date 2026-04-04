@@ -93,7 +93,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  /** Prior page-1 id set; merge drops head rows missing from the refreshed first page. */
+  /** Prior page-1 id set; merge uses it to prune likely deletes when the refreshed page 1 has no new batch ids. */
   const lastFetchedFirstPageIdsRef = useRef<Set<string>>(new Set());
 
   const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
@@ -134,7 +134,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
           mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
           const tail = prev.filter((b) => {
             if (topIds.has(b.id)) return false;
-            if (priorFirstPageIds.has(b.id)) return false;
+            if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
             return true;
           });
           return [...normalized, ...tail];
