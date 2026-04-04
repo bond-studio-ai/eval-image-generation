@@ -124,20 +124,20 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         // multiplies requests by the number of pages the user has scrolled into.
         // We do not reset `page` here (would thrash during polling); the append path dedupes by
         // batch id so loadMore after top-of-list insertions does not duplicate tail rows.
+        let mergeIncludesNewBatchId = false;
         setBatches((prev) => {
+          const prevIds = new Set(prev.map((b) => b.id));
+          mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
           const topIds = new Set(normalized.map((b) => b.id));
           const tail = prev.filter((b) => !topIds.has(b.id));
           return [...normalized, ...tail];
         });
-        setHasMore(raw.length > 0);
+        setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
       } else if (replace) {
-        // Pagination — hasMore uses non-empty pages, not "full" pages (raw.length === limit).
-        // The strategy-batch-runs backend often returns fewer than `limit` rows for a given page
-        // even when later pages still have data, so page fullness is not a reliable indicator of
-        // "more results exist". Using raw.length > 0 keeps loading until a page returns zero
-        // rows; that trades one possible extra empty request on the true last page for correct
-        // behavior when the API under-fills pages. A proper fix would be server-side pagination
-        // metadata (e.g. total / hasNext) on the list response.
+        // Initial fetch: keep paging while the page is non-empty. The batch-runs list often
+        // returns fewer than `limit` rows even when more pages exist, so we cannot treat a
+        // short page as the end. We may send one extra request that returns an empty page.
+        // Prefer explicit hasNext/total from the API when available.
         setBatches(normalized);
         setPage(1);
         setHasMore(raw.length > 0);
