@@ -76,7 +76,7 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
 export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [page, setPage] = useState(1);
-  const [lastPageSize, setLastPageSize] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -93,15 +93,16 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  /** Prior page-1 id set; merge uses it to prune likely deletes when the refreshed page 1 has no new batch ids. */
+  const lastFetchedFirstPageIdsRef = useRef<Set<string>>(new Set());
 
-  const hasMore = lastPageSize >= BATCH_PAGE_SIZE;
-
-  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
-    const replace = opts.replace ?? true;
-    const pageToFetch = opts.pageToFetch ?? 1;
-    const limit = replace && batches.length > 0 ? Math.max(BATCH_PAGE_SIZE, batches.length) : BATCH_PAGE_SIZE;
-    if (replace) setFetchError(null);
-    else setLoadingMore(true);
+  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
+    const mergeFirstPage = opts.mergeFirstPage === true;
+    const replace = mergeFirstPage ? false : (opts.replace ?? true);
+    const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
+    const limit = BATCH_PAGE_SIZE;
+    if (replace && !mergeFirstPage) setFetchError(null);
+    else if (!replace && !mergeFirstPage) setLoadingMore(true);
     try {
       const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
       if (appliedFrom) params.set('from', appliedFrom);
@@ -111,27 +112,64 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
         setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
+        if (!mergeFirstPage) setHasMore(false);
         return;
       }
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
       const normalized = raw.map((b) => normalizeBatch(b));
-      setLastPageSize(raw.length);
-      if (replace) {
+      if (mergeFirstPage) {
+        setFetchError(null);
+        // Poll merge only refreshes page 1; rows already loaded from page 2+ are reused as-is.
+        // Known gap: tail batch status can stay stale (and shouldPoll may stay true) until a
+        // full replace or refetch. Refreshing all loaded pages each interval would fix it but
+        // multiplies requests by the number of pages the user has scrolled into.
+        // We do not reset `page` here (would thrash during polling); the append path dedupes by
+        // batch id so loadMore after top-of-list insertions does not duplicate tail rows.
+        const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
+        const topIds = new Set(normalized.map((b) => b.id));
+        let mergeIncludesNewBatchId = false;
+        setBatches((prev) => {
+          const prevIds = new Set(prev.map((b) => b.id));
+          mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
+          const tail = prev.filter((b) => {
+            if (topIds.has(b.id)) return false;
+            if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
+            return true;
+          });
+          return [...normalized, ...tail];
+        });
+        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
+        setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
+      } else if (replace) {
+        // Initial fetch: keep paging while the page is non-empty. The batch-runs list often
+        // returns fewer than `limit` rows even when more pages exist, so we cannot treat a
+        // short page as the end. We may send one extra request that returns an empty page.
+        // Prefer explicit hasNext/total from the API when available.
         setBatches(normalized);
         setPage(1);
+        setHasMore(raw.length > 0);
+        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
       } else {
-        setBatches((prev) => [...prev, ...normalized]);
+        // hasMore from non-empty page only (like replace). Do not require new ids: after a
+        // poll merge, the next page can overlap entirely with the list while deeper pages exist.
+        setBatches((prev) => {
+          const existingIds = new Set(prev.map((b) => b.id));
+          const added = normalized.filter((b) => !existingIds.has(b.id));
+          return [...prev, ...added];
+        });
         setPage(pageToFetch);
+        setHasMore(raw.length > 0);
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
+      if (!mergeFirstPage) setHasMore(false);
     }
     finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [appliedFrom, appliedTo, batches.length]);
+  }, [appliedFrom, appliedTo]);
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -159,7 +197,7 @@ export function BatchRunsTab({ refreshKey }: { refreshKey?: number }) {
   const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
     if (shouldPoll) {
-      intervalRef.current = setInterval(fetchBatches, POLL_INTERVAL);
+      intervalRef.current = setInterval(() => fetchBatches({ mergeFirstPage: true }), POLL_INTERVAL);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [shouldPoll, fetchBatches]);
