@@ -2,6 +2,7 @@
 
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -24,6 +25,8 @@ const BENCHMARK_PROJECT_IDS = [
 ] as const;
 
 export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => void }) {
+  const searchParams = useSearchParams();
+  const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
   const [strategies, setStrategies] = useState<StrategyItem[]>([]);
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,14 +170,14 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
       setCustomImages(false);
       setStrategySearch('');
       setPresetSearch('');
-      setBenchmarkMode(false);
+      setBenchmarkMode(source === 'benchmark');
       onRunCreated?.();
     } catch {
       setError('Network error');
     } finally {
       setSubmitting(false);
     }
-  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated]);
+  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated, source]);
 
   const totalRuns = benchmarkMode
     ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length
@@ -190,6 +193,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
           setSelectedStrategyIds([]);
           setSelectedPresetIds([]);
           setSelectedBenchmarkProjectIds([]);
+          setBenchmarkMode(source === 'benchmark');
         }}
         className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
       >
