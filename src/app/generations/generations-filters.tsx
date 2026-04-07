@@ -40,7 +40,8 @@ export function GenerationsFilters({
     params.unrated ||
     params.prompt_version_id ||
     params.from ||
-    params.to;
+    params.to ||
+    params.source === 'benchmark';
 
   return (
     <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
@@ -138,7 +139,7 @@ export function GenerationsFilters({
       {hasAny && (
         <div className="mt-3 border-t border-gray-100 pt-3">
           <Link
-            href="/executions?tab=generations"
+            href={buildGenerationsQuery({ source: params.source })}
             className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

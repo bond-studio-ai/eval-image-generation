@@ -15,6 +15,14 @@ interface PresetItem {
   name: string | null;
 }
 
+const BENCHMARK_PROJECT_IDS = [
+  'PRJ-P4YAGU7XW',
+  'PRJ-QU6S58FHG',
+  'PRJ-FARVFVS4A',
+  'PRJ-T3HTSH5ME',
+  'PRJ-E78TJ8WXM',
+] as const;
+
 export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => void }) {
   const [strategies, setStrategies] = useState<StrategyItem[]>([]);
   const [presets, setPresets] = useState<PresetItem[]>([]);
@@ -22,10 +30,12 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [showModal, setShowModal] = useState(false);
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
+  const [selectedBenchmarkProjectIds, setSelectedBenchmarkProjectIds] = useState<string[]>([]);
   const [numberOfImages, setNumberOfImages] = useState(2);
   const [customImages, setCustomImages] = useState(false);
   const [strategySearch, setStrategySearch] = useState('');
   const [presetSearch, setPresetSearch] = useState('');
+  const [benchmarkMode, setBenchmarkMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +50,12 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     if (!q) return presets;
     return presets.filter((p) => (p.name ?? '').toLowerCase().includes(q));
   }, [presets, presetSearch]);
+
+  const filteredBenchmarkProjects = useMemo(() => {
+    const q = presetSearch.toLowerCase().trim();
+    if (!q) return [...BENCHMARK_PROJECT_IDS];
+    return BENCHMARK_PROJECT_IDS.filter((projectId) => projectId.toLowerCase().includes(q));
+  }, [presetSearch]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -73,37 +89,62 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     );
   }, []);
 
+  const toggleBenchmarkProject = useCallback((id: string) => {
+    setSelectedBenchmarkProjectIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
+
   const handleRun = useCallback(async () => {
-    if (selectedStrategyIds.length === 0 || selectedPresetIds.length === 0) return;
+    if (selectedStrategyIds.length === 0) return;
     setSubmitting(true);
     setError(null);
     const count = Math.max(1, Math.min(100, numberOfImages));
     const groupId = crypto.randomUUID();
 
     try {
-      const requests = await fetchPresetRunRequests(selectedPresetIds, {
-        batch: true,
-        number_of_images: count,
-        group_id: groupId,
-      });
-      const results = await Promise.allSettled(
-        selectedStrategyIds.flatMap((strategyId) =>
-          requests.map(async (requestBody) => {
-          const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            throw new Error(
-              (data as { error?: { message?: string } }).error?.message || 'Failed to start run',
+      const results = benchmarkMode
+        ? await Promise.allSettled(
+            selectedStrategyIds.map(async (strategyId) => {
+              const res = await fetch(serviceUrl(`strategies/${strategyId}/benchmarks`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectIds: selectedBenchmarkProjectIds }),
+              });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                throw new Error(
+                  (data as { error?: { message?: string } }).error?.message || 'Failed to start benchmark',
+                );
+              }
+              return data;
+            }),
+          )
+        : await (async () => {
+            const requests = await fetchPresetRunRequests(selectedPresetIds, {
+              batch: true,
+              number_of_images: count,
+              group_id: groupId,
+            });
+            return Promise.allSettled(
+              selectedStrategyIds.flatMap((strategyId) =>
+                requests.map(async (requestBody) => {
+                  const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    throw new Error(
+                      (data as { error?: { message?: string } }).error?.message || 'Failed to start run',
+                    );
+                  }
+                  return data;
+                }),
+              ),
             );
-          }
-          return data;
-          }),
-        ),
-      );
+          })();
       const failures = results.filter(
         (result): result is PromiseRejectedResult => result.status === 'rejected',
       );
@@ -121,19 +162,23 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
       setShowModal(false);
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
+      setSelectedBenchmarkProjectIds([]);
       setNumberOfImages(2);
       setCustomImages(false);
       setStrategySearch('');
       setPresetSearch('');
+      setBenchmarkMode(false);
       onRunCreated?.();
     } catch {
       setError('Network error');
     } finally {
       setSubmitting(false);
     }
-  }, [selectedStrategyIds, selectedPresetIds, numberOfImages, onRunCreated]);
+  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated]);
 
-  const totalRuns = selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
+  const totalRuns = benchmarkMode
+    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length
+    : selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
 
   return (
     <>
@@ -144,6 +189,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
           setError(null);
           setSelectedStrategyIds([]);
           setSelectedPresetIds([]);
+          setSelectedBenchmarkProjectIds([]);
         }}
         className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
       >
@@ -170,8 +216,23 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               <div className="shrink-0 border-b border-gray-200 px-5 py-4">
                 <h3 className="text-lg font-semibold text-gray-900">New Run</h3>
                 <p className="mt-1 text-sm text-gray-600">
-                  Select strategies and input presets. This creates one batch: strategies × presets × images to generate.
+                  {benchmarkMode
+                    ? 'Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies.'
+                    : 'Select strategies and input presets. This creates one batch: strategies × presets × images to generate.'}
                 </p>
+                <label className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={benchmarkMode}
+                    onChange={(e) => {
+                      setBenchmarkMode(e.target.checked);
+                      setSelectedPresetIds([]);
+                      setSelectedBenchmarkProjectIds([]);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  Use benchmark projects
+                </label>
               </div>
 
               {loading ? (
@@ -251,20 +312,20 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                     </div>
                   </div>
 
-                  {/* Input presets */}
+                  {/* Input presets / benchmark projects */}
                   <div className="flex min-h-0 flex-col">
                     <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-                          Input presets
-                          {selectedPresetIds.length > 0 && (
+                          {benchmarkMode ? 'Benchmark projects' : 'Input presets'}
+                          {(benchmarkMode ? selectedBenchmarkProjectIds.length : selectedPresetIds.length) > 0 && (
                             <span className="ml-1.5 inline-flex items-center rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700">
-                              {selectedPresetIds.length}
+                              {benchmarkMode ? selectedBenchmarkProjectIds.length : selectedPresetIds.length}
                             </span>
                           )}
                         </p>
-                        {selectedPresetIds.length > 0 && (
-                          <button type="button" onClick={() => setSelectedPresetIds([])} className="text-[10px] font-medium text-gray-400 hover:text-gray-600">
+                        {(benchmarkMode ? selectedBenchmarkProjectIds.length : selectedPresetIds.length) > 0 && (
+                          <button type="button" onClick={() => benchmarkMode ? setSelectedBenchmarkProjectIds([]) : setSelectedPresetIds([])} className="text-[10px] font-medium text-gray-400 hover:text-gray-600">
                             Clear
                           </button>
                         )}
@@ -277,25 +338,27 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                           type="text"
                           value={presetSearch}
                           onChange={(e) => setPresetSearch(e.target.value)}
-                          placeholder="Search presets…"
+                          placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
                           className="w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none"
                         />
                       </div>
                     </div>
                     <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                      {filteredPresets.length === 0 ? (
+                      {(benchmarkMode ? filteredBenchmarkProjects.length : filteredPresets.length) === 0 ? (
                         <p className="py-4 text-center text-xs text-gray-400">
-                          {presets.length === 0 ? 'No presets available' : 'No matches'}
+                          {benchmarkMode ? 'No matches' : presets.length === 0 ? 'No presets available' : 'No matches'}
                         </p>
                       ) : (
                         <div className="space-y-1">
-                          {filteredPresets.map((p) => {
-                            const selected = selectedPresetIds.includes(p.id);
+                          {(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map((entry) => {
+                            const id = typeof entry === 'string' ? entry : entry.id;
+                            const label = typeof entry === 'string' ? entry : entry.name || 'Untitled';
+                            const selected = benchmarkMode ? selectedBenchmarkProjectIds.includes(id) : selectedPresetIds.includes(id);
                             return (
                               <button
-                                key={p.id}
+                                key={id}
                                 type="button"
-                                onClick={() => togglePreset(p.id)}
+                                onClick={() => benchmarkMode ? toggleBenchmarkProject(id) : togglePreset(id)}
                                 className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
                                   selected
                                     ? 'border-primary-400 bg-primary-50 shadow-sm'
@@ -313,7 +376,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                                     </svg>
                                   )}
                                 </span>
-                                <span className="truncate font-medium text-gray-900">{p.name || 'Untitled'}</span>
+                                <span className="truncate font-medium text-gray-900">{label}</span>
                               </button>
                             );
                           })}
@@ -325,9 +388,10 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               )}
 
               <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Images per combination</span>
-                  <div className="inline-flex items-center gap-1.5">
+                {!benchmarkMode && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700">Images per combination</span>
+                    <div className="inline-flex items-center gap-1.5">
                     {[1, 2, 4, 8].map((n) => (
                       <button
                         key={n}
@@ -388,10 +452,19 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                         </button>
                       </div>
                     )}
+                    </div>
                   </div>
-                </div>
+                )}
                 <p className="mt-2 text-xs text-gray-500">
-                  {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total run{totalRuns === 1 ? '' : 's'}</span>
+                  {benchmarkMode ? (
+                    <>
+                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalRuns} total benchmark run{totalRuns === 1 ? '' : 's'}</span>
+                    </>
+                  ) : (
+                    <>
+                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total run{totalRuns === 1 ? '' : 's'}</span>
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -408,7 +481,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 <button
                   type="button"
                   onClick={handleRun}
-                  disabled={submitting || selectedStrategyIds.length === 0 || selectedPresetIds.length === 0}
+                  disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)}
                   className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
@@ -420,7 +493,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                       Starting…
                     </>
                   ) : (
-                    'Run (1 batch)'
+                    benchmarkMode ? 'Run benchmarks' : 'Run (1 batch)'
                   )}
                 </button>
               </div>
