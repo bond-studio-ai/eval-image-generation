@@ -26,6 +26,7 @@ interface PageProps {
     model?: string | string[];
     source?: string | string[];
     compare?: string | string[];
+    compareColumn?: string | string[];
     compareRange?: string | string[];
     compareStrategy?: string | string[];
     compareSource?: string | string[];
@@ -87,6 +88,8 @@ function TabNav({
     if (model) params.set('model', model);
     if (source && source !== 'all') params.set('source', source);
     for (const value of getParamValues(searchParams, 'compare')) params.append('compare', value);
+    for (const value of getParamValues(searchParams, 'compareColumn'))
+      params.append('compareColumn', value);
     for (const value of getParamValues(searchParams, 'compareRange'))
       params.append('compareRange', value);
     for (const value of getParamValues(searchParams, 'compareStrategy'))
@@ -141,18 +144,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   if (model) ratingParams.model = model;
   if (source && source !== 'all') ratingParams.source = source;
 
-  const [sceneRatings, productRatings, perfData, strategies] = await Promise.all([
-    fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
-    fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
+  const [perfData, strategies, sceneRatings, productRatings] = await Promise.all([
     fetchAnalyticsStrategyPerformance(ratingParams),
     fetchStrategies(100),
+    comparison.enabled ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
+    comparison.enabled ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
   ]);
 
-  const sceneDist = sceneRatings.distribution;
-  const productDist = productRatings.distribution;
+  const sceneDist = sceneRatings?.distribution ?? [];
+  const productDist = productRatings?.distribution ?? [];
   const overview = {
-    totalGenerations: sceneRatings.totalGenerations,
-    ratedGenerations: sceneRatings.ratedGenerations,
+    totalGenerations: sceneRatings?.totalGenerations ?? 0,
+    ratedGenerations: sceneRatings?.ratedGenerations ?? 0,
   };
   const models = perfData.models;
   const comparisonSlices = buildComparisonSlices(comparison, strategies);
@@ -166,7 +169,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           : 'Insights into generation quality and strategy performance.'}
       </p>
       <AnalyticsFilters models={models} strategies={strategies} />
-      <TabNav active={activeTab} searchParams={params} />
+      {!comparison.enabled && <TabNav active={activeTab} searchParams={params} />}
 
       {!comparison.enabled && (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -187,27 +190,25 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {activeTab === 'strategies' && (
+      {comparison.enabled ? (
         <>
-          {comparison.enabled ? (
-            <StrategyComparisonMatrix slices={comparisonSlices} model={model} />
-          ) : (
-            <>
-              <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <StrategyComparisonMatrix slices={comparisonSlices} model={model} />
+          <ProductCategoryComparisonMatrix slices={comparisonSlices} model={model} />
+        </>
+      ) : (
+        <>
+          {activeTab === 'strategies' && (
+            <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <DistributionChart data={sceneDist} title="Scene Accuracy" />
                 <DistributionChart data={productDist} title="Product Accuracy" />
               </div>
-              <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
-            </>
+            </div>
           )}
-        </>
-      )}
-
-      {activeTab === 'products' && (
-        <>
-          {comparison.enabled ? (
-            <ProductCategoryComparisonMatrix slices={comparisonSlices} model={model} />
-          ) : (
+          {activeTab === 'strategies' && (
+            <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
+          )}
+          {activeTab === 'products' && (
             <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
               <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
               <p className="mt-1 text-sm text-gray-600">
@@ -220,11 +221,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               </div>
             </div>
           )}
+          {activeTab === 'reliability' && (
+            <ReliabilityTab from={from} to={to} model={model} source={source} />
+          )}
         </>
-      )}
-
-      {activeTab === 'reliability' && (
-        <ReliabilityTab from={from} to={to} model={model} source={source} />
       )}
     </div>
   );

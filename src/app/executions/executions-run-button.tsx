@@ -106,9 +106,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     setError(null);
     const count = Math.max(1, Math.min(100, numberOfImages));
     const groupId = crypto.randomUUID();
-    const benchmarkGroupIds = new Map(
-      selectedBenchmarkProjectIds.map((projectId) => [projectId, crypto.randomUUID()]),
-    );
 
     try {
       const results = benchmarkMode
@@ -121,7 +118,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                   body: JSON.stringify({
                     project_id: projectId,
                     number_of_images: count,
-                    group_id: benchmarkGroupIds.get(projectId),
+                    group_id: groupId,
                   }),
                 });
                 const data = await res.json().catch(() => ({}));
