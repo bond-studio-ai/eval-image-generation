@@ -163,6 +163,9 @@ export function StrategyPerformanceSection({
     setLoadingIds((prev) => new Set(prev).add(strategyId));
     try {
       const params = new URLSearchParams({ strategy_id: strategyId });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      if (model) params.set('model', model);
       if (source && source !== 'all') params.set('source', source);
       const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), { cache: 'no-store' });
       if (!res.ok) return;
@@ -184,7 +187,7 @@ export function StrategyPerformanceSection({
     } finally {
       setLoadingIds((prev) => { const next = new Set(prev); next.delete(strategyId); return next; });
     }
-  }, [source]);
+  }, [from, model, source, to]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {

@@ -1,19 +1,34 @@
+import {
+  buildComparisonSlices,
+  getParamValues,
+  parseComparisonState,
+} from '@/app/analytics/comparison-utils';
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
+import { ProductCategoryComparisonMatrix } from '@/app/analytics/product-category-comparison-matrix';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
+import { StrategyComparisonMatrix } from '@/app/analytics/strategy-comparison-matrix';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
-import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance } from '@/lib/service-client';
+import {
+  fetchAnalyticsRatings,
+  fetchAnalyticsStrategyPerformance,
+  fetchStrategies,
+} from '@/lib/service-client';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
   searchParams: Promise<{
-    tab?: string;
-    from?: string;
-    to?: string;
-    model?: string;
-    source?: string;
+    tab?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
+    model?: string | string[];
+    source?: string | string[];
+    compare?: string | string[];
+    compareRange?: string | string[];
+    compareStrategy?: string | string[];
+    compareSource?: string | string[];
   }>;
 }
 
@@ -53,14 +68,31 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
 
 type TabName = 'strategies' | 'products' | 'reliability';
 
-function TabNav({ active, searchParams }: { active: TabName; searchParams: Record<string, string | undefined> }) {
+function TabNav({
+  active,
+  searchParams,
+}: {
+  active: TabName;
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const buildHref = (tab: string) => {
     const params = new URLSearchParams();
     if (tab !== 'strategies') params.set('tab', tab);
-    if (searchParams.from) params.set('from', searchParams.from);
-    if (searchParams.to) params.set('to', searchParams.to);
-    if (searchParams.model) params.set('model', searchParams.model);
-    if (searchParams.source && searchParams.source !== 'all') params.set('source', searchParams.source);
+    const from = getParamValues(searchParams, 'from')[0];
+    const to = getParamValues(searchParams, 'to')[0];
+    const model = getParamValues(searchParams, 'model')[0];
+    const source = getParamValues(searchParams, 'source')[0];
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (model) params.set('model', model);
+    if (source && source !== 'all') params.set('source', source);
+    for (const value of getParamValues(searchParams, 'compare')) params.append('compare', value);
+    for (const value of getParamValues(searchParams, 'compareRange'))
+      params.append('compareRange', value);
+    for (const value of getParamValues(searchParams, 'compareStrategy'))
+      params.append('compareStrategy', value);
+    for (const value of getParamValues(searchParams, 'compareSource'))
+      params.append('compareSource', value);
     const qs = params.toString();
     return `/${qs ? `?${qs}` : ''}`;
   };
@@ -91,12 +123,17 @@ function TabNav({ active, searchParams }: { active: TabName; searchParams: Recor
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const comparison = parseComparisonState(params);
   const activeTab: TabName =
-    params.tab === 'products' ? 'products' : params.tab === 'reliability' ? 'reliability' : 'strategies';
-  const from = params.from;
-  const to = params.to;
-  const model = params.model;
-  const source = params.source;
+    getParamValues(params, 'tab')[0] === 'products'
+      ? 'products'
+      : getParamValues(params, 'tab')[0] === 'reliability'
+        ? 'reliability'
+        : 'strategies';
+  const from = getParamValues(params, 'from')[0];
+  const to = getParamValues(params, 'to')[0];
+  const model = getParamValues(params, 'model')[0];
+  const source = getParamValues(params, 'source')[0];
 
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams.from = from;
@@ -104,10 +141,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   if (model) ratingParams.model = model;
   if (source && source !== 'all') ratingParams.source = source;
 
-  const [sceneRatings, productRatings, perfData] = await Promise.all([
+  const [sceneRatings, productRatings, perfData, strategies] = await Promise.all([
     fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
     fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
     fetchAnalyticsStrategyPerformance(ratingParams),
+    fetchStrategies(100),
   ]);
 
   const sceneDist = sceneRatings.distribution;
@@ -117,6 +155,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     ratedGenerations: sceneRatings.ratedGenerations,
   };
   const models = perfData.models;
+  const comparisonSlices = buildComparisonSlices(comparison, strategies);
 
   return (
     <div>
@@ -126,54 +165,61 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           ? 'Insights into benchmark generation quality and benchmark performance.'
           : 'Insights into generation quality and strategy performance.'}
       </p>
-      <AnalyticsFilters models={models} />
+      <AnalyticsFilters models={models} strategies={strategies} />
       <TabNav active={activeTab} searchParams={params} />
 
-      {/* Overview Stats — shared across both tabs */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Total Generations</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalGenerations}</p>
+      {!comparison.enabled && (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <p className="text-sm font-medium text-gray-600">Total Generations</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalGenerations}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <p className="text-sm font-medium text-gray-600">Rated</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">{overview.ratedGenerations}</p>
+            <p className="mt-1 text-xs text-gray-600">
+              {overview.totalGenerations > 0
+                ? `${Math.round((overview.ratedGenerations / overview.totalGenerations) * 100)}%`
+                : '0%'}{' '}
+              of total
+            </p>
+          </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Rated</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{overview.ratedGenerations}</p>
-          <p className="mt-1 text-xs text-gray-600">
-            {overview.totalGenerations > 0
-              ? `${Math.round((overview.ratedGenerations / overview.totalGenerations) * 100)}%`
-              : '0%'}{' '}
-            of total
-          </p>
-        </div>
-      </div>
+      )}
 
       {activeTab === 'strategies' && (
         <>
-          {/* Rating Distributions */}
-          <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <DistributionChart data={sceneDist} title="Scene Accuracy" />
-            <DistributionChart data={productDist} title="Product Accuracy" />
-          </div>
-
-          {/* Strategy performance and error breakdown */}
-          <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
+          {comparison.enabled ? (
+            <StrategyComparisonMatrix slices={comparisonSlices} model={model} />
+          ) : (
+            <>
+              <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <DistributionChart data={sceneDist} title="Scene Accuracy" />
+                <DistributionChart data={productDist} title="Product Accuracy" />
+              </div>
+              <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
+            </>
+          )}
         </>
       )}
 
       {activeTab === 'products' && (
         <>
-          {/* Product Category Rates */}
-          <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Success and failure rates for each product category based on evaluation data. Expand a row to see
-              checklist issue counts and freeform notes from failing evaluations; one eval can add to several issue
-              counts.
-            </p>
-            <div className="mt-4">
-              <ProductCategoryRates from={from} to={to} model={model} source={source} />
+          {comparison.enabled ? (
+            <ProductCategoryComparisonMatrix slices={comparisonSlices} model={model} />
+          ) : (
+            <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+              <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Success and failure rates for each product category based on evaluation data. Expand a row to see
+                checklist issue counts and freeform notes from failing evaluations; one eval can add to several issue
+                counts.
+              </p>
+              <div className="mt-4">
+                <ProductCategoryRates from={from} to={to} model={model} source={source} />
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 
