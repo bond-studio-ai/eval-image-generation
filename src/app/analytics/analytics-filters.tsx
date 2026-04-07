@@ -8,6 +8,7 @@ const SOURCE_FILTER_OPTIONS = [
   { value: 'all', label: 'All runs' },
   { value: 'preset', label: 'Preset runs' },
   { value: 'raw_input', label: 'Real Input runs' },
+  { value: 'benchmark', label: 'Benchmark runs' },
 ] as const;
 
 function formatDisplay(iso: string): string {
@@ -38,7 +39,9 @@ export function AnalyticsFilters({ models }: { models: string[] }) {
 
   const clearAll = useCallback(() => {
     const tab = searchParams.get('tab');
-    router.push(tab ? `/?tab=${tab}` : '/');
+    const next = new URLSearchParams();
+    if (tab) next.set('tab', tab);
+    router.push(`/${next.toString() ? `?${next}` : ''}`);
   }, [router, searchParams]);
 
   const hasDateFilter = !!(from || to);

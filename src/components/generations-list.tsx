@@ -34,6 +34,7 @@ interface GenerationsListProps {
     to?: string;
     sort?: string;
     order?: string;
+    source?: string;
   };
 }
 
@@ -100,6 +101,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     if (filters.to) params.set('to', filters.to);
     if (filters.sort) params.set('sort', filters.sort);
     if (filters.order) params.set('order', filters.order);
+    if (filters.source === 'benchmark') params.set('source', 'benchmark');
 
     try {
       const res = await fetch(serviceUrl(`generations?${params}`));

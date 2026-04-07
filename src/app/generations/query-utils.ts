@@ -7,6 +7,7 @@ export type FilterParams = {
   to?: string;
   sort?: string;
   order?: string;
+  source?: string;
 };
 
 export function buildGenerationsQuery(params: FilterParams): string {
@@ -14,7 +15,7 @@ export function buildGenerationsQuery(params: FilterParams): string {
   sp.set('tab', 'generations');
   const keys: (keyof FilterParams)[] = [
     'prompt_version_id', 'scene_accuracy_rating', 'product_accuracy_rating',
-    'unrated', 'from', 'to', 'sort', 'order',
+    'unrated', 'from', 'to', 'sort', 'order', 'source',
   ];
   for (const k of keys) {
     const v = params[k];

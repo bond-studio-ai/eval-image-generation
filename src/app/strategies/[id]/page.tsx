@@ -1,4 +1,5 @@
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
+import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
 import { fetchStrategyById, fetchStrategyRuns, parseStrategyRunJudgeResults } from '@/lib/service-client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -40,6 +41,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          <DeployToEnvironmentButton strategyId={result.id} />
           <ActiveToggleButton strategyId={result.id} isActive={result.isActive} />
           <CloneButton strategyId={result.id} />
           <Link

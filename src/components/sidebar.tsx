@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Analytics', href: '/', icon: AnalyticsIcon },
   { name: 'Runs', href: '/executions', icon: RunsIcon },
   { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
+  { name: 'Environments', href: '/environments', icon: EnvironmentIcon },
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
@@ -122,6 +123,24 @@ function InputPresetIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a2.25 2.25 0 002.25-2.25V5.25A2.25 2.25 0 0020.25 3H3.75a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 003.75 21zm5.25-12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
+      />
+    </svg>
+  );
+}
+
+function EnvironmentIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6.75 7.5h10.5m-10.5 4.5h10.5m-10.5 4.5h10.5M4.5 6.75A2.25 2.25 0 016.75 4.5h10.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 17.25V6.75z"
       />
     </svg>
   );

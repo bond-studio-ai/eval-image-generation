@@ -22,6 +22,7 @@ interface PageProps {
     to?: string;
     sort?: string;
     order?: string;
+    source?: string;
   }>;
 }
 
@@ -40,11 +41,14 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
   );
 }
 
-function TabNav({ active }: { active: 'batches' | 'generations' }) {
+function TabNav({ active, source }: { active: 'batches' | 'generations'; source?: string }) {
+  const batchesHref = source === 'benchmark' ? '/executions?source=benchmark' : '/executions';
+  const generationsHref =
+    source === 'benchmark' ? '/executions?tab=generations&source=benchmark' : '/executions?tab=generations';
   return (
     <div className="mb-6 flex gap-1 border-b border-gray-200">
       <Link
-        href="/executions"
+        href={batchesHref}
         className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
           active === 'batches'
             ? 'border-primary-600 text-primary-700'
@@ -54,7 +58,7 @@ function TabNav({ active }: { active: 'batches' | 'generations' }) {
         Batches
       </Link>
       <Link
-        href="/executions?tab=generations"
+        href={generationsHref}
         className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
           active === 'generations'
             ? 'border-primary-600 text-primary-700'
@@ -75,6 +79,7 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
   if (params.unrated) queryParams.unrated = params.unrated;
   if (params.from) queryParams.from = params.from;
   if (params.to) queryParams.to = params.to;
+  if (params.source === 'benchmark') queryParams.source = 'benchmark';
   queryParams.order = params.order === 'asc' ? 'asc' : 'desc';
   queryParams.limit = String(PAGE_SIZE);
   if (params.page) queryParams.page = params.page;
@@ -108,12 +113,13 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
     to: params.to,
     sort: params.sort ?? 'created_at',
     order: params.order ?? 'desc',
+    source: params.source,
   };
 
   return (
     <div>
       <ExecutionsPageHeader />
-      <TabNav active="generations" />
+      <TabNav active="generations" source={params.source} />
 
       <GenerationsFilters params={params} promptVersions={promptVersions} />
 
