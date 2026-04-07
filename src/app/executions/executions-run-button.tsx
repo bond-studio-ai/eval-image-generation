@@ -24,6 +24,8 @@ const BENCHMARK_PROJECT_IDS = [
   'PRJ-E78TJ8WXM',
 ] as const;
 
+const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
+
 export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => void }) {
   const searchParams = useSearchParams();
   const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
@@ -104,24 +106,33 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     setError(null);
     const count = Math.max(1, Math.min(100, numberOfImages));
     const groupId = crypto.randomUUID();
+    const benchmarkGroupIds = new Map(
+      selectedBenchmarkProjectIds.map((projectId) => [projectId, crypto.randomUUID()]),
+    );
 
     try {
       const results = benchmarkMode
         ? await Promise.allSettled(
-            selectedStrategyIds.map(async (strategyId) => {
-              const res = await fetch(serviceUrl(`strategies/${strategyId}/benchmarks`), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectIds: selectedBenchmarkProjectIds }),
-              });
-              const data = await res.json().catch(() => ({}));
-              if (!res.ok) {
-                throw new Error(
-                  (data as { error?: { message?: string } }).error?.message || 'Failed to start benchmark',
-                );
-              }
-              return data;
-            }),
+            selectedStrategyIds.flatMap((strategyId) =>
+              selectedBenchmarkProjectIds.map(async (projectId) => {
+                const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    project_id: projectId,
+                    number_of_images: count,
+                    group_id: benchmarkGroupIds.get(projectId),
+                  }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  throw new Error(
+                    (data as { error?: { message?: string } }).error?.message || 'Failed to start benchmark run',
+                  );
+                }
+                return data;
+              }),
+            ),
           )
         : await (async () => {
             const requests = await fetchPresetRunRequests(selectedPresetIds, {
@@ -180,7 +191,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated, source]);
 
   const totalRuns = benchmarkMode
-    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length
+    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length * Math.max(1, Math.min(100, numberOfImages))
     : selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
 
   return (
@@ -192,7 +203,9 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
           setError(null);
           setSelectedStrategyIds([]);
           setSelectedPresetIds([]);
-          setSelectedBenchmarkProjectIds([]);
+          setSelectedBenchmarkProjectIds(
+            source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+          );
           setBenchmarkMode(source === 'benchmark');
         }}
         className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
@@ -231,7 +244,9 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                     onChange={(e) => {
                       setBenchmarkMode(e.target.checked);
                       setSelectedPresetIds([]);
-                      setSelectedBenchmarkProjectIds([]);
+                      setSelectedBenchmarkProjectIds(
+                        e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+                      );
                     }}
                     className="h-4 w-4 rounded border-gray-300"
                   />
