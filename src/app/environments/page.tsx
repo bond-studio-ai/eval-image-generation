@@ -34,6 +34,7 @@ export default function EnvironmentsPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState<EnvironmentFormState>(EMPTY_FORM);
+  const [showAuthToken, setShowAuthToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = useMemo(() => Boolean(form.id), [form.id]);
@@ -64,6 +65,7 @@ export default function EnvironmentsPage() {
 
   const resetForm = useCallback(() => {
     setForm(EMPTY_FORM);
+    setShowAuthToken(false);
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -249,12 +251,24 @@ export default function EnvironmentsPage() {
               <span className="text-sm font-medium text-gray-700">
                 Auth token {isEditing ? '(leave blank to keep current)' : ''}
               </span>
-              <textarea
-                value={form.authToken}
-                onChange={(e) => setForm((prev) => ({ ...prev, authToken: e.target.value }))}
-                rows={4}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-              />
+              <div className="mt-1 flex gap-2">
+                <input
+                  type={showAuthToken ? 'text' : 'password'}
+                  value={form.authToken}
+                  onChange={(e) => setForm((prev) => ({ ...prev, authToken: e.target.value }))}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAuthToken((prev) => !prev)}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  aria-label={showAuthToken ? 'Hide auth token' : 'Show auth token'}
+                >
+                  {showAuthToken ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </label>
             <label className="flex items-center gap-3">
               <input

@@ -181,7 +181,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   useEffect(() => {
     fetchBatches({ replace: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedFrom, appliedTo, refreshKey]);
+  }, [appliedFrom, appliedTo, refreshKey, source]);
 
   useEffect(() => {
     const el = sentinelRef.current;

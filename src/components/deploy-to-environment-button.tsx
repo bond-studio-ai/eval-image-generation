@@ -35,10 +35,19 @@ export function DeployToEnvironmentButton({
     if (!open) return;
     let cancelled = false;
     setLoading(true);
+    setSelectedId('');
     setError(null);
     setResult(null);
     fetch(serviceUrl('environments?limit=100'), { cache: 'no-store' })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(
+            (json as { error?: { message?: string } }).error?.message ?? 'Failed to load environments.',
+          );
+        }
+        return json;
+      })
       .then((json) => {
         if (cancelled) return;
         const items = Array.isArray(json.data) ? (json.data as EnvironmentItem[]) : [];
@@ -46,10 +55,10 @@ export function DeployToEnvironmentButton({
         const firstEligible = items.find((item) => item.isActive && item.hasAuthToken);
         setSelectedId(firstEligible?.id ?? '');
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (!cancelled) {
           setEnvironments([]);
-          setError('Failed to load environments.');
+          setError(err instanceof Error ? err.message : 'Failed to load environments.');
         }
       })
       .finally(() => {
