@@ -4,10 +4,9 @@ import {
   parseComparisonState,
 } from '@/app/analytics/comparison-utils';
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
-import { ProductCategoryComparisonMatrix } from '@/app/analytics/product-category-comparison-matrix';
+import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
-import { StrategyComparisonMatrix } from '@/app/analytics/strategy-comparison-matrix';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
 import {
   fetchAnalyticsRatings,
@@ -191,10 +190,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       )}
 
       {comparison.enabled ? (
-        <>
-          <StrategyComparisonMatrix slices={comparisonSlices} model={model} />
-          <ProductCategoryComparisonMatrix slices={comparisonSlices} model={model} />
-        </>
+        <ComparisonSpreadsheet slices={comparisonSlices} model={model} />
       ) : (
         <>
           {activeTab === 'strategies' && (

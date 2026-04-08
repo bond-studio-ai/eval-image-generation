@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
+  batchRunId: string | null;
   strategyId: string;
   strategyName: string | null;
   runHref?: string | null;
@@ -18,6 +19,7 @@ interface RunRow {
   createdAt: string;
   completedAt: string | null;
   inputPresetName: string | null;
+  source: string | null;
   lastOutputUrl: string | null;
   lastOutputGenerationId: string | null;
   stepResults: { id: string; status: string }[];
@@ -66,6 +68,8 @@ function deriveRunReviewStatus(run: RunRow): string {
 function normalizeBatch(b: Record<string, unknown>): BatchRow {
   const runs = (Array.isArray(b.runs) ? b.runs : []).map((r: Record<string, unknown>) => ({
     ...r,
+    batchRunId: (r.batchRunId as string) ?? null,
+    source: (r.source as string) ?? null,
     inputPresetName:
       r.inputPresetName ??
       (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
@@ -337,7 +341,12 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
         <div className="space-y-4">
         {batches.map((batch) => {
           const isExpanded = expandedIds.has(batch.id);
-          const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
+          const isBenchmark = source === 'benchmark';
+          const projectKeys = new Set(
+            batch.runs.map((r) =>
+              isBenchmark && r.batchRunId ? r.batchRunId : r.inputPresetName ?? '(no preset)',
+            ),
+          );
           const isMultiStrategy = batch.strategies.length > 1;
 
           return (
@@ -371,7 +380,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
                   ) : null}
                   <span className="text-sm text-gray-600">
                     {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
-                    {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
+                    {projectKeys.size} {isBenchmark ? 'project' : 'preset'}{projectKeys.size === 1 ? '' : 's'}
                   </span>
                   <span className="text-xs text-gray-400">
                     {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
@@ -568,12 +577,18 @@ function ListView({
   }
 
   const grouped = new Map<string, Map<string, RunRow[]>>();
+  const rowLabels = new Map<string, string>();
   for (const run of runs) {
     if (!grouped.has(run.strategyId)) grouped.set(run.strategyId, new Map());
     const byPreset = grouped.get(run.strategyId)!;
-    const preset = run.inputPresetName ?? '(no preset)';
-    if (!byPreset.has(preset)) byPreset.set(preset, []);
-    byPreset.get(preset)!.push(run);
+    const rowKey =
+      run.source === 'benchmark' && run.batchRunId
+        ? run.batchRunId
+        : run.inputPresetName ?? '(no preset)';
+    const label = run.inputPresetName ?? '(no preset)';
+    rowLabels.set(rowKey, label);
+    if (!byPreset.has(rowKey)) byPreset.set(rowKey, []);
+    byPreset.get(rowKey)!.push(run);
   }
   for (const byPreset of grouped.values()) {
     for (const arr of byPreset.values()) {
@@ -620,13 +635,14 @@ function ListView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {presetNames.map((presetName) => {
-                    const presetRuns = byPreset.get(presetName)!;
+                  {presetNames.map((rowKey) => {
+                    const presetRuns = byPreset.get(rowKey)!;
+                    const displayLabel = rowLabels.get(rowKey) ?? rowKey;
                     return (
-                      <tr key={presetName} className="hover:bg-gray-50/50">
+                      <tr key={rowKey} className="hover:bg-gray-50/50">
                         <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
                           style={{ minWidth: 200, maxWidth: 200 }}>
-                          <span className="block break-words">{presetName}</span>
+                          <span className="block break-words">{displayLabel}</span>
                         </td>
                         {Array.from({ length: maxExec }, (_, i) => (
                           <RunCell key={i} run={presetRuns[i]} cellSize={CELL} awaitingJudge={awaitingJudge} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
@@ -691,14 +707,25 @@ function MatrixView({
     }
   }
 
-  const presetNames = new Set<string>();
-  for (const run of runs) presetNames.add(run.inputPresetName ?? '(no preset)');
-  const sortedPresets = Array.from(presetNames).sort();
+  const rowKeys = new Set<string>();
+  const matrixRowLabels = new Map<string, string>();
+  for (const run of runs) {
+    const rowKey =
+      run.source === 'benchmark' && run.batchRunId
+        ? run.batchRunId
+        : run.inputPresetName ?? '(no preset)';
+    rowKeys.add(rowKey);
+    matrixRowLabels.set(rowKey, run.inputPresetName ?? '(no preset)');
+  }
+  const sortedPresets = Array.from(rowKeys).sort();
 
   const grid = new Map<string, RunRow[]>();
   for (const run of runs) {
-    const presetName = run.inputPresetName ?? '(no preset)';
-    const key = `${presetName}\0${run.strategyId}`;
+    const rowKey =
+      run.source === 'benchmark' && run.batchRunId
+        ? run.batchRunId
+        : run.inputPresetName ?? '(no preset)';
+    const key = `${rowKey}\0${run.strategyId}`;
     if (!grid.has(key)) grid.set(key, []);
     grid.get(key)!.push(run);
   }
@@ -732,14 +759,14 @@ function MatrixView({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
-          {sortedPresets.map((presetName) => (
-            <tr key={presetName} className="hover:bg-gray-50/50">
+          {sortedPresets.map((rowKey) => (
+            <tr key={rowKey} className="hover:bg-gray-50/50">
               <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
                 style={{ minWidth: 200, maxWidth: 200 }}>
-                <span className="block break-words">{presetName}</span>
+                <span className="block break-words">{matrixRowLabels.get(rowKey) ?? rowKey}</span>
               </td>
               {strategyIds.map((stratId) => {
-                const cellRuns = grid.get(`${presetName}\0${stratId}`) ?? [];
+                const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
                 const firstRun = cellRuns[0];
                 const outputRuns = cellRuns.filter(
                   (run): run is RunRow & { lastOutputUrl: string } => !!run.lastOutputUrl
