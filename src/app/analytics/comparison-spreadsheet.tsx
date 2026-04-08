@@ -8,10 +8,7 @@ import {
 import { serviceUrl } from '@/lib/api-base';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
-type StrategyRow = {
-  id: string;
-  name: string;
-  generationCount: number;
+type SummaryData = {
   sceneRatedCount: number;
   sceneGoodPct: number;
   sceneFailedPct: number;
@@ -31,7 +28,7 @@ type CategoryRate = {
 };
 
 type SliceData = {
-  strategy: StrategyRow | null;
+  summary: SummaryData | null;
   categories: CategoryRate[];
 };
 
@@ -66,6 +63,19 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   });
 }
 
+function normalizeSummary(raw: unknown): SummaryData | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const s = raw as Record<string, unknown>;
+  return {
+    sceneRatedCount: Number(s.sceneRatedCount) || 0,
+    sceneGoodPct: Number(s.sceneGoodPct) || 0,
+    sceneFailedPct: Number(s.sceneFailedPct) || 0,
+    productRatedCount: Number(s.productRatedCount) || 0,
+    productGoodPct: Number(s.productGoodPct) || 0,
+    productFailedPct: Number(s.productFailedPct) || 0,
+  };
+}
+
 const SLICE_BG_COLORS = [
   { header: 'bg-amber-50', headerBorder: 'border-amber-200' },
   { header: 'bg-blue-50', headerBorder: 'border-blue-200' },
@@ -97,41 +107,25 @@ export function ComparisonSpreadsheet({
       try {
         const results = await Promise.all(
           slices.map(async (slice) => {
-            const base = new URLSearchParams({
+            const catParams = new URLSearchParams({
               from: slice.range.from,
               to: slice.range.to,
               source: slice.source,
+              strategy_id: slice.strategyId,
             });
-            if (model) base.set('model', model);
+            if (model) catParams.set('model', model);
 
-            const catParams = new URLSearchParams(base);
-            catParams.set('strategy_id', slice.strategyId);
+            const catRes = await fetch(
+              serviceUrl(`analytics/product-category-rates?${catParams}`),
+              { cache: 'no-store' },
+            );
 
-            const [perfRes, catRes] = await Promise.all([
-              fetch(serviceUrl(`analytics/strategy-performance?${base}`), {
-                cache: 'no-store',
-              }),
-              fetch(serviceUrl(`analytics/product-category-rates?${catParams}`), {
-                cache: 'no-store',
-              }),
-            ]);
-
-            const perfJson = perfRes.ok ? await perfRes.json() : {};
             const catJson = catRes.ok ? await catRes.json() : {};
-
-            const perfRows = Array.isArray(perfJson.data?.rows)
-              ? perfJson.data.rows
-              : [];
-            const strategy =
-              (perfRows.find(
-                (r: Record<string, unknown>) =>
-                  String(r.id ?? '') === slice.strategyId,
-              ) as StrategyRow | undefined) ?? null;
 
             return {
               key: slice.key,
               data: {
-                strategy,
+                summary: normalizeSummary(catJson.data?.summary),
                 categories: normalizeCategoryRows(catJson.data?.categories),
               },
             };
@@ -190,13 +184,17 @@ export function ComparisonSpreadsheet({
   }
 
   const colCount = slices.length;
+  const sliceMinWidth = 320;
 
   return (
     <div className="mt-8">
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
-        <table className="min-w-full border-collapse text-xs">
-          {/* Title row */}
+        <table
+          className="border-collapse text-xs"
+          style={{ minWidth: 200 + colCount * sliceMinWidth }}
+        >
           <thead>
+            {/* Title row */}
             <tr>
               <th
                 colSpan={1 + colCount * 3}
@@ -211,13 +209,14 @@ export function ComparisonSpreadsheet({
               <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
-                const d = dataBySlice[slice.key];
-                const ratedCount = d?.strategy?.productRatedCount ?? 0;
+                const s = dataBySlice[slice.key]?.summary;
+                const ratedCount = s?.productRatedCount ?? 0;
                 return (
                   <th
                     key={slice.key}
                     colSpan={3}
                     className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
+                    style={{ minWidth: sliceMinWidth }}
                   >
                     <div className="text-xs font-bold text-gray-900">
                       {slice.strategyName}
@@ -233,13 +232,13 @@ export function ComparisonSpreadsheet({
               })}
             </tr>
 
-            {/* Overall accuracy rows in the header area */}
+            {/* Overall accuracy rows */}
             <tr className="bg-gray-50/60">
               <th className="border-b border-r border-gray-200 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
                 Scene Accuracy (Overall)
               </th>
               {slices.map((slice, i) => {
-                const s = dataBySlice[slice.key]?.strategy;
+                const s = dataBySlice[slice.key]?.summary;
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
                   <Fragment key={slice.key}>
@@ -261,7 +260,7 @@ export function ComparisonSpreadsheet({
                 Product Accuracy (Overall)
               </th>
               {slices.map((slice, i) => {
-                const s = dataBySlice[slice.key]?.strategy;
+                const s = dataBySlice[slice.key]?.summary;
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
                   <Fragment key={slice.key}>
