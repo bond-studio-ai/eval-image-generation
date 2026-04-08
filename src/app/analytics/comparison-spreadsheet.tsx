@@ -17,6 +17,8 @@ type SummaryData = {
   productFailedPct: number;
 };
 
+type IssueItem = { issue: string; count: number };
+
 type CategoryRate = {
   name: string;
   total: number;
@@ -24,11 +26,12 @@ type CategoryRate = {
   failure: number;
   successPct: number;
   failurePct: number;
-  issues: { issue: string; count: number }[];
+  issues: IssueItem[];
 };
 
 type SliceData = {
   summary: SummaryData | null;
+  sceneIssues: IssueItem[];
   categories: CategoryRate[];
 };
 
@@ -61,6 +64,19 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
         : [],
     };
   });
+}
+
+function normalizeIssueItems(raw: unknown): IssueItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      const row = entry as Record<string, unknown>;
+      return {
+        issue: String(row.issue ?? ''),
+        count: Number(row.count ?? 0),
+      };
+    })
+    .filter((i) => i.issue);
 }
 
 function normalizeSummary(raw: unknown): SummaryData | null {
@@ -126,6 +142,7 @@ export function ComparisonSpreadsheet({
               key: slice.key,
               data: {
                 summary: normalizeSummary(catJson.data?.summary),
+                sceneIssues: normalizeIssueItems(catJson.data?.sceneIssues),
                 categories: normalizeCategoryRows(catJson.data?.categories),
               },
             };
@@ -145,6 +162,14 @@ export function ComparisonSpreadsheet({
       cancelled = true;
     };
   }, [model, slices]);
+
+  const sceneIssueRows = useMemo(() => {
+    const issueNames = new Set<string>();
+    for (const data of Object.values(dataBySlice)) {
+      for (const item of data.sceneIssues) issueNames.add(item.issue);
+    }
+    return [...issueNames].sort((a, b) => a.localeCompare(b));
+  }, [dataBySlice]);
 
   const categoryRows = useMemo(() => {
     const names = new Set<string>();
@@ -184,16 +209,109 @@ export function ComparisonSpreadsheet({
   }
 
   const colCount = slices.length;
+  const fullColSpan = 1 + colCount * 3;
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 space-y-6">
+      {/* ── Scene Accuracy Issues ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
         <table className="w-full border-collapse text-xs">
           <thead>
-            {/* Title row */}
             <tr>
               <th
-                colSpan={1 + colCount * 3}
+                colSpan={1 + colCount}
+                className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900"
+              >
+                Scene Accuracy Issues
+              </th>
+            </tr>
+            <tr>
+              <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
+              {slices.map((slice, i) => {
+                const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+                const s = dataBySlice[slice.key]?.summary;
+                return (
+                  <th
+                    key={slice.key}
+                    className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
+                    style={{ minWidth: 160 }}
+                  >
+                    <div className="text-xs font-bold text-gray-900">
+                      {slice.strategyName}
+                    </div>
+                    <div className="mt-0.5 text-[10px] font-medium text-gray-600">
+                      {s ? `${s.sceneRatedCount} rated · ${s.sceneGoodPct}% good · ${s.sceneFailedPct}% fail` : ''}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+            <tr className="bg-gray-100">
+              <th className="sticky left-0 z-10 border-b border-r border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600">
+                Issue
+              </th>
+              {slices.map((slice) => (
+                <th
+                  key={slice.key}
+                  className="border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500"
+                >
+                  Count (% of failed)
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={1 + colCount} className="px-4 py-6 text-center text-sm text-gray-400">
+                  Loading…
+                </td>
+              </tr>
+            )}
+            {!loading && sceneIssueRows.length === 0 && (
+              <tr>
+                <td colSpan={1 + colCount} className="px-4 py-4 text-center text-sm text-gray-400">
+                  No scene accuracy issues found.
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              sceneIssueRows.map((issueName) => (
+                <tr key={issueName} className="bg-white">
+                  <th className="sticky left-0 z-10 border-b border-r border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-normal text-gray-700">
+                    {issueName}
+                  </th>
+                  {slices.map((slice) => {
+                    const d = dataBySlice[slice.key];
+                    const item = d?.sceneIssues.find((i) => i.issue === issueName);
+                    const sceneFailed = d?.summary
+                      ? Math.round((d.summary.sceneFailedPct / 100) * d.summary.sceneRatedCount)
+                      : 0;
+                    const pct = item && sceneFailed > 0
+                      ? Math.round((item.count / sceneFailed) * 100)
+                      : 0;
+                    return (
+                      <td
+                        key={slice.key}
+                        className="border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] text-red-600"
+                      >
+                        {item ? `${item.count} (${pct}%)` : '-'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Product Category Rates ── */}
+      <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr>
+              <th
+                colSpan={fullColSpan}
                 className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900"
               >
                 Product Category Success / Failure Rates
@@ -299,7 +417,7 @@ export function ComparisonSpreadsheet({
             {loading && (
               <tr>
                 <td
-                  colSpan={1 + colCount * 3}
+                  colSpan={fullColSpan}
                   className="px-4 py-6 text-center text-sm text-gray-400"
                 >
                   Loading comparison data…
@@ -310,7 +428,7 @@ export function ComparisonSpreadsheet({
             {!loading && categoryRows.length === 0 && (
               <tr>
                 <td
-                  colSpan={1 + colCount * 3}
+                  colSpan={fullColSpan}
                   className="px-4 py-6 text-center text-sm text-gray-400"
                 >
                   No product category data available.

@@ -175,11 +175,25 @@ export function StrategyPerformanceSection({
         setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
         return;
       }
+      const executionErrors = raw.executionErrors ?? raw.execution_errors;
+      const sceneIssues = raw.sceneIssues ?? raw.scene_issues;
+      const productIssues = raw.productIssues ?? raw.product_issues;
+      const ratingSummary = raw.ratingSummary ?? raw.rating_summary;
       const normalized: BreakdownData = {
-        execution_errors: Array.isArray(raw.execution_errors) ? raw.execution_errors : [],
-        scene_issues: Array.isArray(raw.scene_issues) ? raw.scene_issues : [],
-        product_issues: Array.isArray(raw.product_issues) ? raw.product_issues : [],
-        rating_summary: raw.rating_summary ?? null,
+        execution_errors: Array.isArray(executionErrors) ? executionErrors : [],
+        scene_issues: Array.isArray(sceneIssues) ? sceneIssues : [],
+        product_issues: Array.isArray(productIssues) ? productIssues : [],
+        rating_summary: ratingSummary
+          ? {
+              total: ratingSummary.total ?? 0,
+              scene_good: ratingSummary.sceneGood ?? ratingSummary.scene_good ?? 0,
+              scene_failed: ratingSummary.sceneFailed ?? ratingSummary.scene_failed ?? 0,
+              scene_unset: ratingSummary.sceneUnset ?? ratingSummary.scene_unset ?? 0,
+              product_good: ratingSummary.productGood ?? ratingSummary.product_good ?? 0,
+              product_failed: ratingSummary.productFailed ?? ratingSummary.product_failed ?? 0,
+              product_unset: ratingSummary.productUnset ?? ratingSummary.product_unset ?? 0,
+            }
+          : null,
       };
       setBreakdowns((prev) => ({ ...prev, [strategyId]: normalized }));
     } catch {
