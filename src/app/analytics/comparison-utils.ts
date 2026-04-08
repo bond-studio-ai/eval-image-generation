@@ -4,7 +4,7 @@ export const COMPARE_RANGE_QUERY_KEY = 'compareRange';
 export const COMPARE_STRATEGY_QUERY_KEY = 'compareStrategy';
 export const COMPARE_SOURCE_QUERY_KEY = 'compareSource';
 
-export type AnalyticsComparisonSource = 'preset' | 'raw_input';
+export type AnalyticsComparisonSource = 'preset' | 'raw_input' | 'benchmark';
 
 export type AnalyticsComparisonRange = {
   from: string;
@@ -66,7 +66,7 @@ function parseColumn(value: string): AnalyticsComparisonColumn | null {
 }
 
 function isComparisonSource(value: string): value is AnalyticsComparisonSource {
-  return value === 'preset' || value === 'raw_input';
+  return value === 'preset' || value === 'raw_input' || value === 'benchmark';
 }
 
 export function parseComparisonState(params: URLSearchParams | AnalyticsSearchParams): AnalyticsComparisonState {
@@ -115,7 +115,9 @@ export function encodeComparisonColumn(column: AnalyticsComparisonColumn): strin
 }
 
 export function formatComparisonSource(source: AnalyticsComparisonSource): string {
-  return source === 'raw_input' ? 'Raw input' : 'Preset';
+  if (source === 'raw_input') return 'Raw input';
+  if (source === 'benchmark') return 'Benchmark';
+  return 'Preset';
 }
 
 export function formatComparisonRange(range: AnalyticsComparisonRange): string {

@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  buildComparisonColumnLabel,
   COMPARE_COLUMN_QUERY_KEY,
   COMPARE_QUERY_KEY,
   COMPARE_RANGE_QUERY_KEY,
@@ -26,7 +25,7 @@ const SOURCE_FILTER_OPTIONS = [
   { value: 'benchmark', label: 'Benchmark runs' },
 ] as const;
 
-const COMPARISON_SOURCE_OPTIONS: AnalyticsComparisonSource[] = ['preset', 'raw_input'];
+const COMPARISON_SOURCE_OPTIONS: AnalyticsComparisonSource[] = ['preset', 'raw_input', 'benchmark'];
 
 function formatDisplay(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
@@ -37,10 +36,12 @@ function StrategySearchSelect({
   value,
   strategies,
   onChange,
+  compact,
 }: {
   value: string;
   strategies: StrategyListItem[];
   onChange: (strategyId: string) => void;
+  compact?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -74,7 +75,7 @@ function StrategySearchSelect({
     <div className="relative" ref={containerRef}>
       <div className="relative">
         <svg
-          className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+          className={`absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}`}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={2}
@@ -96,7 +97,9 @@ function StrategySearchSelect({
             if (value) onChange('');
           }}
           placeholder="Search strategy…"
-          className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-9 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none"
+          className={`w-full rounded-lg border border-gray-200 bg-white text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none ${
+            compact ? 'py-1.5 pl-8 pr-8 text-xs' : 'py-2 pl-9 pr-9 text-sm'
+          }`}
         />
         {(query || value) && (
           <button
@@ -106,9 +109,9 @@ function StrategySearchSelect({
               onChange('');
               setOpen(false);
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -116,9 +119,9 @@ function StrategySearchSelect({
       </div>
 
       {open && (
-        <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+        <div className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
           {filteredStrategies.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500">No matching strategies</div>
+            <div className="px-3 py-2 text-xs text-gray-500">No matching strategies</div>
           ) : (
             filteredStrategies.map((strategy) => (
               <button
@@ -129,7 +132,7 @@ function StrategySearchSelect({
                   setQuery(strategy.name);
                   setOpen(false);
                 }}
-                className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                className={`flex w-full items-center rounded-lg px-3 py-1.5 text-left text-xs transition-colors ${
                   value === strategy.id
                     ? 'bg-primary-50 text-primary-700'
                     : 'text-gray-700 hover:bg-gray-50'
@@ -141,84 +144,6 @@ function StrategySearchSelect({
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function ComparisonColumnCard({
-  column,
-  index,
-  strategies,
-  onChange,
-  onRemove,
-  canRemove,
-}: {
-  column: AnalyticsComparisonColumn;
-  index: number;
-  strategies: StrategyListItem[];
-  onChange: (next: AnalyticsComparisonColumn) => void;
-  onRemove: () => void;
-  canRemove: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Column {index + 1}</p>
-          <p className="mt-1 text-sm font-medium text-gray-900">
-            {buildComparisonColumnLabel(column, strategies)}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={!canRemove}
-          className="rounded-lg px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Remove
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-4">
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">Date range</p>
-          <DateRangePicker
-            from={column.from}
-            to={column.to}
-            onChange={(from, to) => onChange({ ...column, from, to })}
-            onClear={() => onChange({ ...column, from: '', to: '' })}
-          />
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">Strategy</p>
-          <StrategySearchSelect
-            value={column.strategyId}
-            strategies={strategies}
-            onChange={(strategyId) => onChange({ ...column, strategyId })}
-          />
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">Source</p>
-          <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
-            {COMPARISON_SOURCE_OPTIONS.map((source) => (
-              <button
-                key={source}
-                type="button"
-                onClick={() => onChange({ ...column, source })}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  column.source === source
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {formatComparisonSource(source)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -290,20 +215,15 @@ export function AnalyticsFilters({
         next.set(COMPARE_QUERY_KEY, '1');
         const currentState = parseComparisonState(next);
         if (currentState.columns.length === 0) {
+          const defaultSource: AnalyticsComparisonSource =
+            source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
           next.append(
             COMPARE_COLUMN_QUERY_KEY,
             encodeComparisonColumn(
-              createEmptyComparisonColumn({
-                from,
-                to,
-                source: source === 'raw_input' ? 'raw_input' : 'preset',
-              }),
+              createEmptyComparisonColumn({ from, to, source: defaultSource }),
             ),
           );
         }
-        next.delete('from');
-        next.delete('to');
-        next.delete('source');
         next.delete(COMPARE_RANGE_QUERY_KEY);
         next.delete(COMPARE_STRATEGY_QUERY_KEY);
         next.delete(COMPARE_SOURCE_QUERY_KEY);
@@ -314,14 +234,12 @@ export function AnalyticsFilters({
 
   const addComparisonColumn = useCallback(() => {
     const lastColumn = comparison.columns.at(-1);
+    const defaultSource: AnalyticsComparisonSource =
+      source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
     updateComparisonColumns([
       ...comparison.columns,
       createEmptyComparisonColumn(
-        lastColumn ?? {
-          from,
-          to,
-          source: source === 'raw_input' ? 'raw_input' : 'preset',
-        },
+        lastColumn ?? { from, to, source: defaultSource },
       ),
     ]);
   }, [comparison.columns, from, source, to, updateComparisonColumns]);
@@ -343,15 +261,16 @@ export function AnalyticsFilters({
 
   return (
     <div className="mt-6 flex flex-col gap-3">
+      {/* ── Filter bar ── */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700">
+        <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 select-none">
           <input
             type="checkbox"
             checked={comparison.enabled}
             onChange={(event) => setComparisonEnabled(event.target.checked)}
             className="h-4 w-4 rounded border-gray-300"
           />
-          Comparison mode
+          Compare
         </label>
 
         {!comparison.enabled && (
@@ -391,40 +310,25 @@ export function AnalyticsFilters({
           </div>
         )}
 
-        <div className="h-6 w-px bg-gray-200" />
-
-        {!comparison.enabled ? (
-          <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
-            {SOURCE_FILTER_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => applyFilters({ source: option.value })}
-                className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                  source === option.value
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        ) : (
+        {!comparison.enabled && (
           <>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-              Build the matrix one column at a time.
+            <div className="h-6 w-px bg-gray-200" />
+            <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
+              {SOURCE_FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => applyFilters({ source: option.value })}
+                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    source === option.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={addComparisonColumn}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add column
-            </button>
           </>
         )}
 
@@ -445,9 +349,10 @@ export function AnalyticsFilters({
         )}
       </div>
 
-      {hasAnyFilter && (
+      {/* ── Active filter pills (non-comparison) ── */}
+      {!comparison.enabled && hasAnyFilter && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {!comparison.enabled && hasDateFilter && (
+          {hasDateFilter && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-medium text-primary-700 ring-1 ring-primary-200/60">
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -485,7 +390,7 @@ export function AnalyticsFilters({
               </button>
             </span>
           )}
-          {source !== 'all' && !comparison.enabled && (
+          {source !== 'all' && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/60">
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
@@ -502,55 +407,120 @@ export function AnalyticsFilters({
               </button>
             </span>
           )}
-          {comparison.enabled && (
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200">
-              {comparison.columns.length} column{comparison.columns.length === 1 ? '' : 's'}
-            </span>
-          )}
         </div>
       )}
 
+      {/* ── Comparison column builder ── */}
       {comparison.enabled && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-xs">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">Comparison columns</h3>
-              <p className="mt-1 text-xs text-gray-600">
-                Add a column, then choose the date range, strategy, and source for that column.
-              </p>
-            </div>
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50/80">
+                  <th className="w-10 px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                    #
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500" style={{ minWidth: 200 }}>
+                    Strategy
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                    Date range
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                    Source
+                  </th>
+                  <th className="w-10 px-3 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {comparison.columns.map((column, index) => (
+                  <tr key={`${index}-${encodeComparisonColumn(column)}`} className="group">
+                    <td className="px-3 py-2.5 text-center text-xs font-medium text-gray-400">
+                      {index + 1}
+                    </td>
+                    <td className="px-3 py-2.5" style={{ minWidth: 200 }}>
+                      <StrategySearchSelect
+                        value={column.strategyId}
+                        strategies={strategies}
+                        compact
+                        onChange={(strategyId) => {
+                          const nextColumns = [...comparison.columns];
+                          nextColumns[index] = { ...column, strategyId };
+                          updateComparisonColumns(nextColumns);
+                        }}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <DateRangePicker
+                        from={column.from}
+                        to={column.to}
+                        onChange={(f, t) => {
+                          const nextColumns = [...comparison.columns];
+                          nextColumns[index] = { ...column, from: f, to: t };
+                          updateComparisonColumns(nextColumns);
+                        }}
+                        onClear={() => {
+                          const nextColumns = [...comparison.columns];
+                          nextColumns[index] = { ...column, from: '', to: '' };
+                          updateComparisonColumns(nextColumns);
+                        }}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+                        {COMPARISON_SOURCE_OPTIONS.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => {
+                              const nextColumns = [...comparison.columns];
+                              nextColumns[index] = { ...column, source: s };
+                              updateComparisonColumns(nextColumns);
+                            }}
+                            className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                              column.source === s
+                                ? 'bg-white text-gray-900 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            {formatComparisonSource(s)}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateComparisonColumns(
+                            comparison.columns.filter((_, i) => i !== index),
+                          )
+                        }
+                        disabled={comparison.columns.length <= 1}
+                        className="rounded-lg p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border-t border-gray-100 px-4 py-3">
             <button
               type="button"
               onClick={addComparisonColumn}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Add column
             </button>
-          </div>
-
-          <div className="mt-4 grid gap-4 xl:grid-cols-2">
-            {comparison.columns.map((column, index) => (
-              <ComparisonColumnCard
-                key={`${index}-${encodeComparisonColumn(column)}`}
-                column={column}
-                index={index}
-                strategies={strategies}
-                canRemove={comparison.columns.length > 1}
-                onRemove={() =>
-                  updateComparisonColumns(
-                    comparison.columns.filter((_, columnIndex) => columnIndex !== index),
-                  )
-                }
-                onChange={(nextColumn) => {
-                  const nextColumns = [...comparison.columns];
-                  nextColumns[index] = nextColumn;
-                  updateComparisonColumns(nextColumns);
-                }}
-              />
-            ))}
           </div>
         </div>
       )}
