@@ -184,15 +184,11 @@ export function ComparisonSpreadsheet({
   }
 
   const colCount = slices.length;
-  const sliceMinWidth = 320;
 
   return (
     <div className="mt-8">
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
-        <table
-          className="border-collapse text-xs"
-          style={{ minWidth: 200 + colCount * sliceMinWidth }}
-        >
+        <table className="w-full border-collapse text-xs">
           <thead>
             {/* Title row */}
             <tr>
@@ -216,7 +212,7 @@ export function ComparisonSpreadsheet({
                     key={slice.key}
                     colSpan={3}
                     className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
-                    style={{ minWidth: sliceMinWidth }}
+                    style={{ minWidth: 320 }}
                   >
                     <div className="text-xs font-bold text-gray-900">
                       {slice.strategyName}
