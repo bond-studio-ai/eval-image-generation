@@ -229,7 +229,6 @@ export function ComparisonSpreadsheet({
               <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
-                const s = dataBySlice[slice.key]?.summary;
                 return (
                   <th
                     key={slice.key}
@@ -240,9 +239,35 @@ export function ComparisonSpreadsheet({
                       {slice.strategyName}
                     </div>
                     <div className="mt-0.5 text-[10px] font-medium text-gray-600">
-                      {s ? `${s.sceneRatedCount} rated · ${s.sceneGoodPct}% good · ${s.sceneFailedPct}% fail` : ''}
+                      {formatComparisonSource(slice.source)} ({formatComparisonRange(slice.range)})
                     </div>
                   </th>
+                );
+              })}
+            </tr>
+            {/* Scene Accuracy Overall */}
+            <tr className="bg-gray-50/60">
+              <th className="border-b border-r border-gray-200 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
+                Overall
+              </th>
+              {slices.map((slice, i) => {
+                const s = dataBySlice[slice.key]?.summary;
+                const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+                return (
+                  <td
+                    key={slice.key}
+                    className={`border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] ${color.header}`}
+                  >
+                    {s ? (
+                      <>
+                        <span className="text-gray-500">{s.sceneRatedCount} rated</span>
+                        {' · '}
+                        <span className="font-semibold text-green-700">{s.sceneGoodPct}%</span>
+                        <span className="text-gray-400"> / </span>
+                        <span className="font-semibold text-red-600">{s.sceneFailedPct}%</span>
+                      </>
+                    ) : '-'}
+                  </td>
                 );
               })}
             </tr>
@@ -346,29 +371,7 @@ export function ComparisonSpreadsheet({
               })}
             </tr>
 
-            {/* Overall accuracy rows */}
-            <tr className="bg-gray-50/60">
-              <th className="border-b border-r border-gray-200 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
-                Scene Accuracy (Overall)
-              </th>
-              {slices.map((slice, i) => {
-                const s = dataBySlice[slice.key]?.summary;
-                const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
-                return (
-                  <Fragment key={slice.key}>
-                    <td className={`border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-500 ${color.header}`}>
-                      {s?.sceneRatedCount ?? ''}
-                    </td>
-                    <td className={`border-b border-gray-200 px-2 py-1.5 text-center text-[11px] font-semibold text-green-700 ${color.header}`}>
-                      {s ? `${s.sceneGoodPct}%` : '-'}
-                    </td>
-                    <td className={`border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] font-semibold text-red-600 ${color.header}`}>
-                      {s ? `${s.sceneFailedPct}%` : '-'}
-                    </td>
-                  </Fragment>
-                );
-              })}
-            </tr>
+            {/* Overall accuracy row */}
             <tr className="bg-gray-50/60">
               <th className="border-b border-r border-gray-300 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
                 Product Accuracy (Overall)
