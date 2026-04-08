@@ -75,6 +75,17 @@ const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string
   { value: 'arbitrary', label: 'Arbitrary' },
 ];
 
+const TILE_PATTERN_OPTIONS = [
+  { value: 'Horizontal', label: 'Horizontal' },
+  { value: 'Vertical', label: 'Vertical' },
+  { value: 'Herringbone', label: 'Herringbone' },
+  { value: 'Stacked', label: 'Stacked' },
+  { value: 'Offset', label: 'Offset' },
+  { value: 'HalfOffset', label: 'Half Offset' },
+  { value: 'ThirdOffset', label: 'Third Offset' },
+  { value: 'Straight', label: 'Straight' },
+];
+
 const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
   {
     key: 'wallpaperPlacement',
@@ -117,6 +128,13 @@ const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
       { value: 'CenterOnSink', label: 'Center on Sink' },
     ],
   },
+  { key: 'floorTilePattern', label: 'Floor Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'wallTilePattern', label: 'Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'nicheTilePattern', label: 'Niche Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'showerWallTilePattern', label: 'Shower Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'showerShortWallTilePattern', label: 'Shower Short Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'showerFloorTilePattern', label: 'Shower Floor Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  { key: 'curbTilePattern', label: 'Curb Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
   { key: 'isShowerGlassVisible', label: 'Shower Glass Visible', type: 'boolean' },
   { key: 'isTubDoorVisible', label: 'Tub Door Visible', type: 'boolean' },
 ];
