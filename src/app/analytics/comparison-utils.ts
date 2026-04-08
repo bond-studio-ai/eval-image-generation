@@ -167,13 +167,14 @@ export function buildComparisonSlices(
   const strategyMap = new Map(strategies.map((strategy) => [strategy.id, strategy.name]));
   const slices: AnalyticsComparisonSlice[] = [];
 
-  for (const column of state.columns) {
+  for (let i = 0; i < state.columns.length; i++) {
+    const column = state.columns[i];
     if (!isComparisonColumnComplete(column)) continue;
     const strategyName = strategyMap.get(column.strategyId);
     if (!strategyName) continue;
 
     slices.push({
-      key: encodeComparisonColumn(column),
+      key: `${i}-${encodeComparisonColumn(column)}`,
       range: { from: column.from, to: column.to },
       strategyId: column.strategyId,
       strategyName,

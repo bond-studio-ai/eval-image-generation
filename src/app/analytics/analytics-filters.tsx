@@ -2,10 +2,6 @@
 
 import {
   COMPARE_COLUMN_QUERY_KEY,
-  COMPARE_QUERY_KEY,
-  COMPARE_RANGE_QUERY_KEY,
-  COMPARE_SOURCE_QUERY_KEY,
-  COMPARE_STRATEGY_QUERY_KEY,
   createEmptyComparisonColumn,
   encodeComparisonColumn,
   formatComparisonSource,
@@ -169,12 +165,15 @@ function StrategyDropdown({
 export function AnalyticsFilters({
   models,
   strategies,
+  activeTab,
 }: {
   models: string[];
   strategies: StrategyListItem[];
+  activeTab: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isCompare = activeTab === 'compare';
 
   const from = searchParams.get('from') ?? '';
   const to = searchParams.get('to') ?? '';
@@ -182,116 +181,88 @@ export function AnalyticsFilters({
   const source = searchParams.get('source') ?? 'all';
   const comparison = parseComparisonState(searchParams);
 
-  const applyParams = useCallback(
+  const columnsRef = useRef(comparison.columns);
+  columnsRef.current = comparison.columns;
+
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (isCompare && comparison.columns.length === 0 && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      const defaultSource: AnalyticsComparisonSource =
+        source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
+      const defaultCol = createEmptyComparisonColumn({ from, to, source: defaultSource });
+      const next = new URLSearchParams(searchParams.toString());
+      next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(defaultCol));
+      router.replace(`/?${next}`);
+    }
+    if (!isCompare) hasInitializedRef.current = false;
+  }, [isCompare, comparison.columns.length, from, to, source, searchParams, router]);
+
+  const buildUrl = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
       const next = new URLSearchParams(searchParams.toString());
       mutate(next);
-      router.push(`/?${next}`);
+      return `/?${next}`;
     },
-    [router, searchParams],
+    [searchParams],
   );
 
   const applyFilters = useCallback(
     (overrides: Record<string, string>) => {
-      applyParams((next) => {
-        for (const [key, value] of Object.entries(overrides)) {
-          if (value) next.set(key, value);
-          else next.delete(key);
-        }
-      });
+      router.replace(
+        buildUrl((next) => {
+          for (const [key, value] of Object.entries(overrides)) {
+            if (value) next.set(key, value);
+            else next.delete(key);
+          }
+        }),
+      );
     },
-    [applyParams],
+    [router, buildUrl],
   );
 
   const updateComparisonColumns = useCallback(
     (columns: AnalyticsComparisonColumn[]) => {
-      applyParams((next) => {
-        next.delete(COMPARE_COLUMN_QUERY_KEY);
-        next.delete(COMPARE_RANGE_QUERY_KEY);
-        next.delete(COMPARE_STRATEGY_QUERY_KEY);
-        next.delete(COMPARE_SOURCE_QUERY_KEY);
-        for (const column of columns) {
-          next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(column));
-        }
-      });
-    },
-    [applyParams],
-  );
-
-  const setComparisonEnabled = useCallback(
-    (enabled: boolean) => {
-      applyParams((next) => {
-        if (!enabled) {
-          next.delete(COMPARE_QUERY_KEY);
+      router.replace(
+        buildUrl((next) => {
           next.delete(COMPARE_COLUMN_QUERY_KEY);
-          next.delete(COMPARE_RANGE_QUERY_KEY);
-          next.delete(COMPARE_STRATEGY_QUERY_KEY);
-          next.delete(COMPARE_SOURCE_QUERY_KEY);
-          return;
-        }
-
-        next.set(COMPARE_QUERY_KEY, '1');
-        const currentState = parseComparisonState(next);
-        if (currentState.columns.length === 0) {
-          const defaultSource: AnalyticsComparisonSource =
-            source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
-          next.append(
-            COMPARE_COLUMN_QUERY_KEY,
-            encodeComparisonColumn(
-              createEmptyComparisonColumn({ from, to, source: defaultSource }),
-            ),
-          );
-        }
-        next.delete(COMPARE_RANGE_QUERY_KEY);
-        next.delete(COMPARE_STRATEGY_QUERY_KEY);
-        next.delete(COMPARE_SOURCE_QUERY_KEY);
-      });
+          for (const column of columns) {
+            next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(column));
+          }
+        }),
+      );
     },
-    [applyParams, from, source, to],
+    [router, buildUrl],
   );
 
   const addComparisonColumn = useCallback(() => {
-    const lastColumn = comparison.columns.at(-1);
+    const cols = columnsRef.current;
+    const lastColumn = cols.at(-1);
     const defaultSource: AnalyticsComparisonSource =
       source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
     updateComparisonColumns([
-      ...comparison.columns,
+      ...cols,
       createEmptyComparisonColumn(
         lastColumn ?? { from, to, source: defaultSource },
       ),
     ]);
-  }, [comparison.columns, from, source, to, updateComparisonColumns]);
+  }, [from, source, to, updateComparisonColumns]);
 
   const clearAll = useCallback(() => {
     const tab = searchParams.get('tab');
     const next = new URLSearchParams();
     if (tab) next.set('tab', tab);
-    router.push(`/${next.toString() ? `?${next}` : ''}`);
+    router.replace(`/${next.toString() ? `?${next}` : ''}`);
   }, [router, searchParams]);
 
   const hasDateFilter = !!(from || to);
-  const hasAnyFilter =
-    hasDateFilter ||
-    !!model ||
-    source !== 'all' ||
-    comparison.enabled ||
-    comparison.columns.length > 0;
+  const hasAnyFilter = hasDateFilter || !!model || source !== 'all';
 
   return (
-    <div className="mt-6 flex flex-col gap-3">
+    <div className="mt-4 flex flex-col gap-3">
       {/* ── Filter bar ── */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 select-none">
-          <input
-            type="checkbox"
-            checked={comparison.enabled}
-            onChange={(event) => setComparisonEnabled(event.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
-          />
-          Compare
-        </label>
-
-        {!comparison.enabled && (
+        {!isCompare && (
           <DateRangePicker
             from={from}
             to={to}
@@ -300,9 +271,9 @@ export function AnalyticsFilters({
           />
         )}
 
-        {models.length > 0 && <div className="h-6 w-px bg-gray-200" />}
+        {models.length > 0 && !isCompare && <div className="h-6 w-px bg-gray-200" />}
 
-        {models.length > 0 && (
+        {models.length > 0 && !isCompare && (
           <div className="relative">
             <select
               value={model}
@@ -328,7 +299,7 @@ export function AnalyticsFilters({
           </div>
         )}
 
-        {!comparison.enabled && (
+        {!isCompare && (
           <>
             <div className="h-6 w-px bg-gray-200" />
             <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
@@ -350,7 +321,7 @@ export function AnalyticsFilters({
           </>
         )}
 
-        {hasAnyFilter && (
+        {!isCompare && hasAnyFilter && (
           <>
             <div className="h-6 w-px bg-gray-200" />
             <button
@@ -368,7 +339,7 @@ export function AnalyticsFilters({
       </div>
 
       {/* ── Active filter pills (non-comparison) ── */}
-      {!comparison.enabled && hasAnyFilter && (
+      {!isCompare && hasAnyFilter && (
         <div className="flex flex-wrap items-center gap-1.5">
           {hasDateFilter && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-medium text-primary-700 ring-1 ring-primary-200/60">
@@ -429,7 +400,7 @@ export function AnalyticsFilters({
       )}
 
       {/* ── Comparison column builder ── */}
-      {comparison.enabled && (
+      {isCompare && (
         <div className="rounded-xl border border-gray-200 bg-white shadow-xs">
           <div>
             <table className="w-full">
@@ -452,7 +423,7 @@ export function AnalyticsFilters({
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {comparison.columns.map((column, index) => (
-                  <tr key={`${index}-${encodeComparisonColumn(column)}`} className="group">
+                  <tr key={index} className="group">
                     <td className="px-3 py-2.5 text-center text-xs font-medium text-gray-400">
                       {index + 1}
                     </td>

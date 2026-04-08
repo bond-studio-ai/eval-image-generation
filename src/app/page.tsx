@@ -24,11 +24,7 @@ interface PageProps {
     to?: string | string[];
     model?: string | string[];
     source?: string | string[];
-    compare?: string | string[];
     compareColumn?: string | string[];
-    compareRange?: string | string[];
-    compareStrategy?: string | string[];
-    compareSource?: string | string[];
   }>;
 }
 
@@ -66,7 +62,7 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
   );
 }
 
-type TabName = 'strategies' | 'products' | 'reliability';
+type TabName = 'strategies' | 'products' | 'reliability' | 'compare';
 
 function TabNav({
   active,
@@ -86,15 +82,10 @@ function TabNav({
     if (to) params.set('to', to);
     if (model) params.set('model', model);
     if (source && source !== 'all') params.set('source', source);
-    for (const value of getParamValues(searchParams, 'compare')) params.append('compare', value);
-    for (const value of getParamValues(searchParams, 'compareColumn'))
-      params.append('compareColumn', value);
-    for (const value of getParamValues(searchParams, 'compareRange'))
-      params.append('compareRange', value);
-    for (const value of getParamValues(searchParams, 'compareStrategy'))
-      params.append('compareStrategy', value);
-    for (const value of getParamValues(searchParams, 'compareSource'))
-      params.append('compareSource', value);
+    if (tab === 'compare') {
+      for (const value of getParamValues(searchParams, 'compareColumn'))
+        params.append('compareColumn', value);
+    }
     const qs = params.toString();
     return `/${qs ? `?${qs}` : ''}`;
   };
@@ -103,10 +94,11 @@ function TabNav({
     { key: 'strategies', label: 'Strategies' },
     { key: 'products', label: 'Products' },
     { key: 'reliability', label: 'Reliability' },
+    { key: 'compare', label: 'Compare' },
   ];
 
   return (
-    <div className="mt-6 flex gap-1 border-b border-gray-200">
+    <div className="mt-4 flex gap-1 border-b border-gray-200">
       {tabs.map((tab) => (
         <Link
           key={tab.key}
@@ -125,17 +117,24 @@ function TabNav({
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const comparison = parseComparisonState(params);
+  const tabRaw = getParamValues(params, 'tab')[0];
   const activeTab: TabName =
-    getParamValues(params, 'tab')[0] === 'products'
+    tabRaw === 'products'
       ? 'products'
-      : getParamValues(params, 'tab')[0] === 'reliability'
+      : tabRaw === 'reliability'
         ? 'reliability'
-        : 'strategies';
+        : tabRaw === 'compare'
+          ? 'compare'
+          : 'strategies';
   const from = getParamValues(params, 'from')[0];
   const to = getParamValues(params, 'to')[0];
   const model = getParamValues(params, 'model')[0];
   const source = getParamValues(params, 'source')[0];
+
+  const isCompare = activeTab === 'compare';
+  const comparison = isCompare
+    ? parseComparisonState({ ...params, compare: '1' })
+    : { enabled: false, columns: [] };
 
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams.from = from;
@@ -146,8 +145,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const [perfData, strategies, sceneRatings, productRatings] = await Promise.all([
     fetchAnalyticsStrategyPerformance(ratingParams),
     fetchStrategies(100),
-    comparison.enabled ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
-    comparison.enabled ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
+    isCompare ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'scene' }),
+    isCompare ? Promise.resolve(null) : fetchAnalyticsRatings({ ...ratingParams, type: 'product' }),
   ]);
 
   const sceneDist = sceneRatings?.distribution ?? [];
@@ -167,10 +166,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           ? 'Insights into benchmark generation quality and benchmark performance.'
           : 'Insights into generation quality and strategy performance.'}
       </p>
-      <AnalyticsFilters models={models} strategies={strategies} />
-      {!comparison.enabled && <TabNav active={activeTab} searchParams={params} />}
+      <TabNav active={activeTab} searchParams={params} />
+      <AnalyticsFilters models={models} strategies={strategies} activeTab={activeTab} />
 
-      {!comparison.enabled && (
+      {!isCompare && (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
             <p className="text-sm font-medium text-gray-600">Total Generations</p>
@@ -189,7 +188,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {comparison.enabled ? (
+      {isCompare ? (
         <ComparisonSpreadsheet slices={comparisonSlices} model={model} />
       ) : (
         <>
