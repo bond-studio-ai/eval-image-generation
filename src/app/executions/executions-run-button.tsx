@@ -414,7 +414,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               )}
 
               <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                {!benchmarkMode && (
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-700">Images per combination</span>
                     <div className="inline-flex items-center gap-1.5">
@@ -478,11 +477,10 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                       )}
                     </div>
                   </div>
-                )}
                 <p className="mt-2 text-xs text-gray-500">
                   {benchmarkMode ? (
                     <>
-                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalRuns} total benchmark run{totalRuns === 1 ? '' : 's'}</span>
+                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total benchmark run{totalRuns === 1 ? '' : 's'}</span>
                     </>
                   ) : (
                     <>

@@ -76,6 +76,11 @@ const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string
   { value: 'arbitrary', label: 'Arbitrary' },
 ];
 
+function getImageTypeLabel(imageType: ProductImageType, hasProduct: boolean): string {
+  if (imageType === 'arbitrary' && hasProduct) return 'Override';
+  return PRODUCT_IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label ?? 'Tear Sheet';
+}
+
 const TILE_PATTERN_OPTIONS = [
   { value: 'Horizontal', label: 'Horizontal' },
   { value: 'Vertical', label: 'Vertical' },
@@ -636,8 +641,7 @@ function ProductField({
   const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
   const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
-  const imageTypeLabel =
-    PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === effectiveImageType)?.label ?? 'Tear Sheet';
+  const imageTypeLabel = getImageTypeLabel(effectiveImageType, !!selectedId);
   const summaryText = selectedProduct
     ? selectedProduct.name
     : attachedArbitraryUrl || savedImageUrl
@@ -822,7 +826,9 @@ function ProductSelectionModal({
             <h3 className="text-sm font-semibold uppercase text-gray-900">{field.label}</h3>
             <p className="mt-1 text-xs text-gray-500">
               {isArbitraryMode
-                ? 'Upload a custom image for this slot.'
+                ? draftSelectedId
+                  ? 'Upload a custom image to override the product image sent for generation.'
+                  : 'Upload a custom image for this slot.'
                 : 'Search by product name, category, family, or ID.'}
             </p>
           </div>
@@ -868,7 +874,7 @@ function ProductSelectionModal({
                 </p>
               </div>
               <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-                {PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === draftImageType)?.label ?? 'Tear Sheet'}
+                {getImageTypeLabel(draftImageType, !!draftSelectedId)}
               </span>
             </div>
             <div className="mt-3">
@@ -885,7 +891,7 @@ function ProductSelectionModal({
                         : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    {option.label}
+                    {getImageTypeLabel(option.value, !!draftSelectedId)}
                   </button>
                 ))}
               </div>
@@ -893,7 +899,7 @@ function ProductSelectionModal({
             {draftImageType === 'arbitrary' ? (
               <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
                 <SceneImageInput
-                  label="Attached arbitrary image"
+                  label={draftSelectedId ? 'Override image' : 'Attached arbitrary image'}
                   value={draftArbitraryUrl}
                   onChange={setDraftArbitraryUrl}
                 />
@@ -1072,8 +1078,7 @@ function DisplayField({
     const productId = String(value);
     const product = productById.get(productId);
     const imageType = readProductImageType(allValues[getProductImageTypeKey(field.key)]);
-    const imageTypeLabel =
-      PRODUCT_IMAGE_TYPE_OPTIONS.find((option) => option.value === imageType)?.label ?? 'Featured Image';
+    const imageTypeLabel = imageType ? getImageTypeLabel(imageType, true) : 'Featured Image';
     return (
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-gray-600">{field.label}</span>
