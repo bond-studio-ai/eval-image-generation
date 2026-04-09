@@ -36,7 +36,10 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
       if (!res.ok) return;
       const json = await res.json();
       const newId = json.data?.id;
-      if (newId) router.push(`/input-presets/${newId}/edit`);
+      if (newId) {
+        router.refresh();
+        router.push(`/input-presets/${newId}/edit`);
+      }
     } finally {
       setCloningId(null);
     }

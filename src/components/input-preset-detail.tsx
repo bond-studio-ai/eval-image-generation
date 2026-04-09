@@ -207,7 +207,10 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                     if (!res.ok) throw new Error('Clone failed');
                     const json = await res.json();
                     const newId = json.data?.id;
-                    if (newId) router.push(`/input-presets/${newId}/edit`);
+                    if (newId) {
+                      router.refresh();
+                      router.push(`/input-presets/${newId}/edit`);
+                    }
                   } finally {
                     setCloning(false);
                   }
