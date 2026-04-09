@@ -66,6 +66,7 @@ const PRODUCT_FIELDS: ProductFieldDef[] = [
   { key: 'tubDoor', label: 'Tub Door', type: 'product', apiCategories: ['Tub Doors'] },
   { key: 'tubFiller', label: 'Tub Filler', type: 'product', apiCategories: ['Tub Filler'] },
   { key: 'wallpaper', label: 'Wallpaper', type: 'product', apiCategories: ['Wallpaper', 'Wallpaper Accessories'] },
+  { key: 'lvp', label: 'LVP', type: 'product', apiCategories: ['LVP'] },
 ];
 
 const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string }> = [

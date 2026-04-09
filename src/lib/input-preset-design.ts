@@ -22,6 +22,7 @@ export const INPUT_PRESET_DESIGN_FIELD_KEYS = [
   'tub',
   'tubDoor',
   'tubFiller',
+  'lvp',
   'wallpaper',
   'wallpaperPlacement',
   'wallTilePlacement',
@@ -51,6 +52,7 @@ export const INPUT_PRESET_DESIGN_FIELD_KEYS = [
   'tubImageType',
   'tubDoorImageType',
   'tubFillerImageType',
+  'lvpImageType',
   'wallpaperImageType',
   'wallTileImageType',
   'floorTilePattern',
@@ -93,6 +95,7 @@ export const INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY: Record<string, string> = {
   tubDoor: 'tub_doors_url',
   tubFiller: 'tub_fillers_url',
   wallpaper: 'wallpapers_url',
+  lvp: 'lvps_url',
 }
 
 export const INPUT_PRESET_SLOT_LABELS: Record<string, string> = {
@@ -120,6 +123,7 @@ export const INPUT_PRESET_SLOT_LABELS: Record<string, string> = {
   tubDoor: 'Tub Door',
   tubFiller: 'Tub Filler',
   wallpaper: 'Wallpaper',
+  lvp: 'LVP',
 }
 
 export interface InputPresetStoredImage {
