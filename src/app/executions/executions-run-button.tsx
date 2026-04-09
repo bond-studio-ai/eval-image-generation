@@ -22,6 +22,21 @@ const BENCHMARK_PROJECT_IDS = [
   'PRJ-FARVFVS4A',
   'PRJ-T3HTSH5ME',
   'PRJ-E78TJ8WXM',
+  'PRJ-K8X7ABKR2',
+  'PRJ-QJUEYENEP',
+  'PRJ-P8CD6Q2HH',
+  'PRJ-QSNP6AZTC',
+  'PRJ-BD38GQP2K',
+  'PRJ-4XN53LRMM',
+  'PRJ-VPG3BGK29',
+  'PRJ-954NJBRZQ',
+  'PRJ-887MW333R',
+  'PRJ-3ASSMMB7A',
+  'PRJ-9LGYQDNSY',
+  'PRJ-TFJDZP3VK',
+  'PRJ-KBLQ9SAU4',
+  'PRJ-N43MK39ZR',
+  'PRJ-XB6SETAU7',
 ] as const;
 
 const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
@@ -110,60 +125,59 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     try {
       const results = benchmarkMode
         ? await Promise.allSettled(
+          selectedStrategyIds.flatMap((strategyId) =>
+            selectedBenchmarkProjectIds.map(async (projectId) => {
+              const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  project_id: projectId,
+                  number_of_images: count,
+                  group_id: groupId,
+                }),
+              });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                throw new Error(
+                  (data as { error?: { message?: string } }).error?.message || 'Failed to start benchmark run',
+                );
+              }
+              return data;
+            }),
+          ),
+        )
+        : await (async () => {
+          const requests = await fetchPresetRunRequests(selectedPresetIds, {
+            batch: true,
+            number_of_images: count,
+            group_id: groupId,
+          });
+          return Promise.allSettled(
             selectedStrategyIds.flatMap((strategyId) =>
-              selectedBenchmarkProjectIds.map(async (projectId) => {
+              requests.map(async (requestBody) => {
                 const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    project_id: projectId,
-                    number_of_images: count,
-                    group_id: groupId,
-                  }),
+                  body: JSON.stringify(requestBody),
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
                   throw new Error(
-                    (data as { error?: { message?: string } }).error?.message || 'Failed to start benchmark run',
+                    (data as { error?: { message?: string } }).error?.message || 'Failed to start run',
                   );
                 }
                 return data;
               }),
             ),
-          )
-        : await (async () => {
-            const requests = await fetchPresetRunRequests(selectedPresetIds, {
-              batch: true,
-              number_of_images: count,
-              group_id: groupId,
-            });
-            return Promise.allSettled(
-              selectedStrategyIds.flatMap((strategyId) =>
-                requests.map(async (requestBody) => {
-                  const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                  });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok) {
-                    throw new Error(
-                      (data as { error?: { message?: string } }).error?.message || 'Failed to start run',
-                    );
-                  }
-                  return data;
-                }),
-              ),
-            );
-          })();
+          );
+        })();
       const failures = results.filter(
         (result): result is PromiseRejectedResult => result.status === 'rejected',
       );
       if (failures.length > 0) {
         const succeeded = results.length - failures.length;
         setError(
-          `${failures[0]?.reason instanceof Error ? failures[0].reason.message : 'Failed to start run'}${
-            succeeded > 0 ? ' Some runs were still created.' : ''
+          `${failures[0]?.reason instanceof Error ? failures[0].reason.message : 'Failed to start run'}${succeeded > 0 ? ' Some runs were still created.' : ''
           }`,
         );
         if (succeeded > 0) onRunCreated?.();
@@ -302,17 +316,15 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                                 key={s.id}
                                 type="button"
                                 onClick={() => toggleStrategy(s.id)}
-                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                                  selected
+                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${selected
                                     ? 'border-primary-400 bg-primary-50 shadow-sm'
                                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                }`}
+                                  }`}
                               >
-                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                  selected
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${selected
                                     ? 'border-primary-500 bg-primary-500 text-white'
                                     : 'border-gray-300 bg-white'
-                                }`}>
+                                  }`}>
                                   {selected && (
                                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -375,17 +387,15 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                                 key={id}
                                 type="button"
                                 onClick={() => benchmarkMode ? toggleBenchmarkProject(id) : togglePreset(id)}
-                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                                  selected
+                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${selected
                                     ? 'border-primary-400 bg-primary-50 shadow-sm'
                                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                }`}
+                                  }`}
                               >
-                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                  selected
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${selected
                                     ? 'border-primary-500 bg-primary-500 text-white'
                                     : 'border-gray-300 bg-white'
-                                }`}>
+                                  }`}>
                                   {selected && (
                                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -408,66 +418,64 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-700">Images per combination</span>
                     <div className="inline-flex items-center gap-1.5">
-                    {[1, 2, 4, 8].map((n) => (
+                      {[1, 2, 4, 8].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => { setNumberOfImages(n); setCustomImages(false); }}
+                          className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${!customImages && numberOfImages === n
+                              ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                            }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
                       <button
-                        key={n}
                         type="button"
-                        onClick={() => { setNumberOfImages(n); setCustomImages(false); }}
-                        className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${
-                          !customImages && numberOfImages === n
+                        onClick={() => { setCustomImages(true); if ([1, 2, 4, 8].includes(numberOfImages)) setNumberOfImages(3); }}
+                        className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${customImages
                             ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
                             : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
-                        {n}
+                        Custom
                       </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => { setCustomImages(true); if ([1, 2, 4, 8].includes(numberOfImages)) setNumberOfImages(3); }}
-                      className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${
-                        customImages
-                          ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      Custom
-                    </button>
-                    {customImages && (
-                      <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
-                          disabled={numberOfImages <= 1}
-                          className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                          </svg>
-                        </button>
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          autoFocus
-                          value={numberOfImages}
-                          onChange={(e) =>
-                            setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-                          }
-                          className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
-                          disabled={numberOfImages >= 100}
-                          className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
+                      {customImages && (
+                        <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+                          <button
+                            type="button"
+                            onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
+                            disabled={numberOfImages <= 1}
+                            className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                            </svg>
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            autoFocus
+                            value={numberOfImages}
+                            onChange={(e) =>
+                              setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
+                            }
+                            className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
+                            disabled={numberOfImages >= 100}
+                            className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
