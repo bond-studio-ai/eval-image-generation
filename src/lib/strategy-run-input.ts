@@ -79,6 +79,8 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
 
     if (imageType === 'arbitrary') {
       arbitrary_images.push({ url, slot, tag: slot });
+      const existing = product_images[categoryKey] ?? [];
+      if (!existing.includes(url)) product_images[categoryKey] = [...existing, url];
       continue;
     }
 
