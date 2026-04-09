@@ -95,11 +95,8 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         real_photo: realPhoto,
         mood_board: moodBoard,
       };
-      if (designSettings) {
-        for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
-          const value = designSettings[key];
-          if (value !== undefined) payload[key] = value;
-        }
+      for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
+        payload[key] = designSettings?.[key] ?? null;
       }
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
