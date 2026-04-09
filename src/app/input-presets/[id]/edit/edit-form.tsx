@@ -31,7 +31,6 @@ interface InitialData {
   moodBoard: string | null;
   arbitraryImagesBySlot: Record<string, string | null>;
   designSettings: Record<string, unknown> | null;
-  productUrlValues: Record<string, string | null>;
   savedImageUrlsBySlot: Record<string, string | null>;
 }
 
@@ -102,13 +101,10 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
           if (value !== undefined) payload[key] = value;
         }
       }
-      for (const urlColumn of Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
-        payload[urlColumn] = initialData.productUrlValues[urlColumn] ?? null;
-      }
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
           payload[urlColumn] = arbitraryImagesBySlot[slot] ?? null;
-        } else if (initialData.arbitraryImagesBySlot[slot]) {
+        } else {
           payload[urlColumn] = null;
         }
       }

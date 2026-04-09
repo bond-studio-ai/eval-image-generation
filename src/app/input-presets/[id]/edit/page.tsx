@@ -1,8 +1,6 @@
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
-  INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
-  readInputPresetValue,
 } from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
 import Link from 'next/link';
@@ -61,12 +59,6 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const arbitraryImagesBySlot = Object.fromEntries(
     storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url])
   );
-  const productUrlValues = Object.fromEntries(
-    Object.values(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).map((column) => {
-      const value = readInputPresetValue(preset as Record<string, unknown>, column);
-      return [column, typeof value === 'string' && value.length > 0 ? value : null];
-    })
-  );
   const savedImageUrlsBySlot = Object.fromEntries(
     storedImages.map((image) => [image.slot, image.url])
   );
@@ -82,7 +74,6 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
     arbitraryImagesBySlot,
     designSettings,
-    productUrlValues,
     savedImageUrlsBySlot,
   };
 
