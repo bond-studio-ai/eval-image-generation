@@ -36,7 +36,7 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
       if (!res.ok) return;
       const json = await res.json();
       const newId = json.data?.id;
-      if (newId) {
+      if (newId && newId !== id) {
         router.refresh();
         router.push(`/input-presets/${newId}/edit`);
       }
