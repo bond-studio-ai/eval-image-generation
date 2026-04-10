@@ -7,7 +7,7 @@ import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
@@ -285,14 +285,21 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   }, [fetchBatches]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollRef = useRef<number[] | null>(null);
+
+  useLayoutEffect(() => {
+    const saved = pendingScrollRef.current;
+    if (!saved) return;
+    pendingScrollRef.current = null;
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    if (!scrollers) return;
+    scrollers.forEach((el, i) => { if (i < saved.length) el.scrollLeft = saved[i]; });
+  });
 
   const fetchBatchesKeepScroll = useCallback(async (...args: Parameters<typeof fetchBatches>) => {
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    const saved = scrollers ? Array.from(scrollers).map((el) => ({ el, left: el.scrollLeft })) : [];
+    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
     await fetchBatches(...args);
-    requestAnimationFrame(() => {
-      for (const { el, left } of saved) if (el.isConnected) el.scrollLeft = left;
-    });
   }, [fetchBatches]);
 
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
