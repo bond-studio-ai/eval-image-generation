@@ -146,6 +146,17 @@ export function MatrixTab() {
     );
   }
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchRunsKeepScroll = useCallback(async () => {
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    const saved = scrollers ? Array.from(scrollers).map((el) => ({ el, left: el.scrollLeft })) : [];
+    await fetchRuns();
+    requestAnimationFrame(() => {
+      for (const { el, left } of saved) if (el.isConnected) el.scrollLeft = left;
+    });
+  }, [fetchRuns]);
+
   if (runs.length === 0) {
     return <p className="text-sm text-gray-600">No individual runs yet. Run a strategy from its detail page.</p>;
   }
@@ -153,7 +164,7 @@ export function MatrixTab() {
   const cols = matrix.strategies.length;
 
   return (
-    <div className="space-y-5">
+    <div ref={containerRef} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <FilterPanel
           label="Input Presets"
@@ -252,7 +263,7 @@ export function MatrixTab() {
                               </svg>
                             </div>
                             {outputRun.lastOutputGenerationId && (
-                              <MatrixCellRatingOverlay generationId={outputRun.lastOutputGenerationId} onRated={fetchRuns} />
+                              <MatrixCellRatingOverlay generationId={outputRun.lastOutputGenerationId} onRated={fetchRunsKeepScroll} />
                             )}
                           </button>
                         ))}
@@ -278,7 +289,7 @@ export function MatrixTab() {
                           </svg>
                         </div>
                         {run.lastOutputGenerationId && (
-                          <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={fetchRuns} />
+                          <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={fetchRunsKeepScroll} />
                         )}
                       </button>
                     ) : (
@@ -298,7 +309,7 @@ export function MatrixTab() {
           src={lightbox.src}
           runHref={lightbox.runHref}
           generationId={lightbox.generationId}
-          onRated={() => fetchRuns()}
+          onRated={() => fetchRunsKeepScroll()}
           onClose={() => setLightbox(null)}
         />
       )}

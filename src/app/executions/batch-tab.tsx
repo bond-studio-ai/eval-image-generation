@@ -284,6 +284,17 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     finally { setRetryingJudgeBatchId(null); }
   }, [fetchBatches]);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchBatchesKeepScroll = useCallback(async (...args: Parameters<typeof fetchBatches>) => {
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    const saved = scrollers ? Array.from(scrollers).map((el) => ({ el, left: el.scrollLeft })) : [];
+    await fetchBatches(...args);
+    requestAnimationFrame(() => {
+      for (const { el, left } of saved) if (el.isConnected) el.scrollLeft = left;
+    });
+  }, [fetchBatches]);
+
   if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
 
   if (fetchError) {
@@ -303,7 +314,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       {/* Date filter + view toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DateRangePicker
@@ -475,7 +486,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
                       runs={batch.runs}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
-                      onRated={fetchBatches}
+                      onRated={fetchBatchesKeepScroll}
                       onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
                     />
                   ) : (
@@ -485,7 +496,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
                       isSingleStrategy={!isMultiStrategy}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
-                      onRated={fetchBatches}
+                      onRated={fetchBatchesKeepScroll}
                       onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
                     />
                   )}
@@ -507,7 +518,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
           src={lightbox.src}
           runHref={lightbox.runHref}
           generationId={lightbox.generationId}
-          onRated={() => fetchBatches()}
+          onRated={() => fetchBatchesKeepScroll()}
           onClose={() => setLightbox(null)}
         />
       )}

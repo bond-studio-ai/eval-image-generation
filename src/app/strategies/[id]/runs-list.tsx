@@ -114,8 +114,19 @@ export function StrategyRunsList({
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchRunsKeepScroll = useCallback(async () => {
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    const saved = scrollers ? Array.from(scrollers).map((el) => ({ el, left: el.scrollLeft })) : [];
+    await fetchRuns();
+    requestAnimationFrame(() => {
+      for (const { el, left } of saved) if (el.isConnected) el.scrollLeft = left;
+    });
+  }, [fetchRuns]);
+
   return (
-    <>
+    <div ref={containerRef}>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Runs</h2>
         <div className="flex items-center gap-2">
@@ -147,7 +158,7 @@ export function StrategyRunsList({
               key={`batch-${item.id}`}
               batch={item}
               strategyId={strategyId}
-              onRated={fetchRuns}
+              onRated={fetchRunsKeepScroll}
               onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
             />
           ))}
@@ -159,7 +170,7 @@ export function StrategyRunsList({
               key={`batch-matrix-${item.id}`}
               batch={item}
               strategyId={strategyId}
-              onRated={fetchRuns}
+              onRated={fetchRunsKeepScroll}
               onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
             />
           ))}
@@ -170,11 +181,11 @@ export function StrategyRunsList({
           src={lightbox.src}
           runHref={lightbox.runHref}
           generationId={lightbox.generationId}
-          onRated={() => fetchRuns()}
+          onRated={() => fetchRunsKeepScroll()}
           onClose={() => setLightbox(null)}
         />
       )}
-    </>
+    </div>
   );
 }
 

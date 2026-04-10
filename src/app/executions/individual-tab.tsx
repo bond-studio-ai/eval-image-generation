@@ -133,12 +133,23 @@ export function IndividualExecutionsTab() {
     );
   }
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchRunsKeepScroll = useCallback(async () => {
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    const saved = scrollers ? Array.from(scrollers).map((el) => ({ el, left: el.scrollLeft })) : [];
+    await fetchRuns();
+    requestAnimationFrame(() => {
+      for (const { el, left } of saved) if (el.isConnected) el.scrollLeft = left;
+    });
+  }, [fetchRuns]);
+
   if (runs.length === 0) {
     return <p className="text-sm text-gray-600">No individual runs yet. Run a strategy from its detail page.</p>;
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+    <div ref={containerRef} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -232,7 +243,7 @@ export function IndividualExecutionsTab() {
           src={lightbox.src}
           runHref={lightbox.runHref}
           generationId={lightbox.generationId}
-          onRated={() => fetchRuns()}
+          onRated={() => fetchRunsKeepScroll()}
           onClose={() => setLightbox(null)}
         />
       )}
