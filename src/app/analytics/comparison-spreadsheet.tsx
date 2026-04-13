@@ -5,7 +5,7 @@ import {
   formatComparisonSource,
   type AnalyticsComparisonSlice,
 } from '@/app/analytics/comparison-utils';
-import { serviceUrl } from '@/lib/api-base';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
 type SummaryData = {
@@ -121,6 +121,7 @@ export function ComparisonSpreadsheet({
     (async () => {
       setLoading(true);
       try {
+        const tz = browserTimezone();
         const results = await Promise.all(
           slices.map(async (slice) => {
             const catParams = new URLSearchParams({
@@ -130,6 +131,7 @@ export function ComparisonSpreadsheet({
               strategy_id: slice.strategyId,
             });
             if (model) catParams.set('model', model);
+            if (tz) catParams.set('tz', tz);
 
             const catRes = await fetch(
               serviceUrl(`analytics/product-category-rates?${catParams}`),

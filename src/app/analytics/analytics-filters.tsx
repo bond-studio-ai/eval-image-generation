@@ -11,6 +11,7 @@ import {
 } from '@/app/analytics/comparison-utils';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { StrategyListItem } from '@/lib/service-client';
+import { browserTimezone } from '@/lib/api-base';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -215,6 +216,9 @@ export function AnalyticsFilters({
             if (value) next.set(key, value);
             else next.delete(key);
           }
+          const tz = browserTimezone();
+          if (tz && (next.has('from') || next.has('to'))) next.set('tz', tz);
+          else next.delete('tz');
         }),
       );
     },

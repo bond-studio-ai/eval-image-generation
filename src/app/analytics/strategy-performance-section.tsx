@@ -2,7 +2,7 @@
 
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
-import { serviceUrl } from '@/lib/api-base';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
@@ -149,6 +149,8 @@ export function StrategyPerformanceSection({
         if (to) params.set('to', to);
         if (model) params.set('model', model);
         if (source && source !== 'all') params.set('source', source);
+        const tz = browserTimezone();
+        if (tz) params.set('tz', tz);
         const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();
@@ -167,6 +169,8 @@ export function StrategyPerformanceSection({
       if (to) params.set('to', to);
       if (model) params.set('model', model);
       if (source && source !== 'all') params.set('source', source);
+      const tz = browserTimezone();
+      if (tz) params.set('tz', tz);
       const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();

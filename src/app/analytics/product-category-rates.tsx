@@ -1,6 +1,6 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
 type CategoryIssueCount = { issue: string; count: number };
@@ -356,6 +356,8 @@ export function ProductCategoryRates({
         if (model) params.set('model', model);
         if (source && source !== 'all') params.set('source', source);
         if (strategyId) params.set('strategy_id', strategyId);
+        const tz = browserTimezone();
+        if (tz) params.set('tz', tz);
         const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const json = await res.json();

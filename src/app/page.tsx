@@ -136,11 +136,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     ? parseComparisonState({ ...params, compare: '1' })
     : { enabled: false, columns: [] };
 
+  const tz = getParamValues(params, 'tz')[0];
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams.from = from;
   if (to) ratingParams.to = to;
   if (model) ratingParams.model = model;
   if (source && source !== 'all') ratingParams.source = source;
+  if (tz) ratingParams.tz = tz;
 
   const [perfData, strategies, sceneRatings, productRatings] = await Promise.all([
     fetchAnalyticsStrategyPerformance(ratingParams),

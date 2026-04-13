@@ -11,3 +11,12 @@ export function localUrl(path: string): string {
   const p = path.startsWith('/') ? path.slice(1) : path;
   return `/api/v1/${p}`;
 }
+
+/** The browser's IANA timezone (e.g. "America/Los_Angeles"). */
+export function browserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return '';
+  }
+}

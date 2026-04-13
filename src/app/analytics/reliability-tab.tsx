@@ -1,6 +1,6 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import type { ReliabilityData } from '@/lib/service-client';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -122,6 +122,8 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
       if (to) params.set('to', to);
       if (model) params.set('model', model);
       if (source && source !== 'all') params.set('source', source);
+      const tz = browserTimezone();
+      if (tz) params.set('tz', tz);
       const qs = params.toString();
       const res = await fetch(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ''}`), {
         cache: 'no-store',
