@@ -326,6 +326,41 @@ export const PRODUCT_ACCURACY_ISSUES = [
   'Incorrect tile pattern',
 ] as const;
 
+export const CATEGORY_SPECIFIC_ISSUES: Record<string, readonly string[]> = {
+  faucets: [
+    'Converted to widespread',
+    'Incorrect shape',
+    'Incorrect detailing',
+    'Incorrect handle placement',
+  ],
+  lightings: [
+    'Incorrect armature shape',
+    'Incorrect number of lights',
+  ],
+  vanities: [
+    'Incorrect base/legs shape',
+    'Incorrect cabinet doors & drawers detailing',
+  ],
+  mirrors: [
+    'Incorrect shape',
+  ],
+  shower_systems: [
+    'Added a hand shower',
+    'Incorrect shower head shape',
+    'Incorrect temp valve shape',
+    'Incorrect tub spout shape',
+    'Added an extra tub spout',
+  ],
+  toilets: [
+    'Flush hardware missing',
+    'Incorrect flush hardware location',
+  ],
+  tub_fillers: [
+    'Incorrect shape',
+    'Incorrect detailing',
+  ],
+};
+
 export const SCENE_ACCURACY_ISSUES = [
   'Unrealistic lighting & shadows',
   'Perspective drift',

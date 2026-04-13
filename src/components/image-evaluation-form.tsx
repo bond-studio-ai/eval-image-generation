@@ -1,7 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { CATEGORY_LABELS } from '@/lib/validation';
+import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Issue options
@@ -335,11 +335,15 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
               activeCategories.map((category) => {
                 const catData = data.productAccuracy[category] ?? { issues: [], notes: '' };
                 const label = CATEGORY_LABELS[category] ?? category;
+                const categoryIssues = CATEGORY_SPECIFIC_ISSUES[category];
+                const issueOptions = categoryIssues
+                  ? [...PRODUCT_ACCURACY_ISSUES, ...categoryIssues]
+                  : [...PRODUCT_ACCURACY_ISSUES];
                 return (
                   <div key={category} className="rounded border border-gray-100 bg-gray-50/50 p-3">
                     <p className="mb-2 text-xs font-semibold text-gray-700">{label}</p>
                     <IssueCheckboxGroup
-                      options={PRODUCT_ACCURACY_ISSUES}
+                      options={issueOptions}
                       selected={catData.issues}
                       onChange={(v) => updateCategoryEval(category, 'issues', v)}
                     />
