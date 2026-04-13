@@ -6,7 +6,7 @@ import {
   type AnalyticsComparisonSlice,
 } from '@/app/analytics/comparison-utils';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 type SummaryData = {
   sceneRatedCount: number;
@@ -111,6 +111,22 @@ export function ComparisonSpreadsheet({
   const [dataBySlice, setDataBySlice] = useState<Record<string, SliceData>>({});
   const [loading, setLoading] = useState(false);
 
+  type SortCol = { sliceKey: string; field: 'successPct' | 'failurePct'; dir: 'asc' | 'desc' };
+  const [categorySort, setCategorySort] = useState<SortCol | null>(null);
+
+  const toggleCategorySort = useCallback(
+    (sliceKey: string, field: 'successPct' | 'failurePct') => {
+      setCategorySort((prev) => {
+        if (prev?.sliceKey === sliceKey && prev.field === field) {
+          if (prev.dir === 'desc') return { sliceKey, field, dir: 'asc' };
+          return null;
+        }
+        return { sliceKey, field, dir: 'desc' };
+      });
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
     if (slices.length === 0) {
@@ -179,26 +195,42 @@ export function ComparisonSpreadsheet({
       for (const cat of data.categories) names.add(cat.name);
     }
 
-    return [...names]
-      .sort((a, b) => formatCategoryName(a).localeCompare(formatCategoryName(b)))
-      .flatMap((catName) => {
-        const issueNames = new Set<string>();
-        for (const data of Object.values(dataBySlice)) {
-          const cat = data.categories.find((c) => c.name === catName);
-          for (const issue of cat?.issues ?? []) issueNames.add(issue.issue);
-        }
-        return [
-          { type: 'category' as const, categoryName: catName },
-          ...[...issueNames]
-            .sort((a, b) => a.localeCompare(b))
-            .map((issueName) => ({
-              type: 'issue' as const,
-              categoryName: catName,
-              issueName,
-            })),
-        ];
-      });
-  }, [dataBySlice]);
+    let sortedNames = [...names].sort((a, b) =>
+      formatCategoryName(a).localeCompare(formatCategoryName(b)),
+    );
+
+    if (categorySort) {
+      const { sliceKey, field, dir } = categorySort;
+      const sliceData = dataBySlice[sliceKey];
+      if (sliceData) {
+        sortedNames.sort((a, b) => {
+          const catA = sliceData.categories.find((c) => c.name === a);
+          const catB = sliceData.categories.find((c) => c.name === b);
+          const valA = catA?.[field] ?? -1;
+          const valB = catB?.[field] ?? -1;
+          return dir === 'desc' ? valB - valA : valA - valB;
+        });
+      }
+    }
+
+    return sortedNames.flatMap((catName) => {
+      const issueNames = new Set<string>();
+      for (const data of Object.values(dataBySlice)) {
+        const cat = data.categories.find((c) => c.name === catName);
+        for (const issue of cat?.issues ?? []) issueNames.add(issue.issue);
+      }
+      return [
+        { type: 'category' as const, categoryName: catName },
+        ...[...issueNames]
+          .sort((a, b) => a.localeCompare(b))
+          .map((issueName) => ({
+            type: 'issue' as const,
+            categoryName: catName,
+            issueName,
+          })),
+      ];
+    });
+  }, [dataBySlice, categorySort]);
 
   if (slices.length === 0) {
     return (
@@ -407,11 +439,19 @@ export function ComparisonSpreadsheet({
                   <th className="border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
                     Rated Images
                   </th>
-                  <th className="border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-green-700">
-                    Success
+                  <th
+                    className="cursor-pointer border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-green-700 select-none hover:bg-gray-200"
+                    onClick={() => toggleCategorySort(slice.key, 'successPct')}
+                  >
+                    Success{' '}
+                    <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === 'successPct'} dir={categorySort?.dir} />
                   </th>
-                  <th className="border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-red-600">
-                    Fail
+                  <th
+                    className="cursor-pointer border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-red-600 select-none hover:bg-gray-200"
+                    onClick={() => toggleCategorySort(slice.key, 'failurePct')}
+                  >
+                    Fail{' '}
+                    <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === 'failurePct'} dir={categorySort?.dir} />
                   </th>
                 </Fragment>
               ))}
@@ -521,4 +561,9 @@ export function ComparisonSpreadsheet({
       </div>
     </div>
   );
+}
+
+function SortArrow({ active, dir }: { active?: boolean; dir?: 'asc' | 'desc' }) {
+  if (!active) return <span className="text-gray-300">{'\u2195'}</span>;
+  return <span>{dir === 'asc' ? '\u2191' : '\u2193'}</span>;
 }
