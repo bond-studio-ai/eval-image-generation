@@ -20,6 +20,10 @@ const SCENE_ACCURACY_ISSUES = [
   'Hallucinated details in the room',
 ];
 
+function toSnakeCase(str: string): string {
+  return str.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`);
+}
+
 /** Per-category product accuracy data */
 interface CategoryEval {
   issues: string[];
@@ -123,14 +127,22 @@ export function ImageEvaluationForm({ resultId, productCategories = [] }: ImageE
       .then((r) => {
         if (r.data) {
           const d = r.data;
-          const pa = d.productAccuracy ?? {};
+          const rawPa = d.productAccuracy ?? {};
+          const pa: Record<string, CategoryEval> = {};
+          for (const [key, val] of Object.entries(rawPa)) {
+            const normalized = toSnakeCase(key);
+            const existing = pa[normalized];
+            const v = val as CategoryEval;
+            if (existing && existing.issues.length > 0) continue;
+            pa[normalized] = v;
+          }
           const productAccuracy: Record<string, CategoryEval> = {};
           for (const cat of productCategories) {
             productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
           }
           for (const [key, val] of Object.entries(pa)) {
             if (!productAccuracy[key]) {
-              productAccuracy[key] = val as CategoryEval;
+              productAccuracy[key] = val;
             }
           }
 
