@@ -1,13 +1,11 @@
 /**
  * Server-side client for calling the image-generation service.
- * Used by SSR pages to fetch data. Reads BASE_API_HOSTNAME from env.
+ * Used by SSR pages to fetch data.
  */
 
-const getBase = () => {
-  const base = process.env.BASE_API_HOSTNAME;
-  if (!base) throw new Error('BASE_API_HOSTNAME is not set');
-  return `${base.replace(/\/$/, '')}/image-generation/v1`;
-};
+import { imageGenerationBase } from './env';
+
+const getBase = () => imageGenerationBase();
 
 async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${getBase()}${path.startsWith('/') ? path : `/${path}`}`;
@@ -353,4 +351,28 @@ export interface ReliabilityData {
 export async function fetchAnalyticsReliability(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
   return fetchService<ReliabilityData>(`/analytics/reliability${qs ? `?${qs}` : ''}`);
+}
+
+// ─── Environments ────────────────────────────────────────────────────────────
+
+export interface EnvironmentListItem {
+  id: string;
+  name: string;
+  apiHostname: string;
+  isActive: boolean;
+  hasAuthToken: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchEnvironments(limit = 100): Promise<EnvironmentListItem[]> {
+  return fetchService<EnvironmentListItem[]>(`/environments?limit=${limit}`);
+}
+
+export async function fetchEnvironmentById(id: string): Promise<EnvironmentListItem | null> {
+  try {
+    return await fetchService<EnvironmentListItem>(`/environments/${id}`);
+  } catch {
+    return null;
+  }
 }

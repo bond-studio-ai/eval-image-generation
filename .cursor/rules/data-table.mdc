@@ -1,0 +1,168 @@
+---
+description: Conventions for list/table views using the shared DataTable component and its reusable helpers.
+globs:
+  - src/app/**/page.tsx
+  - src/components/**-list.tsx
+  - src/components/**-table.tsx
+  - src/app/**/*-table.tsx
+---
+
+# DataTable
+
+Use `<DataTable>` from `@/components/data-table` for **every** list/table view. Never write raw `<table>` markup.
+
+## Imports
+
+```tsx
+import {
+  DataTable,
+  NameCell,
+  StatusBadge,
+  DateCell,
+  checkboxColumn,
+  actionsColumn,
+  type DataTableColumn,
+  type RowAction,
+  TD_DEFAULT,      // 'whitespace-nowrap px-6 py-4 text-sm text-gray-700'
+  TH_DEFAULT,      // standard left-aligned th
+} from '@/components/data-table';
+```
+
+## DataTable Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `columns` | `DataTableColumn<T>[]` | — | Column definitions |
+| `data` | `T[]` | — | Row data |
+| `rowKey` | `(row: T) => string` | — | Unique key per row |
+| `rowClassName` | `(row: T) => string` | `'hover:bg-gray-50'` | Dynamic row classes |
+| `emptyMessage` | `string` | `'No items found.'` | Empty state text |
+| `loading` | `boolean` | `false` | Show loading row |
+| `loadingMessage` | `string` | `'Loading...'` | Loading row text |
+| `footer` | `ReactNode` | — | After-table content (e.g. `<Pagination>`) |
+| `className` | `string` | `'mt-8'` | Outer wrapper classes |
+
+## Column Definition
+
+```tsx
+interface DataTableColumn<T> {
+  header: ReactNode;
+  headerClassName?: string;  // default: TH_DEFAULT
+  cell: (row: T) => ReactNode;
+  cellClassName?: string;    // default: TD_DEFAULT
+}
+```
+
+Most columns need no `cellClassName` override — `TD_DEFAULT` handles padding, text size, color, and `whitespace-nowrap`. Only override for special cases (e.g. `NameCell` columns use `'px-6 py-4'` to allow wrapping).
+
+## Reusable Cell Components
+
+### NameCell — linked name + optional subtitle
+
+```tsx
+cell: (row) => <NameCell href={`/resources/${row.id}`} name={row.name} subtitle={row.description} />,
+cellClassName: 'px-6 py-4',
+```
+
+Props: `href`, `name` (string | null), `subtitle?` (string | null), `fallback?` (default `'Untitled'`).
+Renders the name as a primary-600 link with a truncated gray subtitle below.
+
+### StatusBadge — consistent status pill
+
+```tsx
+cell: (row) => <StatusBadge status={row.deletedAt ? 'deleted' : 'active'} />,
+```
+
+Statuses: `'active'` (green), `'inactive'` (gray), `'deleted'` (red).
+Optional `label` prop overrides the display text (e.g. `<StatusBadge status="active" label="Configured" />`).
+
+### DateCell — formatted date
+
+```tsx
+cell: (row) => <DateCell date={row.createdAt} />,
+```
+
+Uses `toLocaleDateString()` — change here to update all tables at once.
+
+## checkboxColumn Factory
+
+For bulk-select tables, call `checkboxColumn()` as the **first** column:
+
+```tsx
+checkboxColumn<RowType>({
+  selected,            // Set<string>
+  onToggle: toggleSelect,
+  onToggleAll: toggleAll,
+  allSelected,         // boolean
+  rowId: (row) => row.id,
+  isSelectable: (row) => !row.deletedAt,  // optional guard
+}),
+```
+
+## actionsColumn Factory
+
+Use `actionsColumn()` as the **last** column. Never write raw action button JSX in column definitions.
+
+Each action is described declaratively with `{ icon, label, onClick }`:
+
+```tsx
+actionsColumn<RowType>([
+  { icon: 'clone',  label: 'Clone item',  onClick: (row) => handleClone(row.id), loading: (row) => cloningId === row.id },
+  { icon: 'edit',   label: 'Edit item',   onClick: (row) => router.push(`/items/${row.id}/edit`) },
+  { icon: 'delete', label: 'Delete item',  onClick: (row) => handleDelete(row.id, row.name), variant: 'danger', loading: (row) => deletingId === row.id },
+])
+```
+
+### RowAction descriptor
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `icon` | `'clone' \| 'delete' \| 'edit'` | Built-in icon |
+| `label` | `string` | Tooltip text |
+| `onClick` | `(row: T) => void` | Click handler |
+| `variant` | `'default' \| 'danger'` | Button style (default: `'default'`) |
+| `loading` | `(row: T) => boolean` | Shows spinner when true |
+| `hidden` | `(row: T) => boolean` | Hides button when true |
+
+For custom components that don't fit the icon/label/onClick pattern (e.g. `DeployToEnvironmentButton`), use the render escape hatch:
+
+```tsx
+{ render: (row) => <DeployToEnvironmentButton strategyId={row.id} variant="icon" /> }
+```
+
+### Strategies example (multiple actions)
+
+```tsx
+const actions = useMemo<RowAction<StrategyListItem>[]>(() => [
+  { icon: 'clone', label: 'Clone strategy', onClick: (s) => handleClone(s.id), loading: (s) => cloningId === s.id },
+  { render: (s) => <DeployToEnvironmentButton strategyId={s.id} variant="icon" /> },
+  { icon: 'delete', label: 'Delete strategy', onClick: (s) => handleDelete(s.id, s.name), variant: 'danger', loading: (s) => deletingId === s.id },
+], [handleClone, handleDelete, cloningId, deletingId]);
+
+// Then in columns:
+actionsColumn(actions),
+```
+
+### Input presets example (single action, conditional visibility)
+
+```tsx
+actionsColumn<InputPresetRow>([
+  { icon: 'clone', label: 'Clone preset', onClick: (ip) => handleClone(ip.id), loading: (ip) => cloningId === ip.id, hidden: (ip) => !!ip.deletedAt },
+])
+```
+
+## Class Name Constants
+
+| Constant | Value | Use for |
+|----------|-------|---------|
+| `TD_DEFAULT` | `'whitespace-nowrap px-6 py-4 text-sm text-gray-700'` | Most data cells (applied automatically) |
+| `TH_DEFAULT` | `'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600'` | Most header cells (applied automatically) |
+
+## Rules
+
+- Always define `columns` with `useMemo` to avoid re-renders.
+- Use `footer` for `<Pagination>` — keep it inside the card.
+- Pass `className=""` when the default `mt-8` spacing is unwanted.
+- Prefer cell components (`NameCell`, `StatusBadge`, `DateCell`) over inline JSX.
+- Use `actionsColumn()` for all action columns — never write raw action button JSX.
+- Only override `cellClassName` when `TD_DEFAULT` doesn't fit (name columns, custom action cells).

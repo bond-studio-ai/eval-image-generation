@@ -1,9 +1,11 @@
+import { imageGenerationBase } from '@/lib/env';
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_BASE = process.env.BASE_API_HOSTNAME ?? '';
-
 async function proxy(request: NextRequest, pathSegments: string[]) {
-  if (!BACKEND_BASE) {
+  let base: string;
+  try {
+    base = imageGenerationBase();
+  } catch {
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Backend BASE_API_HOSTNAME is not configured' } },
       { status: 502 },
@@ -12,7 +14,7 @@ async function proxy(request: NextRequest, pathSegments: string[]) {
 
   const path = pathSegments.length > 0 ? pathSegments.join('/') : '';
   const search = request.nextUrl.searchParams.toString();
-  const url = `${BACKEND_BASE.replace(/\/$/, '')}/image-generation/v1${path ? `/${path}` : ''}${search ? `?${search}` : ''}`;
+  const url = `${base}${path ? `/${path}` : ''}${search ? `?${search}` : ''}`;
 
   const headers = new Headers();
   request.headers.forEach((value, key) => {

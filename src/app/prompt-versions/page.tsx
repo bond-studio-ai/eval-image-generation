@@ -1,6 +1,7 @@
+import { imageGenerationBase } from '@/lib/env';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { PromptVersionsList, type PromptVersionRow } from '@/components/prompt-versions-list';
-import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,14 +15,11 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
   const limit = 20;
   const includeDeleted = params.include_deleted === 'true';
 
-  const base = process.env.BASE_API_HOSTNAME;
-  if (!base) throw new Error('BASE_API_HOSTNAME is not set');
-
   const qs = new URLSearchParams({ limit: String(limit), page: String(page) });
   if (includeDeleted) qs.set('include_deleted', 'true');
 
   const res = await fetch(
-    `${base.replace(/\/$/, '')}/image-generation/v1/prompt-versions?${qs}`,
+    `${imageGenerationBase()}/prompt-versions?${qs}`,
     { cache: 'no-store' },
   );
   if (!res.ok) throw new Error(`Service ${res.status}`);
@@ -45,34 +43,18 @@ export default async function PromptVersionsPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prompt Versions</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage versioned prompts for image generation.
-          </p>
-        </div>
-        <Link
-          href="/prompt-versions/new"
-          className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs"
-        >
-          New Prompt Version
-        </Link>
-      </div>
+      <PageHeader
+        title="Prompt Versions"
+        subtitle="Manage versioned prompts for image generation."
+        actions={<PrimaryLinkButton href="/prompt-versions/new" icon>New Prompt Version</PrimaryLinkButton>}
+      />
 
       {data.length === 0 ? (
         <div className="mt-8">
           <EmptyState
             title="No prompt versions"
             description="Get started by creating your first prompt version."
-            action={
-              <Link
-                href="/prompt-versions/new"
-                className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs"
-              >
-                Create Prompt Version
-              </Link>
-            }
+            action={<PrimaryLinkButton href="/prompt-versions/new" icon>Create Prompt Version</PrimaryLinkButton>}
           />
         </div>
       ) : (

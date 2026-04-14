@@ -1,7 +1,8 @@
+import { imageGenerationBase } from '@/lib/env';
 import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { EmptyState } from '@/components/empty-state';
 import { InputPresetsList, type InputPresetRow } from '@/components/input-presets-list';
-import Link from 'next/link';
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +20,11 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
   const limit = 20;
   const includeDeleted = params.include_deleted === 'true';
 
-  const base = process.env.BASE_API_HOSTNAME;
-  if (!base) throw new Error('BASE_API_HOSTNAME is not set');
-
   const qs = new URLSearchParams({ limit: String(limit), page: String(page) });
   if (includeDeleted) qs.set('include_deleted', 'true');
 
   const res = await fetch(
-    `${base.replace(/\/$/, '')}/image-generation/v1/input-presets?${qs}`,
+    `${imageGenerationBase()}/input-presets?${qs}`,
     { cache: 'no-store' },
   );
   if (!res.ok) throw new Error(`Service ${res.status}`);
@@ -49,34 +47,18 @@ export default async function InputPresetsPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Input Presets</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage reusable sets of input images for generation.
-          </p>
-        </div>
-        <Link
-          href="/input-presets/new"
-          className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs"
-        >
-          New Input Preset
-        </Link>
-      </div>
+      <PageHeader
+        title="Input Presets"
+        subtitle="Manage reusable sets of input images for generation."
+        actions={<PrimaryLinkButton href="/input-presets/new" icon>New Input Preset</PrimaryLinkButton>}
+      />
 
       {data.length === 0 ? (
         <div className="mt-8">
           <EmptyState
             title="No input presets"
             description="Get started by creating your first input preset."
-            action={
-              <Link
-                href="/input-presets/new"
-                className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs"
-              >
-                Create Input Preset
-              </Link>
-            }
+            action={<PrimaryLinkButton href="/input-presets/new" icon>Create Input Preset</PrimaryLinkButton>}
           />
         </div>
       ) : (

@@ -1,6 +1,6 @@
+import { PageHeader } from '@/components/page-header';
 import { StrategyBuilder } from '@/components/strategy-builder';
 import { fetchInputPresets, fetchModels, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +25,8 @@ export default async function EditStrategyPage({ params }: PageProps) {
 
   return (
     <div>
-      <Link href={`/strategies/${id}`} className="mb-4 inline-block text-sm text-gray-600 hover:text-gray-900">
-        &larr; Back to {strat.name}
-      </Link>
+      <PageHeader backHref={`/strategies/${id}`} backLabel={`Back to ${strat.name}`} title="Edit Strategy" />
+      <div className="mt-6">
       <StrategyBuilder
           strategyId={strat.id}
           initialName={strat.name}
@@ -80,6 +79,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
           inputPresets={inputPresets}
           models={models}
         />
+      </div>
     </div>
   );
 }

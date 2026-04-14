@@ -1,5 +1,6 @@
 'use client';
 
+import { PageHeader } from '@/components/page-header';
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -299,10 +300,10 @@ export function AuditComparePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Audit</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Select one run to inspect its audit data, or two runs to compare side by side.
-      </p>
+      <PageHeader
+        title="Audit"
+        subtitle="Select one run to inspect its audit data, or two runs to compare side by side."
+      />
 
       {/* Picker section */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white shadow-xs">

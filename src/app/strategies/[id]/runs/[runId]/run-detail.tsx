@@ -5,6 +5,7 @@ import { buildPanels, ReasoningModal } from '@/components/judge-score-badge';
 import { RunJudgeEvaluationsSection } from '@/components/run-judge-evaluations-section';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { ViewPromptModal } from '@/components/view-prompt-modal';
+import { PageHeader } from '@/components/page-header';
 import { serviceUrl } from '@/lib/api-base';
 import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
 import Link from 'next/link';
@@ -342,18 +343,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
 
   return (
     <div>
-      <Link href={`/strategies/${strategyId}`} className="text-sm text-gray-600 hover:text-gray-900">
-        &larr; Back to {data.strategy.name}
-      </Link>
+      <PageHeader
+        backHref={`/strategies/${strategyId}`}
+        backLabel={`Back to ${data.strategy.name}`}
+        title="Strategy Run"
+        subtitle={`${data.strategy.name} · ${new Date(data.createdAt).toLocaleString()}`}
+      />
 
-      <div className="mt-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Strategy Run</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {data.strategy.name} &middot; {new Date(data.createdAt).toLocaleString()}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
           {data.status !== 'failed' && data.status !== 'skipped' && (
             <button
               type="button"
@@ -466,7 +463,6 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
               )}
             </>
           ) : null}
-        </div>
       </div>
 
       {/* Run-level skip reason when run is skipped */}

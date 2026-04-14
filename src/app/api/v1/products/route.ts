@@ -1,10 +1,7 @@
+import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
 
 const RETAILER_ID_QUERY_KEY = 'retailerId';
-const baseHostname = process.env.BASE_API_HOSTNAME;
-const API_BASE = baseHostname
-  ? `https://${baseHostname.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-  : null;
 
 // In-memory cache keyed by retailer filter
 const cachedProducts = new Map<string, Product[]>();
@@ -48,11 +45,7 @@ export async function GET(request: Request) {
       return successResponse(cached);
     }
 
-    if (!API_BASE) {
-      return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
-    }
-
-    const catalogUrl = new URL('/catalog/v3/products', API_BASE);
+    const catalogUrl = new URL('/catalog/v3/products', platformApiBase());
     catalogUrl.searchParams.set('perPage', '100000');
     if (retailerId) {
       catalogUrl.searchParams.set(RETAILER_ID_QUERY_KEY, retailerId);

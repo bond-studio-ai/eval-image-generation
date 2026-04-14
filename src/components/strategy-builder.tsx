@@ -1,5 +1,6 @@
 'use client';
 
+import { ResourceFormHeader } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
 import type { ModelListing } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
@@ -322,44 +323,17 @@ export function StrategyBuilder({
   return (
     <div className="space-y-6">
       {/* Header with save */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">
-          {isEditing ? 'Strategy Configuration' : 'New Strategy'}
-        </h2>
+      <div className="flex justify-end">
         {saveButton}
       </div>
 
-      {/* Name & Description */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="strategy-name" className="mb-1 block text-sm font-medium text-gray-700">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="strategy-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Modern bathroom 3-step refinement"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
-          </div>
-          <div>
-            <label htmlFor="strategy-desc" className="mb-1 block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="strategy-desc"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-            />
-          </div>
-        </div>
-      </div>
+      <ResourceFormHeader
+        name={name}
+        onNameChange={setName}
+        namePlaceholder="e.g. Modern bathroom 3-step refinement"
+        description={description}
+        onDescriptionChange={setDescription}
+      />
 
       {/* Strategy-level settings (Model, Aspect Ratio, etc.) */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">

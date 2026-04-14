@@ -1,11 +1,9 @@
+import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
 
-const baseHostname = process.env.BASE_API_HOSTNAME;
-const API_BASE = baseHostname
-  ? `https://${baseHostname.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-  : null;
-const PROJECTS_BASE = API_BASE ? `${API_BASE}/v2/projects` : null;
-const SPATIAL_BASE = API_BASE ? `${API_BASE}/spatial/v1` : null;
+const API_BASE = platformApiBase();
+const PROJECTS_BASE = `${API_BASE}/v2/projects`;
+const SPATIAL_BASE = `${API_BASE}/spatial/v1`;
 const POLL_INTERVAL_MS = 750;
 const POLL_TIMEOUT_MS = 12_000;
 const STABLE_READS_REQUIRED = 2;
@@ -36,9 +34,6 @@ async function readProjectIdFromCreateResponse(res: Response): Promise<string> {
 }
 
 async function fetchRoomByProjectId(projectId: string): Promise<Record<string, unknown>> {
-  if (!SPATIAL_BASE) {
-    throw new Error('BASE_API_HOSTNAME is not set');
-  }
   const res = await fetch(`${SPATIAL_BASE}/rooms?projectId=${encodeURIComponent(projectId)}`, {
     headers: { Accept: 'application/json' },
     cache: 'no-store',
@@ -75,9 +70,6 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
 export async function POST(request: Request) {
   try {
-    if (!PROJECTS_BASE || !SPATIAL_BASE) {
-      return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
-    }
     const body = (await request.json().catch(() => ({}))) as {
       layout_type_id?: unknown;
       pkg_id?: unknown;

@@ -1,0 +1,14 @@
+---
+description: Use Yarn as the package manager — never npm.
+alwaysApply: true
+---
+
+# Use Yarn, not npm
+
+This project uses Yarn as its package manager. Never use `npm` commands.
+
+- `yarn` or `yarn install` — install dependencies
+- `yarn add <pkg>` — add a dependency
+- `yarn add -D <pkg>` — add a dev dependency
+- `yarn remove <pkg>` — remove a dependency
+- `yarn <script>` — run a package.json script

@@ -2,6 +2,7 @@ import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { ExpandableImage } from '@/components/expandable-image';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { PageHeader } from '@/components/page-header';
 import { RatingBadge } from '@/components/rating-badge';
 import { fetchGenerationById } from '@/lib/service-client';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
@@ -135,14 +136,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
     <div>
       <SectionNav sections={navSections} />
 
-      <Link href="/executions?tab=generations" className="text-sm text-gray-600 hover:text-gray-900">
-        &larr; Back to Generations
-      </Link>
-
-      <div className="mt-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Generation Detail</h1>
-          <p className="mt-1 text-sm text-gray-500">
+      <PageHeader
+        backHref="/executions?tab=generations"
+        backLabel="Back to Generations"
+        title="Generation Detail"
+        subtitle={
+          <span>
             Prompt Version:{' '}
             <Link
               href={`/prompt-versions/${promptVersion?.id}`}
@@ -153,14 +152,16 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
             </Link>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <RatingBadge rating={sceneAccuracyRating} label="Scene" />
-          <RatingBadge rating={productAccuracyRating} label="Product" />
-          <DeleteGenerationButton generationId={result.id} />
-        </div>
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            <RatingBadge rating={sceneAccuracyRating} label="Scene" />
+            <RatingBadge rating={productAccuracyRating} label="Product" />
+            <DeleteGenerationButton generationId={result.id} />
+          </>
+        }
+      />
 
       {/* Rating */}
       <div id="section-rating" className="mt-6 scroll-mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">

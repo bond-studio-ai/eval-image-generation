@@ -1,0 +1,52 @@
+---
+description: Use shared form components (ResourceFormHeader, ErrorCard) for all resource create/edit forms.
+globs: src/app/**/page.tsx,src/components/**/*.tsx
+alwaysApply: false
+---
+
+# Resource Forms
+
+## Name & Description
+
+Always use `<ResourceFormHeader>` from `@/components/resource-form-header` for the name/description card on any resource create or edit form (strategies, input presets, prompt versions, etc.).
+
+```tsx
+import { ResourceFormHeader, ErrorCard } from '@/components/resource-form-header';
+
+<ResourceFormHeader
+  name={name}
+  onNameChange={setName}
+  namePlaceholder="e.g. Modern bathroom 3-step refinement"
+  description={description}
+  onDescriptionChange={setDescription}
+/>
+```
+
+- Renders a white card (`p-5 shadow-xs`) with labeled Name + Description fields
+- `nameRequired` defaults to `true` (shows red asterisk)
+- Never use raw inline-editable inputs for name/description — always use this card
+
+## Error Display
+
+Use `<ErrorCard>` for all form error messages. Never use bare `<p className="text-red-600">`.
+
+```tsx
+{error && <div className="mt-4"><ErrorCard message={error} /></div>}
+```
+
+## Page Structure for Create/Edit Forms
+
+1. `<PageHeader>` with back link + save button in actions
+2. `<ResourceFormHeader>` for name/description (with `mt-6`)
+3. `{error && <ErrorCard />}` (with `mt-4`)
+4. Resource-specific fields below
+
+## Page Structure for Resource Lists
+
+Every resource (strategies, input presets, prompt versions, environments) follows the same pattern:
+
+1. **List page** — server component that fetches data, renders `<PageHeader>` with `<PrimaryLinkButton href="/resource/new">`, then `<DataTable>` (or `<EmptyState>` when empty)
+2. **Create page** (`/resource/new`) — `<PageHeader>` with back link + `<PrimaryButton>` save action, form fields below
+3. **Edit page** (`/resource/[id]/edit`) — server component loads data, passes to a client form component
+
+Never embed create/edit forms inline on the list page. Always use separate routes.
