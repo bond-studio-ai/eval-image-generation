@@ -48,18 +48,12 @@ export default async function EditStrategyPage({ params }: PageProps) {
             preview_model: strat.previewModel ?? null,
             preview_resolution: strat.previewResolution ?? '512',
           }}
-          initialJudges={(strat.judges ?? []).map((j) => ({
-            id: j.id,
-            name: j.name ?? '',
-            judge_model: j.judgeModel,
-            judge_type: j.judgeType as 'batch' | 'individual',
-            judge_prompt_version_id: j.judgePromptVersionId,
-            tolerance_threshold: j.toleranceThreshold,
-          }))}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
+            type: s.type ?? 'generation',
+            number_of_images: s.numberOfImages ?? undefined,
             name: s.name ?? '',
-            prompt_version_id: s.promptVersionId,
+            prompt_version_id: s.promptVersionId ?? '',
             model: s.model,
             aspect_ratio: s.aspectRatio,
             output_resolution: s.outputResolution,
@@ -75,6 +69,14 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
             arbitrary_image_from_step: s.arbitraryImageFromStep,
+            judges: s.type === 'judge' ? (s.judges ?? []).map((j) => ({
+              id: j.id,
+              name: j.name ?? '',
+              judge_model: j.judgeModel,
+              judge_type: j.judgeType as 'batch' | 'individual',
+              judge_prompt_version_id: j.judgePromptVersionId,
+              tolerance_threshold: j.toleranceThreshold,
+            })) : undefined,
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

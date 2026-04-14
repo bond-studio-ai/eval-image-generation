@@ -64,27 +64,31 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         ) : (
           <div className="mt-4">
             <StrategyFlowDag
-              steps={result.steps.map((step): DagStep => ({
-                stepOrder: step.stepOrder,
-                label: step.name || `Step ${step.stepOrder}`,
-                model: step.model ?? result.model,
-                aspectRatio: step.aspectRatio ?? result.aspectRatio,
-                outputResolution: step.outputResolution ?? result.outputResolution,
-                temperature: step.temperature ?? result.temperature,
-                promptName: step.promptVersionName,
-                dollhouseViewFromStep: step.dollhouseViewFromStep,
-                realPhotoFromStep: step.realPhotoFromStep,
-                moodBoardFromStep: step.moodBoardFromStep,
-                arbitraryImageFromStep: step.arbitraryImageFromStep,
-              }))}
-              judges={(result.judges ?? []).map((j) => ({
-                name: j.name,
-                type: j.judgeType as 'batch' | 'individual',
-                model: j.judgeModel,
-                promptName: j.judgePromptVersionName,
-                toleranceThreshold: j.toleranceThreshold,
-                position: j.position,
-              }))}
+              steps={result.steps
+                .filter((step) => (step.type ?? 'generation') !== 'judge')
+                .map((step): DagStep => ({
+                  stepOrder: step.stepOrder,
+                  label: step.name || `Step ${step.stepOrder}`,
+                  model: step.model ?? result.model,
+                  aspectRatio: step.aspectRatio ?? result.aspectRatio,
+                  outputResolution: step.outputResolution ?? result.outputResolution,
+                  temperature: step.temperature ?? result.temperature,
+                  promptName: step.promptVersionName,
+                  dollhouseViewFromStep: step.dollhouseViewFromStep,
+                  realPhotoFromStep: step.realPhotoFromStep,
+                  moodBoardFromStep: step.moodBoardFromStep,
+                  arbitraryImageFromStep: step.arbitraryImageFromStep,
+                }))}
+              judges={result.steps
+                .filter((step) => step.type === 'judge')
+                .flatMap((step) => (step.judges ?? []).map((j, ji) => ({
+                  name: j.name,
+                  type: j.judgeType as 'batch' | 'individual',
+                  model: j.judgeModel,
+                  promptName: j.judgePromptVersionName,
+                  toleranceThreshold: j.toleranceThreshold,
+                  position: ji + 1,
+                })))}
             />
           </div>
         )}
@@ -103,17 +107,19 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         description={result.description}
         steps={result.steps.map((s) => ({
           stepOrder: s.stepOrder,
+          type: s.type ?? 'generation' as const,
+          numberOfImages: s.numberOfImages,
           name: s.name,
           promptVersionId: s.promptVersionId,
           promptVersionName: s.promptVersionName,
-        }))}
-        judges={(result.judges ?? []).map((j) => ({
-          name: j.name,
-          judgeModel: j.judgeModel,
-          judgeType: j.judgeType,
-          toleranceThreshold: j.toleranceThreshold,
-          judgePromptVersionId: j.judgePromptVersionId,
-          judgePromptVersionName: j.judgePromptVersionName,
+          judges: (s.judges ?? []).map((j) => ({
+            name: j.name,
+            judgeModel: j.judgeModel,
+            judgeType: j.judgeType as 'batch' | 'individual',
+            toleranceThreshold: j.toleranceThreshold,
+            judgePromptVersionId: j.judgePromptVersionId,
+            judgePromptVersionName: j.judgePromptVersionName,
+          })),
         }))}
         preview={{
           previewModel: result.previewModel,
@@ -126,7 +132,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        hasJudge={(result.judges ?? []).length > 0}
+        hasJudge={result.steps.some((s) => s.type === 'judge')}
         initialRuns={runsRaw.map((run) => {
           const inputPresetName =
             (run.inputPresetName as string) ??

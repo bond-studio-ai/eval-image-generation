@@ -52,8 +52,10 @@ import type { InputPresetDesignFields } from './input-preset-design';
 export interface StrategyStepItem {
   id: string;
   stepOrder: number;
+  type: 'generation' | 'judge';
+  numberOfImages: number | null;
   name: string | null;
-  promptVersionId: string;
+  promptVersionId: string | null;
   promptVersionName: string | null;
   model: string;
   aspectRatio: string;
@@ -70,6 +72,7 @@ export interface StrategyStepItem {
   includeProductImages: boolean;
   includeProductCategories: string[];
   arbitraryImageFromStep: number | null;
+  judges: StrategyJudgeItem[];
 }
 
 export interface StrategyJudgeItem {
@@ -125,7 +128,6 @@ export interface StrategyDetailItem {
   previewModel: string | null;
   previewResolution: string | null;
   steps: StrategyStepItem[];
-  judges?: StrategyJudgeItem[];
   runCount: number;
 }
 

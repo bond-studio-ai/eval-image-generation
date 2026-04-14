@@ -51,8 +51,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
   const [selectedBenchmarkProjectIds, setSelectedBenchmarkProjectIds] = useState<string[]>([]);
-  const [numberOfImages, setNumberOfImages] = useState(2);
-  const [customImages, setCustomImages] = useState(false);
   const [strategySearch, setStrategySearch] = useState('');
   const [presetSearch, setPresetSearch] = useState('');
   const [benchmarkMode, setBenchmarkMode] = useState(false);
@@ -119,7 +117,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     if (selectedStrategyIds.length === 0) return;
     setSubmitting(true);
     setError(null);
-    const count = Math.max(1, Math.min(100, numberOfImages));
     const groupId = crypto.randomUUID();
 
     try {
@@ -132,7 +129,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   project_id: projectId,
-                  number_of_images: count,
                   group_id: groupId,
                 }),
               });
@@ -149,7 +145,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         : await (async () => {
           const requests = await fetchPresetRunRequests(selectedPresetIds, {
             batch: true,
-            number_of_images: count,
             group_id: groupId,
           });
           return Promise.allSettled(
@@ -188,8 +183,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
       setSelectedStrategyIds([]);
       setSelectedPresetIds([]);
       setSelectedBenchmarkProjectIds([]);
-      setNumberOfImages(2);
-      setCustomImages(false);
       setStrategySearch('');
       setPresetSearch('');
       setBenchmarkMode(source === 'benchmark');
@@ -199,11 +192,11 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     } finally {
       setSubmitting(false);
     }
-  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated, source]);
+  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, onRunCreated, source]);
 
-  const totalRuns = benchmarkMode
-    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length * Math.max(1, Math.min(100, numberOfImages))
-    : selectedStrategyIds.length * selectedPresetIds.length * Math.max(1, Math.min(100, numberOfImages));
+  const totalCombinations = benchmarkMode
+    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length
+    : selectedStrategyIds.length * selectedPresetIds.length;
 
   return (
     <>
@@ -414,77 +407,16 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               )}
 
               <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-700">Images per combination</span>
-                    <div className="inline-flex items-center gap-1.5">
-                      {[1, 2, 4, 8].map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => { setNumberOfImages(n); setCustomImages(false); }}
-                          className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${!customImages && numberOfImages === n
-                              ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
-                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                            }`}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => { setCustomImages(true); if ([1, 2, 4, 8].includes(numberOfImages)) setNumberOfImages(3); }}
-                        className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${customImages
-                            ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
-                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                          }`}
-                      >
-                        Custom
-                      </button>
-                      {customImages && (
-                        <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
-                          <button
-                            type="button"
-                            onClick={() => setNumberOfImages((n) => Math.max(1, n - 1))}
-                            disabled={numberOfImages <= 1}
-                            className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-                          >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                            </svg>
-                          </button>
-                          <input
-                            type="number"
-                            min={1}
-                            max={100}
-                            autoFocus
-                            value={numberOfImages}
-                            onChange={(e) =>
-                              setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-                            }
-                            className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setNumberOfImages((n) => Math.min(100, n + 1))}
-                            disabled={numberOfImages >= 100}
-                            className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-                          >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="text-xs text-gray-500">
                   {benchmarkMode ? (
                     <>
-                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total benchmark run{totalRuns === 1 ? '' : 's'}</span>
+                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
+                      <span className="ml-1 text-gray-400">(image count per strategy is defined by its judge system)</span>
                     </>
                   ) : (
                     <>
-                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} &times; {Math.max(1, Math.min(100, numberOfImages))} {numberOfImages === 1 ? 'image' : 'images'} = <span className="font-semibold text-gray-700">{totalRuns} total run{totalRuns === 1 ? '' : 's'}</span>
+                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
+                      <span className="ml-1 text-gray-400">(image count per strategy is defined by its judge system)</span>
                     </>
                   )}
                 </p>
