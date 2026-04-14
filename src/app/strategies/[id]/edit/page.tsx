@@ -25,12 +25,10 @@ export default async function EditStrategyPage({ params }: PageProps) {
 
   return (
     <div>
-      <Link href={`/strategies/${id}`} className="text-sm text-gray-600 hover:text-gray-900">
+      <Link href={`/strategies/${id}`} className="mb-4 inline-block text-sm text-gray-600 hover:text-gray-900">
         &larr; Back to {strat.name}
       </Link>
-      <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Strategy</h1>
-      <div className="mt-6">
-        <StrategyBuilder
+      <StrategyBuilder
           strategyId={strat.id}
           initialName={strat.name}
           initialDescription={strat.description ?? ''}
@@ -82,7 +80,6 @@ export default async function EditStrategyPage({ params }: PageProps) {
           inputPresets={inputPresets}
           models={models}
         />
-      </div>
     </div>
   );
 }
