@@ -8,6 +8,7 @@ import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
+type CatalogImageTag = 'photo-image' | 'tear-sheet' | 'line-drawing';
 
 interface BaseFieldDef {
   key: string;
@@ -139,6 +140,34 @@ const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}Image
 const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
 const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'featured-image';
 
+const SLOT_TO_CATALOG_CATEGORY: Record<string, string> = {
+  floorTile: 'floor-tiles',
+  toilet: 'toilets',
+  vanity: 'vanities',
+  faucet: 'faucets',
+  mirror: 'mirrors',
+  robeHook: 'robe-hooks',
+  toiletPaperHolder: 'toilet-paper-holders',
+  towelBar: 'towel-bars',
+  towelRing: 'towel-rings',
+  lighting: 'lightings',
+  nicheTile: 'shower-wall-tiles',
+  paint: 'paints',
+  shelves: 'shelves',
+  showerFloorTile: 'shower-floor-tiles',
+  curbTile: 'shower-curb-tiles',
+  showerSystem: 'shower-systems',
+  showerWallTile: 'shower-wall-tiles',
+  showerShortWallTile: 'shower-wall-tiles',
+  showerGlass: 'shower-glasses',
+  tub: 'tubs',
+  tubDoor: 'tub-doors',
+  tubFiller: 'tub-fillers',
+  wallpaper: 'wallpapers',
+  wallTile: 'wall-tiles',
+  lvp: 'lvps',
+};
+
 function getProductImageTypeKey(slotKey: string): string {
   return `${slotKey}ImageType`;
 }
@@ -161,6 +190,229 @@ export type DesignSettingsValue = Record<string, unknown> | null;
 export function designSettingsHasValues(value: DesignSettingsValue): boolean {
   if (!value) return false;
   return Object.values(value).some(isNonEmpty);
+}
+
+interface CatalogImageVariant {
+  tag: CatalogImageTag;
+  url: string;
+}
+
+function useCatalogProductImages(catalogCategory: string | null, productId: string | null) {
+  const [images, setImages] = useState<CatalogImageVariant[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!productId || !catalogCategory) { setImages([]); return; }
+
+    let cancelled = false;
+    setLoading(true);
+    fetch(localUrl(`catalog/products/${catalogCategory}/${productId}`))
+      .then((r) => r.json())
+      .then((r) => {
+        if (cancelled) return;
+        const product = r.data ?? r;
+        const rawImages = Array.isArray(product?.images) ? product.images : [];
+        const variants: CatalogImageVariant[] = [];
+        const featured = product?.featured_image?.url ?? product?.featuredImage?.url;
+        if (featured) variants.push({ tag: 'photo-image', url: featured });
+        for (const img of rawImages) {
+          if (!img?.url || !img.tag) continue;
+          if (img.tag === 'photo-image' && variants.some((v) => v.tag === 'photo-image')) continue;
+          if (['photo-image', 'tear-sheet', 'line-drawing'].includes(img.tag)) {
+            variants.push({ tag: img.tag, url: img.url });
+          }
+        }
+        setImages(variants);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) { setImages([]); setLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [catalogCategory, productId]);
+
+  return { images, loading };
+}
+
+const IMAGE_TAG_LABELS: Record<CatalogImageTag, string> = {
+  'photo-image': 'Featured',
+  'tear-sheet': 'Tear Sheet',
+  'line-drawing': 'Line Drawing',
+};
+
+const IMAGE_TAG_ICON: Record<CatalogImageTag, string> = {
+  'photo-image': '📷',
+  'tear-sheet': '📋',
+  'line-drawing': '✏️',
+};
+
+function downloadUrl(url: string, filename: string) {
+  const sep = url.includes('?') ? '&' : '?';
+  const a = document.createElement('a');
+  a.href = `${url}${sep}f=webp`;
+  a.download = filename.replace(/\.\w+$/, '.webp');
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
+  'photo-image': (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+    </svg>
+  ),
+  'tear-sheet': (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+  ),
+  'line-drawing': (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+    </svg>
+  ),
+};
+
+function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: CatalogImageTag; url: string; productName: string | null; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const sep = url.includes('?') ? '&' : '?';
+  const webpUrl = `${url}${sep}f=webp`;
+  const safeName = (productName ?? 'product').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[90vh] w-full max-w-5xl cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-gray-700">
+              {productName ?? 'Product'} &mdash; {IMAGE_TAG_LABELS[tag]}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Download
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+            {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={webpUrl}
+              alt={`${productName ?? 'Product'} - ${IMAGE_TAG_LABELS[tag]}`}
+              onLoad={() => setLoaded(true)}
+              className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; url: string; productName: string | null }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  return (
+    <div className="group/tip relative">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setPreviewOpen(true);
+        }}
+        className="rounded p-1 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+      >
+        {TAG_ICONS[tag]}
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
+        {IMAGE_TAG_LABELS[tag]}
+      </span>
+      {previewOpen && (
+        <ProductImagePreviewModal
+          tag={tag}
+          url={url}
+          productName={productName}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProductImageDownloadButtons({
+  images,
+  productId,
+  productName,
+}: {
+  images: CatalogImageVariant[];
+  productId: string;
+  productName: string | null;
+}) {
+  return (
+    <>
+      {(['photo-image', 'tear-sheet', 'line-drawing'] as CatalogImageTag[]).map((tag) => {
+        const img = images.find((v) => v.tag === tag);
+        if (!img) return null;
+        return <ImageTypeIconButton key={tag} tag={tag} url={img.url} productName={productName} />;
+      })}
+    </>
+  );
+}
+
+function ProductImageDownloads({ slotKey, productId, productName }: { slotKey: string; productId: string | null; productName: string | null }) {
+  const category = slotKey ? SLOT_TO_CATALOG_CATEGORY[slotKey] ?? null : null;
+  const { images, loading } = useCatalogProductImages(category, productId);
+
+  if (!productId) return null;
+  if (loading) return <div className="mt-1.5 flex gap-1"><span className="animate-pulse text-[10px] text-gray-400">...</span></div>;
+  if (images.length === 0) return null;
+
+  return (
+    <div className="mt-1.5 flex items-center gap-0.5">
+      <ProductImageDownloadButtons images={images} productId={productId} productName={productName} />
+    </div>
+  );
+}
+
+function ProductListItemDownloads({ catalogCategory, productId, productName }: { catalogCategory: string; productId: string; productName: string | null }) {
+  const { images, loading } = useCatalogProductImages(catalogCategory, productId);
+
+  if (loading) return null;
+  if (images.length === 0) return null;
+
+  return (
+    <span className="flex items-center gap-0.5">
+      <ProductImageDownloadButtons images={images} productId={productId} productName={productName} />
+    </span>
+  );
 }
 
 export function useCatalogProducts(retailerId?: string) {
@@ -682,6 +934,9 @@ function ProductField({
           </p>
         </div>
       </button>
+      {selectedId && (
+        <ProductImageDownloads slotKey={field.key} productId={selectedId} productName={selectedProduct?.name ?? null} />
+      )}
       {hasSelection && (
         <div className="mt-2 flex justify-end">
           <button
@@ -697,6 +952,7 @@ function ProductField({
       {pickerOpen ? (
         <ProductSelectionModal
           field={field}
+          catalogCategory={SLOT_TO_CATALOG_CATEGORY[field.key] ?? null}
           products={products}
           loaded={loaded}
           selectedId={selectedId}
@@ -721,6 +977,7 @@ function ProductField({
 
 function ProductSelectionModal({
   field,
+  catalogCategory,
   products,
   loaded,
   selectedId,
@@ -733,6 +990,7 @@ function ProductSelectionModal({
   onClose,
 }: {
   field: ProductFieldDef;
+  catalogCategory: string | null;
   products: CatalogProduct[];
   loaded: boolean;
   selectedId: string;
@@ -910,17 +1168,19 @@ function ProductSelectionModal({
               <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
             ) : (
               filteredProducts.map((product) => (
-                <button
+                <div
                   key={product.id}
-                  type="button"
-                  onClick={() => setDraftSelectedId(product.id)}
-                  className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left last:border-b-0 transition-colors ${
+                  className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 transition-colors ${
                     product.id === draftSelectedId
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDraftSelectedId(product.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
                     <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
                       {product.featuredImage?.url ? (
                         <ImageWithSkeleton
@@ -941,13 +1201,18 @@ function ProductSelectionModal({
                         {product.category?.name ?? 'No category'} • {product.id}
                       </span>
                     </span>
+                  </button>
+                  <span className="flex shrink-0 items-center gap-1">
+                    {catalogCategory && (
+                      <ProductListItemDownloads catalogCategory={catalogCategory} productId={product.id} productName={product.name} />
+                    )}
+                    {product.id === draftSelectedId && (
+                      <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">
+                        Selected
+                      </span>
+                    )}
                   </span>
-                  {product.id === draftSelectedId ? (
-                    <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">
-                      Selected
-                    </span>
-                  ) : null}
-                </button>
+                </div>
               ))
             )}
           </div>
