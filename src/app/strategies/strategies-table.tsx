@@ -4,30 +4,23 @@ import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
   DataTable,
   DateCell,
-  FilterPills,
   NameCell,
   SearchBar,
   SelectAllCheckbox,
   StatusBadge,
+  ToggleFilter,
   actionsColumn,
   checkboxColumn,
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
 import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
+import { Pagination } from '@/components/pagination';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-
-type StatusFilter = 'all' | 'active' | 'inactive';
-
-const STATUS_OPTIONS: { label: string; value: StatusFilter }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-];
 
 export function StrategiesTable() {
   const router = useRouter();
@@ -35,25 +28,24 @@ export function StrategiesTable() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [activeOnly, setActiveOnly] = useState(false);
 
   const {
     items,
     loading,
-    loadingMore,
-    hasMore,
+    total,
+    totalPages,
+    page,
     search,
     setSearch,
-    loadMore,
+    goToPage,
     refresh,
     setFilters,
   } = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
 
-  const updateStatusFilter = useCallback((v: StatusFilter) => {
-    setStatusFilter(v);
-    const f: Record<string, string> = {};
-    if (v !== 'all') f.is_active = v === 'active' ? 'true' : 'false';
-    setFilters(f);
+  const updateActiveOnly = useCallback((on: boolean) => {
+    setActiveOnly(on);
+    setFilters(on ? { is_active: 'true' } : {});
   }, [setFilters]);
 
   const handleClone = useCallback(
@@ -186,7 +178,7 @@ export function StrategiesTable() {
       <div className="w-72">
         <SearchBar value={search} onChange={setSearch} placeholder="Search strategies..." />
       </div>
-      <FilterPills options={STATUS_OPTIONS} value={statusFilter} onChange={updateStatusFilter} />
+      <ToggleFilter label="Active only" checked={activeOnly} onChange={updateActiveOnly} />
       <div className="ml-auto">
         <SelectAllCheckbox count={selected.size} total={items.length} onToggle={toggleAll} />
       </div>
@@ -200,12 +192,10 @@ export function StrategiesTable() {
         data={items}
         rowKey={(s) => s.id}
         rowClassName={(s) => `hover:bg-gray-50 ${selected.has(s.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage={search || statusFilter !== 'all' ? 'No strategies match your filters.' : 'No strategies found.'}
+        emptyMessage={search || activeOnly ? 'No strategies match your filters.' : 'No strategies found.'}
         loading={loading}
         toolbar={toolbar}
-        onLoadMore={loadMore}
-        hasMore={hasMore}
-        loadingMore={loadingMore}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
       />
 
       <BulkDeleteBar

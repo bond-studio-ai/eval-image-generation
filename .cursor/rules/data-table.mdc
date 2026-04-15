@@ -37,40 +37,20 @@ import { useInfiniteList } from '@/hooks/use-infinite-list';
 
 All list tables fetch their own data via the `useInfiniteList<T>(endpoint, options?)` hook. **No server-side data fetching in page components** — pages are thin wrappers that render `<PageHeader>` + the table component.
 
-### Infinite scroll (default)
-
 ```tsx
 const {
-  items,        // T[] — accumulated rows across all loaded pages
-  loading,      // true during initial fetch
-  loadingMore,  // true during subsequent page fetches
-  hasMore,      // true if more pages exist
+  items,        // T[] — single page of rows
+  loading,      // true during fetch
   total,        // total row count from the API
+  totalPages,   // total number of pages
+  page,         // current page number
   search,       // current search string (raw, pre-debounce)
   setSearch,    // update search (debounced 300ms internally)
   filters,      // Record<string, string> of active filters
   setFilters,   // replace all filters (resets to page 1)
-  loadMore,     // fetch next page and append
-  refresh,      // re-fetch from page 1 (after mutations)
-} = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
-```
-
-### Traditional pagination
-
-```tsx
-const {
-  items,        // T[] — single page of rows
-  loading,
-  total,
-  totalPages,
-  page,         // current page number
-  search,
-  setSearch,
-  filters,
-  setFilters,
   goToPage,     // navigate to a specific page (syncs to URL)
-  refresh,
-} = useInfiniteList<SomeItem>('some-resource', { limit: 20, paginate: 'pages' });
+  refresh,      // re-fetch current page (call after mutations)
+} = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
 ```
 
 ### Options
@@ -79,14 +59,11 @@ const {
 |--------|------|---------|-------------|
 | `limit` | `number` | `20` | Items per page |
 | `debounceMs` | `number` | `300` | Search debounce delay in ms |
-| `paginate` | `'infinite' \| 'pages'` | `'infinite'` | Infinite scroll vs URL-based pagination |
 
 ### URL sync
 
-- `search` and `filters` are always synced to URL query params via `router.replace()` (no history pollution during typing).
-- In `'pages'` mode, `page` is also synced to the URL (`?page=2`).
-- In `'infinite'` mode, `page` is kept in React state only (not meaningful to bookmark mid-scroll).
-- On mount, the hook reads initial values from `useSearchParams()` so URLs are shareable/bookmarkable.
+- `search`, `filters`, and `page` are synced to URL query params via `window.history.replaceState` (no Next.js re-renders, no history pollution).
+- On mount, the hook reads initial values from the URL so links are shareable/bookmarkable.
 
 ### Key behaviors
 
@@ -94,6 +71,7 @@ const {
 - Search is **backend-powered** — the hook passes `search` as a query param. Never filter client-side.
 - `setFilters({ is_active: 'true' })` passes extra query params to the backend.
 - After any mutation (create, delete, clone, toggle), call `refresh()` to reload.
+- Use `<Pagination>` from `@/components/pagination` in the `footer` prop with `goToPage` as the `onPageChange` callback.
 
 ## DataTable Props
 
@@ -104,22 +82,23 @@ const {
 | `rowKey` | `(row: T) => string` | — | Unique key per row |
 | `rowClassName` | `(row: T) => string` | `'hover:bg-gray-50'` | Dynamic row classes |
 | `emptyMessage` | `string` | `'No items found.'` | Empty state text |
-| `loading` | `boolean` | `false` | Show loading row (initial load) |
-| `loadingMessage` | `string` | `'Loading...'` | Loading row text |
+| `loading` | `boolean` | `false` | Show skeleton rows while fetching |
 | `toolbar` | `ReactNode` | — | Search/filter bar — rendered sticky at top |
-| `footer` | `ReactNode` | — | After-table content |
+| `footer` | `ReactNode` | — | After-table content (typically `<Pagination>`) |
 | `className` | `string` | `'mt-8'` | Outer wrapper classes |
-| `onLoadMore` | `() => void` | — | Called when sentinel enters viewport |
-| `hasMore` | `boolean` | — | Whether more pages exist |
-| `loadingMore` | `boolean` | — | Show "Loading more…" row at bottom |
+| `skeletonRows` | `number` | `5` | Fallback skeleton count (auto-adjusts to last data length) |
 
 ### Sticky toolbar
 
 The toolbar is `sticky top-0 z-10 bg-white` and stays visible while the user scrolls through rows. The outer card uses `overflow-clip` (not `overflow-hidden`) so `sticky` works correctly.
 
-### Infinite scroll
+### Pagination footer
 
-When `onLoadMore` and `hasMore` are provided, a sentinel `<div>` is rendered after the last row. An `IntersectionObserver` with `rootMargin: '200px'` triggers `onLoadMore()` when the user scrolls near the bottom.
+Use `<Pagination>` from `@/components/pagination` in the `footer` prop:
+
+```tsx
+footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
+```
 
 ## Toolbar
 

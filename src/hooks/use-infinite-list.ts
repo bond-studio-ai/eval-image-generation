@@ -20,19 +20,11 @@ export interface UseInfiniteListOptions {
   limit?: number;
   /** Debounce delay for search input in ms. Default 300. */
   debounceMs?: number;
-  /**
-   * `'infinite'` — accumulates rows on scroll (page kept in state only).
-   * `'pages'` — traditional pagination with page synced to URL.
-   * Default `'infinite'`.
-   */
-  paginate?: 'infinite' | 'pages';
 }
 
 export interface UseInfiniteListReturn<T> {
   items: T[];
   loading: boolean;
-  loadingMore: boolean;
-  hasMore: boolean;
   total: number;
   totalPages: number;
   page: number;
@@ -40,11 +32,7 @@ export interface UseInfiniteListReturn<T> {
   setSearch: (q: string) => void;
   filters: Record<string, string>;
   setFilters: (f: Record<string, string>) => void;
-  /** Infinite scroll: fetch and append next page. */
-  loadMore: () => void;
-  /** Page mode: navigate to a specific page. */
   goToPage: (page: number) => void;
-  /** Re-fetch from page 1 (call after mutations). */
   refresh: () => void;
 }
 
@@ -68,19 +56,15 @@ export function useInfiniteList<T>(
   endpoint: string,
   options: UseInfiniteListOptions = {},
 ): UseInfiniteListReturn<T> {
-  const { limit = 20, debounceMs = 300, paginate = 'infinite' } = options;
-  const isPageMode = paginate === 'pages';
+  const { limit = 20, debounceMs = 300 } = options;
 
-  // Read initial state from URL on mount (SSR-safe)
   const initial = useMemo(() => readInitialParams(), []);
 
   const [items, setItems] = useState<T[]>([]);
-  const [page, setPage] = useState(isPageMode ? initial.page : 1);
+  const [page, setPage] = useState(initial.page);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearchRaw] = useState(initial.search);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.search);
   const [filters, setFiltersRaw] = useState<Record<string, string>>(initial.filters);
@@ -90,9 +74,7 @@ export function useInfiniteList<T>(
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => { mountedRef.current = false; };
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -108,21 +90,18 @@ export function useInfiniteList<T>(
   // Sync state → URL via history.replaceState (no Next.js re-render)
   // ---------------------------------------------------------------------------
 
-  const syncUrl = useCallback(
-    (s: string, f: Record<string, string>, p: number) => {
-      const params = new URLSearchParams();
-      if (s) params.set(URL_KEY_SEARCH, s);
-      for (const [key, val] of Object.entries(f)) {
-        if (val !== undefined && val !== '') params.set(key, val);
-      }
-      if (isPageMode && p > 1) params.set(URL_KEY_PAGE, String(p));
+  const syncUrl = useCallback((s: string, f: Record<string, string>, p: number) => {
+    const params = new URLSearchParams();
+    if (s) params.set(URL_KEY_SEARCH, s);
+    for (const [key, val] of Object.entries(f)) {
+      if (val !== undefined && val !== '') params.set(key, val);
+    }
+    if (p > 1) params.set(URL_KEY_PAGE, String(p));
 
-      const qs = params.toString();
-      const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-      window.history.replaceState(null, '', url);
-    },
-    [isPageMode],
-  );
+    const qs = params.toString();
+    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', url);
+  }, []);
 
   const prevSyncKey = useRef(`${initial.search}|${JSON.stringify(initial.filters)}`);
   useEffect(() => {
@@ -137,16 +116,12 @@ export function useInfiniteList<T>(
   // ---------------------------------------------------------------------------
 
   const fetchPage = useCallback(
-    async (pageNum: number, append: boolean) => {
+    async (pageNum: number) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
 
       try {
         const qs = new URLSearchParams({
@@ -167,63 +142,46 @@ export function useInfiniteList<T>(
 
         if (!mountedRef.current) return;
 
-        if (append) {
-          setItems((prev) => [...prev, ...json.data]);
-        } else {
-          setItems(json.data);
-        }
-
+        setItems(json.data);
         setTotal(json.pagination.total);
         setTotalPages(json.pagination.totalPages);
-        setHasMore(pageNum < json.pagination.totalPages);
         setPage(pageNum);
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         if (!mountedRef.current) return;
-        if (!append) {
-          setItems([]);
-          setTotal(0);
-          setTotalPages(0);
-          setHasMore(false);
-        }
+        setItems([]);
+        setTotal(0);
+        setTotalPages(0);
       } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
+        if (mountedRef.current) setLoading(false);
       }
     },
     [endpoint, limit, debouncedSearch, filters],
   );
 
-  const initialPageRef = useRef(isPageMode ? initial.page : 1);
+  const initialPageRef = useRef(initial.page);
   useEffect(() => {
     const startPage = initialPageRef.current;
     initialPageRef.current = 1;
-    fetchPage(startPage, false);
+    fetchPage(startPage);
   }, [fetchPage]);
 
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
 
-  const loadMore = useCallback(() => {
-    if (loadingMore || loading || !hasMore) return;
-    fetchPage(page + 1, true);
-  }, [fetchPage, page, loadingMore, loading, hasMore]);
-
   const goToPage = useCallback(
     (p: number) => {
       if (p < 1 || p === page) return;
       syncUrl(debouncedSearch, filters, p);
-      fetchPage(p, false);
+      fetchPage(p);
     },
     [fetchPage, page, syncUrl, debouncedSearch, filters],
   );
 
   const refresh = useCallback(() => {
-    fetchPage(isPageMode ? page : 1, false);
-  }, [fetchPage, isPageMode, page]);
+    fetchPage(page);
+  }, [fetchPage, page]);
 
   const setSearch = useCallback((q: string) => {
     setSearchRaw(q);
@@ -236,8 +194,6 @@ export function useInfiniteList<T>(
   return {
     items,
     loading,
-    loadingMore,
-    hasMore,
     total,
     totalPages,
     page,
@@ -245,7 +201,6 @@ export function useInfiniteList<T>(
     setSearch,
     filters,
     setFilters,
-    loadMore,
     goToPage,
     refresh,
   };

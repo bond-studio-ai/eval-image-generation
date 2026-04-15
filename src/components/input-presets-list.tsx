@@ -12,6 +12,7 @@ import {
   checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
+import { Pagination } from '@/components/pagination';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
@@ -38,11 +39,12 @@ export function InputPresetsList() {
   const {
     items,
     loading,
-    loadingMore,
-    hasMore,
+    total,
+    totalPages,
+    page,
     search,
     setSearch,
-    loadMore,
+    goToPage,
     refresh,
   } = useInfiniteList<InputPresetRow>('input-presets', { limit: 20 });
 
@@ -142,9 +144,7 @@ export function InputPresetsList() {
         emptyMessage={search ? 'No input presets match your search.' : 'No input presets found.'}
         loading={loading}
         toolbar={toolbar}
-        onLoadMore={loadMore}
-        hasMore={hasMore}
-        loadingMore={loadingMore}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
       />
 
       <BulkDeleteBar

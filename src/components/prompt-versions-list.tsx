@@ -12,6 +12,7 @@ import {
   checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
+import { Pagination } from '@/components/pagination';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
@@ -36,11 +37,12 @@ export function PromptVersionsList() {
   const {
     items,
     loading,
-    loadingMore,
-    hasMore,
+    total,
+    totalPages,
+    page,
     search,
     setSearch,
-    loadMore,
+    goToPage,
     refresh,
   } = useInfiniteList<PromptVersionRow>('prompt-versions', { limit: 20 });
 
@@ -146,9 +148,7 @@ export function PromptVersionsList() {
         emptyMessage={search ? 'No prompt versions match your search.' : 'No prompt versions found.'}
         loading={loading}
         toolbar={toolbar}
-        onLoadMore={loadMore}
-        hasMore={hasMore}
-        loadingMore={loadingMore}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
       />
 
       <BulkDeleteBar

@@ -10,6 +10,7 @@ import {
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
+import { Pagination } from '@/components/pagination';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { EnvironmentListItem } from '@/lib/service-client';
@@ -23,11 +24,12 @@ export function EnvironmentsTable() {
   const {
     items,
     loading,
-    loadingMore,
-    hasMore,
+    total,
+    totalPages,
+    page,
     search,
     setSearch,
-    loadMore,
+    goToPage,
     refresh,
   } = useInfiniteList<EnvironmentListItem>('environments', { limit: 20 });
 
@@ -99,9 +101,7 @@ export function EnvironmentsTable() {
       emptyMessage={search ? 'No environments match your search.' : 'No environments created yet.'}
       loading={loading}
       toolbar={toolbar}
-      onLoadMore={loadMore}
-      hasMore={hasMore}
-      loadingMore={loadingMore}
+      footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
     />
   );
 }

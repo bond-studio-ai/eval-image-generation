@@ -37,9 +37,6 @@ interface DataTableProps<T> {
   toolbar?: ReactNode;
   footer?: ReactNode;
   className?: string;
-  onLoadMore?: () => void;
-  hasMore?: boolean;
-  loadingMore?: boolean;
 }
 
 const SKELETON_WIDTHS = ['w-3/4', 'w-1/2', 'w-2/3', 'w-1/3', 'w-5/6', 'w-2/5'];
@@ -58,15 +55,6 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
   );
 }
 
-function LoadingSpinner() {
-  return (
-    <svg className="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-}
-
 export function DataTable<T>({
   columns,
   data,
@@ -74,30 +62,18 @@ export function DataTable<T>({
   rowClassName,
   emptyMessage = 'No items found.',
   loading = false,
-  skeletonRows = 8,
+  skeletonRows = 5,
   toolbar,
   footer,
   className = 'mt-8',
-  onLoadMore,
-  hasMore,
-  loadingMore,
 }: DataTableProps<T>) {
   const colCount = columns.length;
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const lastRowCount = useRef(skeletonRows);
   useEffect(() => {
-    if (!onLoadMore || !hasMore) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) onLoadMore();
-      },
-      { rootMargin: '200px' },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [onLoadMore, hasMore]);
+    if (data.length > 0) lastRowCount.current = data.length;
+  }, [data.length]);
+  const displaySkeletonRows = loading ? lastRowCount.current : 0;
 
   return (
     <div
@@ -119,7 +95,7 @@ export function DataTable<T>({
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {loading ? (
-              Array.from({ length: skeletonRows }, (_, i) => (
+              Array.from({ length: displaySkeletonRows }, (_, i) => (
                 <SkeletonRow key={i} colCount={colCount} rowIndex={i} />
               ))
             ) : data.length === 0 ? (
@@ -142,18 +118,8 @@ export function DataTable<T>({
                 </tr>
               ))
             )}
-            {loadingMore && (
-              <tr>
-                <td colSpan={colCount} className="py-4">
-                  <div className="flex justify-center">
-                    <LoadingSpinner />
-                  </div>
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
-        {hasMore && <div ref={sentinelRef} className="h-1" />}
       </div>
       {footer}
     </div>
@@ -307,6 +273,38 @@ export function FilterPills<V extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** Toggle switch for boolean filters (e.g. "Active only"). */
+export function ToggleFilter({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 select-none">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+          checked ? 'bg-primary-600' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+            checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+          }`}
+        />
+      </button>
+      <span className="text-sm text-gray-600">{label}</span>
+    </label>
   );
 }
 
