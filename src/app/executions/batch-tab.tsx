@@ -254,7 +254,33 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     await fetchBatches(...args);
   }, [fetchBatches]);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading runs…</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="h-9 w-56 animate-pulse rounded-lg bg-gray-100" />
+          <div className="h-8 w-28 animate-pulse rounded-lg bg-gray-100" />
+        </div>
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+            <div className="flex w-full items-center justify-between px-5 py-3">
+              <div className="flex flex-1 items-center gap-3">
+                <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
+                <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
+                <div className="h-4 animate-pulse rounded bg-gray-200" style={{ width: 120 + (i % 3) * 40 }} />
+                <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
+                <div className="h-3 w-24 animate-pulse rounded bg-gray-50" />
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
+                <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (fetchError) {
     return (
@@ -430,8 +456,24 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
         })
       }
       {hasMore && (
-        <div ref={sentinelRef} className="py-4 text-center text-sm text-gray-500">
-          {loadingMore ? 'Loading more…' : '\u00a0'}
+        <div ref={sentinelRef}>
+          {loadingMore ? (
+            <div className="space-y-4 pt-1">
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+                  <div className="flex w-full items-center justify-between px-5 py-3">
+                    <div className="flex flex-1 items-center gap-3">
+                      <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
+                      <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
+                      <div className="h-4 animate-pulse rounded bg-gray-200" style={{ width: 120 + (i % 3) * 40 }} />
+                      <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
+                    </div>
+                    <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <div className="py-4">&nbsp;</div>}
         </div>
       )}
         </div>
