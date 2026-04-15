@@ -25,6 +25,8 @@ export interface UseInfiniteListOptions {
 export interface UseInfiniteListReturn<T> {
   items: T[];
   loading: boolean;
+  /** True when fetching a new page while keeping current data visible. */
+  paginating: boolean;
   total: number;
   totalPages: number;
   page: number;
@@ -65,6 +67,7 @@ export function useInfiniteList<T>(
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [paginating, setPaginating] = useState(false);
   const [search, setSearchRaw] = useState(initial.search);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.search);
   const [filters, setFiltersRaw] = useState<Record<string, string>>(initial.filters);
@@ -115,15 +118,17 @@ export function useInfiniteList<T>(
   // Fetch
   // ---------------------------------------------------------------------------
 
-  const scrollRef = useRef<number | null>(null);
-
   const fetchPage = useCallback(
-    async (pageNum: number) => {
+    async (pageNum: number, { preserveScroll }: { preserveScroll?: boolean } = {}) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setLoading(true);
+      if (preserveScroll) {
+        setPaginating(true);
+      } else {
+        setLoading(true);
+      }
 
       try {
         const qs = new URLSearchParams({
@@ -157,11 +162,7 @@ export function useInfiniteList<T>(
       } finally {
         if (mountedRef.current) {
           setLoading(false);
-          if (scrollRef.current !== null) {
-            const el = document.querySelector('main');
-            if (el) requestAnimationFrame(() => { el.scrollTop = scrollRef.current!; });
-            scrollRef.current = null;
-          }
+          setPaginating(false);
         }
       }
     },
@@ -182,10 +183,8 @@ export function useInfiniteList<T>(
   const goToPage = useCallback(
     (p: number) => {
       if (p < 1 || p === page) return;
-      const el = document.querySelector('main');
-      if (el) scrollRef.current = el.scrollTop;
       syncUrl(debouncedSearch, filters, p);
-      fetchPage(p);
+      fetchPage(p, { preserveScroll: true });
     },
     [fetchPage, page, syncUrl, debouncedSearch, filters],
   );
@@ -205,6 +204,7 @@ export function useInfiniteList<T>(
   return {
     items,
     loading,
+    paginating,
     total,
     totalPages,
     page,

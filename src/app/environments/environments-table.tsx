@@ -30,6 +30,7 @@ export function EnvironmentsTable() {
     search,
     setSearch,
     goToPage,
+    paginating,
     refresh,
   } = useInfiniteList<EnvironmentListItem>('environments', { limit: 20 });
 
@@ -101,7 +102,7 @@ export function EnvironmentsTable() {
       emptyMessage={search ? 'No environments match your search.' : 'No environments created yet.'}
       loading={loading}
       toolbar={toolbar}
-      footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
+      footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
     />
   );
 }

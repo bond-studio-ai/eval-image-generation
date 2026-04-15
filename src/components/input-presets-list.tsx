@@ -45,6 +45,7 @@ export function InputPresetsList() {
     search,
     setSearch,
     goToPage,
+    paginating,
     refresh,
   } = useInfiniteList<InputPresetRow>('input-presets', { limit: 20 });
 
@@ -144,7 +145,7 @@ export function InputPresetsList() {
         emptyMessage={search ? 'No input presets match your search.' : 'No input presets found.'}
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
       <BulkDeleteBar
