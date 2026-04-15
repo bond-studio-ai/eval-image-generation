@@ -1,10 +1,11 @@
 ---
-description: Conventions for list/table views using the shared DataTable component and its reusable helpers.
+description: Conventions for list/table views using the shared DataTable component, useInfiniteList hook, and reusable helpers.
 globs:
   - src/app/**/page.tsx
   - src/components/**-list.tsx
   - src/components/**-table.tsx
   - src/app/**/*-table.tsx
+  - src/hooks/use-infinite-list.ts
 ---
 
 # DataTable
@@ -16,6 +17,9 @@ Use `<DataTable>` from `@/components/data-table` for **every** list/table view. 
 ```tsx
 import {
   DataTable,
+  SearchBar,
+  SelectAllCheckbox,
+  FilterPills,
   NameCell,
   StatusBadge,
   DateCell,
@@ -23,24 +27,133 @@ import {
   actionsColumn,
   type DataTableColumn,
   type RowAction,
-  TD_DEFAULT,      // 'whitespace-nowrap px-6 py-4 text-sm text-gray-700'
-  TH_DEFAULT,      // standard left-aligned th
+  TD_DEFAULT,
+  TH_DEFAULT,
 } from '@/components/data-table';
+import { useInfiniteList } from '@/hooks/use-infinite-list';
 ```
+
+## Data Fetching — `useInfiniteList`
+
+All list tables fetch their own data via the `useInfiniteList<T>(endpoint, options?)` hook. **No server-side data fetching in page components** — pages are thin wrappers that render `<PageHeader>` + the table component.
+
+### Infinite scroll (default)
+
+```tsx
+const {
+  items,        // T[] — accumulated rows across all loaded pages
+  loading,      // true during initial fetch
+  loadingMore,  // true during subsequent page fetches
+  hasMore,      // true if more pages exist
+  total,        // total row count from the API
+  search,       // current search string (raw, pre-debounce)
+  setSearch,    // update search (debounced 300ms internally)
+  filters,      // Record<string, string> of active filters
+  setFilters,   // replace all filters (resets to page 1)
+  loadMore,     // fetch next page and append
+  refresh,      // re-fetch from page 1 (after mutations)
+} = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
+```
+
+### Traditional pagination
+
+```tsx
+const {
+  items,        // T[] — single page of rows
+  loading,
+  total,
+  totalPages,
+  page,         // current page number
+  search,
+  setSearch,
+  filters,
+  setFilters,
+  goToPage,     // navigate to a specific page (syncs to URL)
+  refresh,
+} = useInfiniteList<SomeItem>('some-resource', { limit: 20, paginate: 'pages' });
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `limit` | `number` | `20` | Items per page |
+| `debounceMs` | `number` | `300` | Search debounce delay in ms |
+| `paginate` | `'infinite' \| 'pages'` | `'infinite'` | Infinite scroll vs URL-based pagination |
+
+### URL sync
+
+- `search` and `filters` are always synced to URL query params via `router.replace()` (no history pollution during typing).
+- In `'pages'` mode, `page` is also synced to the URL (`?page=2`).
+- In `'infinite'` mode, `page` is kept in React state only (not meaningful to bookmark mid-scroll).
+- On mount, the hook reads initial values from `useSearchParams()` so URLs are shareable/bookmarkable.
+
+### Key behaviors
+
+- `endpoint` is the path segment appended to `serviceUrl()` (e.g. `'strategies'`, `'input-presets'`).
+- Search is **backend-powered** — the hook passes `search` as a query param. Never filter client-side.
+- `setFilters({ is_active: 'true' })` passes extra query params to the backend.
+- After any mutation (create, delete, clone, toggle), call `refresh()` to reload.
 
 ## DataTable Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `columns` | `DataTableColumn<T>[]` | — | Column definitions |
-| `data` | `T[]` | — | Row data |
+| `data` | `T[]` | — | Row data from `useInfiniteList.items` |
 | `rowKey` | `(row: T) => string` | — | Unique key per row |
 | `rowClassName` | `(row: T) => string` | `'hover:bg-gray-50'` | Dynamic row classes |
 | `emptyMessage` | `string` | `'No items found.'` | Empty state text |
-| `loading` | `boolean` | `false` | Show loading row |
+| `loading` | `boolean` | `false` | Show loading row (initial load) |
 | `loadingMessage` | `string` | `'Loading...'` | Loading row text |
-| `footer` | `ReactNode` | — | After-table content (e.g. `<Pagination>`) |
+| `toolbar` | `ReactNode` | — | Search/filter bar — rendered sticky at top |
+| `footer` | `ReactNode` | — | After-table content |
 | `className` | `string` | `'mt-8'` | Outer wrapper classes |
+| `onLoadMore` | `() => void` | — | Called when sentinel enters viewport |
+| `hasMore` | `boolean` | — | Whether more pages exist |
+| `loadingMore` | `boolean` | — | Show "Loading more…" row at bottom |
+
+### Sticky toolbar
+
+The toolbar is `sticky top-0 z-10 bg-white` and stays visible while the user scrolls through rows. The outer card uses `overflow-clip` (not `overflow-hidden`) so `sticky` works correctly.
+
+### Infinite scroll
+
+When `onLoadMore` and `hasMore` are provided, a sentinel `<div>` is rendered after the last row. An `IntersectionObserver` with `rootMargin: '200px'` triggers `onLoadMore()` when the user scrolls near the bottom.
+
+## Toolbar
+
+Every list table should include a toolbar with a `SearchBar` and `SelectAllCheckbox`.
+
+### Standard toolbar layout
+
+```tsx
+const toolbar = (
+  <div className="flex items-center gap-4">
+    <div className="w-72">
+      <SearchBar value={search} onChange={setSearch} placeholder="Search items..." />
+    </div>
+    {/* Optional: FilterPills for backend-driven status filtering */}
+    <FilterPills options={STATUS_OPTIONS} value={statusFilter} onChange={updateStatusFilter} />
+    <div className="ml-auto">
+      <SelectAllCheckbox count={selected.size} total={items.length} onToggle={toggleAll} />
+    </div>
+  </div>
+);
+```
+
+### FilterPills with backend filters
+
+FilterPills are for **backend-driven** filters. When the user clicks a pill, call `setFilters()` to send the filter as a query param:
+
+```tsx
+const updateStatusFilter = useCallback((v: StatusFilter) => {
+  setStatusFilter(v);
+  const f: Record<string, string> = {};
+  if (v !== 'all') f.is_active = v === 'active' ? 'true' : 'false';
+  setFilters(f);
+}, [setFilters]);
+```
 
 ## Column Definition
 
@@ -65,7 +178,6 @@ cellClassName: 'px-6 py-4',
 ```
 
 Props: `href`, `name` (string | null), `subtitle?` (string | null), `fallback?` (default `'Untitled'`).
-Renders the name as a primary-600 link with a truncated gray subtitle below.
 
 ### StatusBadge — consistent status pill
 
@@ -74,7 +186,7 @@ cell: (row) => <StatusBadge status={row.deletedAt ? 'deleted' : 'active'} />,
 ```
 
 Statuses: `'active'` (green), `'inactive'` (gray), `'deleted'` (red).
-Optional `label` prop overrides the display text (e.g. `<StatusBadge status="active" label="Configured" />`).
+Optional `label` prop overrides the display text.
 
 ### DateCell — formatted date
 
@@ -82,22 +194,20 @@ Optional `label` prop overrides the display text (e.g. `<StatusBadge status="act
 cell: (row) => <DateCell date={row.createdAt} />,
 ```
 
-Uses `toLocaleDateString()` — change here to update all tables at once.
-
 ## checkboxColumn Factory
 
-For bulk-select tables, call `checkboxColumn()` as the **first** column:
+All list tables should include `checkboxColumn()` as the **first** column for per-row selection. The select-all control lives in the toolbar via `SelectAllCheckbox`.
 
 ```tsx
 checkboxColumn<RowType>({
-  selected,            // Set<string>
+  selected,
   onToggle: toggleSelect,
-  onToggleAll: toggleAll,
-  allSelected,         // boolean
   rowId: (row) => row.id,
   isSelectable: (row) => !row.deletedAt,  // optional guard
 }),
 ```
+
+Pair with `<BulkDeleteBar>` from `@/components/bulk-delete-bar` and `SelectAllCheckbox` in the toolbar.
 
 ## actionsColumn Factory
 
@@ -118,37 +228,16 @@ actionsColumn<RowType>([
 | Field | Type | Description |
 |-------|------|-------------|
 | `icon` | `'clone' \| 'delete' \| 'edit'` | Built-in icon |
-| `label` | `string` | Tooltip text |
+| `label` | `string` | Tooltip text (shown on hover) |
 | `onClick` | `(row: T) => void` | Click handler |
 | `variant` | `'default' \| 'danger'` | Button style (default: `'default'`) |
 | `loading` | `(row: T) => boolean` | Shows spinner when true |
 | `hidden` | `(row: T) => boolean` | Hides button when true |
 
-For custom components that don't fit the icon/label/onClick pattern (e.g. `DeployToEnvironmentButton`), use the render escape hatch:
+For custom components (e.g. `DeployToEnvironmentButton`), use the render escape hatch:
 
 ```tsx
 { render: (row) => <DeployToEnvironmentButton strategyId={row.id} variant="icon" /> }
-```
-
-### Strategies example (multiple actions)
-
-```tsx
-const actions = useMemo<RowAction<StrategyListItem>[]>(() => [
-  { icon: 'clone', label: 'Clone strategy', onClick: (s) => handleClone(s.id), loading: (s) => cloningId === s.id },
-  { render: (s) => <DeployToEnvironmentButton strategyId={s.id} variant="icon" /> },
-  { icon: 'delete', label: 'Delete strategy', onClick: (s) => handleDelete(s.id, s.name), variant: 'danger', loading: (s) => deletingId === s.id },
-], [handleClone, handleDelete, cloningId, deletingId]);
-
-// Then in columns:
-actionsColumn(actions),
-```
-
-### Input presets example (single action, conditional visibility)
-
-```tsx
-actionsColumn<InputPresetRow>([
-  { icon: 'clone', label: 'Clone preset', onClick: (ip) => handleClone(ip.id), loading: (ip) => cloningId === ip.id, hidden: (ip) => !!ip.deletedAt },
-])
 ```
 
 ## Class Name Constants
@@ -158,10 +247,32 @@ actionsColumn<InputPresetRow>([
 | `TD_DEFAULT` | `'whitespace-nowrap px-6 py-4 text-sm text-gray-700'` | Most data cells (applied automatically) |
 | `TH_DEFAULT` | `'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600'` | Most header cells (applied automatically) |
 
+## Page Structure
+
+List pages are thin server components — all data fetching happens in the table component via `useInfiniteList`:
+
+```tsx
+export default function ResourcesPage() {
+  return (
+    <div>
+      <PageHeader
+        title="Resources"
+        subtitle="Description"
+        actions={<PrimaryLinkButton href="/resources/new" icon>New Resource</PrimaryLinkButton>}
+      />
+      <ResourcesTable />
+    </div>
+  );
+}
+```
+
 ## Rules
 
 - Always define `columns` with `useMemo` to avoid re-renders.
-- Use `footer` for `<Pagination>` — keep it inside the card.
+- Always include `checkboxColumn` (first) and `actionsColumn` (last) for consistency across all tables.
+- Always include a `SearchBar` in the `toolbar` — search is backend-powered, never client-side.
+- Use `useInfiniteList` for all data fetching — no server-side fetching in page components.
+- After mutations, call `refresh()` (not `router.refresh()`).
 - Pass `className=""` when the default `mt-8` spacing is unwanted.
 - Prefer cell components (`NameCell`, `StatusBadge`, `DateCell`) over inline JSX.
 - Use `actionsColumn()` for all action columns — never write raw action button JSX.

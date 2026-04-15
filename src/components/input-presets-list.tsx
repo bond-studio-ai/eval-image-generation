@@ -5,12 +5,14 @@ import {
   DataTable,
   DateCell,
   NameCell,
+  SearchBar,
+  SelectAllCheckbox,
   StatusBadge,
   actionsColumn,
   checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
-import { Pagination } from '@/components/pagination';
+import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
@@ -19,23 +21,30 @@ export interface InputPresetRow {
   id: string;
   name: string | null;
   description: string | null;
-  imageCount: number;
-  generationCount: number;
+  dollhouseView: string | null;
+  realPhoto: string | null;
+  moodBoard: string | null;
+  stats?: { generationCount: number };
   createdAt: string;
   deletedAt: string | null;
+  [key: string]: unknown;
 }
 
-interface InputPresetsListProps {
-  data: InputPresetRow[];
-  page: number;
-  totalPages: number;
-  total: number;
-}
-
-export function InputPresetsList({ data, page, totalPages, total }: InputPresetsListProps) {
+export function InputPresetsList() {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cloningId, setCloningId] = useState<string | null>(null);
+
+  const {
+    items,
+    loading,
+    loadingMore,
+    hasMore,
+    search,
+    setSearch,
+    loadMore,
+    refresh,
+  } = useInfiniteList<InputPresetRow>('input-presets', { limit: 20 });
 
   const handleClone = useCallback(async (id: string) => {
     setCloningId(id);
@@ -45,7 +54,6 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
       const json = await res.json();
       const newId = json.data?.id;
       if (newId) {
-        router.refresh();
         router.push(`/input-presets/${newId}/edit`);
       }
     } finally {
@@ -53,7 +61,7 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
     }
   }, [router]);
 
-  const activeItems = data.filter((ip) => !ip.deletedAt);
+  const activeItems = useMemo(() => items.filter((ip) => !ip.deletedAt), [items]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -80,18 +88,14 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
     });
     if (res.ok) {
       setSelected(new Set());
-      router.refresh();
+      refresh();
     }
-  }, [selected, router]);
-
-  const allSelected = activeItems.length > 0 && selected.size === activeItems.length;
+  }, [selected, refresh]);
 
   const columns = useMemo<DataTableColumn<InputPresetRow>[]>(() => [
     checkboxColumn<InputPresetRow>({
       selected,
       onToggle: toggleSelect,
-      onToggleAll: toggleAll,
-      allSelected,
       rowId: (ip) => ip.id,
       isSelectable: (ip) => !ip.deletedAt,
     }),
@@ -101,12 +105,8 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
       cellClassName: 'px-6 py-4',
     },
     {
-      header: 'Images',
-      cell: (ip) => `${ip.imageCount} image${ip.imageCount !== 1 ? 's' : ''}`,
-    },
-    {
       header: 'Generations',
-      cell: (ip) => ip.generationCount,
+      cell: (ip) => ip.stats?.generationCount ?? 0,
     },
     {
       header: 'Created',
@@ -119,17 +119,32 @@ export function InputPresetsList({ data, page, totalPages, total }: InputPresets
     actionsColumn<InputPresetRow>([
       { icon: 'clone', label: 'Clone preset', onClick: (ip) => handleClone(ip.id), loading: (ip) => cloningId === ip.id, hidden: (ip) => !!ip.deletedAt },
     ]),
-  ], [allSelected, toggleAll, selected, toggleSelect, handleClone, cloningId]);
+  ], [selected, toggleSelect, handleClone, cloningId]);
+
+  const toolbar = (
+    <div className="flex items-center gap-4">
+      <div className="w-72">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search input presets..." />
+      </div>
+      <div className="ml-auto">
+        <SelectAllCheckbox count={selected.size} total={activeItems.length} onToggle={toggleAll} />
+      </div>
+    </div>
+  );
 
   return (
     <>
       <DataTable
         columns={columns}
-        data={data}
+        data={items}
         rowKey={(ip) => ip.id}
         rowClassName={(ip) => `hover:bg-gray-50 ${selected.has(ip.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage="No input presets found."
-        footer={<Pagination page={page} totalPages={totalPages} total={total} />}
+        emptyMessage={search ? 'No input presets match your search.' : 'No input presets found.'}
+        loading={loading}
+        toolbar={toolbar}
+        onLoadMore={loadMore}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
       />
 
       <BulkDeleteBar

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 
 // ---------------------------------------------------------------------------
 // Core types
@@ -34,8 +34,12 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   loading?: boolean;
   loadingMessage?: string;
+  toolbar?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export function DataTable<T>({
@@ -46,15 +50,37 @@ export function DataTable<T>({
   emptyMessage = 'No items found.',
   loading = false,
   loadingMessage = 'Loading...',
+  toolbar,
   footer,
   className = 'mt-8',
+  onLoadMore,
+  hasMore,
+  loadingMore,
 }: DataTableProps<T>) {
   const colCount = columns.length;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!onLoadMore || !hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) onLoadMore();
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore]);
 
   return (
     <div
-      className={`overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs ${className}`}
+      className={`overflow-clip rounded-lg border border-gray-200 bg-white shadow-xs ${className}`}
     >
+      {toolbar && (
+        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-3">{toolbar}</div>
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -93,8 +119,16 @@ export function DataTable<T>({
                 </tr>
               ))
             )}
+            {loadingMore && (
+              <tr>
+                <td colSpan={colCount} className="px-6 py-4 text-center text-sm text-gray-500">
+                  Loading more…
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
+        {hasMore && <div ref={sentinelRef} className="h-1" />}
       </div>
       {footer}
     </div>
@@ -162,6 +196,96 @@ export function DateCell({ date }: { date: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Toolbar components
+// ---------------------------------------------------------------------------
+
+/** Search input for the DataTable toolbar. Pair with the `toolbar` prop. */
+export function SearchBar({
+  value,
+  onChange,
+  placeholder = 'Search...',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <svg
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+      </svg>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+      />
+    </div>
+  );
+}
+
+/** Select-all checkbox for the toolbar. Shows count when items are selected. */
+export function SelectAllCheckbox({
+  count,
+  total,
+  onToggle,
+}: {
+  count: number;
+  total: number;
+  onToggle: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 select-none">
+      <input
+        type="checkbox"
+        checked={total > 0 && count === total}
+        ref={(el) => { if (el) el.indeterminate = count > 0 && count < total; }}
+        onChange={onToggle}
+        className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+      />
+      {count > 0 ? `${count} selected` : 'Select all'}
+    </label>
+  );
+}
+
+/** Pill-style filter buttons for the toolbar. */
+export function FilterPills<V extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { label: string; value: V }[];
+  value: V;
+  onChange: (value: V) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            value === opt.value
+              ? 'bg-primary-100 text-primary-700 ring-1 ring-inset ring-primary-600/20'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Column factories
 // ---------------------------------------------------------------------------
 
@@ -171,27 +295,16 @@ const CHECKBOX_CLASS =
 export function checkboxColumn<T>({
   selected,
   onToggle,
-  onToggleAll,
-  allSelected,
   rowId,
   isSelectable,
 }: {
   selected: Set<string>;
   onToggle: (id: string) => void;
-  onToggleAll: () => void;
-  allSelected: boolean;
   rowId: (row: T) => string;
   isSelectable?: (row: T) => boolean;
 }): DataTableColumn<T> {
   return {
-    header: (
-      <input
-        type="checkbox"
-        checked={allSelected}
-        onChange={onToggleAll}
-        className={CHECKBOX_CLASS}
-      />
-    ),
+    header: '',
     headerClassName: 'w-10 px-3 py-3',
     cell: (row) => {
       if (isSelectable && !isSelectable(row)) return null;
@@ -275,20 +388,36 @@ function ActionButton({
   variant?: 'default' | 'danger';
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+
+  const showTip = () => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) setTip({ x: rect.left + rect.width / 2, y: rect.top });
+  };
+
   return (
-    <div className="group/action relative">
+    <>
       <button
+        ref={ref}
         type="button"
         onClick={onClick}
         disabled={disabled}
+        onMouseEnter={showTip}
+        onMouseLeave={() => setTip(null)}
         className={VARIANT_CLASSES[variant]}
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover/action:opacity-100">
-        {label}
-      </span>
-    </div>
+      {tip && (
+        <span
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg"
+          style={{ left: tip.x, top: tip.y - 4 }}
+        >
+          {label}
+        </span>
+      )}
+    </>
   );
 }
 

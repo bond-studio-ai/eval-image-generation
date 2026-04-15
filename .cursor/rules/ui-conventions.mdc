@@ -47,11 +47,14 @@ alwaysApply: true
 | `PrimaryButton` | `@/components/page-header` | Form submit buttons with loading |
 | `ResourceFormHeader` | `@/components/resource-form-header` | Name + Description card for any resource |
 | `ErrorCard` | `@/components/resource-form-header` | Error messages in red card |
-| `DataTable` | `@/components/data-table` | Generic typed table with card shell, loading/empty states |
+| `DataTable` | `@/components/data-table` | Generic typed table with sticky toolbar, infinite scroll, loading/empty states |
+| `useInfiniteList` | `@/hooks/use-infinite-list` | Hook for backend-powered search, pagination accumulation, and infinite scroll |
+| `SearchBar` | `@/components/data-table` | Search input for DataTable toolbar (backend-powered) |
+| `SelectAllCheckbox` | `@/components/data-table` | Toolbar checkbox with count label and indeterminate state |
+| `FilterPills` | `@/components/data-table` | Toolbar pill buttons for backend-driven status filtering |
 | `NameCell` | `@/components/data-table` | Linked name + subtitle for table rows |
 | `StatusBadge` | `@/components/data-table` | Consistent active/inactive/deleted pill |
 | `DateCell` | `@/components/data-table` | Formatted date for table rows |
 | `checkboxColumn` | `@/components/data-table` | Factory for bulk-select checkbox column |
 | `actionsColumn` | `@/components/data-table` | Factory for declarative action columns (icon + label + onClick) |
-| `Pagination` | `@/components/pagination` | URL-based page navigation footer |
 | `BulkDeleteBar` | `@/components/bulk-delete-bar` | Floating bar for bulk selection actions |

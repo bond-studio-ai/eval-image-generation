@@ -4,19 +4,32 @@ import {
   DataTable,
   DateCell,
   NameCell,
+  SearchBar,
   StatusBadge,
   actionsColumn,
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
+import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { EnvironmentListItem } from '@/lib/service-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
-export function EnvironmentsTable({ environments }: { environments: EnvironmentListItem[] }) {
+export function EnvironmentsTable() {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const {
+    items,
+    loading,
+    loadingMore,
+    hasMore,
+    search,
+    setSearch,
+    loadMore,
+    refresh,
+  } = useInfiniteList<EnvironmentListItem>('environments', { limit: 20 });
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
@@ -25,14 +38,14 @@ export function EnvironmentsTable({ environments }: { environments: EnvironmentL
       try {
         const res = await fetch(serviceUrl(`environments/${id}`), { method: 'DELETE' });
         if (!res.ok) return;
-        router.refresh();
+        refresh();
       } catch {
         // ignore
       } finally {
         setDeletingId(null);
       }
     },
-    [router],
+    [refresh],
   );
 
   const actions = useMemo<RowAction<EnvironmentListItem>[]>(() => [
@@ -70,12 +83,25 @@ export function EnvironmentsTable({ environments }: { environments: EnvironmentL
     actionsColumn(actions),
   ], [actions]);
 
+  const toolbar = (
+    <div className="flex items-center gap-3">
+      <div className="w-72">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search environments..." />
+      </div>
+    </div>
+  );
+
   return (
     <DataTable
       columns={columns}
-      data={environments}
+      data={items}
       rowKey={(item) => item.id}
-      emptyMessage="No environments created yet."
+      emptyMessage={search ? 'No environments match your search.' : 'No environments created yet.'}
+      loading={loading}
+      toolbar={toolbar}
+      onLoadMore={loadMore}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
     />
   );
 }

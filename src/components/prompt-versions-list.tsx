@@ -5,12 +5,14 @@ import {
   DataTable,
   DateCell,
   NameCell,
+  SearchBar,
+  SelectAllCheckbox,
   StatusBadge,
   actionsColumn,
   checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
-import { Pagination } from '@/components/pagination';
+import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
@@ -21,24 +23,28 @@ export interface PromptVersionRow {
   description: string | null;
   systemPrompt: string;
   userPrompt: string;
-  generationCount: number;
+  stats?: { generationCount: number };
   createdAt: string;
   deletedAt: string | null;
 }
 
-interface PromptVersionsListProps {
-  data: PromptVersionRow[];
-  page: number;
-  totalPages: number;
-  total: number;
-}
-
-export function PromptVersionsList({ data, page, totalPages, total }: PromptVersionsListProps) {
+export function PromptVersionsList() {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cloningId, setCloningId] = useState<string | null>(null);
 
-  const activeItems = data.filter((pv) => !pv.deletedAt);
+  const {
+    items,
+    loading,
+    loadingMore,
+    hasMore,
+    search,
+    setSearch,
+    loadMore,
+    refresh,
+  } = useInfiniteList<PromptVersionRow>('prompt-versions', { limit: 20 });
+
+  const activeItems = useMemo(() => items.filter((pv) => !pv.deletedAt), [items]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -65,9 +71,9 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
     });
     if (res.ok) {
       setSelected(new Set());
-      router.refresh();
+      refresh();
     }
-  }, [selected, router]);
+  }, [selected, refresh]);
 
   const handleClone = useCallback(async (pv: PromptVersionRow) => {
     setCloningId(pv.id);
@@ -90,14 +96,10 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
     finally { setCloningId(null); }
   }, [router]);
 
-  const allSelected = activeItems.length > 0 && selected.size === activeItems.length;
-
   const columns = useMemo<DataTableColumn<PromptVersionRow>[]>(() => [
     checkboxColumn<PromptVersionRow>({
       selected,
       onToggle: toggleSelect,
-      onToggleAll: toggleAll,
-      allSelected,
       rowId: (pv) => pv.id,
       isSelectable: (pv) => !pv.deletedAt,
     }),
@@ -108,7 +110,7 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
     },
     {
       header: 'Generations',
-      cell: (pv) => pv.generationCount,
+      cell: (pv) => pv.stats?.generationCount ?? 0,
     },
     {
       header: 'Created',
@@ -121,17 +123,32 @@ export function PromptVersionsList({ data, page, totalPages, total }: PromptVers
     actionsColumn<PromptVersionRow>([
       { icon: 'clone', label: 'Clone prompt version', onClick: (pv) => handleClone(pv), loading: (pv) => cloningId === pv.id },
     ]),
-  ], [allSelected, toggleAll, selected, toggleSelect, handleClone, cloningId]);
+  ], [selected, toggleSelect, handleClone, cloningId]);
+
+  const toolbar = (
+    <div className="flex items-center gap-4">
+      <div className="w-72">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search prompt versions..." />
+      </div>
+      <div className="ml-auto">
+        <SelectAllCheckbox count={selected.size} total={activeItems.length} onToggle={toggleAll} />
+      </div>
+    </div>
+  );
 
   return (
     <>
       <DataTable
         columns={columns}
-        data={data}
+        data={items}
         rowKey={(pv) => pv.id}
         rowClassName={(pv) => `hover:bg-gray-50 ${selected.has(pv.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage="No prompt versions found."
-        footer={<Pagination page={page} totalPages={totalPages} total={total} />}
+        emptyMessage={search ? 'No prompt versions match your search.' : 'No prompt versions found.'}
+        loading={loading}
+        toolbar={toolbar}
+        onLoadMore={loadMore}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
       />
 
       <BulkDeleteBar
