@@ -14,6 +14,8 @@ import {
   YAxis,
 } from 'recharts';
 
+const Y_TICKS = [0, 20, 40, 60, 80, 100];
+
 interface AccuracyTrendChartProps {
   from?: string;
   to?: string;
@@ -113,7 +115,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
             />
             <YAxis
               domain={[0, 100]}
-              ticks={[0, 20, 40, 60, 80, 100]}
+              ticks={Y_TICKS}
               tickFormatter={(v: number) => `${v}%`}
               tick={{ fontSize: 12 }}
               stroke="#9ca3af"
@@ -148,7 +150,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
               stroke="#3b82f6"
               strokeWidth={2}
               dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
             />
             <Line
               type="linear"
@@ -157,7 +159,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
               stroke="#22c55e"
               strokeWidth={2}
               dot={{ r: 4, fill: '#22c55e', strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 0 }}
             />
           </LineChart>
         </ResponsiveContainer>
