@@ -682,15 +682,8 @@ function ProductField({
           </p>
         </div>
       </button>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
-        >
-          {hasSelection ? 'Edit' : 'Choose'}
-        </button>
-        {hasSelection ? (
+      {hasSelection && (
+        <div className="mt-2 flex justify-end">
           <button
             type="button"
             onClick={onClearSelection}
@@ -698,8 +691,8 @@ function ProductField({
           >
             Clear
           </button>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       {pickerOpen ? (
         <ProductSelectionModal
