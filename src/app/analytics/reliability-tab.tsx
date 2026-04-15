@@ -1,5 +1,6 @@
 'use client';
 
+import { AccuracyTrendChart } from '@/app/analytics/accuracy-trend-chart';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import type { ReliabilityData } from '@/lib/service-client';
 import { useCallback, useEffect, useState } from 'react';
@@ -160,6 +161,9 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
 
   return (
     <div className="mt-6 space-y-6">
+      {/* Accuracy trend chart */}
+      <AccuracyTrendChart from={from} to={to} model={model} source={source} />
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total Runs" value={data.summary.totalRuns} />
