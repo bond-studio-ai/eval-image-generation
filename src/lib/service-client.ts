@@ -354,6 +354,21 @@ export async function fetchAnalyticsReliability(params: Record<string, string>) 
   return fetchService<ReliabilityData>(`/analytics/reliability${qs ? `?${qs}` : ''}`);
 }
 
+// ─── Accuracy Trends ─────────────────────────────────────────────────────────
+
+export interface AccuracyTrendPoint {
+  date: string;
+  sceneAccuracy: number;
+  productAccuracy: number;
+}
+
+export async function fetchAnalyticsAccuracyTrends(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  return fetchService<{ trends: AccuracyTrendPoint[] }>(
+    `/analytics/accuracy-trends${qs ? `?${qs}` : ''}`,
+  );
+}
+
 // ─── Environments ────────────────────────────────────────────────────────────
 
 export interface EnvironmentListItem {
