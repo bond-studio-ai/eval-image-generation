@@ -22,8 +22,10 @@ interface AccuracyTrendChartProps {
 }
 
 function formatDate(dateStr: string): string {
+  const parts = dateStr.split('-');
+  if (parts.length === 3) return `${Number(parts[1])}/${Number(parts[2])}`;
   const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
 }
 
 export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendChartProps) {
@@ -51,7 +53,8 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
         return;
       }
       const json = await res.json();
-      setData(json.data?.trends ?? []);
+      const trends = json.data?.trends;
+      setData(Array.isArray(trends) ? trends : []);
     } catch {
       setError(true);
     } finally {
@@ -110,19 +113,19 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
               stroke="#9ca3af"
             />
             <Tooltip
-              formatter={(value: unknown, name: unknown) => [
-                `${Number(value).toFixed(1)}%`,
-                String(name),
-              ]}
+              formatter={(value: unknown, name: unknown) => {
+                const n = Number(value);
+                return [Number.isFinite(n) ? `${n.toFixed(1)}%` : 'N/A', String(name)];
+              }}
               labelFormatter={(_label, payload) => {
                 const point = payload?.[0]?.payload as { date?: string } | undefined;
                 if (!point?.date) return String(_label);
-                const d = new Date(point.date);
-                return d.toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                });
+                const [y, m, d] = point.date.split('-');
+                if (y && m && d) {
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
+                }
+                return String(_label);
               }}
               contentStyle={{
                 borderRadius: '8px',
