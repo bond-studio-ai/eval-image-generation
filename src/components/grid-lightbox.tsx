@@ -83,9 +83,9 @@ export function GridLightbox({
     const input = generation?.input;
     if (!input) return [];
     const entries: { label: string; url: string }[] = [];
-    if (typeof input.dollhouse_view === 'string' && input.dollhouse_view) entries.push({ label: 'Dollhouse', url: input.dollhouse_view });
-    if (typeof input.real_photo === 'string' && input.real_photo) entries.push({ label: 'Real Photo', url: input.real_photo });
-    if (typeof input.mood_board === 'string' && input.mood_board) entries.push({ label: 'Mood Board', url: input.mood_board });
+    if (typeof input.dollhouseView === 'string' && input.dollhouseView) entries.push({ label: 'Dollhouse', url: input.dollhouseView });
+    if (typeof input.realPhoto === 'string' && input.realPhoto) entries.push({ label: 'Real Photo', url: input.realPhoto });
+    if (typeof input.moodBoard === 'string' && input.moodBoard) entries.push({ label: 'Mood Board', url: input.moodBoard });
     return entries;
   }, [generation?.input]);
 

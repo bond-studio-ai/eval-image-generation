@@ -120,15 +120,10 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
       }
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
+      const apiHasMore = json.hasMore === true;
       const normalized = raw.map((b) => normalizeBatch(b));
       if (mergeFirstPage) {
         setFetchError(null);
-        // Poll merge only refreshes page 1; rows already loaded from page 2+ are reused as-is.
-        // Known gap: tail batch status can stay stale (and shouldPoll may stay true) until a
-        // full replace or refetch. Refreshing all loaded pages each interval would fix it but
-        // multiplies requests by the number of pages the user has scrolled into.
-        // We do not reset `page` here (would thrash during polling); the append path dedupes by
-        // batch id so loadMore after top-of-list insertions does not duplicate tail rows.
         const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
         const topIds = new Set(normalized.map((b) => b.id));
         let mergeIncludesNewBatchId = false;
@@ -145,24 +140,18 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
         lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
         setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
       } else if (replace) {
-        // Initial fetch: keep paging while the page is non-empty. The batch-runs list often
-        // returns fewer than `limit` rows even when more pages exist, so we cannot treat a
-        // short page as the end. We may send one extra request that returns an empty page.
-        // Prefer explicit hasNext/total from the API when available.
         setBatches(normalized);
         setPage(1);
-        setHasMore(raw.length > 0);
+        setHasMore(apiHasMore);
         lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
       } else {
-        // hasMore from non-empty page only (like replace). Do not require new ids: after a
-        // poll merge, the next page can overlap entirely with the list while deeper pages exist.
         setBatches((prev) => {
           const existingIds = new Set(prev.map((b) => b.id));
           const added = normalized.filter((b) => !existingIds.has(b.id));
           return [...prev, ...added];
         });
         setPage(pageToFetch);
-        setHasMore(raw.length > 0);
+        setHasMore(apiHasMore);
       }
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
