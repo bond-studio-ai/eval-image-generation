@@ -1,0 +1,46 @@
+---
+description: Use the shared PageHeader component for all page titles, subtitles, back links, and primary actions.
+globs: src/app/**/page.tsx,src/components/**/*.tsx
+alwaysApply: false
+---
+
+# Page Headers
+
+Always use `<PageHeader>` from `@/components/page-header` for page titles. Never write raw `<h1>` tags.
+
+```tsx
+import { PageHeader, PrimaryLinkButton, PrimaryButton } from '@/components/page-header';
+
+// List page with "New" action
+<PageHeader
+  title="Strategies"
+  subtitle="Multi-step workflows that chain generations together."
+  actions={<PrimaryLinkButton href="/strategies/new" icon>New Strategy</PrimaryLinkButton>}
+/>
+
+// Detail/edit page with back link
+<PageHeader
+  backHref={`/strategies/${id}`}
+  backLabel={`Back to ${name}`}
+  title="Edit Strategy"
+/>
+
+// Create/edit form page — title="" hides the h1, save button in actions
+<PageHeader
+  backHref="/input-presets"
+  backLabel="Back to Input Presets"
+  title="New Input Preset"
+  actions={
+    <PrimaryButton onClick={handleCreate} disabled={!canCreate} loading={creating}>
+      Create Input Preset
+    </PrimaryButton>
+  }
+/>
+```
+
+- `title` renders as `h1 text-2xl font-bold text-gray-900`
+- `subtitle` accepts `React.ReactNode` — use JSX for rich subtitles with links
+- `backLabel` defaults to "Back" when omitted
+- `actions` slot goes on the right side of the header row
+- Use `PrimaryLinkButton` for navigation CTAs; pass `icon` for a plus icon
+- Use `PrimaryButton` for form submit buttons (`onClick`, `disabled`, `loading`)

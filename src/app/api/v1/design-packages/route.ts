@@ -1,17 +1,11 @@
+import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
 
 const RETAILER_ID_QUERY_KEY = 'retailerId';
-const baseHostname = process.env.BASE_API_HOSTNAME;
-const API_BASE = baseHostname
-  ? `https://${baseHostname.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-  : null;
-const STUDIO_API_BASE = API_BASE ? `${API_BASE}/studio/v1` : null;
 
 export async function GET(request: Request) {
   try {
-    if (!STUDIO_API_BASE) {
-      return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
-    }
+    const STUDIO_API_BASE = `${platformApiBase()}/studio/v1`;
 
     const requestUrl = new URL(request.url);
     const retailerId = requestUrl.searchParams.get(RETAILER_ID_QUERY_KEY)?.trim();

@@ -1,5 +1,6 @@
 'use client';
 
+import { PageHeader } from '@/components/page-header';
 import { ScopeToggle } from '@/components/scope-toggle';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -18,19 +19,21 @@ export function ExecutionsTabs() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Runs</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {source === 'benchmark'
+      <div className="mb-6">
+        <PageHeader
+          title="Runs"
+          subtitle={
+            source === 'benchmark'
               ? 'Run benchmark projects and review benchmark image generations.'
-              : 'Run strategies and browse generated images.'}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <ScopeToggle />
-          <ExecutionsRunButton onRunCreated={handleRunCreated} />
-        </div>
+              : 'Run strategies and browse generated images.'
+          }
+          actions={
+            <>
+              <ScopeToggle />
+              <ExecutionsRunButton onRunCreated={handleRunCreated} />
+            </>
+          }
+        />
       </div>
 
       <div className="mb-6 flex gap-1 border-b border-gray-200">

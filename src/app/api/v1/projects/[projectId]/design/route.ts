@@ -1,11 +1,9 @@
+import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
 
-const baseHostname = process.env.BASE_API_HOSTNAME;
-const API_BASE = baseHostname
-  ? `https://${baseHostname.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-  : null;
-const STUDIO_API_BASE = API_BASE ? `${API_BASE}/studio/v1` : null;
-const SPATIAL_API_BASE = API_BASE ? `${API_BASE}/spatial/v1` : null;
+const API_BASE = platformApiBase();
+const STUDIO_API_BASE = `${API_BASE}/studio/v1`;
+const SPATIAL_API_BASE = `${API_BASE}/spatial/v1`;
 const STUDIO_DESIGN_KEYS = [
   'id',
   'colorScheme',
@@ -92,9 +90,6 @@ function extractDesignId(value: unknown): string | null {
 }
 
 async function fetchRoomByProjectId(projectId: string): Promise<Record<string, unknown>> {
-  if (!SPATIAL_API_BASE) {
-    throw new Error('BASE_API_HOSTNAME is not set');
-  }
   const res = await fetch(`${SPATIAL_API_BASE}/rooms?projectId=${encodeURIComponent(projectId)}`, {
     headers: { Accept: 'application/json' },
     cache: 'no-store',
@@ -115,9 +110,6 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   try {
-    if (!STUDIO_API_BASE || !SPATIAL_API_BASE) {
-      return errorResponse('INTERNAL_ERROR', 'BASE_API_HOSTNAME is not set');
-    }
     const { projectId } = await params;
     const body = (await request.json().catch(() => ({}))) as { design?: unknown };
     const design =

@@ -1,0 +1,61 @@
+---
+description: UI/UX conventions for consistent styling across the eval app.
+alwaysApply: true
+---
+
+# UI/UX Conventions
+
+## Layout
+
+- The app shell (`AppShell`) provides `max-w-7xl` centering, `py-8 pb-24` padding, and scrolling via `overflow-y-auto` on `<main>`.
+- `html` and `body` have `overflow: hidden; height: 100%` — never rely on body scroll.
+- Pages render inside the shell; don't add their own max-width or horizontal padding.
+
+## Typography
+
+- Page titles: `text-2xl font-bold text-gray-900` (via `PageHeader`)
+- Subtitles: `text-sm text-gray-600` (via `PageHeader`)
+- Section headings: `text-lg font-semibold text-gray-900`
+- Form labels: `text-sm font-medium text-gray-700`
+
+## Cards
+
+- Form/control cards: `rounded-lg border border-gray-200 bg-white p-5 shadow-xs`
+- Content/display cards: `rounded-lg border border-gray-200 bg-white p-6 shadow-xs`
+- Error cards: use `<ErrorCard>` from `@/components/resource-form-header`
+
+## Primary Buttons
+
+- Solid: `bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs`
+- Disabled: `disabled:bg-primary-300`
+- Link variant: use `PrimaryLinkButton` from `@/components/page-header`
+- Submit variant: use `PrimaryButton` from `@/components/page-header`
+
+## Forms
+
+- Place save/create buttons in the `PageHeader` actions slot (top-right), not in sticky footers.
+- Use `ResourceFormHeader` for name/description fields on all resource forms.
+- Use `ErrorCard` for all error messages.
+- Never use `fixed`/`sticky` bottom bars for save actions.
+
+## Shared Components
+
+| Component | Import | Purpose |
+|-----------|--------|---------|
+| `PageHeader` | `@/components/page-header` | All page titles, back links, actions |
+| `PrimaryLinkButton` | `@/components/page-header` | Navigation CTAs with plus icon |
+| `PrimaryButton` | `@/components/page-header` | Form submit buttons with loading |
+| `ResourceFormHeader` | `@/components/resource-form-header` | Name + Description card for any resource |
+| `ErrorCard` | `@/components/resource-form-header` | Error messages in red card |
+| `DataTable` | `@/components/data-table` | Generic typed table with sticky toolbar, skeleton loading, empty states |
+| `useInfiniteList` | `@/hooks/use-infinite-list` | Hook for backend-powered search, pagination, and URL sync |
+| `Pagination` | `@/components/pagination` | Page numbers, prev/next, jump-to-page — used in DataTable footer |
+| `SearchBar` | `@/components/data-table` | Search input for DataTable toolbar (backend-powered) |
+| `SelectAllCheckbox` | `@/components/data-table` | Toolbar checkbox with count label and indeterminate state |
+| `FilterPills` | `@/components/data-table` | Toolbar pill buttons for backend-driven status filtering |
+| `NameCell` | `@/components/data-table` | Linked name + subtitle for table rows |
+| `StatusBadge` | `@/components/data-table` | Consistent active/inactive/deleted pill |
+| `DateCell` | `@/components/data-table` | Formatted date for table rows |
+| `checkboxColumn` | `@/components/data-table` | Factory for bulk-select checkbox column |
+| `actionsColumn` | `@/components/data-table` | Factory for declarative action columns (icon + label + onClick) |
+| `BulkDeleteBar` | `@/components/bulk-delete-bar` | Floating bar for bulk selection actions |

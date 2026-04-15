@@ -35,7 +35,6 @@ export function StrategyRunButton({
     try {
       const [requestBody] = await fetchPresetRunRequests([selectedId], {
         batch: true,
-        number_of_images: 8,
       });
       if (!requestBody) throw new Error('Failed to build run request');
       const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
@@ -153,7 +152,6 @@ export function StrategyBatchRunButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [numberOfImages, setNumberOfImages] = useState(8);
 
   const presetMap = useMemo(
     () => new Map(inputPresets.map((p) => [p.id, p])),
@@ -181,13 +179,10 @@ export function StrategyBatchRunButton({
     setSubmitting(true);
     setError(null);
 
-    const count = Math.max(1, Math.min(100, numberOfImages));
-
     try {
       const groupId = crypto.randomUUID();
       const requests = await fetchPresetRunRequests(selectedIds, {
         batch: true,
-        number_of_images: count,
         group_id: groupId,
       });
       const results = await Promise.allSettled(
@@ -222,13 +217,10 @@ export function StrategyBatchRunButton({
       setShowModal(false);
       setSelectedIds([]);
       setSearch('');
-      setNumberOfImages(8);
       onRunCreated?.();
     } catch { setError('Network error'); }
     finally { setSubmitting(false); }
-  }, [strategyId, selectedIds, numberOfImages, onRunCreated]);
-
-  const totalRuns = selectedIds.length * Math.max(1, Math.min(100, numberOfImages));
+  }, [strategyId, selectedIds, onRunCreated]);
 
   return (
     <>
@@ -329,16 +321,9 @@ export function StrategyBatchRunButton({
             {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
 
             <div className="shrink-0 border-t border-gray-200 px-5 py-3">
-              <label className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">Number of images</span>
-                <input
-                  type="number" min={1} max={100} value={numberOfImages}
-                  onChange={(e) => setNumberOfImages(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
-                  className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                />
-              </label>
-              <p className="mt-1 text-xs text-gray-500">
-                {selectedIds.length} preset(s) &times; {Math.max(1, Math.min(100, numberOfImages))} image(s) = {totalRuns} total run(s).
+              <p className="text-xs text-gray-500">
+                {selectedIds.length} preset{selectedIds.length === 1 ? '' : 's'} selected.
+                <span className="ml-1 text-gray-400">Image count is defined by the strategy&apos;s judge system.</span>
               </p>
             </div>
 
@@ -357,7 +342,7 @@ export function StrategyBatchRunButton({
                     </svg>
                     Starting...
                   </>
-                ) : totalRuns === 0 ? 'Select presets' : `Start batch (${totalRuns} run${totalRuns === 1 ? '' : 's'})`}
+                ) : selectedIds.length === 0 ? 'Select presets' : `Start batch (${selectedIds.length} preset${selectedIds.length === 1 ? '' : 's'})`}
               </button>
             </div>
           </div>

@@ -2,8 +2,8 @@ import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
 } from '@/lib/input-preset-design';
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { fetchInputPresetById } from '@/lib/service-client';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
 
@@ -31,20 +31,18 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   if (generationCount > 0 && !force) {
     return (
       <div>
-        <Link href={`/input-presets/${id}`} className="text-sm text-gray-600 hover:text-gray-900">
-          &larr; Back to preset
-        </Link>
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-6">
-          <h2 className="text-lg font-semibold text-amber-900">Cannot edit this preset</h2>
-          <p className="mt-2 text-sm text-amber-800">
+        <PageHeader
+          backHref={`/input-presets/${id}`}
+          backLabel="Back to preset"
+          title="Cannot edit this preset"
+        />
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
+          <p className="text-sm text-amber-800">
             This preset has been used in {generationCount} generation{generationCount !== 1 ? 's' : ''}. To change it, clone the preset first, then edit the copy.
           </p>
-          <Link
-            href={`/input-presets/${id}`}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
-          >
-            Back to preset (use Clone there)
-          </Link>
+          <div className="mt-4">
+            <PrimaryLinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</PrimaryLinkButton>
+          </div>
         </div>
       </div>
     );

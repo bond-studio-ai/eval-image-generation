@@ -1,5 +1,6 @@
 'use client';
 
+import { PageHeader } from '@/components/page-header';
 import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -239,12 +240,10 @@ export function PreviewPromptPage({
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Prompt Preview</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          See how a prompt template renders with an input preset.
-        </p>
-      </div>
+      <PageHeader
+        title="Prompt Preview"
+        subtitle="See how a prompt template renders with an input preset."
+      />
 
       {loadError && (
         <p className="mt-4 text-sm text-red-600">{loadError}</p>

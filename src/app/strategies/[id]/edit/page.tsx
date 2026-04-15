@@ -1,6 +1,6 @@
+import { PageHeader } from '@/components/page-header';
 import { StrategyBuilder } from '@/components/strategy-builder';
 import { fetchInputPresets, fetchModels, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -25,12 +25,9 @@ export default async function EditStrategyPage({ params }: PageProps) {
 
   return (
     <div>
-      <Link href={`/strategies/${id}`} className="text-sm text-gray-600 hover:text-gray-900">
-        &larr; Back to {strat.name}
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Strategy</h1>
+      <PageHeader backHref={`/strategies/${id}`} backLabel={`Back to ${strat.name}`} title="Edit Strategy" />
       <div className="mt-6">
-        <StrategyBuilder
+      <StrategyBuilder
           strategyId={strat.id}
           initialName={strat.name}
           initialDescription={strat.description ?? ''}
@@ -48,18 +45,12 @@ export default async function EditStrategyPage({ params }: PageProps) {
             preview_model: strat.previewModel ?? null,
             preview_resolution: strat.previewResolution ?? '512',
           }}
-          initialJudges={(strat.judges ?? []).map((j) => ({
-            id: j.id,
-            name: j.name ?? '',
-            judge_model: j.judgeModel,
-            judge_type: j.judgeType as 'batch' | 'individual',
-            judge_prompt_version_id: j.judgePromptVersionId,
-            tolerance_threshold: j.toleranceThreshold,
-          }))}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
+            type: s.type ?? 'generation',
+            number_of_images: s.numberOfImages ?? undefined,
             name: s.name ?? '',
-            prompt_version_id: s.promptVersionId,
+            prompt_version_id: s.promptVersionId ?? '',
             model: s.model,
             aspect_ratio: s.aspectRatio,
             output_resolution: s.outputResolution,
@@ -75,6 +66,14 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
             arbitrary_image_from_step: s.arbitraryImageFromStep,
+            judges: s.type === 'judge' ? (s.judges ?? []).map((j) => ({
+              id: j.id,
+              name: j.name ?? '',
+              judge_model: j.judgeModel,
+              judge_type: j.judgeType as 'batch' | 'individual',
+              judge_prompt_version_id: j.judgePromptVersionId,
+              tolerance_threshold: j.toleranceThreshold,
+            })) : undefined,
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

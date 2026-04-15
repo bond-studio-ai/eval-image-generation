@@ -1,0 +1,26 @@
+---
+description: Use centralized env helpers from @/lib/env instead of reading process.env.BASE_API_HOSTNAME directly.
+globs: src/**/*.ts,src/**/*.tsx
+alwaysApply: false
+---
+
+# Environment Configuration
+
+Never read `process.env.BASE_API_HOSTNAME` directly. Use the helpers from `@/lib/env`:
+
+```ts
+import { imageGenerationBase } from '@/lib/env';
+import { platformApiBase } from '@/lib/env';
+
+// Image-generation service endpoints
+const url = `${imageGenerationBase()}/prompt-versions`;
+
+// Platform APIs (studio, spatial, projects) — always https
+const url = `${platformApiBase()}/studio/v1/design-packages`;
+```
+
+- `imageGenerationBase()` returns `"{BASE_API_HOSTNAME}/image-generation/v1"`
+- `platformApiBase()` returns `"https://{BASE_API_HOSTNAME}"` (protocol-normalized)
+- Both throw if the env var is missing — let callers catch or let it bubble
+- These are **server-only** — never import in `'use client'` components
+- Browser code should use `serviceUrl()` from `@/lib/api-base` which proxies through `/api/v1/image-generation/`

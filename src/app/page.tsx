@@ -8,6 +8,7 @@ import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
+import { PageHeader } from '@/components/page-header';
 import {
   fetchAnalyticsRatings,
   fetchAnalyticsStrategyPerformance,
@@ -162,12 +163,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-      <p className="mt-1 text-sm text-gray-600">
-        {source === 'benchmark'
-          ? 'Insights into benchmark generation quality and benchmark performance.'
-          : 'Insights into generation quality and strategy performance.'}
-      </p>
+      <PageHeader
+        title="Analytics"
+        subtitle={
+          source === 'benchmark'
+            ? 'Insights into benchmark generation quality and benchmark performance.'
+            : 'Insights into generation quality and strategy performance.'
+        }
+      />
       <TabNav active={activeTab} searchParams={params} />
       <AnalyticsFilters models={models} strategies={strategies} activeTab={activeTab} />
 

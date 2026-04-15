@@ -11,18 +11,10 @@ export default async function NewStrategyPage() {
   ]);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">New Strategy</h1>
-      <p className="mt-1 text-sm text-gray-600">
-        Define a multi-step generation workflow.
-      </p>
-      <div className="mt-6">
-        <StrategyBuilder
-          promptVersions={promptVersions}
-          inputPresets={inputPresets}
-          models={models}
-        />
-      </div>
-    </div>
+    <StrategyBuilder
+      promptVersions={promptVersions}
+      inputPresets={inputPresets}
+      models={models}
+    />
   );
 }
