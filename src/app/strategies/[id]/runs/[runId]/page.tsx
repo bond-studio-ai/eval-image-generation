@@ -35,6 +35,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     error: string | null;
     executionTime: number | null;
     generationId: string | null;
+    isJudgeSelected: boolean;
     processedUserPrompt: string | null;
     processedSystemPrompt: string | null;
     inputImages: { url: string; label: string }[] | null;
@@ -86,6 +87,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
       error: sr.error,
       executionTime: sr.executionTime,
       generationId: sr.generationId,
+      isJudgeSelected: sr.isJudgeSelected ?? false,
       processedUserPrompt: sr.processedUserPrompt,
       processedSystemPrompt: sr.processedSystemPrompt,
       inputImages: sr.inputImages,
