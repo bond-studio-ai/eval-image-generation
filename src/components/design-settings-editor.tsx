@@ -934,18 +934,20 @@ function ProductField({
           </p>
         </div>
       </button>
-      {selectedId && (
-        <ProductImageDownloads slotKey={field.key} productId={selectedId} productName={selectedProduct?.name ?? null} />
-      )}
-      {hasSelection && (
-        <div className="mt-2 flex justify-end">
-          <button
-            type="button"
-            onClick={onClearSelection}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
-          >
-            Clear
-          </button>
+      {(selectedId || hasSelection) && (
+        <div className="mt-2 flex items-center justify-between">
+          {selectedId ? (
+            <ProductImageDownloads slotKey={field.key} productId={selectedId} productName={selectedProduct?.name ?? null} />
+          ) : <span />}
+          {hasSelection && (
+            <button
+              type="button"
+              onClick={onClearSelection}
+              className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
