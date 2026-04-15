@@ -7,6 +7,7 @@ interface PaginationProps {
   totalPages: number;
   total: number;
   onPageChange: (page: number) => void;
+  loading?: boolean;
 }
 
 function pageRange(current: number, total: number): (number | 'ellipsis-start' | 'ellipsis-end')[] {
@@ -82,14 +83,20 @@ function EllipsisJump({
 const BASE_BTN =
   'relative inline-flex items-center px-2 py-2 text-sm font-medium ring-1 ring-gray-300 ring-inset focus:z-10';
 
-export function Pagination({ page, totalPages, total, onPageChange }: PaginationProps) {
+export function Pagination({ page, totalPages, total, onPageChange, loading }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const pages = pageRange(page, totalPages);
 
   return (
     <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
-      <p className="text-sm text-gray-700">
+      <p className="flex items-center gap-2 text-sm text-gray-700">
+        {loading && (
+          <svg className="h-3.5 w-3.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        )}
         Page <span className="font-medium">{page}</span> of{' '}
         <span className="font-medium">{totalPages}</span>
         <span className="text-gray-400"> ({total} results)</span>

@@ -43,6 +43,7 @@ export function PromptVersionsList() {
     search,
     setSearch,
     goToPage,
+    paginating,
     refresh,
   } = useInfiniteList<PromptVersionRow>('prompt-versions', { limit: 20 });
 
@@ -148,7 +149,7 @@ export function PromptVersionsList() {
         emptyMessage={search ? 'No prompt versions match your search.' : 'No prompt versions found.'}
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
       <BulkDeleteBar

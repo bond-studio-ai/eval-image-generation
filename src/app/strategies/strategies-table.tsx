@@ -39,6 +39,7 @@ export function StrategiesTable() {
     search,
     setSearch,
     goToPage,
+    paginating,
     refresh,
     setFilters,
   } = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
@@ -195,7 +196,7 @@ export function StrategiesTable() {
         emptyMessage={search || activeOnly ? 'No strategies match your filters.' : 'No strategies found.'}
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} />}
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
       <BulkDeleteBar
