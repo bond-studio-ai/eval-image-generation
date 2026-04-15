@@ -376,7 +376,7 @@ function NumberOfImagesInput({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium text-gray-700">Images per judge</span>
+      <span className="text-sm font-medium text-gray-700">Number of images</span>
       <div className="inline-flex items-center gap-1.5">
         <button
           type="button"
@@ -403,7 +403,7 @@ function NumberOfImagesInput({
           Custom
         </button>
         {customImages && (
-          <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+          <div className="inline-flex h-8 items-center rounded-lg border border-gray-300 bg-white shadow-sm">
             <button
               type="button"
               onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
