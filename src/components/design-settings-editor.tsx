@@ -69,17 +69,6 @@ const PRODUCT_FIELDS: ProductFieldDef[] = [
   { key: 'lvp', label: 'LVP', type: 'product', apiCategories: ['LVP'] },
 ];
 
-const PRODUCT_IMAGE_TYPE_OPTIONS: Array<{ value: ProductImageType; label: string }> = [
-  { value: 'featured-image', label: 'Featured Image' },
-  { value: 'line-drawing', label: 'Line Drawing' },
-  { value: 'tear-sheet', label: 'Tear Sheet' },
-  { value: 'arbitrary', label: 'Arbitrary' },
-];
-
-function getImageTypeLabel(imageType: ProductImageType, hasProduct: boolean): string {
-  if (imageType === 'arbitrary' && hasProduct) return 'Override';
-  return PRODUCT_IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label ?? 'Tear Sheet';
-}
 
 const TILE_PATTERN_OPTIONS = [
   { value: 'Horizontal', label: 'Horizontal' },
@@ -148,7 +137,7 @@ const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
 const FIELDS: FieldDef[] = [...PRODUCT_FIELDS, ...SETTING_FIELDS];
 const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}ImageType`);
 const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
-const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'tear-sheet';
+const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'featured-image';
 
 function getProductImageTypeKey(slotKey: string): string {
   return `${slotKey}ImageType`;
@@ -641,7 +630,6 @@ function ProductField({
   const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
   const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
-  const imageTypeLabel = getImageTypeLabel(effectiveImageType, !!selectedId);
   const summaryText = selectedProduct
     ? selectedProduct.name
     : attachedArbitraryUrl || savedImageUrl
@@ -674,9 +662,11 @@ function ProductField({
         <div className="mt-2 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <label className="truncate text-xs font-semibold text-gray-800">{field.label}</label>
-            <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-              {imageTypeLabel}
-            </span>
+            {effectiveImageType === 'arbitrary' && (
+              <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+                Custom
+              </span>
+            )}
           </div>
           <p className="mt-1 truncate text-[11px] text-gray-600" title={summaryText}>
             {summaryText}
@@ -873,28 +863,28 @@ function ProductSelectionModal({
                       : 'Choose a catalog product or use an arbitrary image URL.'}
                 </p>
               </div>
-              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-                {getImageTypeLabel(draftImageType, !!draftSelectedId)}
-              </span>
             </div>
             <div className="mt-3">
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500">Image to send</p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setDraftImageType(option.value)}
-                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                      draftImageType === option.value
-                        ? 'border-violet-300 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+              <label className="flex cursor-pointer items-center gap-2">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isArbitraryMode}
+                  onClick={() => setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                    isArbitraryMode ? 'bg-violet-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                      isArbitraryMode ? 'translate-x-[18px]' : 'translate-x-[3px]'
                     }`}
-                  >
-                    {getImageTypeLabel(option.value, !!draftSelectedId)}
-                  </button>
-                ))}
-              </div>
+                  />
+                </button>
+                <span className="text-[11px] font-medium text-gray-600">
+                  Use custom image override
+                </span>
+              </label>
             </div>
             {draftImageType === 'arbitrary' ? (
               <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
@@ -1078,12 +1068,12 @@ function DisplayField({
     const productId = String(value);
     const product = productById.get(productId);
     const imageType = readProductImageType(allValues[getProductImageTypeKey(field.key)]);
-    const imageTypeLabel = imageType ? getImageTypeLabel(imageType, true) : 'Featured Image';
+    const isCustom = imageType === 'arbitrary';
     return (
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-gray-600">{field.label}</span>
         <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-          {`${product?.name ?? productId} · ${imageTypeLabel}`}
+          {product?.name ?? productId}{isCustom ? ' · Custom' : ''}
         </span>
       </div>
     );

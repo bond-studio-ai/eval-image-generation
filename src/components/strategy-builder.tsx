@@ -7,6 +7,8 @@ import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet';
+
 interface StepData {
   id?: string;
   type: 'generation' | 'judge';
@@ -27,6 +29,7 @@ interface StepData {
   include_mood_board: boolean;
   include_product_images: boolean;
   include_product_categories: string[];
+  product_image_types: Record<string, ProductImageType>;
   arbitrary_image_from_step: number | null;
   judges?: JudgeData[];
 }
@@ -71,6 +74,24 @@ interface StrategyBuilderProps {
   models?: ModelListing;
 }
 
+const PRODUCT_CATEGORIES = [
+  'faucets', 'floor_tiles', 'lightings', 'lvps', 'mirrors', 'paints',
+  'robe_hooks', 'shelves', 'shower_curb_tiles', 'shower_floor_tiles',
+  'shower_glasses', 'shower_systems', 'shower_wall_tiles',
+  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
+  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wall_tiles', 'wallpapers',
+] as const;
+
+const IMAGE_TYPE_OPTIONS: { value: ProductImageType; label: string }[] = [
+  { value: 'featured-image', label: 'Featured' },
+  { value: 'tear-sheet', label: 'Tear Sheet' },
+  { value: 'line-drawing', label: 'Line Drawing' },
+];
+
+function categoryLabel(cat: string): string {
+  return cat.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function defaultStep(promptVersionId: string): StepData {
   return {
     type: 'generation',
@@ -90,11 +111,12 @@ function defaultStep(promptVersionId: string): StepData {
     include_mood_board: true,
     include_product_images: true,
     include_product_categories: [],
+    product_image_types: {},
     arbitrary_image_from_step: null,
   };
 }
 
-const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+const ASPECT_RATIOS = ['auto', '1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
 const RESOLUTIONS = ['1K', '2K', '4K'];
 
 const JUDGE_TYPES: { value: 'batch' | 'individual'; label: string; description: string }[] = [
@@ -119,6 +141,122 @@ const defaultStrategySettings: StrategySettings = {
   group_product_images: false,
   check_scene_accuracy: false,
 };
+
+const DEFAULT_IMAGE_TYPE: ProductImageType = 'featured-image';
+
+function ImageTypePill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+        active
+          ? 'bg-indigo-600 text-white shadow-sm'
+          : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-indigo-300 hover:text-indigo-600'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ProductImageTypeOverrides({
+  value,
+  onChange,
+}: {
+  value: Record<string, ProductImageType>;
+  onChange: (v: Record<string, ProductImageType>) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const nonDefaultCount = PRODUCT_CATEGORIES.filter(
+    (cat) => (value[cat] ?? DEFAULT_IMAGE_TYPE) !== DEFAULT_IMAGE_TYPE,
+  ).length;
+
+  const setCategory = (cat: string, type: ProductImageType) => {
+    const next = { ...value, [cat]: type };
+    onChange(next);
+  };
+
+  const setAll = (type: ProductImageType) => {
+    const next: Record<string, ProductImageType> = {};
+    for (const cat of PRODUCT_CATEGORIES) next[cat] = type;
+    onChange(next);
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/50 p-3">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <span className="text-xs font-medium text-indigo-800">
+          Product Image Types
+          {nonDefaultCount > 0 && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+              {nonDefaultCount} non-default
+            </span>
+          )}
+        </span>
+        <svg
+          className={`h-4 w-4 text-indigo-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="mt-2">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-[10px] text-indigo-600">Set all:</span>
+            {IMAGE_TYPE_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => setAll(o.value)}
+                className="rounded px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 ring-1 ring-indigo-200 hover:bg-indigo-100 transition-colors"
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            {PRODUCT_CATEGORIES.map((cat) => {
+              const current = value[cat] ?? DEFAULT_IMAGE_TYPE;
+              return (
+                <div key={cat} className="flex items-center justify-between gap-1.5 py-0.5">
+                  <span className="min-w-0 truncate text-[11px] text-gray-700" title={categoryLabel(cat)}>
+                    {categoryLabel(cat)}
+                  </span>
+                  <div className="flex shrink-0 gap-0.5">
+                    {IMAGE_TYPE_OPTIONS.map((o) => (
+                      <ImageTypePill
+                        key={o.value}
+                        active={current === o.value}
+                        label={o.label}
+                        onClick={() => setCategory(cat, o.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const CANDIDATE_PRESETS = [1, 2, 4, 8] as const;
 
@@ -245,6 +383,7 @@ export function StrategyBuilder({
         include_mood_board: true,
         include_product_images: true,
         include_product_categories: [],
+        product_image_types: {},
         arbitrary_image_from_step: null,
         judges: [{
           name: '',
@@ -313,6 +452,7 @@ export function StrategyBuilder({
           includeMoodBoard: s.include_mood_board,
           includeProductImages: s.include_product_images,
           includeProductCategories: s.include_product_categories ?? [],
+          productImageTypes: s.product_image_types ?? {},
           arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
           judges: s.type === 'judge' && s.judges?.length
             ? s.judges.map((j, ji) => ({
@@ -719,6 +859,14 @@ export function StrategyBuilder({
                     </label>
                   </div>
                 </div>
+
+              {/* Product Image Type Overrides */}
+              {step.include_product_images && (
+                <ProductImageTypeOverrides
+                  value={step.product_image_types}
+                  onChange={(v) => updateStep(idx, { product_image_types: v })}
+                />
+              )}
 
               {/* Scene Field Overrides (only for step 2+) */}
               {idx > 0 && (
