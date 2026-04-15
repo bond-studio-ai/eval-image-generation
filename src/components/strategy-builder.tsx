@@ -157,10 +157,10 @@ function ImageTypePill({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
         active
-          ? 'bg-indigo-600 text-white shadow-sm'
-          : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-indigo-300 hover:text-indigo-600'
+          ? 'border-primary-300 bg-primary-50 text-primary-700'
+          : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
       }`}
     >
       {label}
@@ -192,22 +192,22 @@ function ProductImageTypeOverrides({
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/50 p-3">
+    <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between text-left"
       >
-        <span className="text-xs font-medium text-indigo-800">
+        <span className="text-xs font-medium text-gray-700">
           Product Image Types
           {nonDefaultCount > 0 && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+            <span className="ml-2 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-medium text-primary-700 ring-1 ring-inset ring-primary-200">
               {nonDefaultCount} non-default
             </span>
           )}
         </span>
         <svg
-          className={`h-4 w-4 text-indigo-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -216,29 +216,29 @@ function ProductImageTypeOverrides({
         </svg>
       </button>
       {expanded && (
-        <div className="mt-2">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-[10px] text-indigo-600">Set all:</span>
+        <div className="mt-3">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-[11px] font-medium text-gray-500">Set all:</span>
             {IMAGE_TYPE_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 type="button"
                 onClick={() => setAll(o.value)}
-                className="rounded px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 ring-1 ring-indigo-200 hover:bg-indigo-100 transition-colors"
+                className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
               >
                 {o.label}
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {PRODUCT_CATEGORIES.map((cat) => {
               const current = value[cat] ?? DEFAULT_IMAGE_TYPE;
               return (
-                <div key={cat} className="flex items-center justify-between gap-1.5 py-0.5">
-                  <span className="min-w-0 truncate text-[11px] text-gray-700" title={categoryLabel(cat)}>
+                <div key={cat} className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="min-w-0 truncate text-xs text-gray-700" title={categoryLabel(cat)}>
                     {categoryLabel(cat)}
                   </span>
-                  <div className="flex shrink-0 gap-0.5">
+                  <div className="flex shrink-0 gap-1">
                     {IMAGE_TYPE_OPTIONS.map((o) => (
                       <ImageTypePill
                         key={o.value}
