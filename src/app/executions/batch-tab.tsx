@@ -89,10 +89,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
-  const [markingBatchId, setMarkingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
-  const [retryingJudgeBatchId, setRetryingJudgeBatchId] = useState<string | null>(null);
-  const [judgeRetryError, setJudgeRetryError] = useState<{ batchId: string; message: string } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
   const [appliedTo, setAppliedTo] = useState('');
@@ -238,16 +235,6 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     finally { setRetryingBatchId(null); }
   }, [fetchBatches]);
 
-  const handleMarkBatchFailed = useCallback(async (batchId: string) => {
-    setMarkingBatchId(batchId);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/mark-failed`), { method: 'POST' });
-      if (!res.ok) return;
-      await fetchBatches();
-    } catch { /* ignore */ }
-    finally { setMarkingBatchId(null); }
-  }, [fetchBatches]);
-
   const handleDeleteBatch = useCallback(async (batchId: string, displayName: string) => {
     if (!confirm(`Delete "${displayName}"? This will permanently remove the batch and all its runs.`)) return;
     setDeletingBatchId(batchId);
@@ -258,30 +245,6 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
       await fetchBatches();
     } catch { /* ignore */ }
     finally { setDeletingBatchId(null); }
-  }, [fetchBatches]);
-
-  const handleRetryJudge = useCallback(async (batchId: string) => {
-    setRetryingJudgeBatchId(batchId);
-    setJudgeRetryError(null);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-judge`), { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
-        setJudgeRetryError({ batchId, message: msg });
-      } else {
-        const body = await res.json().catch(() => null);
-        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
-        if (data?.failedGroups && data.failedGroups > 0) {
-          setJudgeRetryError({ batchId, message: data.errors?.[0] ?? 'Judge failed during retry' });
-        }
-      }
-      await fetchBatches();
-    } catch (err) {
-      setJudgeRetryError({ batchId, message: err instanceof Error ? err.message : 'Network error' });
-      await fetchBatches().catch(() => {});
-    }
-    finally { setRetryingJudgeBatchId(null); }
   }, [fetchBatches]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -425,36 +388,6 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
                       )}
                     </button>
                   )}
-                  {needsJudgeRetry(batch.runs) && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleRetryJudge(batch.id); }}
-                      disabled={retryingJudgeBatchId === batch.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-50"
-                    >
-                      {retryingJudgeBatchId === batch.id ? (
-                        <>
-                          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Retrying…
-                        </>
-                      ) : (
-                        <>Retry Judge</>
-                      )}
-                    </button>
-                  )}
-                  {batch.status !== 'reviewed' && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleMarkBatchFailed(batch.id); }}
-                      disabled={markingBatchId === batch.id}
-                      className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-                    >
-                      {markingBatchId === batch.id ? '…' : 'Mark batch as failed'}
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
@@ -479,18 +412,12 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
                 </div>
               </div>
 
-              {judgeRetryError?.batchId === batch.id && (
-                <div className="flex items-center justify-between border-t border-red-100 bg-red-50 px-4 py-2">
-                  <span className="text-xs text-red-700">{judgeRetryError.message}</span>
-                  <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
-                </div>
-              )}
-
               {isExpanded && (
                 <div className="border-t border-gray-100 p-4">
                   {viewMode === 'matrix' ? (
                     <MatrixView
                       runs={batch.runs}
+                      numberOfImages={batch.numberOfImages}
                       retryingRunId={retryingRunId}
                       onRetry={handleRetry}
                       onRated={fetchBatchesKeepScroll}
@@ -694,26 +621,22 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }
 
-function needsJudgeRetry(runs: RunRow[]): boolean {
-  const completed = runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
-  if (completed.length < 2) return false;
-  return completed.some((r) => r.judgeScore === 0) ||
-    completed.every((r) => r.judgeScore == null);
-}
-
 function MatrixView({
   runs,
+  numberOfImages,
   retryingRunId,
   onRetry,
   onRated,
   onImageClick,
 }: {
   runs: RunRow[];
+  numberOfImages: number;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
 }) {
+  const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
   const strategyNames: string[] = [];
   const strategyIds: string[] = [];
   const seen = new Set<string>();
@@ -812,13 +735,24 @@ function MatrixView({
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={run.lastOutputUrl} alt=""
-                                className="w-full rounded-md border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                                className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                                 style={{ aspectRatio: '1' }} />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
                                 <svg className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                                 </svg>
                               </div>
+                              <JudgeScoreBadge
+                                runId={run.id}
+                                judgeScore={run.judgeScore}
+                                isJudgeSelected={run.isJudgeSelected}
+                                judgeReasoning={run.judgeReasoning}
+                                judgeOutput={run.judgeOutput}
+                                judgeSystemPrompt={run.judgeSystemPrompt}
+                                judgeUserPrompt={run.judgeUserPrompt}
+                                judgeTypeUsed={run.judgeTypeUsed}
+                                awaitingJudge={awaitingJudge}
+                              />
                               {run.lastOutputGenerationId && (
                                 <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
                               )}
@@ -835,13 +769,24 @@ function MatrixView({
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={firstRun.lastOutputUrl} alt=""
-                            className="rounded-lg border border-gray-200 object-cover shadow-sm transition-shadow hover:shadow-md"
+                            className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                             style={{ width: CELL - 20, height: CELL - 20 }} />
                           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                             <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                             </svg>
                           </div>
+                          <JudgeScoreBadge
+                            runId={firstRun.id}
+                            judgeScore={firstRun.judgeScore}
+                            isJudgeSelected={firstRun.isJudgeSelected}
+                            judgeReasoning={firstRun.judgeReasoning}
+                            judgeOutput={firstRun.judgeOutput}
+                            judgeSystemPrompt={firstRun.judgeSystemPrompt}
+                            judgeUserPrompt={firstRun.judgeUserPrompt}
+                            judgeTypeUsed={firstRun.judgeTypeUsed}
+                            awaitingJudge={awaitingJudge}
+                          />
                           {firstRun.lastOutputGenerationId && (
                             <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} onRated={onRated} />
                           )}
