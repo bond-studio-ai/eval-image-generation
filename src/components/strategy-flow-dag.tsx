@@ -280,7 +280,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           );
         })}
 
-        {steps.map((step) => {
+        {steps.map((step, idx) => {
           const pos = positions.get(step.stepOrder);
           if (!pos) return null;
 
@@ -293,7 +293,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
 
           return (
             <foreignObject
-              key={step.stepOrder}
+              key={`${step.stepOrder}-${idx}`}
               x={pos.x}
               y={pos.y}
               width={NODE_WIDTH}
