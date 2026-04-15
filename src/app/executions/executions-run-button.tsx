@@ -408,9 +408,11 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
 
               {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
 
-              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-200 px-5 py-3">
+              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
                 <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
-                <div className="flex items-center gap-2">
+              </div>
+
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -436,7 +438,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                     benchmarkMode ? 'Run benchmarks' : 'Run (1 batch)'
                   )}
                 </button>
-                </div>
               </div>
             </div>
           </div>,
