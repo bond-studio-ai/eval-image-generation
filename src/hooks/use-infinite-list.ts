@@ -1,14 +1,13 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface PaginationResponse {
   page: number;
   limit: number;
   total: number;
-  total_pages: number;
+  totalPages: number;
 }
 
 interface ListResponse<T> {
@@ -49,9 +48,21 @@ export interface UseInfiniteListReturn<T> {
   refresh: () => void;
 }
 
-// Keys the hook writes to the URL. Other query params are left untouched.
 const URL_KEY_SEARCH = 'search';
 const URL_KEY_PAGE = 'page';
+
+function readInitialParams() {
+  if (typeof window === 'undefined') return { search: '', page: 1, filters: {} as Record<string, string> };
+  const sp = new URLSearchParams(window.location.search);
+  const search = sp.get(URL_KEY_SEARCH) ?? '';
+  const page = Math.max(1, parseInt(sp.get(URL_KEY_PAGE) ?? '1', 10) || 1);
+  const filters: Record<string, string> = {};
+  sp.forEach((val, key) => {
+    if (key === URL_KEY_SEARCH || key === URL_KEY_PAGE || key === 'limit') return;
+    filters[key] = val;
+  });
+  return { search, page, filters };
+}
 
 export function useInfiniteList<T>(
   endpoint: string,
@@ -60,44 +71,19 @@ export function useInfiniteList<T>(
   const { limit = 20, debounceMs = 300, paginate = 'infinite' } = options;
   const isPageMode = paginate === 'pages';
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // ---------------------------------------------------------------------------
-  // Initialise from URL
-  // ---------------------------------------------------------------------------
-
-  const initialSearch = searchParams.get(URL_KEY_SEARCH) ?? '';
-  const initialPage = isPageMode
-    ? Math.max(1, parseInt(searchParams.get(URL_KEY_PAGE) ?? '1', 10) || 1)
-    : 1;
-
-  const initialFilters = useMemo(() => {
-    const f: Record<string, string> = {};
-    searchParams.forEach((val, key) => {
-      if (key === URL_KEY_SEARCH || key === URL_KEY_PAGE || key === 'limit') return;
-      f[key] = val;
-    });
-    return f;
-    // Only run on mount — searchParams reference changes on every render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
+  // Read initial state from URL on mount (SSR-safe)
+  const initial = useMemo(() => readInitialParams(), []);
 
   const [items, setItems] = useState<T[]>([]);
-  const [page, setPage] = useState(initialPage);
+  const [page, setPage] = useState(isPageMode ? initial.page : 1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [search, setSearchRaw] = useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
-  const [filters, setFiltersRaw] = useState<Record<string, string>>(initialFilters);
+  const [search, setSearchRaw] = useState(initial.search);
+  const [debouncedSearch, setDebouncedSearch] = useState(initial.search);
+  const [filters, setFiltersRaw] = useState<Record<string, string>>(initial.filters);
 
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
@@ -119,7 +105,7 @@ export function useInfiniteList<T>(
   }, [search, debounceMs]);
 
   // ---------------------------------------------------------------------------
-  // Sync state → URL (replaceState to avoid polluting history)
+  // Sync state → URL via history.replaceState (no Next.js re-render)
   // ---------------------------------------------------------------------------
 
   const syncUrl = useCallback(
@@ -132,14 +118,13 @@ export function useInfiniteList<T>(
       if (isPageMode && p > 1) params.set(URL_KEY_PAGE, String(p));
 
       const qs = params.toString();
-      const url = qs ? `${pathname}?${qs}` : pathname;
-      router.replace(url, { scroll: false });
+      const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      window.history.replaceState(null, '', url);
     },
-    [pathname, router, isPageMode],
+    [isPageMode],
   );
 
-  // Sync when debounced search or filters change (resets to page 1)
-  const prevSyncKey = useRef('');
+  const prevSyncKey = useRef(`${initial.search}|${JSON.stringify(initial.filters)}`);
   useEffect(() => {
     const key = `${debouncedSearch}|${JSON.stringify(filters)}`;
     if (key === prevSyncKey.current) return;
@@ -189,8 +174,8 @@ export function useInfiniteList<T>(
         }
 
         setTotal(json.pagination.total);
-        setTotalPages(json.pagination.total_pages);
-        setHasMore(pageNum < json.pagination.total_pages);
+        setTotalPages(json.pagination.totalPages);
+        setHasMore(pageNum < json.pagination.totalPages);
         setPage(pageNum);
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -211,10 +196,11 @@ export function useInfiniteList<T>(
     [endpoint, limit, debouncedSearch, filters],
   );
 
+  const initialPageRef = useRef(isPageMode ? initial.page : 1);
   useEffect(() => {
-    fetchPage(isPageMode ? initialPage : 1, false);
-    // initialPage only matters on mount for page mode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const startPage = initialPageRef.current;
+    initialPageRef.current = 1;
+    fetchPage(startPage, false);
   }, [fetchPage]);
 
   // ---------------------------------------------------------------------------

@@ -33,13 +33,38 @@ interface DataTableProps<T> {
   rowClassName?: (row: T) => string;
   emptyMessage?: string;
   loading?: boolean;
-  loadingMessage?: string;
+  skeletonRows?: number;
   toolbar?: ReactNode;
   footer?: ReactNode;
   className?: string;
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+}
+
+const SKELETON_WIDTHS = ['w-3/4', 'w-1/2', 'w-2/3', 'w-1/3', 'w-5/6', 'w-2/5'];
+
+function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: number }) {
+  return (
+    <tr>
+      {Array.from({ length: colCount }, (_, i) => (
+        <td key={i} className="px-6 py-4">
+          <div
+            className={`h-4 animate-pulse rounded bg-gray-200 ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length]}`}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <svg className="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
 }
 
 export function DataTable<T>({
@@ -49,7 +74,7 @@ export function DataTable<T>({
   rowClassName,
   emptyMessage = 'No items found.',
   loading = false,
-  loadingMessage = 'Loading...',
+  skeletonRows = 8,
   toolbar,
   footer,
   className = 'mt-8',
@@ -94,11 +119,9 @@ export function DataTable<T>({
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {loading ? (
-              <tr>
-                <td colSpan={colCount} className="px-6 py-6 text-sm text-gray-500">
-                  {loadingMessage}
-                </td>
-              </tr>
+              Array.from({ length: skeletonRows }, (_, i) => (
+                <SkeletonRow key={i} colCount={colCount} rowIndex={i} />
+              ))
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="px-6 py-6 text-sm text-gray-500">
@@ -121,8 +144,10 @@ export function DataTable<T>({
             )}
             {loadingMore && (
               <tr>
-                <td colSpan={colCount} className="px-6 py-4 text-center text-sm text-gray-500">
-                  Loading more…
+                <td colSpan={colCount} className="py-4">
+                  <div className="flex justify-center">
+                    <LoadingSpinner />
+                  </div>
                 </td>
               </tr>
             )}
