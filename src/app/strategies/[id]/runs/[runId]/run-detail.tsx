@@ -187,13 +187,23 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {images.map((img, i) => (
           <div key={i} className="group relative">
-            <div
-              className={`aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? 'cursor-pointer border-violet-400 ring-1 ring-violet-200' : 'border-gray-200'}`}
-              {...(img.isComposite ? { role: 'button', onClick: () => setExpandedGroup(expandedGroup === i ? null : i) } : {})}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
-            </div>
+            {img.isComposite ? (
+              <div
+                className="aspect-square cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
+                role="button"
+                onClick={() => setExpandedGroup(expandedGroup === i ? null : i)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt={img.label} className="h-full w-full object-cover" loading="lazy" />
+              </div>
+            ) : (
+              <ExpandableImage
+                src={img.url}
+                alt={img.label}
+                wrapperClassName="relative block aspect-square w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50"
+                className="h-full w-full object-cover"
+              />
+            )}
             <div className="mt-1 flex items-center gap-1">
               {img.isComposite && (
                 <span className="inline-flex shrink-0 items-center rounded bg-violet-100 px-1 py-px text-[9px] font-semibold text-violet-700">
@@ -219,10 +229,12 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
             {images[expandedGroup].sourceImages!.map((src, j) => (
               <div key={j}>
-                <div className="aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src.url} alt={src.label} className="h-full w-full object-cover" loading="lazy" />
-                </div>
+                <ExpandableImage
+                  src={src.url}
+                  alt={src.label}
+                  wrapperClassName="relative block aspect-square w-full overflow-hidden rounded-md border border-violet-200 bg-white"
+                  className="h-full w-full object-cover"
+                />
                 <p className="mt-1 truncate text-[10px] leading-tight text-violet-700" title={src.label}>{src.label}</p>
               </div>
             ))}
@@ -681,7 +693,9 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       };
     });
 
-  const dagJudges = [...data.judgeResults]
+  const dagJudges = [...new Map(
+    data.judgeResults.map((j) => [j.strategyJudgeId, j])
+  ).values()]
     .sort((a, b) => a.position - b.position)
     .map((j) => ({
       name: j.judgeName,
