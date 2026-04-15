@@ -197,9 +197,6 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     }
   }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, onRunCreated, source]);
 
-  const totalCombinations = benchmarkMode
-    ? selectedStrategyIds.length * selectedBenchmarkProjectIds.length
-    : selectedStrategyIds.length * selectedPresetIds.length;
 
   return (
     <>
@@ -409,26 +406,11 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 </div>
               )}
 
-              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-xs text-gray-500">
-                    {benchmarkMode ? (
-                      <>
-                        {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
-                      </>
-                    ) : (
-                      <>
-                        {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
-                      </>
-                    )}
-                  </p>
-                  <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
-                </div>
-              </div>
-
               {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
 
-              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-200 px-5 py-3">
+                <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -454,6 +436,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                     benchmarkMode ? 'Run benchmarks' : 'Run (1 batch)'
                   )}
                 </button>
+                </div>
               </div>
             </div>
           </div>,
