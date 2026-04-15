@@ -69,6 +69,7 @@ export interface StrategyStepItem {
   includeMoodBoard: boolean;
   includeProductImages: boolean;
   includeProductCategories: string[];
+  productImageTypes: Record<string, string>;
   arbitraryImageFromStep: number | null;
   judges: StrategyJudgeItem[];
 }
