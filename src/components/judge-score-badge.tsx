@@ -372,6 +372,26 @@ export function JudgeScoreBadge({
       if (!res.ok) return;
       const json = await res.json();
       const raw = (json.data ?? {}) as Record<string, unknown>;
+      const allJudgeResults = parseStrategyRunJudgeResults(raw.judgeResults);
+
+      let winnerCandidateIndex: number | null = null;
+      const stepResults = Array.isArray(raw.stepResults) ? raw.stepResults : [];
+      for (const sr of stepResults) {
+        if (sr && typeof sr === 'object') {
+          const s = sr as Record<string, unknown>;
+          if (s.isJudgeSelected && s.candidateIndex != null) {
+            winnerCandidateIndex = Number(s.candidateIndex);
+            break;
+          }
+        }
+      }
+
+      const hasTaggedResults = allJudgeResults.some((j) => j.candidateIndex != null);
+      const filteredResults =
+        winnerCandidateIndex != null && hasTaggedResults
+          ? allJudgeResults.filter((j) => j.candidateIndex === winnerCandidateIndex)
+          : allJudgeResults;
+
       setFetchedDetail({
         judgeScore: raw.judgeScore != null ? Number(raw.judgeScore) : null,
         isJudgeSelected: Boolean(raw.isJudgeSelected),
@@ -380,7 +400,7 @@ export function JudgeScoreBadge({
         judgeSystemPrompt: raw.judgeSystemPrompt != null ? String(raw.judgeSystemPrompt) : null,
         judgeUserPrompt: raw.judgeUserPrompt != null ? String(raw.judgeUserPrompt) : null,
         judgeTypeUsed: raw.judgeTypeUsed != null ? String(raw.judgeTypeUsed) : null,
-        judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+        judgeResults: filteredResults,
       });
     } catch {
       // Keep the fallback data already shown in the modal.

@@ -106,6 +106,7 @@ export interface StrategyRunJudgeResultEntry {
   judgeUserPrompt: string | null;
   judgeInputImages: { url: string; label: string; isComposite?: boolean; sourceImages?: { url: string; label: string }[] }[] | null;
   judgeTypeUsed: string | null;
+  candidateIndex: number | null;
 }
 
 export interface StrategyDetailItem {
@@ -252,6 +253,7 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       judgeUserPrompt: r.judgeUserPrompt != null ? String(r.judgeUserPrompt) : null,
       judgeInputImages: Array.isArray(imgs) ? (imgs as StrategyRunJudgeResultEntry['judgeInputImages']) : null,
       judgeTypeUsed: r.judgeTypeUsed != null ? String(r.judgeTypeUsed) : null,
+      candidateIndex: typeof r.candidateIndex === 'number' ? r.candidateIndex : r.candidateIndex != null ? Number(r.candidateIndex) : null,
     });
   }
   return out;
