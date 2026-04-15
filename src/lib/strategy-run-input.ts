@@ -38,6 +38,7 @@ export type CreateStrategyRunRequest = Omit<StrategyRunInputPayload, 'pkg_id'> &
   callback_url?: string;
   dollhouse_capture?: StrategyRunDollhouseCapturePayload;
   group_id?: string;
+  number_of_images?: number;
 };
 
 type LayoutBootstrapResponse = {
@@ -149,7 +150,7 @@ async function upsertProjectDesign(
 
 export async function buildPresetRunRequest(
   input: StrategyRunInputPayload,
-  options: { preset_id: string; batch?: boolean; group_id?: string },
+  options: { preset_id: string; batch?: boolean; group_id?: string; number_of_images?: number },
 ): Promise<CreateStrategyRunRequest> {
   let dollhouseCapture: StrategyRunDollhouseCapturePayload | undefined;
   if (!input.scene_images.dollhouse_view && input.layout_type_id) {
@@ -183,6 +184,7 @@ export async function buildPresetRunRequest(
     ...(options.batch !== undefined ? { batch: options.batch } : {}),
     ...(options.group_id ? { group_id: options.group_id } : {}),
     ...(dollhouseCapture ? { dollhouse_capture: dollhouseCapture } : {}),
+    ...(options.number_of_images ? { number_of_images: options.number_of_images } : {}),
   };
 }
 
@@ -205,7 +207,7 @@ export async function fetchPresetRunInputs(presetIds: string[]): Promise<Strateg
 
 export async function fetchPresetRunRequests(
   presetIds: string[],
-  options: { batch?: boolean; group_id?: string },
+  options: { batch?: boolean; group_id?: string; number_of_images?: number },
 ): Promise<CreateStrategyRunRequest[]> {
   const presetDetails = await Promise.all(
     presetIds.map(async (presetId) => {

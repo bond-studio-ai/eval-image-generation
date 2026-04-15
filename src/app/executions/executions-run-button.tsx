@@ -56,6 +56,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
   const [benchmarkMode, setBenchmarkMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
 
   const filteredStrategies = useMemo(() => {
     const q = strategySearch.toLowerCase().trim();
@@ -130,6 +131,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 body: JSON.stringify({
                   project_id: projectId,
                   group_id: groupId,
+                  ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
                 }),
               });
               const data = await res.json().catch(() => ({}));
@@ -146,6 +148,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
           const requests = await fetchPresetRunRequests(selectedPresetIds, {
             batch: true,
             group_id: groupId,
+            ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
           });
           return Promise.allSettled(
             selectedStrategyIds.flatMap((strategyId) =>
@@ -407,19 +410,20 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
               )}
 
               <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-                <p className="text-xs text-gray-500">
-                  {benchmarkMode ? (
-                    <>
-                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
-                      <span className="ml-1 text-gray-400">(image count per strategy is defined by its judge system)</span>
-                    </>
-                  ) : (
-                    <>
-                      {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
-                      <span className="ml-1 text-gray-400">(image count per strategy is defined by its judge system)</span>
-                    </>
-                  )}
-                </p>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-xs text-gray-500">
+                    {benchmarkMode ? (
+                      <>
+                        {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedBenchmarkProjectIds.length} {selectedBenchmarkProjectIds.length === 1 ? 'project' : 'projects'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {selectedStrategyIds.length} {selectedStrategyIds.length === 1 ? 'strategy' : 'strategies'} &times; {selectedPresetIds.length} {selectedPresetIds.length === 1 ? 'preset' : 'presets'} = <span className="font-semibold text-gray-700">{totalCombinations} batch{totalCombinations === 1 ? '' : 'es'}</span>
+                      </>
+                    )}
+                  </p>
+                  <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+                </div>
               </div>
 
               {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
@@ -456,5 +460,35 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
           document.body,
         )}
     </>
+  );
+}
+
+function NumberOfImagesInput({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Images per judge</label>
+      <div className="flex items-center gap-1">
+        {[null, 2, 3, 4, 6, 8].map((n) => (
+          <button
+            key={n ?? 'default'}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+              value === n
+                ? 'border-primary-300 bg-primary-50 text-primary-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {n ?? 'Default'}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

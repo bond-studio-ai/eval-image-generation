@@ -22,6 +22,7 @@ export function StrategyRunButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
 
   const filteredPresets = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -35,6 +36,7 @@ export function StrategyRunButton({
     try {
       const [requestBody] = await fetchPresetRunRequests([selectedId], {
         batch: true,
+        ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
       });
       if (!requestBody) throw new Error('Failed to build run request');
       const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
@@ -110,23 +112,26 @@ export function StrategyRunButton({
 
             {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
 
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-              <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="button" onClick={handleStart} disabled={submitting || !selectedId}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
-                {submitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Starting...
-                  </>
-                ) : 'Start run'}
-              </button>
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-200 px-5 py-3">
+              <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleStart} disabled={submitting || !selectedId}
+                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
+                  {submitting ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Starting...
+                    </>
+                  ) : 'Start run'}
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -152,6 +157,7 @@ export function StrategyBatchRunButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
+  const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
 
   const presetMap = useMemo(
     () => new Map(inputPresets.map((p) => [p.id, p])),
@@ -184,6 +190,7 @@ export function StrategyBatchRunButton({
       const requests = await fetchPresetRunRequests(selectedIds, {
         batch: true,
         group_id: groupId,
+        ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
       });
       const results = await Promise.allSettled(
         requests.map(async (requestBody) => {
@@ -320,35 +327,63 @@ export function StrategyBatchRunButton({
 
             {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
 
-            <div className="shrink-0 border-t border-gray-200 px-5 py-3">
-              <p className="text-xs text-gray-500">
-                {selectedIds.length} preset{selectedIds.length === 1 ? '' : 's'} selected.
-                <span className="ml-1 text-gray-400">Image count is defined by the strategy&apos;s judge system.</span>
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-              <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="button" onClick={handleStartBatch} disabled={submitting || selectedIds.length === 0}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
-                {submitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Starting...
-                  </>
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-200 px-5 py-3">
+              <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleStartBatch} disabled={submitting || selectedIds.length === 0}
+                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
+                  {submitting ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Starting...
+                    </>
                 ) : selectedIds.length === 0 ? 'Select presets' : `Start batch (${selectedIds.length} preset${selectedIds.length === 1 ? '' : 's'})`}
               </button>
+              </div>
             </div>
           </div>
         </div>,
         document.body,
       )}
     </>
+  );
+}
+
+/* ────────────────── Shared: Number of images override input ────────────────── */
+
+function NumberOfImagesInput({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Images per judge</label>
+      <div className="flex items-center gap-1">
+        {[null, 2, 3, 4, 6, 8].map((n) => (
+          <button
+            key={n ?? 'default'}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+              value === n
+                ? 'border-primary-300 bg-primary-50 text-primary-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {n ?? 'Default'}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
