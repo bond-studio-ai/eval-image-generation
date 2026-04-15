@@ -3,7 +3,7 @@
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import type { InputPresetListItem } from '@/lib/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 /* ────────────────── Simple Run (single preset, single run) ────────────────── */
@@ -358,8 +358,6 @@ export function StrategyBatchRunButton({
 
 /* ────────────────── Shared: Number of images override input ────────────────── */
 
-const CANDIDATE_PRESETS = [1, 2, 4, 8] as const;
-
 function NumberOfImagesInput({
   value,
   onChange,
@@ -368,59 +366,72 @@ function NumberOfImagesInput({
   onChange: (v: number | null) => void;
 }) {
   const isDefault = value === null;
-  const isPreset = !isDefault && CANDIDATE_PRESETS.includes(value as 1 | 2 | 4 | 8);
-  const [custom, setCustom] = useState(!isDefault && !isPreset);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
+  const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
 
-  useEffect(() => {
-    if (custom) inputRef.current?.focus();
-  }, [custom]);
-
-  const activeCls = 'bg-amber-600 text-white shadow-sm';
-  const inactiveCls = 'bg-white text-amber-800 ring-1 ring-amber-300 hover:bg-amber-50';
-  const btnBase = 'min-w-[1.75rem] rounded-md px-1.5 py-1 text-xs font-semibold transition-colors';
+  const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
+  const inactiveCls = 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50';
 
   return (
-    <div className="flex items-center gap-2">
-      <label className="text-xs font-medium text-amber-800 whitespace-nowrap">Candidates:</label>
-      <div className="flex items-center gap-1">
+    <div className="flex items-center gap-3">
+      <span className="text-sm font-medium text-gray-700">Images per judge</span>
+      <div className="inline-flex items-center gap-1.5">
         <button
           type="button"
-          onClick={() => { setCustom(false); onChange(null); }}
-          className={`${btnBase} ${isDefault ? activeCls : inactiveCls}`}
+          onClick={() => { onChange(null); setCustomImages(false); }}
+          className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${isDefault ? activeCls : inactiveCls}`}
         >
           Default
         </button>
-        {CANDIDATE_PRESETS.map((n) => (
+        {[1, 2, 4, 8].map((n) => (
           <button
             key={n}
             type="button"
-            onClick={() => { setCustom(false); onChange(n); }}
-            className={`${btnBase} ${!isDefault && !custom && value === n ? activeCls : inactiveCls}`}
+            onClick={() => { onChange(n); setCustomImages(false); }}
+            className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${!isDefault && !customImages && value === n ? activeCls : inactiveCls}`}
           >
             {n}
           </button>
         ))}
         <button
           type="button"
-          onClick={() => setCustom(true)}
-          className={`${btnBase} ${custom ? activeCls : inactiveCls}`}
+          onClick={() => { setCustomImages(true); if (isDefault || [1, 2, 4, 8].includes(value!)) onChange(3); }}
+          className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${customImages ? activeCls : inactiveCls}`}
         >
           Custom
         </button>
-        {custom && (
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            value={value ?? ''}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              if (!Number.isNaN(v) && v >= 1 && v <= 100) onChange(v);
-              else if (e.target.value === '') onChange(1);
-            }}
-            className="w-12 rounded-md border border-amber-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-amber-900 [appearance:textfield] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
+        {customImages && (
+          <div className="inline-flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
+              disabled={(value ?? 1) <= 1}
+              className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+              </svg>
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              autoFocus
+              value={value ?? 1}
+              onChange={(e) => onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
+              className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
+              disabled={(value ?? 1) >= 100}
+              className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
     </div>
