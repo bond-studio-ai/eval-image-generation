@@ -115,6 +115,8 @@ export function useInfiniteList<T>(
   // Fetch
   // ---------------------------------------------------------------------------
 
+  const scrollRef = useRef<number | null>(null);
+
   const fetchPage = useCallback(
     async (pageNum: number) => {
       abortRef.current?.abort();
@@ -153,7 +155,14 @@ export function useInfiniteList<T>(
         setTotal(0);
         setTotalPages(0);
       } finally {
-        if (mountedRef.current) setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+          if (scrollRef.current !== null) {
+            const el = document.querySelector('main');
+            if (el) requestAnimationFrame(() => { el.scrollTop = scrollRef.current!; });
+            scrollRef.current = null;
+          }
+        }
       }
     },
     [endpoint, limit, debouncedSearch, filters],
@@ -173,6 +182,8 @@ export function useInfiniteList<T>(
   const goToPage = useCallback(
     (p: number) => {
       if (p < 1 || p === page) return;
+      const el = document.querySelector('main');
+      if (el) scrollRef.current = el.scrollTop;
       syncUrl(debouncedSearch, filters, p);
       fetchPage(p);
     },

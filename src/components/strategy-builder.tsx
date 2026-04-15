@@ -5,7 +5,7 @@ import { serviceUrl } from '@/lib/api-base';
 import type { ModelListing } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StepData {
   id?: string;
@@ -119,6 +119,61 @@ const defaultStrategySettings: StrategySettings = {
   group_product_images: false,
   check_scene_accuracy: false,
 };
+
+const CANDIDATE_PRESETS = [1, 2, 4, 8] as const;
+
+function CandidatePicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const isPreset = CANDIDATE_PRESETS.includes(value as 1 | 2 | 4 | 8);
+  const [custom, setCustom] = useState(!isPreset);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (custom) inputRef.current?.focus();
+  }, [custom]);
+
+  const activeCls = 'bg-amber-600 text-white shadow-sm';
+  const inactiveCls = 'bg-white text-amber-800 ring-1 ring-amber-300 hover:bg-amber-50';
+  const btnBase = 'min-w-[1.75rem] rounded-md px-1.5 py-1 text-xs font-semibold transition-colors';
+
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-xs font-medium text-amber-800">Candidates:</label>
+      <div className="flex items-center gap-1">
+        {CANDIDATE_PRESETS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => { setCustom(false); onChange(n); }}
+            className={`${btnBase} ${!custom && value === n ? activeCls : inactiveCls}`}
+          >
+            {n}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setCustom(true)}
+          className={`${btnBase} ${custom ? activeCls : inactiveCls}`}
+        >
+          Custom
+        </button>
+        {custom && (
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              if (!Number.isNaN(v) && v >= 1 && v <= 100) onChange(v);
+              else if (e.target.value === '') onChange(1);
+            }}
+            className="w-12 rounded-md border border-amber-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-amber-900 [appearance:textfield] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function StrategyBuilder({
   strategyId,
@@ -488,17 +543,10 @@ export function StrategyBuilder({
                   <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                     Step {idx + 1} &mdash; Judge
                   </span>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-amber-800">Candidates:</label>
-                    <input
-                      type="number"
-                      min={2}
-                      max={100}
-                      value={step.number_of_images ?? 4}
-                      onChange={(e) => updateStep(idx, { number_of_images: Math.max(2, Math.min(100, parseInt(e.target.value, 10) || 4)) })}
-                      className="w-16 rounded-lg border border-amber-300 bg-white px-2 py-1 text-sm font-semibold text-amber-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                  <CandidatePicker
+                    value={step.number_of_images ?? 4}
+                    onChange={(n) => updateStep(idx, { number_of_images: n })}
+                  />
                 </div>
                 <button type="button" onClick={() => removeStep(idx)} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

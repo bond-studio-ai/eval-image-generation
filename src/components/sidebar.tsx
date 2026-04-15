@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigation = [
-  { name: 'Analytics', href: '/', icon: AnalyticsIcon },
   { name: 'Runs', href: '/executions', icon: RunsIcon },
-  { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
+  { name: 'Analytics', href: '/', icon: AnalyticsIcon },
   { name: 'Environments', href: '/environments', icon: EnvironmentIcon },
+  { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
   { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
-  { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
+  { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Audit', href: '/audit/compare', icon: AuditCompareIcon },
 ];
 
@@ -35,11 +35,10 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
             >
               <item.icon className={`h-5 w-5 ${isActive ? 'text-primary-600' : 'text-gray-500'}`} />
               {item.name}
