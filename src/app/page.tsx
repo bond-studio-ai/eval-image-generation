@@ -64,7 +64,7 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
   );
 }
 
-type TabName = 'strategies' | 'products' | 'reliability' | 'compare';
+type TabName = 'strategies' | 'products' | 'reliability' | 'accuracy' | 'compare';
 
 function TabNav({
   active,
@@ -95,6 +95,7 @@ function TabNav({
   const tabs: { key: TabName; label: string }[] = [
     { key: 'strategies', label: 'Strategies' },
     { key: 'products', label: 'Products' },
+    { key: 'accuracy', label: 'Accuracy' },
     { key: 'reliability', label: 'Reliability' },
     { key: 'compare', label: 'Compare' },
   ];
@@ -123,11 +124,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const activeTab: TabName =
     tabRaw === 'products'
       ? 'products'
-      : tabRaw === 'reliability'
-        ? 'reliability'
-        : tabRaw === 'compare'
-          ? 'compare'
-          : 'strategies';
+      : tabRaw === 'accuracy'
+        ? 'accuracy'
+        : tabRaw === 'reliability'
+          ? 'reliability'
+          : tabRaw === 'compare'
+            ? 'compare'
+            : 'strategies';
   const from = getParamValues(params, 'from')[0];
   const to = getParamValues(params, 'to')[0];
   const model = getParamValues(params, 'model')[0];
@@ -207,9 +210,6 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             </div>
           )}
           {activeTab === 'strategies' && (
-            <AccuracyTrendChart from={from} to={to} model={model} source={source} />
-          )}
-          {activeTab === 'strategies' && (
             <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
           )}
           {activeTab === 'products' && (
@@ -224,6 +224,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 <ProductCategoryRates from={from} to={to} model={model} source={source} />
               </div>
             </div>
+          )}
+          {activeTab === 'accuracy' && (
+            <AccuracyTrendChart from={from} to={to} model={model} source={source} />
           )}
           {activeTab === 'reliability' && (
             <ReliabilityTab from={from} to={to} model={model} source={source} />
