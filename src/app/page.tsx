@@ -1,3 +1,4 @@
+import { AccuracyTrendChart } from '@/app/analytics/accuracy-trend-chart';
 import {
   buildComparisonSlices,
   getParamValues,
@@ -204,6 +205,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 <DistributionChart data={productDist} title="Product Accuracy" />
               </div>
             </div>
+          )}
+          {activeTab === 'strategies' && (
+            <AccuracyTrendChart from={from} to={to} model={model} source={source} />
           )}
           {activeTab === 'strategies' && (
             <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
