@@ -14,6 +14,8 @@ import {
   YAxis,
 } from 'recharts';
 
+const Y_TICKS = [0, 20, 40, 60, 80, 100];
+
 interface AccuracyTrendChartProps {
   from?: string;
   to?: string;
@@ -103,14 +105,21 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
       </p>
       <div className="mt-4" style={{ width: '100%', height: 360 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+          <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}>
+            <CartesianGrid stroke="#e5e7eb" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 12 }}
+              stroke="#9ca3af"
+              tickLine={false}
+            />
             <YAxis
               domain={[0, 100]}
+              ticks={Y_TICKS}
               tickFormatter={(v: number) => `${v}%`}
               tick={{ fontSize: 12 }}
               stroke="#9ca3af"
+              tickLine={false}
             />
             <Tooltip
               formatter={(value: unknown, name: unknown) => {
@@ -135,22 +144,22 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
             />
             <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '8px' }} />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="sceneAccuracy"
               name="Scene Accuracy"
               stroke="#3b82f6"
               strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="productAccuracy"
               name="Product Accuracy"
               stroke="#22c55e"
               strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              dot={{ r: 4, fill: '#22c55e', strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 0 }}
             />
           </LineChart>
         </ResponsiveContainer>
