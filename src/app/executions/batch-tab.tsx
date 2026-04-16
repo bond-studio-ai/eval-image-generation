@@ -90,6 +90,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
   const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
   const [appliedTo, setAppliedTo] = useState('');
@@ -103,8 +104,15 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     const replace = mergeFirstPage ? false : (opts.replace ?? true);
     const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
     const limit = BATCH_PAGE_SIZE;
-    if (replace && !mergeFirstPage) setFetchError(null);
-    else if (!replace && !mergeFirstPage) setLoadingMore(true);
+    if (replace && !mergeFirstPage) {
+      setFetchError(null);
+      if (!loading) {
+        setRefreshing(true);
+        setExpandedIds(new Set());
+      }
+    } else if (!replace && !mergeFirstPage) {
+      setLoadingMore(true);
+    }
     try {
       const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
       if (appliedFrom) params.set('from', appliedFrom);
@@ -160,6 +168,7 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     finally {
       setLoading(false);
       setLoadingMore(false);
+      setRefreshing(false);
     }
   }, [appliedFrom, appliedTo, source]);
 
@@ -327,14 +336,24 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
         </div>
       </div>
 
-      {batches.length === 0 && !loading ? (
+      {refreshing && (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading {source === 'benchmark' ? 'benchmark' : 'standard'} runs…
+        </div>
+      )}
+
+      {batches.length === 0 && !loading && !refreshing ? (
         <p className="text-sm text-gray-600">
           {appliedFrom || appliedTo
             ? 'No runs match the selected date range.'
             : 'No runs yet. Use \u201cRun\u201d to create one.'}
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className={`space-y-4 transition-opacity duration-200 ${refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}>
         {batches.map((batch) => {
           const isExpanded = expandedIds.has(batch.id);
           const isBenchmark = source === 'benchmark';
