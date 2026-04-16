@@ -116,7 +116,7 @@ function defaultStep(promptVersionId: string): StepData {
   };
 }
 
-const ASPECT_RATIOS = ['auto', '1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+const ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
 const RESOLUTIONS = ['1K', '2K', '4K'];
 
 const JUDGE_TYPES: { value: 'batch' | 'individual'; label: string; description: string }[] = [
