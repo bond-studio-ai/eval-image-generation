@@ -195,7 +195,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     } finally {
       setSubmitting(false);
     }
-  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, onRunCreated, source]);
+  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated, source]);
 
 
   return (
