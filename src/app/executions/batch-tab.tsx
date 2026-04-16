@@ -784,7 +784,7 @@ function MatrixView({
                               className="group relative block cursor-pointer"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={run.lastOutputUrl} alt=""
+                              <img src={run.lastOutputUrl} alt="" loading="lazy"
                                 className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                                 style={{ aspectRatio: '1' }} />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
@@ -818,7 +818,7 @@ function MatrixView({
                           className="group relative block cursor-pointer"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={firstRun.lastOutputUrl} alt=""
+                          <img src={firstRun.lastOutputUrl} alt="" loading="lazy"
                             className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                             style={{ width: CELL - 20, height: CELL - 20 }} />
                           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
@@ -901,7 +901,7 @@ function RunCell({
             className="group relative block cursor-pointer"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={run.lastOutputUrl} alt=""
+            <img src={run.lastOutputUrl} alt="" loading="lazy"
               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
               style={{ width: cellSize - 20, height: cellSize - 20 }} />
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
