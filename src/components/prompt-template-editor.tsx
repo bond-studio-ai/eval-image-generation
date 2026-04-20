@@ -262,6 +262,7 @@ export function PromptTemplateEditor({
             onClick={() => {
               setConditionalOpen(!conditionalOpen);
               setReferenceOpen(false);
+              setDollhouseOpen(false);
             }}
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               conditionalOpen
@@ -315,6 +316,7 @@ export function PromptTemplateEditor({
             onClick={() => {
               setReferenceOpen(!referenceOpen);
               setConditionalOpen(false);
+              setDollhouseOpen(false);
               if (!referenceOpen) {
                 setReferenceCategory(null);
                 setAttributesError(null);

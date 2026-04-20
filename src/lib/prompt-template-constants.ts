@@ -162,28 +162,21 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
 ] as const;
 
 export const DOLLHOUSE_ATTRIBUTES = [
-  { value: 'visible', label: 'Visible', helper: 'Fraction in [0, 1]' },
-  { value: 'side', label: 'Side', helper: '"Front" / "Left" / "Right"' },
+  { value: 'visible', helper: 'Fraction in [0, 1]' },
+  { value: 'side', helper: '"Front" / "Left" / "Right"' },
 ] as const;
 
 export type DollhouseArea = (typeof DOLLHOUSE_AREAS)[number]['value'];
 export type DollhouseProductType = (typeof DOLLHOUSE_PRODUCT_TYPES)[number];
 export type DollhouseAttribute = (typeof DOLLHOUSE_ATTRIBUTES)[number]['value'];
 
-/** Render helpers so the editor can build the path in one place. */
+/** Render helper so the editor can build the handlebars path in one place. */
 export function dollhouseReferencePath(
   area: DollhouseArea,
   product: DollhouseProductType,
   attr: DollhouseAttribute,
 ): string {
   return `{{dollhouse.${area}.${product}.${attr}}}`;
-}
-
-export function dollhouseConditionalPath(
-  area: DollhouseArea,
-  product: DollhouseProductType,
-): string {
-  return `dollhouse.${area}.${product}`;
 }
 
 function toTitleCase(s: string): string {
