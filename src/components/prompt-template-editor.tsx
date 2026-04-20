@@ -3,7 +3,13 @@
 import { localUrl } from '@/lib/api-base';
 import {
   CONDITIONAL_OPTIONS,
+  DOLLHOUSE_AREAS,
+  DOLLHOUSE_ATTRIBUTES,
+  DOLLHOUSE_PRODUCT_TYPES,
+  dollhouseReferencePath,
   REFERENCE_OPTIONS,
+  type DollhouseArea,
+  type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -68,6 +74,11 @@ export function PromptTemplateEditor({
   const [attributes, setAttributes] = useState<string[]>([]);
   const [attributesLoading, setAttributesLoading] = useState(false);
   const [attributesError, setAttributesError] = useState<string | null>(null);
+
+  const [dollhouseOpen, setDollhouseOpen] = useState(false);
+  const [dollhouseArea, setDollhouseArea] = useState<DollhouseArea | null>(null);
+  const [dollhouseProduct, setDollhouseProduct] = useState<DollhouseProductType | null>(null);
+  const [dollhouseSearch, setDollhouseSearch] = useState('');
 
   const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
   const hasErrors = errors.length > 0;
@@ -164,6 +175,18 @@ export function PromptTemplateEditor({
     [handleInsert],
   );
 
+  const handleDollhouseAttributeSelect = useCallback(
+    (attr: (typeof DOLLHOUSE_ATTRIBUTES)[number]) => {
+      if (!dollhouseArea || !dollhouseProduct) return;
+      handleInsert(dollhouseReferencePath(dollhouseArea, dollhouseProduct, attr.value));
+      setDollhouseOpen(false);
+      setDollhouseArea(null);
+      setDollhouseProduct(null);
+      setDollhouseSearch('');
+    },
+    [dollhouseArea, dollhouseProduct, handleInsert],
+  );
+
   const closeAll = useCallback(() => {
     setConditionalOpen(false);
     setReferenceOpen(false);
@@ -171,6 +194,10 @@ export function PromptTemplateEditor({
     setAttributesError(null);
     setConditionalSearch('');
     setReferenceSearch('');
+    setDollhouseOpen(false);
+    setDollhouseArea(null);
+    setDollhouseProduct(null);
+    setDollhouseSearch('');
   }, []);
 
   const filteredConditionalOptions = useMemo(() => {
@@ -191,15 +218,21 @@ export function PromptTemplateEditor({
     );
   }, [referenceSearch]);
 
+  const filteredDollhouseProducts = useMemo(() => {
+    const q = dollhouseSearch.trim().toLowerCase();
+    if (!q) return DOLLHOUSE_PRODUCT_TYPES;
+    return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
+  }, [dollhouseSearch]);
+
   useEffect(() => {
-    if (!conditionalOpen && !referenceOpen) return;
+    if (!conditionalOpen && !referenceOpen && !dollhouseOpen) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current?.contains(e.target as Node)) return;
       closeAll();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [conditionalOpen, referenceOpen, closeAll]);
+  }, [conditionalOpen, referenceOpen, dollhouseOpen, closeAll]);
 
   if (!showPicker) {
     return (
@@ -229,6 +262,7 @@ export function PromptTemplateEditor({
             onClick={() => {
               setConditionalOpen(!conditionalOpen);
               setReferenceOpen(false);
+              setDollhouseOpen(false);
             }}
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               conditionalOpen
@@ -282,6 +316,7 @@ export function PromptTemplateEditor({
             onClick={() => {
               setReferenceOpen(!referenceOpen);
               setConditionalOpen(false);
+              setDollhouseOpen(false);
               if (!referenceOpen) {
                 setReferenceCategory(null);
                 setAttributesError(null);
@@ -381,6 +416,142 @@ export function PromptTemplateEditor({
                       })}
                     </div>
                   )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setDollhouseOpen(!dollhouseOpen);
+              setConditionalOpen(false);
+              setReferenceOpen(false);
+              if (!dollhouseOpen) {
+                setDollhouseArea(null);
+                setDollhouseProduct(null);
+                setDollhouseSearch('');
+              }
+            }}
+            title="Insert a dollhouse reference like {{dollhouse.vanityArea.vanity.visible}}"
+            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
+              dollhouseOpen
+                ? 'border-primary-300 bg-primary-50/90 text-primary-800'
+                : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            Dollhouse
+            <svg
+              className={`h-3.5 w-3.5 text-gray-400 ${dollhouseOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {dollhouseOpen && (
+            <div className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+              {!dollhouseArea ? (
+                <>
+                  <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                    Pick an <strong>area</strong> first. Inserts{' '}
+                    <code className="rounded bg-gray-100 px-0.5">{`{{dollhouse.{area}.{product}.{attr}}}`}</code>
+                  </p>
+                  <div className="max-h-60 overflow-auto py-1">
+                    {DOLLHOUSE_AREAS.map((area) => (
+                      <button
+                        key={area.value}
+                        type="button"
+                        onClick={() => setDollhouseArea(area.value)}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
+                      >
+                        {area.label}
+                        <span className="ml-2 font-mono text-[10px] text-gray-400">
+                          {area.value}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : !dollhouseProduct ? (
+                <>
+                  <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDollhouseArea(null);
+                        setDollhouseSearch('');
+                      }}
+                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
+                    >
+                      ← Back
+                    </button>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
+                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label}
+                    </span>
+                  </div>
+                  <div className="border-b border-gray-200 p-2">
+                    <input
+                      type="text"
+                      value={dollhouseSearch}
+                      onChange={(e) => setDollhouseSearch(e.target.value)}
+                      placeholder="Search products…"
+                      className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-auto py-1">
+                    {filteredDollhouseProducts.map((product) => (
+                      <button
+                        key={product}
+                        type="button"
+                        onClick={() => setDollhouseProduct(product)}
+                        className="w-full px-3 py-2 text-left font-mono text-xs text-gray-900 hover:bg-gray-50"
+                      >
+                        {product}
+                      </button>
+                    ))}
+                    {filteredDollhouseProducts.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setDollhouseProduct(null)}
+                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
+                    >
+                      ← Back
+                    </button>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
+                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label} ·{' '}
+                      <span className="font-mono">{dollhouseProduct}</span>
+                    </span>
+                  </div>
+                  <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
+                    Inserts{' '}
+                    <code className="rounded bg-gray-100 px-0.5">
+                      {`{{dollhouse.${dollhouseArea}.${dollhouseProduct}.…}}`}
+                    </code>
+                  </p>
+                  <div className="max-h-60 overflow-auto py-1">
+                    {DOLLHOUSE_ATTRIBUTES.map((attr) => (
+                      <button
+                        key={attr.value}
+                        type="button"
+                        onClick={() => handleDollhouseAttributeSelect(attr)}
+                        className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-gray-50"
+                      >
+                        <span className="font-mono text-xs text-gray-900">{attr.value}</span>
+                        <span className="text-[11px] text-gray-500">{attr.helper}</span>
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </div>

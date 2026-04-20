@@ -116,6 +116,69 @@ export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
   label: toTitleCase(TO_CAMEL_SINGULAR[k]),
 }));
 
+/**
+ * Dollhouse picker options for templates like
+ * `{{dollhouse.{area}.{product}.{attr}}}` / `{{#if dollhouse.{area}.{product}}}`.
+ *
+ * Sourced from the dollhouse-capture response's `productsInFrame` (see
+ * service-image-generation `benchmark-dollhouse-mock.ts`). Product keys are
+ * camelCase-first-letter of the dollhouse `type` string (e.g. `WallPaint` →
+ * `wallPaint`).
+ *
+ * TODO(benchmark-mock): populated for the PRJ-DLEZLYQ96 benchmark today.
+ * Revisit once the dollhouse service returns these fields on every project.
+ */
+export const DOLLHOUSE_AREAS = [
+  { value: 'vanityArea', label: 'Vanity Area' },
+  { value: 'showerArea', label: 'Shower Area' },
+  { value: 'toiletArea', label: 'Toilet Area' },
+] as const;
+
+export const DOLLHOUSE_PRODUCT_TYPES = [
+  'faucet',
+  'floorTile',
+  'lighting',
+  'lvp',
+  'mirror',
+  'robeHook',
+  'shelves',
+  'showerCurbTile',
+  'showerFloorTile',
+  'showerGlass',
+  'showerShortWallTile',
+  'showerSystem',
+  'showerWallTile',
+  'toilet',
+  'toiletPaperHolder',
+  'towelBar',
+  'towelRing',
+  'tub',
+  'tubDoor',
+  'tubFiller',
+  'vanity',
+  'wallPaint',
+  'wallTile',
+  'wallpaper',
+] as const;
+
+export const DOLLHOUSE_ATTRIBUTES = [
+  { value: 'visible', helper: 'Fraction in [0, 1]' },
+  { value: 'side', helper: '"Front" / "Left" / "Right"' },
+] as const;
+
+export type DollhouseArea = (typeof DOLLHOUSE_AREAS)[number]['value'];
+export type DollhouseProductType = (typeof DOLLHOUSE_PRODUCT_TYPES)[number];
+export type DollhouseAttribute = (typeof DOLLHOUSE_ATTRIBUTES)[number]['value'];
+
+/** Render helper so the editor can build the handlebars path in one place. */
+export function dollhouseReferencePath(
+  area: DollhouseArea,
+  product: DollhouseProductType,
+  attr: DollhouseAttribute,
+): string {
+  return `{{dollhouse.${area}.${product}.${attr}}}`;
+}
+
 function toTitleCase(s: string): string {
   return s.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
 }
