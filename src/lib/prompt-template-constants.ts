@@ -120,18 +120,17 @@ export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
  * Dollhouse picker options for templates like
  * `{{dollhouse.{area}.{product}.{attr}}}` / `{{#if dollhouse.{area}.{product}}}`.
  *
- * Sourced from the dollhouse-capture response's `productsInFrame` (see
- * service-image-generation `benchmark-dollhouse-mock.ts`). Product keys are
- * camelCase-first-letter of the dollhouse `type` string (e.g. `WallPaint` →
- * `wallPaint`).
+ * Area keys come from the camera frame summary normalized to camelCase
+ * (e.g. `Vanity` -> `vanity`). Product keys are camelCase-first-letter
+ * of the dollhouse `type` string (e.g. `WallPaint` -> `wallPaint`).
  *
- * TODO(benchmark-mock): populated for the PRJ-DLEZLYQ96 benchmark today.
- * Revisit once the dollhouse service returns these fields on every project.
+ * The picker offers common suggestions, but templates may also use custom keys
+ * to match newly-added dollhouse summaries and product types.
  */
 export const DOLLHOUSE_AREAS = [
-  { value: 'vanityArea', label: 'Vanity Area' },
-  { value: 'showerArea', label: 'Shower Area' },
-  { value: 'toiletArea', label: 'Toilet Area' },
+  { value: 'vanity', label: 'Vanity' },
+  { value: 'shower', label: 'Shower' },
+  { value: 'toilet', label: 'Toilet' },
 ] as const;
 
 export const DOLLHOUSE_PRODUCT_TYPES = [
@@ -162,12 +161,12 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
 ] as const;
 
 export const DOLLHOUSE_ATTRIBUTES = [
-  { value: 'visible', helper: 'Fraction in [0, 1]' },
-  { value: 'side', helper: '"Front" / "Left" / "Right"' },
+  { value: 'visibility.visible', helper: 'Visibility fraction in [0, 1] when a single entry exists' },
+  { value: 'visibility.facing', helper: 'Facing direction when a single entry exists' },
 ] as const;
 
-export type DollhouseArea = (typeof DOLLHOUSE_AREAS)[number]['value'];
-export type DollhouseProductType = (typeof DOLLHOUSE_PRODUCT_TYPES)[number];
+export type DollhouseArea = string;
+export type DollhouseProductType = string;
 export type DollhouseAttribute = (typeof DOLLHOUSE_ATTRIBUTES)[number]['value'];
 
 /** Render helper so the editor can build the handlebars path in one place. */
@@ -177,6 +176,25 @@ export function dollhouseReferencePath(
   attr: DollhouseAttribute,
 ): string {
   return `{{dollhouse.${area}.${product}.${attr}}}`;
+}
+
+export function toDollhousePathKey(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  if (/^[a-z][A-Za-z0-9]*$/.test(trimmed)) return trimmed;
+  if (/^[A-Z][A-Za-z0-9]*$/.test(trimmed)) {
+    return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+  }
+
+  const words = trimmed.split(/[^a-zA-Z0-9]+/).filter(Boolean);
+  if (words.length === 0) return '';
+
+  return words
+    .map((word, index) => {
+      const lower = word.toLowerCase();
+      return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
 }
 
 function toTitleCase(s: string): string {

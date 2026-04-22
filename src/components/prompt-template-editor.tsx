@@ -8,6 +8,7 @@ import {
   DOLLHOUSE_PRODUCT_TYPES,
   dollhouseReferencePath,
   REFERENCE_OPTIONS,
+  toDollhousePathKey,
   type DollhouseArea,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
@@ -78,6 +79,7 @@ export function PromptTemplateEditor({
   const [dollhouseOpen, setDollhouseOpen] = useState(false);
   const [dollhouseArea, setDollhouseArea] = useState<DollhouseArea | null>(null);
   const [dollhouseProduct, setDollhouseProduct] = useState<DollhouseProductType | null>(null);
+  const [dollhouseAreaSearch, setDollhouseAreaSearch] = useState('');
   const [dollhouseSearch, setDollhouseSearch] = useState('');
 
   const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
@@ -182,6 +184,7 @@ export function PromptTemplateEditor({
       setDollhouseOpen(false);
       setDollhouseArea(null);
       setDollhouseProduct(null);
+      setDollhouseAreaSearch('');
       setDollhouseSearch('');
     },
     [dollhouseArea, dollhouseProduct, handleInsert],
@@ -197,6 +200,7 @@ export function PromptTemplateEditor({
     setDollhouseOpen(false);
     setDollhouseArea(null);
     setDollhouseProduct(null);
+    setDollhouseAreaSearch('');
     setDollhouseSearch('');
   }, []);
 
@@ -218,11 +222,29 @@ export function PromptTemplateEditor({
     );
   }, [referenceSearch]);
 
+  const filteredDollhouseAreas = useMemo(() => {
+    const q = dollhouseAreaSearch.trim().toLowerCase();
+    if (!q) return DOLLHOUSE_AREAS;
+    return DOLLHOUSE_AREAS.filter(
+      (area) =>
+        area.label.toLowerCase().includes(q) || area.value.toLowerCase().includes(q),
+    );
+  }, [dollhouseAreaSearch]);
+
   const filteredDollhouseProducts = useMemo(() => {
     const q = dollhouseSearch.trim().toLowerCase();
     if (!q) return DOLLHOUSE_PRODUCT_TYPES;
     return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
   }, [dollhouseSearch]);
+
+  const customDollhouseArea = useMemo(
+    () => toDollhousePathKey(dollhouseAreaSearch),
+    [dollhouseAreaSearch],
+  );
+  const customDollhouseProduct = useMemo(
+    () => toDollhousePathKey(dollhouseSearch),
+    [dollhouseSearch],
+  );
 
   useEffect(() => {
     if (!conditionalOpen && !referenceOpen && !dollhouseOpen) return;
@@ -432,10 +454,11 @@ export function PromptTemplateEditor({
               if (!dollhouseOpen) {
                 setDollhouseArea(null);
                 setDollhouseProduct(null);
+                setDollhouseAreaSearch('');
                 setDollhouseSearch('');
               }
             }}
-            title="Insert a dollhouse reference like {{dollhouse.vanityArea.vanity.visible}}"
+            title="Insert a dollhouse reference like {{dollhouse.vanity.vanity.visibility.visible}}"
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               dollhouseOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
@@ -460,8 +483,26 @@ export function PromptTemplateEditor({
                     Pick an <strong>area</strong> first. Inserts{' '}
                     <code className="rounded bg-gray-100 px-0.5">{`{{dollhouse.{area}.{product}.{attr}}}`}</code>
                   </p>
+                  <div className="border-b border-gray-200 p-2">
+                    <input
+                      type="text"
+                      value={dollhouseAreaSearch}
+                      onChange={(e) => setDollhouseAreaSearch(e.target.value)}
+                      placeholder="Search or type a custom area key…"
+                      className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    />
+                    {customDollhouseArea && !DOLLHOUSE_AREAS.some((a) => a.value === customDollhouseArea) && (
+                      <button
+                        type="button"
+                        onClick={() => setDollhouseArea(customDollhouseArea)}
+                        className="mt-2 w-full rounded-md border border-dashed border-primary-300 bg-primary-50 px-3 py-2 text-left text-sm text-primary-800 hover:bg-primary-100"
+                      >
+                        Use custom area key <span className="font-mono">{customDollhouseArea}</span>
+                      </button>
+                    )}
+                  </div>
                   <div className="max-h-60 overflow-auto py-1">
-                    {DOLLHOUSE_AREAS.map((area) => (
+                    {filteredDollhouseAreas.map((area) => (
                       <button
                         key={area.value}
                         type="button"
@@ -474,6 +515,9 @@ export function PromptTemplateEditor({
                         </span>
                       </button>
                     ))}
+                    {filteredDollhouseAreas.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-gray-500">No matching suggested areas</p>
+                    )}
                   </div>
                 </>
               ) : !dollhouseProduct ? (
@@ -483,6 +527,7 @@ export function PromptTemplateEditor({
                       type="button"
                       onClick={() => {
                         setDollhouseArea(null);
+                        setDollhouseAreaSearch('');
                         setDollhouseSearch('');
                       }}
                       className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
@@ -490,7 +535,7 @@ export function PromptTemplateEditor({
                       ← Back
                     </button>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label}
+                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label ?? dollhouseArea}
                     </span>
                   </div>
                   <div className="border-b border-gray-200 p-2">
@@ -498,9 +543,19 @@ export function PromptTemplateEditor({
                       type="text"
                       value={dollhouseSearch}
                       onChange={(e) => setDollhouseSearch(e.target.value)}
-                      placeholder="Search products…"
+                      placeholder="Search or type a custom product key…"
                       className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                     />
+                    {customDollhouseProduct &&
+                      !DOLLHOUSE_PRODUCT_TYPES.some((product) => product === customDollhouseProduct) && (
+                        <button
+                          type="button"
+                          onClick={() => setDollhouseProduct(customDollhouseProduct)}
+                          className="mt-2 w-full rounded-md border border-dashed border-primary-300 bg-primary-50 px-3 py-2 text-left text-sm text-primary-800 hover:bg-primary-100"
+                        >
+                          Use custom product key <span className="font-mono">{customDollhouseProduct}</span>
+                        </button>
+                      )}
                   </div>
                   <div className="max-h-60 overflow-auto py-1">
                     {filteredDollhouseProducts.map((product) => (
@@ -529,7 +584,7 @@ export function PromptTemplateEditor({
                       ← Back
                     </button>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label} ·{' '}
+                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label ?? dollhouseArea} ·{' '}
                       <span className="font-mono">{dollhouseProduct}</span>
                     </span>
                   </div>
