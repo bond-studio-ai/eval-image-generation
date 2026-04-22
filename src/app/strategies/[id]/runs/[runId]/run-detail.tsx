@@ -58,6 +58,7 @@ interface RunData {
   id: string;
   status: string;
   createdAt: string;
+  startedAt: string | null;
   completedAt: string | null;
   judgeScore: number | null;
   isJudgeSelected: boolean;
@@ -755,11 +756,11 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       position: j.position,
     }));
 
+  const elapsedStart = data.startedAt ?? data.createdAt;
   const duration = data.completedAt
-    ? Math.round((new Date(data.completedAt).getTime() - new Date(data.createdAt).getTime()) / 1000)
+    ? Math.round((new Date(data.completedAt).getTime() - new Date(elapsedStart).getTime()) / 1000)
     : null;
 
-  const completedSteps = sorted.filter((s) => s.status === 'completed').length;
   const hasJudgeInfo = data.judgeResults.length > 0 || data.judgeReasoning || data.judgeSystemPrompt || data.judgeUserPrompt;
   const hasConfig = data.strategy.model != null || data.strategy.aspectRatio != null;
 

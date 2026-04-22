@@ -58,6 +58,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     id: run.id as string,
     status: run.status as string,
     createdAt: run.createdAt as string,
+    startedAt: (run.startedAt as string) ?? null,
     completedAt: (run.completedAt as string) ?? null,
     judgeScore: (run.judgeScore as number) ?? null,
     isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
