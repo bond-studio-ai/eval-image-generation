@@ -171,6 +171,10 @@ const MODEL_LABELS: Record<string, string> = {
   'gemini-3.1-flash-image-preview': 'Nano Banana 2',
   'seedream-4.5': 'Seedream 4.5',
   'seedream-5': 'Seedream 5',
+  'gpt-image-1': 'GPT Image 1',
+  'gpt-image-1-mini': 'GPT Image 1 Mini',
+  'gpt-image-1.5': 'GPT Image 1.5',
+  'gpt-image-2': 'GPT Image 2',
 };
 
 export interface DagJudge {
