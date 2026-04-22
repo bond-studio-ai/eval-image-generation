@@ -121,16 +121,17 @@ export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
  * `{{dollhouse.{area}.{product}.{attr}}}` / `{{#if dollhouse.{area}.{product}}}`.
  *
  * Area keys come from the camera frame summary normalized to camelCase
- * (e.g. `Vanity` -> `vanity`). Product keys are camelCase-first-letter
+ * and suffixed with `Area` (e.g. `Vanity` -> `vanityArea`). Product keys are camelCase-first-letter
  * of the dollhouse `type` string (e.g. `WallPaint` -> `wallPaint`).
  *
  * The picker offers common suggestions, but templates may also use custom keys
  * to match newly-added dollhouse summaries and product types.
  */
 export const DOLLHOUSE_AREAS = [
-  { value: 'vanity', label: 'Vanity' },
-  { value: 'shower', label: 'Shower' },
-  { value: 'toilet', label: 'Toilet' },
+  { value: 'showerArea', label: 'Shower Area' },
+  { value: 'vanityArea', label: 'Vanity Area' },
+  { value: 'toiletArea', label: 'Toilet Area' },
+  { value: 'tubArea', label: 'Tub Area' },
 ] as const;
 
 export const DOLLHOUSE_PRODUCT_TYPES = [
