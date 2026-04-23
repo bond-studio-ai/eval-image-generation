@@ -50,12 +50,30 @@ export function validateHandlebarsTemplate(
   type Token =
     | { kind: 'comment'; line: number }
     | { kind: 'partial'; line: number }
-    | { kind: 'blockOpen'; name: string; line: number }
-    | { kind: 'blockClose'; name: string; line: number }
+    | { kind: 'blockOpen'; name: string; line: number; indent: number }
+    | { kind: 'blockClose'; name: string; line: number; indent: number }
     | { kind: 'rawOpen'; name: string; line: number }
     | { kind: 'rawClose'; name: string; line: number }
     | { kind: 'else'; line: number }
     | { kind: 'expr'; content: string; line: number };
+
+  /**
+   * Number of leading whitespace characters on the line containing
+   * `pos`, up to but not including `pos`. Used to match block closes
+   * against the visually-aligned block open so missing nested closes
+   * get flagged on the nested block rather than the outer one.
+   */
+  function columnIndent(pos: number): number {
+    let lineStart = pos;
+    while (lineStart > 0 && template[lineStart - 1] !== '\n') lineStart--;
+    let n = 0;
+    for (let j = lineStart; j < pos; j++) {
+      const c = template[j];
+      if (c === ' ' || c === '\t') n++;
+      else return n;
+    }
+    return n;
+  }
 
   const tokens: Token[] = [];
   let i = 0;
@@ -198,7 +216,12 @@ export function validateHandlebarsTemplate(
         if (!name) {
           errors.push({ line, message: 'Invalid "{{/}}" — missing block name' });
         } else {
-          tokens.push({ kind: 'blockClose', name, line });
+          tokens.push({
+            kind: 'blockClose',
+            name,
+            line,
+            indent: columnIndent(start),
+          });
         }
         i = close + 2;
         continue;
@@ -216,7 +239,12 @@ export function validateHandlebarsTemplate(
             message: `Invalid "{{${first}}}" — missing block name`,
           });
         } else {
-          tokens.push({ kind: 'blockOpen', name, line });
+          tokens.push({
+            kind: 'blockOpen',
+            name,
+            line,
+            indent: columnIndent(start),
+          });
         }
         i = close + 2;
         continue;
@@ -230,13 +258,12 @@ export function validateHandlebarsTemplate(
     i++;
   }
 
-  const blockStack: { name: string; line: number }[] = [];
+  type StackEntry = { name: string; line: number; indent: number };
+  const blockStack: StackEntry[] = [];
   let rawStackDepth = 0;
 
   for (const t of tokens) {
     if (rawStackDepth > 0) {
-      // Inside a raw block, only raw-close tokens matter. Everything
-      // else is text and must not affect the block stack.
       if (t.kind === 'rawClose') rawStackDepth--;
       if (t.kind === 'rawOpen') rawStackDepth++;
       continue;
@@ -253,7 +280,7 @@ export function validateHandlebarsTemplate(
         });
         break;
       case 'blockOpen':
-        blockStack.push({ name: t.name, line: t.line });
+        blockStack.push({ name: t.name, line: t.line, indent: t.indent });
         break;
       case 'blockClose': {
         if (blockStack.length === 0) {
@@ -261,18 +288,67 @@ export function validateHandlebarsTemplate(
             line: t.line,
             message: `Unexpected {{/${t.name}}} with no matching {{#${t.name}}}`,
           });
-        } else {
-          const last = blockStack[blockStack.length - 1];
-          if (last.name !== t.name) {
-            errors.push({
-              line: t.line,
-              message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`,
-            });
-            blockStack.pop();
-          } else {
-            blockStack.pop();
+          break;
+        }
+
+        // Indent-aware match: walk the stack from top to bottom and
+        // take the topmost open that (a) has the same name and (b) is
+        // indented no deeper than the close itself. If the user simply
+        // deleted the close of a deeper nested block, this attributes
+        // the remaining close to the less-indented outer block and
+        // flags the nested block (which is what the user expects).
+        //
+        // When no indent-compatible match exists we fall back to plain
+        // LIFO matching so the old behaviour still holds for templates
+        // with no useful indentation.
+        let matchIdx = -1;
+        for (let j = blockStack.length - 1; j >= 0; j--) {
+          if (
+            blockStack[j].name === t.name &&
+            blockStack[j].indent <= t.indent
+          ) {
+            matchIdx = j;
+            break;
           }
         }
+
+        if (matchIdx === -1) {
+          // No same-name indent-compatible open — try a looser
+          // last-resort search that ignores indent. If even that
+          // misses, it's an orphan close.
+          for (let j = blockStack.length - 1; j >= 0; j--) {
+            if (blockStack[j].name === t.name) {
+              matchIdx = j;
+              break;
+            }
+          }
+        }
+
+        if (matchIdx === -1) {
+          // Name isn't on the stack at all. Report as mismatch
+          // against whatever is on top of the stack, which preserves
+          // the original "did you mean {{/x}}?" messaging.
+          const last = blockStack[blockStack.length - 1];
+          errors.push({
+            line: t.line,
+            message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`,
+          });
+          blockStack.pop();
+          break;
+        }
+
+        // Anything above the matched index is now known to be
+        // unclosed, because the close we just saw closes a deeper
+        // ancestor. Flag each of them once here so the error lands on
+        // the block whose close is actually missing.
+        for (let j = blockStack.length - 1; j > matchIdx; j--) {
+          const unclosed = blockStack[j];
+          errors.push({
+            line: unclosed.line,
+            message: `Unclosed {{#${unclosed.name}}} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`,
+          });
+        }
+        blockStack.length = matchIdx;
         break;
       }
       case 'else':
