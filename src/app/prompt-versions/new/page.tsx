@@ -6,6 +6,7 @@ import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PromptTemplateEditor } from '@/components/prompt-template-editor';
+import { TwoPaneSplit } from '@/components/two-pane-split';
 
 export default function NewPromptVersionPage() {
   const router = useRouter();
@@ -99,38 +100,41 @@ export default function NewPromptVersionPage() {
       </div>
 
       {/* Prompts */}
-      <div className="mt-8 flex min-h-[50vh] flex-1 flex-col gap-6 sm:flex-row">
-        <div className="flex min-h-[300px] min-w-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:min-h-[400px]">
-          <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
-            System Prompt <span className="text-red-500">*</span>
-          </h2>
-          <div className="mt-3 flex min-h-0 flex-1 flex-col">
-            <PromptTemplateEditor
-              value={systemPrompt}
-              onChange={setSystemPrompt}
-              rows={6}
-              placeholder="System prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
-              className={`font-mono ${editableInput}`}
-              fillHeight
-            />
+      <TwoPaneSplit
+        className="mt-8"
+        left={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+              System Prompt <span className="text-red-500">*</span>
+            </h2>
+            <div className="mt-3 flex min-h-0 flex-1 flex-col">
+              <PromptTemplateEditor
+                value={systemPrompt}
+                onChange={setSystemPrompt}
+                placeholder="System prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
+                className={`font-mono ${editableInput}`}
+                fillHeight
+              />
+            </div>
           </div>
-        </div>
-        <div className="flex min-h-[300px] min-w-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:min-h-[400px]">
-          <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
-            User Prompt <span className="text-red-500">*</span>
-          </h2>
-          <div className="mt-3 flex min-h-0 flex-1 flex-col">
-            <PromptTemplateEditor
-              value={userPrompt}
-              onChange={setUserPrompt}
-              rows={6}
-              placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
-              className={`font-mono ${editableInput}`}
-              fillHeight
-            />
+        }
+        right={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+              User Prompt <span className="text-red-500">*</span>
+            </h2>
+            <div className="mt-3 flex min-h-0 flex-1 flex-col">
+              <PromptTemplateEditor
+                value={userPrompt}
+                onChange={setUserPrompt}
+                placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
+                className={`font-mono ${editableInput}`}
+                fillHeight
+              />
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Generations placeholder */}
       <div className="mt-8">

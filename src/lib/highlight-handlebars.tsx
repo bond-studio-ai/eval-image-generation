@@ -87,3 +87,58 @@ export function renderHighlightedHandlebars(source: string): ReactNode[] {
 
   return nodes;
 }
+
+/**
+ * Highlight `source` and return one array of `ReactNode`s per logical line
+ * (i.e. split on `\n`). Tokens that straddle newlines (e.g. multiline
+ * `{{!-- ... --}}` comments) are split at each newline and each piece keeps
+ * the kind's color, so multi-line comments and blocks still render correctly
+ * when each line lives in its own container.
+ */
+export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][] {
+  const lines: ReactNode[][] = [[]];
+  let keyCounter = 0;
+
+  const push = (text: string, className?: string) => {
+    if (!text) return;
+    const parts = text.split('\n');
+    parts.forEach((part, i) => {
+      if (part.length > 0) {
+        const k = `p-${keyCounter++}`;
+        const node = className ? (
+          <span key={k} className={className}>
+            {part}
+          </span>
+        ) : (
+          <span key={k}>{part}</span>
+        );
+        lines[lines.length - 1].push(node);
+      }
+      if (i < parts.length - 1) lines.push([]);
+    });
+  };
+
+  const re = mustacheRegex();
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(source)) !== null) {
+    const [token] = match;
+    if (match.index > cursor) push(source.slice(cursor, match.index));
+    push(token, CLASS_BY_KIND[classify(token)]);
+    cursor = match.index + token.length;
+    if (match.index === re.lastIndex) re.lastIndex++;
+  }
+
+  if (cursor < source.length) push(source.slice(cursor));
+
+  // Keep empty lines visible: an empty `<div>` would collapse to 0px, so seed
+  // it with a zero-width character to preserve the row height.
+  for (const line of lines) {
+    if (line.length === 0) {
+      line.push(<span key={`z-${keyCounter++}`}>{'\u200B'}</span>);
+    }
+  }
+
+  return lines;
+}

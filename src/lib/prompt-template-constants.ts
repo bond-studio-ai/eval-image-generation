@@ -157,7 +157,10 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
 
 /**
  * Dollhouse attributes come in two shapes:
- *  - Scalar fields on the product itself (`quantity`, `location`).
+ *  - Scalar fields on the product itself (`quantity`). A product-level
+ *    `location` exists at runtime but is intentionally not surfaced here
+ *    because layout slots are only meaningful per framing, inside the
+ *    `visibility` iteration.
  *  - Per-framing rows on `visibility[]` — always iterated with `{{#each}}` so the
  *    template works whether the product was framed once or many times.
  *
@@ -178,11 +181,6 @@ export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
     value: 'quantity',
     helper: 'How many instances of this product are anchored in the area',
     build: (p) => `{{${p}.quantity}}`,
-  },
-  {
-    value: 'location',
-    helper: 'Layout slot for the product (Left/Right/Top/Bottom/Center)',
-    build: (p) => `{{${p}.location}}`,
   },
   {
     value: '#each visibility → visible',

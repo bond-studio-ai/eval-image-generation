@@ -10,9 +10,10 @@ import {
   toDollhousePathKey,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
-import { renderHighlightedHandlebars } from '@/lib/highlight-handlebars';
+import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
 import {
+  Fragment,
   forwardRef,
   useCallback,
   useEffect,
@@ -36,33 +37,43 @@ interface PromptTemplateEditorProps {
   fillHeight?: boolean;
 }
 
-function insertAtCursor(
+/**
+ * Replace the selection `[start, end)` with `text` in a way that
+ * participates in the browser's native undo stack.
+ *
+ * `document.execCommand('insertText')` is deprecated but still universally
+ * implemented in the browsers we target and is the only path that
+ * actually records the change on the textarea's undo history. When it
+ * refuses (returns false) we fall back to the prototype-setter trick and
+ * a synthetic `input` event, which keeps React's controlled value in sync
+ * but will not be undoable in that rare case.
+ */
+function insertWithUndo(
+  el: HTMLTextAreaElement,
+  start: number,
+  end: number,
   text: string,
-  selectionStart: number,
-  selectionEnd: number,
-  toInsert: string,
-): { newValue: string; newCursor: number } {
-  const before = text.slice(0, selectionStart);
-  const after = text.slice(selectionEnd);
-  const newValue = before + toInsert + after;
-  const newCursor = selectionStart + toInsert.length;
-  return { newValue, newCursor };
-}
-
-function insertWrapper(
-  text: string,
-  selectionStart: number,
-  selectionEnd: number,
-  condition: string,
-): { newValue: string; newCursor: number } {
-  const before = text.slice(0, selectionStart);
-  const selected = text.slice(selectionStart, selectionEnd);
-  const after = text.slice(selectionEnd);
-  const inner = selected || '\n  \n';
-  const wrapper = `{{#if ${condition}}}${inner}{{/if}}`;
-  const newValue = before + wrapper + after;
-  const newCursor = selectionStart + `{{#if ${condition}}}`.length + (selected ? selected.length : 1);
-  return { newValue, newCursor };
+): void {
+  el.focus();
+  el.setSelectionRange(start, end);
+  // `document.execCommand` is marked deprecated in lib.dom but is still
+  // the only cross-browser way to edit a textarea's value while keeping
+  // the native undo stack intact. Route the call through a local,
+  // non-deprecated signature to avoid the editor warning at the call
+  // site without suppressing unrelated deprecations.
+  const exec = (document as unknown as {
+    execCommand(command: string, showUi?: boolean, value?: string): boolean;
+  }).execCommand;
+  const ok = exec.call(document, 'insertText', false, text);
+  if (ok) return;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLTextAreaElement.prototype,
+    'value',
+  )?.set;
+  setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  const caret = start + text.length;
+  el.setSelectionRange(caret, caret);
 }
 
 export function PromptTemplateEditor({
@@ -101,42 +112,33 @@ export function PromptTemplateEditor({
       .replace(/\bfocus:ring-primary-500\b/, 'focus:ring-red-500');
   }, [className, hasErrors]);
 
-  const focusTextarea = useCallback(() => {
-    textareaRef.current?.focus();
-  }, []);
-
-  const getSelection = useCallback(() => {
+  const handleInsert = useCallback((toInsert: string) => {
     const el = textareaRef.current;
-    if (!el) return { start: 0, end: 0 };
-    return { start: el.selectionStart, end: el.selectionEnd };
+    if (!el) return;
+    insertWithUndo(el, el.selectionStart, el.selectionEnd, toInsert);
   }, []);
-
-  const handleInsert = useCallback(
-    (toInsert: string) => {
-      const { start, end } = getSelection();
-      const { newValue, newCursor } = insertAtCursor(value, start, end, toInsert);
-      onChange(newValue);
-      focusTextarea();
-      requestAnimationFrame(() => {
-        textareaRef.current?.setSelectionRange(newCursor, newCursor);
-      });
-    },
-    [value, onChange, getSelection, focusTextarea],
-  );
 
   const handleConditionalSelect = useCallback(
     (opt: (typeof CONDITIONAL_OPTIONS)[number]) => {
+      const el = textareaRef.current;
+      if (!el) return;
       const condition = opt.isProduct ? `products.${opt.value}` : opt.value;
-      const { start, end } = getSelection();
-      const { newValue, newCursor } = insertWrapper(value, start, end, condition);
-      onChange(newValue);
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const selected = el.value.slice(start, end);
+      const prefix = `{{#if ${condition}}}`;
+      const inner = selected || '\n  \n';
+      const wrapper = `${prefix}${inner}{{/if}}`;
+      insertWithUndo(el, start, end, wrapper);
       setConditionalOpen(false);
-      focusTextarea();
-      requestAnimationFrame(() => {
-        textareaRef.current?.setSelectionRange(newCursor, newCursor);
-      });
+      // When the user had no selection, put the caret on the blank line
+      // inside the wrapper (matches the previous behaviour).
+      if (!selected) {
+        const caret = start + prefix.length + 1;
+        requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+      }
     },
-    [value, onChange, getSelection, focusTextarea],
+    [],
   );
 
   const fetchAttributes = useCallback(async (category: string) => {
@@ -255,7 +257,11 @@ export function PromptTemplateEditor({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : textareaClass}
+          className={
+            fillHeight
+              ? `min-h-0 flex-1 resize-none ${textareaClass}`
+              : `resize-y ${textareaClass}`
+          }
           fillHeight={fillHeight}
         />
         <TemplateErrors errors={errors} />
@@ -268,7 +274,7 @@ export function PromptTemplateEditor({
       ref={containerRef}
       className={`flex flex-col gap-2 ${fillHeight ? 'min-h-0 flex-1' : ''}`}
     >
-      <div className="flex shrink-0 flex-wrap gap-1.5">
+      <div className="grid shrink-0 grid-cols-3 gap-1.5">
         <div className="relative">
           <button
             type="button"
@@ -277,15 +283,15 @@ export function PromptTemplateEditor({
               setReferenceOpen(false);
               setDollhouseOpen(false);
             }}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
+            className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               conditionalOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
-            Conditional
+            <span className="truncate">Conditional</span>
             <svg
-              className={`h-3.5 w-3.5 text-gray-400 ${conditionalOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${conditionalOpen ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -335,15 +341,15 @@ export function PromptTemplateEditor({
                 setAttributesError(null);
               }
             }}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
+            className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               referenceOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
-            Reference
+            <span className="truncate">Reference</span>
             <svg
-              className={`h-3.5 w-3.5 text-gray-400 ${referenceOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${referenceOpen ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -448,15 +454,15 @@ export function PromptTemplateEditor({
               }
             }}
             title="Insert a dollhouse reference like {{dollhouse.vanity.quantity}} or {{#each dollhouse.vanity.visibility}}{{location}} ({{visible}}%){{/each}}"
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
+            className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               dollhouseOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
-            Dollhouse
+            <span className="truncate">Dollhouse</span>
             <svg
-              className={`h-3.5 w-3.5 text-gray-400 ${dollhouseOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${dollhouseOpen ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -559,8 +565,12 @@ export function PromptTemplateEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className={`min-h-0 flex-1 resize-none ${textareaClass}`}
-        fillHeight
+        className={
+          fillHeight
+            ? `min-h-0 flex-1 resize-none ${textareaClass}`
+            : `resize-y ${textareaClass}`
+        }
+        fillHeight={fillHeight}
       />
       <TemplateErrors errors={errors} />
     </div>
@@ -615,57 +625,117 @@ type HighlightedTextareaProps = Omit<
   fillHeight?: boolean;
 };
 
+// Width of the line-number gutter, declared once so the overlay and the
+// textarea's left padding stay in lockstep.
+const GUTTER_WIDTH = '2.5rem';
+
 /**
- * Transparent-text `<textarea>` with a syntax-highlighted overlay aligned
- * behind it.
+ * Measure the native vertical scrollbar width once and cache it.
+ * Returns 0 in non-DOM environments and on platforms with overlay
+ * scrollbars (e.g. macOS Safari with trackpad-only scrollbars).
+ */
+let cachedScrollbarWidth: number | null = null;
+function measureScrollbarWidth(): number {
+  if (cachedScrollbarWidth !== null) return cachedScrollbarWidth;
+  if (typeof document === 'undefined') return 0;
+  const outer = document.createElement('div');
+  outer.style.cssText =
+    'position:absolute;top:-9999px;left:-9999px;visibility:hidden;overflow:scroll;width:100px;height:100px;';
+  document.body.appendChild(outer);
+  const inner = document.createElement('div');
+  inner.style.cssText = 'width:100%;height:200px;';
+  outer.appendChild(inner);
+  const sw = outer.offsetWidth - inner.offsetWidth;
+  document.body.removeChild(outer);
+  cachedScrollbarWidth = sw;
+  return sw;
+}
+
+/**
+ * Transparent-text `<textarea>` with a syntax-highlighted overlay and a
+ * line-number gutter, both aligned character-for-character with the
+ * textarea behind them.
  *
- * Alignment details:
- *  - The overlay gets the same `className` as the textarea so padding,
- *    border, font, and line-height match character-for-character.
- *  - Both the overlay and the textarea use `scrollbar-gutter: stable`, so
- *    the textarea's scrollbar doesn't shrink its inner width relative to
- *    the overlay (which would otherwise cause lines to wrap at different
- *    columns and the text to visibly drift).
- *  - The overlay is a real scroll container whose `scrollTop` is driven
- *    from the textarea's `onScroll`; its own scrollbar is hidden.
- *  - Color and background are set via inline `style` so they always win
- *    over whatever the caller passes in `className`.
+ * Layout:
+ *  - A single overlay behind the textarea hosts a 2-column CSS grid:
+ *      col 1 = fixed-width gutter cell (line number, top-aligned)
+ *      col 2 = flexible content cell (highlighted text, `pre-wrap`)
+ *    Each logical line is its own grid row, so when a line wraps into
+ *    multiple visual rows the grid row auto-expands and the gutter
+ *    number stays pinned at the visual top of its logical line.
+ *  - The textarea is stacked above the overlay (`z-10`). Its
+ *    `paddingLeft` is forced to `GUTTER_WIDTH` so characters line up
+ *    with the overlay's content column, making wrap points match.
+ *  - The textarea reserves its native scrollbar width via
+ *    `scrollbar-gutter: stable`. To keep the overlay's usable width
+ *    identical, the overlay is NOT a scroll container — it is
+ *    `overflow: hidden`, its right padding is the measured scrollbar
+ *    width, and scrolling is sync'd by translating the inner grid via
+ *    `transform` from the textarea's `onScroll`. This sidesteps every
+ *    browser's quirky `scrollbar-gutter` handling for nested hidden
+ *    scrollbars, which was the root cause of the line-wrap drift.
+ *  - Color and background on the textarea are set via inline `style` so
+ *    they always win over whatever the caller passes in `className`.
  */
 const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaProps>(
   function HighlightedTextarea(
     { value, onChange, className, fillHeight = false, onScroll, style, ...rest },
     ref,
   ) {
-    const overlayRef = useRef<HTMLDivElement>(null);
+    const overlayInnerRef = useRef<HTMLDivElement>(null);
+    const [scrollbarWidth, setScrollbarWidth] = useState(0);
+
+    useEffect(() => {
+      setScrollbarWidth(measureScrollbarWidth());
+    }, []);
 
     const handleScroll = useCallback(
       (e: UIEvent<HTMLTextAreaElement>) => {
-        const el = overlayRef.current;
-        if (el) {
-          el.scrollTop = e.currentTarget.scrollTop;
-          el.scrollLeft = e.currentTarget.scrollLeft;
+        const inner = overlayInnerRef.current;
+        if (inner) {
+          const t = e.currentTarget;
+          inner.style.transform = `translate(${-t.scrollLeft}px, ${-t.scrollTop}px)`;
         }
         onScroll?.(e);
       },
       [onScroll],
     );
 
-    const highlighted = useMemo(() => renderHighlightedHandlebars(value), [value]);
+    const lines = useMemo(() => renderHighlightedHandlebarsByLine(value), [value]);
 
     return (
-      <div className={`relative flex flex-col ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
+      <div className={`relative ${fillHeight ? 'flex min-h-0 flex-1' : ''}`}>
         <div
-          ref={overlayRef}
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 overflow-auto whitespace-pre-wrap break-words text-gray-900 [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
+          className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`}
           style={{
             borderColor: 'transparent',
             boxShadow: 'none',
-            scrollbarGutter: 'stable',
-            scrollbarWidth: 'none',
+            paddingLeft: 0,
+            paddingRight: scrollbarWidth,
           }}
         >
-          {highlighted}
+          <div
+            ref={overlayInnerRef}
+            className="grid"
+            style={{
+              gridTemplateColumns: `${GUTTER_WIDTH} 1fr`,
+              willChange: 'transform',
+            }}
+          >
+            {lines.map((line, i) => (
+              <Fragment key={i}>
+                <div className="select-none self-start pr-2 text-right font-mono text-sm tabular-nums leading-5 text-gray-400">
+                  {i + 1}
+                </div>
+                <div
+                  className="whitespace-pre-wrap break-words pr-3 font-mono text-sm leading-5 text-gray-900"
+                >
+                  {line}
+                </div>
+              </Fragment>
+            ))}
+          </div>
         </div>
         <textarea
           {...rest}
@@ -674,13 +744,15 @@ const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaP
           onChange={onChange}
           onScroll={handleScroll}
           spellCheck={false}
-          className={`relative z-10 ${className ?? ''}`}
+          className={`relative z-10 w-full ${className ?? ''}`}
           style={{
             ...style,
             color: 'transparent',
             backgroundColor: 'transparent',
             caretColor: 'rgb(17, 24, 39)',
+            paddingLeft: GUTTER_WIDTH,
             scrollbarGutter: 'stable',
+            lineHeight: '1.25rem',
           }}
         />
       </div>

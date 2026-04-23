@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { DeletePromptVersionButton } from './delete-prompt-version-button';
 import { PromptTemplateEditor } from './prompt-template-editor';
 import { RatingBadge } from './rating-badge';
+import { TwoPaneSplit } from './two-pane-split';
 
 // ------------------------------------
 // Types
@@ -269,46 +270,49 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       </div>
 
       {/* Prompts */}
-      <div className="mt-8 flex min-h-[50vh] flex-1 flex-col gap-6 sm:flex-row sm:min-h-[60vh]">
-        <div className="flex min-h-[300px] min-w-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:min-h-[400px]">
-          <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">System Prompt</h2>
-          {isEditable ? (
-            <div className="mt-3 flex min-h-0 flex-1 flex-col">
-              <PromptTemplateEditor
-                value={systemPrompt}
-                onChange={setSystemPrompt}
-                rows={6}
-                placeholder="Enter the system prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
-                className={`font-mono ${editableInput}`}
-                fillHeight
-              />
-            </div>
-          ) : (
-            <pre className="mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
-              {data.systemPrompt}
-            </pre>
-          )}
-        </div>
-        <div className="flex min-h-[300px] min-w-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:min-h-[400px]">
-          <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">User Prompt</h2>
-          {isEditable ? (
-            <div className="mt-3 flex min-h-0 flex-1 flex-col">
-              <PromptTemplateEditor
-                value={userPrompt}
-                onChange={setUserPrompt}
-                rows={6}
-                placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
-                className={`font-mono ${editableInput}`}
-                fillHeight
-              />
-            </div>
-          ) : (
-            <pre className="mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
-              {data.userPrompt}
-            </pre>
-          )}
-        </div>
-      </div>
+      <TwoPaneSplit
+        className="mt-8"
+        left={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">System Prompt</h2>
+            {isEditable ? (
+              <div className="mt-3 flex min-h-0 flex-1 flex-col">
+                <PromptTemplateEditor
+                  value={systemPrompt}
+                  onChange={setSystemPrompt}
+                  placeholder="Enter the system prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
+                  className={`font-mono ${editableInput}`}
+                  fillHeight
+                />
+              </div>
+            ) : (
+              <pre className="mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
+                {data.systemPrompt}
+              </pre>
+            )}
+          </div>
+        }
+        right={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">User Prompt</h2>
+            {isEditable ? (
+              <div className="mt-3 flex min-h-0 flex-1 flex-col">
+                <PromptTemplateEditor
+                  value={userPrompt}
+                  onChange={setUserPrompt}
+                  placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
+                  className={`font-mono ${editableInput}`}
+                  fillHeight
+                />
+              </div>
+            ) : (
+              <pre className="mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
+                {data.userPrompt}
+              </pre>
+            )}
+          </div>
+        }
+      />
 
       {/* Generations List */}
       <div className="mt-8">
