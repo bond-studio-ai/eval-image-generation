@@ -50,7 +50,13 @@ export function validateHandlebarsTemplate(
   type Token =
     | { kind: 'comment'; line: number }
     | { kind: 'partial'; line: number }
-    | { kind: 'blockOpen'; name: string; line: number; indent: number }
+    | {
+        kind: 'blockOpen';
+        name: string;
+        line: number;
+        indent: number;
+        display: string;
+      }
     | { kind: 'blockClose'; name: string; line: number; indent: number }
     | { kind: 'rawOpen'; name: string; line: number }
     | { kind: 'rawClose'; name: string; line: number }
@@ -244,6 +250,7 @@ export function validateHandlebarsTemplate(
             name,
             line,
             indent: columnIndent(start),
+            display: `{{${content}}}`,
           });
         }
         i = close + 2;
@@ -258,7 +265,12 @@ export function validateHandlebarsTemplate(
     i++;
   }
 
-  type StackEntry = { name: string; line: number; indent: number };
+  type StackEntry = {
+    name: string;
+    line: number;
+    indent: number;
+    display: string;
+  };
   const blockStack: StackEntry[] = [];
   let rawStackDepth = 0;
 
@@ -280,7 +292,12 @@ export function validateHandlebarsTemplate(
         });
         break;
       case 'blockOpen':
-        blockStack.push({ name: t.name, line: t.line, indent: t.indent });
+        blockStack.push({
+          name: t.name,
+          line: t.line,
+          indent: t.indent,
+          display: t.display,
+        });
         break;
       case 'blockClose': {
         if (blockStack.length === 0) {
@@ -345,7 +362,7 @@ export function validateHandlebarsTemplate(
           const unclosed = blockStack[j];
           errors.push({
             line: unclosed.line,
-            message: `Unclosed {{#${unclosed.name}}} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`,
+            message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`,
           });
         }
         blockStack.length = matchIdx;
@@ -367,11 +384,11 @@ export function validateHandlebarsTemplate(
   for (const block of blockStack) {
     errors.push({
       line: block.line,
-      message: `Unclosed {{#${block.name}}} — missing {{/${block.name}}}`,
+      message: `Unclosed ${block.display} — missing {{/${block.name}}}`,
     });
   }
 
-  return errors;
+  return errors.sort((a, b) => a.line - b.line || a.message.localeCompare(b.message));
 }
 
 /**
