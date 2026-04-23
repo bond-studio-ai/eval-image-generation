@@ -10,8 +10,19 @@ import {
   toDollhousePathKey,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
+import { renderHighlightedHandlebars } from '@/lib/highlight-handlebars';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type TextareaHTMLAttributes,
+  type UIEvent,
+} from 'react';
 
 interface PromptTemplateEditorProps {
   value: string;
@@ -238,13 +249,14 @@ export function PromptTemplateEditor({
   if (!showPicker) {
     return (
       <div className={fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}>
-        <textarea
+        <HighlightedTextarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
           className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : textareaClass}
+          fillHeight={fillHeight}
         />
         <TemplateErrors errors={errors} />
       </div>
@@ -541,16 +553,15 @@ export function PromptTemplateEditor({
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className={`min-h-0 flex-1 resize-none ${textareaClass}`}
-        />
-      </div>
+      <HighlightedTextarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className={`min-h-0 flex-1 resize-none ${textareaClass}`}
+        fillHeight
+      />
       <TemplateErrors errors={errors} />
     </div>
   );
@@ -594,3 +605,72 @@ function TemplateErrors({ errors }: { errors: { line: number; message: string }[
     </div>
   );
 }
+
+type HighlightedTextareaProps = Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'value' | 'onChange'
+> & {
+  value: string;
+  onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  fillHeight?: boolean;
+};
+
+/**
+ * Transparent-text `<textarea>` with a syntax-highlighted overlay aligned
+ * behind it. The overlay mirrors the textarea's padding/font/wrapping so
+ * caret and highlighted tokens always line up exactly.
+ */
+const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaProps>(
+  function HighlightedTextarea(
+    { value, onChange, className, fillHeight = false, onScroll, style, ...rest },
+    ref,
+  ) {
+    const [scroll, setScroll] = useState({ top: 0, left: 0 });
+
+    const handleScroll = useCallback(
+      (e: UIEvent<HTMLTextAreaElement>) => {
+        setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft });
+        onScroll?.(e);
+      },
+      [onScroll],
+    );
+
+    // Tokenize once per value; keys inside are stable (index-based) so React
+    // only diffs the ranges that actually changed.
+    const highlighted = useMemo(() => renderHighlightedHandlebars(value), [value]);
+
+    return (
+      <div
+        className={`relative flex flex-col ${fillHeight ? 'min-h-0 flex-1' : ''}`}
+      >
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 overflow-hidden text-gray-900 ${className ?? ''}`}
+          // Hide the overlay's own border/ring so only the textarea's
+          // focus/hover states render on top.
+          style={{ borderColor: 'transparent', boxShadow: 'none' }}
+        >
+          <div
+            className="whitespace-pre-wrap break-words"
+            style={{
+              transform: `translate(${-scroll.left}px, ${-scroll.top}px)`,
+              willChange: 'transform',
+            }}
+          >
+            {highlighted}
+          </div>
+        </div>
+        <textarea
+          {...rest}
+          ref={ref}
+          value={value}
+          onChange={onChange}
+          onScroll={handleScroll}
+          spellCheck={false}
+          className={`relative z-10 bg-transparent text-transparent caret-gray-900 ${className ?? ''}`}
+          style={{ ...style }}
+        />
+      </div>
+    );
+  },
+);
