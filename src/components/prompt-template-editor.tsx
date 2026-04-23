@@ -180,7 +180,7 @@ export function PromptTemplateEditor({
   const handleDollhouseAttributeSelect = useCallback(
     (attr: (typeof DOLLHOUSE_ATTRIBUTES)[number]) => {
       if (!dollhouseArea || !dollhouseProduct) return;
-      handleInsert(dollhouseReferencePath(dollhouseArea, dollhouseProduct, attr.value));
+      handleInsert(dollhouseReferencePath(dollhouseArea, dollhouseProduct, attr));
       setDollhouseOpen(false);
       setDollhouseArea(null);
       setDollhouseProduct(null);
@@ -458,7 +458,7 @@ export function PromptTemplateEditor({
                 setDollhouseSearch('');
               }
             }}
-            title="Insert a dollhouse reference like {{dollhouse.vanityArea.vanity.visibility.visible}}"
+            title="Insert a dollhouse reference like {{#each dollhouse.vanityArea.vanity.visibility}}{{visible}}{{/each}}"
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               dollhouseOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
@@ -480,8 +480,9 @@ export function PromptTemplateEditor({
               {!dollhouseArea ? (
                 <>
                   <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
-                    Pick an <strong>area</strong> first. Inserts{' '}
-                    <code className="rounded bg-gray-100 px-0.5">{`{{dollhouse.{area}.{product}.{attr}}}`}</code>
+                    Pick an <strong>area</strong> first. Inserts a{' '}
+                    <code className="rounded bg-gray-100 px-0.5">{`{{#each dollhouse.{area}.{product}.visibility}}…{{/each}}`}</code>{' '}
+                    block.
                   </p>
                   <div className="border-b border-gray-200 p-2">
                     <input
@@ -589,10 +590,11 @@ export function PromptTemplateEditor({
                     </span>
                   </div>
                   <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
-                    Inserts{' '}
+                    Inserts a{' '}
                     <code className="rounded bg-gray-100 px-0.5">
-                      {`{{dollhouse.${dollhouseArea}.${dollhouseProduct}.…}}`}
-                    </code>
+                      {`{{#each dollhouse.${dollhouseArea}.${dollhouseProduct}.visibility}}…{{/each}}`}
+                    </code>{' '}
+                    block.
                   </p>
                   <div className="max-h-60 overflow-auto py-1">
                     {DOLLHOUSE_ATTRIBUTES.map((attr) => (

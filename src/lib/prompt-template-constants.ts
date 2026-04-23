@@ -161,14 +161,38 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
   'wallpaper',
 ] as const;
 
-export const DOLLHOUSE_ATTRIBUTES = [
-  { value: 'visibility.visible', helper: 'Visibility fraction in [0, 1] when a single entry exists' },
-  { value: 'visibility.facing', helper: 'Facing direction when a single entry exists' },
+/**
+ * Dollhouse `visibility` is always an array (one entry per framing), so
+ * references iterate with `{{#each}}` instead of indexing. Each option
+ * builds a self-contained Handlebars block that renders correctly whether
+ * the product was framed once or many times.
+ */
+export type DollhouseAttribute = {
+  readonly value: string;
+  readonly helper: string;
+  readonly build: (pathPrefix: string) => string;
+};
+
+export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
+  {
+    value: '#each visibility → visible',
+    helper: 'Iterate every framing and print its visibility fraction in [0, 1]',
+    build: (p) => `{{#each ${p}.visibility}}{{visible}}{{/each}}`,
+  },
+  {
+    value: '#each visibility → facing',
+    helper: 'Iterate every framing and print its facing direction',
+    build: (p) => `{{#each ${p}.visibility}}{{facing}}{{/each}}`,
+  },
+  {
+    value: '#each visibility → facing (visible)',
+    helper: 'Iterate every framing and print "facing (visible)" for each',
+    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}){{/each}}`,
+  },
 ] as const;
 
 export type DollhouseArea = string;
 export type DollhouseProductType = string;
-export type DollhouseAttribute = (typeof DOLLHOUSE_ATTRIBUTES)[number]['value'];
 
 /** Render helper so the editor can build the handlebars path in one place. */
 export function dollhouseReferencePath(
@@ -176,7 +200,7 @@ export function dollhouseReferencePath(
   product: DollhouseProductType,
   attr: DollhouseAttribute,
 ): string {
-  return `{{dollhouse.${area}.${product}.${attr}}}`;
+  return attr.build(`dollhouse.${area}.${product}`);
 }
 
 export function toDollhousePathKey(input: string): string {
