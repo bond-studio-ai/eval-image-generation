@@ -156,10 +156,16 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
 ] as const;
 
 /**
- * Dollhouse `visibility` is always an array (one entry per framing), so
- * references iterate with `{{#each}}` instead of indexing. Each option
- * builds a self-contained Handlebars block that renders correctly whether
- * the product was framed once or many times.
+ * Dollhouse attributes come in two shapes:
+ *  - Scalar fields on the product itself (`quantity`, `location`).
+ *  - Per-framing rows on `visibility[]` — always iterated with `{{#each}}` so the
+ *    template works whether the product was framed once or many times.
+ *
+ * Each visibility row has:
+ *   - `facing`   — camera-side enum (Front/Back/Left/Right).
+ *   - `location` — layout slot (Center/Left/Right/Top/Bottom) from the capture
+ *                  service; falls back to lowercased `facing` when absent.
+ *   - `visible`  — percentage in `[0, 100]`.
  */
 export type DollhouseAttribute = {
   readonly value: string;
@@ -169,9 +175,24 @@ export type DollhouseAttribute = {
 
 export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
   {
+    value: 'quantity',
+    helper: 'How many instances of this product are anchored in the area',
+    build: (p) => `{{${p}.quantity}}`,
+  },
+  {
+    value: 'location',
+    helper: 'Layout slot for the product (Left/Right/Top/Bottom/Center)',
+    build: (p) => `{{${p}.location}}`,
+  },
+  {
     value: '#each visibility → visible',
-    helper: 'Iterate every framing and print its visibility fraction in [0, 1]',
+    helper: 'Iterate every framing and print its visibility percentage (0–100)',
     build: (p) => `{{#each ${p}.visibility}}{{visible}}{{/each}}`,
+  },
+  {
+    value: '#each visibility → location',
+    helper: 'Iterate every framing and print its layout location',
+    build: (p) => `{{#each ${p}.visibility}}{{location}}{{/each}}`,
   },
   {
     value: '#each visibility → facing',
@@ -179,9 +200,14 @@ export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
     build: (p) => `{{#each ${p}.visibility}}{{facing}}{{/each}}`,
   },
   {
-    value: '#each visibility → facing (visible)',
-    helper: 'Iterate every framing and print "facing (visible)" for each',
-    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}){{/each}}`,
+    value: '#each visibility → location (visible%)',
+    helper: 'Iterate every framing and print "location (visible%)" for each',
+    build: (p) => `{{#each ${p}.visibility}}{{location}} ({{visible}}%){{/each}}`,
+  },
+  {
+    value: '#each visibility → facing (visible%)',
+    helper: 'Iterate every framing and print "facing (visible%)" for each',
+    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}%){{/each}}`,
   },
 ] as const;
 

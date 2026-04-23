@@ -435,7 +435,7 @@ export function PromptTemplateEditor({
                 setDollhouseSearch('');
               }
             }}
-            title="Insert a dollhouse reference like {{#each dollhouse.vanity.visibility}}{{visible}}{{/each}}"
+            title="Insert a dollhouse reference like {{dollhouse.vanity.quantity}} or {{#each dollhouse.vanity.visibility}}{{location}} ({{visible}}%){{/each}}"
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               dollhouseOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
