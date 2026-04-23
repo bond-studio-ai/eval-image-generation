@@ -617,48 +617,55 @@ type HighlightedTextareaProps = Omit<
 
 /**
  * Transparent-text `<textarea>` with a syntax-highlighted overlay aligned
- * behind it. The overlay mirrors the textarea's padding/font/wrapping so
- * caret and highlighted tokens always line up exactly.
+ * behind it.
+ *
+ * Alignment details:
+ *  - The overlay gets the same `className` as the textarea so padding,
+ *    border, font, and line-height match character-for-character.
+ *  - Both the overlay and the textarea use `scrollbar-gutter: stable`, so
+ *    the textarea's scrollbar doesn't shrink its inner width relative to
+ *    the overlay (which would otherwise cause lines to wrap at different
+ *    columns and the text to visibly drift).
+ *  - The overlay is a real scroll container whose `scrollTop` is driven
+ *    from the textarea's `onScroll`; its own scrollbar is hidden.
+ *  - Color and background are set via inline `style` so they always win
+ *    over whatever the caller passes in `className`.
  */
 const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaProps>(
   function HighlightedTextarea(
     { value, onChange, className, fillHeight = false, onScroll, style, ...rest },
     ref,
   ) {
-    const [scroll, setScroll] = useState({ top: 0, left: 0 });
+    const overlayRef = useRef<HTMLDivElement>(null);
 
     const handleScroll = useCallback(
       (e: UIEvent<HTMLTextAreaElement>) => {
-        setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft });
+        const el = overlayRef.current;
+        if (el) {
+          el.scrollTop = e.currentTarget.scrollTop;
+          el.scrollLeft = e.currentTarget.scrollLeft;
+        }
         onScroll?.(e);
       },
       [onScroll],
     );
 
-    // Tokenize once per value; keys inside are stable (index-based) so React
-    // only diffs the ranges that actually changed.
     const highlighted = useMemo(() => renderHighlightedHandlebars(value), [value]);
 
     return (
-      <div
-        className={`relative flex flex-col ${fillHeight ? 'min-h-0 flex-1' : ''}`}
-      >
+      <div className={`relative flex flex-col ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
         <div
+          ref={overlayRef}
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 overflow-hidden text-gray-900 ${className ?? ''}`}
-          // Hide the overlay's own border/ring so only the textarea's
-          // focus/hover states render on top.
-          style={{ borderColor: 'transparent', boxShadow: 'none' }}
+          className={`pointer-events-none absolute inset-0 overflow-auto whitespace-pre-wrap break-words text-gray-900 [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
+          style={{
+            borderColor: 'transparent',
+            boxShadow: 'none',
+            scrollbarGutter: 'stable',
+            scrollbarWidth: 'none',
+          }}
         >
-          <div
-            className="whitespace-pre-wrap break-words"
-            style={{
-              transform: `translate(${-scroll.left}px, ${-scroll.top}px)`,
-              willChange: 'transform',
-            }}
-          >
-            {highlighted}
-          </div>
+          {highlighted}
         </div>
         <textarea
           {...rest}
@@ -667,8 +674,14 @@ const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaP
           onChange={onChange}
           onScroll={handleScroll}
           spellCheck={false}
-          className={`relative z-10 bg-transparent text-transparent caret-gray-900 ${className ?? ''}`}
-          style={{ ...style }}
+          className={`relative z-10 ${className ?? ''}`}
+          style={{
+            ...style,
+            color: 'transparent',
+            backgroundColor: 'transparent',
+            caretColor: 'rgb(17, 24, 39)',
+            scrollbarGutter: 'stable',
+          }}
         />
       </div>
     );
