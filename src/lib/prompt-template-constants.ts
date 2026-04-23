@@ -118,22 +118,16 @@ export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
 
 /**
  * Dollhouse picker options for templates like
- * `{{dollhouse.{area}.{product}.{attr}}}` / `{{#if dollhouse.{area}.{product}}}`.
+ * `{{dollhouse.{product}.{attr}}}` / `{{#if dollhouse.{product}}}`.
  *
- * Area keys come from the camera frame summary normalized to camelCase
- * and suffixed with `Area` (e.g. `Vanity` -> `vanityArea`). Product keys are camelCase-first-letter
- * of the dollhouse `type` string (e.g. `WallPaint` -> `wallPaint`).
+ * Product keys are the dollhouse `type` string with the first letter
+ * lowercased (e.g. `WallPaint` -> `wallPaint`). The `dollhouse` namespace is
+ * swapped per dollhouse image at render time, so templates reference
+ * products directly without an area prefix.
  *
- * The picker offers common suggestions, but templates may also use custom keys
- * to match newly-added dollhouse summaries and product types.
+ * The picker offers common suggestions, but templates may also use custom
+ * keys to match newly-added product types.
  */
-export const DOLLHOUSE_AREAS = [
-  { value: 'showerArea', label: 'Shower Area' },
-  { value: 'vanityArea', label: 'Vanity Area' },
-  { value: 'toiletArea', label: 'Toilet Area' },
-  { value: 'tubArea', label: 'Tub Area' },
-] as const;
-
 export const DOLLHOUSE_PRODUCT_TYPES = [
   'faucet',
   'floorTile',
@@ -191,16 +185,14 @@ export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
   },
 ] as const;
 
-export type DollhouseArea = string;
 export type DollhouseProductType = string;
 
 /** Render helper so the editor can build the handlebars path in one place. */
 export function dollhouseReferencePath(
-  area: DollhouseArea,
   product: DollhouseProductType,
   attr: DollhouseAttribute,
 ): string {
-  return attr.build(`dollhouse.${area}.${product}`);
+  return attr.build(`dollhouse.${product}`);
 }
 
 export function toDollhousePathKey(input: string): string {

@@ -3,13 +3,11 @@
 import { localUrl } from '@/lib/api-base';
 import {
   CONDITIONAL_OPTIONS,
-  DOLLHOUSE_AREAS,
   DOLLHOUSE_ATTRIBUTES,
   DOLLHOUSE_PRODUCT_TYPES,
   dollhouseReferencePath,
   REFERENCE_OPTIONS,
   toDollhousePathKey,
-  type DollhouseArea,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
@@ -77,9 +75,7 @@ export function PromptTemplateEditor({
   const [attributesError, setAttributesError] = useState<string | null>(null);
 
   const [dollhouseOpen, setDollhouseOpen] = useState(false);
-  const [dollhouseArea, setDollhouseArea] = useState<DollhouseArea | null>(null);
   const [dollhouseProduct, setDollhouseProduct] = useState<DollhouseProductType | null>(null);
-  const [dollhouseAreaSearch, setDollhouseAreaSearch] = useState('');
   const [dollhouseSearch, setDollhouseSearch] = useState('');
 
   const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
@@ -179,15 +175,13 @@ export function PromptTemplateEditor({
 
   const handleDollhouseAttributeSelect = useCallback(
     (attr: (typeof DOLLHOUSE_ATTRIBUTES)[number]) => {
-      if (!dollhouseArea || !dollhouseProduct) return;
-      handleInsert(dollhouseReferencePath(dollhouseArea, dollhouseProduct, attr));
+      if (!dollhouseProduct) return;
+      handleInsert(dollhouseReferencePath(dollhouseProduct, attr));
       setDollhouseOpen(false);
-      setDollhouseArea(null);
       setDollhouseProduct(null);
-      setDollhouseAreaSearch('');
       setDollhouseSearch('');
     },
-    [dollhouseArea, dollhouseProduct, handleInsert],
+    [dollhouseProduct, handleInsert],
   );
 
   const closeAll = useCallback(() => {
@@ -198,9 +192,7 @@ export function PromptTemplateEditor({
     setConditionalSearch('');
     setReferenceSearch('');
     setDollhouseOpen(false);
-    setDollhouseArea(null);
     setDollhouseProduct(null);
-    setDollhouseAreaSearch('');
     setDollhouseSearch('');
   }, []);
 
@@ -222,25 +214,12 @@ export function PromptTemplateEditor({
     );
   }, [referenceSearch]);
 
-  const filteredDollhouseAreas = useMemo(() => {
-    const q = dollhouseAreaSearch.trim().toLowerCase();
-    if (!q) return DOLLHOUSE_AREAS;
-    return DOLLHOUSE_AREAS.filter(
-      (area) =>
-        area.label.toLowerCase().includes(q) || area.value.toLowerCase().includes(q),
-    );
-  }, [dollhouseAreaSearch]);
-
   const filteredDollhouseProducts = useMemo(() => {
     const q = dollhouseSearch.trim().toLowerCase();
     if (!q) return DOLLHOUSE_PRODUCT_TYPES;
     return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
   }, [dollhouseSearch]);
 
-  const customDollhouseArea = useMemo(
-    () => toDollhousePathKey(dollhouseAreaSearch),
-    [dollhouseAreaSearch],
-  );
   const customDollhouseProduct = useMemo(
     () => toDollhousePathKey(dollhouseSearch),
     [dollhouseSearch],
@@ -452,13 +431,11 @@ export function PromptTemplateEditor({
               setConditionalOpen(false);
               setReferenceOpen(false);
               if (!dollhouseOpen) {
-                setDollhouseArea(null);
                 setDollhouseProduct(null);
-                setDollhouseAreaSearch('');
                 setDollhouseSearch('');
               }
             }}
-            title="Insert a dollhouse reference like {{#each dollhouse.vanityArea.vanity.visibility}}{{visible}}{{/each}}"
+            title="Insert a dollhouse reference like {{#each dollhouse.vanity.visibility}}{{visible}}{{/each}}"
             className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
               dollhouseOpen
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
@@ -477,68 +454,14 @@ export function PromptTemplateEditor({
           </button>
           {dollhouseOpen && (
             <div className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-              {!dollhouseArea ? (
+              {!dollhouseProduct ? (
                 <>
                   <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
-                    Pick an <strong>area</strong> first. Inserts a{' '}
-                    <code className="rounded bg-gray-100 px-0.5">{`{{#each dollhouse.{area}.{product}.visibility}}…{{/each}}`}</code>{' '}
-                    block.
+                    Pick a <strong>product</strong>. Inserts a{' '}
+                    <code className="rounded bg-gray-100 px-0.5">{`{{#each dollhouse.{product}.visibility}}…{{/each}}`}</code>{' '}
+                    block — the <code className="rounded bg-gray-100 px-0.5">dollhouse</code> namespace
+                    is bound per image at render time.
                   </p>
-                  <div className="border-b border-gray-200 p-2">
-                    <input
-                      type="text"
-                      value={dollhouseAreaSearch}
-                      onChange={(e) => setDollhouseAreaSearch(e.target.value)}
-                      placeholder="Search or type a custom area key…"
-                      className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                    />
-                    {customDollhouseArea && !DOLLHOUSE_AREAS.some((a) => a.value === customDollhouseArea) && (
-                      <button
-                        type="button"
-                        onClick={() => setDollhouseArea(customDollhouseArea)}
-                        className="mt-2 w-full rounded-md border border-dashed border-primary-300 bg-primary-50 px-3 py-2 text-left text-sm text-primary-800 hover:bg-primary-100"
-                      >
-                        Use custom area key <span className="font-mono">{customDollhouseArea}</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-60 overflow-auto py-1">
-                    {filteredDollhouseAreas.map((area) => (
-                      <button
-                        key={area.value}
-                        type="button"
-                        onClick={() => setDollhouseArea(area.value)}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                      >
-                        {area.label}
-                        <span className="ml-2 font-mono text-[10px] text-gray-400">
-                          {area.value}
-                        </span>
-                      </button>
-                    ))}
-                    {filteredDollhouseAreas.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-gray-500">No matching suggested areas</p>
-                    )}
-                  </div>
-                </>
-              ) : !dollhouseProduct ? (
-                <>
-                  <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDollhouseArea(null);
-                        setDollhouseAreaSearch('');
-                        setDollhouseSearch('');
-                      }}
-                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
-                    >
-                      ← Back
-                    </button>
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label ?? dollhouseArea}
-                    </span>
-                  </div>
                   <div className="border-b border-gray-200 p-2">
                     <input
                       type="text"
@@ -579,20 +502,22 @@ export function PromptTemplateEditor({
                   <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
                     <button
                       type="button"
-                      onClick={() => setDollhouseProduct(null)}
+                      onClick={() => {
+                        setDollhouseProduct(null);
+                        setDollhouseSearch('');
+                      }}
                       className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
                     >
                       ← Back
                     </button>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      {DOLLHOUSE_AREAS.find((a) => a.value === dollhouseArea)?.label ?? dollhouseArea} ·{' '}
                       <span className="font-mono">{dollhouseProduct}</span>
                     </span>
                   </div>
                   <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
                     Inserts a{' '}
                     <code className="rounded bg-gray-100 px-0.5">
-                      {`{{#each dollhouse.${dollhouseArea}.${dollhouseProduct}.visibility}}…{{/each}}`}
+                      {`{{#each dollhouse.${dollhouseProduct}.visibility}}…{{/each}}`}
                     </code>{' '}
                     block.
                   </p>
