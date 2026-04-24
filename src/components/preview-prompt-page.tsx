@@ -52,7 +52,9 @@ export function PreviewPromptPage({
 }: PreviewPromptPageProps) {
   const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(initialPromptVersions ?? []);
   const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
-  const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(initialDollhouseSource ?? null);
+  const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(
+    initialDollhouseSource ?? null
+  );
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
   const [selectedAreaSummary, setSelectedAreaSummary] = useState<string | null>(initialAreaSummary);
@@ -69,8 +71,7 @@ export function PreviewPromptPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const hasInitialOptions =
-    initialPromptVersions != null && initialPresets != null && initialDollhouseSource != null;
+  const hasInitialOptions = initialPromptVersions != null && initialPresets != null;
   const [loadingOptions, setLoadingOptions] = useState(!hasInitialOptions);
 
   useEffect(() => {
@@ -80,15 +81,13 @@ export function PreviewPromptPage({
     setLoadingOptions(true);
     async function load() {
       try {
-        const [pvRes, presetRes, dollhouseRes] = await Promise.all([
+        const [pvRes, presetRes] = await Promise.all([
           fetch(serviceUrl('prompt-versions?limit=100&minimal=true')),
           fetch(serviceUrl('input-presets?limit=100&minimal=true')),
-          fetch(serviceUrl('prompt-versions/preview/dollhouse-source')),
         ]);
         if (cancelled) return;
         const pvJson = await pvRes.json();
         const presetJson = await presetRes.json();
-        const dollhouseJson = await dollhouseRes.json();
 
         if (!pvRes.ok) {
           setLoadError(pvJson?.error?.message ?? 'Failed to load prompt versions');
@@ -98,18 +97,28 @@ export function PreviewPromptPage({
           setLoadError(presetJson?.error?.message ?? 'Failed to load input presets');
           return;
         }
-        if (!dollhouseRes.ok) {
-          setLoadError(dollhouseJson?.error?.message ?? 'Failed to load dollhouse source');
-          return;
-        }
 
         const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
         const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
-        setPromptVersions(pvData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null })));
+        setPromptVersions(
+          pvData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null }))
+        );
         setPresets(
           presetData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null }))
         );
-        setDollhouseSource(dollhouseJson.data ?? null);
+        try {
+          const dollhouseRes = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
+          const dollhouseJson = await dollhouseRes.json();
+          if (!cancelled && dollhouseRes.ok) {
+            setDollhouseSource(dollhouseJson.data ?? null);
+          } else if (!cancelled && !dollhouseRes.ok) {
+            setLoadError('Dollhouse preview is temporarily unavailable. Preset preview still works.');
+          }
+        } catch {
+          if (!cancelled) {
+            setLoadError('Dollhouse preview is temporarily unavailable. Preset preview still works.');
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : 'Failed to load options');
@@ -194,6 +203,34 @@ export function PreviewPromptPage({
     if (selectedAreaSummary || !dollhouseSource?.defaultAreaSummary) return;
     setSelectedAreaSummary(dollhouseSource.defaultAreaSummary);
   }, [dollhouseSource, selectedAreaSummary]);
+
+  useEffect(() => {
+    if (dollhouseSource) return;
+    let cancelled = false;
+
+    async function loadDollhouseSource() {
+      try {
+        const res = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
+        const json = await res.json();
+        if (cancelled) return;
+        if (res.ok) {
+          setDollhouseSource(json.data ?? null);
+          setLoadError((current) =>
+            current === 'Dollhouse preview is temporarily unavailable. Preset preview still works.'
+              ? null
+              : current
+          );
+        }
+      } catch {
+        // Keep preset preview available even if dollhouse metadata can't load.
+      }
+    }
+
+    loadDollhouseSource();
+    return () => {
+      cancelled = true;
+    };
+  }, [dollhouseSource]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -308,7 +345,7 @@ export function PreviewPromptPage({
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <p className="text-sm font-medium text-gray-700">Hardcoded dollhouse source</p>
-        <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Loading…'}</p>
+        <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Unavailable'}</p>
         <p className="mt-2 text-sm text-gray-600">
           Input presets remain the base preview context. Selecting an area layers in hardcoded `dollhouse.*` attributes on top.
         </p>
@@ -371,7 +408,7 @@ export function PreviewPromptPage({
               selectedId={selectedArea?.summary ?? null}
               selectedLabel={selectedArea?.summary || null}
               onSelectId={setSelectedAreaSummary}
-              emptyMessage="No dollhouse areas"
+              emptyMessage={dollhouseSource ? 'No dollhouse areas' : 'Dollhouse preview unavailable'}
             />
           )}
         </div>

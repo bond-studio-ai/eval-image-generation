@@ -20,16 +20,16 @@ export default async function PreviewPromptRoute({ searchParams }: PageProps) {
   const [promptVersions, presets, dollhouseSource] = await Promise.all([
     fetchPromptVersionsMinimal(100),
     fetchInputPresetsMinimal(100),
-    fetchPromptPreviewDollhouseSource(),
+    fetchPromptPreviewDollhouseSource().catch(() => null),
   ]);
   return (
     <PreviewPromptPage
       initialPromptVersionId={params.prompt_version_id ?? null}
       initialPresetId={params.preset_id ?? null}
-      initialAreaSummary={params.area_summary ?? dollhouseSource.defaultAreaSummary}
+      initialAreaSummary={params.area_summary ?? dollhouseSource?.defaultAreaSummary ?? null}
       initialPromptVersions={promptVersions}
       initialPresets={presets}
-      initialDollhouseSource={dollhouseSource}
+      initialDollhouseSource={dollhouseSource ?? undefined}
     />
   );
 }
