@@ -37,7 +37,6 @@ interface PreviewPromptPageProps {
   initialPromptVersionId?: string | null;
   initialPresetId?: string | null;
   initialAreaSummary?: string | null;
-  initialMode?: 'preset' | 'dollhouse';
   initialPromptVersions?: PromptVersionItem[];
   initialPresets?: InputPresetItem[];
   initialDollhouseSource?: DollhouseSource;
@@ -47,7 +46,6 @@ export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
   initialAreaSummary = null,
-  initialMode = 'preset',
   initialPromptVersions,
   initialPresets,
   initialDollhouseSource,
@@ -58,7 +56,6 @@ export function PreviewPromptPage({
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
   const [selectedAreaSummary, setSelectedAreaSummary] = useState<string | null>(initialAreaSummary);
-  const [previewMode, setPreviewMode] = useState<'preset' | 'dollhouse'>(initialMode);
   const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
   const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
   const [areaDropdownOpen, setAreaDropdownOpen] = useState(false);
@@ -158,29 +155,20 @@ export function PreviewPromptPage({
   );
 
   const fetchPreview = useCallback(async () => {
-    if (!selectedPromptId) {
-      setPreviews([]);
-      return;
-    }
-    if (previewMode === 'preset' && !selectedPresetId) {
-      setPreviews([]);
-      return;
-    }
-    if (previewMode === 'dollhouse' && !selectedAreaSummary) {
+    if (!selectedPromptId || !selectedPresetId) {
       setPreviews([]);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const body =
-        previewMode === 'preset'
-          ? { inputPresetId: selectedPresetId }
-          : { dollhouseAreaSummary: selectedAreaSummary };
       const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          inputPresetId: selectedPresetId,
+          ...(selectedAreaSummary ? { dollhouseAreaSummary: selectedAreaSummary } : {}),
+        }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -195,14 +183,12 @@ export function PreviewPromptPage({
     } finally {
       setLoading(false);
     }
-  }, [previewMode, selectedAreaSummary, selectedPresetId, selectedPromptId]);
+  }, [selectedAreaSummary, selectedPresetId, selectedPromptId]);
 
   useEffect(() => {
-    const hasSourceSelection =
-      previewMode === 'preset' ? !!selectedPresetId : !!selectedAreaSummary;
-    if (selectedPromptId && hasSourceSelection) fetchPreview();
+    if (selectedPromptId && selectedPresetId) fetchPreview();
     else setPreviews([]);
-  }, [fetchPreview, previewMode, selectedAreaSummary, selectedPresetId, selectedPromptId]);
+  }, [fetchPreview, selectedAreaSummary, selectedPresetId, selectedPromptId]);
 
   useEffect(() => {
     if (selectedAreaSummary || !dollhouseSource?.defaultAreaSummary) return;
@@ -311,7 +297,7 @@ export function PreviewPromptPage({
     <div>
       <PageHeader
         title="Prompt Preview"
-        subtitle="See how a prompt template renders with either an input preset or a dollhouse area."
+        subtitle="See how a prompt template renders with an input preset plus optional dollhouse area attributes."
       />
 
       {loadError && (
@@ -321,27 +307,10 @@ export function PreviewPromptPage({
       )}
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <p className="text-sm font-medium text-gray-700">Preview source</p>
-        <div className="mt-3 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          {(['preset', 'dollhouse'] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setPreviewMode(mode)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                previewMode === mode
-                  ? 'bg-white text-primary-700 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {mode === 'preset' ? 'Input preset' : 'Dollhouse area'}
-            </button>
-          ))}
-        </div>
-        <p className="mt-3 text-sm text-gray-600">
-          {previewMode === 'preset'
-            ? 'Use the original preset-based preview flow.'
-            : 'Use the hardcoded dollhouse fixture and swap in area-specific `dollhouse.*` attributes.'}
+        <p className="text-sm font-medium text-gray-700">Hardcoded dollhouse source</p>
+        <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Loading…'}</p>
+        <p className="mt-2 text-sm text-gray-600">
+          Input presets remain the base preview context. Selecting an area layers in hardcoded `dollhouse.*` attributes on top.
         </p>
       </div>
 
@@ -367,70 +336,61 @@ export function PreviewPromptPage({
           )}
         </div>
         <div className="min-w-0">
-          {previewMode === 'preset' ? (
-            <>
-              <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
-              {loadingOptions ? (
-                <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
-              ) : (
-                <DropdownWithSearch
-                  containerRef={presetRef}
-                  open={presetDropdownOpen}
-                  setOpen={setPresetDropdownOpen}
-                  search={presetSearch}
-                  setSearch={setPresetSearch}
-                  placeholder="Select input preset…"
-                  options={filteredPresets.map((preset) => ({ id: preset.id, label: preset.name || 'Untitled' }))}
-                  selectedId={selectedPreset?.id ?? null}
-                  selectedLabel={selectedPreset?.name || null}
-                  onSelectId={setSelectedPresetId}
-                  emptyMessage="No presets"
-                />
-              )}
-            </>
+          <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
+          {loadingOptions ? (
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
           ) : (
-            <>
-              <label className="mb-1.5 block text-xs font-medium text-gray-600">Dollhouse area</label>
-              {loadingOptions ? (
-                <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
-              ) : (
-                <DropdownWithSearch
-                  containerRef={areaRef}
-                  open={areaDropdownOpen}
-                  setOpen={setAreaDropdownOpen}
-                  search={areaSearch}
-                  setSearch={setAreaSearch}
-                  placeholder="Select dollhouse area…"
-                  options={filteredAreas.map((area) => ({ id: area.summary, label: area.summary }))}
-                  selectedId={selectedArea?.summary ?? null}
-                  selectedLabel={selectedArea?.summary || null}
-                  onSelectId={setSelectedAreaSummary}
-                  emptyMessage="No dollhouse areas"
-                />
-              )}
-            </>
+            <DropdownWithSearch
+              containerRef={presetRef}
+              open={presetDropdownOpen}
+              setOpen={setPresetDropdownOpen}
+              search={presetSearch}
+              setSearch={setPresetSearch}
+              placeholder="Select input preset…"
+              options={filteredPresets.map((preset) => ({ id: preset.id, label: preset.name || 'Untitled' }))}
+              selectedId={selectedPreset?.id ?? null}
+              selectedLabel={selectedPreset?.name || null}
+              onSelectId={setSelectedPresetId}
+              emptyMessage="No presets"
+            />
           )}
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-          {previewMode === 'preset' ? (
-            <>
-              <p className="text-sm font-medium text-gray-700">Selected preset</p>
-              <p className="mt-1 text-sm text-gray-900">{selectedPreset?.name ?? 'None selected'}</p>
-              <p className="mt-2 text-xs text-gray-500">
-                Preset preview uses the existing prompt rendering path with the selected input preset.
-              </p>
-            </>
+        <div className="min-w-0">
+          <label className="mb-1.5 block text-xs font-medium text-gray-600">Dollhouse area</label>
+          {loadingOptions ? (
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
           ) : (
-            <>
-              <p className="text-sm font-medium text-gray-700">Hardcoded project</p>
-              <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Loading…'}</p>
-              <p className="mt-3 text-sm font-medium text-gray-700">Selected area</p>
-              <p className="mt-1 text-sm text-gray-900">{selectedArea?.summary ?? 'None selected'}</p>
-              <p className="mt-2 break-all text-xs text-gray-500">
-                {selectedArea?.imageUrl ?? 'Choose an area to use its filtered dollhouse attributes.'}
-              </p>
-            </>
+            <DropdownWithSearch
+              containerRef={areaRef}
+              open={areaDropdownOpen}
+              setOpen={setAreaDropdownOpen}
+              search={areaSearch}
+              setSearch={setAreaSearch}
+              placeholder="Select dollhouse area…"
+              options={filteredAreas.map((area) => ({ id: area.summary, label: area.summary }))}
+              selectedId={selectedArea?.summary ?? null}
+              selectedLabel={selectedArea?.summary || null}
+              onSelectId={setSelectedAreaSummary}
+              emptyMessage="No dollhouse areas"
+            />
           )}
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+          <p className="text-sm font-medium text-gray-700">Selected preset</p>
+          <p className="mt-1 text-sm text-gray-900">{selectedPreset?.name ?? 'None selected'}</p>
+          <p className="mt-2 text-xs text-gray-500">
+            Preset content remains the base prompt preview context.
+          </p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+          <p className="text-sm font-medium text-gray-700">Selected dollhouse area</p>
+          <p className="mt-1 text-sm text-gray-900">{selectedArea?.summary ?? 'None selected'}</p>
+          <p className="mt-2 break-all text-xs text-gray-500">
+            {selectedArea?.imageUrl ?? 'The selected preset will still preview normally without dollhouse attributes.'}
+          </p>
         </div>
       </div>
 

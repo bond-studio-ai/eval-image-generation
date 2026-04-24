@@ -12,20 +12,11 @@ interface PageProps {
     prompt_version_id?: string;
     preset_id?: string;
     area_summary?: string;
-    mode?: 'preset' | 'dollhouse';
   }>;
 }
 
 export default async function PreviewPromptRoute({ searchParams }: PageProps) {
   const params = await searchParams;
-  const initialMode =
-    params.mode === 'dollhouse'
-      ? 'dollhouse'
-      : params.mode === 'preset'
-        ? 'preset'
-        : params.area_summary
-          ? 'dollhouse'
-          : 'preset';
   const [promptVersions, presets, dollhouseSource] = await Promise.all([
     fetchPromptVersionsMinimal(100),
     fetchInputPresetsMinimal(100),
@@ -36,7 +27,6 @@ export default async function PreviewPromptRoute({ searchParams }: PageProps) {
       initialPromptVersionId={params.prompt_version_id ?? null}
       initialPresetId={params.preset_id ?? null}
       initialAreaSummary={params.area_summary ?? dollhouseSource.defaultAreaSummary}
-      initialMode={initialMode}
       initialPromptVersions={promptVersions}
       initialPresets={presets}
       initialDollhouseSource={dollhouseSource}
