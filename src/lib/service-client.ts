@@ -35,6 +35,19 @@ export interface PromptVersionMinimalItem {
   name: string | null;
 }
 
+export interface PromptPreviewDollhouseArea {
+  summary: string;
+  imageUrl: string;
+  priority: number;
+}
+
+export interface PromptPreviewDollhouseSource {
+  projectId: string;
+  projectLabel: string;
+  defaultAreaSummary: string | null;
+  areas: PromptPreviewDollhouseArea[];
+}
+
 export interface StrategyListItem {
   id: string;
   name: string;
@@ -194,6 +207,10 @@ export async function fetchPromptVersions(limit = 100): Promise<PromptVersionLis
 
 export async function fetchPromptVersionsMinimal(limit = 100): Promise<PromptVersionMinimalItem[]> {
   return fetchService<PromptVersionMinimalItem[]>(`/prompt-versions?limit=${limit}&minimal=true`);
+}
+
+export async function fetchPromptPreviewDollhouseSource(): Promise<PromptPreviewDollhouseSource> {
+  return fetchService<PromptPreviewDollhouseSource>('/prompt-versions/preview/dollhouse-source');
 }
 
 export async function fetchPromptVersionById(id: string) {

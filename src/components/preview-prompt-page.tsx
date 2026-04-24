@@ -1,6 +1,7 @@
 'use client';
 
 import { PageHeader } from '@/components/page-header';
+import { ErrorCard } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -14,6 +15,19 @@ interface InputPresetItem {
   name: string | null;
 }
 
+interface DollhouseAreaItem {
+  summary: string;
+  imageUrl: string;
+  priority: number;
+}
+
+interface DollhouseSource {
+  projectId: string;
+  projectLabel: string;
+  defaultAreaSummary: string | null;
+  areas: DollhouseAreaItem[];
+}
+
 interface PreviewItem {
   systemPrompt: string;
   userPrompt: string;
@@ -22,32 +36,44 @@ interface PreviewItem {
 interface PreviewPromptPageProps {
   initialPromptVersionId?: string | null;
   initialPresetId?: string | null;
-  /** When provided, dropdowns are populated on first paint (no client fetch). */
+  initialAreaSummary?: string | null;
+  initialMode?: 'preset' | 'dollhouse';
   initialPromptVersions?: PromptVersionItem[];
   initialPresets?: InputPresetItem[];
+  initialDollhouseSource?: DollhouseSource;
 }
 
 export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
+  initialAreaSummary = null,
+  initialMode = 'preset',
   initialPromptVersions,
   initialPresets,
+  initialDollhouseSource,
 }: PreviewPromptPageProps) {
   const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(initialPromptVersions ?? []);
   const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
+  const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(initialDollhouseSource ?? null);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
+  const [selectedAreaSummary, setSelectedAreaSummary] = useState<string | null>(initialAreaSummary);
+  const [previewMode, setPreviewMode] = useState<'preset' | 'dollhouse'>(initialMode);
   const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
   const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
+  const [areaDropdownOpen, setAreaDropdownOpen] = useState(false);
   const [promptSearch, setPromptSearch] = useState('');
   const [presetSearch, setPresetSearch] = useState('');
+  const [areaSearch, setAreaSearch] = useState('');
   const promptRef = useRef<HTMLDivElement>(null);
   const presetRef = useRef<HTMLDivElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const hasInitialOptions = initialPromptVersions != null && initialPresets != null;
+  const hasInitialOptions =
+    initialPromptVersions != null && initialPresets != null && initialDollhouseSource != null;
   const [loadingOptions, setLoadingOptions] = useState(!hasInitialOptions);
 
   useEffect(() => {
@@ -57,27 +83,36 @@ export function PreviewPromptPage({
     setLoadingOptions(true);
     async function load() {
       try {
-        const [pvRes, ipRes] = await Promise.all([
+        const [pvRes, presetRes, dollhouseRes] = await Promise.all([
           fetch(serviceUrl('prompt-versions?limit=100&minimal=true')),
           fetch(serviceUrl('input-presets?limit=100&minimal=true')),
+          fetch(serviceUrl('prompt-versions/preview/dollhouse-source')),
         ]);
         if (cancelled) return;
         const pvJson = await pvRes.json();
-        const ipJson = await ipRes.json();
+        const presetJson = await presetRes.json();
+        const dollhouseJson = await dollhouseRes.json();
 
         if (!pvRes.ok) {
           setLoadError(pvJson?.error?.message ?? 'Failed to load prompt versions');
           return;
         }
-        if (!ipRes.ok) {
-          setLoadError(ipJson?.error?.message ?? 'Failed to load input presets');
+        if (!presetRes.ok) {
+          setLoadError(presetJson?.error?.message ?? 'Failed to load input presets');
+          return;
+        }
+        if (!dollhouseRes.ok) {
+          setLoadError(dollhouseJson?.error?.message ?? 'Failed to load dollhouse source');
           return;
         }
 
         const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
-        const ipData = Array.isArray(ipJson.data) ? ipJson.data : [];
+        const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
         setPromptVersions(pvData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null })));
-        setPresets(ipData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null })));
+        setPresets(
+          presetData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null }))
+        );
+        setDollhouseSource(dollhouseJson.data ?? null);
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : 'Failed to load options');
@@ -99,30 +134,53 @@ export function PreviewPromptPage({
   const filteredPresets = useMemo(() => {
     const q = presetSearch.trim().toLowerCase();
     if (!q) return presets;
-    return presets.filter((p) => (p.name ?? '').toLowerCase().includes(q));
+    return presets.filter((preset) => (preset.name ?? '').toLowerCase().includes(q));
   }, [presets, presetSearch]);
+
+  const filteredAreas = useMemo(() => {
+    const q = areaSearch.trim().toLowerCase();
+    const areas = dollhouseSource?.areas ?? [];
+    if (!q) return areas;
+    return areas.filter((area) => area.summary.toLowerCase().includes(q));
+  }, [areaSearch, dollhouseSource]);
 
   const selectedPrompt = useMemo(
     () => promptVersions.find((p) => p.id === selectedPromptId),
     [promptVersions, selectedPromptId],
   );
   const selectedPreset = useMemo(
-    () => presets.find((p) => p.id === selectedPresetId),
+    () => presets.find((preset) => preset.id === selectedPresetId),
     [presets, selectedPresetId],
+  );
+  const selectedArea = useMemo(
+    () => (dollhouseSource?.areas ?? []).find((area) => area.summary === selectedAreaSummary),
+    [dollhouseSource, selectedAreaSummary],
   );
 
   const fetchPreview = useCallback(async () => {
-    if (!selectedPromptId || !selectedPresetId) {
+    if (!selectedPromptId) {
+      setPreviews([]);
+      return;
+    }
+    if (previewMode === 'preset' && !selectedPresetId) {
+      setPreviews([]);
+      return;
+    }
+    if (previewMode === 'dollhouse' && !selectedAreaSummary) {
       setPreviews([]);
       return;
     }
     setLoading(true);
     setError(null);
     try {
+      const body =
+        previewMode === 'preset'
+          ? { inputPresetId: selectedPresetId }
+          : { dollhouseAreaSummary: selectedAreaSummary };
       const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputPresetId: selectedPresetId }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -137,21 +195,30 @@ export function PreviewPromptPage({
     } finally {
       setLoading(false);
     }
-  }, [selectedPromptId, selectedPresetId]);
+  }, [previewMode, selectedAreaSummary, selectedPresetId, selectedPromptId]);
 
   useEffect(() => {
-    if (selectedPromptId && selectedPresetId) fetchPreview();
+    const hasSourceSelection =
+      previewMode === 'preset' ? !!selectedPresetId : !!selectedAreaSummary;
+    if (selectedPromptId && hasSourceSelection) fetchPreview();
     else setPreviews([]);
-  }, [selectedPromptId, selectedPresetId, fetchPreview]);
+  }, [fetchPreview, previewMode, selectedAreaSummary, selectedPresetId, selectedPromptId]);
+
+  useEffect(() => {
+    if (selectedAreaSummary || !dollhouseSource?.defaultAreaSummary) return;
+    setSelectedAreaSummary(dollhouseSource.defaultAreaSummary);
+  }, [dollhouseSource, selectedAreaSummary]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        promptRef.current && !promptRef.current.contains(e.target as Node) &&
-        presetRef.current && !presetRef.current.contains(e.target as Node)
-      ) {
+      if (promptRef.current && !promptRef.current.contains(e.target as Node)) {
         setPromptDropdownOpen(false);
+      }
+      if (presetRef.current && !presetRef.current.contains(e.target as Node)) {
         setPresetDropdownOpen(false);
+      }
+      if (areaRef.current && !areaRef.current.contains(e.target as Node)) {
+        setAreaDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -166,8 +233,9 @@ export function PreviewPromptPage({
     setSearch,
     placeholder,
     options,
-    selected,
-    onSelect,
+    selectedId,
+    selectedLabel,
+    onSelectId,
     emptyMessage,
   }: {
     containerRef: React.RefObject<HTMLDivElement | null>;
@@ -176,9 +244,10 @@ export function PreviewPromptPage({
     search: string;
     setSearch: (v: string) => void;
     placeholder: string;
-    options: { id: string; name: string | null }[];
-    selected: { id: string; name: string | null } | undefined;
-    onSelect: (id: string) => void;
+    options: { id: string; label: string }[];
+    selectedId?: string | null;
+    selectedLabel?: string | null;
+    onSelectId: (id: string) => void;
     emptyMessage: string;
   }) => (
     <div ref={containerRef} className="relative w-full">
@@ -187,8 +256,8 @@ export function PreviewPromptPage({
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
       >
-        <span className={selected ? 'text-gray-900' : 'text-gray-500'}>
-          {selected?.name || placeholder}
+        <span className={selectedLabel ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedLabel || placeholder}
         </span>
         <svg
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -215,19 +284,19 @@ export function PreviewPromptPage({
             {options.length === 0 ? (
               <li className="px-3 py-2 text-sm text-gray-500">{emptyMessage}</li>
             ) : (
-              options.map((p) => (
-                <li key={p.id}>
+              options.map((option) => (
+                <li key={option.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      onSelect(p.id);
+                      onSelectId(option.id);
                       setOpen(false);
                     }}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                      selected?.id === p.id ? 'bg-primary-50 text-primary-800' : 'text-gray-900'
+                      selectedId === option.id ? 'bg-primary-50 text-primary-800' : 'text-gray-900'
                     }`}
                   >
-                    {p.name || 'Untitled'}
+                    {option.label}
                   </button>
                 </li>
               ))
@@ -242,55 +311,134 @@ export function PreviewPromptPage({
     <div>
       <PageHeader
         title="Prompt Preview"
-        subtitle="See how a prompt template renders with an input preset."
+        subtitle="See how a prompt template renders with either an input preset or a dollhouse area."
       />
 
       {loadError && (
-        <p className="mt-4 text-sm text-red-600">{loadError}</p>
+        <div className="mt-4">
+          <ErrorCard message={loadError} />
+        </div>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <p className="text-sm font-medium text-gray-700">Preview source</p>
+        <div className="mt-3 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+          {(['preset', 'dollhouse'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setPreviewMode(mode)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                previewMode === mode
+                  ? 'bg-white text-primary-700 shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {mode === 'preset' ? 'Input preset' : 'Dollhouse area'}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-gray-600">
+          {previewMode === 'preset'
+            ? 'Use the original preset-based preview flow.'
+            : 'Use the hardcoded dollhouse fixture and swap in area-specific `dollhouse.*` attributes.'}
+        </p>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Prompt version</label>
           {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
           ) : (
-          <DropdownWithSearch
-            containerRef={promptRef}
-            open={promptDropdownOpen}
-            setOpen={setPromptDropdownOpen}
-            search={promptSearch}
-            setSearch={setPromptSearch}
-            placeholder="Select prompt version…"
-            options={filteredPrompts}
-            selected={selectedPrompt}
-            onSelect={setSelectedPromptId}
-            emptyMessage="No prompt versions"
-          />
+            <DropdownWithSearch
+              containerRef={promptRef}
+              open={promptDropdownOpen}
+              setOpen={setPromptDropdownOpen}
+              search={promptSearch}
+              setSearch={setPromptSearch}
+              placeholder="Select prompt version…"
+              options={filteredPrompts.map((prompt) => ({ id: prompt.id, label: prompt.name || 'Untitled' }))}
+              selectedId={selectedPrompt?.id ?? null}
+              selectedLabel={selectedPrompt?.name || null}
+              onSelectId={setSelectedPromptId}
+              emptyMessage="No prompt versions"
+            />
           )}
         </div>
         <div className="min-w-0">
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
-          {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+          {previewMode === 'preset' ? (
+            <>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
+              {loadingOptions ? (
+                <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+              ) : (
+                <DropdownWithSearch
+                  containerRef={presetRef}
+                  open={presetDropdownOpen}
+                  setOpen={setPresetDropdownOpen}
+                  search={presetSearch}
+                  setSearch={setPresetSearch}
+                  placeholder="Select input preset…"
+                  options={filteredPresets.map((preset) => ({ id: preset.id, label: preset.name || 'Untitled' }))}
+                  selectedId={selectedPreset?.id ?? null}
+                  selectedLabel={selectedPreset?.name || null}
+                  onSelectId={setSelectedPresetId}
+                  emptyMessage="No presets"
+                />
+              )}
+            </>
           ) : (
-          <DropdownWithSearch
-            containerRef={presetRef}
-            open={presetDropdownOpen}
-            setOpen={setPresetDropdownOpen}
-            search={presetSearch}
-            setSearch={setPresetSearch}
-            placeholder="Select input preset…"
-            options={filteredPresets}
-            selected={selectedPreset}
-            onSelect={setSelectedPresetId}
-            emptyMessage="No presets"
-          />
+            <>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">Dollhouse area</label>
+              {loadingOptions ? (
+                <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+              ) : (
+                <DropdownWithSearch
+                  containerRef={areaRef}
+                  open={areaDropdownOpen}
+                  setOpen={setAreaDropdownOpen}
+                  search={areaSearch}
+                  setSearch={setAreaSearch}
+                  placeholder="Select dollhouse area…"
+                  options={filteredAreas.map((area) => ({ id: area.summary, label: area.summary }))}
+                  selectedId={selectedArea?.summary ?? null}
+                  selectedLabel={selectedArea?.summary || null}
+                  onSelectId={setSelectedAreaSummary}
+                  emptyMessage="No dollhouse areas"
+                />
+              )}
+            </>
+          )}
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+          {previewMode === 'preset' ? (
+            <>
+              <p className="text-sm font-medium text-gray-700">Selected preset</p>
+              <p className="mt-1 text-sm text-gray-900">{selectedPreset?.name ?? 'None selected'}</p>
+              <p className="mt-2 text-xs text-gray-500">
+                Preset preview uses the existing prompt rendering path with the selected input preset.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-gray-700">Hardcoded project</p>
+              <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Loading…'}</p>
+              <p className="mt-3 text-sm font-medium text-gray-700">Selected area</p>
+              <p className="mt-1 text-sm text-gray-900">{selectedArea?.summary ?? 'None selected'}</p>
+              <p className="mt-2 break-all text-xs text-gray-500">
+                {selectedArea?.imageUrl ?? 'Choose an area to use its filtered dollhouse attributes.'}
+              </p>
+            </>
           )}
         </div>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="mt-4">
+          <ErrorCard message={error} />
+        </div>
+      )}
       {loading && <p className="mt-4 text-sm text-gray-500">Loading preview…</p>}
 
       {previews.length > 0 && !loading && (
