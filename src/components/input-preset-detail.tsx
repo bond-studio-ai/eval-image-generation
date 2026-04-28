@@ -75,7 +75,6 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const productCards = useMemo(() => {
     const imageTypeLabels: Record<string, string> = {
       'featured-image': 'Featured Image',
-      'photo-image': 'Photo Image',
       'line-drawing': 'Line Drawing',
       'tear-sheet': 'Tear Sheet',
       arbitrary: 'Arbitrary',
@@ -93,7 +92,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const imageTypeLabel =
         typeof imageTypeValue === 'string' && imageTypeLabels[imageTypeValue]
           ? imageTypeLabels[imageTypeValue]
-          : 'Featured Image';
+          : 'Tear Sheet';
 
       return [
         {

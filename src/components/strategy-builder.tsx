@@ -7,7 +7,7 @@ import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet';
+type ProductImageType = 'featured-image' | 'photo-image' | 'line-drawing' | 'tear-sheet';
 
 interface StepData {
   id?: string;
@@ -84,6 +84,7 @@ const PRODUCT_CATEGORIES = [
 
 const IMAGE_TYPE_OPTIONS: { value: ProductImageType; label: string }[] = [
   { value: 'featured-image', label: 'Featured' },
+  { value: 'photo-image', label: 'Photo Image' },
   { value: 'tear-sheet', label: 'Tear Sheet' },
   { value: 'line-drawing', label: 'Line Drawing' },
 ];
@@ -143,6 +144,20 @@ const defaultStrategySettings: StrategySettings = {
 };
 
 const DEFAULT_IMAGE_TYPE: ProductImageType = 'featured-image';
+const IMAGE_TYPE_VALUES = new Set<ProductImageType>(IMAGE_TYPE_OPTIONS.map((option) => option.value));
+
+function normalizeProductImageType(value: unknown): ProductImageType {
+  return typeof value === 'string' && IMAGE_TYPE_VALUES.has(value as ProductImageType)
+    ? (value as ProductImageType)
+    : DEFAULT_IMAGE_TYPE;
+}
+
+function normalizeProductImageTypes(value: Record<string, unknown> | null | undefined): Record<string, ProductImageType> {
+  if (!value) return {};
+  return Object.fromEntries(
+    Object.entries(value).map(([category, imageType]) => [category, normalizeProductImageType(imageType)]),
+  );
+}
 
 function ImageTypePill({
   active,
@@ -181,7 +196,7 @@ function ProductImageTypeOverrides({
   ).length;
 
   const setCategory = (cat: string, type: ProductImageType) => {
-    const next = { ...value, [cat]: type };
+    const next = { ...value, [cat]: normalizeProductImageType(type) };
     onChange(next);
   };
 
@@ -230,9 +245,12 @@ function ProductImageTypeOverrides({
               </button>
             ))}
           </div>
+          <p className="mb-3 text-[11px] text-gray-500">
+            If the selected image type is unavailable for a product, generation falls back to the featured image.
+          </p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {PRODUCT_CATEGORIES.map((cat) => {
-              const current = value[cat] ?? DEFAULT_IMAGE_TYPE;
+              const current = normalizeProductImageType(value[cat]);
               return (
                 <div key={cat} className="flex items-center justify-between gap-2 py-0.5">
                   <span className="min-w-0 truncate text-xs text-gray-700" title={categoryLabel(cat)}>
@@ -345,7 +363,10 @@ export function StrategyBuilder({
   );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
-      ? initialSteps
+      ? initialSteps.map((step) => ({
+          ...step,
+          product_image_types: normalizeProductImageTypes(step.product_image_types),
+        }))
       : [defaultStep(promptVersions[0]?.id ?? '')],
   );
   const [saving, setSaving] = useState(false);
@@ -452,7 +473,7 @@ export function StrategyBuilder({
           includeMoodBoard: s.include_mood_board,
           includeProductImages: s.include_product_images,
           includeProductCategories: s.include_product_categories ?? [],
-          productImageTypes: s.product_image_types ?? {},
+          productImageTypes: normalizeProductImageTypes(s.product_image_types),
           arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
           judges: s.type === 'judge' && s.judges?.length
             ? s.judges.map((j, ji) => ({

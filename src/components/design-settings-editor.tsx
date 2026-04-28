@@ -30,12 +30,7 @@ interface ProductFieldDef extends BaseFieldDef {
 }
 
 type FieldDef = SelectFieldDef | BooleanFieldDef | ProductFieldDef;
-type ProductImageType =
-  | 'featured-image'
-  | 'photo-image'
-  | 'line-drawing'
-  | 'tear-sheet'
-  | 'arbitrary';
+type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet' | 'arbitrary';
 type ArbitraryImageMap = Record<string, string | null>;
 
 interface CatalogProduct {
@@ -223,16 +218,6 @@ const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}Image
 const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
 const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'featured-image';
 
-const PRODUCT_IMAGE_TYPE_OPTIONS: {
-  value: Exclude<ProductImageType, 'arbitrary'>;
-  label: string;
-}[] = [
-  { value: 'featured-image', label: 'Featured' },
-  { value: 'photo-image', label: 'Photo Image' },
-  { value: 'tear-sheet', label: 'Tear Sheet' },
-  { value: 'line-drawing', label: 'Line Drawing' },
-];
-
 const SLOT_TO_CATALOG_CATEGORY: Record<string, string> = {
   floorTile: 'floor-tiles',
   toilet: 'toilets',
@@ -267,7 +252,6 @@ function getProductImageTypeKey(slotKey: string): string {
 
 function readProductImageType(value: unknown): ProductImageType | null {
   return value === 'featured-image' ||
-    value === 'photo-image' ||
     value === 'line-drawing' ||
     value === 'tear-sheet' ||
     value === 'arbitrary'
@@ -341,23 +325,8 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
   };
 }
 
-function productImageTypeToTag(imageType: ProductImageType): CatalogImageTag | null {
-  return imageType === 'photo-image' || imageType === 'tear-sheet' || imageType === 'line-drawing'
-    ? imageType
-    : null;
-}
-
-function resolveAvailableProductImageType(
-  imageType: ProductImageType,
-  images: CatalogImageVariant[],
-): ProductImageType {
-  const tag = productImageTypeToTag(imageType);
-  if (!tag) return imageType;
-  return images.some((image) => image.tag === tag) ? imageType : DEFAULT_PRODUCT_IMAGE_TYPE;
-}
-
 const IMAGE_TAG_LABELS: Record<CatalogImageTag, string> = {
-  'photo-image': 'Photo Image',
+  'photo-image': 'Featured',
   'tear-sheet': 'Tear Sheet',
   'line-drawing': 'Line Drawing',
 };
@@ -1233,22 +1202,14 @@ function ProductSelectionModal({
     () => products.find((product) => product.id === draftSelectedId) ?? null,
     [products, draftSelectedId],
   );
-  const { images: draftCatalogImages, loading: draftCatalogImagesLoading } =
-    useCatalogProductImages(catalogCategory, draftSelectedId || null);
   const isArbitraryMode = draftImageType === 'arbitrary';
-  const resolvedDraftImageType = isArbitraryMode
-    ? draftImageType
-    : draftCatalogImagesLoading
-      ? draftImageType
-      : resolveAvailableProductImageType(draftImageType, draftCatalogImages);
-  const willFallbackToFeatured = !isArbitraryMode && resolvedDraftImageType !== draftImageType;
   const canAccept = !isArbitraryMode || !!draftArbitraryUrl;
 
   const handleAccept = () => {
     if (!canAccept) return;
     onAccept({
       productId: draftSelectedId || null,
-      imageType: resolvedDraftImageType,
+      imageType: draftImageType,
       arbitraryUrl: draftImageType === 'arbitrary' ? draftArbitraryUrl : null,
     });
   };
@@ -1335,47 +1296,6 @@ function ProductSelectionModal({
                 </p>
               </div>
             </div>
-            {!isArbitraryMode ? (
-              <div className="mt-3">
-                <p className="mb-1.5 text-[11px] font-medium text-gray-600">Product image type</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => {
-                    const tag = productImageTypeToTag(option.value);
-                    const isAvailable =
-                      option.value === DEFAULT_PRODUCT_IMAGE_TYPE ||
-                      draftCatalogImagesLoading ||
-                      !draftSelectedId ||
-                      !tag ||
-                      draftCatalogImages.some((image) => image.tag === tag);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setDraftImageType(option.value)}
-                        className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                          draftImageType === option.value
-                            ? 'border-primary-300 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                        } ${!isAvailable ? 'border-dashed text-gray-400' : ''}`}
-                        title={
-                          !isAvailable
-                            ? 'Falls back to the featured image if unavailable.'
-                            : undefined
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {willFallbackToFeatured ? (
-                  <p className="mt-1.5 text-[11px] text-amber-600">
-                    Selected image type is unavailable for this product. Featured image will be
-                    used.
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
             <div className="mt-3">
               <label className="flex cursor-pointer items-center gap-2">
                 <button

@@ -65,7 +65,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_mood_board: s.includeMoodBoard ?? true,
             include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
-            product_image_types: (s.productImageTypes ?? {}) as Record<string, 'featured-image' | 'line-drawing' | 'tear-sheet'>,
+            product_image_types: (s.productImageTypes ?? {}) as Record<string, 'featured-image' | 'photo-image' | 'line-drawing' | 'tear-sheet'>,
             arbitrary_image_from_step: s.arbitraryImageFromStep,
             judges: s.type === 'judge' ? (s.judges ?? []).map((j) => ({
               id: j.id,
