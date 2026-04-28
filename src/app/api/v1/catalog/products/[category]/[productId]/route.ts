@@ -2,7 +2,7 @@ import { errorResponse, successResponse } from '@/lib/api-response';
 
 const CATALOG_BASE = 'https://api.usedemo.io/catalog/v3/products';
 const CATALOG_INCLUDE_PARAMS =
-  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&images.tags=photo-image,tear-sheet,line-drawing';
+  'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=color_palette&include[]=components&images.tags=photo-image,tear-sheet,line-drawing';
 
 const TILE_SEGMENTS = new Set([
   'floor-tiles',
@@ -34,7 +34,7 @@ export async function GET(
     }
 
     const json = await res.json();
-    const product = Array.isArray(json.data) ? json.data[0] : json.data ?? json;
+    const product = Array.isArray(json.data) ? json.data[0] : (json.data ?? json);
     return successResponse(product);
   } catch (err) {
     console.error('[catalog product detail] Error:', err);

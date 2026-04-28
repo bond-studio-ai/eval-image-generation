@@ -33,12 +33,19 @@ const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
 type TextureScale = { x: number | null; y: number | null };
 type ScanLike = Record<string, unknown>;
 type CatalogProduct = Record<string, unknown>;
+type Color = { hue: number; chroma: number; luminance: number };
+type ObjectComponent = { categoryComponent: string; color: Color; materialType: string };
 
 type SurfaceItem = {
   productId?: string;
   texture: string;
   scale: { x: string; y: string };
   placement?: string;
+  colorPalette?: Color[];
+  shape?: string;
+  pattern?: string;
+  pieceLength?: string;
+  pieceWidth?: string;
 };
 
 type ObjectItem = {
@@ -51,6 +58,7 @@ type ObjectItem = {
   numberOfSinks?: number;
   counterHeight?: string;
   sinkOffset?: string;
+  components?: ObjectComponent[];
 };
 
 export type UnitySlimDesignMaterials = {
@@ -115,6 +123,35 @@ const OBJECT_SLOTS = [
   'showerSystem',
 ] as const;
 
+const TILE_SURFACE_SLOTS = new Set<string>([
+  'curbTile',
+  'floorTile',
+  'nicheTile',
+  'showerFloorTile',
+  'showerShortWallTile',
+  'showerWallTile',
+  'wallTile',
+]);
+
+const TILE_PATTERN_BY_ID_KEY: Record<string, string> = {
+  horizontalPatternId: 'Horizontal',
+  verticalPatternId: 'Vertical',
+  thirdOffsetPatternId: 'ThirdOffset',
+  halfOffsetPatternId: 'HalfOffset',
+  herringbonePatternId: 'Herringbone',
+  hexagonPatternId: 'Hexagon',
+  rhomboidCubePatternId: 'RhomboidCube',
+  triangularPatternId: 'Triangular',
+  horizontalPicketPatternId: 'HorizontalPicket',
+  verticalPicketPatternId: 'VerticalPicket',
+  fishScalePatternId: 'FishScale',
+  stackedPatternId: 'Stacked',
+  offsetPatternId: 'Offset',
+  straightPatternId: 'Straight',
+};
+
+const TILE_PATTERN_VALUES = new Set(Object.values(TILE_PATTERN_BY_ID_KEY));
+
 function snakeToCamel(value: string): string {
   return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
 }
@@ -147,6 +184,80 @@ function asNumber(value: unknown): number | null {
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function pickHcl(value: unknown): Color | null {
+  const rec = asRecord(value);
+  if (!rec) return null;
+  const hue = asNumber(rec.hue);
+  const chroma = asNumber(rec.chroma);
+  const luminance = asNumber(rec.luminance);
+  if (hue == null || chroma == null || luminance == null) return null;
+  return { hue, chroma, luminance };
+}
+
+function projectColorPalette(product: CatalogProduct): Color[] | undefined {
+  const raw = product.colorPalette ?? product.color_palette;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+
+  const out = raw.flatMap((entry) => {
+    const rec = asRecord(entry);
+    const color = pickHcl(rec?.color ?? entry);
+    return color ? [color] : [];
+  });
+
+  return out.length > 0 ? out : undefined;
+}
+
+function projectComponents(product: CatalogProduct): ObjectComponent[] | undefined {
+  const raw = product.components;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+
+  const out: ObjectComponent[] = [];
+  for (const entry of raw) {
+    const rec = asRecord(entry);
+    if (!rec) continue;
+
+    const categoryComponent =
+      asString(rec.categoryComponent) ?? asString(asRecord(rec.categoryComponent)?.code);
+    const materialType = asString(rec.materialType) ?? asString(asRecord(rec.materialType)?.code);
+    const color = pickHcl(rec.color);
+
+    if (categoryComponent && materialType && color) {
+      out.push({ categoryComponent, color, materialType });
+    }
+  }
+
+  return out.length > 0 ? out : undefined;
+}
+
+function projectTileExtras(
+  product: CatalogProduct,
+): Pick<SurfaceItem, 'shape' | 'pieceLength' | 'pieceWidth'> {
+  const shape = asString(product.shape) ?? asString(asRecord(product.shape)?.code);
+  const pieceLength = asNumber(product.pieceLength);
+  const pieceWidth = asNumber(product.pieceWidth);
+  return {
+    ...(shape ? { shape } : {}),
+    ...(pieceLength != null ? { pieceLength: String(pieceLength) } : {}),
+    ...(pieceWidth != null ? { pieceWidth: String(pieceWidth) } : {}),
+  };
+}
+
+function resolveTilePattern(
+  product: CatalogProduct,
+  slot: string,
+  texture: string,
+  design: Record<string, unknown>,
+): string | undefined {
+  for (const [key, pattern] of Object.entries(TILE_PATTERN_BY_ID_KEY)) {
+    if (product[key] === texture) return pattern;
+  }
+
+  const fromDesign = design[`${slot}Pattern`];
+  return typeof fromDesign === 'string' && TILE_PATTERN_VALUES.has(fromDesign)
+    ? fromDesign
+    : undefined;
 }
 
 function isScanLike(value: unknown): value is ScanLike {
@@ -196,7 +307,10 @@ async function resolveScan(params: {
   return null;
 }
 
-async function fetchCatalogProduct(category: string, productId: string): Promise<CatalogProduct | null> {
+async function fetchCatalogProduct(
+  category: string,
+  productId: string,
+): Promise<CatalogProduct | null> {
   try {
     const res = await fetch(localUrl(`catalog/products/${category}/${productId}`), {
       cache: 'no-store',
@@ -205,12 +319,19 @@ async function fetchCatalogProduct(category: string, productId: string): Promise
     const json = (await res.json()) as { data?: CatalogProduct };
     return json.data ?? null;
   } catch (err) {
-    console.error('[design-materials] Failed to fetch catalog product', { category, productId, err });
+    console.error('[design-materials] Failed to fetch catalog product', {
+      category,
+      productId,
+      err,
+    });
     return null;
   }
 }
 
-function getTextureScale(product: CatalogProduct, patternScale?: TextureScale | null): TextureScale {
+function getTextureScale(
+  product: CatalogProduct,
+  patternScale?: TextureScale | null,
+): TextureScale {
   if (patternScale) return patternScale;
   const textureScale =
     asRecord(product.textureScale) ?? asRecord(asRecord(product.renderAttributes)?.textureScale);
@@ -270,17 +391,35 @@ function buildMaterialLike(product: CatalogProduct, productId: string): CatalogP
     abovePlacementDefaultRotation: product.abovePlacementDefaultRotation ?? null,
     sidePlacementDefaultRotation: product.sidePlacementDefaultRotation ?? null,
     mountingPosition: product.mountingPosition ?? null,
+    colorPalette: product.colorPalette ?? product.color_palette ?? null,
+    components: product.components ?? null,
+    shape: product.shape ?? null,
+    pieceLength: product.pieceLength ?? renderAttributes.pieceLength ?? null,
+    pieceWidth: product.pieceWidth ?? renderAttributes.pieceWidth ?? null,
+    isRemoved: product.isRemoved ?? false,
     patternInfo: asRecord(product.patternInfo) ?? null,
+    horizontalPatternId: product.horizontalPatternId ?? null,
+    verticalPatternId: product.verticalPatternId ?? null,
+    thirdOffsetPatternId: product.thirdOffsetPatternId ?? null,
+    halfOffsetPatternId: product.halfOffsetPatternId ?? null,
     herringbonePatternId: product.herringbonePatternId ?? null,
+    hexagonPatternId: product.hexagonPatternId ?? null,
+    rhomboidCubePatternId: product.rhomboidCubePatternId ?? null,
+    triangularPatternId: product.triangularPatternId ?? null,
+    horizontalPicketPatternId: product.horizontalPicketPatternId ?? null,
+    verticalPicketPatternId: product.verticalPicketPatternId ?? null,
+    fishScalePatternId: product.fishScalePatternId ?? null,
     stackedPatternId: product.stackedPatternId ?? null,
     offsetPatternId: product.offsetPatternId ?? null,
     straightPatternId: product.straightPatternId ?? null,
-    verticalPatternId: product.verticalPatternId ?? null,
-    horizontalPatternId: product.horizontalPatternId ?? null,
   };
 }
 
-function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOTS)[number], design: Record<string, unknown>): SurfaceItem | null {
+function buildSurface(
+  product: CatalogProduct | null,
+  slot: (typeof SURFACE_SLOTS)[number],
+  design: Record<string, unknown>,
+): SurfaceItem | null {
   if (!product) return null;
   const material = buildMaterialLike(product, asString(product.id) ?? '');
   const pattern = readPatternTexture(material, design[`${slot}Pattern`]);
@@ -297,7 +436,35 @@ function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOT
   };
   if (slot === 'wallpaper') out.placement = asString(design.wallpaperPlacement) ?? 'VanityWall';
   if (slot === 'wallTile') out.placement = asString(design.wallTilePlacement) ?? 'VanityHalfWall';
+
+  const colorPalette = projectColorPalette(material);
+  if (colorPalette) out.colorPalette = colorPalette;
+
+  if (TILE_SURFACE_SLOTS.has(slot)) {
+    Object.assign(out, projectTileExtras(material));
+    const resolvedPattern = resolveTilePattern(material, slot, texture, design);
+    if (resolvedPattern) out.pattern = resolvedPattern;
+  }
+
   return out;
+}
+
+function getStylingState(product: CatalogProduct): ObjectItem['styling'] {
+  return product.isRemoved ? 'Removed' : 'Default';
+}
+
+function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTubInScan: boolean } {
+  const showers = Array.isArray(asRecord(scan.areas)?.showers)
+    ? (asRecord(scan.areas)?.showers as unknown[])
+    : [];
+  const hasAlcoveTubInScan = Array.isArray(scan.tubs)
+    ? scan.tubs.some((tub) => asRecord(tub)?.type === 'Alcove')
+    : false;
+
+  return {
+    hasShowerInScan: showers.length > 0,
+    hasAlcoveTubInScan,
+  };
 }
 
 function buildObject(
@@ -306,13 +473,7 @@ function buildObject(
   design: Record<string, unknown>,
   scan: ScanLike,
 ): ObjectItem | null {
-  const showers = Array.isArray(asRecord(scan.areas)?.showers)
-    ? (asRecord(scan.areas)?.showers as unknown[])
-    : [];
-  const hasShowerInScan = showers.length > 0;
-  const hasAlcoveTubInScan = Array.isArray(scan.tubs)
-    ? scan.tubs.some((tub) => asRecord(tub)?.type === 'Alcove')
-    : false;
+  const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
 
   if (!product) {
     if (slot === 'showerGlass' && hasShowerInScan) {
@@ -326,7 +487,15 @@ function buildObject(
 
   const material = buildMaterialLike(product, asString(product.id) ?? '');
   const asset = getAssetId(material);
-  if (!asset) return null;
+  if (!asset) {
+    if (slot === 'showerGlass' && hasShowerInScan) {
+      return { styling: design.isShowerGlassVisible === false ? 'Hidden' : 'Default' };
+    }
+    if (slot === 'tubDoor' && hasAlcoveTubInScan) {
+      return { styling: design.isTubDoorVisible === false ? 'Hidden' : 'Default' };
+    }
+    return null;
+  }
 
   const out: ObjectItem = {
     productId: asString(material.id) ?? undefined,
@@ -336,14 +505,18 @@ function buildObject(
       width: String(material.width ?? ''),
       height: String(material.height ?? ''),
     },
-    styling: 'Default',
+    styling: getStylingState(material),
   };
 
   if (slot === 'vanity') {
     const numberOfSinks = asNumber(material.numberOfSinks);
     if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight != null ? String(material.counterHeight) : null);
-    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset != null ? String(material.sinkOffset) : null);
+    const counterHeight =
+      asString(material.counterHeight) ??
+      (material.counterHeight != null ? String(material.counterHeight) : null);
+    const sinkOffset =
+      asString(material.sinkOffset) ??
+      (material.sinkOffset != null ? String(material.sinkOffset) : null);
     if (counterHeight) out.counterHeight = counterHeight;
     if (sinkOffset) out.sinkOffset = sinkOffset;
   }
@@ -369,6 +542,13 @@ function buildObject(
     delete out.productId;
   }
 
+  if (out.styling === 'Hidden') {
+    delete out.productId;
+  }
+
+  const components = projectComponents(material);
+  if (components) out.components = components;
+
   return out;
 }
 
@@ -391,17 +571,15 @@ export async function buildDesignMaterials(params: {
   );
 
   const result: UnitySlimDesignMaterials = {
-    id:
-      (typeof params.design.id === 'string' && params.design.id) ||
-      params.projectId ||
-      'unknown',
+    id: (typeof params.design.id === 'string' && params.design.id) || params.projectId || 'unknown',
     surfaces: {},
     objects: {},
   };
 
   for (const slot of SURFACE_SLOTS) {
     let product = productBySlot.get(slot) ?? null;
-    if (slot === 'showerShortWallTile' && !product) product = productBySlot.get('showerWallTile') ?? null;
+    if (slot === 'showerShortWallTile' && !product)
+      product = productBySlot.get('showerWallTile') ?? null;
     if (slot === 'nicheTile' && !product && Array.isArray(scan.niches) && scan.niches.length > 0) {
       product = productBySlot.get('showerWallTile') ?? null;
     }
@@ -422,6 +600,18 @@ export async function buildDesignMaterials(params: {
   for (const slot of OBJECT_SLOTS) {
     const object = buildObject(productBySlot.get(slot) ?? null, slot, params.design, scan);
     if (object) result.objects[slot] = object;
+  }
+
+  const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
+  if (hasShowerInScan && !result.objects.showerGlass) {
+    result.objects.showerGlass = {
+      styling: params.design.isShowerGlassVisible === false ? 'Hidden' : 'Default',
+    };
+  }
+  if (hasAlcoveTubInScan && !result.objects.tubDoor) {
+    result.objects.tubDoor = {
+      styling: params.design.isTubDoorVisible === false ? 'Hidden' : 'Default',
+    };
   }
 
   return result;
