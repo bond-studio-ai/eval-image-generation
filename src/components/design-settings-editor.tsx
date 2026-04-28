@@ -1,9 +1,8 @@
 'use client';
 
-import { localUrl } from '@/lib/api-base';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS } from '@/lib/input-preset-design';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { localUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -31,7 +30,12 @@ interface ProductFieldDef extends BaseFieldDef {
 }
 
 type FieldDef = SelectFieldDef | BooleanFieldDef | ProductFieldDef;
-type ProductImageType = 'featured-image' | 'line-drawing' | 'tear-sheet' | 'arbitrary';
+type ProductImageType =
+  | 'featured-image'
+  | 'photo-image'
+  | 'line-drawing'
+  | 'tear-sheet'
+  | 'arbitrary';
 type ArbitraryImageMap = Record<string, string | null>;
 
 interface CatalogProduct {
@@ -43,33 +47,77 @@ interface CatalogProduct {
 }
 
 const PRODUCT_FIELDS: ProductFieldDef[] = [
-  { key: 'vanity', label: 'Vanity', type: 'product', apiCategories: ['Vanities', 'Linen Cabinets'] },
-  { key: 'faucet', label: 'Faucet', type: 'product', apiCategories: ['Faucets', 'Faucet Accessories'] },
+  {
+    key: 'vanity',
+    label: 'Vanity',
+    type: 'product',
+    apiCategories: ['Vanities', 'Linen Cabinets'],
+  },
+  {
+    key: 'faucet',
+    label: 'Faucet',
+    type: 'product',
+    apiCategories: ['Faucets', 'Faucet Accessories'],
+  },
   { key: 'mirror', label: 'Mirror', type: 'product', apiCategories: ['Mirror'] },
-  { key: 'lighting', label: 'Lighting', type: 'product', apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'] },
-  { key: 'toilet', label: 'Toilet', type: 'product', apiCategories: ['Toilet', 'Toilet Accessories'] },
+  {
+    key: 'lighting',
+    label: 'Lighting',
+    type: 'product',
+    apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'],
+  },
+  {
+    key: 'toilet',
+    label: 'Toilet',
+    type: 'product',
+    apiCategories: ['Toilet', 'Toilet Accessories'],
+  },
   { key: 'robeHook', label: 'Robe Hook', type: 'product', apiCategories: ['Robe Hooks'] },
-  { key: 'toiletPaperHolder', label: 'Toilet Paper Holder', type: 'product', apiCategories: ['Toilet Paper Holders'] },
+  {
+    key: 'toiletPaperHolder',
+    label: 'Toilet Paper Holder',
+    type: 'product',
+    apiCategories: ['Toilet Paper Holders'],
+  },
   { key: 'towelBar', label: 'Towel Bar', type: 'product', apiCategories: ['Towel Bars'] },
   { key: 'towelRing', label: 'Towel Ring', type: 'product', apiCategories: ['Towel Rings'] },
   { key: 'floorTile', label: 'Floor Tile', type: 'product', apiCategories: ['Tile'] },
   { key: 'wallTile', label: 'Wall Tile', type: 'product', apiCategories: ['Tile'] },
   { key: 'nicheTile', label: 'Niche Tile', type: 'product', apiCategories: ['Tile'] },
   { key: 'showerWallTile', label: 'Shower Wall Tile', type: 'product', apiCategories: ['Tile'] },
-  { key: 'showerShortWallTile', label: 'Shower Short Wall Tile', type: 'product', apiCategories: ['Tile'] },
+  {
+    key: 'showerShortWallTile',
+    label: 'Shower Short Wall Tile',
+    type: 'product',
+    apiCategories: ['Tile'],
+  },
   { key: 'showerFloorTile', label: 'Shower Floor Tile', type: 'product', apiCategories: ['Tile'] },
   { key: 'curbTile', label: 'Curb Tile', type: 'product', apiCategories: ['Tile'] },
   { key: 'paint', label: 'Paint', type: 'product', apiCategories: ['Paint'] },
   { key: 'shelves', label: 'Shelves', type: 'product', apiCategories: ['Shelves'] },
-  { key: 'showerSystem', label: 'Shower System', type: 'product', apiCategories: ['Shower Systems', 'Shower System Components'] },
+  {
+    key: 'showerSystem',
+    label: 'Shower System',
+    type: 'product',
+    apiCategories: ['Shower Systems', 'Shower System Components'],
+  },
   { key: 'showerGlass', label: 'Shower Glass', type: 'product', apiCategories: ['Shower Glass'] },
-  { key: 'tub', label: 'Tub', type: 'product', apiCategories: ['Tubs', 'Tub Accessories', 'Tub Drains'] },
+  {
+    key: 'tub',
+    label: 'Tub',
+    type: 'product',
+    apiCategories: ['Tubs', 'Tub Accessories', 'Tub Drains'],
+  },
   { key: 'tubDoor', label: 'Tub Door', type: 'product', apiCategories: ['Tub Doors'] },
   { key: 'tubFiller', label: 'Tub Filler', type: 'product', apiCategories: ['Tub Filler'] },
-  { key: 'wallpaper', label: 'Wallpaper', type: 'product', apiCategories: ['Wallpaper', 'Wallpaper Accessories'] },
+  {
+    key: 'wallpaper',
+    label: 'Wallpaper',
+    type: 'product',
+    apiCategories: ['Wallpaper', 'Wallpaper Accessories'],
+  },
   { key: 'lvp', label: 'LVP', type: 'product', apiCategories: ['LVP'] },
 ];
-
 
 const TILE_PATTERN_OPTIONS = [
   { value: 'Horizontal', label: 'Horizontal' },
@@ -124,13 +172,48 @@ const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
       { value: 'CenterOnSink', label: 'Center on Sink' },
     ],
   },
-  { key: 'floorTilePattern', label: 'Floor Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'wallTilePattern', label: 'Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'nicheTilePattern', label: 'Niche Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'showerWallTilePattern', label: 'Shower Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'showerShortWallTilePattern', label: 'Shower Short Wall Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'showerFloorTilePattern', label: 'Shower Floor Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
-  { key: 'curbTilePattern', label: 'Curb Tile Pattern', type: 'select', options: TILE_PATTERN_OPTIONS },
+  {
+    key: 'floorTilePattern',
+    label: 'Floor Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'wallTilePattern',
+    label: 'Wall Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'nicheTilePattern',
+    label: 'Niche Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'showerWallTilePattern',
+    label: 'Shower Wall Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'showerShortWallTilePattern',
+    label: 'Shower Short Wall Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'showerFloorTilePattern',
+    label: 'Shower Floor Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
+  {
+    key: 'curbTilePattern',
+    label: 'Curb Tile Pattern',
+    type: 'select',
+    options: TILE_PATTERN_OPTIONS,
+  },
   { key: 'isShowerGlassVisible', label: 'Shower Glass Visible', type: 'boolean' },
   { key: 'isTubDoorVisible', label: 'Tub Door Visible', type: 'boolean' },
 ];
@@ -139,6 +222,16 @@ const FIELDS: FieldDef[] = [...PRODUCT_FIELDS, ...SETTING_FIELDS];
 const PRODUCT_IMAGE_TYPE_KEYS = PRODUCT_FIELDS.map((field) => `${field.key}ImageType`);
 const ALL_FIELD_KEYS = new Set([...FIELDS.map((field) => field.key), ...PRODUCT_IMAGE_TYPE_KEYS]);
 const DEFAULT_PRODUCT_IMAGE_TYPE: ProductImageType = 'featured-image';
+
+const PRODUCT_IMAGE_TYPE_OPTIONS: {
+  value: Exclude<ProductImageType, 'arbitrary'>;
+  label: string;
+}[] = [
+  { value: 'featured-image', label: 'Featured' },
+  { value: 'photo-image', label: 'Photo Image' },
+  { value: 'tear-sheet', label: 'Tear Sheet' },
+  { value: 'line-drawing', label: 'Line Drawing' },
+];
 
 const SLOT_TO_CATALOG_CATEGORY: Record<string, string> = {
   floorTile: 'floor-tiles',
@@ -173,7 +266,11 @@ function getProductImageTypeKey(slotKey: string): string {
 }
 
 function readProductImageType(value: unknown): ProductImageType | null {
-  return value === 'featured-image' || value === 'line-drawing' || value === 'tear-sheet' || value === 'arbitrary'
+  return value === 'featured-image' ||
+    value === 'photo-image' ||
+    value === 'line-drawing' ||
+    value === 'tear-sheet' ||
+    value === 'arbitrary'
     ? value
     : null;
 }
@@ -202,10 +299,12 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!productId || !catalogCategory) { setImages([]); return; }
+    if (!productId || !catalogCategory) return;
 
     let cancelled = false;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
     fetch(localUrl(`catalog/products/${catalogCategory}/${productId}`))
       .then((r) => r.json())
       .then((r) => {
@@ -226,24 +325,41 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
         setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) { setImages([]); setLoading(false); }
+        if (!cancelled) {
+          setImages([]);
+          setLoading(false);
+        }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [catalogCategory, productId]);
 
-  return { images, loading };
+  return {
+    images: productId && catalogCategory ? images : [],
+    loading: productId && catalogCategory ? loading : false,
+  };
+}
+
+function productImageTypeToTag(imageType: ProductImageType): CatalogImageTag | null {
+  return imageType === 'photo-image' || imageType === 'tear-sheet' || imageType === 'line-drawing'
+    ? imageType
+    : null;
+}
+
+function resolveAvailableProductImageType(
+  imageType: ProductImageType,
+  images: CatalogImageVariant[],
+): ProductImageType {
+  const tag = productImageTypeToTag(imageType);
+  if (!tag) return imageType;
+  return images.some((image) => image.tag === tag) ? imageType : DEFAULT_PRODUCT_IMAGE_TYPE;
 }
 
 const IMAGE_TAG_LABELS: Record<CatalogImageTag, string> = {
-  'photo-image': 'Featured',
+  'photo-image': 'Photo Image',
   'tear-sheet': 'Tear Sheet',
   'line-drawing': 'Line Drawing',
-};
-
-const IMAGE_TAG_ICON: Record<CatalogImageTag, string> = {
-  'photo-image': '📷',
-  'tear-sheet': '📋',
-  'line-drawing': '✏️',
 };
 
 function downloadUrl(url: string, filename: string) {
@@ -260,23 +376,63 @@ function downloadUrl(url: string, filename: string) {
 
 const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
   'photo-image': (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z"
+      />
     </svg>
   ),
   'tear-sheet': (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+      />
     </svg>
   ),
   'line-drawing': (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+      />
     </svg>
   ),
 };
 
-function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: CatalogImageTag; url: string; productName: string | null; onClose: () => void }) {
+function ProductImagePreviewModal({
+  tag,
+  url,
+  productName,
+  onClose,
+}: {
+  tag: CatalogImageTag;
+  url: string;
+  productName: string | null;
+  onClose: () => void;
+}) {
   const [loaded, setLoaded] = useState(false);
   const sep = url.includes('?') ? '&' : '?';
   const webpUrl = `${url}${sep}f=webp`;
@@ -303,8 +459,18 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
               onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
               className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
               </svg>
               Download
             </button>
@@ -313,7 +479,13 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
               onClick={onClose}
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -336,7 +508,15 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
   );
 }
 
-function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; url: string; productName: string | null }) {
+function ImageTypeIconButton({
+  tag,
+  url,
+  productName,
+}: {
+  tag: CatalogImageTag;
+  url: string;
+  productName: string | null;
+}) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   return (
@@ -352,7 +532,7 @@ function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; 
       >
         {TAG_ICONS[tag]}
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded bg-gray-800 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
         {IMAGE_TAG_LABELS[tag]}
       </span>
       {previewOpen && (
@@ -369,11 +549,9 @@ function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; 
 
 function ProductImageDownloadButtons({
   images,
-  productId,
   productName,
 }: {
   images: CatalogImageVariant[];
-  productId: string;
   productName: string | null;
 }) {
   return (
@@ -387,22 +565,43 @@ function ProductImageDownloadButtons({
   );
 }
 
-function ProductImageDownloads({ slotKey, productId, productName }: { slotKey: string; productId: string | null; productName: string | null }) {
-  const category = slotKey ? SLOT_TO_CATALOG_CATEGORY[slotKey] ?? null : null;
+function ProductImageDownloads({
+  slotKey,
+  productId,
+  productName,
+}: {
+  slotKey: string;
+  productId: string | null;
+  productName: string | null;
+}) {
+  const category = slotKey ? (SLOT_TO_CATALOG_CATEGORY[slotKey] ?? null) : null;
   const { images, loading } = useCatalogProductImages(category, productId);
 
   if (!productId) return null;
-  if (loading) return <div className="mt-1.5 flex gap-1"><span className="animate-pulse text-[10px] text-gray-400">...</span></div>;
+  if (loading)
+    return (
+      <div className="mt-1.5 flex gap-1">
+        <span className="animate-pulse text-[10px] text-gray-400">...</span>
+      </div>
+    );
   if (images.length === 0) return null;
 
   return (
     <div className="mt-1.5 flex items-center gap-0.5">
-      <ProductImageDownloadButtons images={images} productId={productId} productName={productName} />
+      <ProductImageDownloadButtons images={images} productName={productName} />
     </div>
   );
 }
 
-function ProductListItemDownloads({ catalogCategory, productId, productName }: { catalogCategory: string; productId: string; productName: string | null }) {
+function ProductListItemDownloads({
+  catalogCategory,
+  productId,
+  productName,
+}: {
+  catalogCategory: string;
+  productId: string;
+  productName: string | null;
+}) {
   const { images, loading } = useCatalogProductImages(catalogCategory, productId);
 
   if (loading) return null;
@@ -410,7 +609,7 @@ function ProductListItemDownloads({ catalogCategory, productId, productName }: {
 
   return (
     <span className="flex items-center gap-0.5">
-      <ProductImageDownloadButtons images={images} productId={productId} productName={productName} />
+      <ProductImageDownloadButtons images={images} productName={productName} />
     </span>
   );
 }
@@ -467,7 +666,7 @@ export function DesignSettingsEditor({
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const { products, byId, loaded } = useCatalogProducts(retailerId);
-  const data = value ?? {};
+  const data = useMemo(() => value ?? {}, [value]);
 
   const setField = useCallback(
     (key: string, nextValue: unknown) => {
@@ -479,25 +678,10 @@ export function DesignSettingsEditor({
     [data, onChange],
   );
 
-  const setProductImageType = useCallback(
-    (slotKey: string, nextValue: ProductImageType | null) => {
-      const next = { ...data };
-      const imageTypeKey = getProductImageTypeKey(slotKey);
-      if (nextValue == null) delete next[imageTypeKey];
-      else next[imageTypeKey] = nextValue;
-
-      if (nextValue !== 'arbitrary' && arbitraryImagesBySlot[slotKey]) {
-        const nextImages = { ...arbitraryImagesBySlot };
-        delete nextImages[slotKey];
-        onArbitraryImagesBySlotChange(nextImages);
-      }
-
-      onChange(Object.keys(next).length === 0 ? null : next);
-    },
-    [arbitraryImagesBySlot, data, onArbitraryImagesBySlotChange, onChange],
+  const filledCount = useMemo(
+    () => FIELDS.filter((field) => isNonEmpty(data[field.key])).length,
+    [data],
   );
-
-  const filledCount = useMemo(() => FIELDS.filter((field) => isNonEmpty(data[field.key])).length, [data]);
   const extraKeys = useMemo(
     () => Object.keys(data).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(data[key])),
     [data],
@@ -531,8 +715,9 @@ export function DesignSettingsEditor({
       const nextImages = Object.fromEntries(
         Object.entries(arbitraryImagesBySlot).filter(
           ([slot, url]) =>
-            !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary'
-        )
+            !!url &&
+            (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary',
+        ),
       );
       onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
@@ -559,8 +744,9 @@ export function DesignSettingsEditor({
       const nextImages = Object.fromEntries(
         Object.entries(arbitraryImagesBySlot).filter(
           ([slot, url]) =>
-            !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary'
-        )
+            !!url &&
+            (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === 'arbitrary',
+        ),
       );
       onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
@@ -574,9 +760,9 @@ export function DesignSettingsEditor({
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold uppercase text-gray-900">Design Settings</h2>
+          <h2 className="text-sm font-semibold text-gray-900 uppercase">Design Settings</h2>
           {filledCount > 0 && (
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">
               {filledCount} set
             </span>
           )}
@@ -596,7 +782,9 @@ export function DesignSettingsEditor({
               type="button"
               onClick={mode === 'json' ? switchToForm : undefined}
               className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                mode === 'form' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                mode === 'form'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Form
@@ -605,7 +793,9 @@ export function DesignSettingsEditor({
               type="button"
               onClick={mode === 'form' ? switchToJson : undefined}
               className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                mode === 'json' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                mode === 'json'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               JSON
@@ -619,9 +809,12 @@ export function DesignSettingsEditor({
           <div className="space-y-6">
             <section className="rounded-lg border border-gray-200 bg-white p-4">
               <div className="mb-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Placement & Visibility</h3>
+                <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                  Placement & Visibility
+                </h3>
                 <p className="mt-1 text-xs text-gray-500">
-                  Configure placement, patterns, and visibility settings separately from product selection.
+                  Configure placement, patterns, and visibility settings separately from product
+                  selection.
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -648,7 +841,9 @@ export function DesignSettingsEditor({
             <section className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Product Selection</h3>
+                  <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                    Product Selection
+                  </h3>
                   <p className="mt-1 text-xs text-gray-500">
                     Configure each slot from its modal picker.
                   </p>
@@ -666,7 +861,11 @@ export function DesignSettingsEditor({
                     imageTypeValue={data[getProductImageTypeKey(field.key)]}
                     loaded={loaded}
                     products={products}
-                    selectedProduct={typeof data[field.key] === 'string' ? byId.get(data[field.key] as string) ?? null : null}
+                    selectedProduct={
+                      typeof data[field.key] === 'string'
+                        ? (byId.get(data[field.key] as string) ?? null)
+                        : null
+                    }
                     arbitraryImagesBySlot={arbitraryImagesBySlot}
                     savedImageUrl={savedImageUrlsBySlot?.[field.key] ?? null}
                     onApplySelection={({ productId, imageType, arbitraryUrl }) => {
@@ -710,12 +909,16 @@ export function DesignSettingsEditor({
 
           {extraKeys.length > 0 && (
             <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="mb-2 text-xs font-medium text-amber-700">Additional fields (switch to JSON to edit):</p>
+              <p className="mb-2 text-xs font-medium text-amber-700">
+                Additional fields (switch to JSON to edit):
+              </p>
               <div className="space-y-1">
                 {extraKeys.map((key) => (
                   <div key={key} className="flex items-center justify-between">
                     <span className="font-mono text-xs text-amber-800">{key}</span>
-                    <span className="font-mono text-xs text-amber-600">{JSON.stringify(data[key])}</span>
+                    <span className="font-mono text-xs text-amber-600">
+                      {JSON.stringify(data[key])}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -724,7 +927,9 @@ export function DesignSettingsEditor({
         </div>
       ) : (
         <div className="p-5">
-          <p className="mb-2 text-xs text-gray-500">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
+          <p className="mb-2 text-xs text-gray-500">
+            Raw JSON with camelCase keys. Switch back to Form to use the structured editor.
+          </p>
           <textarea
             value={jsonText}
             onChange={(e) => {
@@ -734,7 +939,9 @@ export function DesignSettingsEditor({
             spellCheck={false}
             rows={14}
             className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
+            placeholder={
+              '{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'
+            }
           />
           {jsonError && <p className="mt-2 text-xs text-red-600">{jsonError}</p>}
           <div className="mt-3 flex justify-end">
@@ -879,8 +1086,10 @@ function ProductField({
   const selectedId = typeof value === 'string' ? value : '';
   const selectedImageType = readProductImageType(imageTypeValue);
   const attachedArbitraryUrl = arbitraryImagesBySlot[field.key] ?? null;
-  const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
-  const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
+  const previewUrl =
+    attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
+  const hasSelection =
+    !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
   const summaryText = selectedProduct
     ? selectedProduct.name
@@ -890,11 +1099,7 @@ function ProductField({
 
   return (
     <div className="rounded-md border border-gray-200 bg-white p-2.5">
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        className="block w-full text-left"
-      >
+      <button type="button" onClick={() => setPickerOpen(true)} className="block w-full text-left">
         <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
           {previewUrl ? (
             <ImageWithSkeleton
@@ -915,7 +1120,7 @@ function ProductField({
           <div className="flex items-start justify-between gap-2">
             <label className="truncate text-xs font-semibold text-gray-800">{field.label}</label>
             {effectiveImageType === 'arbitrary' && (
-              <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+              <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-violet-200 ring-inset">
                 Custom
               </span>
             )}
@@ -925,7 +1130,7 @@ function ProductField({
           </p>
           <p className="mt-1 truncate text-[10px] text-gray-400">
             {selectedProduct
-              ? selectedProduct.category?.name ?? selectedId
+              ? (selectedProduct.category?.name ?? selectedId)
               : savedImageUrl
                 ? 'Uses saved URL'
                 : attachedArbitraryUrl
@@ -937,8 +1142,14 @@ function ProductField({
       {(selectedId || hasSelection) && (
         <div className="mt-2 flex items-center justify-between">
           {selectedId ? (
-            <ProductImageDownloads slotKey={field.key} productId={selectedId} productName={selectedProduct?.name ?? null} />
-          ) : <span />}
+            <ProductImageDownloads
+              slotKey={field.key}
+              productId={selectedId}
+              productName={selectedProduct?.name ?? null}
+            />
+          ) : (
+            <span />
+          )}
           {hasSelection && (
             <button
               type="button"
@@ -958,7 +1169,6 @@ function ProductField({
           products={products}
           loaded={loaded}
           selectedId={selectedId}
-          selectedProduct={selectedProduct}
           imageTypeValue={effectiveImageType}
           arbitraryUrl={attachedArbitraryUrl}
           savedImageUrl={savedImageUrl}
@@ -983,7 +1193,6 @@ function ProductSelectionModal({
   products,
   loaded,
   selectedId,
-  selectedProduct,
   imageTypeValue,
   arbitraryUrl,
   savedImageUrl,
@@ -996,7 +1205,6 @@ function ProductSelectionModal({
   products: CatalogProduct[];
   loaded: boolean;
   selectedId: string;
-  selectedProduct: CatalogProduct | null;
   imageTypeValue: ProductImageType;
   arbitraryUrl: string | null;
   savedImageUrl: string | null;
@@ -1014,12 +1222,6 @@ function ProductSelectionModal({
   const [draftArbitraryUrl, setDraftArbitraryUrl] = useState<string | null>(arbitraryUrl);
 
   useEffect(() => {
-    setDraftSelectedId(selectedId);
-    setDraftImageType(imageTypeValue);
-    setDraftArbitraryUrl(arbitraryUrl);
-  }, [selectedId, imageTypeValue, arbitraryUrl]);
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
@@ -1029,16 +1231,24 @@ function ProductSelectionModal({
 
   const draftSelectedProduct = useMemo(
     () => products.find((product) => product.id === draftSelectedId) ?? null,
-    [products, draftSelectedId]
+    [products, draftSelectedId],
   );
+  const { images: draftCatalogImages, loading: draftCatalogImagesLoading } =
+    useCatalogProductImages(catalogCategory, draftSelectedId || null);
   const isArbitraryMode = draftImageType === 'arbitrary';
+  const resolvedDraftImageType = isArbitraryMode
+    ? draftImageType
+    : draftCatalogImagesLoading
+      ? draftImageType
+      : resolveAvailableProductImageType(draftImageType, draftCatalogImages);
+  const willFallbackToFeatured = !isArbitraryMode && resolvedDraftImageType !== draftImageType;
   const canAccept = !isArbitraryMode || !!draftArbitraryUrl;
 
   const handleAccept = () => {
     if (!canAccept) return;
     onAccept({
       productId: draftSelectedId || null,
-      imageType: draftImageType,
+      imageType: resolvedDraftImageType,
       arbitraryUrl: draftImageType === 'arbitrary' ? draftArbitraryUrl : null,
     });
   };
@@ -1066,7 +1276,7 @@ function ProductSelectionModal({
       <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
-            <h3 className="text-sm font-semibold uppercase text-gray-900">{field.label}</h3>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase">{field.label}</h3>
             <p className="mt-1 text-xs text-gray-500">
               {isArbitraryMode
                 ? draftSelectedId
@@ -1090,7 +1300,13 @@ function ProductSelectionModal({
               onClick={onClose}
               className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
@@ -1100,7 +1316,9 @@ function ProductSelectionModal({
           <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current selection</p>
+                <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                  Current selection
+                </p>
                 <p className="mt-1 truncate text-sm font-medium text-gray-800">
                   {draftSelectedProduct
                     ? draftSelectedProduct.name
@@ -1117,14 +1335,57 @@ function ProductSelectionModal({
                 </p>
               </div>
             </div>
+            {!isArbitraryMode ? (
+              <div className="mt-3">
+                <p className="mb-1.5 text-[11px] font-medium text-gray-600">Product image type</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRODUCT_IMAGE_TYPE_OPTIONS.map((option) => {
+                    const tag = productImageTypeToTag(option.value);
+                    const isAvailable =
+                      option.value === DEFAULT_PRODUCT_IMAGE_TYPE ||
+                      draftCatalogImagesLoading ||
+                      !draftSelectedId ||
+                      !tag ||
+                      draftCatalogImages.some((image) => image.tag === tag);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setDraftImageType(option.value)}
+                        className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                          draftImageType === option.value
+                            ? 'border-primary-300 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                        } ${!isAvailable ? 'border-dashed text-gray-400' : ''}`}
+                        title={
+                          !isAvailable
+                            ? 'Falls back to the featured image if unavailable.'
+                            : undefined
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {willFallbackToFeatured ? (
+                  <p className="mt-1.5 text-[11px] text-amber-600">
+                    Selected image type is unavailable for this product. Featured image will be
+                    used.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="mt-3">
               <label className="flex cursor-pointer items-center gap-2">
                 <button
                   type="button"
                   role="switch"
                   aria-checked={isArbitraryMode}
-                  onClick={() => setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')}
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                  onClick={() =>
+                    setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')
+                  }
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none ${
                     isArbitraryMode ? 'bg-violet-600' : 'bg-gray-300'
                   }`}
                 >
@@ -1156,9 +1417,11 @@ function ProductSelectionModal({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
+              placeholder={
+                loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'
+              }
               disabled={!loaded}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
             />
           ) : null}
         </div>
@@ -1172,7 +1435,7 @@ function ProductSelectionModal({
               filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 transition-colors ${
+                  className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 transition-colors last:border-b-0 ${
                     product.id === draftSelectedId
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-700 hover:bg-gray-50'
@@ -1206,10 +1469,14 @@ function ProductSelectionModal({
                   </button>
                   <span className="flex shrink-0 items-center gap-1">
                     {catalogCategory && (
-                      <ProductListItemDownloads catalogCategory={catalogCategory} productId={product.id} productName={product.name} />
+                      <ProductListItemDownloads
+                        catalogCategory={catalogCategory}
+                        productId={product.id}
+                        productName={product.name}
+                      />
                     )}
                     {product.id === draftSelectedId && (
-                      <span className="rounded bg-primary-100 px-2 py-0.5 text-[10px] font-semibold">
+                      <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">
                         Selected
                       </span>
                     )}
@@ -1231,7 +1498,7 @@ function ProductSelectionModal({
             type="button"
             onClick={handleAccept}
             disabled={!canAccept}
-            className="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-primary-600 hover:bg-primary-700 rounded-md px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Accept
           </button>
@@ -1255,17 +1522,24 @@ for (const field of SETTING_FIELDS) {
   }
 }
 
-export function DesignSettingsDisplay({ value, hideProductFields = false }: DesignSettingsDisplayProps) {
+export function DesignSettingsDisplay({
+  value,
+  hideProductFields = false,
+}: DesignSettingsDisplayProps) {
   const { byId } = useCatalogProducts();
-  const populated = FIELDS.filter((field) => isNonEmpty(value[field.key]) && (!hideProductFields || field.type !== 'product'));
-  const extraKeys = Object.keys(value).filter((key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(value[key]));
+  const populated = FIELDS.filter(
+    (field) => isNonEmpty(value[field.key]) && (!hideProductFields || field.type !== 'product'),
+  );
+  const extraKeys = Object.keys(value).filter(
+    (key) => !ALL_FIELD_KEYS.has(key) && isNonEmpty(value[key]),
+  );
 
   if (populated.length === 0 && extraKeys.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
       <div className="border-b border-gray-100 px-5 py-3">
-        <h2 className="text-sm font-semibold uppercase text-gray-900">Design Settings</h2>
+        <h2 className="text-sm font-semibold text-gray-900 uppercase">Design Settings</h2>
       </div>
       <div className="px-5 py-4">
         <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
@@ -1285,7 +1559,9 @@ export function DesignSettingsDisplay({ value, hideProductFields = false }: Desi
             {extraKeys.map((key) => (
               <div key={key} className="flex items-center justify-between py-0.5">
                 <span className="font-mono text-xs text-amber-800">{key}</span>
-                <span className="font-mono text-xs text-amber-600">{JSON.stringify(value[key])}</span>
+                <span className="font-mono text-xs text-amber-600">
+                  {JSON.stringify(value[key])}
+                </span>
               </div>
             ))}
           </div>
@@ -1314,8 +1590,8 @@ function DisplayField({
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
             boolValue
-              ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-200'
-              : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200'
+              ? 'bg-green-50 text-green-700 ring-1 ring-green-200 ring-inset'
+              : 'bg-red-50 text-red-700 ring-1 ring-red-200 ring-inset'
           }`}
         >
           {boolValue ? 'Yes' : 'No'}
@@ -1332,8 +1608,9 @@ function DisplayField({
     return (
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-gray-600">{field.label}</span>
-        <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
-          {product?.name ?? productId}{isCustom ? ' · Custom' : ''}
+        <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-violet-200 ring-inset">
+          {product?.name ?? productId}
+          {isCustom ? ' · Custom' : ''}
         </span>
       </div>
     );
@@ -1344,7 +1621,7 @@ function DisplayField({
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-600">{field.label}</span>
-      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">
         {label}
       </span>
     </div>
