@@ -5,6 +5,7 @@ import { ErrorCard } from '@/components/resource-form-header';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
 import {
+  contextLabelForPrompt,
   decodePromptTemplate,
   encodePromptTemplate,
   variablesForPrompt,
@@ -239,7 +240,7 @@ export function CatalogPromptForm({
           <p className="text-[11px] text-gray-500">
             Go <code>text/template</code> syntax (<code>{'{{.Field}}'}</code>) — the worker
             renders this against typed context (
-            <code>{kindContextLabel(kind, scope)}</code>). Use the{' '}
+            <code>{contextLabelForPrompt(kind, scope)}</code>). Use the{' '}
             <strong>Insert variable</strong> dropdown to add a typed reference.
           </p>
         </div>
@@ -346,16 +347,3 @@ function ParentPromptCard({ parent }: { parent: PromptVersion }) {
   );
 }
 
-// kindContextLabel returns the typed Go-side struct admins should
-// expect when authoring a template. Mirrors the resolver's mapping
-// in service-catalog-feed/usecases/ai/prompts/registry.go.
-function kindContextLabel(kind: PromptKind, scope: string): string {
-  if (kind === 'generation') return 'GenerationData';
-  if (kind === 'judge') return 'JudgeData';
-  if (kind === 'extraction') {
-    if (scope.startsWith('procedural::')) return 'ProceduralContext';
-    if (scope === 'mosaic_grid') return '(no inputs)';
-    return 'aidomain.Context';
-  }
-  return '(no documented inputs)';
-}

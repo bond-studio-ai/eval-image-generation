@@ -27,15 +27,28 @@ export function decodePromptTemplate(raw: string): PromptEnvelope {
   }
   if (trimmed.startsWith('{')) {
     try {
-      const parsed = JSON.parse(trimmed) as { system?: unknown; user?: unknown };
-      const system = typeof parsed.system === 'string' ? parsed.system : '';
-      const user = typeof parsed.user === 'string' ? parsed.user : '';
-      // Only treat it as a JSON envelope if at least one side is a
-      // string. A bare `{}` or unrelated JSON falls through to the
-      // plain-text branch so we never silently swallow content.
-      if (system || user || (parsed && Object.keys(parsed).length === 0)) {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      // Treat the row as an envelope ONLY when at least one of the
+      // canonical keys is present, even if its value is the empty
+      // string. The previous test (`system || user`) misclassified
+      // `{"system":"","user":""}` as a non-envelope (both sides
+      // falsy) AND classified bare `{}` as a valid envelope (length
+      // === 0 short-circuit), which together turned `{}` into a
+      // silent content wipe and a deliberate empty envelope into a
+      // plain-text fallback. Using `in` flips both cases the right
+      // way around without a content-sniffing heuristic.
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        ('system' in parsed || 'user' in parsed)
+      ) {
+        const system = typeof parsed.system === 'string' ? parsed.system : '';
+        const user = typeof parsed.user === 'string' ? parsed.user : '';
         return { system, user, source: 'json' };
       }
+      // Anything else (bare `{}`, unrelated JSON like
+      // `{"foo":"bar"}`, a JSON array) is preserved verbatim as
+      // plain-text so a malformed legacy row never gets rewritten.
     } catch {
       // fall through to legacy detection
     }
@@ -70,7 +83,20 @@ export type TemplateToken =
   | { kind: 'expression'; raw: string };
 
 const ACTION_RE = /\{\{[\s\S]*?\}\}/g;
-const SIMPLE_VAR_RE = /^\.[A-Za-z_][\w.]*$/;
+// Strict dot-separated identifier path: ".Foo", ".Foo.Bar", but NOT
+// ".Foo." or ".Foo..Bar". Each segment must start with a letter or
+// underscore (Go's exported field rule still requires the leading
+// uppercase, but the tokenizer is lenient there so admins authoring
+// templates against future fields are not blocked by display logic).
+const SIMPLE_VAR_RE = /^\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$/;
+// Inner-action scanner: pulls every dot-prefixed top-level field
+// reference out of an action body. Used by extractReferencedVariables
+// so references buried in `{{if .Field}}`, `{{with .Field}}`, or
+// pipelines like `{{or .X .Y}}` still surface in the editor's
+// "Variables in use" pill row instead of silently bypassing drift
+// detection. Anchored on word boundary on the left to avoid matching
+// `..Bar` style malformed tails.
+const FIELD_REF_RE = /(?:^|[^.\w])\.([A-Za-z_]\w*)/g;
 const KEYWORDS: Record<string, Extract<TemplateToken, { kind: 'directive' }>['name']> = {
   if: 'if',
   else: 'else',
@@ -128,17 +154,30 @@ export function tokenizePromptTemplate(template: string): TemplateToken[] {
   return out;
 }
 
-/** Pull every distinct {{.Field}} reference out of a template. The
- *  resulting names mirror the typed Go struct fields one-for-one and
- *  are surfaced in the detail page's "Variables in use" pill row. */
+/** Pull every distinct top-level {{.Field}} reference out of a
+ *  template, including references nested inside control-flow
+ *  directives (`{{if .X}}`, `{{with .X}}`) and pipelines (`{{or .X .Y}}`).
+ *
+ *  Restricting to bare `kind === 'variable'` tokens (the previous
+ *  behaviour) hid typos in the most common authoring mistake — a
+ *  misspelled field name in a `{{if}}` guard — because the
+ *  conditional made the typed-variable chip never appear, so the
+ *  drift signal had nothing to flag. Scanning the inner action body
+ *  of every token type via FIELD_REF_RE keeps the pill row honest
+ *  without misclassifying directives as variables.
+ *
+ *  Top-level segment only (Title, ProductTypeLabel, …) so the result
+ *  can be matched against the variable registry; nested paths like
+ *  `.Foo.Bar` collapse to `Foo`. */
 export function extractReferencedVariables(template: string): string[] {
   const seen = new Set<string>();
   for (const token of tokenizePromptTemplate(template)) {
-    if (token.kind === 'variable') {
-      // Top-level field name only (Title, ProductTypeLabel, …) so the
-      // pill row can match against the variable registry. Nested
-      // accesses like `.Foo.Bar` collapse to `Foo` for grouping.
-      const top = token.name.split('.')[0];
+    if (token.kind === 'text') continue;
+    const inner = token.raw.slice(2, -2); // strip the {{ }} wrapper
+    FIELD_REF_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = FIELD_REF_RE.exec(inner)) !== null) {
+      const top = m[1];
       if (top) seen.add(top);
     }
   }
@@ -283,9 +322,14 @@ const PROCEDURAL_VARIABLES: PromptVariable[] = [
 ];
 
 /**
- * Return the typed variables available to the prompt at runtime,
- * inferred from the prompt's (kind, scope). The mapping mirrors the
- * resolver in service-catalog-feed:
+ * promptContextShape is the single source of truth that maps a
+ * (kind, scope) pair to the Go-side data struct the worker uses
+ * when rendering the template. Both `variablesForPrompt` and
+ * `contextLabelForPrompt` derive their result from this helper so
+ * the dropdown variable list and the human-facing label can never
+ * drift out of sync.
+ *
+ * Mirrors the resolver in service-catalog-feed:
  *
  *   - kind=generation                                  → GenerationData
  *   - kind=judge                                       → JudgeData
@@ -294,19 +338,61 @@ const PROCEDURAL_VARIABLES: PromptVariable[] = [
  *   - kind=extraction, scope=`<productType>:image-extraction`
  *                                                       → aidomain.Context
  *   - kind=meta                                        → none
- *
- * Unknown shapes return an empty array so the dropdown silently
- * collapses rather than offering bogus variables.
+ */
+type ContextShape =
+  | { kind: 'generation'; label: 'GenerationData'; variables: PromptVariable[] }
+  | { kind: 'judge'; label: 'JudgeData'; variables: PromptVariable[] }
+  | { kind: 'extraction-style'; label: 'aidomain.Context'; variables: PromptVariable[] }
+  | { kind: 'extraction-procedural'; label: 'ProceduralContext'; variables: PromptVariable[] }
+  | { kind: 'extraction-mosaic'; label: '(no inputs)'; variables: PromptVariable[] }
+  | { kind: 'unknown'; label: '(no documented inputs)'; variables: PromptVariable[] };
+
+function promptContextShape(kind: PromptKind, scope: string): ContextShape {
+  if (kind === 'generation') {
+    return { kind: 'generation', label: 'GenerationData', variables: GENERATION_VARIABLES };
+  }
+  if (kind === 'judge') {
+    return { kind: 'judge', label: 'JudgeData', variables: JUDGE_VARIABLES };
+  }
+  if (kind === 'extraction') {
+    if (scope.startsWith('procedural::')) {
+      return {
+        kind: 'extraction-procedural',
+        label: 'ProceduralContext',
+        variables: PROCEDURAL_VARIABLES,
+      };
+    }
+    if (scope === 'mosaic_grid') {
+      return { kind: 'extraction-mosaic', label: '(no inputs)', variables: [] };
+    }
+    return {
+      kind: 'extraction-style',
+      label: 'aidomain.Context',
+      variables: STYLE_EXTRACTION_VARIABLES,
+    };
+  }
+  return { kind: 'unknown', label: '(no documented inputs)', variables: [] };
+}
+
+/**
+ * Return the typed variables available to the prompt at runtime,
+ * inferred from the prompt's (kind, scope). Unknown shapes return an
+ * empty array so the dropdown silently collapses rather than
+ * offering bogus variables.
  */
 export function variablesForPrompt(kind: PromptKind, scope: string): PromptVariable[] {
-  if (kind === 'generation') return GENERATION_VARIABLES;
-  if (kind === 'judge') return JUDGE_VARIABLES;
-  if (kind === 'extraction') {
-    if (scope.startsWith('procedural::')) return PROCEDURAL_VARIABLES;
-    if (scope === 'mosaic_grid') return [];
-    return STYLE_EXTRACTION_VARIABLES;
-  }
-  return [];
+  return promptContextShape(kind, scope).variables;
+}
+
+/**
+ * Return the human-facing label for the Go-side data struct backing
+ * this prompt. Used by the editor to show authors which struct's
+ * fields they can reference. Sharing this with `variablesForPrompt`
+ * means the dropdown list and the label are guaranteed to describe
+ * the same struct.
+ */
+export function contextLabelForPrompt(kind: PromptKind, scope: string): string {
+  return promptContextShape(kind, scope).label;
 }
 
 /** Convenience: return the variable registered for `name`, or

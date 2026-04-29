@@ -51,22 +51,39 @@ export function PromptTemplateDisplay({
           return <Fragment key={idx}>{token.raw}</Fragment>;
         }
         if (token.kind === 'variable') {
-          const meta = findVariable(variables, token.name.split('.')[0]);
+          const segments = token.name.split('.');
+          const top = segments[0];
+          const meta = findVariable(variables, top);
           const known = !!meta;
-          // Two visual states:
-          //   - known: emerald chip with hover description (the
-          //     resolver knows about this field and the worker will
-          //     inject a real value).
+          const isNested = segments.length > 1;
+          // Three visual states:
+          //   - known top-level: emerald chip with full type/description.
+          //   - known nested:    emerald chip but the tooltip MUST cite
+          //     the full path the chip displays (`.Foo.Bar`) and call
+          //     out that the registry only documents the top-level
+          //     field. Showing `meta.name: meta.type` without context
+          //     would imply the typed value of `.Foo` even though
+          //     the chip references a nested member.
           //   - unknown: amber chip so the admin sees the drift at a
           //     glance without breaking the page.
+          let tooltip: string;
+          if (meta && !isNested) {
+            tooltip = `.${meta.name}: ${meta.type}\n\n${meta.description}`;
+          } else if (meta && isNested) {
+            tooltip =
+              `.${token.name} (nested access of .${meta.name})\n\n` +
+              `.${meta.name} is documented as ${meta.type} in the registry, but the chip references the nested path ` +
+              `.${token.name}. The runtime type/value depends on the leaf field, which the registry does not document. ` +
+              `Verify the path against the worker's data struct before approving.`;
+          } else {
+            tooltip =
+              `.${token.name} is not in the documented variable registry for this prompt kind/scope. ` +
+              `The worker will render it as the type's zero value (or fail at runtime if the field does not exist on the data struct).`;
+          }
           return (
             <span
               key={idx}
-              title={
-                meta
-                  ? `${meta.name}: ${meta.type}\n\n${meta.description}`
-                  : `${token.name} is not in the documented variable registry for this prompt kind/scope. The worker will render it as the type's zero value (or fail at runtime if the field does not exist on the data struct).`
-              }
+              title={tooltip}
               className={`inline-flex items-center rounded-md px-1.5 py-0.5 align-baseline font-mono text-[12px] font-medium ${
                 known
                   ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200'
