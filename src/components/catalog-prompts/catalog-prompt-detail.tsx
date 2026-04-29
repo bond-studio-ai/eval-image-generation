@@ -2,8 +2,10 @@
 
 import { PromptStatusBadge, formatDateTime } from '@/components/catalog-confidence/badges';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
+import { TwoPaneSplit } from '@/components/two-pane-split';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
 import {
+  contextLabelForPrompt,
   decodePromptTemplate,
   variablesForPrompt,
 } from '@/lib/prompt-template-format';
@@ -28,6 +30,12 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
   const router = useRouter();
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const envelope = useMemo(() => decodePromptTemplate(prompt.template), [prompt.template]);
+  const variables = useMemo(
+    () => variablesForPrompt(prompt.kind, prompt.scope),
+    [prompt.kind, prompt.scope],
+  );
 
   const handleApprove = async () => {
     setApproving(true);
@@ -60,19 +68,20 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
               {KIND_LABELS[prompt.kind]}
             </span>
             <PromptStatusBadge status={prompt.status} />
+            <SourceShapeBadge source={envelope.source} />
             <span className="text-xs text-gray-500">
               created {formatDateTime(prompt.createdAt)} by {prompt.createdBy || '—'}
             </span>
           </span>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {prompt.status === 'proposed' && (
               <button
                 type="button"
                 onClick={handleApprove}
                 disabled={approving}
-                className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:bg-green-300"
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-green-700 disabled:bg-green-300"
               >
                 {approving ? 'Approving…' : 'Approve'}
               </button>
@@ -83,7 +92,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
             >
               Propose New Version
             </PrimaryLinkButton>
-          </div>
+          </>
         }
       />
 
@@ -93,16 +102,61 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Stats — mirrors the four-card grid on /prompt-versions/[id] */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat label="Kind" value={KIND_LABELS[prompt.kind]} />
+        <Stat label="Context" value={contextLabelForPrompt(prompt.kind, prompt.scope)} mono />
         <Stat label="Activated" value={formatDateTime(prompt.activatedAt) || '—'} />
         <Stat label="Retired" value={formatDateTime(prompt.retiredAt) || '—'} />
       </div>
 
-      <PromptTemplateSection prompt={prompt} />
+      {/* Prompts — TwoPaneSplit (System left, User right) identical to
+          /prompt-versions/[id] so the read-only surfaces share their
+          visual rhythm. Each pane renders the highlighted display so
+          {{.Field}} chips, control-flow brackets, and pipeline
+          expressions stay readable without leaving this page. */}
+      <TwoPaneSplit
+        className="mt-8"
+        left={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <div className="shrink-0">
+              <h2 className="text-sm font-semibold uppercase text-gray-900">System Prompt</h2>
+              <p className="mt-1 text-[11px] text-gray-500">
+                Sent as the system message — sets the model&apos;s role and output contract.
+              </p>
+            </div>
+            <div className="mt-3 min-h-0 flex-1 overflow-auto">
+              <PromptTemplateDisplay
+                template={envelope.system}
+                variables={variables}
+                emptyMessage="— no system instruction; this prompt only ships a user message —"
+              />
+            </div>
+          </div>
+        }
+        right={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <div className="shrink-0">
+              <h2 className="text-sm font-semibold uppercase text-gray-900">User Prompt</h2>
+              <p className="mt-1 text-[11px] text-gray-500">
+                Sent as the user message — describes the task and substitutes the typed values.
+              </p>
+            </div>
+            <div className="mt-3 min-h-0 flex-1 overflow-auto">
+              <PromptTemplateDisplay
+                template={envelope.user}
+                variables={variables}
+                emptyMessage="— empty —"
+              />
+            </div>
+          </div>
+        }
+      />
+
+      <ReferenceVariablesCard prompt={prompt} variables={variables} />
 
       {prompt.rationale && (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
           <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
             Rationale
           </h2>
@@ -110,7 +164,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
         </div>
       )}
 
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
           History for {prompt.kind}:{prompt.scope}
         </h2>
@@ -175,97 +229,15 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
       <p className="text-xs font-medium text-gray-600">{label}</p>
-      <p className="mt-1 truncate text-base font-semibold text-gray-900">{value}</p>
-    </div>
-  );
-}
-
-/**
- * PromptTemplateSection lifts the Template card out of the main
- * component so the read-only "human readable" view can decode the
- * stored JSON envelope into separate System / User panels and
- * surface the typed variables this prompt is allowed to reference.
- *
- * The legacy/plain-text branches in decodePromptTemplate keep older
- * rows (predating the resolver's JSON envelope) renderable in the
- * same shape — we surface a small badge so the operator can see
- * which legacy shape is in play before proposing a new version.
- */
-function PromptTemplateSection({ prompt }: { prompt: PromptVersion }) {
-  const envelope = useMemo(() => decodePromptTemplate(prompt.template), [prompt.template]);
-  const variables = useMemo(
-    () => variablesForPrompt(prompt.kind, prompt.scope),
-    [prompt.kind, prompt.scope],
-  );
-  return (
-    <div className="mt-6 space-y-4">
-      <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
-              Template
-            </h2>
-            <p className="mt-1 text-[11px] text-gray-500">
-              Go <code>text/template</code> source. Variables are highlighted; hover any chip
-              to see the typed value the worker injects at runtime.
-            </p>
-          </div>
-          <SourceShapeBadge source={envelope.source} />
-        </header>
-
-        <div className="mt-4 space-y-4">
-          <TemplateSide
-            heading="System"
-            description="Sent as the system message — sets the model's role and output contract."
-            template={envelope.system}
-            variables={variables}
-            emptyMessage="— no system instruction; this prompt only ships a user message —"
-          />
-          <TemplateSide
-            heading="User"
-            description="Sent as the user message — describes the task and substitutes the typed values."
-            template={envelope.user}
-            variables={variables}
-            emptyMessage="— empty —"
-          />
-        </div>
-      </section>
-
-      <ReferenceVariablesCard prompt={prompt} variables={variables} />
-    </div>
-  );
-}
-
-function TemplateSide({
-  heading,
-  description,
-  template,
-  variables,
-  emptyMessage,
-}: {
-  heading: string;
-  description: string;
-  template: string;
-  variables: ReturnType<typeof variablesForPrompt>;
-  emptyMessage: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">{heading}</h3>
-        <p className="text-[11px] text-gray-500">{description}</p>
-      </div>
-      <div className="mt-2">
-        <PromptTemplateDisplay
-          template={template}
-          variables={variables}
-          emptyMessage={emptyMessage}
-        />
-      </div>
+      <p
+        className={`mt-1 truncate text-base font-semibold text-gray-900 ${mono ? 'font-mono text-sm' : ''}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -307,7 +279,7 @@ function ReferenceVariablesCard({
 }) {
   if (variables.length === 0) {
     return (
-      <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+      <section className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
           Reference variables
         </h2>
@@ -329,7 +301,7 @@ function ReferenceVariablesCard({
     groups.set(v.group, arr);
   }
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+    <section className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
       <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
         Reference variables
       </h2>

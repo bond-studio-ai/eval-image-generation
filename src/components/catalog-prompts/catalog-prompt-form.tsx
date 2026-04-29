@@ -3,6 +3,7 @@
 import { PageHeader, PrimaryButton } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
 import { SearchableSelect } from '@/components/searchable-select';
+import { TwoPaneSplit } from '@/components/two-pane-split';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
 import {
   contextLabelForPrompt,
@@ -52,10 +53,14 @@ interface CatalogPromptFormProps {
  *   via `parentId`, which is what the admin API uses to chain the
  *   propose -> approve audit history.
  *
- * The `kind` and `scope` controls share the SearchableSelect
- * primitive so the styling is consistent with the list page filter
- * row. Free text is allowed on `scope` so a proposer can introduce a
- * new scope, while `kind` is a fixed enum.
+ * Layout mirrors `/prompt-versions/new` so admins moving between the
+ * two surfaces find the same affordances in the same places: an
+ * identity card up top (here Kind+Scope, there Name+Description), a
+ * stats preview grid, then a TwoPaneSplit hosting System Prompt on
+ * the left and User Prompt on the right. The Insert-variable
+ * dropdown sits at the top of each pane like the
+ * Conditional/Reference/Dollhouse pickers do in the handlebars
+ * editor.
  */
 export function CatalogPromptForm({
   mode,
@@ -175,6 +180,7 @@ export function CatalogPromptForm({
         </div>
       )}
 
+      {/* Identity — analogous to ResourceFormHeader on /prompt-versions/new */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -232,41 +238,58 @@ export function CatalogPromptForm({
         </div>
       </div>
 
-      <div className="mt-6 space-y-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
-            Template <span className="text-red-500">*</span>
-          </h2>
-          <p className="text-[11px] text-gray-500">
-            Go <code>text/template</code> syntax (<code>{'{{.Field}}'}</code>) — the worker
-            renders this against typed context (
-            <code>{contextLabelForPrompt(kind, scope)}</code>). Use the{' '}
-            <strong>Insert variable</strong> dropdown to add a typed reference.
-          </p>
-        </div>
-
-        <PromptTemplateEditor
-          label="System prompt"
-          value={systemTemplate}
-          onChange={setSystemTemplate}
-          variables={variables}
-          rows={6}
-          hint="Sent as the system message — sets the model's role and output contract. Optional."
-          placeholder="You are a strict extractor for…"
-        />
-
-        <PromptTemplateEditor
-          label="User prompt"
-          value={userTemplate}
-          onChange={setUserTemplate}
-          variables={variables}
-          rows={14}
-          required
-          hint="Sent as the user message — describes the task and references the typed values."
-          placeholder="Given this product image, …"
+      {/* Stats preview — mirrors the placeholder grid on /prompt-versions/new
+          so the page rhythm matches even before the proposal exists in DB. */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <StatCard label="Kind" value={KIND_LABEL_MAP[kind]} />
+        <StatCard label="Context" value={contextLabelForPrompt(kind, scope)} mono />
+        <StatCard label="Variables" value={`${variables.length}`} />
+        <StatCard
+          label="Status on submit"
+          value="proposed"
+          tone="amber"
         />
       </div>
 
+      {/* Prompts — TwoPaneSplit with System (left) and User (right),
+          identical layout to /prompt-versions/new. */}
+      <TwoPaneSplit
+        className="mt-8"
+        left={
+          <PromptPaneCard
+            heading="System Prompt"
+            required={false}
+            hint="Sent as the system message — sets the model's role and output contract. Optional."
+          >
+            <PromptTemplateEditor
+              value={systemTemplate}
+              onChange={setSystemTemplate}
+              variables={variables}
+              ariaLabel="System prompt"
+              placeholder={`You are a strict extractor for…\n\nUse {{.Field}} to inject typed values from ${contextLabelForPrompt(kind, scope)}.`}
+              fillHeight
+            />
+          </PromptPaneCard>
+        }
+        right={
+          <PromptPaneCard
+            heading="User Prompt"
+            required
+            hint="Sent as the user message — describes the task and references the typed values."
+          >
+            <PromptTemplateEditor
+              value={userTemplate}
+              onChange={setUserTemplate}
+              variables={variables}
+              ariaLabel="User prompt"
+              placeholder={`Given this product image…\n\nUse the Insert variable dropdown above to add a typed reference.`}
+              fillHeight
+            />
+          </PromptPaneCard>
+        }
+      />
+
+      {/* Rationale */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <label className="block text-sm font-medium text-gray-700">
           Rationale <span className="text-xs font-normal text-gray-500">(optional)</span>
@@ -287,28 +310,83 @@ export function CatalogPromptForm({
         )}
       </div>
 
-      {isNewVersion && parent && (
-        <ParentPromptCard parent={parent} />
-      )}
+      {isNewVersion && parent && <ParentPromptSection parent={parent} />}
+    </div>
+  );
+}
+
+/**
+ * Pane wrapper used by the System/User cards inside the form's
+ * TwoPaneSplit. Mirrors the markup of the prompt-versions form
+ * (`flex h-full min-w-0 flex-col … p-6`) so both surfaces share the
+ * same vertical rhythm: heading at top, hint underneath, editor
+ * filling the remaining height.
+ */
+function PromptPaneCard({
+  heading,
+  required,
+  hint,
+  children,
+}: {
+  heading: string;
+  required: boolean;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <div className="shrink-0">
+        <h2 className="text-sm font-semibold uppercase text-gray-900">
+          {heading}
+          {required && <span className="ml-1 text-red-500">*</span>}
+        </h2>
+        <p className="mt-1 text-[11px] text-gray-500">{hint}</p>
+      </div>
+      <div className="mt-3 flex min-h-0 flex-1 flex-col">{children}</div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  mono = false,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  tone?: 'default' | 'amber';
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+      <p className="text-sm font-medium text-gray-600">{label}</p>
+      <p
+        className={`mt-1 truncate text-base font-semibold ${
+          tone === 'amber' ? 'text-amber-600' : 'text-gray-900'
+        } ${mono ? 'font-mono text-sm' : ''}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
 
 /** Render the parent prompt's decoded (system, user) pair so the
  *  reviewer sees the same human-readable shape they're editing
- *  above. Falls back to a "legacy shape" badge when the parent
- *  pre-dates the JSON envelope. */
-function ParentPromptCard({ parent }: { parent: PromptVersion }) {
+ *  above. Uses the same TwoPaneSplit layout as the editor pair so
+ *  the side-by-side comparison is honest. Falls back to a
+ *  "legacy shape" badge when the parent pre-dates the JSON
+ *  envelope. */
+function ParentPromptSection({ parent }: { parent: PromptVersion }) {
   const envelope = decodePromptTemplate(parent.template);
   const variables = variablesForPrompt(parent.kind, parent.scope);
   return (
-    <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-      <header className="flex flex-wrap items-center justify-between gap-2">
+    <div className="mt-8">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
-            Parent prompt
-          </h2>
-          <p className="mt-1 text-[11px] text-gray-500">
+          <h2 className="text-lg font-semibold text-gray-900">Parent prompt</h2>
+          <p className="mt-1 text-sm text-gray-600">
             For reference. Edits above replace the active row at the next approve.
           </p>
         </div>
@@ -320,30 +398,39 @@ function ParentPromptCard({ parent }: { parent: PromptVersion }) {
             Legacy shape
           </span>
         )}
-      </header>
-      <div className="mt-3 space-y-3">
-        <div>
-          <h3 className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
-            System
-          </h3>
-          <PromptTemplateDisplay
-            template={envelope.system}
-            variables={variables}
-            emptyMessage="— no system instruction —"
-          />
-        </div>
-        <div>
-          <h3 className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
-            User
-          </h3>
-          <PromptTemplateDisplay
-            template={envelope.user}
-            variables={variables}
-            emptyMessage="— empty —"
-          />
-        </div>
       </div>
+      <TwoPaneSplit
+        className="mt-4"
+        height={360}
+        left={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+              System Prompt
+            </h2>
+            <div className="mt-3 min-h-0 flex-1 overflow-auto">
+              <PromptTemplateDisplay
+                template={envelope.system}
+                variables={variables}
+                emptyMessage="— no system instruction —"
+              />
+            </div>
+          </div>
+        }
+        right={
+          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+              User Prompt
+            </h2>
+            <div className="mt-3 min-h-0 flex-1 overflow-auto">
+              <PromptTemplateDisplay
+                template={envelope.user}
+                variables={variables}
+                emptyMessage="— empty —"
+              />
+            </div>
+          </div>
+        }
+      />
     </div>
   );
 }
-
