@@ -18,9 +18,9 @@ export interface ScopeOption {
 }
 
 interface ProposePromptFormProps {
-  // All (kind, scope) pairs that already exist as active prompt versions.
-  // Used to power the searchable scope combobox; the input still accepts
-  // free text so a reviewer can introduce a brand-new scope.
+  // Existing (kind, scope) pairs available to power the searchable scope
+  // combobox; the input still accepts free text so a reviewer can
+  // introduce a brand-new scope.
   availableScopes?: ScopeOption[];
 }
 

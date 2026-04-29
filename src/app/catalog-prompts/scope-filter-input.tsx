@@ -9,37 +9,42 @@ interface ScopeFilterInputProps {
   defaultValue: string;
   availableScopes: ScopeOption[];
   initialKind: PromptKind | '';
+  kindSelectId: string;
 }
 
 // ScopeFilterInput is the client-side counterpart to the page filter's
 // scope <input>. The parent form is a plain GET form (so the URL drives
 // pagination/state and SSR works out of the box), which means we can't
 // pass kind in via React props once the user changes it. Instead we
-// observe the sibling kind <select> by id and re-narrow the suggestion
-// list whenever its value changes. This keeps the page-level filter and
-// the propose-new-prompt form behaviour in lock-step without forcing
-// the whole filter form into a client component.
+// observe the parent form's kind <select> by id and re-narrow the
+// suggestion list whenever its value changes. This keeps the page-level
+// filter and the propose-new-prompt form behaviour in lock-step without
+// forcing the whole filter form into a client component.
 export function ScopeFilterInput({
   defaultValue,
   availableScopes,
   initialKind,
+  kindSelectId,
 }: ScopeFilterInputProps) {
   const [value, setValue] = useState(defaultValue);
   const [kind, setKind] = useState<PromptKind | ''>(initialKind);
   const datalistId = useId();
 
   useEffect(() => {
-    // The kind <select> in the parent form has name="kind"; we hook into
-    // its change event so the datalist narrows in real time even though
-    // the form itself is uncontrolled.
-    const form = document.querySelector<HTMLFormElement>('form');
-    if (!form) return;
-    const select = form.querySelector<HTMLSelectElement>('select[name="kind"]');
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  useEffect(() => {
+    setKind(initialKind);
+  }, [initialKind]);
+
+  useEffect(() => {
+    const select = document.getElementById(kindSelectId) as HTMLSelectElement | null;
     if (!select) return;
     const handler = () => setKind(select.value as PromptKind | '');
     select.addEventListener('change', handler);
     return () => select.removeEventListener('change', handler);
-  }, []);
+  }, [kindSelectId]);
 
   const scopeOptions = useMemo(() => {
     const seen = new Set<string>();
