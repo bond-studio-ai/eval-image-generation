@@ -90,9 +90,15 @@ async function ScopePanel({ scope }: { scope: string }) {
       </div>
     );
   }
+  // The `key` forces React to remount ThresholdEditor whenever the
+  // ?scope= URL param changes. Without it, the editor's useState hooks
+  // hold on to the previous scope's edited values and a `Save` would
+  // silently write them into the freshly-loaded scope. Remounting is
+  // both cheaper and more obvious than wiring a useEffect that syncs
+  // every numeric field on prop change.
   return (
     <div className="mt-6">
-      <ThresholdEditor initial={threshold} />
+      <ThresholdEditor key={scope} initial={threshold} />
     </div>
   );
 }

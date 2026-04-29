@@ -1,18 +1,35 @@
 import { catalogFeedAdminToken, catalogFeedBase } from '@/lib/env';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Thin server-side proxy to the catalog-feed calibrated-confidence admin
- * API. Mirrors the image-generation proxy: only forwards safe headers,
- * and injects the shared service bearer token when configured so the
- * admin endpoints can stay auth-gated upstream while the UI stays
- * Clerk-gated at the browser boundary.
+ * API. The proxy injects a shared service bearer token so the upstream
+ * admin endpoints can stay auth-gated, but `/api/**` is explicitly
+ * excluded from the Clerk middleware matcher in `src/proxy.ts`. That
+ * means the route handler itself must verify the caller is signed in
+ * before forwarding the request — otherwise an unauthenticated client
+ * could borrow the server token and perform privileged admin actions
+ * upstream.
  *
  * Path mapping:
  *   UI           /api/v1/catalog-feed/admin/runs?scope=tear_sheet
  *   Upstream     {catalogFeedBase}/admin/runs?scope=tear_sheet
  */
 async function proxy(request: NextRequest, pathSegments: string[]) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json(
+      {
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Sign in is required to access the catalog-feed admin API.',
+        },
+      },
+      { status: 401 },
+    );
+  }
+
   let base: string;
   try {
     base = catalogFeedBase();

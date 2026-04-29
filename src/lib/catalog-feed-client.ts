@@ -56,6 +56,51 @@ function pickOpt<T>(row: Raw, keys: string[]): T | null {
   return null;
 }
 
+// Categorical fields coming back from the upstream service are validated
+// against an explicit allow-list before they are surfaced as the typed
+// alias. Without these guards a future server change (a new decision
+// lane, a typo, or a mis-cased value) would render with missing badge
+// styles or undefined labels because the consumer code looks the value
+// up in a Record<RoutingDecision, ...>. Falling back to a safe default
+// keeps the UI legible and lets a reviewer still file a verdict; the
+// upstream value is still available to debug from the network tab if
+// needed.
+const ROUTING_DECISIONS: ReadonlyArray<RoutingDecision> = [
+  'auto_ship',
+  'spot_check',
+  'hold_for_review',
+];
+const HUMAN_VERDICTS: ReadonlyArray<HumanVerdict> = ['accept', 'reject', 'partial'];
+const PROMPT_KINDS: ReadonlyArray<PromptKind> = ['generation', 'judge', 'extraction', 'meta'];
+const PROMPT_STATUSES: ReadonlyArray<PromptStatus> = ['proposed', 'active', 'retired'];
+const CALIBRATION_STATUSES: ReadonlyArray<CalibrationStatus> = ['active', 'retired'];
+
+function asDecision(value: unknown): RoutingDecision {
+  return typeof value === 'string' && (ROUTING_DECISIONS as readonly string[]).includes(value)
+    ? (value as RoutingDecision)
+    : 'spot_check';
+}
+function asVerdict(value: unknown): HumanVerdict {
+  return typeof value === 'string' && (HUMAN_VERDICTS as readonly string[]).includes(value)
+    ? (value as HumanVerdict)
+    : 'accept';
+}
+function asPromptKind(value: unknown): PromptKind {
+  return typeof value === 'string' && (PROMPT_KINDS as readonly string[]).includes(value)
+    ? (value as PromptKind)
+    : 'generation';
+}
+function asPromptStatus(value: unknown): PromptStatus {
+  return typeof value === 'string' && (PROMPT_STATUSES as readonly string[]).includes(value)
+    ? (value as PromptStatus)
+    : 'proposed';
+}
+function asCalibrationStatus(value: unknown): CalibrationStatus {
+  return typeof value === 'string' && (CALIBRATION_STATUSES as readonly string[]).includes(value)
+    ? (value as CalibrationStatus)
+    : 'active';
+}
+
 // ─── Types (match domain/aiaudit on the Go side) ────────────────────────────
 
 export type RoutingDecision = 'auto_ship' | 'spot_check' | 'hold_for_review';
@@ -226,7 +271,7 @@ function normalizeRunSummary(row: Raw): AdminRunSummary {
         ? {
             calibrated,
             raw,
-            decision: (decision ?? 'spot_check') as RoutingDecision,
+            decision: asDecision(decision),
           }
         : null,
     reviewed: pick<boolean>(row, ['reviewed', 'Reviewed'], false),
@@ -253,7 +298,10 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
     confidence: null,
     reviewed: false,
     promptTemplate: pickOpt<string>(row, ['promptTemplate', 'PromptTemplate']),
-    promptKind: pickOpt<PromptKind>(row, ['promptKind', 'PromptKind']),
+    promptKind: (() => {
+      const v = pickOpt<string>(row, ['promptKind', 'PromptKind']);
+      return v == null ? null : asPromptKind(v);
+    })(),
     promptVersionId: pickOpt<string>(row, ['promptVersionId', 'PromptVersionID']),
     requestPayload: pickOpt<Record<string, unknown>>(row, ['request', 'Request', 'requestPayload']),
     responsePayload: pickOpt<Record<string, unknown>>(row, [
@@ -291,7 +339,7 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
 
   const humanReviews: HumanReviewEntry[] = reviewsRaw.map((r) => ({
     id: pick<string>(r, ['id', 'ID'], ''),
-    verdict: pick<HumanVerdict>(r, ['verdict', 'Verdict'], 'accept'),
+    verdict: asVerdict(pickOpt<unknown>(r, ['verdict', 'Verdict'])),
     perCriterionFlags: pickOpt<Record<string, unknown>>(r, [
       'perCriterionFlags',
       'PerCriterionFlags',
@@ -307,7 +355,7 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
           id: pick<string>(confidenceRaw, ['id', 'ID'], ''),
           rawScore: pick<number>(confidenceRaw, ['rawScore', 'RawScore'], 0),
           calibratedScore: pick<number>(confidenceRaw, ['calibratedScore', 'CalibratedScore'], 0),
-          decision: pick<RoutingDecision>(confidenceRaw, ['decision', 'Decision'], 'spot_check'),
+          decision: asDecision(pickOpt<unknown>(confidenceRaw, ['decision', 'Decision'])),
           features: pickOpt<Record<string, unknown>>(confidenceRaw, ['features', 'Features']),
           calibrationModelId: pickOpt<string>(confidenceRaw, [
             'calibrationModelId',
@@ -358,10 +406,10 @@ export async function fetchAdminPrompts(
 function normalizePromptVersion(row: Raw): PromptVersion {
   return {
     id: pick<string>(row, ['id', 'ID'], ''),
-    kind: pick<PromptKind>(row, ['kind', 'Kind'], 'generation'),
+    kind: asPromptKind(pickOpt<unknown>(row, ['kind', 'Kind'])),
     scope: pick<string>(row, ['scope', 'Scope'], ''),
     template: pick<string>(row, ['template', 'Template'], ''),
-    status: pick<PromptStatus>(row, ['status', 'Status'], 'proposed'),
+    status: asPromptStatus(pickOpt<unknown>(row, ['status', 'Status'])),
     parentId: pickOpt<string>(row, ['parentId', 'ParentID']),
     rationale: pickOpt<string>(row, ['rationale', 'Rationale']),
     createdBy: pick<string>(row, ['createdBy', 'CreatedBy'], ''),
@@ -388,7 +436,7 @@ export async function fetchAdminCalibrations(): Promise<CalibrationModel[]> {
     brier: pickOpt<number>(r, ['brier', 'Brier']),
     mae: pickOpt<number>(r, ['mae', 'MAE']),
     params: pick<Record<string, unknown>>(r, ['params', 'Params'], {}) ?? {},
-    status: pick<CalibrationStatus>(r, ['status', 'Status'], 'active'),
+    status: asCalibrationStatus(pickOpt<unknown>(r, ['status', 'Status'])),
     validFrom: pick<string>(r, ['validFrom', 'ValidFrom'], ''),
     validTo: pickOpt<string>(r, ['validTo', 'ValidTo']),
     createdAt: pick<string>(r, ['createdAt', 'CreatedAt'], ''),

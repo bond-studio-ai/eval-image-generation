@@ -102,7 +102,7 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
                 By
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Rationale
+                Rationale &amp; template
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Actions
@@ -133,9 +133,24 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
                         ? p.rationale.slice(0, 60) + (p.rationale.length > 60 ? '…' : '')
                         : '—'}
                     </summary>
-                    <pre className="mt-2 max-h-72 overflow-auto rounded bg-gray-50 p-2 text-xs">
-                      {p.template}
-                    </pre>
+                    <div className="mt-2 space-y-2">
+                      <div>
+                        <div className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+                          Full rationale
+                        </div>
+                        <p className="mt-1 text-xs whitespace-pre-wrap text-gray-700">
+                          {p.rationale || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+                          Template preview
+                        </div>
+                        <pre className="mt-1 max-h-72 overflow-auto rounded bg-gray-50 p-2 text-xs">
+                          {p.template}
+                        </pre>
+                      </div>
+                    </div>
                   </details>
                 </td>
                 <td className="px-4 py-2 text-xs">
