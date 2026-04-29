@@ -3,7 +3,7 @@
 import type { PromptKind } from '@/lib/catalog-feed-client';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 const KIND_OPTIONS: { value: PromptKind; label: string }[] = [
   { value: 'generation', label: 'Generation' },
@@ -12,7 +12,19 @@ const KIND_OPTIONS: { value: PromptKind; label: string }[] = [
   { value: 'meta', label: 'Meta' },
 ];
 
-export function ProposePromptForm() {
+export interface ScopeOption {
+  kind: PromptKind;
+  scope: string;
+}
+
+interface ProposePromptFormProps {
+  // All (kind, scope) pairs that already exist as active prompt versions.
+  // Used to power the searchable scope combobox; the input still accepts
+  // free text so a reviewer can introduce a brand-new scope.
+  availableScopes?: ScopeOption[];
+}
+
+export function ProposePromptForm({ availableScopes = [] }: ProposePromptFormProps) {
   const { user } = useUser();
   const router = useRouter();
   const [kind, setKind] = useState<PromptKind>('judge');
@@ -22,6 +34,21 @@ export function ProposePromptForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+
+  // Stable per-instance datalist id — using useId() so multiple form
+  // instances on the same page (unlikely today, but cheap) don't collide.
+  const datalistId = useId();
+  const scopeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const opt of availableScopes) {
+      if (opt.kind !== kind) continue;
+      if (seen.has(opt.scope)) continue;
+      seen.add(opt.scope);
+      out.push(opt.scope);
+    }
+    return out.sort((a, b) => a.localeCompare(b));
+  }, [availableScopes, kind]);
 
   const createdBy = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? '';
 
@@ -79,12 +106,36 @@ export function ProposePromptForm() {
       </label>
       <label className="text-xs font-medium text-gray-600">
         Scope
+        {/*
+          Native <datalist>-backed combobox: typing filters the suggestions
+          incrementally and the user can still submit a brand-new scope
+          (free text), which is what we want for proposing scopes that
+          don't exist yet. Switching `kind` repopulates the suggestion
+          list to only the relevant scopes.
+        */}
         <input
           value={scope}
           onChange={(e) => setScope(e.target.value)}
-          placeholder="tear_sheet:faucets"
+          placeholder={
+            scopeOptions.length > 0
+              ? `e.g. ${scopeOptions[0]} — or type a new scope`
+              : 'tear_sheet:faucets'
+          }
+          list={datalistId}
+          autoComplete="off"
           className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
         />
+        <datalist id={datalistId}>
+          {scopeOptions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+        {scopeOptions.length > 0 && (
+          <span className="mt-1 block text-[11px] text-gray-500">
+            {scopeOptions.length} existing {kind} scope
+            {scopeOptions.length === 1 ? '' : 's'} — start typing to filter.
+          </span>
+        )}
       </label>
       <label className="text-xs font-medium text-gray-600 md:col-span-2">
         Template

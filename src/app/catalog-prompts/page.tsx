@@ -3,7 +3,8 @@ import { PageHeader } from '@/components/page-header';
 import { fetchAdminPrompts, type PromptKind } from '@/lib/catalog-feed-client';
 import Link from 'next/link';
 import { PromptActions } from './prompt-actions';
-import { ProposePromptForm } from './propose-form';
+import { ProposePromptForm, type ScopeOption } from './propose-form';
+import { ScopeFilterInput } from './scope-filter-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,12 +26,24 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
   const scope = sp.scope ?? '';
 
   let rows: Awaited<ReturnType<typeof fetchAdminPrompts>> = [];
+  let allRows: Awaited<ReturnType<typeof fetchAdminPrompts>> = [];
   let error: string | null = null;
   try {
-    rows = await fetchAdminPrompts({ kind, scope });
+    // Two fetches in parallel: one filtered (powers the table) and one
+    // unfiltered (powers the searchable scope combobox in both the page
+    // filter and the propose-new-prompt form). Without the unfiltered
+    // fetch the dropdown options would shrink to whatever the current
+    // filter narrows the table to, which is the opposite of what's
+    // useful when the operator is trying to discover scopes.
+    [rows, allRows] = await Promise.all([
+      fetchAdminPrompts({ kind, scope }),
+      fetchAdminPrompts({}),
+    ]);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   }
+
+  const availableScopes: ScopeOption[] = allRows.map((p) => ({ kind: p.kind, scope: p.scope }));
 
   return (
     <div>
@@ -59,11 +72,15 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
         </label>
         <label className="text-xs font-medium text-gray-600 md:col-span-2">
           Scope
-          <input
-            name="scope"
+          <ScopeFilterInput
+            // Initial render uses the URL-bound defaultValue so the page
+            // is still SSR-friendly. Once mounted, the client component
+            // narrows suggestions by the kind selected on this same form
+            // (read live from the DOM) so switching kind <-> scope is
+            // a single fluid interaction.
             defaultValue={scope}
-            placeholder="tear_sheet:faucets, judge:line_drawing…"
-            className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
+            availableScopes={availableScopes}
+            initialKind={kind}
           />
         </label>
         <div className="flex items-end">
@@ -177,7 +194,7 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
           </Link>
           .
         </p>
-        <ProposePromptForm />
+        <ProposePromptForm availableScopes={availableScopes} />
       </div>
     </div>
   );
