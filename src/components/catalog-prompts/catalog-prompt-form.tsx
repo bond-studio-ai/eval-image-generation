@@ -4,9 +4,17 @@ import { PageHeader, PrimaryButton } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
+import {
+  contextLabelForPrompt,
+  decodePromptTemplate,
+  encodePromptTemplate,
+  variablesForPrompt,
+} from '@/lib/prompt-template-format';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { PromptTemplateDisplay } from './prompt-template-display';
+import { PromptTemplateEditor } from './prompt-template-editor';
 
 const KIND_OPTIONS: { value: PromptKind; label: string }[] = [
   { value: 'generation', label: 'Generation' },
@@ -61,10 +69,27 @@ export function CatalogPromptForm({
 
   const [kind, setKind] = useState<PromptKind>(parent?.kind ?? 'generation');
   const [scope, setScope] = useState(parent?.scope ?? '');
-  const [template, setTemplate] = useState(parent?.template ?? '');
+  // Decode the parent template once into its (system, user) parts so
+  // the editor can show two human-readable panels even when the row
+  // predates the JSON envelope format. Plain-text legacy rows land in
+  // the user side with system left empty (matches the resolver's
+  // backward-compat handling in service-catalog-feed).
+  const initialEnvelope = useMemo(
+    () => decodePromptTemplate(parent?.template ?? ''),
+    [parent?.template],
+  );
+  const [systemTemplate, setSystemTemplate] = useState(initialEnvelope.system);
+  const [userTemplate, setUserTemplate] = useState(initialEnvelope.user);
   const [rationale, setRationale] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Variables surface differently per (kind, scope): generation/judge
+  // expose typed worker structs, extraction prompts split between
+  // style (aidomain.Context) and procedural (ProceduralContext).
+  // Recomputed every render but the underlying call returns a stable
+  // module-level array, so React still bails out on identity checks.
+  const variables = useMemo(() => variablesForPrompt(kind, scope), [kind, scope]);
 
   const scopeOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -80,13 +105,22 @@ export function CatalogPromptForm({
 
   const createdBy = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? '';
 
-  const canSubmit = scope.trim() && template.trim() && !submitting;
+  // The submit gate requires at least the user side. System is
+  // optional (some prompts ship a single user-only instruction) but
+  // an entirely empty pair is a no-op that the worker cannot use.
+  const canSubmit = scope.trim() && userTemplate.trim() && !submitting;
 
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
     try {
+      // Re-encode the (system, user) pair into the JSON envelope the
+      // backend round-trips through prompt_versions.template. Doing
+      // this on submit (rather than on every keystroke) keeps the
+      // textarea state plain strings and avoids burying the
+      // operator's edits inside JSON syntax mid-edit.
+      const template = encodePromptTemplate(systemTemplate, userTemplate);
       const res = await fetch('/api/v1/catalog-feed/admin/prompts', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -198,7 +232,7 @@ export function CatalogPromptForm({
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+      <div className="mt-6 space-y-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
             Template <span className="text-red-500">*</span>
@@ -206,16 +240,30 @@ export function CatalogPromptForm({
           <p className="text-[11px] text-gray-500">
             Go <code>text/template</code> syntax (<code>{'{{.Field}}'}</code>) — the worker
             renders this against typed context (
-            <code>GenerationData</code>, <code>JudgeData</code>, etc.).
+            <code>{contextLabelForPrompt(kind, scope)}</code>). Use the{' '}
+            <strong>Insert variable</strong> dropdown to add a typed reference.
           </p>
         </div>
-        <textarea
-          value={template}
-          onChange={(e) => setTemplate(e.target.value)}
-          rows={20}
-          spellCheck={false}
-          className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-xs text-gray-900 shadow-xs focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
-          placeholder="The full prompt template as it will be sent to the model…"
+
+        <PromptTemplateEditor
+          label="System prompt"
+          value={systemTemplate}
+          onChange={setSystemTemplate}
+          variables={variables}
+          rows={6}
+          hint="Sent as the system message — sets the model's role and output contract. Optional."
+          placeholder="You are a strict extractor for…"
+        />
+
+        <PromptTemplateEditor
+          label="User prompt"
+          value={userTemplate}
+          onChange={setUserTemplate}
+          variables={variables}
+          rows={14}
+          required
+          hint="Sent as the user message — describes the task and references the typed values."
+          placeholder="Given this product image, …"
         />
       </div>
 
@@ -240,18 +288,62 @@ export function CatalogPromptForm({
       </div>
 
       {isNewVersion && parent && (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+        <ParentPromptCard parent={parent} />
+      )}
+    </div>
+  );
+}
+
+/** Render the parent prompt's decoded (system, user) pair so the
+ *  reviewer sees the same human-readable shape they're editing
+ *  above. Falls back to a "legacy shape" badge when the parent
+ *  pre-dates the JSON envelope. */
+function ParentPromptCard({ parent }: { parent: PromptVersion }) {
+  const envelope = decodePromptTemplate(parent.template);
+  const variables = variablesForPrompt(parent.kind, parent.scope);
+  return (
+    <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div>
           <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
             Parent prompt
           </h2>
           <p className="mt-1 text-[11px] text-gray-500">
             For reference. Edits above replace the active row at the next approve.
           </p>
-          <pre className="mt-3 max-h-72 overflow-auto rounded bg-gray-50 p-3 font-mono text-[11px] text-gray-700">
-            {parent.template}
-          </pre>
         </div>
-      )}
+        {envelope.source !== 'json' && (
+          <span
+            title="Pre-envelope row. Approving the new version above will write a JSON envelope; the legacy shape stays on the retired row for audit."
+            className="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200"
+          >
+            Legacy shape
+          </span>
+        )}
+      </header>
+      <div className="mt-3 space-y-3">
+        <div>
+          <h3 className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+            System
+          </h3>
+          <PromptTemplateDisplay
+            template={envelope.system}
+            variables={variables}
+            emptyMessage="— no system instruction —"
+          />
+        </div>
+        <div>
+          <h3 className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+            User
+          </h3>
+          <PromptTemplateDisplay
+            template={envelope.user}
+            variables={variables}
+            emptyMessage="— empty —"
+          />
+        </div>
+      </div>
     </div>
   );
 }
+
