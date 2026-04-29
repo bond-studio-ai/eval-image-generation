@@ -3,6 +3,7 @@
 import { PromptStatusBadge, formatDateTime } from '@/components/catalog-confidence/badges';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -145,12 +146,12 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
                   className={row.id === prompt.id ? 'bg-primary-50/30' : 'hover:bg-gray-50'}
                 >
                   <td className="px-4 py-2 align-top">
-                    <a
+                    <Link
                       href={`/catalog-prompts/${row.id}`}
                       className="text-xs text-primary-600 hover:text-primary-500"
                     >
                       <PromptStatusBadge status={row.status} />
-                    </a>
+                    </Link>
                   </td>
                   <td className="px-4 py-2 align-top text-xs text-gray-700">
                     {formatDateTime(row.createdAt)}

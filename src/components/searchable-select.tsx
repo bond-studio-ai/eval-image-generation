@@ -27,7 +27,12 @@ interface SearchableSelectProps {
   options: SearchableSelectOption[];
   value: string;
   onChange: (next: string) => void;
-  /** Forwarded to the underlying input via aria-labelledby. */
+  /** Forwarded to the underlying combobox input via the `aria-label`
+   *  attribute. Use this when the field has no visible <label> next
+   *  to it (e.g. a list-page filter row). When the consumer already
+   *  has a visible label, prefer wiring it via the `id` prop and a
+   *  `<label htmlFor>` instead — both can be present without
+   *  conflict, but `aria-label` will win in screen-reader output. */
   ariaLabel?: string;
   placeholder?: string;
   /** When true the user can submit a value that isn't in the list. */
@@ -84,7 +89,7 @@ export function SearchableSelect({
   const listboxId = `${inputId}-listbox`;
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const optionRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
@@ -196,17 +201,28 @@ export function SearchableSelect({
     }
   };
 
+  // Build groups keyed by `group` so non-adjacent options that share
+  // the same key still render under a single header. The previous
+  // adjacency-only grouping silently produced duplicate group sections
+  // whenever the parent passed an unsorted options array (or when
+  // filtering rearranged the visible set). First-seen order is
+  // preserved so groups still render in the order their first option
+  // appears in `filtered`, keeping behaviour deterministic for
+  // consumers that already pre-sort.
   const grouped = useMemo(() => {
-    const groups: Array<{ group: string | undefined; options: SearchableSelectOption[] }> = [];
-    let current: { group: string | undefined; options: SearchableSelectOption[] } | null = null;
+    const byKey = new Map<string, { group: string | undefined; options: SearchableSelectOption[] }>();
+    const order: string[] = [];
     for (const opt of filtered) {
-      if (!current || current.group !== opt.group) {
-        current = { group: opt.group, options: [] };
-        groups.push(current);
+      const key = opt.group ?? '__ungrouped__';
+      let bucket = byKey.get(key);
+      if (!bucket) {
+        bucket = { group: opt.group, options: [] };
+        byKey.set(key, bucket);
+        order.push(key);
       }
-      current.options.push(opt);
+      bucket.options.push(opt);
     }
-    return groups;
+    return order.map((k) => byKey.get(k)!);
   }, [filtered]);
 
   // Flat index used for aria-activedescendant and keyboard nav so
@@ -273,83 +289,95 @@ export function SearchableSelect({
       </div>
 
       {open && (
-        <ul
+        <div
           id={listboxId}
           role="listbox"
           className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg"
         >
           {filtered.length === 0 && (
-            <li className="px-3 py-2 text-xs text-gray-500">{emptyMessage}</li>
+            <div className="px-3 py-2 text-xs text-gray-500">{emptyMessage}</div>
           )}
-          {grouped.map((g, gi) => (
-            <li key={gi} role="presentation">
-              {g.group && (
-                <div className="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
+          {grouped.map((g, gi) => {
+            const groupLabelId = g.group ? `${listboxId}-group-${gi}-label` : undefined;
+            const renderOptions = g.options.map((opt) => {
+              const idx = flatIndex++;
+              const isHighlighted = idx === highlight;
+              const isSelected = opt.value === value;
+              return (
+                <div
+                  key={opt.value}
+                  ref={(el) => {
+                    optionRefs.current[idx] = el;
+                  }}
+                  id={`${inputId}-option-${idx}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={opt.disabled || undefined}
+                  onMouseEnter={() => setHighlight(idx)}
+                  onMouseDown={(event) => {
+                    // mousedown beats the input's blur and avoids
+                    // a focus flicker when picking with the mouse.
+                    event.preventDefault();
+                    if (opt.disabled) return;
+                    commit(opt.value);
+                  }}
+                  className={`flex cursor-pointer items-center justify-between px-3 py-1.5 ${
+                    isHighlighted ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+                  } ${opt.disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                >
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="block truncate font-mono text-xs">
+                      {typeof opt.label === 'string' || typeof opt.label === 'number'
+                        ? opt.label
+                        : opt.label ?? opt.value}
+                    </span>
+                    {opt.description && (
+                      <span className="block truncate text-[10px] text-gray-500">
+                        {opt.description}
+                      </span>
+                    )}
+                  </span>
+                  {isSelected && (
+                    <svg
+                      className="ml-2 h-3.5 w-3.5 shrink-0 text-primary-600"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 10l4 4 8-8"
+                      />
+                    </svg>
+                  )}
+                </div>
+              );
+            });
+
+            // Per WAI-ARIA 1.2 listbox pattern, options should be
+            // direct children of either the listbox itself or a
+            // role="group" element with an accessible name. Wrapping
+            // them in <li>/<ul> with role="presentation" was both
+            // redundant and unreliable across screen readers.
+            if (!g.group) {
+              return <div key={gi}>{renderOptions}</div>;
+            }
+            return (
+              <div key={gi} role="group" aria-labelledby={groupLabelId}>
+                <div
+                  id={groupLabelId}
+                  className="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
+                >
                   {g.group}
                 </div>
-              )}
-              <ul role="presentation">
-                {g.options.map((opt) => {
-                  const idx = flatIndex++;
-                  const isHighlighted = idx === highlight;
-                  const isSelected = opt.value === value;
-                  return (
-                    <li
-                      key={opt.value}
-                      ref={(el) => {
-                        optionRefs.current[idx] = el;
-                      }}
-                      id={`${inputId}-option-${idx}`}
-                      role="option"
-                      aria-selected={isSelected}
-                      aria-disabled={opt.disabled || undefined}
-                      onMouseEnter={() => setHighlight(idx)}
-                      onMouseDown={(event) => {
-                        // mousedown beats the input's blur and avoids
-                        // a focus flicker when picking with the mouse.
-                        event.preventDefault();
-                        if (opt.disabled) return;
-                        commit(opt.value);
-                      }}
-                      className={`flex cursor-pointer items-center justify-between px-3 py-1.5 ${
-                        isHighlighted ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                      } ${opt.disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        <span className="block truncate font-mono text-xs">
-                          {typeof opt.label === 'string' || typeof opt.label === 'number'
-                            ? opt.label
-                            : opt.label ?? opt.value}
-                        </span>
-                        {opt.description && (
-                          <span className="block truncate text-[10px] text-gray-500">
-                            {opt.description}
-                          </span>
-                        )}
-                      </span>
-                      {isSelected && (
-                        <svg
-                          className="ml-2 h-3.5 w-3.5 shrink-0 text-primary-600"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 10l4 4 8-8"
-                          />
-                        </svg>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
-          ))}
-        </ul>
+                {renderOptions}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

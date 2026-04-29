@@ -41,6 +41,24 @@ const STATUS_VALUES: Array<{ value: PromptStatus | ''; label: string }> = [
   { value: 'retired', label: 'Retired' },
 ];
 
+// Allow-lists for URL-driven filter state. Without this, a stale or
+// hand-edited `?kind=foo` would survive the cast and silently hide
+// every row (the filter equality check never matches). Mirrors the
+// validation already done in `catalog-feed-client.ts` for the same
+// fields.
+const VALID_KINDS = new Set<PromptKind>(['generation', 'judge', 'extraction', 'meta']);
+const VALID_STATUSES = new Set<PromptStatus>(['active', 'proposed', 'retired']);
+
+function readKindParam(raw: string | null): PromptKind | '' {
+  if (!raw) return '';
+  return VALID_KINDS.has(raw as PromptKind) ? (raw as PromptKind) : '';
+}
+
+function readStatusParam(raw: string | null): PromptStatus | '' {
+  if (!raw) return '';
+  return VALID_STATUSES.has(raw as PromptStatus) ? (raw as PromptStatus) : '';
+}
+
 /**
  * CatalogPromptsList renders the catalog-prompts table on top of the
  * shared DataTable + SearchBar primitives so it matches the rest of
@@ -54,9 +72,9 @@ const STATUS_VALUES: Array<{ value: PromptStatus | ''; label: string }> = [
 export function CatalogPromptsList({ rows, loadError }: CatalogPromptsListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialKind = (searchParams.get('kind') ?? '') as PromptKind | '';
+  const initialKind = readKindParam(searchParams.get('kind'));
   const initialScope = searchParams.get('scope') ?? '';
-  const initialStatus = (searchParams.get('status') ?? '') as PromptStatus | '';
+  const initialStatus = readStatusParam(searchParams.get('status'));
   const initialSearch = searchParams.get('search') ?? '';
 
   const [kind, setKind] = useState<PromptKind | ''>(initialKind);

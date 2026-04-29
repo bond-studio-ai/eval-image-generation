@@ -1,5 +1,6 @@
 import { CatalogPromptForm } from '@/components/catalog-prompts/catalog-prompt-form';
 import { fetchAdminPrompts, type PromptVersion } from '@/lib/catalog-feed-client';
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,20 @@ export default async function NewCatalogPromptPage({ searchParams }: PageProps) 
     }
   } catch (err) {
     loadError = err instanceof Error ? err.message : String(err);
+  }
+
+  // If the caller asked for a specific parent (e.g. clicked “Propose
+  // new version” from the list/detail page) and we successfully
+  // loaded the catalogue but cannot find that row, treat it as a
+  // not-found rather than silently downgrading to the generic “new”
+  // form. Falling through would unlock kind+scope and drop
+  // `parentId` from the POST payload, so a stale URL or deleted row
+  // could otherwise create an unlinked proposal under the wrong
+  // identity. We only short-circuit when the catalogue load
+  // succeeded; a network-level loadError is surfaced to the form so
+  // the user can see and retry.
+  if (parentId && !parent && !loadError) {
+    notFound();
   }
 
   return (
