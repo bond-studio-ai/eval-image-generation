@@ -3,7 +3,8 @@ import { PageHeader } from '@/components/page-header';
 import { fetchAdminPrompts, type PromptKind } from '@/lib/catalog-feed-client';
 import Link from 'next/link';
 import { PromptActions } from './prompt-actions';
-import { ProposePromptForm } from './propose-form';
+import { ProposePromptForm, type ScopeOption } from './propose-form';
+import { ScopeFilterInput } from './scope-filter-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,12 +26,29 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
   const scope = sp.scope ?? '';
 
   let rows: Awaited<ReturnType<typeof fetchAdminPrompts>> = [];
+  let allRows: Awaited<ReturnType<typeof fetchAdminPrompts>> = [];
   let error: string | null = null;
-  try {
-    rows = await fetchAdminPrompts({ kind, scope });
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
+  let scopeOptionsError: string | null = null;
+  const [tableResult, scopeOptionsResult] = await Promise.allSettled([
+    fetchAdminPrompts({ kind, scope }),
+    fetchAdminPrompts({}),
+  ]);
+  if (tableResult.status === 'fulfilled') {
+    rows = tableResult.value;
+  } else {
+    error = tableResult.reason instanceof Error ? tableResult.reason.message : String(tableResult.reason);
   }
+  if (scopeOptionsResult.status === 'fulfilled') {
+    allRows = scopeOptionsResult.value;
+  } else {
+    scopeOptionsError =
+      scopeOptionsResult.reason instanceof Error
+        ? scopeOptionsResult.reason.message
+        : String(scopeOptionsResult.reason);
+  }
+
+  const availableScopes: ScopeOption[] = allRows.map((p) => ({ kind: p.kind, scope: p.scope }));
+  const kindSelectId = 'catalog-prompts-kind-filter';
 
   return (
     <div>
@@ -46,6 +64,7 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
         <label className="text-xs font-medium text-gray-600">
           Kind
           <select
+            id={kindSelectId}
             name="kind"
             defaultValue={kind}
             className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
@@ -59,11 +78,16 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
         </label>
         <label className="text-xs font-medium text-gray-600 md:col-span-2">
           Scope
-          <input
-            name="scope"
+          <ScopeFilterInput
+            // Initial render uses the URL-bound defaultValue so the page
+            // is still SSR-friendly. Once mounted, the client component
+            // narrows suggestions by the kind selected on this same form
+            // (read live from the DOM) so switching kind <-> scope is
+            // a single fluid interaction.
             defaultValue={scope}
-            placeholder="tear_sheet:faucets, judge:line_drawing…"
-            className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
+            availableScopes={availableScopes}
+            initialKind={kind}
+            kindSelectId={kindSelectId}
           />
         </label>
         <div className="flex items-end">
@@ -79,6 +103,11 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
       {error && (
         <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           Failed to load prompts: {error}
+        </div>
+      )}
+      {scopeOptionsError && !error && (
+        <div className="mt-6 rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+          Prompt rows loaded, but scope suggestions could not be loaded: {scopeOptionsError}
         </div>
       )}
 
@@ -177,7 +206,7 @@ export default async function CatalogPromptsPage({ searchParams }: PageProps) {
           </Link>
           .
         </p>
-        <ProposePromptForm />
+        <ProposePromptForm availableScopes={availableScopes} />
       </div>
     </div>
   );
