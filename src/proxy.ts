@@ -1,7 +1,4 @@
-import {
-  clerkMiddleware,
-  createRouteMatcher,
-} from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextFetchEvent } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -12,6 +9,10 @@ const isProtectedRoute = createRouteMatcher([
   '/input-presets(.*)',
   '/prompt-versions(.*)',
   '/prompt-preview(.*)',
+  '/catalog-runs(.*)',
+  '/catalog-prompts(.*)',
+  '/catalog-calibrations(.*)',
+  '/catalog-thresholds(.*)',
 ]);
 
 const clerkWithProtection = clerkMiddleware(
@@ -33,7 +34,5 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|auth|api).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth|api).*)'],
 };

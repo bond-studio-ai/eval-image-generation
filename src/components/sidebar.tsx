@@ -13,6 +13,30 @@ const navigation = [
   { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
   { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
   { name: 'Audit', href: '/audit/compare', icon: AuditCompareIcon },
+  {
+    name: 'Catalog Runs',
+    href: '/catalog-runs',
+    icon: CatalogRunsIcon,
+    section: 'Catalog Confidence',
+  },
+  {
+    name: 'Catalog Prompts',
+    href: '/catalog-prompts',
+    icon: PromptIcon,
+    section: 'Catalog Confidence',
+  },
+  {
+    name: 'Calibrations',
+    href: '/catalog-calibrations',
+    icon: CalibrationIcon,
+    section: 'Catalog Confidence',
+  },
+  {
+    name: 'Thresholds',
+    href: '/catalog-thresholds',
+    icon: ThresholdIcon,
+    section: 'Catalog Confidence',
+  },
 ];
 
 export function Sidebar() {
@@ -27,22 +51,33 @@ export function Sidebar() {
         <span className="text-sm font-semibold text-gray-900">AI Image Eval</span>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {navigation.map((item, idx) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+          const prev = idx > 0 ? navigation[idx - 1] : null;
+          const showHeader = item.section && (!prev || prev.section !== item.section);
 
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            <div key={item.name}>
+              {showHeader && (
+                <div className="mt-4 mb-1 px-3 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+                  {item.section}
+                </div>
+              )}
+              <Link
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
-            >
-              <item.icon className={`h-5 w-5 ${isActive ? 'text-primary-600' : 'text-gray-500'}`} />
-              {item.name}
-            </Link>
+              >
+                <item.icon
+                  className={`h-5 w-5 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}
+                />
+                {item.name}
+              </Link>
+            </div>
           );
         })}
       </nav>
@@ -53,7 +88,6 @@ export function Sidebar() {
     </aside>
   );
 }
-
 
 function PromptIcon({ className }: { className?: string }) {
   return (
@@ -195,6 +229,56 @@ function AnalyticsIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+      />
+    </svg>
+  );
+}
+
+function CatalogRunsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+function CalibrationIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 15l4-6 3 4 4-7" />
+    </svg>
+  );
+}
+
+function ThresholdIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 6h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9 6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
       />
     </svg>
   );
