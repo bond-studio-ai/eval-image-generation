@@ -642,26 +642,20 @@ export async function fetchJudgeBaselineEntries(scope: string): Promise<JudgeBas
   ];
 }
 
-function normalizeJudgeBaselineEntry(
-  row: Raw,
-  bucketHint: JudgeBaselineExpected,
-): JudgeBaselineEntry {
+function normalizeJudgeBaselineEntry(row: Raw, bucket: JudgeBaselineExpected): JudgeBaselineEntry {
   // The upstream `/admin/judge-baselines/{scope}` response groups
-  // rows by their `expected` value (the array key — `pass`/`fail`),
-  // and the per-row DTO also includes the same value. We pass the
-  // bucket the row arrived in as `bucketHint` and trust that as the
-  // authoritative label: a server-side enum constraint backs the
-  // bucketing, so even if a future DTO change drops the per-row
-  // `expected` field the editor still renders correctly. We only
-  // fall back to a raw lookup when the hint is unavailable (kept
-  // defensive in case the function is reused elsewhere in future).
-  const rawExpected = pickOpt<unknown>(row, ['expected', 'Expected']);
-  const expected = asBaselineExpected(rawExpected) ?? bucketHint;
+  // rows by their `expected` value (the `pass`/`fail` array keys).
+  // The bucket is THE authoritative label: a server-side enum
+  // constraint backs the bucketing, the API contract is to put each
+  // row in the matching bucket, and trusting the bucket means we
+  // can never mislabel a row in the editor — even if a future DTO
+  // change drops or mistypes the per-row `expected` field. The
+  // per-row field is intentionally ignored.
   return {
     id: pick<string>(row, ['id', 'ID'], ''),
     scope: pick<string>(row, ['scope', 'Scope'], ''),
     productId: pick<string>(row, ['productId', 'ProductID'], ''),
-    expected,
+    expected: bucket,
     failureReason: pickOpt<string>(row, ['failureReason', 'FailureReason']),
     createdBy: pick<string>(row, ['createdBy', 'CreatedBy'], ''),
     createdAt: pick<string>(row, ['createdAt', 'CreatedAt'], ''),

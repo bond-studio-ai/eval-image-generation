@@ -213,11 +213,15 @@ function formatRejection(reason: unknown): string {
  * for the Promoter's rate thresholds to be statistically meaningful.
  * The Promoter gates pass-rate only when `passCount > 0` and
  * fail-rate only when `failCount > 0`, so a 0 on either side is the
- * noteworthy case the badge highlights with a muted color.
+ * noteworthy case the badge highlights with a muted (but still
+ * accessible) color: gray-600 text on gray-50 plus a thin gray-200
+ * ring clears WCAG AA for small text and stays visually secondary
+ * to the colored populated badges.
  */
 function LabeledCell({ pass, fail }: { pass: number; fail: number }) {
-  const passClass = pass > 0 ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-400';
-  const failClass = fail > 0 ? 'bg-red-50 text-red-800' : 'bg-gray-50 text-gray-400';
+  const emptyClass = 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-200';
+  const passClass = pass > 0 ? 'bg-green-50 text-green-800' : emptyClass;
+  const failClass = fail > 0 ? 'bg-red-50 text-red-800' : emptyClass;
   return (
     <div className="flex items-center gap-2 text-xs tabular-nums">
       <span
