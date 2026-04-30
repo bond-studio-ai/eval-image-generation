@@ -22,10 +22,20 @@ export function BaselineSnapshotCard({ prompt, liveStats, liveError }: Props) {
   if (prompt.kind !== 'judge') return null;
 
   const snapshot = prompt.metadata;
+  // Any recorded snapshot key — including timestamp / mismatch count —
+  // counts as "we have a snapshot" so the card never falls back to
+  // the empty state when partial data is present (e.g. an eval that
+  // produced a timestamp but no overall score, or a replay with only
+  // mismatches recorded). The Promoter always writes
+  // `lastEvaluatedAt` on every eval, so this is the canonical
+  // presence check.
   const hasSnapshot =
+    snapshot.lastEvaluatedAt != null ||
     snapshot.lastEvalOverall != null ||
     snapshot.lastBaselinePassRate != null ||
-    snapshot.lastBaselineFailRate != null;
+    snapshot.lastBaselineFailRate != null ||
+    snapshot.lastBaselineSample != null ||
+    snapshot.lastBaselineMismatchCount != null;
 
   return (
     <section className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">

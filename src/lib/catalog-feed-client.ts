@@ -591,7 +591,20 @@ export async function fetchJudgeBaselineEntries(scope: string): Promise<JudgeBas
 }
 
 function normalizeJudgeBaselineEntry(row: Raw): JudgeBaselineEntry {
-  const expected = asBaselineExpected(pickOpt<unknown>(row, ['expected', 'Expected'])) ?? 'pass';
+  // `expected` is the gold label (pass vs fail) — silently defaulting
+  // to `pass` on a missing/invalid value would misrepresent the
+  // operator's curated label and could lead reviewers to make wrong
+  // promotion calls. The upstream service stores it as an enum-backed
+  // Postgres column, so a missing/unknown value here indicates a
+  // contract violation; throw so the page surfaces a load error
+  // instead of rendering bogus data.
+  const rawExpected = pickOpt<unknown>(row, ['expected', 'Expected']);
+  const expected = asBaselineExpected(rawExpected);
+  if (expected == null) {
+    throw new Error(
+      `judge_baseline_entries row missing or has invalid \`expected\` value: ${JSON.stringify(rawExpected)}`,
+    );
+  }
   return {
     id: pick<string>(row, ['id', 'ID'], ''),
     scope: pick<string>(row, ['scope', 'Scope'], ''),

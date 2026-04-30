@@ -9,16 +9,16 @@ interface PageProps {
 }
 
 /**
- * Per-scope baseline editor. The scope segment is URL-encoded by the
- * caller (so `vanities:tear_sheet` arrives as `vanities%3Atear_sheet`)
- * and passed through verbatim to the upstream service. Errors are
- * captured into a variable so the route renders a friendly surface
- * instead of escaping into the route error boundary on transient
- * proxy/auth failures.
+ * Per-scope baseline editor. Next.js already URL-decodes the dynamic
+ * route segment before populating `params`, so we use the value
+ * verbatim — calling `decodeURIComponent` again would double-decode
+ * and would throw `URIError` on any scope literally containing a `%`
+ * character. Errors are captured into a variable so the route renders
+ * a friendly surface instead of escaping into the route error
+ * boundary on transient proxy/auth failures.
  */
 export default async function JudgeBaselineScopePage({ params }: PageProps) {
-  const { scope: rawScope } = await params;
-  const scope = decodeURIComponent(rawScope);
+  const { scope } = await params;
   let entries: JudgeBaselineEntry[] = [];
   let loadError: string | null = null;
   try {
