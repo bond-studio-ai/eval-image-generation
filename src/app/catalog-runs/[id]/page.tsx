@@ -1,4 +1,5 @@
 import {
+  BaselineMatchBadge,
   DecisionBadge,
   formatDateTime,
   formatLatency,
@@ -109,6 +110,9 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
                     Verdict
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
+                    Baseline
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                     Scores
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
@@ -124,6 +128,13 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
                       {j.modelVendor}/{j.modelName}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700">{j.rawVerdict ?? '—'}</td>
+                    <td className="px-3 py-2 text-xs">
+                      <BaselineMatchBadge
+                        match={j.baselineMatch}
+                        expected={j.baselineExpected}
+                        observedPass={j.baselineObservedPass}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-xs text-gray-600">
                       {j.scores ? (
                         <code className="rounded bg-gray-50 px-1.5 py-0.5 font-mono text-xs text-gray-700">
