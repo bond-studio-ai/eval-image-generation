@@ -5,6 +5,7 @@ import {
   type RoutingDecision,
 } from '@/lib/catalog-feed-client';
 import Link from 'next/link';
+import { ClearRunsButton } from './clear-runs-button';
 import { RunRow } from './run-row';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,26 @@ function toNumber(v: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+// collectUnsupportedClearFilters returns the page-level filters that
+// have NO equivalent on the backend's `DELETE /admin/runs` filter
+// surface (`scope`, `status`, `since`, `before` are honoured; the
+// rest are not). Surfacing the names back to the operator via the
+// confirm-clear copy was the right call from PR #26 review P1: a
+// reviewer working a `decision=hold` queue must be told their
+// score/decision filter will NOT narrow the destructive call so
+// they can either widen the table view first or cancel the clear.
+function collectUnsupportedClearFilters(sp: {
+  decision?: string;
+  minScore?: string;
+  maxScore?: string;
+}): string[] {
+  const out: string[] = [];
+  if (sp.decision) out.push(`decision=${sp.decision}`);
+  if (sp.minScore) out.push(`minScore=${sp.minScore}`);
+  if (sp.maxScore) out.push(`maxScore=${sp.maxScore}`);
+  return out;
+}
+
 export default async function CatalogRunsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1);
@@ -64,6 +85,15 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
         title="Catalog Confidence — Review Queue"
         subtitle="Calibrated AI generation runs from the catalog-feed service. Sort the default view by decision=Hold to work the reviewer queue top-down; Spot-check rows surface the 5% sampled approvals that earn reviewer time."
       />
+
+      <div className="mt-4 flex justify-end">
+        <ClearRunsButton
+          scope={sp.scope}
+          since={sp.since}
+          before={sp.before}
+          unsupportedFilters={collectUnsupportedClearFilters(sp)}
+        />
+      </div>
 
       <form
         method="get"
