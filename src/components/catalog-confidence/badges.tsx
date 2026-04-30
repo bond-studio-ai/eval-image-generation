@@ -115,6 +115,27 @@ export function formatLatency(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/**
+ * StatusBadge surfaces the run's lifecycle state (succeeded, failed,
+ * etc.) on the runs list. Today the queue mostly produces `succeeded`
+ * or `failed`; we render anything else as a neutral "in progress"
+ * affordance so transient states don't render as plain text.
+ */
+const STATUS_STYLES: Record<string, string> = {
+  succeeded: 'bg-green-100 text-green-800 ring-1 ring-inset ring-green-600/20',
+  failed: 'bg-red-100 text-red-800 ring-1 ring-inset ring-red-600/20',
+};
+
+export function StatusBadge({ status }: { status: string }) {
+  const cls =
+    STATUS_STYLES[status] ?? 'bg-blue-100 text-blue-800 ring-1 ring-inset ring-blue-600/20';
+  return (
+    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${cls}`}>
+      {status || 'pending'}
+    </span>
+  );
+}
+
 // ─── Judge baselines ────────────────────────────────────────────────────────
 
 /**

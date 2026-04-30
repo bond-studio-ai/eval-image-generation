@@ -141,6 +141,28 @@ export interface AdminRunSummary {
     decision: RoutingDecision;
   } | null;
   reviewed: boolean;
+  /**
+   * URL of the input image the generator received (typically the
+   * featured photo). Surfaced on the list response so the runs-list
+   * accordion can render side-by-side comparisons without a per-row
+   * detail fetch.
+   */
+  sourceImageUrl: string | null;
+  /**
+   * URLs of the bytes this run actually produced. Pulled from
+   * `response_payload.outputImageUrls` and may be empty for legacy
+   * runs that predate output-URL persistence — the UI falls back to
+   * the canonical `/images/products/{productId}/{render}` path in
+   * that case so reviewers always get a comparison surface.
+   */
+  outputImageUrls: string[];
+  /**
+   * Gemini/OpenAI failure message when the run did not reach a verdict.
+   * Powers the "Failed" badge + inline error context on the list so
+   * "no decision" rows aren't a mystery.
+   */
+  errorMessage: string | null;
+  productId: string | null;
 }
 
 export interface JudgeEvaluationEntry {
@@ -200,7 +222,6 @@ export interface AdminRunDetail {
     promptVersionId: string | null;
     requestPayload: Record<string, unknown> | null;
     responsePayload: Record<string, unknown> | null;
-    errorMessage: string | null;
   };
   judgeEvaluations: JudgeEvaluationEntry[];
   deterministicChecks: DeterministicCheckEntry[];
@@ -362,6 +383,7 @@ function normalizeRunSummary(row: Raw): AdminRunSummary {
   const calibrated = pickOpt<number>(row, ['calibratedScore', 'CalibratedScore']);
   const raw = pickOpt<number>(row, ['rawScore', 'RawScore']);
   const decision = pickOpt<string>(row, ['decision', 'Decision']);
+  const outputs = pickOpt<unknown[]>(row, ['outputImageUrls', 'OutputImageURLs']);
   return {
     id: pick<string>(row, ['runId', 'RunID', 'id', 'ID'], ''),
     jobId: pickOpt<string>(row, ['jobId', 'JobID']),
@@ -382,6 +404,12 @@ function normalizeRunSummary(row: Raw): AdminRunSummary {
           }
         : null,
     reviewed: pick<boolean>(row, ['reviewed', 'Reviewed'], false),
+    sourceImageUrl: pickOpt<string>(row, ['sourceImageUrl', 'SourceImageURL']),
+    outputImageUrls: Array.isArray(outputs)
+      ? outputs.filter((u): u is string => typeof u === 'string' && u.length > 0)
+      : [],
+    errorMessage: pickOpt<string>(row, ['errorMessage', 'ErrorMessage']),
+    productId: pickOpt<string>(row, ['productId', 'ProductID']),
   };
 }
 
@@ -391,6 +419,29 @@ export async function fetchAdminRun(id: string): Promise<AdminRunDetail> {
 }
 
 function normalizeRunDetail(row: Raw): AdminRunDetail {
+  const requestPayload = pickOpt<Record<string, unknown>>(row, [
+    'request',
+    'Request',
+    'requestPayload',
+  ]);
+  const responsePayload = pickOpt<Record<string, unknown>>(row, [
+    'response',
+    'Response',
+    'responsePayload',
+  ]);
+  // Detail page surfaces the same input/output URLs the runs-list
+  // accordion uses. They live on the JSONB payloads (this endpoint
+  // returns them as-is) so we extract them here once and let the
+  // page component render without re-walking the payload tree.
+  const sourceImageUrl =
+    typeof requestPayload?.sourceImage === 'string' ? (requestPayload.sourceImage as string) : null;
+  const outputImageUrlsRaw = responsePayload?.outputImageUrls;
+  const outputImageUrls = Array.isArray(outputImageUrlsRaw)
+    ? (outputImageUrlsRaw as unknown[]).filter(
+        (u): u is string => typeof u === 'string' && u.length > 0,
+      )
+    : [];
+
   const run: AdminRunDetail['run'] = {
     id: pick<string>(row, ['runId', 'RunID', 'id', 'ID'], ''),
     jobId: pickOpt<string>(row, ['jobId', 'JobID']),
@@ -410,13 +461,12 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
       return v == null ? null : asPromptKind(v);
     })(),
     promptVersionId: pickOpt<string>(row, ['promptVersionId', 'PromptVersionID']),
-    requestPayload: pickOpt<Record<string, unknown>>(row, ['request', 'Request', 'requestPayload']),
-    responsePayload: pickOpt<Record<string, unknown>>(row, [
-      'response',
-      'Response',
-      'responsePayload',
-    ]),
+    requestPayload,
+    responsePayload,
     errorMessage: pickOpt<string>(row, ['errorMessage', 'ErrorMessage']),
+    sourceImageUrl,
+    outputImageUrls,
+    productId: pickOpt<string>(row, ['productId', 'ProductID']),
   };
 
   const judgesRaw = (pick<Raw[]>(row, ['judges', 'Judges'], []) ?? []) as Raw[];

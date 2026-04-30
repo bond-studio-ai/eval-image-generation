@@ -43,6 +43,7 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
   }
 
   const run = detail.run;
+  const showReview = run.status === 'succeeded';
   return (
     <div>
       <PageHeader
@@ -51,6 +52,48 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
         backHref="/catalog-runs"
         backLabel="Review queue"
       />
+
+      {run.status === 'failed' && run.errorMessage && (
+        <section className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 shadow-xs">
+          <h2 className="text-sm font-semibold tracking-wide text-red-800 uppercase">
+            Generation failed
+          </h2>
+          <pre className="mt-2 overflow-x-auto rounded-md border border-red-200 bg-white p-3 font-mono text-xs whitespace-pre-wrap text-red-900">
+            {run.errorMessage}
+          </pre>
+        </section>
+      )}
+
+      <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+        <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
+          Input vs output
+        </h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <DetailImage label="Source" url={run.sourceImageUrl} />
+          {run.outputImageUrls.length === 0 ? (
+            <DetailImage
+              label="Generated"
+              url={null}
+              note="Output URL not persisted for this run."
+            />
+          ) : (
+            <div>
+              <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">
+                Generated ({run.outputImageUrls.length})
+              </h3>
+              <div className="mt-1 space-y-2">
+                {run.outputImageUrls.map((url, i) => (
+                  <DetailImage
+                    key={url}
+                    label={i === 0 ? 'Generated' : `Generated #${i + 1}`}
+                    url={url}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -72,21 +115,34 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
           </dl>
         </section>
 
-        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
-          <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
-            Submit human review
-          </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            Verdicts feed the nightly isotonic calibration and the Evals prompt-promotion gate.
-          </p>
-          {detail.humanReviews.length > 0 && (
-            <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-              This run has been reviewed {detail.humanReviews.length} time(s). A new verdict adds to
-              the audit chain rather than replacing the previous one.
-            </div>
-          )}
-          <ReviewForm runId={run.id} />
-        </section>
+        {showReview ? (
+          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
+            <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
+              Submit human review
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Verdicts feed the nightly isotonic calibration and the Evals prompt-promotion gate.
+            </p>
+            {detail.humanReviews.length > 0 && (
+              <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
+                This run has been reviewed {detail.humanReviews.length} time(s). A new verdict adds
+                to the audit chain rather than replacing the previous one.
+              </div>
+            )}
+            <ReviewForm runId={run.id} />
+          </section>
+        ) : (
+          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
+            <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
+              Review unavailable
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Reviews can only be filed against runs whose generation succeeded. This run finished
+              with status <code className="rounded bg-gray-100 px-1 text-xs">{run.status}</code>;
+              fix the upstream failure and rerun before recording a verdict.
+            </p>
+          </section>
+        )}
       </div>
 
       <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -232,6 +288,37 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between gap-4">
       <dt className="text-xs tracking-wide text-gray-500 uppercase">{label}</dt>
       <dd className="text-sm text-gray-900">{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * DetailImage mirrors the runs-list `ImageBlock` so reviewers see the
+ * same comparison surface whether they're scrolling the queue or
+ * inspecting a single run. We use a plain `<img>` instead of next/image
+ * because the catalog CDN is on a separate hostname; configuring
+ * remotePatterns adds friction with no perceptible UX gain at the
+ * sizes we render here.
+ */
+function DetailImage({ label, url, note }: { label: string; url: string | null; note?: string }) {
+  return (
+    <div>
+      <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">{label}</h3>
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" className="mt-1 block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={label}
+            loading="lazy"
+            className="mt-1 max-h-96 w-full rounded-md border border-gray-200 bg-white object-contain"
+          />
+        </a>
+      ) : (
+        <div className="mt-1 flex h-40 items-center justify-center rounded-md border border-dashed border-gray-300 bg-white text-xs text-gray-500">
+          {note ?? 'No image URL'}
+        </div>
+      )}
     </div>
   );
 }
