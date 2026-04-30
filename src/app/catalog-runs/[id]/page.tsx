@@ -7,7 +7,12 @@ import {
   VerdictBadge,
 } from '@/components/catalog-confidence/badges';
 import { PageHeader } from '@/components/page-header';
-import { fetchAdminRun } from '@/lib/catalog-feed-client';
+import {
+  exemplarPreviewUrl,
+  extractRunInputs,
+  fetchAdminRun,
+  type RunInputs,
+} from '@/lib/catalog-feed-client';
 import { ReviewForm } from './review-form';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +49,7 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
 
   const run = detail.run;
   const showReview = run.status === 'succeeded';
+  const inputs = extractRunInputs(run.requestPayload);
   return (
     <div>
       <PageHeader
@@ -94,6 +100,8 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
           )}
         </div>
       </section>
+
+      <InputsSection inputs={inputs} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -288,6 +296,158 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between gap-4">
       <dt className="text-xs tracking-wide text-gray-500 uppercase">{label}</dt>
       <dd className="text-sm text-gray-900">{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * InputsSection renders the typed projection of a run's
+ * `request_payload`: the strategy/model badges, the operator-supplied
+ * productContext as a key/value table, and the exemplar IDs as a
+ * thumbnail strip linkable to the canonical CDN tear-sheet/line-drawing
+ * URL. When nothing useful is present (legacy rows) we render a thin
+ * placeholder so the section never disappears entirely — operators
+ * inspecting an old run otherwise wouldn't know "no inputs persisted"
+ * vs. "the section silently failed to load".
+ */
+function InputsSection({ inputs }: { inputs: RunInputs }) {
+  const badges = [
+    { label: 'Strategy', value: inputs.strategy },
+    { label: 'Model', value: inputs.model },
+    { label: 'Product type', value: inputs.productType },
+    { label: 'Render type', value: inputs.renderType },
+  ].filter((b) => b.value);
+
+  const ctxEntries = inputs.productContext
+    ? Object.entries(inputs.productContext).filter(([, v]) => v != null && v !== '')
+    : [];
+
+  const empty =
+    badges.length === 0 && ctxEntries.length === 0 && inputs.exemplarProductIds.length === 0;
+
+  return (
+    <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">Inputs</h2>
+      {empty ? (
+        <p className="mt-2 text-sm text-gray-500">
+          No structured inputs persisted for this run. The rendered prompt template below still
+          carries the resolved values inline.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-5">
+          {badges.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {badges.map(({ label, value }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs"
+                >
+                  <span className="tracking-wide text-gray-500 uppercase">{label}</span>
+                  <code className="font-mono text-gray-900">{value}</code>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {ctxEntries.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">
+                Product context
+              </h3>
+              <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                {ctxEntries.map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-baseline justify-between gap-3 border-b border-gray-100 py-1"
+                  >
+                    <dt className="font-mono text-xs tracking-wide text-gray-500 uppercase">{k}</dt>
+                    <dd className="text-right font-mono text-xs break-all text-gray-900">
+                      {formatContextValue(v)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
+          {inputs.exemplarProductIds.length > 0 && (
+            <ExemplarThumbnails
+              productIds={inputs.exemplarProductIds}
+              renderType={inputs.renderType}
+              sourceImageUrl={inputs.sourceImageUrl}
+            />
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function formatContextValue(v: unknown): string {
+  if (v == null) return '—';
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+/**
+ * ExemplarThumbnails renders the in-context pass-set the worker fed
+ * Gemini for this run as a small thumbnail strip. Each thumbnail is
+ * a direct link to the canonical CDN URL so reviewers debugging
+ * upstream "Cannot fetch content from URL" 400s can curl-test each
+ * reference inline.
+ */
+function ExemplarThumbnails({
+  productIds,
+  renderType,
+  sourceImageUrl,
+}: {
+  productIds: string[];
+  renderType: string | null;
+  sourceImageUrl: string | null;
+}) {
+  return (
+    <div>
+      <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">
+        Exemplars sent to generator ({productIds.length})
+      </h3>
+      <p className="mt-1 text-xs text-gray-500">
+        Top-N pass-labeled references the worker attached to the prompt. URLs are derived from
+        productId + renderType — the canonical CDN path the generator was asked to fetch.
+      </p>
+      <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+        {productIds.map((id) => {
+          const url = exemplarPreviewUrl(id, renderType, sourceImageUrl);
+          return (
+            <li key={id} className="space-y-1">
+              {url ? (
+                <a href={url} target="_blank" rel="noreferrer" className="block">
+                  {/* Catalog images live on a public CDN; using <img>
+                      avoids next/image remotePatterns config for
+                      preview thumbnails. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={`Exemplar ${id.slice(0, 8)}`}
+                    loading="lazy"
+                    className="aspect-square w-full rounded-md border border-gray-200 bg-white object-contain"
+                  />
+                </a>
+              ) : (
+                <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-white text-[10px] text-gray-500">
+                  no preview
+                </div>
+              )}
+              <code className="block truncate font-mono text-[10px] text-gray-500" title={id}>
+                {id.slice(0, 8)}
+              </code>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
