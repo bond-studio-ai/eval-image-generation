@@ -230,6 +230,76 @@ export interface AdminRunDetail {
   artifactKeys: string[];
 }
 
+/**
+ * RunInputs is the typed projection of `request_payload` that the
+ * runs detail "Inputs" panel renders. We keep extraction in one
+ * place so the page component never has to walk the JSONB tree
+ * directly. Every field is optional because the audit row is
+ * historically partial — runs persisted before
+ * service-catalog-feed#22 won't carry `renderType` or
+ * `productContext`, and the OpenAI strategy never carries
+ * `exemplarProductIds`.
+ */
+export interface RunInputs {
+  strategy: string | null;
+  model: string | null;
+  productType: string | null;
+  renderType: string | null;
+  sourceImageUrl: string | null;
+  productContext: Record<string, unknown> | null;
+  exemplarProductIds: string[];
+}
+
+export function extractRunInputs(payload: Record<string, unknown> | null | undefined): RunInputs {
+  const p = payload ?? {};
+  const exemplarsRaw = p.exemplarProductIds;
+  const ctx = p.productContext;
+  return {
+    strategy: typeof p.strategy === 'string' ? p.strategy : null,
+    model: typeof p.model === 'string' ? p.model : null,
+    productType: typeof p.productType === 'string' ? p.productType : null,
+    renderType: typeof p.renderType === 'string' ? p.renderType : null,
+    sourceImageUrl: typeof p.sourceImage === 'string' ? p.sourceImage : null,
+    productContext:
+      ctx && typeof ctx === 'object' && !Array.isArray(ctx)
+        ? (ctx as Record<string, unknown>)
+        : null,
+    exemplarProductIds: Array.isArray(exemplarsRaw)
+      ? (exemplarsRaw as unknown[]).filter(
+          (id): id is string => typeof id === 'string' && id.length > 0,
+        )
+      : [],
+  };
+}
+
+/**
+ * Derive the canonical CDN URL for an exemplar from its productId,
+ * mirroring the worker-side projection in
+ * usecases/image_generation/contracts/exemplar.go. We extract the
+ * CDN host from the run's own source image URL rather than hard-
+ * coding it, so previews keep working across staging/prod and
+ * locally-pointed environments.
+ */
+export function exemplarPreviewUrl(
+  productId: string,
+  renderType: string | null,
+  sourceImageUrl: string | null,
+): string | null {
+  if (!productId) return null;
+  const rt = renderType?.trim();
+  if (!rt) return null;
+  let host = 'cdn.bondstudio.ai';
+  if (sourceImageUrl) {
+    try {
+      host = new URL(sourceImageUrl).host;
+    } catch {
+      // fall through to default; malformed source URLs shouldn't
+      // poison the exemplar preview row.
+    }
+  }
+  return `https://${host}/images/products/${productId}/${rt}-1.png?f=webp`;
+}
+
 export interface PromptVersion {
   id: string;
   kind: PromptKind;
