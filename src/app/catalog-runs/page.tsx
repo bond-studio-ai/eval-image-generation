@@ -5,6 +5,7 @@ import {
   type RoutingDecision,
 } from '@/lib/catalog-feed-client';
 import Link from 'next/link';
+import { ClearRunsButton } from './clear-runs-button';
 import { RunRow } from './run-row';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +65,10 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
         title="Catalog Confidence — Review Queue"
         subtitle="Calibrated AI generation runs from the catalog-feed service. Sort the default view by decision=Hold to work the reviewer queue top-down; Spot-check rows surface the 5% sampled approvals that earn reviewer time."
       />
+
+      <div className="mt-4 flex justify-end">
+        <ClearRunsButton scope={sp.scope} before={sp.before} />
+      </div>
 
       <form
         method="get"
