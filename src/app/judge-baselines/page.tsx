@@ -35,17 +35,27 @@ export const dynamic = 'force-dynamic';
  * page's TTFB for no upside.
  */
 export default async function JudgeBaselinesIndexPage() {
-  let scopes: JudgeBaselineScopeStat[] = [];
-  let prompts: PromptVersion[] = [];
-  let loadError: string | null = null;
-  try {
-    [scopes, prompts] = await Promise.all([
-      fetchJudgeBaselineScopes(),
-      fetchAdminPrompts({ kind: 'judge' }),
-    ]);
-  } catch (e) {
-    loadError = e instanceof Error ? e.message : String(e);
-  }
+  // The two sources fail independently: one endpoint going down
+  // (404 during a backend rollout window, 5xx from a flapping
+  // service, etc.) MUST NOT drop the rows the other source still
+  // returns. A bare `Promise.all` would do exactly that — a 404 on
+  // the new `/admin/judge-baselines` would empty the whole page
+  // even when `/admin/prompts?kind=judge` is healthy, blocking
+  // operator navigation to prompt-backed scopes that the previous
+  // version of this page rendered fine. Settling each promise
+  // separately lets the page render whichever source is up and
+  // surface a per-source banner for the one that isn't.
+  const [scopesResult, promptsResult] = await Promise.allSettled([
+    fetchJudgeBaselineScopes(),
+    fetchAdminPrompts({ kind: 'judge' }),
+  ]);
+  const scopes: JudgeBaselineScopeStat[] =
+    scopesResult.status === 'fulfilled' ? scopesResult.value : [];
+  const prompts: PromptVersion[] = promptsResult.status === 'fulfilled' ? promptsResult.value : [];
+  const scopesError =
+    scopesResult.status === 'rejected' ? formatRejection(scopesResult.reason) : null;
+  const promptsError =
+    promptsResult.status === 'rejected' ? formatRejection(promptsResult.reason) : null;
 
   // Build a per-scope index of judge prompts so we can attach the
   // active prompt's snapshot to the corresponding baseline row in
@@ -87,9 +97,16 @@ export default async function JudgeBaselinesIndexPage() {
         subtitle="Per-scope curated pass/fail product-ID baselines. The worker captures match telemetry on every primary judge call; the Promoter gates promotion of proposed judge prompts on these labeled sets. Scopes appear here as soon as a baseline is labeled, even before a judge prompt is registered."
       />
 
-      {loadError && (
-        <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          Failed to load baseline scopes: {loadError}
+      {scopesError && (
+        <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Could not load baseline scopes; rows below show only scopes that have a registered judge
+          prompt. Pass/fail counts will be missing until this recovers. ({scopesError})
+        </div>
+      )}
+      {promptsError && (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Could not load judge prompts; rows below show only scopes with labeled baselines. Active
+          prompt links and accuracy snapshots are unavailable until this recovers. ({promptsError})
         </div>
       )}
 
@@ -106,7 +123,7 @@ export default async function JudgeBaselinesIndexPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.length === 0 && !loadError ? (
+            {rows.length === 0 && !scopesError && !promptsError ? (
               <tr>
                 <td className="px-4 py-6 text-center text-sm text-gray-500" colSpan={6}>
                   No baselines or judge prompts yet. Bulk-paste from the per-scope editor or run the
@@ -170,6 +187,24 @@ function Th({ children }: { children: React.ReactNode }) {
       {children}
     </th>
   );
+}
+
+/**
+ * formatRejection renders a Promise rejection reason as a short
+ * human-readable string for the per-source banner. Banner space is
+ * tight so we only surface the message; the full stack lives in
+ * server logs (Next.js prints rejected Server Component fetches by
+ * default). Any non-Error value is stringified verbatim — partial
+ * outages from the proxy can throw plain strings or objects.
+ */
+function formatRejection(reason: unknown): string {
+  if (reason instanceof Error) return reason.message;
+  if (typeof reason === 'string') return reason;
+  try {
+    return JSON.stringify(reason);
+  } catch {
+    return String(reason);
+  }
 }
 
 /**
