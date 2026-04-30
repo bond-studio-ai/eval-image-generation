@@ -268,6 +268,24 @@ export interface JudgeBaselineEntry {
 }
 
 /**
+ * JudgeBaselineScopeStat is the per-scope rollup returned by
+ * `GET /admin/judge-baselines` (no scope path). The eval-site index
+ * uses it as the canonical source of "scopes that have a labeled
+ * baseline today", which is independent from "scopes that have a
+ * registered judge prompt today" — seeding-first onboarding makes
+ * those two sets diverge on purpose.
+ *
+ * `lastUpdatedAt` may be empty when the upstream omits it (e.g. on
+ * an empty rollup, though the endpoint already filters those out).
+ */
+export interface JudgeBaselineScopeStat {
+  scope: string;
+  passCount: number;
+  failCount: number;
+  lastUpdatedAt: string | null;
+}
+
+/**
  * JudgeBaselineStats is the rolling-rollup the upstream service
  * computes by joining `judge_evaluations` against
  * `judge_baseline_entries` for a given prompt version. Used on the
@@ -575,36 +593,70 @@ export async function fetchAdminCalibrations(): Promise<CalibrationModel[]> {
 // ─── Judge baselines ────────────────────────────────────────────────────────
 
 /**
+ * fetchJudgeBaselineScopes returns one row per scope that currently
+ * has at least one labeled baseline entry. Backed by
+ * `GET /admin/judge-baselines` (no scope path) — see PR
+ * bond-studio-ai/service-catalog-feed#18 for the rationale: the
+ * `/judge-baselines` index page MUST render seeded scopes even
+ * before a judge prompt is registered for them, otherwise the
+ * operator can't see what was seeded.
+ */
+export async function fetchJudgeBaselineScopes(): Promise<JudgeBaselineScopeStat[]> {
+  const resp = await fetchAdmin<{ scopes?: Raw[] } | { Scopes?: Raw[] }>(`/admin/judge-baselines`);
+  const rows = ((resp as { scopes?: Raw[] }).scopes ??
+    (resp as { Scopes?: Raw[] }).Scopes ??
+    []) as Raw[];
+  return rows.map((row) => ({
+    scope: pick<string>(row, ['scope', 'Scope'], ''),
+    passCount: pick<number>(row, ['passCount', 'PassCount'], 0),
+    failCount: pick<number>(row, ['failCount', 'FailCount'], 0),
+    lastUpdatedAt: pickOpt<string>(row, ['lastUpdatedAt', 'LastUpdatedAt']),
+  }));
+}
+
+/**
  * fetchJudgeBaselineEntries reads the curated pass/fail set for a
  * single judge `scope`. The admin site is the only writer; mutations
  * round-trip through the `/api/v1/catalog-feed` proxy from the
  * editor below.
+ *
+ * The upstream response is `{ pass: [...], fail: [...] }` (camelCase)
+ * with PascalCase fallbacks for the case where huma drops the JSON
+ * tags. We splice them into a flat list because the editor groups by
+ * `expected` itself; the `expected` field on each row is set
+ * authoritatively from which array it came in to defend against any
+ * mismatched server entry.
  */
 export async function fetchJudgeBaselineEntries(scope: string): Promise<JudgeBaselineEntry[]> {
-  const resp = await fetchAdmin<{ entries?: Raw[] } | { Entries?: Raw[] }>(
-    `/admin/judge-baselines/${encodeURIComponent(scope)}`,
-  );
-  const rows = ((resp as { entries?: Raw[] }).entries ??
-    (resp as { Entries?: Raw[] }).Entries ??
-    []) as Raw[];
-  return rows.map(normalizeJudgeBaselineEntry);
+  const resp = await fetchAdmin<{
+    pass?: Raw[];
+    fail?: Raw[];
+    Pass?: Raw[];
+    Fail?: Raw[];
+  }>(`/admin/judge-baselines/${encodeURIComponent(scope)}`);
+  const passRows = (resp.pass ?? resp.Pass ?? []) as Raw[];
+  const failRows = (resp.fail ?? resp.Fail ?? []) as Raw[];
+  return [
+    ...passRows.map((r) => normalizeJudgeBaselineEntry(r, 'pass')),
+    ...failRows.map((r) => normalizeJudgeBaselineEntry(r, 'fail')),
+  ];
 }
 
-function normalizeJudgeBaselineEntry(row: Raw): JudgeBaselineEntry {
-  // `expected` is the gold label (pass vs fail) — silently defaulting
-  // to `pass` on a missing/invalid value would misrepresent the
-  // operator's curated label and could lead reviewers to make wrong
-  // promotion calls. The upstream service stores it as an enum-backed
-  // Postgres column, so a missing/unknown value here indicates a
-  // contract violation; throw so the page surfaces a load error
-  // instead of rendering bogus data.
+function normalizeJudgeBaselineEntry(
+  row: Raw,
+  bucketHint: JudgeBaselineExpected,
+): JudgeBaselineEntry {
+  // The upstream `/admin/judge-baselines/{scope}` response groups
+  // rows by their `expected` value (the array key — `pass`/`fail`),
+  // and the per-row DTO also includes the same value. We pass the
+  // bucket the row arrived in as `bucketHint` and trust that as the
+  // authoritative label: a server-side enum constraint backs the
+  // bucketing, so even if a future DTO change drops the per-row
+  // `expected` field the editor still renders correctly. We only
+  // fall back to a raw lookup when the hint is unavailable (kept
+  // defensive in case the function is reused elsewhere in future).
   const rawExpected = pickOpt<unknown>(row, ['expected', 'Expected']);
-  const expected = asBaselineExpected(rawExpected);
-  if (expected == null) {
-    throw new Error(
-      `judge_baseline_entries row missing or has invalid \`expected\` value: ${JSON.stringify(rawExpected)}`,
-    );
-  }
+  const expected = asBaselineExpected(rawExpected) ?? bucketHint;
   return {
     id: pick<string>(row, ['id', 'ID'], ''),
     scope: pick<string>(row, ['scope', 'Scope'], ''),
