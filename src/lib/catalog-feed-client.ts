@@ -74,6 +74,7 @@ const HUMAN_VERDICTS: ReadonlyArray<HumanVerdict> = ['accept', 'reject', 'partia
 const PROMPT_KINDS: ReadonlyArray<PromptKind> = ['generation', 'judge', 'extraction', 'meta'];
 const PROMPT_STATUSES: ReadonlyArray<PromptStatus> = ['proposed', 'active', 'retired'];
 const CALIBRATION_STATUSES: ReadonlyArray<CalibrationStatus> = ['active', 'retired'];
+const BASELINE_EXPECTEDS: ReadonlyArray<JudgeBaselineExpected> = ['pass', 'fail'];
 
 function asDecision(value: unknown): RoutingDecision {
   return typeof value === 'string' && (ROUTING_DECISIONS as readonly string[]).includes(value)
@@ -100,6 +101,11 @@ function asCalibrationStatus(value: unknown): CalibrationStatus {
     ? (value as CalibrationStatus)
     : 'active';
 }
+function asBaselineExpected(value: unknown): JudgeBaselineExpected | null {
+  return typeof value === 'string' && (BASELINE_EXPECTEDS as readonly string[]).includes(value)
+    ? (value as JudgeBaselineExpected)
+    : null;
+}
 
 // ─── Types (match domain/aiaudit on the Go side) ────────────────────────────
 
@@ -108,6 +114,15 @@ export type HumanVerdict = 'accept' | 'reject' | 'partial';
 export type PromptKind = 'generation' | 'judge' | 'extraction' | 'meta';
 export type PromptStatus = 'proposed' | 'active' | 'retired';
 export type CalibrationStatus = 'active' | 'retired';
+
+/**
+ * JudgeBaselineExpected matches the upstream `judge_baseline_expected`
+ * Postgres enum. Operators label each `(scope, productId)` pair with
+ * the verdict the judge SHOULD return; the worker stores per-run
+ * `baselineMatch` telemetry against the same set, and the Promoter
+ * gates prompt promotion on the rolled-up rates.
+ */
+export type JudgeBaselineExpected = 'pass' | 'fail';
 
 export interface AdminRunSummary {
   id: string;
@@ -137,6 +152,17 @@ export interface JudgeEvaluationEntry {
   createdAt: string;
   modelVendor: string;
   modelName: string;
+  /**
+   * Baseline-vs-observed cross-check captured at the moment the judge
+   * ran. `baselineExpected` is the operator-curated label for this
+   * `(scope, productId)`; `baselineObservedPass` is the actual verdict
+   * the judge returned; `baselineMatch` is the boolean comparison the
+   * worker stored. All three are nullable: an unlabeled product (the
+   * normal case) leaves them null and the row is treated as untracked.
+   */
+  baselineExpected: JudgeBaselineExpected | null;
+  baselineObservedPass: boolean | null;
+  baselineMatch: boolean | null;
 }
 
 export interface DeterministicCheckEntry {
@@ -195,6 +221,69 @@ export interface PromptVersion {
   createdAt: string;
   activatedAt: string | null;
   retiredAt: string | null;
+  /**
+   * Latest accuracy snapshot the upstream Promoter denormalizes onto
+   * the row right after each eval run. The snapshot covers OpenAI Evals
+   * (`lastEvalOverall`) and the self-hosted baseline replay
+   * (`lastBaseline*` fields). Optional because:
+   *   - non-judge prompts skip the baseline replay entirely;
+   *   - prompts predating the snapshot machinery have no metadata;
+   *   - the upstream metadata field is JSONB and may carry unrelated
+   *     operator-set keys we do not surface here.
+   */
+  metadata: PromptVersionMetadata;
+}
+
+/**
+ * PromptVersionMetadata is the typed read-side projection of the
+ * upstream `prompt_versions.metadata` JSONB column. We only declare
+ * the keys the admin UI consumes; everything else is preserved on
+ * the wire but ignored here. All fields are optional so a prompt
+ * with no eval history renders cleanly with em-dashes.
+ */
+export interface PromptVersionMetadata {
+  lastEvaluatedAt?: string;
+  lastEvalOverall?: number;
+  lastBaselinePassRate?: number;
+  lastBaselineFailRate?: number;
+  lastBaselineSample?: number;
+  lastBaselineMismatchCount?: number;
+}
+
+/**
+ * JudgeBaselineEntry is one labeled product-ID for a given judge
+ * scope. The admin site is the only writer; the worker reads this
+ * set on every primary judge call and the Promoter reads it during
+ * gated promotion.
+ */
+export interface JudgeBaselineEntry {
+  id: string;
+  scope: string;
+  productId: string;
+  expected: JudgeBaselineExpected;
+  failureReason: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * JudgeBaselineStats is the rolling-rollup the upstream service
+ * computes by joining `judge_evaluations` against
+ * `judge_baseline_entries` for a given prompt version. Used on the
+ * prompt-detail page to render live accuracy alongside the snapshot
+ * stamped onto `metadata` at the most recent eval run.
+ */
+export interface JudgeBaselineStats {
+  promptVersionId: string;
+  scope: string | null;
+  passMatched: number;
+  passTotal: number;
+  failMatched: number;
+  failTotal: number;
+  passRate: number;
+  failRate: number;
+  sample: number;
 }
 
 export interface CalibrationModel {
@@ -326,6 +415,11 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
     createdAt: pick<string>(r, ['createdAt', 'CreatedAt'], ''),
     modelVendor: pick<string>(r, ['modelVendor', 'ModelVendor'], ''),
     modelName: pick<string>(r, ['modelName', 'ModelName'], ''),
+    baselineExpected: asBaselineExpected(
+      pickOpt<unknown>(r, ['baselineExpected', 'BaselineExpected']),
+    ),
+    baselineObservedPass: pickOpt<boolean>(r, ['baselineObservedPass', 'BaselineObservedPass']),
+    baselineMatch: pickOpt<boolean>(r, ['baselineMatch', 'BaselineMatch']),
   }));
 
   const deterministicChecks: DeterministicCheckEntry[] = checksRaw.map((r) => ({
@@ -416,7 +510,40 @@ function normalizePromptVersion(row: Raw): PromptVersion {
     createdAt: pick<string>(row, ['createdAt', 'CreatedAt'], ''),
     activatedAt: pickOpt<string>(row, ['activatedAt', 'ActivatedAt']),
     retiredAt: pickOpt<string>(row, ['retiredAt', 'RetiredAt']),
+    metadata: normalizePromptMetadata(pickOpt<Raw>(row, ['metadata', 'Metadata'])),
   };
+}
+
+/**
+ * normalizePromptMetadata reads only the typed snapshot keys we
+ * surface; unknown JSONB keys are dropped silently because the wire
+ * field is shared with operator-set notes/owner data we do not own.
+ * Numeric fields are coerced via Number() so a stringly-typed value
+ * (e.g. legacy seeded data) still renders sensibly instead of blowing
+ * up the table.
+ */
+function normalizePromptMetadata(raw: Raw | null): PromptVersionMetadata {
+  if (!raw) return {};
+  const out: PromptVersionMetadata = {};
+  const setNum = (key: keyof PromptVersionMetadata, candidates: string[]) => {
+    const v = pickOpt<unknown>(raw, candidates);
+    if (v == null) return;
+    const n = typeof v === 'number' ? v : Number(v);
+    if (Number.isFinite(n)) {
+      (out[key] as number) = n;
+    }
+  };
+  const setStr = (key: keyof PromptVersionMetadata, candidates: string[]) => {
+    const v = pickOpt<unknown>(raw, candidates);
+    if (typeof v === 'string' && v) (out[key] as string) = v;
+  };
+  setStr('lastEvaluatedAt', ['lastEvaluatedAt', 'LastEvaluatedAt']);
+  setNum('lastEvalOverall', ['lastEvalOverall', 'LastEvalOverall']);
+  setNum('lastBaselinePassRate', ['lastBaselinePassRate', 'LastBaselinePassRate']);
+  setNum('lastBaselineFailRate', ['lastBaselineFailRate', 'LastBaselineFailRate']);
+  setNum('lastBaselineSample', ['lastBaselineSample', 'LastBaselineSample']);
+  setNum('lastBaselineMismatchCount', ['lastBaselineMismatchCount', 'LastBaselineMismatchCount']);
+  return out;
 }
 
 // ─── Calibrations ───────────────────────────────────────────────────────────
@@ -444,6 +571,82 @@ export async function fetchAdminCalibrations(): Promise<CalibrationModel[]> {
 }
 
 // ─── Thresholds ─────────────────────────────────────────────────────────────
+
+// ─── Judge baselines ────────────────────────────────────────────────────────
+
+/**
+ * fetchJudgeBaselineEntries reads the curated pass/fail set for a
+ * single judge `scope`. The admin site is the only writer; mutations
+ * round-trip through the `/api/v1/catalog-feed` proxy from the
+ * editor below.
+ */
+export async function fetchJudgeBaselineEntries(scope: string): Promise<JudgeBaselineEntry[]> {
+  const resp = await fetchAdmin<{ entries?: Raw[] } | { Entries?: Raw[] }>(
+    `/admin/judge-baselines/${encodeURIComponent(scope)}`,
+  );
+  const rows = ((resp as { entries?: Raw[] }).entries ??
+    (resp as { Entries?: Raw[] }).Entries ??
+    []) as Raw[];
+  return rows.map(normalizeJudgeBaselineEntry);
+}
+
+function normalizeJudgeBaselineEntry(row: Raw): JudgeBaselineEntry {
+  // `expected` is the gold label (pass vs fail) — silently defaulting
+  // to `pass` on a missing/invalid value would misrepresent the
+  // operator's curated label and could lead reviewers to make wrong
+  // promotion calls. The upstream service stores it as an enum-backed
+  // Postgres column, so a missing/unknown value here indicates a
+  // contract violation; throw so the page surfaces a load error
+  // instead of rendering bogus data.
+  const rawExpected = pickOpt<unknown>(row, ['expected', 'Expected']);
+  const expected = asBaselineExpected(rawExpected);
+  if (expected == null) {
+    throw new Error(
+      `judge_baseline_entries row missing or has invalid \`expected\` value: ${JSON.stringify(rawExpected)}`,
+    );
+  }
+  return {
+    id: pick<string>(row, ['id', 'ID'], ''),
+    scope: pick<string>(row, ['scope', 'Scope'], ''),
+    productId: pick<string>(row, ['productId', 'ProductID'], ''),
+    expected,
+    failureReason: pickOpt<string>(row, ['failureReason', 'FailureReason']),
+    createdBy: pick<string>(row, ['createdBy', 'CreatedBy'], ''),
+    createdAt: pick<string>(row, ['createdAt', 'CreatedAt'], ''),
+    updatedAt: pick<string>(row, ['updatedAt', 'UpdatedAt'], ''),
+  };
+}
+
+/**
+ * fetchPromptBaselineStats returns the rolling pass/fail rates for
+ * the prompt version, computed by joining `judge_evaluations`
+ * against `judge_baseline_entries` upstream. Used on the
+ * prompt-detail page alongside the snapshot stamped on
+ * `prompt_versions.metadata` to show "live" accuracy vs the most
+ * recent eval-time snapshot.
+ */
+export async function fetchPromptBaselineStats(
+  promptVersionId: string,
+  scope?: string,
+): Promise<JudgeBaselineStats> {
+  const qs = new URLSearchParams();
+  if (scope) qs.set('scope', scope);
+  const suffix = qs.toString();
+  const raw = await fetchAdmin<Raw>(
+    `/admin/prompts/${encodeURIComponent(promptVersionId)}/baseline-stats${suffix ? `?${suffix}` : ''}`,
+  );
+  return {
+    promptVersionId: pick<string>(raw, ['promptVersionId', 'PromptVersionID'], promptVersionId),
+    scope: pickOpt<string>(raw, ['scope', 'Scope']),
+    passMatched: pick<number>(raw, ['passMatched', 'PassMatched'], 0),
+    passTotal: pick<number>(raw, ['passTotal', 'PassTotal'], 0),
+    failMatched: pick<number>(raw, ['failMatched', 'FailMatched'], 0),
+    failTotal: pick<number>(raw, ['failTotal', 'FailTotal'], 0),
+    passRate: pick<number>(raw, ['passRate', 'PassRate'], 0),
+    failRate: pick<number>(raw, ['failRate', 'FailRate'], 0),
+    sample: pick<number>(raw, ['sample', 'Sample'], 0),
+  };
+}
 
 export async function fetchAdminThreshold(scope: string): Promise<RoutingThreshold> {
   const resp = await fetchAdmin<Raw>(`/admin/thresholds/${encodeURIComponent(scope)}`);

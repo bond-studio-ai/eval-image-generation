@@ -1,10 +1,14 @@
 'use client';
 
-import { PromptStatusBadge, formatDateTime } from '@/components/catalog-confidence/badges';
 import {
+  AccuracyCell,
+  formatDateTime,
+  PromptStatusBadge,
+} from '@/components/catalog-confidence/badges';
+import {
+  actionsColumn,
   DataTable,
   SearchBar,
-  actionsColumn,
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
@@ -204,7 +208,7 @@ export function CatalogPromptsList({ rows, loadError }: CatalogPromptsListProps)
         cell: (row) => (
           <Link
             href={`/catalog-prompts/${row.id}`}
-            className="font-mono text-xs text-primary-600 hover:text-primary-500"
+            className="text-primary-600 hover:text-primary-500 font-mono text-xs"
           >
             {row.scope}
           </Link>
@@ -213,6 +217,30 @@ export function CatalogPromptsList({ rows, loadError }: CatalogPromptsListProps)
       {
         header: 'Status',
         cell: (row) => <PromptStatusBadge status={row.status} />,
+      },
+      {
+        header: 'Pass rate',
+        cell: (row) =>
+          row.kind === 'judge' ? (
+            <AccuracyCell
+              value={row.metadata.lastBaselinePassRate ?? null}
+              sample={row.metadata.lastBaselineSample ?? null}
+            />
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
+      },
+      {
+        header: 'Fail rate',
+        cell: (row) =>
+          row.kind === 'judge' ? (
+            <AccuracyCell
+              value={row.metadata.lastBaselineFailRate ?? null}
+              sample={row.metadata.lastBaselineSample ?? null}
+            />
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
       },
       {
         header: 'Created',

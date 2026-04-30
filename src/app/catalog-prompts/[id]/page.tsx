@@ -1,6 +1,12 @@
-import { PageHeader } from '@/components/page-header';
 import { CatalogPromptDetail } from '@/components/catalog-prompts/catalog-prompt-detail';
-import { fetchAdminPrompts, type PromptVersion } from '@/lib/catalog-feed-client';
+import { BaselineSnapshotCard } from '@/components/judge-baselines/baseline-snapshot-card';
+import { PageHeader } from '@/components/page-header';
+import {
+  fetchAdminPrompts,
+  fetchPromptBaselineStats,
+  type JudgeBaselineStats,
+  type PromptVersion,
+} from '@/lib/catalog-feed-client';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -58,5 +64,26 @@ export default async function CatalogPromptDetailPage({ params }: PageProps) {
     .filter((row) => row.kind === prompt.kind && row.scope === prompt.scope)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
 
-  return <CatalogPromptDetail prompt={prompt} history={history} />;
+  // Live baseline stats only matter for judge prompts. The fetch is
+  // deliberately scoped to the prompt's own scope so a champion
+  // prompt promoted across multiple `(kind, scope)` rows would still
+  // attribute its stats correctly. Errors are downgraded to a soft
+  // surface on the card — the snapshot from `metadata` already gives
+  // operators the eval-time rollup.
+  let liveStats: JudgeBaselineStats | null = null;
+  let liveError: string | null = null;
+  if (prompt.kind === 'judge') {
+    try {
+      liveStats = await fetchPromptBaselineStats(prompt.id, prompt.scope);
+    } catch (err) {
+      liveError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  return (
+    <>
+      <CatalogPromptDetail prompt={prompt} history={history} />
+      <BaselineSnapshotCard prompt={prompt} liveStats={liveStats} liveError={liveError} />
+    </>
+  );
 }
