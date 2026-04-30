@@ -1,9 +1,3 @@
-import {
-  DecisionBadge,
-  formatDateTime,
-  formatLatency,
-  ScoreCell,
-} from '@/components/catalog-confidence/badges';
 import { PageHeader } from '@/components/page-header';
 import {
   fetchAdminRuns,
@@ -11,6 +5,7 @@ import {
   type RoutingDecision,
 } from '@/lib/catalog-feed-client';
 import Link from 'next/link';
+import { RunRow } from './run-row';
 
 export const dynamic = 'force-dynamic';
 
@@ -187,48 +182,7 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
               </tr>
             )}
             {runs.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 text-sm">
-                  <Link
-                    href={`/catalog-runs/${r.id}`}
-                    className="text-primary-700 font-mono hover:underline"
-                  >
-                    {r.id.slice(0, 8)}
-                  </Link>
-                  {r.jobId && (
-                    <div className="text-xs text-gray-500">job {r.jobId.slice(0, 8)}</div>
-                  )}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-900">{r.scope}</td>
-                <td className="px-4 py-2">
-                  {r.confidence ? (
-                    <DecisionBadge decision={r.confidence.decision} />
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  <ScoreCell value={r.confidence?.calibrated ?? null} />
-                </td>
-                <td className="px-4 py-2">
-                  <ScoreCell value={r.confidence?.raw ?? null} />
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-700 tabular-nums">
-                  {formatLatency(r.latencyMs)}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-700">{formatDateTime(r.startedAt)}</td>
-                <td className="px-4 py-2 text-xs">
-                  {r.reviewed ? (
-                    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
-                      Yes
-                    </span>
-                  ) : (
-                    <span className="bg-primary-50 text-primary-700 inline-flex items-center rounded-md px-2 py-1 font-medium">
-                      Pending
-                    </span>
-                  )}
-                </td>
-              </tr>
+              <RunRow key={r.id} run={r} totalColumns={8} />
             ))}
           </tbody>
         </table>
