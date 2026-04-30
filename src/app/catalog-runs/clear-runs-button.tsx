@@ -80,14 +80,20 @@ export function ClearRunsButton({
     setPhase('previewing');
     try {
       const res = await fetch(buildUrl({}), { method: 'DELETE' });
-      const body = (await res.json()) as ClearRunsResponse;
+      const body = await readJsonBody(res);
       if (!res.ok) {
         throw new Error(
           (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`,
         );
       }
-      setMatched(body.matched ?? 0);
-      setSnapshotAt(body.snapshotAt ?? null);
+      const parsed = body as ClearRunsResponse;
+      if (parsed.snapshotAt == null) {
+        throw new Error(
+          'Backend returned no snapshotAt — confirm step would be unsafe. The DELETE /admin/runs endpoint may be running an older deploy that responded 204 No Content with an empty body. Retry once api.bondstudio.ai picks up the latest build.',
+        );
+      }
+      setMatched(parsed.matched ?? 0);
+      setSnapshotAt(parsed.snapshotAt);
       setPhase('confirm');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -106,13 +112,14 @@ export function ClearRunsButton({
         }),
         { method: 'DELETE' },
       );
-      const body = (await res.json()) as ClearRunsResponse;
+      const body = await readJsonBody(res);
       if (!res.ok) {
         throw new Error(
           (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`,
         );
       }
-      setLastDeleted(body.deleted ?? 0);
+      const parsed = body as ClearRunsResponse;
+      setLastDeleted(parsed.deleted ?? 0);
       setMatched(null);
       setSnapshotAt(null);
       setPhase('idle');
@@ -191,6 +198,29 @@ export function ClearRunsButton({
       {error && <span className="max-w-md text-right text-xs text-red-700">Failed: {error}</span>}
     </div>
   );
+}
+
+// readJsonBody parses the response body as JSON without crashing
+// when the backend returns 204 No Content (or anything else with an
+// empty body). The original implementation called `res.json()`
+// directly, which throws "Unexpected end of JSON input" on empty
+// payloads — exactly the failure mode reported when huma's default
+// DELETE status of 204 stripped the response body. Backend pinned
+// 200 OK; this handler is the belt-and-braces.
+async function readJsonBody(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text();
+  if (text.trim() === '') {
+    return {};
+  }
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return {
+      error: {
+        message: `Backend returned non-JSON response (HTTP ${res.status}): ${text.slice(0, 200)}`,
+      },
+    };
+  }
 }
 
 function filterDescription(filter: {
