@@ -70,7 +70,7 @@ const ROUTING_DECISIONS: ReadonlyArray<RoutingDecision> = [
   'spot_check',
   'hold_for_review',
 ];
-const HUMAN_VERDICTS: ReadonlyArray<HumanVerdict> = ['accept', 'reject', 'partial'];
+const HUMAN_VERDICTS: ReadonlyArray<HumanVerdict> = ['accept', 'reject'];
 const PROMPT_KINDS: ReadonlyArray<PromptKind> = ['generation', 'judge', 'extraction', 'meta'];
 const PROMPT_STATUSES: ReadonlyArray<PromptStatus> = ['proposed', 'active', 'retired'];
 const CALIBRATION_STATUSES: ReadonlyArray<CalibrationStatus> = ['active', 'retired'];
@@ -110,7 +110,14 @@ function asBaselineExpected(value: unknown): JudgeBaselineExpected | null {
 // ─── Types (match domain/aiaudit on the Go side) ────────────────────────────
 
 export type RoutingDecision = 'auto_ship' | 'spot_check' | 'hold_for_review';
-export type HumanVerdict = 'accept' | 'reject' | 'partial';
+// Reviewer verdict on a generation. Two-state pass/fail semantics; the
+// wire encoding stays `accept`/`reject` to match the upstream Postgres
+// `human_review_verdict` enum and avoid forcing a coupled
+// catalog-feed deploy. The UI relabels these as Pass / Fail. The
+// legacy `partial` value is no longer surfaced — historical rows (if
+// any) decode here as `accept` via `asVerdict`'s safe fallback so the
+// reviewer surface never crashes on them.
+export type HumanVerdict = 'accept' | 'reject';
 export type PromptKind = 'generation' | 'judge' | 'extraction' | 'meta';
 export type PromptStatus = 'proposed' | 'active' | 'retired';
 export type CalibrationStatus = 'active' | 'retired';

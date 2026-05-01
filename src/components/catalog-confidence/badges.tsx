@@ -38,7 +38,11 @@ export function DecisionBadge({ decision }: { decision: RoutingDecision }) {
 const VERDICT_STYLES: Record<HumanVerdict, string> = {
   accept: 'bg-green-100 text-green-800',
   reject: 'bg-red-100 text-red-800',
-  partial: 'bg-yellow-100 text-yellow-800',
+};
+
+const VERDICT_LABELS: Record<HumanVerdict, string> = {
+  accept: 'Pass',
+  reject: 'Fail',
 };
 
 export function VerdictBadge({ verdict }: { verdict: HumanVerdict }) {
@@ -46,7 +50,7 @@ export function VerdictBadge({ verdict }: { verdict: HumanVerdict }) {
     <span
       className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${VERDICT_STYLES[verdict]}`}
     >
-      {verdict}
+      {VERDICT_LABELS[verdict]}
     </span>
   );
 }
