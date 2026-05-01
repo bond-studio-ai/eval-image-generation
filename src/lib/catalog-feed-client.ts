@@ -192,6 +192,15 @@ export interface JudgeEvaluationEntry {
   baselineExpected: JudgeBaselineExpected | null;
   baselineObservedPass: boolean | null;
   baselineMatch: boolean | null;
+  /**
+   * Resolved (post-substitution) prompt the judge model received for
+   * this evaluation. Captured on the judge `ai_runs` row's
+   * `request_payload.prompt` upstream and lifted onto the per-judge
+   * detail row server-side via the `judge_evaluations -> ai_runs`
+   * join. `null` when the upstream judge errored before producing a
+   * Result, or for legacy rows that predate prompt capture.
+   */
+  promptTemplate: string | null;
 }
 
 export interface DeterministicCheckEntry {
@@ -277,6 +286,31 @@ export function extractRunInputs(payload: Record<string, unknown> | null | undef
         )
       : [],
   };
+}
+
+/**
+ * extractResolvedPrompt returns the post-substitution prompt the
+ * generation call sent to the model, captured upstream on the
+ * `ai_runs.request_payload.prompt` JSONB key. We read from
+ * `request_payload` rather than a flat `run.promptTemplate` field
+ * because the Go-side `prompt_versions.template` row only carries
+ * the unsubstituted template (placeholders intact) — reviewers
+ * debugging an output need to see the rendered values inline,
+ * which is what the worker writes here at audit time.
+ *
+ * Returns `null` for legacy rows that predate prompt capture (the
+ * key is intentionally omitted upstream when the prompt is empty
+ * or whitespace-only) so the page can fall back to a friendly
+ * "not recorded" surface instead of rendering an empty <pre>.
+ */
+export function extractResolvedPrompt(
+  payload: Record<string, unknown> | null | undefined,
+): string | null {
+  const p = payload ?? {};
+  if (typeof p.prompt === 'string' && p.prompt.trim().length > 0) {
+    return p.prompt;
+  }
+  return null;
 }
 
 /**
@@ -565,6 +599,7 @@ function normalizeRunDetail(row: Raw): AdminRunDetail {
     ),
     baselineObservedPass: pickOpt<boolean>(r, ['baselineObservedPass', 'BaselineObservedPass']),
     baselineMatch: pickOpt<boolean>(r, ['baselineMatch', 'BaselineMatch']),
+    promptTemplate: pickOpt<string>(r, ['promptTemplate', 'PromptTemplate']),
   }));
 
   const deterministicChecks: DeterministicCheckEntry[] = checksRaw.map((r) => ({

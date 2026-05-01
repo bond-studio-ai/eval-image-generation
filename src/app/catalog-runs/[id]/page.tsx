@@ -9,8 +9,10 @@ import {
 import { PageHeader } from '@/components/page-header';
 import {
   exemplarPreviewUrl,
+  extractResolvedPrompt,
   extractRunInputs,
   fetchAdminRun,
+  type JudgeEvaluationEntry,
   type RunInputs,
 } from '@/lib/catalog-feed-client';
 import { ReviewForm } from './review-form';
@@ -50,6 +52,12 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
   const run = detail.run;
   const showReview = run.status === 'succeeded';
   const inputs = extractRunInputs(run.requestPayload);
+  // The upstream `ai_runs` row stores only an unsubstituted
+  // `prompt_versions.template` link — reviewers need the resolved
+  // prompt with values inlined to verify what the model actually saw.
+  // The worker captures that on `request_payload.prompt` (omitted for
+  // legacy rows); we surface it in its own section below.
+  const generationPrompt = extractResolvedPrompt(run.requestPayload);
   return (
     <div>
       <PageHeader
@@ -277,16 +285,15 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      {run.promptTemplate && (
-        <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-          <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
-            Prompt template (at run time)
-          </h2>
-          <pre className="mt-3 max-h-96 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">
-            {run.promptTemplate}
-          </pre>
-        </section>
-      )}
+      <PromptSection
+        title="Generation prompt (resolved)"
+        description="The exact prompt text — placeholders substituted with the
+          run's typed inputs — the generator received. Captured server-side on
+          ai_runs.request_payload.prompt at audit time."
+        prompt={generationPrompt}
+      />
+
+      <JudgePromptsSection judges={detail.judgeEvaluations} />
     </div>
   );
 }
@@ -480,5 +487,84 @@ function DetailImage({ label, url, note }: { label: string; url: string | null; 
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * PromptSection renders one resolved prompt block. The section is
+ * always present — when the upstream row predates prompt capture or
+ * the call errored before producing a prompt, we render a friendly
+ * placeholder so a reviewer is never left wondering whether the
+ * panel silently failed to load vs. legitimately has no prompt to
+ * show.
+ */
+function PromptSection({
+  title,
+  description,
+  prompt,
+}: {
+  title: string;
+  description?: string;
+  prompt: string | null;
+}) {
+  return (
+    <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">{title}</h2>
+      {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
+      {prompt ? (
+        <pre className="mt-3 max-h-96 overflow-auto rounded bg-gray-50 p-3 text-xs whitespace-pre-wrap text-gray-800">
+          {prompt}
+        </pre>
+      ) : (
+        <p className="mt-3 text-sm text-gray-500">
+          No resolved prompt recorded. Older runs predate per-run prompt capture; rerun the job to
+          backfill.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * JudgePromptsSection collapses the per-judge resolved prompts into
+ * one section with role-tagged sub-blocks. Reviewers debugging a
+ * verdict typically want both the generation prompt AND the judge
+ * prompt — keeping them adjacent on the page avoids the scroll-jump
+ * we'd get if each judge were a separate top-level section.
+ *
+ * When no judge ran (e.g. generation failed before reaching the
+ * judge step) we render nothing rather than an empty surface.
+ */
+function JudgePromptsSection({ judges }: { judges: JudgeEvaluationEntry[] }) {
+  if (judges.length === 0) return null;
+  return (
+    <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
+        Judge prompts (resolved)
+      </h2>
+      <p className="mt-1 text-xs text-gray-500">
+        The exact prompt text each judge model received, captured server-side on the judge run's
+        request_payload.prompt. Empty for legacy rows that predate per-judge prompt capture.
+      </p>
+      <div className="mt-4 space-y-4">
+        {judges.map((j) => (
+          <div key={j.id}>
+            <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">
+              {j.role}
+              <span className="ml-2 font-mono text-[10px] text-gray-500 normal-case">
+                {j.modelVendor}/{j.modelName}
+              </span>
+            </h3>
+            {j.promptTemplate ? (
+              <pre className="mt-2 max-h-96 overflow-auto rounded bg-gray-50 p-3 text-xs whitespace-pre-wrap text-gray-800">
+                {j.promptTemplate}
+              </pre>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500">No resolved prompt recorded.</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
