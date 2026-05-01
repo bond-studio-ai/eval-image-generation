@@ -1,6 +1,7 @@
 'use client';
 
 import type { HumanVerdict } from '@/lib/catalog-feed-client';
+import { extractUpstreamError } from '@/lib/proxy-error';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -10,9 +11,8 @@ interface Props {
 }
 
 const VERDICTS: { value: HumanVerdict; label: string; tone: string }[] = [
-  { value: 'accept', label: 'Accept', tone: 'bg-green-600 hover:bg-green-700' },
-  { value: 'partial', label: 'Partial', tone: 'bg-yellow-600 hover:bg-yellow-700' },
-  { value: 'reject', label: 'Reject', tone: 'bg-red-600 hover:bg-red-700' },
+  { value: 'accept', label: 'Pass', tone: 'bg-green-600 hover:bg-green-700' },
+  { value: 'reject', label: 'Fail', tone: 'bg-red-600 hover:bg-red-700' },
 ];
 
 /**
@@ -52,8 +52,7 @@ export function ReviewForm({ runId }: Props) {
         }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status}: ${text.slice(0, 300)}`);
+        throw new Error(await extractUpstreamError(res));
       }
       setOk(true);
       setNotes('');

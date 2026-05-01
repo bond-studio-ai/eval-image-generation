@@ -74,18 +74,77 @@ async function proxy(request: NextRequest, pathSegments: string[]) {
     // no body
   }
 
-  const res = await fetch(url, {
-    method: request.method,
-    headers,
-    body: body && body.length > 0 ? body : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: request.method,
+      headers,
+      body: body && body.length > 0 ? body : undefined,
+    });
+  } catch (err) {
+    // Network-level failure (DNS, TLS, refused connection). Surface
+    // both to Next stdout and to the browser so the reviewer sees the
+    // root cause instead of an opaque "failed to fetch".
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('catalog-feed proxy network error', {
+      method: request.method,
+      url,
+      error: message,
+      bodyLen: body?.length ?? 0,
+    });
+    return NextResponse.json(
+      { error: { code: 'UPSTREAM_NETWORK_ERROR', message, url } },
+      { status: 502 },
+    );
+  }
 
   const contentType = res.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
 
+  // Read the body as text first so we can both forward it and log it
+  // on non-2xx without consuming the stream twice. JSON branches still
+  // get a real JSON response (best-effort parsed) so existing callers
+  // that read .json() keep working.
+  const rawBody = await res.text().catch(() => '');
+
+  if (!res.ok) {
+    // Mirror the catalog-feed structured error to Next stdout so we
+    // can diagnose 4xx/5xx without poking at the browser network tab.
+    // The reviewer's "Submit review" button shows the upstream body
+    // verbatim today, but adding the server log closes the visibility
+    // gap when the upstream returns an HTML 5xx instead of JSON (e.g.
+    // when the proxy can't reach the service at all but TLS succeeds).
+    console.error('catalog-feed proxy upstream error', {
+      method: request.method,
+      url,
+      status: res.status,
+      contentType,
+      bodySnippet: rawBody.slice(0, 600),
+    });
+  }
+
   if (isJson) {
-    const json = await res.json();
-    return NextResponse.json(json, { status: res.status });
+    let parsed: unknown = {};
+    if (rawBody.length > 0) {
+      try {
+        parsed = JSON.parse(rawBody);
+      } catch (err) {
+        console.error('catalog-feed proxy JSON parse failed', {
+          url,
+          status: res.status,
+          error: err instanceof Error ? err.message : String(err),
+          bodySnippet: rawBody.slice(0, 300),
+        });
+        parsed = {
+          error: {
+            code: 'UPSTREAM_BAD_JSON',
+            message: 'Upstream returned malformed JSON',
+            bodySnippet: rawBody.slice(0, 300),
+          },
+        };
+      }
+    }
+    return NextResponse.json(parsed, { status: res.status });
   }
 
   const responseHeaders = new Headers();
@@ -101,8 +160,7 @@ async function proxy(request: NextRequest, pathSegments: string[]) {
     }
   });
 
-  const responseBody = await res.text();
-  return new NextResponse(responseBody, {
+  return new NextResponse(rawBody, {
     status: res.status,
     statusText: res.statusText,
     headers: responseHeaders,

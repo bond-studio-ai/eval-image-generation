@@ -8,6 +8,7 @@ import {
   StatusBadge,
 } from '@/components/catalog-confidence/badges';
 import type { AdminRunSummary, HumanVerdict } from '@/lib/catalog-feed-client';
+import { extractUpstreamError } from '@/lib/proxy-error';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -227,9 +228,8 @@ function ImageBlock({ label, url, note }: { label: string; url: string | null; n
 }
 
 const VERDICTS: { value: HumanVerdict; label: string; tone: string }[] = [
-  { value: 'accept', label: 'Accept', tone: 'bg-green-600 hover:bg-green-700' },
-  { value: 'partial', label: 'Partial', tone: 'bg-yellow-600 hover:bg-yellow-700' },
-  { value: 'reject', label: 'Reject', tone: 'bg-red-600 hover:bg-red-700' },
+  { value: 'accept', label: 'Pass', tone: 'bg-green-600 hover:bg-green-700' },
+  { value: 'reject', label: 'Fail', tone: 'bg-red-600 hover:bg-red-700' },
 ];
 
 /**
@@ -266,8 +266,7 @@ function InlineReviewForm({ runId, onSubmitted }: { runId: string; onSubmitted: 
         }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status}: ${text.slice(0, 300)}`);
+        throw new Error(await extractUpstreamError(res));
       }
       onSubmitted();
       router.refresh();
