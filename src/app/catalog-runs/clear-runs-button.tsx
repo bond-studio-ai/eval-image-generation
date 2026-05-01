@@ -82,14 +82,22 @@ export function ClearRunsButton({
       const res = await fetch(buildUrl({}), { method: 'DELETE' });
       const body = await readJsonBody(res);
       if (!res.ok) {
+        throw new Error(extractErrorMessage(body) ?? `HTTP ${res.status}`);
+      }
+      // PR #27 follow-up (P1): a 2xx response with a non-JSON or
+      // structurally-invalid body must not be treated as success.
+      // Without this guard a stray HTML proxy page would silently
+      // advance the operator into the destructive confirm phase.
+      const parsed = parseClearRunsResponse(body);
+      if (!parsed) {
         throw new Error(
-          (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`,
+          extractErrorMessage(body) ??
+            'Backend returned an unexpected body shape. Likely an outdated deploy or proxy error page — verify api.bondstudio.ai is on the latest build before retrying.',
         );
       }
-      const parsed = body as ClearRunsResponse;
       if (parsed.snapshotAt == null) {
         throw new Error(
-          'Backend returned no snapshotAt — confirm step would be unsafe. The DELETE /admin/runs endpoint may be running an older deploy that responded 204 No Content with an empty body. Retry once api.bondstudio.ai picks up the latest build.',
+          'Backend returned no snapshotAt — confirm step would be unsafe. The DELETE /admin/runs endpoint may be running an older deploy. Retry once api.bondstudio.ai picks up the latest build.',
         );
       }
       setMatched(parsed.matched ?? 0);
@@ -114,12 +122,30 @@ export function ClearRunsButton({
       );
       const body = await readJsonBody(res);
       if (!res.ok) {
+        throw new Error(extractErrorMessage(body) ?? `HTTP ${res.status}`);
+      }
+      // PR #27 follow-up (P1): refuse to mark the destructive call
+      // successful unless the body proves the backend actually ran
+      // it. Required signals: a JSON object with `dryRun === false`
+      // (so we know we hit the destructive branch) AND a numeric
+      // `deleted`. Anything else — proxy HTML, a stale 204 that
+      // somehow leaked through, a confirm response that came back
+      // as `dryRun:true` because the backend ignored our flag —
+      // surfaces as an explicit error and keeps the operator in
+      // the confirm phase rather than reporting a false success.
+      const parsed = parseClearRunsResponse(body);
+      if (!parsed) {
         throw new Error(
-          (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`,
+          extractErrorMessage(body) ??
+            'Backend returned an unexpected body shape. Refusing to mark the clear successful.',
         );
       }
-      const parsed = body as ClearRunsResponse;
-      setLastDeleted(parsed.deleted ?? 0);
+      if (parsed.dryRun !== false || typeof parsed.deleted !== 'number') {
+        throw new Error(
+          'Backend response did not confirm the destructive call ran. Re-preview before retrying.',
+        );
+      }
+      setLastDeleted(parsed.deleted);
       setMatched(null);
       setSnapshotAt(null);
       setPhase('idle');
@@ -207,13 +233,31 @@ export function ClearRunsButton({
 // payloads — exactly the failure mode reported when huma's default
 // DELETE status of 204 stripped the response body. Backend pinned
 // 200 OK; this handler is the belt-and-braces.
+//
+// Empty bodies and parse failures are surfaced as a structured
+// `{ error: { message } }` object so call sites can render a useful
+// message without crashing. Callers must NOT treat a parse-error
+// response as a successful destructive payload — preview/commit
+// validate the shape via `parseClearRunsResponse` below.
 async function readJsonBody(res: Response): Promise<Record<string, unknown>> {
   const text = await res.text();
   if (text.trim() === '') {
-    return {};
+    return {
+      error: {
+        message: `Backend returned an empty body (HTTP ${res.status}).`,
+      },
+    };
   }
   try {
-    return JSON.parse(text) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(text);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {
+        error: {
+          message: `Backend returned a non-object JSON response (HTTP ${res.status}): ${text.slice(0, 200)}`,
+        },
+      };
+    }
+    return parsed as Record<string, unknown>;
   } catch {
     return {
       error: {
@@ -221,6 +265,35 @@ async function readJsonBody(res: Response): Promise<Record<string, unknown>> {
       },
     };
   }
+}
+
+// parseClearRunsResponse returns the typed view of the backend
+// payload, or null if the body is structurally not a successful
+// ClearRuns response (missing required keys, wrong types, or the
+// `error` envelope readJsonBody emits for empty / non-JSON bodies).
+function parseClearRunsResponse(body: Record<string, unknown>): ClearRunsResponse | null {
+  if ('error' in body) return null;
+  const hasShape =
+    typeof body.dryRun === 'boolean' ||
+    typeof body.matched === 'number' ||
+    typeof body.deleted === 'number' ||
+    typeof body.snapshotAt === 'string';
+  if (!hasShape) return null;
+  return {
+    dryRun: typeof body.dryRun === 'boolean' ? body.dryRun : undefined,
+    matched: typeof body.matched === 'number' ? body.matched : undefined,
+    deleted: typeof body.deleted === 'number' ? body.deleted : undefined,
+    snapshotAt: typeof body.snapshotAt === 'string' ? body.snapshotAt : undefined,
+  };
+}
+
+function extractErrorMessage(body: Record<string, unknown>): string | null {
+  const env = body.error;
+  if (env && typeof env === 'object' && 'message' in env) {
+    const m = (env as { message?: unknown }).message;
+    if (typeof m === 'string' && m.length > 0) return m;
+  }
+  return null;
 }
 
 function filterDescription(filter: {
