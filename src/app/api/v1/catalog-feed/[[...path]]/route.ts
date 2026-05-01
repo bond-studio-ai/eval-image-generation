@@ -124,27 +124,40 @@ async function proxy(request: NextRequest, pathSegments: string[]) {
   }
 
   if (isJson) {
-    let parsed: unknown = {};
-    if (rawBody.length > 0) {
-      try {
-        parsed = JSON.parse(rawBody);
-      } catch (err) {
-        console.error('catalog-feed proxy JSON parse failed', {
-          url,
-          status: res.status,
-          error: err instanceof Error ? err.message : String(err),
-          bodySnippet: rawBody.slice(0, 300),
-        });
-        parsed = {
+    if (rawBody.length === 0) {
+      return NextResponse.json({}, { status: res.status });
+    }
+    try {
+      const parsed = JSON.parse(rawBody);
+      return NextResponse.json(parsed, { status: res.status });
+    } catch (err) {
+      // The upstream said `application/json` but produced invalid
+      // bytes. We deliberately upgrade the response to 502 here even
+      // when the upstream status was 2xx — every browser caller
+      // gates on `res.ok`, so passing through a 2xx with an
+      // `UPSTREAM_BAD_JSON` envelope would silently mask a write
+      // failure (e.g. the inline review form would clear and
+      // refresh as if the verdict landed). 502 forces the FE error
+      // path to run; the original upstream status is preserved in
+      // the body for debugging.
+      console.error('catalog-feed proxy JSON parse failed', {
+        url,
+        upstreamStatus: res.status,
+        error: err instanceof Error ? err.message : String(err),
+        bodySnippet: rawBody.slice(0, 300),
+      });
+      return NextResponse.json(
+        {
           error: {
             code: 'UPSTREAM_BAD_JSON',
             message: 'Upstream returned malformed JSON',
+            upstreamStatus: res.status,
             bodySnippet: rawBody.slice(0, 300),
           },
-        };
-      }
+        },
+        { status: 502 },
+      );
     }
-    return NextResponse.json(parsed, { status: res.status });
   }
 
   const responseHeaders = new Headers();
