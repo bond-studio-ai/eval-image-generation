@@ -15,6 +15,7 @@ import {
   type JudgeEvaluationEntry,
   type RunInputs,
 } from '@/lib/catalog-feed-client';
+import { withImageParams } from '@/lib/image-utils';
 import { ReviewForm } from './review-form';
 
 export const dynamic = 'force-dynamic';
@@ -468,14 +469,15 @@ function ExemplarThumbnails({
  * sizes we render here.
  */
 function DetailImage({ label, url, note }: { label: string; url: string | null; note?: string }) {
+  const optimized = url ? withImageParams(url, 1024) : null;
   return (
     <div>
       <h3 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">{label}</h3>
-      {url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="mt-1 block">
+      {optimized ? (
+        <a href={optimized} target="_blank" rel="noreferrer" className="mt-1 block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={url}
+            src={optimized}
             alt={label}
             loading="lazy"
             className="mt-1 max-h-96 w-full rounded-md border border-gray-200 bg-white object-contain"

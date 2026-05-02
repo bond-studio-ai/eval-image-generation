@@ -8,6 +8,7 @@ import {
   StatusBadge,
 } from '@/components/catalog-confidence/badges';
 import type { AdminRunSummary, HumanVerdict } from '@/lib/catalog-feed-client';
+import { withImageParams } from '@/lib/image-utils';
 import { extractUpstreamError } from '@/lib/proxy-error';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
@@ -202,17 +203,18 @@ function RunBody({
 }
 
 function ImageBlock({ label, url, note }: { label: string; url: string | null; note?: string }) {
+  const optimized = url ? withImageParams(url, 1024) : null;
   return (
     <div>
       <h4 className="text-xs font-semibold tracking-wide text-gray-600 uppercase">{label}</h4>
-      {url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="mt-1 block">
+      {optimized ? (
+        <a href={optimized} target="_blank" rel="noreferrer" className="mt-1 block">
           {/* Catalog images live on a public CDN; using <img> here keeps
               this component server-side rendering friendly without
               wiring up next/image's remotePatterns config. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={url}
+            src={optimized}
             alt={label}
             loading="lazy"
             className="mt-1 max-h-72 w-full rounded-md border border-gray-200 bg-white object-contain"
