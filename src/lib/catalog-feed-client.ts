@@ -468,6 +468,8 @@ export interface ListRunsParams {
   maxScore?: number;
   since?: string;
   before?: string;
+  /** Omit = all runs; true = has human review; false = no human review */
+  reviewed?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -480,6 +482,8 @@ export async function fetchAdminRuns(params: ListRunsParams = {}): Promise<Admin
   if (params.maxScore != null) qs.set('maxScore', String(params.maxScore));
   if (params.since) qs.set('since', params.since);
   if (params.before) qs.set('before', params.before);
+  if (params.reviewed === true) qs.set('reviewed', 'true');
+  if (params.reviewed === false) qs.set('reviewed', 'false');
   if (params.limit != null) qs.set('limit', String(params.limit));
   if (params.offset != null) qs.set('offset', String(params.offset));
   const suffix = qs.toString();

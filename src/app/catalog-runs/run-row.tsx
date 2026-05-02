@@ -7,13 +7,11 @@ import {
   ScoreCell,
   StatusBadge,
 } from '@/components/catalog-confidence/badges';
-import type { AdminRunSummary, HumanVerdict } from '@/lib/catalog-feed-client';
+import type { AdminRunSummary } from '@/lib/catalog-feed-client';
 import { withImageParams } from '@/lib/image-utils';
-import { extractUpstreamError } from '@/lib/proxy-error';
-import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { HumanReviewForm } from './human-review-form';
 
 interface Props {
   run: AdminRunSummary;
@@ -36,21 +34,17 @@ interface Props {
  *     runs aren't reviewable; the body just surfaces the failure).
  *   - Reviewed → collapsed by default.
  *
- * After a successful verdict submission we collapse the row
- * optimistically; the next router.refresh() flips `reviewed` server-
- * side and the row stays collapsed via the same default rule.
+ * After a successful Pass we collapse the row optimistically; Fail
+ * keeps the row open for debounced notes. `router.refresh()` updates
+ * `reviewed` from the server.
  */
 export function RunRow({ run, totalColumns }: Props) {
   const reviewable = run.status === 'succeeded';
   const failed = run.status === 'failed';
-  // Compute the auto-expand default once at mount: succeeded-but-
-  // unreviewed rows snap open so reviewers don't have to click each
-  // one; failed rows snap open so the Gemini error is visible
-  // inline. Subsequent user toggles win — including on rows whose
-  // `reviewed` flag flips to true after a router.refresh, so people
-  // can re-open a row to double-check what they just verdicted.
   const initialOpen = !run.reviewed && (reviewable || failed);
   const [open, setOpen] = useState(initialOpen);
+  /** After Fail, server sets reviewed=true on refresh; keep the form so notes can be edited. */
+  const [keepRejectNotesForm, setKeepRejectNotesForm] = useState(false);
 
   const reviewedLabel = run.reviewed ? (
     <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
@@ -72,7 +66,13 @@ export function RunRow({ run, totalColumns }: Props) {
         <td className="px-4 py-2 text-sm">
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              setOpen((v) => {
+                const next = !v;
+                if (!next) setKeepRejectNotesForm(false);
+                return next;
+              });
+            }}
             className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded text-gray-500 hover:bg-gray-200"
             aria-expanded={open}
             aria-controls={`run-${run.id}-body`}
@@ -113,7 +113,13 @@ export function RunRow({ run, totalColumns }: Props) {
       {open && (
         <tr id={`run-${run.id}-body`} className="bg-gray-50/50">
           <td colSpan={totalColumns} className="px-4 py-4">
-            <RunBody run={run} onReviewed={() => setOpen(false)} reviewable={reviewable} />
+            <RunBody
+              run={run}
+              onPassSubmitted={() => setOpen(false)}
+              reviewable={reviewable}
+              keepRejectNotesForm={keepRejectNotesForm}
+              onRejectSubmitted={() => setKeepRejectNotesForm(true)}
+            />
           </td>
         </tr>
       )}
@@ -146,11 +152,15 @@ function ChevronIcon({ open }: { open: boolean }) {
 function RunBody({
   run,
   reviewable,
-  onReviewed,
+  onPassSubmitted,
+  keepRejectNotesForm,
+  onRejectSubmitted,
 }: {
   run: AdminRunSummary;
   reviewable: boolean;
-  onReviewed: () => void;
+  onPassSubmitted: () => void;
+  keepRejectNotesForm: boolean;
+  onRejectSubmitted: () => void;
 }) {
   if (run.status === 'failed') {
     return (
@@ -197,7 +207,13 @@ function RunBody({
           </div>
         )}
       </div>
-      {reviewable && !run.reviewed && <InlineReviewForm runId={run.id} onSubmitted={onReviewed} />}
+      {reviewable && (!run.reviewed || keepRejectNotesForm) && (
+        <HumanReviewForm
+          runId={run.id}
+          onPassSubmitted={onPassSubmitted}
+          onRejectSubmitted={onRejectSubmitted}
+        />
+      )}
     </div>
   );
 }
@@ -225,110 +241,6 @@ function ImageBlock({ label, url, note }: { label: string; url: string | null; n
           {note ?? 'No image URL'}
         </div>
       )}
-    </div>
-  );
-}
-
-const VERDICTS: { value: HumanVerdict; label: string; tone: string }[] = [
-  { value: 'accept', label: 'Pass', tone: 'bg-green-600 hover:bg-green-700' },
-  { value: 'reject', label: 'Fail', tone: 'bg-red-600 hover:bg-red-700' },
-];
-
-/**
- * InlineReviewForm is the list-level twin of `/catalog-runs/[id]/review-form`.
- * It POSTs through the same Next proxy + admin endpoint so a single
- * audit chain accepts both surfaces. We collapse the accordion as
- * soon as the submit succeeds and call `router.refresh()` so the row
- * re-renders with `reviewed=true`.
- */
-function InlineReviewForm({ runId, onSubmitted }: { runId: string; onSubmitted: () => void }) {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
-  const [verdict, setVerdict] = useState<HumanVerdict | null>(null);
-  const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const reviewerId = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? '';
-
-  const submit = async () => {
-    if (!verdict || !reviewerId) {
-      if (!reviewerId) setError('Could not resolve reviewer identity.');
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/v1/catalog-feed/admin/runs/${runId}/review`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          verdict,
-          reviewerId,
-          notes: notes.trim() || undefined,
-        }),
-      });
-      if (!res.ok) {
-        throw new Error(await extractUpstreamError(res));
-      }
-      onSubmitted();
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="rounded-md border border-gray-200 bg-white p-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="block text-xs font-medium tracking-wide text-gray-600 uppercase">
-            Verdict
-          </label>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {VERDICTS.map((v) => {
-              const active = verdict === v.value;
-              return (
-                <button
-                  key={v.value}
-                  type="button"
-                  onClick={() => setVerdict(v.value)}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium text-white shadow-xs transition-colors ${v.tone} ${active ? '' : 'opacity-50'}`}
-                >
-                  {v.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <label className="block text-xs font-medium tracking-wide text-gray-600 uppercase">
-            Notes (optional)
-          </label>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="What was right or wrong?"
-            className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-md border-gray-300 px-2 py-1.5 text-sm text-gray-900 shadow-xs"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!verdict || submitting || !isLoaded}
-          className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
-        >
-          {submitting ? 'Submitting…' : 'Submit'}
-        </button>
-      </div>
-      {error && (
-        <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800">
-          {error}
-        </div>
-      )}
-      {reviewerId && <p className="mt-2 text-[11px] text-gray-500">Submitting as {reviewerId}</p>}
     </div>
   );
 }
