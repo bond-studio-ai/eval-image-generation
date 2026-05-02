@@ -135,18 +135,19 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
         {showReview ? (
           <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
             <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
-              Submit human review
+              Human review
             </h2>
             <p className="mt-1 text-xs text-gray-500">
               Verdicts feed the nightly isotonic calibration and the Evals prompt-promotion gate.
+              Pass or Fail saves immediately; notes are available after Fail and save while you type.
             </p>
-            {detail.humanReviews.length > 0 && (
-              <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-                This run has been reviewed {detail.humanReviews.length} time(s). A new verdict adds
-                to the audit chain rather than replacing the previous one.
-              </div>
+            {detail.humanReviews.length === 0 ? (
+              <ReviewForm runId={run.id} />
+            ) : (
+              <p className="mt-4 text-sm text-gray-600">
+                This run already has a human review. See the summary below.
+              </p>
             )}
-            <ReviewForm runId={run.id} />
           </section>
         ) : (
           <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
@@ -259,7 +260,9 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
 
       <section className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="text-sm font-semibold tracking-wide text-gray-600 uppercase">
-          Human reviews ({detail.humanReviews.length})
+          {detail.humanReviews.length === 1
+            ? 'Human review'
+            : `Human reviews (${detail.humanReviews.length})`}
         </h2>
         {detail.humanReviews.length === 0 ? (
           <p className="mt-3 text-sm text-gray-500">No human reviews yet.</p>
@@ -545,7 +548,7 @@ function JudgePromptsSection({ judges }: { judges: JudgeEvaluationEntry[] }) {
         Judge prompts (resolved)
       </h2>
       <p className="mt-1 text-xs text-gray-500">
-        The exact prompt text each judge model received, captured server-side on the judge run's
+        The exact prompt text each judge model received, captured server-side on each judge run as
         request_payload.prompt. Empty for legacy rows that predate per-judge prompt capture.
       </p>
       <div className="mt-4 space-y-4">

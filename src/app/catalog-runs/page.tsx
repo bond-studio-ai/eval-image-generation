@@ -18,6 +18,7 @@ interface PageProps {
     maxScore?: string;
     since?: string;
     before?: string;
+    reviewed?: string;
     page?: string;
   }>;
 }
@@ -29,6 +30,12 @@ const DECISION_OPTIONS: { value: RoutingDecision | ''; label: string }[] = [
   { value: 'hold_for_review', label: 'Hold for review' },
   { value: 'spot_check', label: 'Spot-check' },
   { value: 'auto_ship', label: 'Auto-ship' },
+];
+
+const REVIEWED_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'All runs' },
+  { value: 'false', label: 'Unreviewed only' },
+  { value: 'true', label: 'Reviewed only' },
 ];
 
 function toNumber(v: string | undefined): number | undefined {
@@ -49,12 +56,20 @@ function collectUnsupportedClearFilters(sp: {
   decision?: string;
   minScore?: string;
   maxScore?: string;
+  reviewed?: string;
 }): string[] {
   const out: string[] = [];
   if (sp.decision) out.push(`decision=${sp.decision}`);
   if (sp.minScore) out.push(`minScore=${sp.minScore}`);
   if (sp.maxScore) out.push(`maxScore=${sp.maxScore}`);
+  if (sp.reviewed) out.push(`reviewed=${sp.reviewed}`);
   return out;
+}
+
+function parseReviewed(raw: string | undefined): boolean | undefined {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return undefined;
 }
 
 export default async function CatalogRunsPage({ searchParams }: PageProps) {
@@ -67,6 +82,7 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
     maxScore: toNumber(sp.maxScore),
     since: sp.since || undefined,
     before: sp.before || undefined,
+    reviewed: parseReviewed(sp.reviewed),
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
   };
@@ -97,7 +113,7 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
 
       <form
         method="get"
-        className="mt-6 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-xs md:grid-cols-6"
+        className="mt-6 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-xs md:grid-cols-7"
       >
         <label className="text-xs font-medium text-gray-600">
           Scope
@@ -147,6 +163,20 @@ export default async function CatalogRunsPage({ searchParams }: PageProps) {
             placeholder="1.00"
             className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
           />
+        </label>
+        <label className="text-xs font-medium text-gray-600">
+          Human reviewed
+          <select
+            name="reviewed"
+            defaultValue={sp.reviewed ?? ''}
+            className="focus:border-primary-500 focus:ring-primary-500 mt-1 w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-xs"
+          >
+            {REVIEWED_OPTIONS.map((o) => (
+              <option key={o.value || 'all'} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-xs font-medium text-gray-600">
           Since (RFC3339)
