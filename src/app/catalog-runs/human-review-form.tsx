@@ -17,21 +17,37 @@ type Props = {
   runId: string;
   /** Invoked only after a successful Pass, e.g. collapse the list accordion row. */
   onPassSubmitted?: () => void;
+  /**
+   * Invoked after a successful Fail POST, before router.refresh(). Lets parents
+   * keep the form mounted while reviewed flips true on the server (list row).
+   */
+  onRejectSubmitted?: () => void;
+  /** Edit notes only for an existing reject review (detail page after refresh). */
+  mode?: 'full' | 'rejectNotesOnly';
+  /** Seed notes when mode is rejectNotesOnly. */
+  initialNotes?: string;
 };
 
 /**
  * Pass/Fail submit immediately via POST; optional notes appear only after Fail
  * succeeds and PATCH updates are debounced while typing.
  */
-export function HumanReviewForm({ runId, onPassSubmitted }: Props) {
+export function HumanReviewForm({
+  runId,
+  onPassSubmitted,
+  onRejectSubmitted,
+  mode = 'full',
+  initialNotes = '',
+}: Props) {
+  const notesOnly = mode === 'rejectNotesOnly';
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notesPatchError, setNotesPatchError] = useState<string | null>(null);
-  const [rejectCommitted, setRejectCommitted] = useState(false);
-  const [committed, setCommitted] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [rejectCommitted, setRejectCommitted] = useState(notesOnly);
+  const [committed, setCommitted] = useState(notesOnly);
+  const [notes, setNotes] = useState(initialNotes);
   const skipFirstNotePatch = useRef(true);
 
   const reviewerId = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? '';
@@ -94,6 +110,7 @@ export function HumanReviewForm({ runId, onPassSubmitted }: Props) {
       if (verdict === 'reject') {
         setRejectCommitted(true);
         skipFirstNotePatch.current = true;
+        onRejectSubmitted?.();
       } else {
         onPassSubmitted?.();
       }
@@ -105,7 +122,29 @@ export function HumanReviewForm({ runId, onPassSubmitted }: Props) {
     }
   };
 
-  const locked = committed || submitting || !isLoaded;
+  const locked = committed || submitting || (!notesOnly && !isLoaded);
+
+  if (notesOnly) {
+    return (
+      <div className="mt-4 rounded-md border border-gray-200 bg-white p-3">
+        <label className="block text-xs font-medium tracking-wide text-gray-600 uppercase">
+          Notes (fail)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="What was wrong? Saved automatically while you type."
+          className="focus:border-primary-500 focus:ring-primary-500 mt-1 block w-full rounded-md border-gray-300 px-2 py-1.5 text-sm text-gray-900 shadow-xs"
+        />
+        {notesPatchError && (
+          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+            Could not save notes: {notesPatchError}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border border-gray-200 bg-white p-3">

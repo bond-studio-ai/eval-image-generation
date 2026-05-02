@@ -16,6 +16,7 @@ import {
   type RunInputs,
 } from '@/lib/catalog-feed-client';
 import { withImageParams } from '@/lib/image-utils';
+import { HumanReviewForm } from '../human-review-form';
 import { ReviewForm } from './review-form';
 
 export const dynamic = 'force-dynamic';
@@ -143,9 +144,20 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
             </p>
             {detail.humanReviews.length === 0 ? (
               <ReviewForm runId={run.id} />
+            ) : detail.humanReviews[0].verdict === 'reject' ? (
+              <>
+                <p className="mt-4 text-xs text-gray-500">
+                  Fail is recorded. Add or edit notes below; changes save automatically while you type.
+                </p>
+                <HumanReviewForm
+                  runId={run.id}
+                  mode="rejectNotesOnly"
+                  initialNotes={detail.humanReviews[0].notes ?? ''}
+                />
+              </>
             ) : (
               <p className="mt-4 text-sm text-gray-600">
-                This run already has a human review. See the summary below.
+                This run already has a pass review. See the summary below.
               </p>
             )}
           </section>
