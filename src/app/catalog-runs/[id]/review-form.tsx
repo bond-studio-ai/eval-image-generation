@@ -7,7 +7,7 @@ interface Props {
 }
 
 /**
- * Detail-page wrapper around the shared Pass/Fail + debounced-notes flow.
+ * Detail-page wrapper around the shared review form (notes + Pass/Fail in one POST).
  */
 export function ReviewForm({ runId }: Props) {
   return <HumanReviewForm runId={runId} />;

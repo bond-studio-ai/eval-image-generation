@@ -34,17 +34,14 @@ interface Props {
  *     runs aren't reviewable; the body just surfaces the failure).
  *   - Reviewed → collapsed by default.
  *
- * After a successful Pass we collapse the row optimistically; Fail
- * keeps the row open for debounced notes. `router.refresh()` updates
- * `reviewed` from the server.
+ * After a successful Pass we collapse the row optimistically.
+ * Notes are typed in the form and submitted with Pass/Fail in one POST.
  */
 export function RunRow({ run, totalColumns }: Props) {
   const reviewable = run.status === 'succeeded';
   const failed = run.status === 'failed';
   const initialOpen = !run.reviewed && (reviewable || failed);
   const [open, setOpen] = useState(initialOpen);
-  /** After Fail, server sets reviewed=true on refresh; keep the form so notes can be edited. */
-  const [keepRejectNotesForm, setKeepRejectNotesForm] = useState(false);
 
   const reviewedLabel = run.reviewed ? (
     <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
@@ -66,13 +63,7 @@ export function RunRow({ run, totalColumns }: Props) {
         <td className="px-4 py-2 text-sm">
           <button
             type="button"
-            onClick={() => {
-              setOpen((v) => {
-                const next = !v;
-                if (!next) setKeepRejectNotesForm(false);
-                return next;
-              });
-            }}
+            onClick={() => setOpen((v) => !v)}
             className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded text-gray-500 hover:bg-gray-200"
             aria-expanded={open}
             aria-controls={`run-${run.id}-body`}
@@ -113,13 +104,7 @@ export function RunRow({ run, totalColumns }: Props) {
       {open && (
         <tr id={`run-${run.id}-body`} className="bg-gray-50/50">
           <td colSpan={totalColumns} className="px-4 py-4">
-            <RunBody
-              run={run}
-              onPassSubmitted={() => setOpen(false)}
-              reviewable={reviewable}
-              keepRejectNotesForm={keepRejectNotesForm}
-              onRejectSubmitted={() => setKeepRejectNotesForm(true)}
-            />
+            <RunBody run={run} onPassSubmitted={() => setOpen(false)} reviewable={reviewable} />
           </td>
         </tr>
       )}
@@ -153,14 +138,10 @@ function RunBody({
   run,
   reviewable,
   onPassSubmitted,
-  keepRejectNotesForm,
-  onRejectSubmitted,
 }: {
   run: AdminRunSummary;
   reviewable: boolean;
   onPassSubmitted: () => void;
-  keepRejectNotesForm: boolean;
-  onRejectSubmitted: () => void;
 }) {
   if (run.status === 'failed') {
     return (
@@ -207,12 +188,8 @@ function RunBody({
           </div>
         )}
       </div>
-      {reviewable && (!run.reviewed || keepRejectNotesForm) && (
-        <HumanReviewForm
-          runId={run.id}
-          onPassSubmitted={onPassSubmitted}
-          onRejectSubmitted={onRejectSubmitted}
-        />
+      {reviewable && !run.reviewed && (
+        <HumanReviewForm runId={run.id} onPassSubmitted={onPassSubmitted} />
       )}
     </div>
   );
