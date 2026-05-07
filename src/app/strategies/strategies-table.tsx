@@ -19,6 +19,7 @@ import { Pagination } from '@/components/pagination';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/types';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -86,12 +87,11 @@ export function StrategiesTable() {
     [refresh],
   );
 
-  const handleToggleActive = useCallback(
-    async (id: string, currentlyActive: boolean) => {
+  const handleDeactivate = useCallback(
+    async (id: string) => {
       setTogglingId(id);
       try {
-        const action = currentlyActive ? 'deactivate' : 'activate';
-        const res = await fetch(serviceUrl(`strategies/${id}/${action}`), { method: 'POST' });
+        const res = await fetch(serviceUrl(`strategies/${id}/deactivate`), { method: 'POST' });
         if (!res.ok) return;
         refresh();
       } catch {
@@ -147,17 +147,27 @@ export function StrategiesTable() {
     },
     {
       header: 'Status',
-      cell: (s) => (
-        <button
-          type="button"
-          onClick={() => handleToggleActive(s.id, s.isActive)}
-          disabled={togglingId === s.id}
-          className="disabled:opacity-50"
-          title={s.isActive ? 'Deactivate strategy' : 'Activate strategy'}
-        >
-          <StatusBadge status={s.isActive ? 'active' : 'inactive'} />
-        </button>
-      ),
+      cell: (s) => {
+        if (!s.activeForSource) {
+          return (
+            <Link href={`/strategies/${s.id}`} title="Open strategy to activate it">
+              <StatusBadge status="inactive" />
+            </Link>
+          );
+        }
+        const sourceLabel = s.activeForSource === 'photo' ? 'Photo' : 'Dollhouse';
+        return (
+          <button
+            type="button"
+            onClick={() => handleDeactivate(s.id)}
+            disabled={togglingId === s.id}
+            className="disabled:opacity-50"
+            title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}
+          >
+            <StatusBadge status="active" label={`Active · ${sourceLabel}`} />
+          </button>
+        );
+      },
     },
     {
       header: 'Steps',
@@ -172,7 +182,7 @@ export function StrategiesTable() {
       cell: (s) => <DateCell date={s.createdAt} />,
     },
     actionsColumn(actions),
-  ], [actions, handleToggleActive, togglingId, selected, toggleSelect]);
+  ], [actions, handleDeactivate, togglingId, selected, toggleSelect]);
 
   const toolbar = (
     <div className="flex items-center gap-4">
