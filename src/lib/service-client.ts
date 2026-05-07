@@ -48,10 +48,15 @@ export interface PromptPreviewDollhouseSource {
   areas: PromptPreviewDollhouseArea[];
 }
 
+export type StrategyRunSource = 'dollhouse' | 'photo';
+
 export interface StrategyListItem {
   id: string;
   name: string;
   description: string | null;
+  /** The source this strategy is active for, or null when inactive. */
+  activeForSource: StrategyRunSource | null;
+  /** Derived from `activeForSource`: true when active for any source. */
   isActive: boolean;
   createdAt: string;
   stepCount: number;
@@ -126,6 +131,9 @@ export interface StrategyDetailItem {
   id: string;
   name: string;
   description: string | null;
+  /** The source this strategy is active for, or null when inactive. */
+  activeForSource: StrategyRunSource | null;
+  /** Derived from `activeForSource`: true when active for any source. */
   isActive: boolean;
   createdAt: string;
   deletedAt: string | null;

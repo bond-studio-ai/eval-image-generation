@@ -37,7 +37,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         actions={
           <>
             <DeployToEnvironmentButton strategyId={result.id} />
-            <ActiveToggleButton strategyId={result.id} isActive={result.isActive} />
+            <ActiveToggleButton strategyId={result.id} activeForSource={result.activeForSource} />
             <CloneButton strategyId={result.id} />
             <PrimaryLinkButton href={`/strategies/${result.id}/edit`} icon>Edit Strategy</PrimaryLinkButton>
           </>
