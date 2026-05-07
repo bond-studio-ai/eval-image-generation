@@ -34,7 +34,7 @@ interface Run {
   judgeResults?: StrategyRunJudgeResultEntry[] | null;
 }
 
-type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
+type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
 
 const POLL_INTERVAL = 3000;
 
@@ -63,12 +63,13 @@ export function StrategyRunsList({
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
 
   const batchGroups = new Map<string, Run[]>();
+  const standaloneKeys = new Set<string>();
   for (const run of runs) {
-    const runGroupId = run.groupId ?? run.batchRunId;
-    if (runGroupId) {
-      if (!batchGroups.has(runGroupId)) batchGroups.set(runGroupId, []);
-      batchGroups.get(runGroupId)!.push(run);
-    }
+    const realKey = run.groupId ?? run.batchRunId;
+    const runGroupId = realKey ?? run.id;
+    if (!realKey) standaloneKeys.add(runGroupId);
+    if (!batchGroups.has(runGroupId)) batchGroups.set(runGroupId, []);
+    batchGroups.get(runGroupId)!.push(run);
   }
   const hasAwaitingJudge = hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
   const shouldPoll = hasActiveRun || !!hasAwaitingJudge;
@@ -109,7 +110,7 @@ export function StrategyRunsList({
         : allStatuses.some((s) => s === 'failed')
           ? 'failed'
           : 'pending';
-    items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '', awaitingJudge: isAwaitingJudge(sorted, hasJudge) });
+    items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '', awaitingJudge: isAwaitingJudge(sorted, hasJudge), isStandalone: standaloneKeys.has(batchId) });
   }
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -204,7 +205,7 @@ function BatchRunCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
+  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -278,8 +279,8 @@ function BatchRunCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-            batch
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${batch.isStandalone ? 'bg-gray-100 text-gray-700' : 'bg-indigo-50 text-indigo-700'}`}>
+            {batch.isStandalone ? 'run' : 'batch'}
           </span>
           <StatusBadge status={batch.status} />
           <span className="text-sm text-gray-600">
@@ -291,7 +292,7 @@ function BatchRunCard({
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {failedRuns > 0 && (
+          {failedRuns > 0 && !batch.isStandalone && (
             <span
               role="button"
               tabIndex={0}
@@ -360,7 +361,7 @@ function CollapsibleBatchCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean };
+  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -426,7 +427,7 @@ function CollapsibleBatchCard({
           Batch · {new Date(batch.createdAt).toLocaleString()}
         </span>
         <div className="flex items-center gap-2">
-          {failedRuns > 0 && (
+          {failedRuns > 0 && !batch.isStandalone && (
             <span
               role="button"
               tabIndex={0}
