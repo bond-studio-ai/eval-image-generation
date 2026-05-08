@@ -47,7 +47,9 @@ interface SegmentationCategoryResponse {
 interface Segmentation {
   generationResultId: string;
   createdAt: string;
-  results: Record<string, SegmentationCategoryResponse | null | undefined>;
+  // `results` is raw backend JSON; older/partial payloads may omit it entirely
+  // or send `null`, so callers must guard before iterating.
+  results: Record<string, SegmentationCategoryResponse | null | undefined> | null | undefined;
 }
 
 interface StepResult {
@@ -377,7 +379,9 @@ interface SegmentationCategoryRow {
 }
 
 function buildSegmentationRows(segmentation: Segmentation): SegmentationCategoryRow[] {
-  return Object.entries(segmentation.results)
+  const results = segmentation.results;
+  if (!results || typeof results !== 'object' || Array.isArray(results)) return [];
+  return Object.entries(results)
     .filter(([, value]) => value !== null && value !== undefined)
     .map(([category, value]) => {
       const data = (value ?? {}) as SegmentationCategoryResponse;
