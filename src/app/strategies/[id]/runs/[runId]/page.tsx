@@ -52,6 +52,11 @@ export default async function StrategyRunPage({ params }: PageProps) {
       moodBoardFromStep: number | null;
       promptVersion: { id: string; name: string | null } | null;
     } | null;
+    segmentation: {
+      generationResultId: string;
+      createdAt: string;
+      results: Record<string, Record<string, unknown> | null | undefined>;
+    } | null;
   }[];
 
   const initialData = {
@@ -107,6 +112,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
             promptVersion: sr.step.promptVersion,
           }
         : null,
+      segmentation: sr.segmentation ?? null,
     })),
   };
 
