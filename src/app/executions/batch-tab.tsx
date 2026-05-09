@@ -4,8 +4,11 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
+import { SegmentationBadge, type SegmentationState } from '@/components/segmentation-badge';
+import { SegmentationResultsBadge } from '@/components/segmentation-results-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
+import { useBatchSegmentationStatus } from '@/lib/use-batch-segmentation-status';
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -78,7 +81,13 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
   return { ...b, runs } as BatchRow;
 }
 
-export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: number; source?: 'default' | 'benchmark' }) {
+export function BatchRunsTab({
+  refreshKey,
+  source = 'default',
+}: {
+  refreshKey?: number;
+  source?: 'default' | 'benchmark';
+}) {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -91,7 +100,11 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    runHref: string;
+    generationId: string | null;
+  } | null>(null);
   const [appliedFrom, setAppliedFrom] = useState('');
   const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -99,78 +112,84 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   /** Prior page-1 id set; merge uses it to prune likely deletes when the refreshed page 1 has no new batch ids. */
   const lastFetchedFirstPageIdsRef = useRef<Set<string>>(new Set());
 
-  const fetchBatches = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
-    const mergeFirstPage = opts.mergeFirstPage === true;
-    const replace = mergeFirstPage ? false : (opts.replace ?? true);
-    const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
-    const limit = BATCH_PAGE_SIZE;
-    if (replace && !mergeFirstPage) {
-      setFetchError(null);
-      if (!loading) {
-        setRefreshing(true);
-        setExpandedIds(new Set());
-      }
-    } else if (!replace && !mergeFirstPage) {
-      setLoadingMore(true);
-    }
-    try {
-      const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
-      if (appliedFrom) params.set('from', appliedFrom);
-      if (appliedTo) params.set('to', appliedTo);
-      if (source === 'benchmark') params.set('source', 'benchmark');
-      const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        const msg = (err as { error?: { message?: string } })?.error?.message;
-        setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
-        if (!mergeFirstPage) setHasMore(false);
-        return;
-      }
-      const json = await res.json();
-      const raw = (json.data ?? []) as Record<string, unknown>[];
-      const apiHasMore = json.hasMore === true;
-      const normalized = raw.map((b) => normalizeBatch(b));
-      if (mergeFirstPage) {
+  const fetchBatches = useCallback(
+    async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
+      const mergeFirstPage = opts.mergeFirstPage === true;
+      const replace = mergeFirstPage ? false : (opts.replace ?? true);
+      const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
+      const limit = BATCH_PAGE_SIZE;
+      if (replace && !mergeFirstPage) {
         setFetchError(null);
-        const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
-        const topIds = new Set(normalized.map((b) => b.id));
-        let mergeIncludesNewBatchId = false;
-        setBatches((prev) => {
-          const prevIds = new Set(prev.map((b) => b.id));
-          mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
-          const tail = prev.filter((b) => {
-            if (topIds.has(b.id)) return false;
-            if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
-            return true;
-          });
-          return [...normalized, ...tail];
-        });
-        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
-        setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
-      } else if (replace) {
-        setBatches(normalized);
-        setPage(1);
-        setHasMore(apiHasMore);
-        lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
-      } else {
-        setBatches((prev) => {
-          const existingIds = new Set(prev.map((b) => b.id));
-          const added = normalized.filter((b) => !existingIds.has(b.id));
-          return [...prev, ...added];
-        });
-        setPage(pageToFetch);
-        setHasMore(apiHasMore);
+        if (!loading) {
+          setRefreshing(true);
+          setExpandedIds(new Set());
+        }
+      } else if (!replace && !mergeFirstPage) {
+        setLoadingMore(true);
       }
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
-      if (!mergeFirstPage) setHasMore(false);
-    }
-    finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [appliedFrom, appliedTo, source]);
+      try {
+        const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
+        if (appliedFrom) params.set('from', appliedFrom);
+        if (appliedTo) params.set('to', appliedTo);
+        if (source === 'benchmark') params.set('source', 'benchmark');
+        const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const msg = (err as { error?: { message?: string } })?.error?.message;
+          setFetchError(
+            msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
+          );
+          if (!mergeFirstPage) setHasMore(false);
+          return;
+        }
+        const json = await res.json();
+        const raw = (json.data ?? []) as Record<string, unknown>[];
+        const apiHasMore = json.hasMore === true;
+        const normalized = raw.map((b) => normalizeBatch(b));
+        if (mergeFirstPage) {
+          setFetchError(null);
+          const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
+          const topIds = new Set(normalized.map((b) => b.id));
+          let mergeIncludesNewBatchId = false;
+          setBatches((prev) => {
+            const prevIds = new Set(prev.map((b) => b.id));
+            mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
+            const tail = prev.filter((b) => {
+              if (topIds.has(b.id)) return false;
+              if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
+              return true;
+            });
+            return [...normalized, ...tail];
+          });
+          lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
+          setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
+        } else if (replace) {
+          setBatches(normalized);
+          setPage(1);
+          setHasMore(apiHasMore);
+          lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
+        } else {
+          setBatches((prev) => {
+            const existingIds = new Set(prev.map((b) => b.id));
+            const added = normalized.filter((b) => !existingIds.has(b.id));
+            return [...prev, ...added];
+          });
+          setPage(pageToFetch);
+          setHasMore(apiHasMore);
+        }
+      } catch (e) {
+        setFetchError(
+          e instanceof Error ? e.message : 'Network error. Check backend and try again.',
+        );
+        if (!mergeFirstPage) setHasMore(false);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
+      }
+    },
+    [appliedFrom, appliedTo, source],
+  );
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -179,15 +198,17 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
 
   useEffect(() => {
     fetchBatches({ replace: true });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedFrom, appliedTo, refreshKey, source]);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !hasMore || loadingMore) return;
     const obs = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) loadMore(); },
-      { rootMargin: '200px', threshold: 0 }
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: '200px', threshold: 0 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -198,9 +219,14 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
   const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
     if (shouldPoll) {
-      intervalRef.current = setInterval(() => fetchBatches({ mergeFirstPage: true }), POLL_INTERVAL);
+      intervalRef.current = setInterval(
+        () => fetchBatches({ mergeFirstPage: true }),
+        POLL_INTERVAL,
+      );
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [shouldPoll, fetchBatches]);
 
   const handleDateChange = useCallback((from: string, to: string) => {
@@ -213,37 +239,66 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     setAppliedTo('');
   }, []);
 
-  const handleRetry = useCallback(async (runId: string) => {
-    setRetryingRunId(runId);
-    try {
-      const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
-      if (!res.ok) return;
-      await fetchBatches();
-    } catch { /* ignore */ }
-    finally { setRetryingRunId(null); }
-  }, [fetchBatches]);
+  const handleRetry = useCallback(
+    async (runId: string) => {
+      setRetryingRunId(runId);
+      try {
+        const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
+        if (!res.ok) return;
+        await fetchBatches();
+      } catch {
+        /* ignore */
+      } finally {
+        setRetryingRunId(null);
+      }
+    },
+    [fetchBatches],
+  );
 
-  const handleRetryFailed = useCallback(async (batchId: string) => {
-    setRetryingBatchId(batchId);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-failed`), { method: 'POST' });
-      if (!res.ok) return;
-      await fetchBatches();
-    } catch { /* ignore */ }
-    finally { setRetryingBatchId(null); }
-  }, [fetchBatches]);
+  const handleRetryFailed = useCallback(
+    async (batchId: string) => {
+      setRetryingBatchId(batchId);
+      try {
+        const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-failed`), {
+          method: 'POST',
+        });
+        if (!res.ok) return;
+        await fetchBatches();
+      } catch {
+        /* ignore */
+      } finally {
+        setRetryingBatchId(null);
+      }
+    },
+    [fetchBatches],
+  );
 
-  const handleDeleteBatch = useCallback(async (batchId: string, displayName: string) => {
-    if (!confirm(`Delete "${displayName}"? This will permanently remove the batch and all its runs.`)) return;
-    setDeletingBatchId(batchId);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}`), { method: 'DELETE' });
-      if (!res.ok) return;
-      setExpandedIds((prev) => { const next = new Set(prev); next.delete(batchId); return next; });
-      await fetchBatches();
-    } catch { /* ignore */ }
-    finally { setDeletingBatchId(null); }
-  }, [fetchBatches]);
+  const handleDeleteBatch = useCallback(
+    async (batchId: string, displayName: string) => {
+      if (
+        !confirm(
+          `Delete "${displayName}"? This will permanently remove the batch and all its runs.`,
+        )
+      )
+        return;
+      setDeletingBatchId(batchId);
+      try {
+        const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}`), { method: 'DELETE' });
+        if (!res.ok) return;
+        setExpandedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(batchId);
+          return next;
+        });
+        await fetchBatches();
+      } catch {
+        /* ignore */
+      } finally {
+        setDeletingBatchId(null);
+      }
+    },
+    [fetchBatches],
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollRef = useRef<number[] | null>(null);
@@ -254,14 +309,19 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     pendingScrollRef.current = null;
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
     if (!scrollers) return;
-    scrollers.forEach((el, i) => { if (i < saved.length) el.scrollLeft = saved[i]; });
+    scrollers.forEach((el, i) => {
+      if (i < saved.length) el.scrollLeft = saved[i];
+    });
   });
 
-  const fetchBatchesKeepScroll = useCallback(async (...args: Parameters<typeof fetchBatches>) => {
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
-    await fetchBatches(...args);
-  }, [fetchBatches]);
+  const fetchBatchesKeepScroll = useCallback(
+    async (...args: Parameters<typeof fetchBatches>) => {
+      const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+      pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
+      await fetchBatches(...args);
+    },
+    [fetchBatches],
+  );
 
   if (loading) {
     return (
@@ -276,7 +336,10 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
               <div className="flex flex-1 items-center gap-3">
                 <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
                 <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
-                <div className="h-4 animate-pulse rounded bg-gray-200" style={{ width: 120 + (i % 3) * 40 }} />
+                <div
+                  className="h-4 animate-pulse rounded bg-gray-200"
+                  style={{ width: 120 + (i % 3) * 40 }}
+                />
                 <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
                 <div className="h-3 w-24 animate-pulse rounded bg-gray-50" />
               </div>
@@ -295,10 +358,15 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
         <p className="text-sm text-amber-800">{fetchError}</p>
-        <p className="mt-1 text-xs text-amber-700">Ensure BASE_API_HOSTNAME points to the image-generation backend.</p>
+        <p className="mt-1 text-xs text-amber-700">
+          Ensure BASE_API_HOSTNAME points to the image-generation backend.
+        </p>
         <button
           type="button"
-          onClick={() => { setLoading(true); fetchBatches(); }}
+          onClick={() => {
+            setLoading(true);
+            fetchBatches();
+          }}
           className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
         >
           Retry
@@ -339,8 +407,19 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
       {refreshing && (
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
           Loading {source === 'benchmark' ? 'benchmark' : 'standard'} runs…
         </div>
@@ -353,148 +432,233 @@ export function BatchRunsTab({ refreshKey, source = 'default' }: { refreshKey?: 
             : 'No runs yet. Use \u201cRun\u201d to create one.'}
         </p>
       ) : (
-        <div className={`space-y-4 transition-opacity duration-200 ${refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}>
-        {batches.map((batch) => {
-          const isExpanded = expandedIds.has(batch.id);
-          const isBenchmark = source === 'benchmark';
-          const projectKeys = new Set(
-            batch.runs.map((r) =>
-              isBenchmark && r.batchRunId ? r.batchRunId : r.inputPresetName ?? '(no preset)',
-            ),
-          );
-          const isMultiStrategy = batch.strategies.length > 1;
+        <div
+          className={`space-y-4 transition-opacity duration-200 ${refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}
+        >
+          {batches.map((batch) => {
+            const isExpanded = expandedIds.has(batch.id);
+            const isBenchmark = source === 'benchmark';
+            const projectKeys = new Set(
+              batch.runs.map((r) =>
+                isBenchmark && r.batchRunId ? r.batchRunId : (r.inputPresetName ?? '(no preset)'),
+              ),
+            );
+            const isMultiStrategy = batch.strategies.length > 1;
 
-          return (
-            <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-              <div className="flex w-full items-center justify-between px-5 py-3">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; })}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedIds((prev) => { const next = new Set(prev); if (isExpanded) next.delete(batch.id); else next.add(batch.id); return next; }); } }}
-                  className="flex flex-1 items-center gap-3 text-left hover:bg-gray-50 rounded -ml-2 -my-1 px-2 py-1 cursor-pointer"
-                >
-                  <svg
-                    className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                    fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+            return (
+              <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div className="flex w-full items-center justify-between px-5 py-3">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      setExpandedIds((prev) => {
+                        const next = new Set(prev);
+                        if (isExpanded) next.delete(batch.id);
+                        else next.add(batch.id);
+                        return next;
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setExpandedIds((prev) => {
+                          const next = new Set(prev);
+                          if (isExpanded) next.delete(batch.id);
+                          else next.add(batch.id);
+                          return next;
+                        });
+                      }
+                    }}
+                    className="-my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left hover:bg-gray-50"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                  <ReviewStatusBadge status={batch.status} />
-                  <span className="text-sm font-semibold text-gray-900">
-                    {batch.name ?? 'Untitled batch'}
-                  </span>
-                  {isMultiStrategy ? (
-                    <MultiStrategyLabel strategies={batch.strategies} />
-                  ) : batch.strategies.length === 1 ? (
-                    <StrategyHoverCard strategyId={batch.strategies[0].id}>
-                      <span className="text-xs font-medium text-gray-500 cursor-help">
-                        {batch.strategies[0].name}
-                      </span>
-                    </StrategyHoverCard>
-                  ) : null}
-                  <span className="text-sm text-gray-600">
-                    {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
-                    {projectKeys.size} {isBenchmark ? 'project' : 'preset'}{projectKeys.size === 1 ? '' : 's'}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {batch.completedRuns} completed{batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {batch.failedRuns > 0 && (
+                    <svg
+                      className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                      />
+                    </svg>
+                    <ReviewStatusBadge status={batch.status} />
+                    <span className="text-sm font-semibold text-gray-900">
+                      {batch.name ?? 'Untitled batch'}
+                    </span>
+                    {isMultiStrategy ? (
+                      <MultiStrategyLabel strategies={batch.strategies} />
+                    ) : batch.strategies.length === 1 ? (
+                      <StrategyHoverCard strategyId={batch.strategies[0].id}>
+                        <span className="cursor-help text-xs font-medium text-gray-500">
+                          {batch.strategies[0].name}
+                        </span>
+                      </StrategyHoverCard>
+                    ) : null}
+                    <span className="text-sm text-gray-600">
+                      {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
+                      {projectKeys.size} {isBenchmark ? 'project' : 'preset'}
+                      {projectKeys.size === 1 ? '' : 's'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {batch.completedRuns} completed
+                      {batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {batch.failedRuns > 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetryFailed(batch.id);
+                        }}
+                        disabled={retryingBatchId === batch.id}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                      >
+                        {retryingBatchId === batch.id ? (
+                          <>
+                            <svg
+                              className="h-3.5 w-3.5 animate-spin"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                              />
+                            </svg>
+                            Retrying…
+                          </>
+                        ) : (
+                          <>Retry failed ({batch.failedRuns})</>
+                        )}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleRetryFailed(batch.id); }}
-                      disabled={retryingBatchId === batch.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                      onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
+                      disabled={deletingBatchId === batch.id}
+                      className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      title="Delete run"
                     >
-                      {retryingBatchId === batch.id ? (
-                        <>
-                          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Retrying…
-                        </>
+                      {deletingBatchId === batch.id ? (
+                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
                       ) : (
-                        <>Retry failed ({batch.failedRuns})</>
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.11 0 00-7.5 0"
+                          />
+                        </svg>
                       )}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
-                    disabled={deletingBatchId === batch.id}
-                    className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                    title="Delete run"
-                  >
-                    {deletingBatchId === batch.id ? (
-                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.11 0 00-7.5 0" />
-                      </svg>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-400">
-                    {new Date(batch.createdAt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="border-t border-gray-100 p-4">
-                  {viewMode === 'matrix' ? (
-                    <MatrixView
-                      runs={batch.runs}
-                      numberOfImages={batch.numberOfImages}
-                      retryingRunId={retryingRunId}
-                      onRetry={handleRetry}
-                      onRated={fetchBatchesKeepScroll}
-                      onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                    />
-                  ) : (
-                    <ListView
-                      runs={batch.runs}
-                      numberOfImages={batch.numberOfImages}
-                      isSingleStrategy={!isMultiStrategy}
-                      retryingRunId={retryingRunId}
-                      onRetry={handleRetry}
-                      onRated={fetchBatchesKeepScroll}
-                      onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })
-      }
-      {hasMore && (
-        <div ref={sentinelRef}>
-          {loadingMore ? (
-            <div className="space-y-4 pt-1">
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
-                  <div className="flex w-full items-center justify-between px-5 py-3">
-                    <div className="flex flex-1 items-center gap-3">
-                      <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
-                      <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
-                      <div className="h-4 animate-pulse rounded bg-gray-200" style={{ width: 120 + (i % 3) * 40 }} />
-                      <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
-                    </div>
-                    <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+                    <span className="text-xs text-gray-400">
+                      {new Date(batch.createdAt).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              ))}
+
+                {isExpanded && (
+                  <div className="border-t border-gray-100 p-4">
+                    {viewMode === 'matrix' ? (
+                      <MatrixView
+                        runs={batch.runs}
+                        numberOfImages={batch.numberOfImages}
+                        retryingRunId={retryingRunId}
+                        onRetry={handleRetry}
+                        onRated={fetchBatchesKeepScroll}
+                        onImageClick={(run) =>
+                          setLightbox({
+                            src: run.lastOutputUrl!,
+                            runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`,
+                            generationId: run.lastOutputGenerationId ?? null,
+                          })
+                        }
+                        expanded={isExpanded}
+                      />
+                    ) : (
+                      <ListView
+                        runs={batch.runs}
+                        numberOfImages={batch.numberOfImages}
+                        isSingleStrategy={!isMultiStrategy}
+                        retryingRunId={retryingRunId}
+                        onRetry={handleRetry}
+                        onRated={fetchBatchesKeepScroll}
+                        onImageClick={(run) =>
+                          setLightbox({
+                            src: run.lastOutputUrl!,
+                            runHref: run.runHref ?? `/strategies/${run.strategyId}/runs/${run.id}`,
+                            generationId: run.lastOutputGenerationId ?? null,
+                          })
+                        }
+                        expanded={isExpanded}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {hasMore && (
+            <div ref={sentinelRef}>
+              {loadingMore ? (
+                <div className="space-y-4 pt-1">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+                      <div className="flex w-full items-center justify-between px-5 py-3">
+                        <div className="flex flex-1 items-center gap-3">
+                          <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
+                          <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
+                          <div
+                            className="h-4 animate-pulse rounded bg-gray-200"
+                            style={{ width: 120 + (i % 3) * 40 }}
+                          />
+                          <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
+                        </div>
+                        <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4">&nbsp;</div>
+              )}
             </div>
-          ) : <div className="py-4">&nbsp;</div>}
-        </div>
-      )}
+          )}
         </div>
       )}
       {lightbox && (
@@ -523,16 +687,16 @@ function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: st
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-purple-200 cursor-help">
+      <span className="inline-flex cursor-help items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-purple-200">
         Multi-Strategy Run
       </span>
       {showTooltip && (
-        <span className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-          <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-gray-400">
+        <span className="absolute top-full left-0 z-50 mt-1 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-gray-400 uppercase">
             Strategies ({strategies.length})
           </span>
           {strategies.map((s) => (
-            <span key={s.id} className="block text-xs text-gray-700 py-0.5">
+            <span key={s.id} className="block py-0.5 text-xs text-gray-700">
               {s.name}
             </span>
           ))}
@@ -552,10 +716,12 @@ function ListView({
   onRetry,
   onRated,
   onImageClick,
+  expanded,
 }: {
   runs: RunRow[];
   numberOfImages: number;
   isSingleStrategy?: boolean;
+  expanded?: boolean;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
   onRated?: () => void;
@@ -579,7 +745,7 @@ function ListView({
     const rowKey =
       run.source === 'benchmark' && run.batchRunId
         ? run.batchRunId
-        : run.inputPresetName ?? '(no preset)';
+        : (run.inputPresetName ?? '(no preset)');
     const label = run.inputPresetName ?? '(no preset)';
     rowLabels.set(rowKey, label);
     if (!byPreset.has(rowKey)) byPreset.set(rowKey, []);
@@ -593,6 +759,13 @@ function ListView({
 
   const CELL = 240;
 
+  // Hydrate segmentation status for every run's generation id (not just
+  // the canonical-per-row one) so each per-cell masks badge can reflect
+  // that specific run's status. The hook dedupes by id internally.
+  const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
+    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+
   return (
     <div className="space-y-6">
       {strategyOrder.map((stratId) => {
@@ -605,25 +778,34 @@ function ListView({
             {!isSingleStrategy && (
               <h3 className="mb-2 text-sm font-semibold text-gray-800">
                 <StrategyHoverCard strategyId={stratId}>
-                  <Link href={`/strategies/${stratId}`} className="text-primary-600 hover:text-primary-500">
+                  <Link
+                    href={`/strategies/${stratId}`}
+                    className="text-primary-600 hover:text-primary-500"
+                  >
                     {strategyLabels.get(stratId)}
                   </Link>
                 </StrategyHoverCard>
               </h3>
             )}
             <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
-              <table className="divide-y divide-gray-200" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+              <table
+                className="divide-y divide-gray-200"
+                style={{ borderCollapse: 'separate', borderSpacing: 0 }}
+              >
                 <thead className="bg-gray-50">
                   <tr>
                     <th
-                      className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
+                      className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
                       style={{ minWidth: 200, maxWidth: 200 }}
                     >
                       Input preset
                     </th>
                     {Array.from({ length: maxExec }, (_, i) => (
-                      <th key={i} className="px-2 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-600"
-                        style={{ width: CELL, minWidth: CELL }}>
+                      <th
+                        key={i}
+                        className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600 uppercase"
+                        style={{ width: CELL, minWidth: CELL }}
+                      >
                         #{i + 1}
                       </th>
                     ))}
@@ -633,15 +815,45 @@ function ListView({
                   {presetNames.map((rowKey) => {
                     const presetRuns = byPreset.get(rowKey)!;
                     const displayLabel = rowLabels.get(rowKey) ?? rowKey;
+                    const canonicalGenerationId = presetRuns[0]?.lastOutputGenerationId ?? null;
                     return (
                       <tr key={rowKey} className="hover:bg-gray-50/50">
-                        <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                          style={{ minWidth: 200, maxWidth: 200 }}>
+                        <td
+                          className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+                          style={{ minWidth: 200, maxWidth: 200 }}
+                        >
                           <span className="block break-words">{displayLabel}</span>
+                          {canonicalGenerationId && (
+                            <SegmentationBadge
+                              generationId={canonicalGenerationId}
+                              initialState={segmentationStatuses.get(canonicalGenerationId)}
+                              onStateChange={(next) =>
+                                setSegmentationStatus(canonicalGenerationId, next)
+                              }
+                            />
+                          )}
                         </td>
-                        {Array.from({ length: maxExec }, (_, i) => (
-                          <RunCell key={i} run={presetRuns[i]} cellSize={CELL} awaitingJudge={awaitingJudge} retryingRunId={retryingRunId} onRetry={onRetry} onRated={onRated} onImageClick={onImageClick} />
-                        ))}
+                        {Array.from({ length: maxExec }, (_, i) => {
+                          const cellRun = presetRuns[i];
+                          const cellGenerationId = cellRun?.lastOutputGenerationId ?? null;
+                          return (
+                            <RunCell
+                              key={i}
+                              run={cellRun}
+                              cellSize={CELL}
+                              awaitingJudge={awaitingJudge}
+                              retryingRunId={retryingRunId}
+                              onRetry={onRetry}
+                              onRated={onRated}
+                              onImageClick={onImageClick}
+                              segmentationState={
+                                cellGenerationId
+                                  ? segmentationStatuses.get(cellGenerationId)
+                                  : undefined
+                              }
+                            />
+                          );
+                        })}
                       </tr>
                     );
                   })}
@@ -666,7 +878,9 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   const withOutput = runs.filter((r) => r.lastOutputUrl);
   if (withOutput.length < 2 || !runs.every((r) => r.judgeScore == null)) return false;
 
-  const completedTimes = runs.filter((r) => r.completedAt).map((r) => new Date(r.completedAt!).getTime());
+  const completedTimes = runs
+    .filter((r) => r.completedAt)
+    .map((r) => new Date(r.completedAt!).getTime());
   if (completedTimes.length === 0) return false;
   return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }
@@ -678,6 +892,7 @@ function MatrixView({
   onRetry,
   onRated,
   onImageClick,
+  expanded,
 }: {
   runs: RunRow[];
   numberOfImages: number;
@@ -685,6 +900,7 @@ function MatrixView({
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
+  expanded?: boolean;
 }) {
   const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
   const strategyNames: string[] = [];
@@ -704,7 +920,7 @@ function MatrixView({
     const rowKey =
       run.source === 'benchmark' && run.batchRunId
         ? run.batchRunId
-        : run.inputPresetName ?? '(no preset)';
+        : (run.inputPresetName ?? '(no preset)');
     rowKeys.add(rowKey);
     matrixRowLabels.set(rowKey, run.inputPresetName ?? '(no preset)');
   }
@@ -715,7 +931,7 @@ function MatrixView({
     const rowKey =
       run.source === 'benchmark' && run.batchRunId
         ? run.batchRunId
-        : run.inputPresetName ?? '(no preset)';
+        : (run.inputPresetName ?? '(no preset)');
     const key = `${rowKey}\0${run.strategyId}`;
     if (!grid.has(key)) grid.set(key, []);
     grid.get(key)!.push(run);
@@ -726,22 +942,52 @@ function MatrixView({
 
   const CELL = 240;
 
+  // For the inline "Run segmentation" pill under each preset row label, pick
+  // a canonical generation id per row (matrix rows span strategy columns,
+  // so we segment the first available output across the row).
+  const matrixCanonicalGenerationId = new Map<string, string>();
+  for (const rowKey of sortedPresets) {
+    for (const stratId of strategyIds) {
+      const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
+      const hit = cellRuns.find((run) => run.lastOutputGenerationId);
+      if (hit?.lastOutputGenerationId) {
+        matrixCanonicalGenerationId.set(rowKey, hit.lastOutputGenerationId);
+        break;
+      }
+    }
+  }
+  // Hydrate status for *every* run's generation id so each cell's masks
+  // badge can reflect that specific run, while the inline pill still uses
+  // the canonical row id above.
+  const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
+    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+
   return (
     <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
-      <table className="divide-y divide-gray-200" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+      <table
+        className="divide-y divide-gray-200"
+        style={{ borderCollapse: 'separate', borderSpacing: 0 }}
+      >
         <thead className="bg-gray-50">
           <tr>
             <th
-              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
+              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
               style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
             </th>
             {strategyNames.map((name, i) => (
-              <th key={strategyIds[i]} className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600"
-                style={{ minWidth: CELL }}>
+              <th
+                key={strategyIds[i]}
+                className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600"
+                style={{ minWidth: CELL }}
+              >
                 <StrategyHoverCard strategyId={strategyIds[i]}>
-                  <Link href={`/strategies/${strategyIds[i]}`} className="text-primary-600 hover:text-primary-500">
+                  <Link
+                    href={`/strategies/${strategyIds[i]}`}
+                    className="text-primary-600 hover:text-primary-500"
+                  >
                     {name}
                   </Link>
                 </StrategyHoverCard>
@@ -752,19 +998,29 @@ function MatrixView({
         <tbody className="divide-y divide-gray-200 bg-white">
           {sortedPresets.map((rowKey) => (
             <tr key={rowKey} className="hover:bg-gray-50/50">
-              <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                style={{ minWidth: 200, maxWidth: 200 }}>
+              <td
+                className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+                style={{ minWidth: 200, maxWidth: 200 }}
+              >
                 <span className="block break-words">{matrixRowLabels.get(rowKey) ?? rowKey}</span>
+                <MatrixRowSegmentationBadge
+                  generationId={matrixCanonicalGenerationId.get(rowKey) ?? null}
+                  statuses={segmentationStatuses}
+                  setStatus={setSegmentationStatus}
+                />
               </td>
               {strategyIds.map((stratId) => {
                 const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
                 const firstRun = cellRuns[0];
                 const outputRuns = cellRuns.filter(
-                  (run): run is RunRow & { lastOutputUrl: string } => !!run.lastOutputUrl
+                  (run): run is RunRow & { lastOutputUrl: string } => !!run.lastOutputUrl,
                 );
                 return (
-                  <td key={stratId} className="border-l border-gray-100 p-1.5 text-center align-middle"
-                    style={{ width: CELL, height: CELL, minWidth: CELL }}>
+                  <td
+                    key={stratId}
+                    className="border-l border-gray-100 p-1.5 text-center align-middle"
+                    style={{ width: CELL, height: CELL, minWidth: CELL }}
+                  >
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                       {!firstRun ? (
                         <span className="text-gray-200">&mdash;</span>
@@ -784,12 +1040,26 @@ function MatrixView({
                               className="group relative block cursor-pointer"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={run.lastOutputUrl} alt="" loading="lazy"
+                              <img
+                                src={run.lastOutputUrl}
+                                alt=""
+                                loading="lazy"
                                 className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
-                                style={{ aspectRatio: '1' }} />
+                                style={{ aspectRatio: '1' }}
+                              />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
-                                <svg className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                <svg
+                                  className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                                  />
                                 </svg>
                               </div>
                               <JudgeScoreBadge
@@ -803,8 +1073,19 @@ function MatrixView({
                                 judgeTypeUsed={run.judgeTypeUsed}
                                 awaitingJudge={awaitingJudge}
                               />
+                              <SegmentationResultsBadge
+                                generationId={run.lastOutputGenerationId ?? null}
+                                state={
+                                  run.lastOutputGenerationId
+                                    ? segmentationStatuses.get(run.lastOutputGenerationId)
+                                    : undefined
+                                }
+                              />
                               {run.lastOutputGenerationId && (
-                                <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+                                <MatrixCellRatingOverlay
+                                  generationId={run.lastOutputGenerationId}
+                                  onRated={onRated}
+                                />
                               )}
                             </button>
                           ))}
@@ -814,16 +1095,32 @@ function MatrixView({
                           role="button"
                           tabIndex={0}
                           onClick={() => onImageClick(firstRun)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(firstRun); }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') onImageClick(firstRun);
+                          }}
                           className="group relative block cursor-pointer"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={firstRun.lastOutputUrl} alt="" loading="lazy"
+                          <img
+                            src={firstRun.lastOutputUrl}
+                            alt=""
+                            loading="lazy"
                             className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
-                            style={{ width: CELL - 20, height: CELL - 20 }} />
+                            style={{ width: CELL - 20, height: CELL - 20 }}
+                          />
                           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                            <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                            <svg
+                              className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                              />
                             </svg>
                           </div>
                           <JudgeScoreBadge
@@ -837,19 +1134,38 @@ function MatrixView({
                             judgeTypeUsed={firstRun.judgeTypeUsed}
                             awaitingJudge={awaitingJudge}
                           />
+                          <SegmentationResultsBadge
+                            generationId={firstRun.lastOutputGenerationId ?? null}
+                            state={
+                              firstRun.lastOutputGenerationId
+                                ? segmentationStatuses.get(firstRun.lastOutputGenerationId)
+                                : undefined
+                            }
+                          />
                           {firstRun.lastOutputGenerationId && (
-                            <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} onRated={onRated} />
+                            <MatrixCellRatingOverlay
+                              generationId={firstRun.lastOutputGenerationId}
+                              onRated={onRated}
+                            />
                           )}
                         </div>
                       ) : (
                         <>
-                          <Link href={firstRun.runHref ?? `/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
+                          <Link
+                            href={
+                              firstRun.runHref ??
+                              `/strategies/${firstRun.strategyId}/runs/${firstRun.id}`
+                            }
+                          >
                             <ReviewStatusBadge status={deriveRunReviewStatus(firstRun)} />
                           </Link>
                           {(firstRun.status === 'failed' || firstRun.status === 'skipped') && (
-                            <button type="button" onClick={() => onRetry(firstRun.id)}
+                            <button
+                              type="button"
+                              onClick={() => onRetry(firstRun.id)}
                               disabled={retryingRunId === firstRun.id}
-                              className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
+                              className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50"
+                            >
                               {retryingRunId === firstRun.id ? 'Retrying…' : 'Retry'}
                             </button>
                           )}
@@ -867,6 +1183,30 @@ function MatrixView({
   );
 }
 
+/**
+ * Helper for the matrix row's segmentation badge cell. Lives outside the
+ * giant `MatrixView` JSX tree so the inline JSX in the row stays compact
+ * (segmentation is a leftmost-column concern; cell columns are per-strategy).
+ */
+function MatrixRowSegmentationBadge({
+  generationId,
+  statuses,
+  setStatus,
+}: {
+  generationId: string | null;
+  statuses: Map<string, SegmentationState>;
+  setStatus: (id: string, state: SegmentationState) => void;
+}) {
+  if (!generationId) return null;
+  return (
+    <SegmentationBadge
+      generationId={generationId}
+      initialState={statuses.get(generationId)}
+      onStateChange={(next) => setStatus(generationId, next)}
+    />
+  );
+}
+
 /* ─── Shared cell renderer ─── */
 
 function RunCell({
@@ -877,6 +1217,7 @@ function RunCell({
   onRetry,
   onRated,
   onImageClick,
+  segmentationState,
 }: {
   run: RunRow | undefined;
   cellSize: number;
@@ -885,10 +1226,13 @@ function RunCell({
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
+  segmentationState?: SegmentationState;
 }) {
   return (
-    <td className="border-l border-gray-100 p-1.5 text-center align-middle"
-      style={{ width: cellSize, height: cellSize, minWidth: cellSize }}>
+    <td
+      className="border-l border-gray-100 p-1.5 text-center align-middle"
+      style={{ width: cellSize, height: cellSize, minWidth: cellSize }}
+    >
       <div className="flex h-full w-full flex-col items-center justify-center gap-1">
         {!run ? (
           <span className="text-gray-200">&mdash;</span>
@@ -897,16 +1241,32 @@ function RunCell({
             role="button"
             tabIndex={0}
             onClick={() => onImageClick(run)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') onImageClick(run);
+            }}
             className="group relative block cursor-pointer"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={run.lastOutputUrl} alt="" loading="lazy"
+            <img
+              src={run.lastOutputUrl}
+              alt=""
+              loading="lazy"
               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
-              style={{ width: cellSize - 20, height: cellSize - 20 }} />
+              style={{ width: cellSize - 20, height: cellSize - 20 }}
+            />
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-              <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              <svg
+                className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                />
               </svg>
             </div>
             <JudgeScoreBadge
@@ -920,8 +1280,15 @@ function RunCell({
               judgeTypeUsed={run.judgeTypeUsed}
               awaitingJudge={awaitingJudge}
             />
+            <SegmentationResultsBadge
+              generationId={run.lastOutputGenerationId ?? null}
+              state={segmentationState}
+            />
             {run.lastOutputGenerationId && (
-              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+              <MatrixCellRatingOverlay
+                generationId={run.lastOutputGenerationId}
+                onRated={onRated}
+              />
             )}
           </div>
         ) : (
@@ -930,9 +1297,12 @@ function RunCell({
               <ReviewStatusBadge status={deriveRunReviewStatus(run)} />
             </Link>
             {(run.status === 'failed' || run.status === 'skipped') && (
-              <button type="button" onClick={() => onRetry(run.id)}
+              <button
+                type="button"
+                onClick={() => onRetry(run.id)}
                 disabled={retryingRunId === run.id}
-                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50">
+                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50"
+              >
                 {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
               </button>
             )}
@@ -952,7 +1322,9 @@ function ReviewStatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? config.pending;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}
+    >
       {c.label}
     </span>
   );
