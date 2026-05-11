@@ -550,13 +550,7 @@ function SegmentationModal({
               No segmentation results to display.
             </p>
           )}
-          {!loading && !error && rows.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {rows.map((row) => (
-                <CategoryCard key={row.category} row={row} />
-              ))}
-            </div>
-          )}
+          {!loading && !error && rows.length > 0 && <CollapsibleCategoryGrid rows={rows} />}
         </div>
       </div>
     </div>
@@ -950,6 +944,52 @@ function readPerCategoryTimings(
  * styling matches the rest of the modal (and so we can show the
  * total-ms summary on the right even while collapsed).
  */
+/**
+ * Collapsible wrapper around the per-category cards grid. The grid is
+ * heavy — it lazily loads/blends every mask PNG on a `<canvas>` per
+ * card, plus a thumbnail per individual mask — so we keep it collapsed
+ * by default and let the user opt into the full inspection view. The
+ * header summarizes how many categories and masks are inside without
+ * having to expand.
+ */
+function CollapsibleCategoryGrid({ rows }: { rows: CategoryRow[] }) {
+  const [open, setOpen] = useState(false);
+  const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
+
+  return (
+    <div className="mb-5">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+      >
+        <span className="flex items-center gap-2">
+          <ChevronIcon
+            className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
+          />
+          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+            Per-category masks
+          </span>
+          <span className="text-[11px] font-normal text-gray-500">
+            {rows.length} {rows.length === 1 ? 'category' : 'categories'}
+          </span>
+        </span>
+        <span className="text-[11px] text-gray-500 tabular-nums">
+          {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <CategoryCard key={row.category} row={row} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CollapsibleTimeline({
   timings,
   lookup,
