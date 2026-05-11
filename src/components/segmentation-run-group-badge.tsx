@@ -17,10 +17,17 @@ import { useCallback, useMemo } from 'react';
  * dot (and vice versa), and a partial in-flight request from a per-cell
  * click never gets clobbered when this badge fires.
  *
- * Per-id `POST`s run in parallel with `Promise.allSettled` so a slow or
- * failing generation can't block the others. Ids that are currently
- * `running` or `checking` are skipped at click time so re-clicking
- * the badge can't double-fire while a previous run is still in flight.
+ * Per-id `POST`s run *sequentially* (one image at a time). Running them
+ * in parallel was overloading SAM upstream — the per-generation handler
+ * already fans out across product categories in parallel, so layering
+ * row-level parallelism on top multiplied the in-flight calls by N. A
+ * single failure still doesn't block the rest of the row: we keep
+ * walking the queue and surface each id's outcome individually on the
+ * shared `statuses` map.
+ *
+ * Ids that are currently `running` or `checking` are skipped at click
+ * time so re-clicking the badge can't double-fire while a previous run
+ * is still in flight.
  *
  * When *every* tracked id has already been segmented, clicking the badge
  * re-runs all of them with `?force=true` (matches the per-cell badge's
@@ -111,17 +118,31 @@ export function SegmentationRunGroupBadge({
     if (targets.length === 0) return;
 
     // Optimistic transition so the row badge (and every cell) flips to
-    // "Segmenting" before the network round-trip resolves.
+    // "Segmenting" before the network round-trip resolves. We flip *all*
+    // targets up front (not just the one we're about to await) so the
+    // row badge's `running` aggregate matches the user's mental model of
+    // "I asked for all of them" even though we'll process them one by one.
     for (const target of targets) {
       setStatus(target.id, { kind: 'running' });
     }
 
-    await Promise.allSettled(
-      targets.map(async ({ id, force }) => {
-        const next = await runSegmentationPost(id, force);
-        setStatus(id, next);
-      }),
-    );
+    // Walk the queue sequentially. A single failure must not stop the
+    // rest of the row, so we swallow per-id throws here — `runSegmentationPost`
+    // already maps backend errors into a `SegmentationState` of kind
+    // `error`, so the only way `await` rejects is a programming bug we'd
+    // rather surface as a per-cell error than as an unhandled rejection.
+    for (const { id, force } of targets) {
+      let next: SegmentationState;
+      try {
+        next = await runSegmentationPost(id, force);
+      } catch (err) {
+        next = {
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Unexpected error',
+        };
+      }
+      setStatus(id, next);
+    }
   }, [generationIds, statuses, setStatus]);
 
   if (generationIds.length === 0) return null;
