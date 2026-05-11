@@ -50,16 +50,41 @@ function colorForCategory(category: string): string {
 
 /**
  * Shape returned by `GET /image-generation/v1/generations/:id/segmentation`.
- * Mirrors `Segmentation` in
- * `src/app/strategies/[id]/runs/[runId]/run-detail.tsx` so the modal
- * shows the same payload shape the run-detail page already understands.
+ * Mirrors the FAL `fal-ai/sam-3-1/image` response that the backend
+ * stores per category on `generation_segmentation`. Note that `image`
+ * and each entry of `masks` are objects (NOT raw URLs) — earlier code
+ * assumed bare strings and silently rendered nothing.
  */
+interface SegmentationFalAsset {
+  url: string;
+  width?: number;
+  height?: number;
+  contentType?: string;
+}
+
+interface SegmentationCategoryMetadataEntry {
+  box?: number[];
+  index?: number;
+  score?: number;
+}
+
 interface SegmentationCategoryResponse {
-  image?: string | null;
-  masks?: string[];
-  scores?: number[];
-  boxes?: unknown;
-  metadata?: Record<string, unknown> | null;
+  image?: SegmentationFalAsset | string | null;
+  masks?: Array<SegmentationFalAsset | string> | null;
+  scores?: number[] | null;
+  boxes?: number[][] | null;
+  metadata?: SegmentationCategoryMetadataEntry[] | Record<string, unknown> | null;
+}
+
+/**
+ * FAL responses ship URLs inside `{ url, width, height, contentType }`
+ * wrappers, but very early runs persisted plain strings. Accept both
+ * so older `generation_segmentation` rows keep rendering.
+ */
+function assetUrl(asset: SegmentationFalAsset | string | null | undefined): string | null {
+  if (!asset) return null;
+  if (typeof asset === 'string') return asset.length > 0 ? asset : null;
+  return typeof asset.url === 'string' && asset.url.length > 0 ? asset.url : null;
 }
 
 /**
@@ -144,11 +169,22 @@ function categoryLabel(category: string): string {
   );
 }
 
+interface CategoryMask {
+  url: string;
+  score: number | null;
+}
+
 interface CategoryRow {
   category: string;
   label: string;
+  /**
+   * FAL's `image` field — typically a per-category composite (sometimes
+   * just identical to the first entry of `masks`). Used as the headline
+   * preview at the top of each card; `masks` is rendered below as a
+   * grid so every individual prediction is visible.
+   */
   composite: string | null;
-  maskCount: number;
+  masks: CategoryMask[];
   topScore: number | null;
 }
 
@@ -159,18 +195,35 @@ function buildRows(record: SegmentationRecord | null): CategoryRow[] {
     .filter(([, value]) => value !== null && value !== undefined)
     .map(([category, value]) => {
       const data = (value ?? {}) as SegmentationCategoryResponse;
-      const masks = Array.isArray(data.masks) ? data.masks : [];
+      const rawMasks = Array.isArray(data.masks) ? data.masks : [];
       const scores = Array.isArray(data.scores) ? data.scores : [];
-      const numericScores = scores.filter((s): s is number => typeof s === 'number');
-      const composite = typeof data.image === 'string' && data.image.length > 0 ? data.image : null;
+      const masks: CategoryMask[] = rawMasks
+        .map((mask, idx): CategoryMask | null => {
+          const url = assetUrl(mask);
+          if (!url) return null;
+          const score = typeof scores[idx] === 'number' ? scores[idx]! : null;
+          return { url, score };
+        })
+        .filter((m): m is CategoryMask => m !== null);
+      const numericScores = masks
+        .map((m) => m.score)
+        .filter((s): s is number => typeof s === 'number');
+      // Prefer the FAL-provided composite; fall back to the first mask
+      // so single-mask categories still get a preview tile.
+      const composite = assetUrl(data.image) ?? masks[0]?.url ?? null;
       return {
         category,
         label: categoryLabel(category),
         composite,
-        maskCount: masks.length,
+        masks,
         topScore: numericScores.length > 0 ? Math.max(...numericScores) : null,
       };
     })
+    // Drop categories that came back fully empty so the grid isn't
+    // cluttered with "no masks detected" tiles for shower curb tiles
+    // etc. — the legend / per-category status still surfaces via the
+    // timeline panel for anyone debugging a zero-mask run.
+    .filter((row) => row.masks.length > 0 || row.composite !== null)
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -266,7 +319,7 @@ function SegmentationModal({
   onClose: () => void;
 }) {
   const rows = useMemo(() => buildRows(record), [record]);
-  const totalMasks = rows.reduce((sum, row) => sum + row.maskCount, 0);
+  const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
 
   return (
     <div
@@ -347,7 +400,7 @@ function SegmentationModal({
             </div>
           )}
           {!loading && !error && record?.timings && (
-            <SegmentationTimelineSection timings={record.timings} />
+            <CollapsibleTimeline timings={record.timings} />
           )}
           {!loading && !error && record?.combinedOverlayUrl && (
             <div className="mb-5">
@@ -386,55 +439,117 @@ function SegmentationModal({
             </p>
           )}
           {!loading && !error && rows.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {rows.map((row) => (
-                <div
-                  key={row.category}
-                  className="rounded-md border border-gray-200 bg-gray-50 p-2"
-                >
-                  <div className="flex items-baseline justify-between gap-1">
-                    <p
-                      className="truncate text-[11px] font-semibold text-gray-700"
-                      title={row.label}
-                    >
-                      {row.label}
-                    </p>
-                    {row.topScore !== null && (
-                      <span className="shrink-0 rounded bg-white px-1 py-px text-[10px] text-gray-600 tabular-nums ring-1 ring-gray-200">
-                        {row.topScore.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-[10px] text-gray-500">
-                    {row.maskCount} {row.maskCount === 1 ? 'mask' : 'masks'}
-                  </p>
-                  {row.composite ? (
-                    <a
-                      href={row.composite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white"
-                    >
-                      <SkeletonImage
-                        src={row.composite}
-                        alt={`${row.label} segmentation overlay`}
-                        containerClassName="h-full w-full"
-                        imgClassName="h-full w-full object-contain"
-                      />
-                    </a>
-                  ) : (
-                    <div className="mt-2 flex aspect-square w-full items-center justify-center rounded border border-dashed border-gray-200 bg-white">
-                      <p className="px-2 text-center text-[10px] text-gray-400 italic">
-                        {row.maskCount === 0 ? 'No masks detected' : 'No overlay returned'}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <CategoryCard key={row.category} row={row} />
               ))}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Per-category card: composite preview on top, then a grid of every
+ * individual mask underneath. Single-mask categories collapse to just
+ * the composite — duplicating it as a second tile would be noise.
+ *
+ * The composite is taken from FAL's `image` field on the SAM response
+ * (which, in practice, is identical to `masks[0]` for single-mask
+ * categories and a separate combined PNG for multi-mask ones). We
+ * always render every entry in `masks` separately because the user
+ * specifically wants to inspect each one.
+ */
+function CategoryCard({ row }: { row: CategoryRow }) {
+  const totalMasks = row.masks.length;
+  const showIndividualMasks = totalMasks > 1;
+  const swatch = colorForCategory(row.category);
+
+  return (
+    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span
+            className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
+            style={{ backgroundColor: swatch }}
+            aria-hidden="true"
+          />
+          <p
+            className="truncate text-xs font-semibold text-gray-800"
+            title={row.label}
+          >
+            {row.label}
+          </p>
+        </div>
+        {row.topScore !== null && (
+          <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] text-gray-700 tabular-nums ring-1 ring-gray-200">
+            {row.topScore.toFixed(2)}
+          </span>
+        )}
+      </div>
+      <p className="mt-0.5 text-[10px] text-gray-500">
+        {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
+      </p>
+
+      {row.composite ? (
+        <a
+          href={row.composite}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white"
+        >
+          <SkeletonImage
+            src={row.composite}
+            alt={`${row.label} composite overlay`}
+            containerClassName="h-full w-full"
+            imgClassName="h-full w-full object-contain"
+          />
+        </a>
+      ) : (
+        <div className="mt-2 flex aspect-square w-full items-center justify-center rounded border border-dashed border-gray-200 bg-white">
+          <p className="px-2 text-center text-[10px] text-gray-400 italic">
+            No composite returned
+          </p>
+        </div>
+      )}
+
+      {showIndividualMasks && (
+        <div className="mt-2">
+          <p className="mb-1 text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            Individual masks
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {row.masks.map((mask, idx) => (
+              <a
+                key={`${mask.url}-${idx}`}
+                href={mask.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={
+                  mask.score !== null
+                    ? `Mask ${idx + 1} · score ${mask.score.toFixed(3)}`
+                    : `Mask ${idx + 1}`
+                }
+                className="group relative block aspect-square overflow-hidden rounded border border-gray-200 bg-white"
+              >
+                <SkeletonImage
+                  src={mask.url}
+                  alt={`${row.label} mask ${idx + 1}`}
+                  containerClassName="h-full w-full"
+                  imgClassName="h-full w-full object-contain"
+                />
+                {mask.score !== null && (
+                  <span className="absolute right-0.5 bottom-0.5 rounded bg-black/60 px-1 py-px text-[9px] font-medium text-white tabular-nums">
+                    {mask.score.toFixed(2)}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -519,7 +634,7 @@ function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
             />
             <span
               className="text-[11px] leading-tight text-gray-700"
-              title={`${row.label} · ${row.maskCount} ${row.maskCount === 1 ? 'mask' : 'masks'}`}
+              title={`${row.label} · ${row.masks.length} ${row.masks.length === 1 ? 'mask' : 'masks'}`}
             >
               {row.label}
             </span>
@@ -612,6 +727,51 @@ function readPerCategoryTimings(metadata: Record<string, unknown> | null | undef
 }
 
 /**
+ * Collapsible wrapper around `SegmentationTimelineSection`. The
+ * timeline is interesting when debugging slow runs but is mostly noise
+ * for everyday viewing, so it starts collapsed and the user opts in.
+ *
+ * Uses a button + state instead of native `<details>` so the header
+ * styling matches the rest of the modal (and so we can show the
+ * total-ms summary on the right even while collapsed).
+ */
+function CollapsibleTimeline({ timings }: { timings: SegmentationTimings }) {
+  const [open, setOpen] = useState(false);
+  const stepCount = timings.steps.length;
+
+  return (
+    <div className="mb-5">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+      >
+        <span className="flex items-center gap-2">
+          <ChevronIcon
+            className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
+          />
+          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+            Execution timeline
+          </span>
+          <span className="text-[11px] font-normal text-gray-500">
+            {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+          </span>
+        </span>
+        <span className="text-[11px] text-gray-500 tabular-nums">
+          {formatMs(timings.totalMs)} total
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2">
+          <SegmentationTimelineSection timings={timings} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Gantt-style execution timeline for a single segmentation run. Each step
  * is rendered as a horizontal bar positioned at `startMs / totalMs` with
  * width `durationMs / totalMs`, so the viewer can spot where the run
@@ -637,15 +797,7 @@ function SegmentationTimelineSection({ timings }: { timings: SegmentationTimings
   const perCategoryRows = readPerCategoryTimings(samStep?.metadata);
 
   return (
-    <div className="mb-5">
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <h4 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
-          Execution timeline
-        </h4>
-        <span className="text-[11px] text-gray-500 tabular-nums">
-          {formatMs(timings.totalMs)} total
-        </span>
-      </div>
+    <div>
       <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5">
         <div className="flex flex-col gap-1.5">
           {timings.steps.map((step, idx) => {
@@ -734,6 +886,20 @@ function MaskIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
       />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2.5}
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 }
