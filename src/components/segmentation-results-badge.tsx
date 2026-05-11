@@ -188,7 +188,22 @@ interface SegmentationTimings {
   steps: SegmentationTimingStep[];
 }
 
+/**
+ * Backend response shape for
+ * `GET /image-generation/v1/generations/:id/segmentation`. The backend
+ * stores one JSONB column per category on the `generation_segmentation`
+ * row (`vanities`, `faucets`, `toilet_flush`, etc.), so the response
+ * has those categories as **top-level** keys on `record` alongside the
+ * row's metadata (`id`, `createdAt`, `combinedOverlayUrl`, `timings`).
+ * Categories are NOT nested under a `results` field — earlier code
+ * assumed they were and silently rendered nothing because the lookup
+ * always missed.
+ *
+ * Unknown keys on the response that aren't in `RECORD_METADATA_KEYS`
+ * are treated as category entries.
+ */
 interface SegmentationRecord {
+  id?: string;
   generationResultId?: string;
   createdAt?: string;
   /**
@@ -201,8 +216,25 @@ interface SegmentationRecord {
   combinedOverlayUrl?: string | null;
   /** Persisted execution timeline for the run that produced this row. */
   timings?: SegmentationTimings | null;
-  results?: Record<string, SegmentationCategoryResponse | null | undefined> | null;
+  // Categories (`vanities`, `faucets`, `toiletFlush`, …) land here, one
+  // key per JSONB column on the backend row. TypeScript can't express
+  // "every key except RECORD_METADATA_KEYS" cleanly, so we use an
+  // unknown-valued index signature and narrow inside `buildRows`.
+  [category: string]: unknown;
 }
+
+/**
+ * Top-level keys on the segmentation record that describe the row
+ * itself rather than per-category results. Anything outside this set
+ * is treated as a SAM category payload.
+ */
+const RECORD_METADATA_KEYS = new Set<string>([
+  'id',
+  'generationResultId',
+  'createdAt',
+  'combinedOverlayUrl',
+  'timings',
+]);
 
 interface SegmentationResultsBadgeProps {
   generationId: string | null | undefined;
@@ -234,11 +266,21 @@ interface CategoryRow {
 }
 
 function buildRows(record: SegmentationRecord | null, lookup: CategoryLookup): CategoryRow[] {
-  const results = record?.results;
-  if (!results || typeof results !== 'object' || Array.isArray(results)) return [];
+  if (!record || typeof record !== 'object') return [];
+  // Categories are top-level keys on the row. Walk every property,
+  // skip the known row-metadata fields, and treat the rest as
+  // potential category payloads. Anything that isn't a plain object
+  // (e.g. categories that came back `null` because SAM had nothing to
+  // segment for that prompt) falls through the `value` guard below.
+  const entries = Object.entries(record).filter(
+    ([key, value]) =>
+      !RECORD_METADATA_KEYS.has(key) &&
+      value !== null &&
+      value !== undefined &&
+      typeof value === 'object',
+  );
   return (
-    Object.entries(results)
-      .filter(([, value]) => value !== null && value !== undefined)
+    entries
       .map(([category, value]) => {
         const data = (value ?? {}) as SegmentationCategoryResponse;
         const rawMasks = Array.isArray(data.masks) ? data.masks : [];
