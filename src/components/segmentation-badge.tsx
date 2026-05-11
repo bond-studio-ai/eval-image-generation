@@ -180,7 +180,7 @@ export function SegmentationBadge({
       className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
     >
       <SparkleIcon className="h-2.5 w-2.5" />
-      Run segmentation
+      Automate QA
     </button>
   );
 }
