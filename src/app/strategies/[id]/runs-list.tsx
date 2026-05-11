@@ -3,8 +3,14 @@
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
+import { SegmentationBadge } from '@/components/segmentation-badge';
+import { SegmentationResultsBadge } from '@/components/segmentation-results-badge';
 import { serviceUrl } from '@/lib/api-base';
-import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from '@/lib/service-client';
+import {
+  parseStrategyRunJudgeResults,
+  type StrategyRunJudgeResultEntry,
+} from '@/lib/service-client';
+import { useBatchSegmentationStatus } from '@/lib/use-batch-segmentation-status';
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -34,7 +40,15 @@ interface Run {
   judgeResults?: StrategyRunJudgeResultEntry[] | null;
 }
 
-type ListItem = { kind: 'batch'; id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
+type ListItem = {
+  kind: 'batch';
+  id: string;
+  runs: Run[];
+  status: string;
+  createdAt: string;
+  awaitingJudge: boolean;
+  isStandalone: boolean;
+};
 
 const POLL_INTERVAL = 3000;
 
@@ -56,7 +70,11 @@ export function StrategyRunsList({
   initialRuns: Run[];
 }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    runHref: string;
+    generationId: string | null;
+  } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -71,7 +89,8 @@ export function StrategyRunsList({
     if (!batchGroups.has(runGroupId)) batchGroups.set(runGroupId, []);
     batchGroups.get(runGroupId)!.push(run);
   }
-  const hasAwaitingJudge = hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
+  const hasAwaitingJudge =
+    hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
   const shouldPoll = hasActiveRun || !!hasAwaitingJudge;
 
   const fetchRuns = useCallback(async () => {
@@ -86,7 +105,9 @@ export function StrategyRunsList({
           judgeResults: parseStrategyRunJudgeResults(row.judgeResults),
         })),
       );
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [strategyId]);
 
   useEffect(() => {
@@ -101,7 +122,9 @@ export function StrategyRunsList({
   const items: ListItem[] = [];
 
   for (const [batchId, batchRuns] of batchGroups) {
-    const sorted = [...batchRuns].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const sorted = [...batchRuns].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
     const allStatuses = sorted.map((r) => r.status);
     const status = allStatuses.every((s) => s === 'completed')
       ? 'completed'
@@ -110,7 +133,15 @@ export function StrategyRunsList({
         : allStatuses.some((s) => s === 'failed')
           ? 'failed'
           : 'pending';
-    items.push({ kind: 'batch', id: batchId, runs: sorted, status, createdAt: sorted[0]?.createdAt ?? '', awaitingJudge: isAwaitingJudge(sorted, hasJudge), isStandalone: standaloneKeys.has(batchId) });
+    items.push({
+      kind: 'batch',
+      id: batchId,
+      runs: sorted,
+      status,
+      createdAt: sorted[0]?.createdAt ?? '',
+      awaitingJudge: isAwaitingJudge(sorted, hasJudge),
+      isStandalone: standaloneKeys.has(batchId),
+    });
   }
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -124,7 +155,9 @@ export function StrategyRunsList({
     pendingScrollRef.current = null;
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
     if (!scrollers) return;
-    scrollers.forEach((el, i) => { if (i < saved.length) el.scrollLeft = saved[i]; });
+    scrollers.forEach((el, i) => {
+      if (i < saved.length) el.scrollLeft = saved[i];
+    });
   });
 
   const fetchRunsKeepScroll = useCallback(async () => {
@@ -158,7 +191,9 @@ export function StrategyRunsList({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-600">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
+        <p className="mt-4 text-sm text-gray-600">
+          No runs yet. Click &ldquo;Run Batch&rdquo; to execute.
+        </p>
       ) : viewMode === 'list' ? (
         <div className="mt-4 space-y-4">
           {items.map((item) => (
@@ -167,7 +202,13 @@ export function StrategyRunsList({
               batch={item}
               strategyId={strategyId}
               onRated={fetchRunsKeepScroll}
-              onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+              onImageClick={(run) =>
+                setLightbox({
+                  src: run.lastOutputUrl!,
+                  runHref: `/strategies/${strategyId}/runs/${run.id}`,
+                  generationId: run.lastOutputGenerationId ?? null,
+                })
+              }
             />
           ))}
         </div>
@@ -179,7 +220,13 @@ export function StrategyRunsList({
               batch={item}
               strategyId={strategyId}
               onRated={fetchRunsKeepScroll}
-              onImageClick={(run) => setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })}
+              onImageClick={(run) =>
+                setLightbox({
+                  src: run.lastOutputUrl!,
+                  runHref: `/strategies/${strategyId}/runs/${run.id}`,
+                  generationId: run.lastOutputGenerationId ?? null,
+                })
+              }
             />
           ))}
         </div>
@@ -205,7 +252,14 @@ function BatchRunCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
+  batch: {
+    id: string;
+    runs: Run[];
+    status: string;
+    createdAt: string;
+    awaitingJudge: boolean;
+    isStandalone: boolean;
+  };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -216,12 +270,15 @@ function BatchRunCard({
   const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
   const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? '(no preset)'));
   const completedRuns = batch.runs.filter((r) => r.status === 'completed').length;
-  const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
+  const failedRuns = batch.runs.filter(
+    (r) => r.status === 'failed' || r.status === 'skipped',
+  ).length;
 
   const showRetryJudge = (() => {
     const completed = batch.runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
     if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing =
+      completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
     if (hasFailedOrMissing) return true;
     const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
     return missingPerJudge;
@@ -231,10 +288,15 @@ function BatchRunCard({
     e.stopPropagation();
     setRetrying(true);
     try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), {
+        method: 'POST',
+      });
       if (res.ok) onRated?.();
-    } catch { /* ignore */ }
-    finally { setRetrying(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setRetrying(false);
+    }
   };
 
   const handleRetryJudge = async (e: React.MouseEvent) => {
@@ -242,10 +304,14 @@ function BatchRunCard({
     setRetryingJudge(true);
     setJudgeRetryError(null);
     try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
+        method: 'POST',
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        const msg =
+          (body as { error?: { message?: string } })?.error?.message ??
+          `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       } else {
         const body = await res.json().catch(() => null);
@@ -258,8 +324,9 @@ function BatchRunCard({
     } catch (err) {
       setJudgeRetryError(err instanceof Error ? err.message : 'Network error');
       onRated?.();
+    } finally {
+      setRetryingJudge(false);
     }
-    finally { setRetryingJudge(false); }
   };
 
   return (
@@ -279,13 +346,15 @@ function BatchRunCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${batch.isStandalone ? 'bg-gray-100 text-gray-700' : 'bg-indigo-50 text-indigo-700'}`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${batch.isStandalone ? 'bg-gray-100 text-gray-700' : 'bg-indigo-50 text-indigo-700'}`}
+          >
             {batch.isStandalone ? 'run' : 'batch'}
           </span>
           <StatusBadge status={batch.status} />
           <span className="text-sm text-gray-600">
-            {batch.runs.length} run{batch.runs.length === 1 ? '' : 's'} &middot;{' '}
-            {presetNames.size} preset{presetNames.size === 1 ? '' : 's'}
+            {batch.runs.length} run{batch.runs.length === 1 ? '' : 's'} &middot; {presetNames.size}{' '}
+            preset{presetNames.size === 1 ? '' : 's'}
           </span>
           <span className="text-xs text-gray-400">
             {completedRuns} completed{failedRuns > 0 ? `, ${failedRuns} failed` : ''}
@@ -297,17 +366,41 @@ function BatchRunCard({
               role="button"
               tabIndex={0}
               onClick={handleRetryFailed}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryFailed(e as unknown as React.MouseEvent); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ')
+                  handleRetryFailed(e as unknown as React.MouseEvent);
+              }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retrying ? (
                 <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               ) : (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                  />
                 </svg>
               )}
               Retry Failed ({failedRuns})
@@ -318,17 +411,41 @@ function BatchRunCard({
               role="button"
               tabIndex={0}
               onClick={handleRetryJudge}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryJudge(e as unknown as React.MouseEvent); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ')
+                  handleRetryJudge(e as unknown as React.MouseEvent);
+              }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
                 <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               ) : (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                  />
                 </svg>
               )}
               Retry Judge
@@ -342,13 +459,26 @@ function BatchRunCard({
       {judgeRetryError && (
         <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-5 py-2">
           <span className="text-xs text-red-700">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
+          <button
+            type="button"
+            onClick={() => setJudgeRetryError(null)}
+            className="text-xs text-red-400 hover:text-red-600"
+          >
+            dismiss
+          </button>
         </div>
       )}
 
       {expanded && (
         <div className="p-4">
-          <BatchMatrix runs={batch.runs} strategyId={strategyId} awaitingJudge={batch.awaitingJudge} onRated={onRated} onImageClick={onImageClick} />
+          <BatchMatrix
+            runs={batch.runs}
+            strategyId={strategyId}
+            awaitingJudge={batch.awaitingJudge}
+            onRated={onRated}
+            onImageClick={onImageClick}
+            expanded={expanded}
+          />
         </div>
       )}
     </div>
@@ -361,7 +491,14 @@ function CollapsibleBatchCard({
   onRated,
   onImageClick,
 }: {
-  batch: { id: string; runs: Run[]; status: string; createdAt: string; awaitingJudge: boolean; isStandalone: boolean };
+  batch: {
+    id: string;
+    runs: Run[];
+    status: string;
+    createdAt: string;
+    awaitingJudge: boolean;
+    isStandalone: boolean;
+  };
   strategyId: string;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
@@ -370,12 +507,15 @@ function CollapsibleBatchCard({
   const [retrying, setRetrying] = useState(false);
   const [retryingJudge, setRetryingJudge] = useState(false);
   const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
-  const failedRuns = batch.runs.filter((r) => r.status === 'failed' || r.status === 'skipped').length;
+  const failedRuns = batch.runs.filter(
+    (r) => r.status === 'failed' || r.status === 'skipped',
+  ).length;
 
   const showRetryJudge = (() => {
     const completed = batch.runs.filter((r) => r.status === 'completed' && r.lastOutputUrl);
     if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing =
+      completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
     if (hasFailedOrMissing) return true;
     const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
     return missingPerJudge;
@@ -385,10 +525,15 @@ function CollapsibleBatchCard({
     e.stopPropagation();
     setRetrying(true);
     try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), {
+        method: 'POST',
+      });
       if (res.ok) onRated?.();
-    } catch { /* ignore */ }
-    finally { setRetrying(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setRetrying(false);
+    }
   };
 
   const handleRetryJudge = async (e: React.MouseEvent) => {
@@ -396,10 +541,14 @@ function CollapsibleBatchCard({
     setRetryingJudge(true);
     setJudgeRetryError(null);
     try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
+        method: 'POST',
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        const msg =
+          (body as { error?: { message?: string } })?.error?.message ??
+          `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       } else {
         const body = await res.json().catch(() => null);
@@ -412,8 +561,9 @@ function CollapsibleBatchCard({
     } catch (err) {
       setJudgeRetryError(err instanceof Error ? err.message : 'Network error');
       onRated?.();
+    } finally {
+      setRetryingJudge(false);
     }
-    finally { setRetryingJudge(false); }
   };
 
   return (
@@ -432,17 +582,41 @@ function CollapsibleBatchCard({
               role="button"
               tabIndex={0}
               onClick={handleRetryFailed}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryFailed(e as unknown as React.MouseEvent); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ')
+                  handleRetryFailed(e as unknown as React.MouseEvent);
+              }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retrying ? (
                 <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               ) : (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                  />
                 </svg>
               )}
               Retry Failed ({failedRuns})
@@ -453,17 +627,41 @@ function CollapsibleBatchCard({
               role="button"
               tabIndex={0}
               onClick={handleRetryJudge}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRetryJudge(e as unknown as React.MouseEvent); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ')
+                  handleRetryJudge(e as unknown as React.MouseEvent);
+              }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
                 <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               ) : (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                  />
                 </svg>
               )}
               Retry Judge
@@ -484,12 +682,25 @@ function CollapsibleBatchCard({
       {judgeRetryError && (
         <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-2">
           <span className="text-xs text-red-700">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">dismiss</button>
+          <button
+            type="button"
+            onClick={() => setJudgeRetryError(null)}
+            className="text-xs text-red-400 hover:text-red-600"
+          >
+            dismiss
+          </button>
         </div>
       )}
       {expanded && (
         <div className="p-4">
-          <BatchMatrix runs={batch.runs} strategyId={strategyId} awaitingJudge={batch.awaitingJudge} onRated={onRated} onImageClick={onImageClick} />
+          <BatchMatrix
+            runs={batch.runs}
+            strategyId={strategyId}
+            awaitingJudge={batch.awaitingJudge}
+            onRated={onRated}
+            onImageClick={onImageClick}
+            expanded={expanded}
+          />
         </div>
       )}
     </div>
@@ -504,12 +715,14 @@ function BatchMatrix({
   awaitingJudge,
   onRated,
   onImageClick,
+  expanded,
 }: {
   runs: Run[];
   strategyId: string;
   awaitingJudge?: boolean;
   onRated?: () => void;
   onImageClick: (run: Run) => void;
+  expanded?: boolean;
 }) {
   const byPreset = new Map<string, Run[]>();
   for (const run of runs) {
@@ -523,22 +736,35 @@ function BatchMatrix({
   const presetNames = Array.from(byPreset.keys()).sort();
   const maxExecutions = Math.max(0, ...Array.from(byPreset.values()).map((a) => a.length));
 
+  // Hydrate per-run segmentation status when the parent accordion opens.
+  // We track *every* run's generation id (not just the canonical-per-row one)
+  // so the per-cell masks badge can reflect that specific run's status.
+  const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
+    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+
   const CELL = 240;
 
   return (
     <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
-      <table className="divide-y divide-gray-200" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+      <table
+        className="divide-y divide-gray-200"
+        style={{ borderCollapse: 'separate', borderSpacing: 0 }}
+      >
         <thead className="bg-gray-50">
           <tr>
             <th
-              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-600"
+              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
               style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
             </th>
             {Array.from({ length: maxExecutions }, (_, i) => (
-              <th key={i} className="px-2 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-600"
-                style={{ width: CELL, minWidth: CELL }}>
+              <th
+                key={i}
+                className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600 uppercase"
+                style={{ width: CELL, minWidth: CELL }}
+              >
                 #{i + 1}
               </th>
             ))}
@@ -547,17 +773,31 @@ function BatchMatrix({
         <tbody className="divide-y divide-gray-200 bg-white">
           {presetNames.map((presetName) => {
             const presetRuns = byPreset.get(presetName)!;
+            const canonicalRun = presetRuns[0];
+            const canonicalGenerationId = canonicalRun?.lastOutputGenerationId ?? null;
             return (
               <tr key={presetName} className="hover:bg-gray-50/50">
-                <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
-                  style={{ minWidth: 200, maxWidth: 200 }}>
+                <td
+                  className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+                  style={{ minWidth: 200, maxWidth: 200 }}
+                >
                   <span className="block break-words">{presetName}</span>
+                  {canonicalGenerationId && (
+                    <SegmentationBadge
+                      generationId={canonicalGenerationId}
+                      initialState={segmentationStatuses.get(canonicalGenerationId)}
+                      onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)}
+                    />
+                  )}
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
                   const run = presetRuns[i];
                   return (
-                    <td key={i} className="border-l border-gray-100 p-1.5 text-center align-middle"
-                      style={{ width: CELL, height: CELL, minWidth: CELL }}>
+                    <td
+                      key={i}
+                      className="border-l border-gray-100 p-1.5 text-center align-middle"
+                      style={{ width: CELL, height: CELL, minWidth: CELL }}
+                    >
                       <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                         {!run ? (
                           <span className="text-gray-200">&mdash;</span>
@@ -566,16 +806,32 @@ function BatchMatrix({
                             role="button"
                             tabIndex={0}
                             onClick={() => onImageClick(run)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onImageClick(run); }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') onImageClick(run);
+                            }}
                             className="group relative block cursor-pointer"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={run.lastOutputUrl} alt="" loading="lazy"
+                            <img
+                              src={run.lastOutputUrl}
+                              alt=""
+                              loading="lazy"
                               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
-                              style={{ width: CELL - 20, height: CELL - 20 }} />
+                              style={{ width: CELL - 20, height: CELL - 20 }}
+                            />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                              <svg
+                                className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                                />
                               </svg>
                             </div>
                             <JudgeScoreBadge
@@ -590,8 +846,19 @@ function BatchMatrix({
                               judgeResults={run.judgeResults ?? null}
                               awaitingJudge={awaitingJudge}
                             />
+                            <SegmentationResultsBadge
+                              generationId={run.lastOutputGenerationId ?? null}
+                              state={
+                                run.lastOutputGenerationId
+                                  ? segmentationStatuses.get(run.lastOutputGenerationId)
+                                  : undefined
+                              }
+                            />
                             {run.lastOutputGenerationId && (
-                              <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />
+                              <MatrixCellRatingOverlay
+                                generationId={run.lastOutputGenerationId}
+                                onRated={onRated}
+                              />
                             )}
                           </div>
                         ) : (
@@ -620,7 +887,9 @@ function StatusBadge({ status }: { status: string }) {
     failed: 'bg-red-100 text-red-700',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}
+    >
       {status}
     </span>
   );
