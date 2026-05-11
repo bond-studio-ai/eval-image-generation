@@ -18,7 +18,53 @@ export type SegmentationState =
   | { kind: 'error'; message?: string };
 
 /** ~3 minutes is enough for the synchronous SAM fan-out on the slowest projects. */
-const POST_TIMEOUT_MS = 180_000;
+export const SEGMENTATION_POST_TIMEOUT_MS = 180_000;
+
+/**
+ * Single-generation `POST /generations/:id/segmentation` call that resolves
+ * to the final `SegmentationState` for the badge. Shared between the
+ * per-generation `SegmentationBadge` and the row-level
+ * `SegmentationRunGroupBadge` so both code paths report the same
+ * `done`/`error` shape (cached flag, success counts, error message).
+ */
+export async function runSegmentationPost(
+  generationId: string,
+  force: boolean,
+): Promise<SegmentationState> {
+  try {
+    const url = serviceUrl(
+      `generations/${generationId}/segmentation${force ? '?force=true' : ''}`,
+    );
+    const res = await fetch(url, {
+      method: 'POST',
+      signal: AbortSignal.timeout(SEGMENTATION_POST_TIMEOUT_MS),
+    });
+    const json = (await res.json().catch(() => null)) as {
+      data?: { cached?: boolean; succeeded?: number; promptCount?: number };
+      error?: { message?: string };
+    } | null;
+
+    if (!res.ok) {
+      const message =
+        json?.error?.message ??
+        (res.status === 422
+          ? 'Nothing to segment'
+          : `Segmentation failed (${res.status})`);
+      return { kind: 'error', message };
+    }
+
+    const data = json?.data ?? {};
+    return {
+      kind: 'done',
+      cached: data.cached === true,
+      succeeded: typeof data.succeeded === 'number' ? data.succeeded : undefined,
+      total: typeof data.promptCount === 'number' ? data.promptCount : undefined,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Network error';
+    return { kind: 'error', message };
+  }
+}
 
 interface SegmentationBadgeProps {
   generationId: string | null | undefined;
@@ -57,39 +103,8 @@ export function SegmentationBadge({
     async (force: boolean) => {
       if (!generationId) return;
       transition({ kind: 'running' });
-
-      try {
-        const url = serviceUrl(
-          `generations/${generationId}/segmentation${force ? '?force=true' : ''}`,
-        );
-        const res = await fetch(url, {
-          method: 'POST',
-          signal: AbortSignal.timeout(POST_TIMEOUT_MS),
-        });
-        const json = (await res.json().catch(() => null)) as {
-          data?: { cached?: boolean; succeeded?: number; promptCount?: number };
-          error?: { message?: string };
-        } | null;
-
-        if (!res.ok) {
-          const message =
-            json?.error?.message ??
-            (res.status === 422 ? 'Nothing to segment' : `Segmentation failed (${res.status})`);
-          transition({ kind: 'error', message });
-          return;
-        }
-
-        const data = json?.data ?? {};
-        transition({
-          kind: 'done',
-          cached: data.cached === true,
-          succeeded: typeof data.succeeded === 'number' ? data.succeeded : undefined,
-          total: typeof data.promptCount === 'number' ? data.promptCount : undefined,
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Network error';
-        transition({ kind: 'error', message });
-      }
+      const next = await runSegmentationPost(generationId, force);
+      transition(next);
     },
     [generationId, transition],
   );
