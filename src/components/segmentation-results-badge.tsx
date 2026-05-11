@@ -480,7 +480,16 @@ function SegmentationModal({
                   imgClassName="block h-full w-full object-contain"
                 />
               </a>
-              {rows.length > 0 && <SegmentationLegend rows={rows} />}
+            </div>
+          )}
+          {/* Render the legend whenever we have categories, even if the
+              combined overlay PNG didn't get built (older row, sharp/S3
+              hiccup, etc.). The per-card swatches use the same colors,
+              so the legend is the user's anchor for what each tint
+              means regardless of overlay presence. */}
+          {!loading && !error && rows.length > 0 && (
+            <div className="mb-5">
+              <SegmentationLegend rows={rows} />
             </div>
           )}
           {!loading && !error && rows.length === 0 && !record?.combinedOverlayUrl && (
@@ -503,18 +512,18 @@ function SegmentationModal({
 
 /**
  * Per-category card: composite preview on top, then a grid of every
- * individual mask underneath. Single-mask categories collapse to just
- * the composite — duplicating it as a second tile would be noise.
+ * individual mask underneath. We always render every entry in `masks`
+ * separately — even when there's just one — so the user can spot when
+ * FAL's `image` composite differs from the underlying prediction, and
+ * so a category's per-mask score badges are always reachable.
  *
  * The composite is taken from FAL's `image` field on the SAM response
  * (which, in practice, is identical to `masks[0]` for single-mask
- * categories and a separate combined PNG for multi-mask ones). We
- * always render every entry in `masks` separately because the user
- * specifically wants to inspect each one.
+ * categories and a separate combined PNG for multi-mask ones).
  */
 function CategoryCard({ row }: { row: CategoryRow }) {
   const totalMasks = row.masks.length;
-  const showIndividualMasks = totalMasks > 1;
+  const showIndividualMasks = totalMasks >= 1;
   const swatch = row.color;
 
   return (
