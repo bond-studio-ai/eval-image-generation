@@ -251,12 +251,23 @@ function buildRows(record: SegmentationRecord | null, lookup: CategoryLookup): C
             return { url, score };
           })
           .filter((m): m is CategoryMask => m !== null);
-        const numericScores = masks
-          .map((m) => m.score)
-          .filter((s): s is number => typeof s === 'number');
         // Prefer the FAL-provided composite; fall back to the first mask
         // so single-mask categories still get a preview tile.
         const composite = assetUrl(data.image) ?? masks[0]?.url ?? null;
+        // FAL only fills the per-prediction `masks` array when
+        // `return_multiple_masks=true` is honored. For categories where
+        // FAL collapsed everything into the single `image` (or older
+        // rows from before that setting), promote the composite into
+        // the masks list so the "Individual masks" grid always reflects
+        // what was actually predicted. Without this, those categories
+        // appear with just a composite and no per-mask tile/score.
+        if (masks.length === 0 && composite) {
+          const fallbackScore = typeof scores[0] === 'number' ? scores[0]! : null;
+          masks.push({ url: composite, score: fallbackScore });
+        }
+        const numericScores = masks
+          .map((m) => m.score)
+          .filter((s): s is number => typeof s === 'number');
         return {
           category,
           label: lookup.label(category),
