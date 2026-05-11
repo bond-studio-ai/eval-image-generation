@@ -37,6 +37,11 @@ const SEGMENTATION_COLORS: Record<string, string> = {
   towel_bars: '#FFD8B1',
   robe_hooks: '#000075',
   towel_rings: '#A9A9A9',
+  // SAM-only extras intentionally share the parent product's hex so the
+  // legend reads as "one product" instead of fragmenting into a swatch
+  // per accessory.
+  flush_actuator_plate: '#FFFAC8',
+  vanity_backsplash: '#E6194B',
 };
 
 function colorForCategory(category: string): string {
@@ -128,6 +133,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   robe_hooks: 'Robe hook',
   towel_rings: 'Towel ring',
   ceilings: 'Ceiling',
+  flush_actuator_plate: 'Flush actuator plate',
+  vanity_backsplash: 'Vanity backsplash',
 };
 
 function categoryLabel(category: string): string {
