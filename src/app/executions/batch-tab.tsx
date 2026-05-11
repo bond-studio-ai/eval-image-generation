@@ -4,8 +4,9 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
-import { SegmentationBadge, type SegmentationState } from '@/components/segmentation-badge';
+import type { SegmentationState } from '@/components/segmentation-badge';
 import { SegmentationResultsBadge } from '@/components/segmentation-results-badge';
+import { SegmentationRunGroupBadge } from '@/components/segmentation-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
 import { useBatchSegmentationStatus } from '@/lib/use-batch-segmentation-status';
@@ -815,7 +816,13 @@ function ListView({
                   {presetNames.map((rowKey) => {
                     const presetRuns = byPreset.get(rowKey)!;
                     const displayLabel = rowLabels.get(rowKey) ?? rowKey;
-                    const canonicalGenerationId = presetRuns[0]?.lastOutputGenerationId ?? null;
+                    // Segment *every* execution in the row, not just the
+                    // canonical/first one — the row's "Run segmentation"
+                    // pill fans out to all of these generations in
+                    // parallel so each #N column gets its masks.
+                    const rowGenerationIds = presetRuns
+                      .map((r) => r.lastOutputGenerationId)
+                      .filter((id): id is string => !!id);
                     return (
                       <tr key={rowKey} className="hover:bg-gray-50/50">
                         <td
@@ -823,13 +830,11 @@ function ListView({
                           style={{ minWidth: 200, maxWidth: 200 }}
                         >
                           <span className="block break-words">{displayLabel}</span>
-                          {canonicalGenerationId && (
-                            <SegmentationBadge
-                              generationId={canonicalGenerationId}
-                              initialState={segmentationStatuses.get(canonicalGenerationId)}
-                              onStateChange={(next) =>
-                                setSegmentationStatus(canonicalGenerationId, next)
-                              }
+                          {rowGenerationIds.length > 0 && (
+                            <SegmentationRunGroupBadge
+                              generationIds={rowGenerationIds}
+                              statuses={segmentationStatuses}
+                              setStatus={setSegmentationStatus}
                             />
                           )}
                         </td>
@@ -942,19 +947,20 @@ function MatrixView({
 
   const CELL = 240;
 
-  // For the inline "Run segmentation" pill under each preset row label, pick
-  // a canonical generation id per row (matrix rows span strategy columns,
-  // so we segment the first available output across the row).
-  const matrixCanonicalGenerationId = new Map<string, string>();
+  // For the inline "Run segmentation" pill under each preset row label,
+  // collect *every* generation id across every strategy column for that
+  // row. Clicking the pill fans out a parallel POST per id so every cell
+  // ends up with its own masks instead of just the leftmost one.
+  const matrixRowGenerationIds = new Map<string, string[]>();
   for (const rowKey of sortedPresets) {
+    const ids: string[] = [];
     for (const stratId of strategyIds) {
       const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
-      const hit = cellRuns.find((run) => run.lastOutputGenerationId);
-      if (hit?.lastOutputGenerationId) {
-        matrixCanonicalGenerationId.set(rowKey, hit.lastOutputGenerationId);
-        break;
+      for (const run of cellRuns) {
+        if (run.lastOutputGenerationId) ids.push(run.lastOutputGenerationId);
       }
     }
+    if (ids.length > 0) matrixRowGenerationIds.set(rowKey, ids);
   }
   // Hydrate status for *every* run's generation id so each cell's masks
   // badge can reflect that specific run, while the inline pill still uses
@@ -1004,7 +1010,7 @@ function MatrixView({
               >
                 <span className="block break-words">{matrixRowLabels.get(rowKey) ?? rowKey}</span>
                 <MatrixRowSegmentationBadge
-                  generationId={matrixCanonicalGenerationId.get(rowKey) ?? null}
+                  generationIds={matrixRowGenerationIds.get(rowKey) ?? []}
                   statuses={segmentationStatuses}
                   setStatus={setSegmentationStatus}
                 />
@@ -1189,20 +1195,20 @@ function MatrixView({
  * (segmentation is a leftmost-column concern; cell columns are per-strategy).
  */
 function MatrixRowSegmentationBadge({
-  generationId,
+  generationIds,
   statuses,
   setStatus,
 }: {
-  generationId: string | null;
+  generationIds: string[];
   statuses: Map<string, SegmentationState>;
   setStatus: (id: string, state: SegmentationState) => void;
 }) {
-  if (!generationId) return null;
+  if (generationIds.length === 0) return null;
   return (
-    <SegmentationBadge
-      generationId={generationId}
-      initialState={statuses.get(generationId)}
-      onStateChange={(next) => setStatus(generationId, next)}
+    <SegmentationRunGroupBadge
+      generationIds={generationIds}
+      statuses={statuses}
+      setStatus={setStatus}
     />
   );
 }
