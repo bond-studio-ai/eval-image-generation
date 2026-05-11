@@ -2,50 +2,129 @@
 
 import type { SegmentationState } from '@/components/segmentation-badge';
 import { serviceUrl } from '@/lib/api-base';
+import {
+  getSegmentationCategories,
+  indexByKey,
+  type SegmentationCategoryMetadata,
+} from '@/lib/segmentation-categories';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
- * Hex color the backend tints each category with on the combined overlay.
- * MUST stay in sync with `DEFAULT_SEGMENTATION_COLORS` in
- * `service-image-generation/src/services/segmentation-overlay-colors.ts`.
- *
- * Two categories that collapse to the same SAM prompt intentionally share
- * a hex (`floor_tiles` + `lvps` → `Floor`; `wall_tiles` + `paints` → `Wall`;
- * `tub_doors` + `shower_glasses` → `Shower Glass`).
+ * Fallback hex palette used when the `/segmentation-categories` endpoint
+ * hasn't responded yet (or has failed). The authoritative palette comes
+ * from the backend — see `DEFAULT_SEGMENTATION_COLORS` in
+ * `service-image-generation/src/domain/segmentation/overlay-colors.ts`.
+ * Keys are registered in BOTH snake_case and camelCase because
+ * `record.results` from the segmentation endpoint uses camelCase keys
+ * (the case-converter middleware rewrites all JSON object keys on the
+ * way out), which is what tripped the legend before this endpoint
+ * existed — multi-word categories silently fell through to the default
+ * gray.
  */
-const SEGMENTATION_COLORS: Record<string, string> = {
+const FALLBACK_COLORS: Record<string, string> = {
   vanities: '#E6194B',
   faucets: '#3CB44B',
   lightings: '#FFE119',
   mirrors: '#4363D8',
   shower_systems: '#F58231',
+  showerSystems: '#F58231',
   floor_tiles: '#911EB4',
+  floorTiles: '#911EB4',
   lvps: '#911EB4',
   wall_tiles: '#46F0F0',
+  wallTiles: '#46F0F0',
   tubs: '#F032E6',
   tub_fillers: '#BCF60C',
+  tubFillers: '#BCF60C',
   tub_doors: '#FABEBE',
+  tubDoors: '#FABEBE',
   shower_glasses: '#FABEBE',
+  showerGlasses: '#FABEBE',
   shower_wall_tiles: '#008080',
+  showerWallTiles: '#008080',
   shower_floor_tiles: '#E6BEFF',
+  showerFloorTiles: '#E6BEFF',
   shower_curb_tiles: '#9A6324',
+  showerCurbTiles: '#9A6324',
   toilets: '#FFFAC8',
   paints: '#46F0F0',
   wallpapers: '#800000',
   shelves: '#AAFFC3',
   toilet_paper_holders: '#808000',
+  toiletPaperHolders: '#808000',
   towel_bars: '#FFD8B1',
+  towelBars: '#FFD8B1',
   robe_hooks: '#000075',
+  robeHooks: '#000075',
   towel_rings: '#A9A9A9',
-  // SAM-only extras intentionally share the parent product's hex so the
-  // legend reads as "one product" instead of fragmenting into a swatch
-  // per accessory.
-  flush_actuator_plate: '#FFFAC8',
+  towelRings: '#A9A9A9',
+  toilet_flush: '#FFFAC8',
+  toiletFlush: '#FFFAC8',
   vanity_backsplash: '#E6194B',
+  vanityBacksplash: '#E6194B',
+  shower_handle: '#F58231',
+  showerHandle: '#F58231',
+  shower_spout: '#F58231',
+  showerSpout: '#F58231',
 };
 
-function colorForCategory(category: string): string {
-  return SEGMENTATION_COLORS[category] ?? '#9CA3AF';
+const NEUTRAL_SWATCH = '#9CA3AF';
+
+interface CategoryLookup {
+  color: (category: string) => string;
+  label: (category: string) => string;
+}
+
+function fallbackLabel(category: string): string {
+  return category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Resolve a `(category) -> { color, label }` lookup from the categories
+ * fetched from the backend, falling back to a baked-in palette while the
+ * fetch is in flight or after it has failed. Callers should pass the
+ * categories returned by `useSegmentationCategories()`.
+ */
+function buildCategoryLookup(entries: SegmentationCategoryMetadata[] | null): CategoryLookup {
+  if (!entries) {
+    return {
+      color: (category) => FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
+      label: fallbackLabel,
+    };
+  }
+  const indexed = indexByKey(entries);
+  return {
+    color: (category) =>
+      indexed.get(category)?.color ?? FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
+    label: (category) => indexed.get(category)?.label ?? fallbackLabel(category),
+  };
+}
+
+/**
+ * React hook wrapping the module-level cached fetch in
+ * `getSegmentationCategories`. Returns `null` until the response lands
+ * (caller falls back to the baked-in palette in the meantime). Errors
+ * are intentionally swallowed — the fallback palette covers them and we
+ * don't want a transient backend outage to break the modal.
+ */
+function useSegmentationCategories(): SegmentationCategoryMetadata[] | null {
+  const [entries, setEntries] = useState<SegmentationCategoryMetadata[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSegmentationCategories()
+      .then((data) => {
+        if (!cancelled) setEntries(data);
+      })
+      .catch(() => {
+        /* swallowed: fallback palette is in place */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return entries;
 }
 
 /**
@@ -133,42 +212,6 @@ interface SegmentationResultsBadgeProps {
   state: SegmentationState | undefined;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  vanities: 'Vanity',
-  faucets: 'Faucet',
-  lightings: 'Lighting',
-  mirrors: 'Mirror',
-  shower_systems: 'Shower system',
-  floor_tiles: 'Floor tile',
-  lvps: 'LVP',
-  wall_tiles: 'Wall tile',
-  tubs: 'Tub',
-  tub_fillers: 'Tub filler',
-  tub_doors: 'Tub door',
-  shower_glasses: 'Shower glass',
-  shower_wall_tiles: 'Shower wall tile',
-  shower_floor_tiles: 'Shower floor tile',
-  shower_curb_tiles: 'Shower curb tile',
-  toilets: 'Toilet',
-  paints: 'Paint',
-  wallpapers: 'Wallpaper',
-  shelves: 'Shelves',
-  toilet_paper_holders: 'Toilet paper holder',
-  towel_bars: 'Towel bar',
-  robe_hooks: 'Robe hook',
-  towel_rings: 'Towel ring',
-  ceilings: 'Ceiling',
-  flush_actuator_plate: 'Flush actuator plate',
-  vanity_backsplash: 'Vanity backsplash',
-};
-
-function categoryLabel(category: string): string {
-  return (
-    CATEGORY_LABELS[category] ??
-    category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  );
-}
-
 interface CategoryMask {
   url: string;
   score: number | null;
@@ -177,6 +220,8 @@ interface CategoryMask {
 interface CategoryRow {
   category: string;
   label: string;
+  /** Hex color resolved via the backend's category palette. */
+  color: string;
   /**
    * FAL's `image` field — typically a per-category composite (sometimes
    * just identical to the first entry of `masks`). Used as the headline
@@ -188,43 +233,46 @@ interface CategoryRow {
   topScore: number | null;
 }
 
-function buildRows(record: SegmentationRecord | null): CategoryRow[] {
+function buildRows(record: SegmentationRecord | null, lookup: CategoryLookup): CategoryRow[] {
   const results = record?.results;
   if (!results || typeof results !== 'object' || Array.isArray(results)) return [];
-  return Object.entries(results)
-    .filter(([, value]) => value !== null && value !== undefined)
-    .map(([category, value]) => {
-      const data = (value ?? {}) as SegmentationCategoryResponse;
-      const rawMasks = Array.isArray(data.masks) ? data.masks : [];
-      const scores = Array.isArray(data.scores) ? data.scores : [];
-      const masks: CategoryMask[] = rawMasks
-        .map((mask, idx): CategoryMask | null => {
-          const url = assetUrl(mask);
-          if (!url) return null;
-          const score = typeof scores[idx] === 'number' ? scores[idx]! : null;
-          return { url, score };
-        })
-        .filter((m): m is CategoryMask => m !== null);
-      const numericScores = masks
-        .map((m) => m.score)
-        .filter((s): s is number => typeof s === 'number');
-      // Prefer the FAL-provided composite; fall back to the first mask
-      // so single-mask categories still get a preview tile.
-      const composite = assetUrl(data.image) ?? masks[0]?.url ?? null;
-      return {
-        category,
-        label: categoryLabel(category),
-        composite,
-        masks,
-        topScore: numericScores.length > 0 ? Math.max(...numericScores) : null,
-      };
-    })
-    // Drop categories that came back fully empty so the grid isn't
-    // cluttered with "no masks detected" tiles for shower curb tiles
-    // etc. — the legend / per-category status still surfaces via the
-    // timeline panel for anyone debugging a zero-mask run.
-    .filter((row) => row.masks.length > 0 || row.composite !== null)
-    .sort((a, b) => a.label.localeCompare(b.label));
+  return (
+    Object.entries(results)
+      .filter(([, value]) => value !== null && value !== undefined)
+      .map(([category, value]) => {
+        const data = (value ?? {}) as SegmentationCategoryResponse;
+        const rawMasks = Array.isArray(data.masks) ? data.masks : [];
+        const scores = Array.isArray(data.scores) ? data.scores : [];
+        const masks: CategoryMask[] = rawMasks
+          .map((mask, idx): CategoryMask | null => {
+            const url = assetUrl(mask);
+            if (!url) return null;
+            const score = typeof scores[idx] === 'number' ? scores[idx]! : null;
+            return { url, score };
+          })
+          .filter((m): m is CategoryMask => m !== null);
+        const numericScores = masks
+          .map((m) => m.score)
+          .filter((s): s is number => typeof s === 'number');
+        // Prefer the FAL-provided composite; fall back to the first mask
+        // so single-mask categories still get a preview tile.
+        const composite = assetUrl(data.image) ?? masks[0]?.url ?? null;
+        return {
+          category,
+          label: lookup.label(category),
+          color: lookup.color(category),
+          composite,
+          masks,
+          topScore: numericScores.length > 0 ? Math.max(...numericScores) : null,
+        };
+      })
+      // Drop categories that came back fully empty so the grid isn't
+      // cluttered with "no masks detected" tiles for shower curb tiles
+      // etc. — the legend / per-category status still surfaces via the
+      // timeline panel for anyone debugging a zero-mask run.
+      .filter((row) => row.masks.length > 0 || row.composite !== null)
+      .sort((a, b) => a.label.localeCompare(b.label))
+  );
 }
 
 export function SegmentationResultsBadge({ generationId, state }: SegmentationResultsBadgeProps) {
@@ -318,7 +366,9 @@ function SegmentationModal({
   error: string | null;
   onClose: () => void;
 }) {
-  const rows = useMemo(() => buildRows(record), [record]);
+  const categories = useSegmentationCategories();
+  const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
+  const rows = useMemo(() => buildRows(record, lookup), [record, lookup]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
 
   return (
@@ -400,7 +450,7 @@ function SegmentationModal({
             </div>
           )}
           {!loading && !error && record?.timings && (
-            <CollapsibleTimeline timings={record.timings} />
+            <CollapsibleTimeline timings={record.timings} lookup={lookup} />
           )}
           {!loading && !error && record?.combinedOverlayUrl && (
             <div className="mb-5">
@@ -465,7 +515,7 @@ function SegmentationModal({
 function CategoryCard({ row }: { row: CategoryRow }) {
   const totalMasks = row.masks.length;
   const showIndividualMasks = totalMasks > 1;
-  const swatch = colorForCategory(row.category);
+  const swatch = row.color;
 
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
@@ -476,10 +526,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
             style={{ backgroundColor: swatch }}
             aria-hidden="true"
           />
-          <p
-            className="truncate text-xs font-semibold text-gray-800"
-            title={row.label}
-          >
+          <p className="truncate text-xs font-semibold text-gray-800" title={row.label}>
             {row.label}
           </p>
         </div>
@@ -509,9 +556,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
         </a>
       ) : (
         <div className="mt-2 flex aspect-square w-full items-center justify-center rounded border border-dashed border-gray-200 bg-white">
-          <p className="px-2 text-center text-[10px] text-gray-400 italic">
-            No composite returned
-          </p>
+          <p className="px-2 text-center text-[10px] text-gray-400 italic">No composite returned</p>
         </div>
       )}
 
@@ -589,10 +634,7 @@ function SkeletonImage({
   return (
     <div className={`relative ${containerClassName}`}>
       {!loaded && !errored && (
-        <div
-          className="absolute inset-0 animate-pulse rounded bg-gray-200"
-          aria-hidden="true"
-        />
+        <div className="absolute inset-0 animate-pulse rounded bg-gray-200" aria-hidden="true" />
       )}
       {errored && (
         <div className="absolute inset-0 flex items-center justify-center rounded bg-gray-100 px-2 text-center text-[11px] text-gray-500">
@@ -629,7 +671,7 @@ function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
           <div key={row.category} className="flex items-center gap-1.5">
             <span
               className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
-              style={{ backgroundColor: colorForCategory(row.category) }}
+              style={{ backgroundColor: row.color }}
               aria-hidden="true"
             />
             <span
@@ -706,7 +748,9 @@ interface PerCategoryTiming {
   error?: string;
 }
 
-function readPerCategoryTimings(metadata: Record<string, unknown> | null | undefined): PerCategoryTiming[] {
+function readPerCategoryTimings(
+  metadata: Record<string, unknown> | null | undefined,
+): PerCategoryTiming[] {
   if (!metadata) return [];
   const raw = metadata['perCategory'];
   if (!Array.isArray(raw)) return [];
@@ -735,7 +779,13 @@ function readPerCategoryTimings(metadata: Record<string, unknown> | null | undef
  * styling matches the rest of the modal (and so we can show the
  * total-ms summary on the right even while collapsed).
  */
-function CollapsibleTimeline({ timings }: { timings: SegmentationTimings }) {
+function CollapsibleTimeline({
+  timings,
+  lookup,
+}: {
+  timings: SegmentationTimings;
+  lookup: CategoryLookup;
+}) {
   const [open, setOpen] = useState(false);
   const stepCount = timings.steps.length;
 
@@ -764,7 +814,7 @@ function CollapsibleTimeline({ timings }: { timings: SegmentationTimings }) {
       </button>
       {open && (
         <div className="mt-2">
-          <SegmentationTimelineSection timings={timings} />
+          <SegmentationTimelineSection timings={timings} lookup={lookup} />
         </div>
       )}
     </div>
@@ -782,7 +832,13 @@ function CollapsibleTimeline({ timings }: { timings: SegmentationTimings }) {
  * the most between runs and the timeline-bar level resolution would
  * otherwise hide it.
  */
-function SegmentationTimelineSection({ timings }: { timings: SegmentationTimings }) {
+function SegmentationTimelineSection({
+  timings,
+  lookup,
+}: {
+  timings: SegmentationTimings;
+  lookup: CategoryLookup;
+}) {
   // The backend uses a monotonic clock for offsets, but a near-zero or
   // missing total can still slip through (e.g. an aborted run). Default
   // to the max(end of last step) so we never divide by zero in the
@@ -805,11 +861,11 @@ function SegmentationTimelineSection({ timings }: { timings: SegmentationTimings
             const leftPct = Math.min((step.startMs / inferredTotal) * 100, 99.5);
             const sharePct = (step.durationMs / inferredTotal) * 100;
             return (
-              <div key={`${step.name}-${idx}`} className="flex items-center gap-2 text-[11px] text-gray-700">
-                <span
-                  className="w-36 shrink-0 truncate"
-                  title={timelineStepLabel(step.name)}
-                >
+              <div
+                key={`${step.name}-${idx}`}
+                className="flex items-center gap-2 text-[11px] text-gray-700"
+              >
+                <span className="w-36 shrink-0 truncate" title={timelineStepLabel(step.name)}>
                   {timelineStepLabel(step.name)}
                 </span>
                 <div className="relative h-3 flex-1 overflow-hidden rounded bg-white ring-1 ring-gray-200">
@@ -819,7 +875,7 @@ function SegmentationTimelineSection({ timings }: { timings: SegmentationTimings
                     title={`Started at ${formatMs(step.startMs)}, took ${formatMs(step.durationMs)} (${sharePct.toFixed(1)}%)`}
                   />
                 </div>
-                <span className="w-16 shrink-0 text-right tabular-nums text-gray-600">
+                <span className="w-16 shrink-0 text-right text-gray-600 tabular-nums">
                   {formatMs(step.durationMs)}
                 </span>
               </div>
@@ -837,21 +893,25 @@ function SegmentationTimelineSection({ timings }: { timings: SegmentationTimings
                   key={row.category}
                   className="flex items-center gap-2 text-[11px] text-gray-700"
                 >
-                  <span className="w-36 shrink-0 truncate" title={`${categoryLabel(row.category)} — ${row.prompt}`}>
-                    {categoryLabel(row.category)}
+                  <span
+                    className="w-36 shrink-0 truncate"
+                    title={`${lookup.label(row.category)} — ${row.prompt}`}
+                  >
+                    {lookup.label(row.category)}
                   </span>
                   <div className="relative h-2 flex-1 overflow-hidden rounded bg-white ring-1 ring-gray-200">
                     <div
                       className={`absolute inset-y-0 left-0 ${row.ok ? 'bg-purple-300' : 'bg-rose-300'}`}
                       style={{
                         width: `${Math.max(
-                          (row.durationMs / Math.max(samStep?.durationMs ?? row.durationMs, 1)) * 100,
+                          (row.durationMs / Math.max(samStep?.durationMs ?? row.durationMs, 1)) *
+                            100,
                           1,
                         )}%`,
                       }}
                     />
                   </div>
-                  <span className="w-16 shrink-0 text-right tabular-nums text-gray-600">
+                  <span className="w-16 shrink-0 text-right text-gray-600 tabular-nums">
                     {formatMs(row.durationMs)}
                   </span>
                   {!row.ok && (
