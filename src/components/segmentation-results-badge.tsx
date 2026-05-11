@@ -7,7 +7,7 @@ import {
   indexByKey,
   type SegmentationCategoryMetadata,
 } from '@/lib/segmentation-categories';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Fallback hex palette used when the `/segmentation-categories` endpoint
@@ -564,15 +564,129 @@ function SegmentationModal({
 }
 
 /**
- * Per-category card: composite preview on top, then a grid of every
- * individual mask underneath. We always render every entry in `masks`
- * separately — even when there's just one — so the user can spot when
- * FAL's `image` composite differs from the underlying prediction, and
- * so a category's per-mask score badges are always reachable.
+ * Combined per-category mask preview built on a `<canvas>` by drawing
+ * each mask PNG on top of a black background using `globalCompositeOperation = 'lighten'`.
+ * SAM emits black-bg / white-shape masks, so `lighten` resolves to the
+ * union of every white region — exactly what "merge all the masks for
+ * this category" should look like.
  *
- * The composite is taken from FAL's `image` field on the SAM response
- * (which, in practice, is identical to `masks[0]` for single-mask
- * categories and a separate combined PNG for multi-mask ones).
+ * Why client-side and not in the backend overlay? The combined overlay
+ * URL tints colors on top of the original photo, which is a different
+ * artifact. Here we want a per-category black/white silhouette that
+ * shows where SAM said this category lives, before any tinting. Doing
+ * it on the canvas avoids another round-trip to the service and stays
+ * trivially in sync whenever the underlying mask URLs change.
+ *
+ * No CORS handshake is required: we never read pixels back, we just
+ * draw the images, so a tainted canvas is fine. If the image fetch
+ * itself fails we surface a placeholder rather than the misleading
+ * partial draw.
+ */
+function CompositeMaskCanvas({
+  masks,
+  alt,
+  containerClassName,
+  canvasClassName,
+}: {
+  masks: CategoryMask[];
+  alt: string;
+  containerClassName?: string;
+  canvasClassName?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  // Stable identity for `useEffect` so we don't repaint on every render
+  // (each `buildRows` call returns fresh `masks` arrays even when the
+  // URLs are unchanged).
+  const maskKey = masks.map((m) => m.url).join('|');
+
+  useEffect(() => {
+    if (masks.length === 0) {
+      setStatus('error');
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
+    setStatus('loading');
+
+    const loadImage = (url: string) =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load mask: ${url}`));
+        img.src = url;
+      });
+
+    (async () => {
+      try {
+        const images = await Promise.all(masks.map((m) => loadImage(m.url)));
+        if (cancelled) return;
+        const first = images[0]!;
+        // Cap to a sensible canvas size — masks are typically
+        // 2400x1792 which is wasteful for a thumbnail tile.
+        const MAX_DIM = 800;
+        const scale = Math.min(1, MAX_DIM / Math.max(first.naturalWidth, first.naturalHeight));
+        const width = Math.max(1, Math.round(first.naturalWidth * scale));
+        const height = Math.max(1, Math.round(first.naturalHeight * scale));
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setStatus('error');
+          return;
+        }
+        // Black background so any pixel not painted by a mask stays
+        // black — matches SAM's individual-mask appearance.
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighten';
+        for (const img of images) {
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+        setStatus('ready');
+      } catch {
+        if (!cancelled) setStatus('error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- maskKey covers it
+  }, [maskKey]);
+
+  return (
+    <div className={`relative ${containerClassName ?? ''}`}>
+      {status === 'loading' && (
+        <div className="absolute inset-0 animate-pulse bg-gray-100" aria-hidden="true" />
+      )}
+      {status === 'error' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white">
+          <p className="px-2 text-center text-[10px] text-gray-400 italic">No combined preview</p>
+        </div>
+      )}
+      <canvas
+        ref={canvasRef}
+        aria-label={alt}
+        className={`${canvasClassName ?? ''} transition-opacity duration-150 ${
+          status === 'ready' ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+    </div>
+  );
+}
+
+/**
+ * Per-category card: combined mask preview on top (every mask blended
+ * into one silhouette), then a grid of every individual mask
+ * underneath with score badges so the user can inspect each prediction
+ * separately.
+ *
+ * The combined preview is computed on a canvas at display time rather
+ * than relying on FAL's `image` field, which (in practice) is just the
+ * top-scored mask repeated — i.e. not actually a merge of all masks.
  */
 function CategoryCard({ row }: { row: CategoryRow }) {
   const totalMasks = row.masks.length;
@@ -602,23 +716,18 @@ function CategoryCard({ row }: { row: CategoryRow }) {
         {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
       </p>
 
-      {row.composite ? (
-        <a
-          href={row.composite}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white"
-        >
-          <SkeletonImage
-            src={row.composite}
-            alt={`${row.label} composite overlay`}
+      {row.masks.length > 0 ? (
+        <div className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white">
+          <CompositeMaskCanvas
+            masks={row.masks}
+            alt={`${row.label} combined mask preview (${totalMasks} ${totalMasks === 1 ? 'mask' : 'masks'} merged)`}
             containerClassName="h-full w-full"
-            imgClassName="h-full w-full object-contain"
+            canvasClassName="h-full w-full object-contain"
           />
-        </a>
+        </div>
       ) : (
         <div className="mt-2 flex aspect-square w-full items-center justify-center rounded border border-dashed border-gray-200 bg-white">
-          <p className="px-2 text-center text-[10px] text-gray-400 italic">No composite returned</p>
+          <p className="px-2 text-center text-[10px] text-gray-400 italic">No masks returned</p>
         </div>
       )}
 
