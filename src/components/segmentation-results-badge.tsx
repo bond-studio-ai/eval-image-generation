@@ -189,6 +189,91 @@ interface SegmentationTimings {
 }
 
 /**
+ * Reason a per-category metric block is empty. Mirrors
+ * `DriftAbsenceReason` in `service-image-generation`'s
+ * `drift-assessment.ts` — kept literal so the UI copy can be
+ * exhaustive over the enum at compile time.
+ */
+type DriftAbsenceReason = 'absent_in_dollhouse' | 'absent_in_sam' | 'absent_in_both';
+
+interface DriftCategoryHeader {
+  category: string;
+  dollhousePixelCount: number;
+  samPixelCount: number;
+  absenceReason?: DriftAbsenceReason;
+}
+
+interface LargeObjectDriftMetrics extends DriftCategoryHeader {
+  iou: number | null;
+  centroidDriftPx: number | null;
+  centroidDriftNormalized: number | null;
+  p95SymmetricDistancePx: number | null;
+  p95RefToPredPx: number | null;
+  p95PredToRefPx: number | null;
+  areaRatio: number | null;
+}
+
+interface SurfaceDriftMetrics extends DriftCategoryHeader {
+  iou: number | null;
+  boundaryDriftPx: number | null;
+  boundaryRefToPredPx: number | null;
+  boundaryPredToRefPx: number | null;
+  pixelClassAccuracy: number | null;
+}
+
+interface SmallObjectDriftMetrics extends DriftCategoryHeader {
+  presence: 0 | 1;
+  centroidDriftPx: number | null;
+  centroidDriftNormalized: number | null;
+  p95DistancePx: number | null;
+}
+
+interface OverallDriftMetrics {
+  /**
+   * Per the user-spec, this is `mismatched_pixels / total_pixels`
+   * (NOT the squared-error MSE). The backend keeps the `mse` field
+   * name for continuity; we display it as "% mismatched" to make
+   * the meaning unambiguous.
+   */
+  mse: number;
+  pixelAccuracy: number;
+  numMismatched: number;
+  totalPixels: number;
+}
+
+/**
+ * Persisted drift report comparing SAM masks against the dollhouse
+ * product map. Stored on `generation_segmentation.drift_assessment`;
+ * keys come back camelCased by the case-converter middleware. The
+ * per-category records use the same camelCase SAM category keys as
+ * the rest of the response (e.g. `wallTiles`, `showerCurbTiles`).
+ */
+interface DriftAssessment {
+  version: 1;
+  imageWidth: number;
+  imageHeight: number;
+  overall: OverallDriftMetrics;
+  largeObjects: Record<string, LargeObjectDriftMetrics>;
+  surfaces: Record<string, SurfaceDriftMetrics>;
+  smallObjects: Record<string, SmallObjectDriftMetrics>;
+  failedSamMaskUrls?: string[];
+}
+
+/**
+ * Subset of `DriftOutcome.status` the eval modal might receive on a
+ * fresh POST response (it ignores this for GETs because the column
+ * doesn't exist server-side).
+ */
+type DriftStatus =
+  | 'computed'
+  | 'no_dollhouse_view'
+  | 'no_strategy_batch_run'
+  | 'no_dollhouse_capture'
+  | 'no_product_mask'
+  | 'no_sam_results'
+  | 'failed';
+
+/**
  * Backend response shape for
  * `GET /image-generation/v1/generations/:id/segmentation`. The backend
  * stores one JSONB column per category on the `generation_segmentation`
@@ -216,6 +301,15 @@ interface SegmentationRecord {
   combinedOverlayUrl?: string | null;
   /** Persisted execution timeline for the run that produced this row. */
   timings?: SegmentationTimings | null;
+  /**
+   * Drift breakdown vs the dollhouse product map for the same camera
+   * frame. `null` (or absent) means drift couldn't be computed — see
+   * `driftStatus` for the reason on POST responses, otherwise assume
+   * the row predates the column or no dollhouse capture was available.
+   */
+  driftAssessment?: DriftAssessment | null;
+  /** Only present on POST responses; the GET endpoint omits this. */
+  driftStatus?: DriftStatus | null;
   // Categories (`vanities`, `faucets`, `toiletFlush`, …) land here, one
   // key per JSONB column on the backend row. TypeScript can't express
   // "every key except RECORD_METADATA_KEYS" cleanly, so we use an
@@ -234,6 +328,19 @@ const RECORD_METADATA_KEYS = new Set<string>([
   'createdAt',
   'combinedOverlayUrl',
   'timings',
+  // Drift comparison vs the dollhouse product map. Lives on the row
+  // alongside the per-category JSONB columns; the case-converter
+  // rewrites the column name to `driftAssessment` on response. Treat
+  // it as metadata so `buildRows` doesn't try to interpret the metric
+  // payload as a SAM category result.
+  'driftAssessment',
+  // Only present on the POST response synthesized from the run
+  // outcome (`computed | no_dollhouse_view | no_sam_results | ...`).
+  // The GET endpoint that this modal calls doesn't populate it
+  // because it's not a DB column, but we include it here so the
+  // record type stays in sync with the backend contract and the
+  // metadata filter ignores it if a caller hands us a POST payload.
+  'driftStatus',
 ]);
 
 interface SegmentationResultsBadgeProps {
@@ -505,6 +612,23 @@ function SegmentationModal({
           {!loading && !error && record?.timings && (
             <CollapsibleTimeline timings={record.timings} lookup={lookup} />
           )}
+          {!loading &&
+            !error &&
+            record !== null &&
+            // Render the section whenever the row has a `driftAssessment`
+            // field at all — including the explicit-null case on GET
+            // responses where drift was attempted but couldn't be
+            // computed. Truthiness gating used to hide the "unavailable"
+            // fallback for those rows. Older rows that predate the
+            // column have `driftAssessment === undefined`, and we keep
+            // those quiet.
+            (record.driftAssessment !== undefined || record.driftStatus !== undefined) && (
+              <CollapsibleDrift
+                assessment={record.driftAssessment ?? null}
+                status={record.driftStatus ?? null}
+                lookup={lookup}
+              />
+            )}
           {!loading && !error && record?.combinedOverlayUrl && (
             <div className="mb-5">
               <div className="mb-1.5 flex items-baseline justify-between gap-2">
@@ -1140,6 +1264,363 @@ function SegmentationTimelineSection({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Human-readable copy for the non-`computed` drift statuses the backend
+ * can return on a fresh POST. Used as a hint inside the section when
+ * drift couldn't be computed so the QA reviewer doesn't have to guess
+ * why the metrics are missing.
+ */
+const DRIFT_STATUS_LABELS: Record<Exclude<DriftStatus, 'computed'>, string> = {
+  no_dollhouse_view: 'No dollhouse view URL was set on this generation.',
+  no_strategy_batch_run: 'Generation is not tied to a dollhouse batch run.',
+  no_dollhouse_capture: 'No dollhouse capture was stored for this batch run.',
+  no_product_mask: 'The matched dollhouse capture has no product mask.',
+  no_sam_results: 'SAM did not return any masks to compare against.',
+  failed: 'Drift computation raised an error — see the server logs.',
+};
+
+/**
+ * Friendly copy for the `absent_in_*` reasons on a per-category metric
+ * block. Tracked on the row itself so the UI can explain why a metric
+ * is `null` without re-deriving it from the pixel counts.
+ */
+const DRIFT_ABSENCE_LABELS: Record<DriftAbsenceReason, string> = {
+  absent_in_dollhouse: 'Not in dollhouse',
+  absent_in_sam: 'Missed by SAM',
+  absent_in_both: 'Not in either',
+};
+
+function formatPercent(value: number | null | undefined, fractionDigits = 1): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  return `${(value * 100).toFixed(fractionDigits)}%`;
+}
+
+function formatNumber(value: number | null | undefined, fractionDigits = 2): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  return value.toFixed(fractionDigits);
+}
+
+function formatPixels(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  if (Math.abs(value) < 10) return `${value.toFixed(1)} px`;
+  return `${Math.round(value)} px`;
+}
+
+function formatInt(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  return Math.round(value).toLocaleString();
+}
+
+/**
+ * Collapsible drift section. Header summarizes the overall MSE so the
+ * reviewer sees the headline number without expanding; the body shows
+ * an overall card plus three per-bucket tables (large objects /
+ * surfaces / small objects) so they can attribute the drift to a
+ * specific product type.
+ *
+ * When drift couldn't be computed (`status !== 'computed'` and no
+ * `assessment`), we still render the header so reviewers know the
+ * field was attempted and surface the reason inside.
+ */
+function CollapsibleDrift({
+  assessment,
+  status,
+  lookup,
+}: {
+  assessment: DriftAssessment | null;
+  status: DriftStatus | null;
+  lookup: CategoryLookup;
+}) {
+  const [open, setOpen] = useState(false);
+  const overall = assessment?.overall ?? null;
+  const computed = !!assessment && (status === null || status === 'computed');
+
+  return (
+    <div className="mb-5">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+      >
+        <span className="flex items-center gap-2">
+          <ChevronIcon
+            className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
+          />
+          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+            Drift assessment
+          </span>
+          {computed && assessment && (
+            <span className="text-[11px] font-normal text-gray-500">
+              {assessment.imageWidth}×{assessment.imageHeight}
+            </span>
+          )}
+        </span>
+        <span className="text-[11px] tabular-nums">
+          {computed && overall ? (
+            <span className="text-gray-700">
+              <span className="font-semibold">{formatPercent(overall.mse, 2)}</span>{' '}
+              <span className="text-gray-500">mismatched</span>
+            </span>
+          ) : (
+            <span className="text-gray-500">unavailable</span>
+          )}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-3">
+          {!computed && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+              {status && status !== 'computed' && DRIFT_STATUS_LABELS[status]
+                ? DRIFT_STATUS_LABELS[status]
+                : 'Drift assessment is not available for this segmentation row.'}
+            </div>
+          )}
+          {computed && assessment && overall && (
+            <>
+              <DriftOverallCard overall={overall} />
+              <DriftBucketTable
+                title="Large objects"
+                kind="largeObject"
+                entries={assessment.largeObjects}
+                lookup={lookup}
+              />
+              <DriftBucketTable
+                title="Surfaces"
+                kind="surface"
+                entries={assessment.surfaces}
+                lookup={lookup}
+              />
+              <DriftBucketTable
+                title="Small objects"
+                kind="smallObject"
+                entries={assessment.smallObjects}
+                lookup={lookup}
+              />
+              {assessment.failedSamMaskUrls && assessment.failedSamMaskUrls.length > 0 && (
+                <p className="px-1 text-[10px] text-gray-500 italic">
+                  {assessment.failedSamMaskUrls.length} SAM mask
+                  {assessment.failedSamMaskUrls.length === 1 ? '' : 's'} failed to download —
+                  metrics may understate SAM coverage.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Headline overall MSE card — the user explicitly asked for this to
+ * be prominent, so it lives above the per-bucket tables and is the
+ * first thing visible when the drift section is expanded.
+ */
+function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+        <div>
+          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            Pixels mismatched
+          </p>
+          <p className="text-2xl font-semibold text-gray-900 tabular-nums">
+            {formatPercent(overall.mse, 2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            Pixel accuracy
+          </p>
+          <p className="text-base font-medium text-gray-700 tabular-nums">
+            {formatPercent(overall.pixelAccuracy, 2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            Mismatched / total
+          </p>
+          <p className="text-base font-medium text-gray-700 tabular-nums">
+            {formatInt(overall.numMismatched)} / {formatInt(overall.totalPixels)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type DriftBucketKind = 'largeObject' | 'surface' | 'smallObject';
+
+/**
+ * Per-bucket drift table. Each bucket gets its own metric columns
+ * (large objects → IoU + centroid + p95 + area ratio, surfaces →
+ * IoU + boundary + pixel-class accuracy, small objects → presence +
+ * centroid + p95) so the layout matches the user's QA spec.
+ */
+function DriftBucketTable({
+  title,
+  kind,
+  entries,
+  lookup,
+}: {
+  title: string;
+  kind: DriftBucketKind;
+  entries:
+    | Record<string, LargeObjectDriftMetrics>
+    | Record<string, SurfaceDriftMetrics>
+    | Record<string, SmallObjectDriftMetrics>;
+  lookup: CategoryLookup;
+}) {
+  const rows = Object.entries(entries);
+  const headers = bucketHeaders(kind);
+
+  return (
+    <div className="rounded-md border border-gray-200 bg-white">
+      <div className="flex items-baseline justify-between gap-2 border-b border-gray-100 px-3 py-2">
+        <p className="text-xs font-semibold text-gray-700">{title}</p>
+        <p className="text-[10px] text-gray-500">
+          {rows.length} {rows.length === 1 ? 'category' : 'categories'}
+        </p>
+      </div>
+      {rows.length === 0 ? (
+        <p className="px-3 py-3 text-[11px] text-gray-500 italic">No categories in this bucket.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px]">
+            <thead className="bg-gray-50 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+              <tr>
+                <th className="px-3 py-1.5">Category</th>
+                {headers.map((header) => (
+                  <th key={header} className="px-3 py-1.5 text-right tabular-nums">
+                    {header}
+                  </th>
+                ))}
+                <th className="px-3 py-1.5 text-right tabular-nums">Pixels (D/S)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-gray-700">
+              {rows.map(([key, metrics]) => (
+                <DriftBucketRow
+                  key={key}
+                  category={key}
+                  metrics={metrics}
+                  kind={kind}
+                  lookup={lookup}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function bucketHeaders(kind: DriftBucketKind): string[] {
+  switch (kind) {
+    case 'largeObject':
+      return ['IoU', 'Centroid', 'p95 dist', 'Area ratio'];
+    case 'surface':
+      return ['IoU', 'Boundary', 'Pixel acc.'];
+    case 'smallObject':
+      return ['Presence', 'Centroid', 'p95 dist'];
+  }
+}
+
+function DriftBucketRow({
+  category,
+  metrics,
+  kind,
+  lookup,
+}: {
+  category: string;
+  metrics: LargeObjectDriftMetrics | SurfaceDriftMetrics | SmallObjectDriftMetrics;
+  kind: DriftBucketKind;
+  lookup: CategoryLookup;
+}) {
+  const label = lookup.label(category);
+  const swatch = lookup.color(category);
+
+  return (
+    <tr className="align-top">
+      <td className="px-3 py-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span
+            className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-gray-300"
+            style={{ backgroundColor: swatch }}
+            aria-hidden="true"
+          />
+          <span className="truncate" title={label}>
+            {label}
+          </span>
+          {metrics.absenceReason && (
+            <span
+              className="ml-1 shrink-0 rounded bg-gray-100 px-1 py-px text-[9px] font-medium text-gray-600 ring-1 ring-gray-200"
+              title={DRIFT_ABSENCE_LABELS[metrics.absenceReason]}
+            >
+              {DRIFT_ABSENCE_LABELS[metrics.absenceReason]}
+            </span>
+          )}
+        </div>
+      </td>
+      {renderBucketCells(metrics, kind)}
+      <td className="px-3 py-1.5 text-right text-gray-500 tabular-nums">
+        {formatInt(metrics.dollhousePixelCount)} / {formatInt(metrics.samPixelCount)}
+      </td>
+    </tr>
+  );
+}
+
+function renderBucketCells(
+  metrics: LargeObjectDriftMetrics | SurfaceDriftMetrics | SmallObjectDriftMetrics,
+  kind: DriftBucketKind,
+) {
+  if (kind === 'largeObject') {
+    const m = metrics as LargeObjectDriftMetrics;
+    return (
+      <>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.iou, 3)}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.centroidDriftPx)}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums">
+          {formatPixels(m.p95SymmetricDistancePx)}
+        </td>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.areaRatio, 2)}</td>
+      </>
+    );
+  }
+  if (kind === 'surface') {
+    const m = metrics as SurfaceDriftMetrics;
+    return (
+      <>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.iou, 3)}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.boundaryDriftPx)}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums">
+          {formatPercent(m.pixelClassAccuracy, 1)}
+        </td>
+      </>
+    );
+  }
+  const m = metrics as SmallObjectDriftMetrics;
+  return (
+    <>
+      <td className="px-3 py-1.5 text-right tabular-nums">
+        {m.presence === 1 ? (
+          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            yes
+          </span>
+        ) : (
+          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 ring-1 ring-gray-200">
+            no
+          </span>
+        )}
+      </td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.centroidDriftPx)}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.p95DistancePx)}</td>
+    </>
   );
 }
 
