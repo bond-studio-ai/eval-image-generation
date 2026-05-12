@@ -612,13 +612,23 @@ function SegmentationModal({
           {!loading && !error && record?.timings && (
             <CollapsibleTimeline timings={record.timings} lookup={lookup} />
           )}
-          {!loading && !error && (record?.driftAssessment || record?.driftStatus) && (
-            <CollapsibleDrift
-              assessment={record?.driftAssessment ?? null}
-              status={record?.driftStatus ?? null}
-              lookup={lookup}
-            />
-          )}
+          {!loading &&
+            !error &&
+            record !== null &&
+            // Render the section whenever the row has a `driftAssessment`
+            // field at all — including the explicit-null case on GET
+            // responses where drift was attempted but couldn't be
+            // computed. Truthiness gating used to hide the "unavailable"
+            // fallback for those rows. Older rows that predate the
+            // column have `driftAssessment === undefined`, and we keep
+            // those quiet.
+            (record.driftAssessment !== undefined || record.driftStatus !== undefined) && (
+              <CollapsibleDrift
+                assessment={record.driftAssessment ?? null}
+                status={record.driftStatus ?? null}
+                lookup={lookup}
+              />
+            )}
           {!loading && !error && record?.combinedOverlayUrl && (
             <div className="mb-5">
               <div className="mb-1.5 flex items-baseline justify-between gap-2">
