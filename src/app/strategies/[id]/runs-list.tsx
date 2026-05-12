@@ -4,7 +4,7 @@ import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { SegmentationBadge } from '@/components/segmentation-badge';
-import { SegmentationResultsBadge } from '@/components/segmentation-results-badge';
+import { SegmentationResultsBadge } from '@/components/segmentation-results';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
