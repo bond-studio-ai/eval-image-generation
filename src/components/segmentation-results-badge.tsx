@@ -1453,24 +1453,7 @@ function CollapsibleDrift({
           {computed && assessment && overall && (
             <>
               <DriftOverallCard overall={overall} />
-              <DriftBucketTable
-                title="Large objects"
-                kind="largeObject"
-                entries={assessment.largeObjects}
-                lookup={lookup}
-              />
-              <DriftBucketTable
-                title="Surfaces"
-                kind="surface"
-                entries={assessment.surfaces}
-                lookup={lookup}
-              />
-              <DriftBucketTable
-                title="Small objects"
-                kind="smallObject"
-                entries={assessment.smallObjects}
-                lookup={lookup}
-              />
+              <DriftUnifiedTable assessment={assessment} lookup={lookup} />
               {assessment.failedSamMaskUrls && assessment.failedSamMaskUrls.length > 0 && (
                 <p className="px-1 text-[10px] text-gray-500 italic">
                   {assessment.failedSamMaskUrls.length} SAM mask
@@ -1576,47 +1559,70 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
 
 type DriftBucketKind = 'largeObject' | 'surface' | 'smallObject';
 
-interface BucketHeader {
-  label: string;
-  hint: string;
+interface DriftRow {
+  key: string;
+  kind: DriftBucketKind;
+  metrics: LargeObjectDriftMetrics | SurfaceDriftMetrics | SmallObjectDriftMetrics;
 }
 
 /**
- * Per-bucket drift table. Each bucket gets its own metric columns
- * (large objects → IoU + centroid + p95 + area ratio, surfaces →
- * IoU + boundary + pixel-class accuracy, small objects → presence +
- * centroid + p95) so the layout matches the user's QA spec.
+ * Flatten the three per-bucket records into a single ordered row list.
  *
- * Categories where neither the dollhouse map nor SAM produced any
- * pixels (`absent_in_both`) are filtered out — the row only exists in
- * the backend payload to keep the per-bucket schema dense, and showing
- * a wall of empty rows just dilutes the actually-interesting drift.
- * If every row in a bucket gets filtered out we drop the whole table.
+ * - Bucket ordering (`largeObject → surface → smallObject`) is
+ *   preserved so the visible pattern of filled / blank cells still
+ *   reads top-to-bottom by category type.
+ * - Rows where neither the dollhouse map nor SAM produced any pixels
+ *   (`absent_in_both`) are dropped: they exist in the backend payload
+ *   only to keep the bucket schema dense, and showing them just
+ *   dilutes the actually-interesting drift.
  */
-function DriftBucketTable({
-  title,
-  kind,
-  entries,
+function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
+  const include = (m: { dollhousePixelCount: number; samPixelCount: number }) =>
+    m.dollhousePixelCount > 0 || m.samPixelCount > 0;
+  const rows: DriftRow[] = [];
+  for (const [key, metrics] of Object.entries(assessment.largeObjects)) {
+    if (include(metrics)) rows.push({ key, kind: 'largeObject', metrics });
+  }
+  for (const [key, metrics] of Object.entries(assessment.surfaces)) {
+    if (include(metrics)) rows.push({ key, kind: 'surface', metrics });
+  }
+  for (const [key, metrics] of Object.entries(assessment.smallObjects)) {
+    if (include(metrics)) rows.push({ key, kind: 'smallObject', metrics });
+  }
+  return rows;
+}
+
+/** Faded em-dash for "this metric doesn't apply to this category".
+ *  Visually distinct from the regular formatter dash (which means
+ *  "metric applies but the value was null"). */
+const NOT_APPLICABLE_CELL = <span className="text-gray-300">—</span>;
+
+/**
+ * Single unified drift table. Every applicable metric across the three
+ * buckets (large object / surface / small object) is a column;
+ * non-applicable cells render the muted dash above so the reader can
+ * tell at a glance that the cell is intentionally blank for this
+ * category type rather than missing data. The bucket grouping is
+ * implied by row ordering — no separate section headers needed.
+ *
+ * Returns `null` if every row was filtered out as `absent_in_both`,
+ * so the section disappears entirely on a generation with no
+ * comparable categories.
+ */
+function DriftUnifiedTable({
+  assessment,
   lookup,
 }: {
-  title: string;
-  kind: DriftBucketKind;
-  entries:
-    | Record<string, LargeObjectDriftMetrics>
-    | Record<string, SurfaceDriftMetrics>
-    | Record<string, SmallObjectDriftMetrics>;
+  assessment: DriftAssessment;
   lookup: CategoryLookup;
 }) {
-  const rows = Object.entries(entries).filter(
-    ([, metrics]) => metrics.dollhousePixelCount > 0 || metrics.samPixelCount > 0,
-  );
+  const rows = useMemo(() => buildDriftRows(assessment), [assessment]);
   if (rows.length === 0) return null;
-  const headers = bucketHeaders(kind);
 
   return (
     <div className="rounded-md border border-gray-200 bg-white">
       <div className="flex items-baseline justify-between gap-2 border-b border-gray-100 px-3 py-2">
-        <p className="text-xs font-semibold text-gray-700">{title}</p>
+        <p className="text-xs font-semibold text-gray-700">Per-category drift</p>
         <p className="text-[10px] text-gray-500">
           {rows.length} {rows.length === 1 ? 'category' : 'categories'}
         </p>
@@ -1626,25 +1632,35 @@ function DriftBucketTable({
           <thead className="bg-gray-50 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
             <tr>
               <th className="px-3 py-1.5">Category</th>
-              {headers.map((header) => (
-                <th key={header.label} className="px-3 py-1.5 text-right tabular-nums">
-                  <MetricLabel label={header.label} hint={header.hint} />
-                </th>
-              ))}
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="IoU" hint={DRIFT_METRIC_HINTS.iou} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Centroid drift" hint={DRIFT_METRIC_HINTS.centroid} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="p95 dist drift" hint={DRIFT_METRIC_HINTS.p95Symmetric} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Area ratio" hint={DRIFT_METRIC_HINTS.areaRatio} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Boundary drift" hint={DRIFT_METRIC_HINTS.p95Boundary} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Pixel-class acc." hint={DRIFT_METRIC_HINTS.pixelAccuracy} />
+              </th>
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Presence" hint={DRIFT_METRIC_HINTS.presence} />
+              </th>
               <th className="px-3 py-1.5 text-right tabular-nums">
                 <MetricLabel label="Pixels (D/S)" hint={DRIFT_METRIC_HINTS.pixels} />
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-gray-700">
-            {rows.map(([key, metrics]) => (
-              <DriftBucketRow
-                key={key}
-                category={key}
-                metrics={metrics}
-                kind={kind}
-                lookup={lookup}
-              />
+            {rows.map((row) => (
+              <DriftUnifiedRow key={`${row.kind}:${row.key}`} row={row} lookup={lookup} />
             ))}
           </tbody>
         </table>
@@ -1653,43 +1669,48 @@ function DriftBucketTable({
   );
 }
 
-function bucketHeaders(kind: DriftBucketKind): BucketHeader[] {
-  switch (kind) {
-    case 'largeObject':
-      return [
-        { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
-        { label: 'Centroid drift', hint: DRIFT_METRIC_HINTS.centroid },
-        { label: 'p95 symmetric dist', hint: DRIFT_METRIC_HINTS.p95Symmetric },
-        { label: 'Area ratio', hint: DRIFT_METRIC_HINTS.areaRatio },
-      ];
-    case 'surface':
-      return [
-        { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
-        { label: 'Boundary drift', hint: DRIFT_METRIC_HINTS.p95Boundary },
-        { label: 'Pixel-class acc.', hint: DRIFT_METRIC_HINTS.pixelAccuracy },
-      ];
-    case 'smallObject':
-      return [
-        { label: 'Presence', hint: DRIFT_METRIC_HINTS.presence },
-        { label: 'Centroid drift', hint: DRIFT_METRIC_HINTS.centroid },
-        { label: 'p95 distance drift', hint: DRIFT_METRIC_HINTS.p95Small },
-      ];
-  }
-}
+function DriftUnifiedRow({ row, lookup }: { row: DriftRow; lookup: CategoryLookup }) {
+  const { kind, metrics, key } = row;
+  const label = lookup.label(key);
+  const swatch = lookup.color(key);
 
-function DriftBucketRow({
-  category,
-  metrics,
-  kind,
-  lookup,
-}: {
-  category: string;
-  metrics: LargeObjectDriftMetrics | SurfaceDriftMetrics | SmallObjectDriftMetrics;
-  kind: DriftBucketKind;
-  lookup: CategoryLookup;
-}) {
-  const label = lookup.label(category);
-  const swatch = lookup.color(category);
+  // Each `applies*` flag controls whether this column renders a value
+  // for the current row's bucket. Inapplicable cells render the muted
+  // dash from `NOT_APPLICABLE_CELL` so they don't compete visually
+  // with the formatter's regular "—" for a real null metric.
+  const appliesIoU = kind === 'largeObject' || kind === 'surface';
+  const appliesCentroid = kind === 'largeObject' || kind === 'smallObject';
+  const appliesP95 = kind === 'largeObject' || kind === 'smallObject';
+  const appliesAreaRatio = kind === 'largeObject';
+  const appliesBoundary = kind === 'surface';
+  const appliesPixelClass = kind === 'surface';
+  const appliesPresence = kind === 'smallObject';
+
+  const iouCell = appliesIoU
+    ? formatNumber((metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou, 3)
+    : null;
+  const centroidCell = appliesCentroid
+    ? formatPixels((metrics as LargeObjectDriftMetrics | SmallObjectDriftMetrics).centroidDriftPx)
+    : null;
+  // The two p95 fields use different property names (`p95SymmetricDistancePx`
+  // for large objects, `p95DistancePx` for small) but represent the same
+  // symmetric Chamfer distance — collapse them into one column.
+  const p95Pixels =
+    kind === 'largeObject'
+      ? (metrics as LargeObjectDriftMetrics).p95SymmetricDistancePx
+      : kind === 'smallObject'
+        ? (metrics as SmallObjectDriftMetrics).p95DistancePx
+        : null;
+  const p95Cell = appliesP95 ? formatPixels(p95Pixels) : null;
+  const areaRatioCell = appliesAreaRatio
+    ? formatNumber((metrics as LargeObjectDriftMetrics).areaRatio, 2)
+    : null;
+  const boundaryCell = appliesBoundary
+    ? formatPixels((metrics as SurfaceDriftMetrics).boundaryDriftPx)
+    : null;
+  const pixelClassCell = appliesPixelClass
+    ? formatPercent((metrics as SurfaceDriftMetrics).pixelClassAccuracy, 1)
+    : null;
 
   return (
     <tr className="align-top">
@@ -1713,60 +1734,35 @@ function DriftBucketRow({
           )}
         </div>
       </td>
-      {renderBucketCells(metrics, kind)}
+      <td className="px-3 py-1.5 text-right tabular-nums">{iouCell ?? NOT_APPLICABLE_CELL}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{centroidCell ?? NOT_APPLICABLE_CELL}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{p95Cell ?? NOT_APPLICABLE_CELL}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums">
+        {areaRatioCell ?? NOT_APPLICABLE_CELL}
+      </td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{boundaryCell ?? NOT_APPLICABLE_CELL}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums">
+        {pixelClassCell ?? NOT_APPLICABLE_CELL}
+      </td>
+      <td className="px-3 py-1.5 text-right">
+        {appliesPresence ? (
+          (metrics as SmallObjectDriftMetrics).presence === 1 ? (
+            <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              yes
+            </span>
+          ) : (
+            <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 ring-1 ring-gray-200">
+              no
+            </span>
+          )
+        ) : (
+          NOT_APPLICABLE_CELL
+        )}
+      </td>
       <td className="px-3 py-1.5 text-right text-gray-500 tabular-nums">
         {formatInt(metrics.dollhousePixelCount)} / {formatInt(metrics.samPixelCount)}
       </td>
     </tr>
-  );
-}
-
-function renderBucketCells(
-  metrics: LargeObjectDriftMetrics | SurfaceDriftMetrics | SmallObjectDriftMetrics,
-  kind: DriftBucketKind,
-) {
-  if (kind === 'largeObject') {
-    const m = metrics as LargeObjectDriftMetrics;
-    return (
-      <>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.iou, 3)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.centroidDriftPx)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">
-          {formatPixels(m.p95SymmetricDistancePx)}
-        </td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.areaRatio, 2)}</td>
-      </>
-    );
-  }
-  if (kind === 'surface') {
-    const m = metrics as SurfaceDriftMetrics;
-    return (
-      <>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(m.iou, 3)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.boundaryDriftPx)}</td>
-        <td className="px-3 py-1.5 text-right tabular-nums">
-          {formatPercent(m.pixelClassAccuracy, 1)}
-        </td>
-      </>
-    );
-  }
-  const m = metrics as SmallObjectDriftMetrics;
-  return (
-    <>
-      <td className="px-3 py-1.5 text-right tabular-nums">
-        {m.presence === 1 ? (
-          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-            yes
-          </span>
-        ) : (
-          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 ring-1 ring-gray-200">
-            no
-          </span>
-        )}
-      </td>
-      <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.centroidDriftPx)}</td>
-      <td className="px-3 py-1.5 text-right tabular-nums">{formatPixels(m.p95DistancePx)}</td>
-    </>
   );
 }
 
