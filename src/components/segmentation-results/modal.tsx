@@ -123,6 +123,11 @@ export function SegmentationModal({
               {error}
             </div>
           )}
+          {/* All collapsible sections stack at the top so the
+              reviewer's first scroll reveals the drift, timeline,
+              and per-category accordions before the overlay
+              preview. Putting the picture first pushed every other
+              affordance below the fold. */}
           {!loading && !error && record?.timings && (
             <CollapsibleTimeline timings={record.timings} lookup={lookup} />
           )}
@@ -143,6 +148,7 @@ export function SegmentationModal({
                 lookup={lookup}
               />
             )}
+          {!loading && !error && rows.length > 0 && <CollapsibleCategoryGrid rows={rows} />}
           {!loading && !error && record?.combinedOverlayUrl && (
             <OverlayComparison
               overlayUrl={record.combinedOverlayUrl}
@@ -164,7 +170,6 @@ export function SegmentationModal({
               No segmentation results to display.
             </p>
           )}
-          {!loading && !error && rows.length > 0 && <CollapsibleCategoryGrid rows={rows} />}
         </div>
       </div>
     </div>
