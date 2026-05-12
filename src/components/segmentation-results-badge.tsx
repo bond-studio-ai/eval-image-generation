@@ -1658,21 +1658,21 @@ function bucketHeaders(kind: DriftBucketKind): BucketHeader[] {
     case 'largeObject':
       return [
         { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
-        { label: 'Centroid', hint: DRIFT_METRIC_HINTS.centroid },
-        { label: 'p95 dist', hint: DRIFT_METRIC_HINTS.p95Symmetric },
+        { label: 'Centroid drift', hint: DRIFT_METRIC_HINTS.centroid },
+        { label: 'p95 symmetric dist', hint: DRIFT_METRIC_HINTS.p95Symmetric },
         { label: 'Area ratio', hint: DRIFT_METRIC_HINTS.areaRatio },
       ];
     case 'surface':
       return [
         { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
-        { label: 'Boundary', hint: DRIFT_METRIC_HINTS.p95Boundary },
-        { label: 'Pixel acc.', hint: DRIFT_METRIC_HINTS.pixelAccuracy },
+        { label: 'Boundary drift', hint: DRIFT_METRIC_HINTS.p95Boundary },
+        { label: 'Pixel-class acc.', hint: DRIFT_METRIC_HINTS.pixelAccuracy },
       ];
     case 'smallObject':
       return [
         { label: 'Presence', hint: DRIFT_METRIC_HINTS.presence },
-        { label: 'Centroid', hint: DRIFT_METRIC_HINTS.centroid },
-        { label: 'p95 dist', hint: DRIFT_METRIC_HINTS.p95Small },
+        { label: 'Centroid drift', hint: DRIFT_METRIC_HINTS.centroid },
+        { label: 'p95 distance drift', hint: DRIFT_METRIC_HINTS.p95Small },
       ];
   }
 }
