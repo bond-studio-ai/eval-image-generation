@@ -80,23 +80,70 @@ function fallbackLabel(category: string): string {
 }
 
 /**
- * Resolve a `(category) -> { color, label }` lookup from the categories
- * fetched from the backend, falling back to a baked-in palette while the
- * fetch is in flight or after it has failed. Callers should pass the
- * categories returned by `useSegmentationCategories()`.
+ * Convert a server-side `{ r, g, b }` triple to a `#RRGGBB` hex string
+ * usable as a CSS color. Clamps to a valid byte range so a buggy
+ * upstream value (e.g. a negative number) doesn't render as
+ * `-1` → `NaN` and break the swatch.
  */
-function buildCategoryLookup(entries: SegmentationCategoryMetadata[] | null): CategoryLookup {
-  if (!entries) {
-    return {
-      color: (category) => FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
-      label: fallbackLabel,
-    };
+function rgbToHex(rgb: { r: number; g: number; b: number }): string {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  const toHex = (n: number) => clamp(n).toString(16).padStart(2, '0');
+  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`.toUpperCase();
+}
+
+/**
+ * Build an index of drift-derived category colors keyed by every
+ * variant the rest of the modal might look up — the canonical
+ * camelCase key the backend sends, the snake_case form, and the
+ * raw label form for completeness. Returns `null` when the drift
+ * assessment doesn't carry `categoryColors` (older rows, or runs
+ * that short-circuited before computing drift), so callers can fall
+ * back to the global palette without a sentinel check.
+ */
+function indexDriftColors(
+  driftAssessment: DriftAssessment | null | undefined,
+): Map<string, string> | null {
+  if (!driftAssessment?.categoryColors) return null;
+  const out = new Map<string, string>();
+  for (const [key, rgb] of Object.entries(driftAssessment.categoryColors)) {
+    if (!rgb || typeof rgb !== 'object') continue;
+    const hex = rgbToHex(rgb);
+    out.set(key, hex);
+    // Backend keys are camelCase; also register the snake_case form
+    // so callers passing either casing land on the same swatch.
+    const snake = key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    if (snake !== key) out.set(snake, hex);
   }
-  const indexed = indexByKey(entries);
+  return out.size > 0 ? out : null;
+}
+
+/**
+ * Resolve a `(category) -> { color, label }` lookup. Color resolution
+ * is a three-tier priority chain:
+ *
+ * 1. The per-generation `driftAssessment.categoryColors` map, which
+ *    carries the exact RGB the dollhouse renderer painted into the
+ *    ground-truth PNG. This is the user-requested source-of-truth so
+ *    the modal swatches match the dollhouse product map pixel-for-pixel.
+ * 2. The backend `/segmentation-categories` palette (cached per
+ *    session via `useSegmentationCategories`).
+ * 3. The baked-in `FALLBACK_COLORS` table, used while the categories
+ *    fetch is in flight or after it has failed.
+ *
+ * Anything that falls through every tier renders as the neutral swatch.
+ */
+function buildCategoryLookup(
+  entries: SegmentationCategoryMetadata[] | null,
+  driftColors: Map<string, string> | null,
+): CategoryLookup {
+  const indexed = entries ? indexByKey(entries) : null;
   return {
     color: (category) =>
-      indexed.get(category)?.color ?? FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
-    label: (category) => indexed.get(category)?.label ?? fallbackLabel(category),
+      driftColors?.get(category) ??
+      indexed?.get(category)?.color ??
+      FALLBACK_COLORS[category] ??
+      NEUTRAL_SWATCH,
+    label: (category) => indexed?.get(category)?.label ?? fallbackLabel(category),
   };
 }
 
@@ -241,6 +288,13 @@ interface OverallDriftMetrics {
   totalPixels: number;
 }
 
+/** RGB triple (0–255) sourced from the dollhouse `productMaskMap`. */
+interface DriftRgbColor {
+  r: number;
+  g: number;
+  b: number;
+}
+
 /**
  * Persisted drift report comparing SAM masks against the dollhouse
  * product map. Stored on `generation_segmentation.drift_assessment`;
@@ -257,6 +311,16 @@ interface DriftAssessment {
   surfaces: Record<string, SurfaceDriftMetrics>;
   smallObjects: Record<string, SmallObjectDriftMetrics>;
   failedSamMaskUrls?: string[];
+  /**
+   * Per-SAM-category RGB color the dollhouse renderer painted into the
+   * ground-truth `productMaskUrl` PNG for this frame. Used as the
+   * primary color source for the modal's swatches so the legend
+   * matches the dollhouse product map pixel-for-pixel. Categories not
+   * present in this map fall back to the existing palette (the
+   * backend `/segmentation-categories` endpoint and the baked-in
+   * fallback table below).
+   */
+  categoryColors?: Record<string, DriftRgbColor>;
 }
 
 /**
@@ -527,7 +591,14 @@ function SegmentationModal({
   onClose: () => void;
 }) {
   const categories = useSegmentationCategories();
-  const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
+  const driftColors = useMemo(
+    () => indexDriftColors(record?.driftAssessment),
+    [record?.driftAssessment],
+  );
+  const lookup = useMemo(
+    () => buildCategoryLookup(categories, driftColors),
+    [categories, driftColors],
+  );
   const rows = useMemo(() => buildRows(record, lookup), [record, lookup]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
 
