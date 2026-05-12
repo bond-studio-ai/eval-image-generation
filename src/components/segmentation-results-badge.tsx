@@ -1470,20 +1470,35 @@ function CollapsibleDrift({
 }
 
 /**
- * Inline description rendered as a native browser tooltip (via the
- * `<abbr title>` element) so hovering any metric header explains what
- * the number means. The dotted underline is the default `abbr` UA
- * style, which is exactly the affordance we want — a subtle "this has
- * more info on hover" hint that doesn't compete with the table data.
+ * Hover tooltip for a metric column header. Renders the label with a
+ * subtle dotted underline (the affordance the eye already associates
+ * with `<abbr>`) and shows a real CSS popover on hover / focus.
+ *
+ * We used to rely on the native `<abbr title>` browser tooltip, but
+ * browsers throttle that to ~700 ms before showing it (and Safari
+ * sometimes refuses to show it at all when the element is nested
+ * inside a `<th>` inside an `overflow-x-auto` container). A
+ * group-hover-driven popover fires instantly, anchors below the
+ * header so it doesn't get clipped by the modal's vertical bounds,
+ * and stays accessible (also opens on keyboard focus via
+ * `peer-focus` on the trigger span).
  */
 function MetricLabel({ label, hint }: { label: string; hint: string }) {
   return (
-    <abbr
-      title={hint}
-      className="cursor-help text-inherit no-underline decoration-gray-400 decoration-dotted underline-offset-2 hover:underline"
-    >
-      {label}
-    </abbr>
+    <span className="group relative inline-flex cursor-help">
+      <span
+        tabIndex={0}
+        className="decoration-gray-400 decoration-dotted underline-offset-2 outline-none group-focus-within:underline group-hover:underline"
+      >
+        {label}
+      </span>
+      <span
+        role="tooltip"
+        className="pointer-events-none invisible absolute top-full left-1/2 z-50 mt-1.5 w-60 -translate-x-1/2 rounded bg-gray-900 px-2 py-1.5 text-[11px] leading-snug font-normal tracking-normal text-white normal-case opacity-0 shadow-lg transition-opacity duration-75 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100"
+      >
+        {hint}
+      </span>
+    </span>
   );
 }
 
@@ -1580,11 +1595,14 @@ function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
   const include = (m: { dollhousePixelCount: number; samPixelCount: number }) =>
     m.dollhousePixelCount > 0 || m.samPixelCount > 0;
   const rows: DriftRow[] = [];
-  for (const [key, metrics] of Object.entries(assessment.largeObjects)) {
-    if (include(metrics)) rows.push({ key, kind: 'largeObject', metrics });
-  }
+  // Row ordering is `surface → largeObject → smallObject`: the room
+  // shell (walls / floor / ceiling) frames every reading below it,
+  // large fixtures come next, and accessories finish at the bottom.
   for (const [key, metrics] of Object.entries(assessment.surfaces)) {
     if (include(metrics)) rows.push({ key, kind: 'surface', metrics });
+  }
+  for (const [key, metrics] of Object.entries(assessment.largeObjects)) {
+    if (include(metrics)) rows.push({ key, kind: 'largeObject', metrics });
   }
   for (const [key, metrics] of Object.entries(assessment.smallObjects)) {
     if (include(metrics)) rows.push({ key, kind: 'smallObject', metrics });
