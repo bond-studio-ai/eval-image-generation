@@ -1416,6 +1416,56 @@ function CollapsibleDrift({
 }
 
 /**
+ * Inline description rendered as a native browser tooltip (via the
+ * `<abbr title>` element) so hovering any metric header explains what
+ * the number means. The dotted underline is the default `abbr` UA
+ * style, which is exactly the affordance we want — a subtle "this has
+ * more info on hover" hint that doesn't compete with the table data.
+ */
+function MetricLabel({ label, hint }: { label: string; hint: string }) {
+  return (
+    <abbr
+      title={hint}
+      className="cursor-help text-inherit no-underline decoration-gray-400 decoration-dotted underline-offset-2 hover:underline"
+    >
+      {label}
+    </abbr>
+  );
+}
+
+/**
+ * Human-readable definitions for every drift metric the modal shows.
+ * Centralized so the per-bucket headers and the overall card use the
+ * same wording; if a reviewer asks "what does Area ratio mean?", it's
+ * the same answer everywhere.
+ */
+const DRIFT_METRIC_HINTS = {
+  iou: 'Intersection-over-Union: |SAM ∩ Dollhouse| / |SAM ∪ Dollhouse|. 1.00 = perfect overlap, 0 = no overlap.',
+  centroid:
+    'Euclidean distance (in pixels) between the SAM mask centroid and the dollhouse mask centroid. 0 = centroids coincide.',
+  p95Symmetric:
+    '95th-percentile symmetric Chamfer distance between mask boundaries, in pixels. Robust to a handful of outliers; lower is better.',
+  p95Boundary:
+    '95th-percentile symmetric Chamfer distance between surface boundaries, in pixels. Lower is better.',
+  p95Small:
+    '95th-percentile symmetric Chamfer distance between the aggregated SAM masks and the dollhouse mask for this category, in pixels.',
+  areaRatio:
+    'SAM mask area / dollhouse mask area. 1.00 = equal area, >1 = SAM is too big, <1 = SAM is too small.',
+  pixelAccuracy:
+    'Fraction of dollhouse pixels labeled with this category that SAM also assigned to it (per-class recall).',
+  presence:
+    '1 if SAM produced at least one mask for this category, 0 otherwise. Useful for accessories where size/shape vary a lot.',
+  pixels:
+    'Dollhouse pixel count / SAM pixel count for this category — context for the metric values to the left.',
+  overallMse:
+    'mismatched_pixels / total_pixels: the share of resized image pixels where SAM and the dollhouse map disagree on the category. 0 = perfect agreement.',
+  overallPixelAccuracy:
+    '1 − mismatched ratio: the share of pixels where SAM agrees with the dollhouse map.',
+  overallRaw:
+    'Raw mismatched-pixel count over total compared pixels (at the AI output resolution).',
+} as const;
+
+/**
  * Headline overall MSE card — the user explicitly asked for this to
  * be prominent, so it lives above the per-bucket tables and is the
  * first thing visible when the drift section is expanded.
@@ -1426,7 +1476,7 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
         <div>
           <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
-            Pixels mismatched
+            <MetricLabel label="Pixels mismatched" hint={DRIFT_METRIC_HINTS.overallMse} />
           </p>
           <p className="text-2xl font-semibold text-gray-900 tabular-nums">
             {formatPercent(overall.mse, 2)}
@@ -1434,7 +1484,7 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
         </div>
         <div>
           <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
-            Pixel accuracy
+            <MetricLabel label="Pixel accuracy" hint={DRIFT_METRIC_HINTS.overallPixelAccuracy} />
           </p>
           <p className="text-base font-medium text-gray-700 tabular-nums">
             {formatPercent(overall.pixelAccuracy, 2)}
@@ -1442,7 +1492,7 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
         </div>
         <div>
           <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
-            Mismatched / total
+            <MetricLabel label="Mismatched / total" hint={DRIFT_METRIC_HINTS.overallRaw} />
           </p>
           <p className="text-base font-medium text-gray-700 tabular-nums">
             {formatInt(overall.numMismatched)} / {formatInt(overall.totalPixels)}
@@ -1455,11 +1505,22 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
 
 type DriftBucketKind = 'largeObject' | 'surface' | 'smallObject';
 
+interface BucketHeader {
+  label: string;
+  hint: string;
+}
+
 /**
  * Per-bucket drift table. Each bucket gets its own metric columns
  * (large objects → IoU + centroid + p95 + area ratio, surfaces →
  * IoU + boundary + pixel-class accuracy, small objects → presence +
  * centroid + p95) so the layout matches the user's QA spec.
+ *
+ * Categories where neither the dollhouse map nor SAM produced any
+ * pixels (`absent_in_both`) are filtered out — the row only exists in
+ * the backend payload to keep the per-bucket schema dense, and showing
+ * a wall of empty rows just dilutes the actually-interesting drift.
+ * If every row in a bucket gets filtered out we drop the whole table.
  */
 function DriftBucketTable({
   title,
@@ -1475,7 +1536,10 @@ function DriftBucketTable({
     | Record<string, SmallObjectDriftMetrics>;
   lookup: CategoryLookup;
 }) {
-  const rows = Object.entries(entries);
+  const rows = Object.entries(entries).filter(
+    ([, metrics]) => metrics.dollhousePixelCount > 0 || metrics.samPixelCount > 0,
+  );
+  if (rows.length === 0) return null;
   const headers = bucketHeaders(kind);
 
   return (
@@ -1486,48 +1550,59 @@ function DriftBucketTable({
           {rows.length} {rows.length === 1 ? 'category' : 'categories'}
         </p>
       </div>
-      {rows.length === 0 ? (
-        <p className="px-3 py-3 text-[11px] text-gray-500 italic">No categories in this bucket.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px]">
-            <thead className="bg-gray-50 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
-              <tr>
-                <th className="px-3 py-1.5">Category</th>
-                {headers.map((header) => (
-                  <th key={header} className="px-3 py-1.5 text-right tabular-nums">
-                    {header}
-                  </th>
-                ))}
-                <th className="px-3 py-1.5 text-right tabular-nums">Pixels (D/S)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-700">
-              {rows.map(([key, metrics]) => (
-                <DriftBucketRow
-                  key={key}
-                  category={key}
-                  metrics={metrics}
-                  kind={kind}
-                  lookup={lookup}
-                />
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead className="bg-gray-50 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            <tr>
+              <th className="px-3 py-1.5">Category</th>
+              {headers.map((header) => (
+                <th key={header.label} className="px-3 py-1.5 text-right tabular-nums">
+                  <MetricLabel label={header.label} hint={header.hint} />
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              <th className="px-3 py-1.5 text-right tabular-nums">
+                <MetricLabel label="Pixels (D/S)" hint={DRIFT_METRIC_HINTS.pixels} />
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-gray-700">
+            {rows.map(([key, metrics]) => (
+              <DriftBucketRow
+                key={key}
+                category={key}
+                metrics={metrics}
+                kind={kind}
+                lookup={lookup}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-function bucketHeaders(kind: DriftBucketKind): string[] {
+function bucketHeaders(kind: DriftBucketKind): BucketHeader[] {
   switch (kind) {
     case 'largeObject':
-      return ['IoU', 'Centroid', 'p95 dist', 'Area ratio'];
+      return [
+        { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
+        { label: 'Centroid', hint: DRIFT_METRIC_HINTS.centroid },
+        { label: 'p95 dist', hint: DRIFT_METRIC_HINTS.p95Symmetric },
+        { label: 'Area ratio', hint: DRIFT_METRIC_HINTS.areaRatio },
+      ];
     case 'surface':
-      return ['IoU', 'Boundary', 'Pixel acc.'];
+      return [
+        { label: 'IoU', hint: DRIFT_METRIC_HINTS.iou },
+        { label: 'Boundary', hint: DRIFT_METRIC_HINTS.p95Boundary },
+        { label: 'Pixel acc.', hint: DRIFT_METRIC_HINTS.pixelAccuracy },
+      ];
     case 'smallObject':
-      return ['Presence', 'Centroid', 'p95 dist'];
+      return [
+        { label: 'Presence', hint: DRIFT_METRIC_HINTS.presence },
+        { label: 'Centroid', hint: DRIFT_METRIC_HINTS.centroid },
+        { label: 'p95 dist', hint: DRIFT_METRIC_HINTS.p95Small },
+      ];
   }
 }
 
