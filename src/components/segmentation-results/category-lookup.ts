@@ -4,7 +4,7 @@ import {
   type SegmentationCategoryMetadata,
 } from '@/lib/segmentation-categories';
 import { useEffect, useState } from 'react';
-import type { CategoryLookup, DriftAssessment } from './types';
+import type { CategoryLookup } from './types';
 
 /**
  * Fallback hex palette used when the `/segmentation-categories` endpoint
@@ -57,12 +57,7 @@ const FALLBACK_COLORS: Record<string, string> = {
   towelRings: '#A9A9A9',
   toilet_flush: '#FFFAC8',
   toiletFlush: '#FFFAC8',
-  vanity_backsplash: '#E6194B',
-  vanityBacksplash: '#E6194B',
-  shower_handle: '#F58231',
-  showerHandle: '#F58231',
-  shower_spout: '#F58231',
-  showerSpout: '#F58231',
+  ceilings: '#C0C0C0',
 };
 
 const NEUTRAL_SWATCH = '#9CA3AF';
@@ -72,69 +67,25 @@ function fallbackLabel(category: string): string {
 }
 
 /**
- * Convert a server-side `{ r, g, b }` triple to a `#RRGGBB` hex string
- * usable as a CSS color. Clamps to a valid byte range so a buggy
- * upstream value (e.g. a negative number) doesn't render as
- * `-1` → `NaN` and break the swatch.
- */
-function rgbToHex(rgb: { r: number; g: number; b: number }): string {
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
-  const toHex = (n: number) => clamp(n).toString(16).padStart(2, '0');
-  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`.toUpperCase();
-}
-
-/**
- * Build an index of drift-derived category colors keyed by every
- * variant the rest of the modal might look up — the canonical
- * camelCase key the backend sends and the snake_case form. Returns
- * `null` when the drift assessment doesn't carry `categoryColors`
- * (older rows, or runs that short-circuited before computing drift),
- * so callers can fall back to the global palette without a sentinel
- * check.
- */
-export function indexDriftColors(
-  driftAssessment: DriftAssessment | null | undefined,
-): Map<string, string> | null {
-  if (!driftAssessment?.categoryColors) return null;
-  const out = new Map<string, string>();
-  for (const [key, rgb] of Object.entries(driftAssessment.categoryColors)) {
-    if (!rgb || typeof rgb !== 'object') continue;
-    const hex = rgbToHex(rgb);
-    out.set(key, hex);
-    // Backend keys are camelCase; also register the snake_case form
-    // so callers passing either casing land on the same swatch.
-    const snake = key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
-    if (snake !== key) out.set(snake, hex);
-  }
-  return out.size > 0 ? out : null;
-}
-
-/**
  * Resolve a `(category) -> { color, label }` lookup. Color resolution
- * is a three-tier priority chain:
+ * is a two-tier priority chain:
  *
- * 1. The per-generation `driftAssessment.categoryColors` map, which
- *    carries the exact RGB the dollhouse renderer painted into the
- *    ground-truth PNG. This is the source-of-truth so the modal
- *    swatches match the dollhouse product map pixel-for-pixel.
- * 2. The backend `/segmentation-categories` palette (cached per
- *    session via `useSegmentationCategories`).
- * 3. The baked-in `FALLBACK_COLORS` table, used while the categories
+ * 1. The backend `/segmentation-categories` palette (cached per
+ *    session via `useSegmentationCategories`). This is the
+ *    source-of-truth so the modal swatches always match what the
+ *    backend painted into the combined overlay PNG.
+ * 2. The baked-in `FALLBACK_COLORS` table, used while the categories
  *    fetch is in flight or after it has failed.
  *
- * Anything that falls through every tier renders as the neutral swatch.
+ * Anything that falls through both tiers renders as the neutral swatch.
  */
 export function buildCategoryLookup(
   entries: SegmentationCategoryMetadata[] | null,
-  driftColors: Map<string, string> | null,
 ): CategoryLookup {
   const indexed = entries ? indexByKey(entries) : null;
   return {
     color: (category) =>
-      driftColors?.get(category) ??
-      indexed?.get(category)?.color ??
-      FALLBACK_COLORS[category] ??
-      NEUTRAL_SWATCH,
+      indexed?.get(category)?.color ?? FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
     label: (category) => indexed?.get(category)?.label ?? fallbackLabel(category),
   };
 }

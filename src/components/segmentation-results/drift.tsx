@@ -1,5 +1,6 @@
 'use client';
 
+import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
 import { useMemo, useState } from 'react';
 import { formatInt, formatNumber, formatPercent, formatPixels } from './format';
 import { ChevronIcon, WarningIcon } from './icons';
@@ -15,6 +16,44 @@ import type {
   SmallObjectDriftMetrics,
   SurfaceDriftMetrics,
 } from './types';
+
+function snakeToCamel(value: string): string {
+  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
+}
+
+/**
+ * Build a category-key → group-metadata lookup so the drift row
+ * tooltip can phrase its resolved SAM prompts. The
+ * `categoryColors`-style maps the legacy modal used are gone; this
+ * map ships group + prompt provenance per category.
+ */
+function indexGroupMetadata(
+  entries: SegmentationCategoryMetadata[] | null,
+): Map<string, SegmentationCategoryMetadata> {
+  const map = new Map<string, SegmentationCategoryMetadata>();
+  if (!entries) return map;
+  for (const entry of entries) {
+    map.set(entry.key, entry);
+    const camel = snakeToCamel(entry.key);
+    if (camel !== entry.key) map.set(camel, entry);
+  }
+  return map;
+}
+
+/**
+ * Phrase a member's resolved SAM prompts: `union(['Toilet', 'Toilet
+ * Flusher'])` or `Wainscoting fallback Wall`. The legacy modal used
+ * to hard-code the rule; now the API ships `resolutionKind` so the
+ * tooltip stays in sync with the backend even when the rules change.
+ */
+function resolutionLabel(entry: SegmentationCategoryMetadata): string {
+  const promptByName = new Map(entry.groupPrompts.map((p) => [p.slug, p.prompt]));
+  const promptNames = entry.resolvedPromptSlugs.map((slug) => promptByName.get(slug) ?? slug);
+  if (entry.resolutionKind === 'union') {
+    return promptNames.length === 1 ? promptNames[0]! : `${promptNames.join(' + ')}`;
+  }
+  return promptNames.join(' fallback ');
+}
 
 /**
  * Human-readable copy for the non-`computed` drift statuses the backend
@@ -311,10 +350,22 @@ function SortableHeader({
   );
 }
 
-function DriftUnifiedRow({ row, lookup }: { row: DriftRow; lookup: CategoryLookup }) {
+function DriftUnifiedRow({
+  row,
+  lookup,
+  groupMetadata,
+}: {
+  row: DriftRow;
+  lookup: CategoryLookup;
+  groupMetadata: Map<string, SegmentationCategoryMetadata>;
+}) {
   const { kind, metrics, key } = row;
   const label = lookup.label(key);
   const swatch = lookup.color(key);
+  const entry = groupMetadata.get(key) ?? null;
+  const groupHint = entry
+    ? `${key} → ${resolutionLabel(entry)}${entry.group !== key ? ` (group ${entry.group})` : ''}`
+    : null;
 
   // Each `applies*` flag controls whether this column renders a value
   // for the current row's bucket. Inapplicable cells render the muted
@@ -363,9 +414,17 @@ function DriftUnifiedRow({ row, lookup }: { row: DriftRow; lookup: CategoryLooku
             style={{ backgroundColor: swatch }}
             aria-hidden="true"
           />
-          <span className="truncate" title={label}>
-            {label}
-          </span>
+          {groupHint ? (
+            <Tooltip hint={groupHint} width={260} triggerClassName="min-w-0">
+              <span className="truncate" title={label}>
+                {label}
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="truncate" title={label}>
+              {label}
+            </span>
+          )}
           {metrics.absenceReason && (
             <Tooltip
               hint={DRIFT_ABSENCE_LABELS[metrics.absenceReason]}
@@ -432,11 +491,14 @@ function DriftUnifiedRow({ row, lookup }: { row: DriftRow; lookup: CategoryLooku
 function DriftUnifiedTable({
   assessment,
   lookup,
+  categories,
 }: {
   assessment: DriftAssessment;
   lookup: CategoryLookup;
+  categories: SegmentationCategoryMetadata[] | null;
 }) {
   const rows = useMemo(() => buildDriftRows(assessment), [assessment]);
+  const groupMetadata = useMemo(() => indexGroupMetadata(categories), [categories]);
 
   // Sort + filter UI state. `null` sort key keeps the natural bucket
   // ordering (surfaces → large → small) the backend ships, which is
@@ -591,7 +653,12 @@ function DriftUnifiedTable({
               </tr>
             ) : (
               visibleRows.map((row) => (
-                <DriftUnifiedRow key={`${row.kind}:${row.key}`} row={row} lookup={lookup} />
+                <DriftUnifiedRow
+                  key={`${row.kind}:${row.key}`}
+                  row={row}
+                  lookup={lookup}
+                  groupMetadata={groupMetadata}
+                />
               ))
             )}
           </tbody>
@@ -615,10 +682,12 @@ export function CollapsibleDrift({
   assessment,
   status,
   lookup,
+  categories,
 }: {
   assessment: DriftAssessment | null;
   status: DriftStatus | null;
   lookup: CategoryLookup;
+  categories: SegmentationCategoryMetadata[] | null;
 }) {
   const [open, setOpen] = useState(false);
   const overall = assessment?.overall ?? null;
@@ -668,7 +737,7 @@ export function CollapsibleDrift({
           {computed && assessment && overall && (
             <>
               <DriftOverallCard overall={overall} />
-              <DriftUnifiedTable assessment={assessment} lookup={lookup} />
+              <DriftUnifiedTable assessment={assessment} lookup={lookup} categories={categories} />
               {assessment.failedSamMaskUrls && assessment.failedSamMaskUrls.length > 0 && (
                 <p className="px-1 text-[10px] text-gray-500 italic">
                   {assessment.failedSamMaskUrls.length} SAM mask

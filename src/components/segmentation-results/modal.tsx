@@ -2,11 +2,7 @@
 
 import { useMemo } from 'react';
 import { CollapsibleCategoryGrid, SegmentationLegend } from './category-grid';
-import {
-  buildCategoryLookup,
-  indexDriftColors,
-  useSegmentationCategories,
-} from './category-lookup';
+import { buildCategoryLookup, useSegmentationCategories } from './category-lookup';
 import { buildRows } from './category-rows';
 import { CollapsibleDrift } from './drift';
 import { OverlayComparison } from './overlay-comparison';
@@ -34,15 +30,8 @@ export function SegmentationModal({
   onClose: () => void;
 }) {
   const categories = useSegmentationCategories();
-  const driftColors = useMemo(
-    () => indexDriftColors(record?.driftAssessment),
-    [record?.driftAssessment],
-  );
-  const lookup = useMemo(
-    () => buildCategoryLookup(categories, driftColors),
-    [categories, driftColors],
-  );
-  const rows = useMemo(() => buildRows(record, lookup), [record, lookup]);
+  const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
+  const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
 
   return (
@@ -146,6 +135,7 @@ export function SegmentationModal({
                 assessment={record.driftAssessment ?? null}
                 status={record.driftStatus ?? null}
                 lookup={lookup}
+                categories={categories}
               />
             )}
           {!loading && !error && rows.length > 0 && <CollapsibleCategoryGrid rows={rows} />}

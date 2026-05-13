@@ -20,6 +20,10 @@ function CategoryCard({ row }: { row: CategoryRow }) {
   const totalMasks = row.masks.length;
   const showIndividualMasks = totalMasks >= 1;
   const swatch = row.color;
+  const consumerHint =
+    row.consumerLabels && row.consumerLabels.length > 0
+      ? `Used by ${row.consumerLabels.join(', ')}`
+      : null;
 
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
@@ -43,6 +47,11 @@ function CategoryCard({ row }: { row: CategoryRow }) {
       <p className="mt-0.5 text-[10px] text-gray-500">
         {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
       </p>
+      {consumerHint && (
+        <p className="mt-0.5 truncate text-[10px] text-gray-400" title={consumerHint}>
+          {consumerHint}
+        </p>
+      )}
 
       {row.masks.length > 0 ? (
         <div className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white">
@@ -109,10 +118,25 @@ function CategoryCard({ row }: { row: CategoryRow }) {
  * called out that the previous flex-wrap version felt ragged.
  */
 export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
+  // Deduplicate by category so the legend lists one swatch per
+  // physical product even when multiple group prompts feed it (e.g.
+  // Wall + Wainscoting both surface as `wall_tiles` cards but a
+  // single Wall Tile swatch suffices for the legend).
+  const seen = new Map<string, CategoryRow & { totalMasks: number }>();
+  for (const row of rows) {
+    const existing = seen.get(row.category);
+    if (existing) {
+      existing.totalMasks += row.masks.length;
+      continue;
+    }
+    seen.set(row.category, { ...row, totalMasks: row.masks.length });
+  }
+  const entries = Array.from(seen.values());
+
   return (
     <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {rows.map((row) => (
+        {entries.map((row) => (
           <div key={row.category} className="flex min-w-0 items-center gap-1.5">
             <span
               className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
@@ -121,7 +145,7 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
             />
             <span
               className="truncate text-[11px] leading-tight text-gray-700"
-              title={`${row.label} · ${row.masks.length} ${row.masks.length === 1 ? 'mask' : 'masks'}`}
+              title={`${row.label} · ${row.totalMasks} ${row.totalMasks === 1 ? 'mask' : 'masks'}`}
             >
               {row.label}
             </span>
@@ -170,7 +194,10 @@ export function CollapsibleCategoryGrid({ rows }: { rows: CategoryRow[] }) {
       {open && (
         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <CategoryCard key={row.category} row={row} />
+            <CategoryCard
+              key={`${row.category}/${row.group ?? row.category}/${row.promptSlug ?? row.category}`}
+              row={row}
+            />
           ))}
         </div>
       )}

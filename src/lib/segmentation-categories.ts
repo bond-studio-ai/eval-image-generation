@@ -15,12 +15,33 @@ export interface SegmentationCategoryMetadata {
   label: string;
   /** Hex (`#RRGGBB`) the overlay paints this category in. */
   color: string;
-  /** Open-vocab noun phrase forwarded to SAM 3.1. */
+  /** Primary SAM prompt (fallback / single prompt). */
   samPrompt: string;
-  /** True for SAM-only piggyback categories (no `generation_input` column). */
+  /** True for scene-shell extras (currently only `ceilings`). */
   isExtra: boolean;
-  /** Parent product key for extras; null for first-class product categories. */
-  parent: string | null;
+  /**
+   * Concept-group identifier this category belongs to. Singleton
+   * categories use their own name as the group id. Multi-member
+   * groups (`wall`, `floor`, `shower_glass`, `toilets`) share one
+   * group across multiple member categories so SAM calls are
+   * deduplicated and the drift row tooltip can phrase the resolution
+   * rule correctly.
+   */
+  group: string;
+  /**
+   * Every SAM prompt fired for this category's group. The eval modal
+   * displays one card per `(group, prompt)` pair plus a sub-label
+   * listing which member categories consume that prompt.
+   */
+  groupPrompts: ReadonlyArray<{ slug: string; prompt: string }>;
+  /**
+   * Stable prompt slugs (from `groupPrompts`) the category actually
+   * resolves to during drift. Order is meaningful for `firstNonEmpty`
+   * rules — the first prompt with masks wins.
+   */
+  resolvedPromptSlugs: readonly string[];
+  /** `'union'` or `'firstNonEmpty'` — drives the tooltip phrasing. */
+  resolutionKind: 'union' | 'firstNonEmpty';
 }
 
 let cache: Promise<SegmentationCategoryMetadata[]> | null = null;
