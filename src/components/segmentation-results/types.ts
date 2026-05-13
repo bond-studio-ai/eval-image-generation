@@ -235,6 +235,14 @@ export interface CategoryMask {
 export interface CategoryRow {
   category: string;
   label: string;
+  /**
+   * Category label without the `— Prompt` suffix attached to
+   * group-aware rows. Lets the legend deduplicate by category and
+   * display a stable name (`Wall Tile`) instead of inheriting
+   * whichever prompt's row sorted first (`Wall Tile — Wainscoting`).
+   * Falls back to `label` for legacy non-grouped rows.
+   */
+  baseLabel?: string;
   /** Hex color resolved via `CategoryLookup.color`. */
   color: string;
   /**

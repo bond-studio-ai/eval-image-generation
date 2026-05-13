@@ -121,33 +121,43 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
   // Deduplicate by category so the legend lists one swatch per
   // physical product even when multiple group prompts feed it (e.g.
   // Wall + Wainscoting both surface as `wall_tiles` cards but a
-  // single Wall Tile swatch suffices for the legend).
-  const seen = new Map<string, CategoryRow & { totalMasks: number }>();
+  // single Wall Tile swatch suffices for the legend). The displayed
+  // text uses `baseLabel` so the legend keeps the bare category name
+  // ("Wall Tile") regardless of whichever prompt's row was inserted
+  // first; otherwise the dedup would inherit a row-specific suffix
+  // ("Wall Tile — Wainscoting") that confuses the swatch-to-product
+  // mapping for multi-prompt groups.
+  const seen = new Map<string, { color: string; displayLabel: string; totalMasks: number }>();
   for (const row of rows) {
+    const displayLabel = row.baseLabel ?? row.label;
     const existing = seen.get(row.category);
     if (existing) {
       existing.totalMasks += row.masks.length;
       continue;
     }
-    seen.set(row.category, { ...row, totalMasks: row.masks.length });
+    seen.set(row.category, {
+      color: row.color,
+      displayLabel,
+      totalMasks: row.masks.length,
+    });
   }
-  const entries = Array.from(seen.values());
+  const entries = Array.from(seen.entries());
 
   return (
     <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {entries.map((row) => (
-          <div key={row.category} className="flex min-w-0 items-center gap-1.5">
+        {entries.map(([category, entry]) => (
+          <div key={category} className="flex min-w-0 items-center gap-1.5">
             <span
               className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
-              style={{ backgroundColor: row.color }}
+              style={{ backgroundColor: entry.color }}
               aria-hidden="true"
             />
             <span
               className="truncate text-[11px] leading-tight text-gray-700"
-              title={`${row.label} · ${row.totalMasks} ${row.totalMasks === 1 ? 'mask' : 'masks'}`}
+              title={`${entry.displayLabel} · ${entry.totalMasks} ${entry.totalMasks === 1 ? 'mask' : 'masks'}`}
             >
-              {row.label}
+              {entry.displayLabel}
             </span>
           </div>
         ))}

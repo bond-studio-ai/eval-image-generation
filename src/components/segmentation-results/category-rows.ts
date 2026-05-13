@@ -57,23 +57,41 @@ function snakeToCamel(value: string): string {
  * can resolve label / color / consumer-member lists for both the
  * canonical snake_case keys and the camelCase form the case-converter
  * middleware emits over JSON.
+ *
+ * `consumersByGroupPrompt` is keyed by `${camelGroup}/${camelSlug}`
+ * because the API case converter recursively rewrites JSONB keys on
+ * the wire — `conceptGroupResults` arrives with camelCase group ids
+ * (`showerGlass`) and camelCase prompt slugs (`toiletFlusher`) even
+ * though the backend persists them snake_case. Storing both forms
+ * keeps the row builder agnostic to whichever casing it has on hand,
+ * but the camel form is the one `Object.entries(conceptGroupResults)`
+ * iterates so we register it explicitly.
  */
 function indexMetadata(entries: SegmentationCategoryMetadata[] | null) {
   const byKey = new Map<string, SegmentationCategoryMetadata>();
   const consumersByGroupPrompt = new Map<string, SegmentationCategoryMetadata[]>();
-  if (!entries) return { byKey, consumersByGroupPrompt };
+  const byGroupKey = new Map<string, SegmentationCategoryMetadata>();
+  if (!entries) return { byKey, consumersByGroupPrompt, byGroupKey };
   for (const entry of entries) {
     byKey.set(entry.key, entry);
-    const camel = snakeToCamel(entry.key);
-    if (camel !== entry.key) byKey.set(camel, entry);
+    const camelKey = snakeToCamel(entry.key);
+    if (camelKey !== entry.key) byKey.set(camelKey, entry);
+    if (!byGroupKey.has(entry.group)) byGroupKey.set(entry.group, entry);
+    const camelGroup = snakeToCamel(entry.group);
+    if (camelGroup !== entry.group && !byGroupKey.has(camelGroup))
+      byGroupKey.set(camelGroup, entry);
     for (const slug of entry.resolvedPromptSlugs) {
-      const key = `${entry.group}/${slug}`;
-      const consumers = consumersByGroupPrompt.get(key) ?? [];
-      consumers.push(entry);
-      consumersByGroupPrompt.set(key, consumers);
+      const snakeRef = `${entry.group}/${slug}`;
+      const camelRef = `${camelGroup}/${snakeToCamel(slug)}`;
+      const refs = camelRef === snakeRef ? [snakeRef] : [snakeRef, camelRef];
+      for (const key of refs) {
+        const consumers = consumersByGroupPrompt.get(key) ?? [];
+        if (!consumers.includes(entry)) consumers.push(entry);
+        consumersByGroupPrompt.set(key, consumers);
+      }
     }
   }
-  return { byKey, consumersByGroupPrompt };
+  return { byKey, consumersByGroupPrompt, byGroupKey };
 }
 
 function readResponse(value: unknown): {
@@ -140,30 +158,34 @@ export function buildRows(
 
   const rows: CategoryRow[] = [];
   if (conceptGroupResults) {
-    const { byKey, consumersByGroupPrompt } = indexMetadata(metadata);
+    const { byKey, consumersByGroupPrompt, byGroupKey } = indexMetadata(metadata);
     for (const [groupId, bucket] of Object.entries(conceptGroupResults)) {
       if (!bucket) continue;
       for (const [promptSlug, response] of Object.entries(bucket)) {
         if (!response || typeof response !== 'object') continue;
         const { composite, masks, topScore } = readResponse(response);
         if (masks.length === 0 && composite === null) continue;
+        // The API case converter rewrites JSONB keys to camelCase on
+        // the wire, so iterating `conceptGroupResults` yields ids
+        // like `showerGlass` / `toiletFlusher` even though the
+        // backend persists them snake_case. `indexMetadata` registers
+        // both forms in `consumersByGroupPrompt` so this lookup hits
+        // for groups and slugs that contain underscores.
         const representativeKey = `${groupId}/${promptSlug}`;
         const consumers = consumersByGroupPrompt.get(representativeKey) ?? [];
-        // Card identity: prefer a member that resolves this exact
-        // group prompt (so the row picks up the right swatch / label
-        // from the API), otherwise fall back to whichever metadata
-        // entry shares the group id.
         const fallbackMember =
-          consumers[0] ??
-          byKey.get(groupId) ??
-          (metadata ?? []).find((entry) => entry.group === groupId) ??
-          null;
+          consumers[0] ?? byKey.get(groupId) ?? byGroupKey.get(groupId) ?? null;
         const categoryKey = fallbackMember?.key ?? groupId;
-        const groupPrompt = fallbackMember?.groupPrompts.find((p) => p.slug === promptSlug);
+        const groupPrompt = fallbackMember?.groupPrompts.find(
+          (p) => p.slug === promptSlug || snakeToCamel(p.slug) === promptSlug,
+        );
         const baseLabel = fallbackMember ? lookup.label(fallbackMember.key) : lookup.label(groupId);
         const promptSuffix =
           groupPrompt?.prompt ??
-          promptSlug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+          promptSlug
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
         const label = `${baseLabel} — ${promptSuffix}`;
         const consumerLabels = consumers
           .map((entry) => lookup.label(entry.key))
@@ -171,6 +193,7 @@ export function buildRows(
         rows.push({
           category: categoryKey,
           label,
+          baseLabel,
           color: lookup.color(categoryKey),
           composite,
           masks,
