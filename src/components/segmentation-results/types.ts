@@ -39,6 +39,19 @@ export interface SegmentationCategoryResponse {
 }
 
 /**
+ * Persisted shape for SAM responses keyed by
+ * `(conceptGroupId → promptSlug → SamResponse)`. Mirrors the backend's
+ * `concept_group_results` JSONB column. Older rows that pre-date the
+ * concept-group migration have this field absent; the backend
+ * read-side adapter projects legacy per-category columns into this
+ * shape so the frontend never sees the legacy form (but the type
+ * still tolerates the absent case during the cutover).
+ */
+export type ConceptGroupResults = Partial<
+  Record<string, Partial<Record<string, SegmentationCategoryResponse>>>
+>;
+
+/**
  * Per-step wall-clock breakdown the backend records on every fresh run
  * and persists in `generation_segmentation.timings`. `null` for older
  * rows (predates the column) or for the cached short-circuit path that
@@ -112,19 +125,16 @@ export interface OverallDriftMetrics {
   totalPixels: number;
 }
 
-/** RGB triple (0–255) sourced from the dollhouse `productMaskMap`. */
-export interface DriftRgbColor {
-  r: number;
-  g: number;
-  b: number;
-}
-
 /**
  * Persisted drift report comparing SAM masks against the dollhouse
  * product map. Stored on `generation_segmentation.drift_assessment`;
  * keys come back camelCased by the case-converter middleware. The
  * per-category records use the same camelCase SAM category keys as
  * the rest of the response (e.g. `wallTiles`, `showerCurbTiles`).
+ *
+ * Swatch colors come from `/segmentation-categories` (cached per
+ * session). The drift assessment no longer carries per-category RGBs;
+ * the codebase palette is the single source of truth.
  */
 export interface DriftAssessment {
   version: 1;
@@ -135,14 +145,6 @@ export interface DriftAssessment {
   surfaces: Record<string, SurfaceDriftMetrics>;
   smallObjects: Record<string, SmallObjectDriftMetrics>;
   failedSamMaskUrls?: string[];
-  /**
-   * Per-SAM-category RGB color the dollhouse renderer painted into the
-   * ground-truth `productMaskUrl` PNG for this frame. Used as the
-   * primary color source for the modal's swatches so the legend
-   * matches the dollhouse product map pixel-for-pixel. Categories not
-   * present in this map fall back to the existing palette.
-   */
-  categoryColors?: Record<string, DriftRgbColor>;
   /**
    * CDN URL of the dollhouse `productMaskUrl` PNG this assessment was
    * computed against. Surfaced so the modal can wipe between the
@@ -199,10 +201,19 @@ export interface SegmentationRecord {
   driftAssessment?: DriftAssessment | null;
   /** Only present on POST responses; the GET endpoint omits this. */
   driftStatus?: DriftStatus | null;
-  // Categories (`vanities`, `faucets`, `toiletFlush`, …) land here, one
-  // key per JSONB column on the backend row. TypeScript can't express
-  // "every key except metadata" cleanly, so this stays untyped and
-  // `buildRows` narrows at the boundary.
+  /**
+   * Canonical SAM payload, keyed by
+   * `(conceptGroupId → promptSlug → SamResponse)`. New rows always
+   * carry this field; legacy rows get it back-filled by the backend
+   * read-side adapter from the per-category JSONB columns. The eval
+   * modal renders one card per `(group, prompt)` pair from here so
+   * Wall vs. Wainscoting show up as separate cards even though both
+   * feed the same Wall concept group.
+   */
+  conceptGroupResults?: ConceptGroupResults | null;
+  // Legacy per-category JSONB columns may still appear on rows that
+  // pre-date `concept_group_results`. `buildRows` falls back to them
+  // when the new field is missing.
   [category: string]: unknown;
 }
 
@@ -224,6 +235,14 @@ export interface CategoryMask {
 export interface CategoryRow {
   category: string;
   label: string;
+  /**
+   * Category label without the `— Prompt` suffix attached to
+   * group-aware rows. Lets the legend deduplicate by category and
+   * display a stable name (`Wall Tile`) instead of inheriting
+   * whichever prompt's row sorted first (`Wall Tile — Wainscoting`).
+   * Falls back to `label` for legacy non-grouped rows.
+   */
+  baseLabel?: string;
   /** Hex color resolved via `CategoryLookup.color`. */
   color: string;
   /**
@@ -235,6 +254,17 @@ export interface CategoryRow {
   composite: string | null;
   masks: CategoryMask[];
   topScore: number | null;
+  /** Concept-group id this card belongs to. Present on rows derived
+   *  from `conceptGroupResults`. */
+  group?: string;
+  /** Stable SAM prompt slug for this card (e.g. `wainscoting`). */
+  promptSlug?: string;
+  /** Human-readable prompt name surfaced in the card subtitle. */
+  promptLabel?: string;
+  /** Member-category labels that resolve to this group prompt — used
+   *  in the card subtitle so reviewers can see which products read
+   *  from this mask. */
+  consumerLabels?: string[];
 }
 
 /**
