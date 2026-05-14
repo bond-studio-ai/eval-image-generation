@@ -639,7 +639,12 @@ function StepGroupCard({
     skipped: 'bg-amber-400',
   };
 
-  const totalTime = group.results.reduce((sum, r) => sum + (r.executionTime ?? 0), 0);
+  // Candidates run in parallel within a generation step, so the step's
+  // wall-clock is the slowest candidate, not the sum of all candidates.
+  const stepWallClockMs = group.results.reduce(
+    (longest, r) => Math.max(longest, r.executionTime ?? 0),
+    0
+  );
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
@@ -663,8 +668,13 @@ function StepGroupCard({
           </span>
         )}
         <span className="ml-auto flex items-center gap-2">
-          {totalTime > 0 && (
-            <span className="text-xs tabular-nums text-gray-400">{(totalTime / 1000).toFixed(1)}s</span>
+          {stepWallClockMs > 0 && (
+            <span
+              className="text-xs tabular-nums text-gray-400"
+              title={isMulti ? 'Longest candidate (parallel)' : 'Generation time'}
+            >
+              {(stepWallClockMs / 1000).toFixed(1)}s
+            </span>
           )}
           <StatusBadge status={groupStatus} />
         </span>
