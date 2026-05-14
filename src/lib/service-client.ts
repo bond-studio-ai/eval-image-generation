@@ -125,6 +125,9 @@ export interface StrategyRunJudgeResultEntry {
   judgeInputImages: { url: string; label: string; isComposite?: boolean; sourceImages?: { url: string; label: string }[] }[] | null;
   judgeTypeUsed: string | null;
   candidateIndex: number | null;
+  /** Wall-clock duration (ms) of the judge invocation, or null for legacy
+   * rows persisted before judge timing was tracked. */
+  executionTimeMs: number | null;
 }
 
 export interface StrategyDetailItem {
@@ -279,6 +282,12 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       judgeInputImages: Array.isArray(imgs) ? (imgs as StrategyRunJudgeResultEntry['judgeInputImages']) : null,
       judgeTypeUsed: r.judgeTypeUsed != null ? String(r.judgeTypeUsed) : null,
       candidateIndex: typeof r.candidateIndex === 'number' ? r.candidateIndex : r.candidateIndex != null ? Number(r.candidateIndex) : null,
+      executionTimeMs:
+        typeof r.executionTimeMs === 'number'
+          ? r.executionTimeMs
+          : r.executionTimeMs != null
+            ? Number(r.executionTimeMs)
+            : null,
     });
   }
   return out;

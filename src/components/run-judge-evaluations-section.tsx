@@ -17,6 +17,10 @@ interface JudgeGroup {
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
   position: number;
+  /** Slowest invocation across this judge's entries (each entry shares the
+   * same value when populated, but we max defensively so legacy nulls
+   * mixed with new values don't drop the badge). */
+  executionTimeMs: number | null;
   entries: StrategyRunJudgeResultEntry[];
 }
 
@@ -32,12 +36,22 @@ function groupByJudge(results: StrategyRunJudgeResultEntry[]): JudgeGroup[] {
         judgePromptVersionId: r.judgePromptVersionId,
         judgePromptVersionName: r.judgePromptVersionName,
         position: r.position,
+        executionTimeMs: null,
         entries: [],
       });
     }
-    map.get(r.strategyJudgeId)!.entries.push(r);
+    const group = map.get(r.strategyJudgeId)!;
+    group.entries.push(r);
+    if (r.executionTimeMs != null) {
+      group.executionTimeMs = Math.max(group.executionTimeMs ?? 0, r.executionTimeMs);
+    }
   }
   return [...map.values()].sort((a, b) => a.position - b.position);
+}
+
+function formatSeconds(ms: number | null | undefined): string | null {
+  if (ms == null || ms <= 0) return null;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 function JudgeGroupCard({ group }: { group: JudgeGroup }) {
@@ -83,6 +97,14 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
           )}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {formatSeconds(group.executionTimeMs) && (
+            <span
+              className="text-xs tabular-nums text-gray-400"
+              title="Judge wall-clock duration"
+            >
+              {formatSeconds(group.executionTimeMs)}
+            </span>
+          )}
           {!isSingle && scores.length > 0 && (
             <div className="flex items-center gap-1">
               {scores.map((s, i) => (
@@ -241,14 +263,29 @@ export function RunJudgeEvaluationsSection({
   if (judgeResults.length === 0) return null;
 
   const groups = useMemo(() => groupByJudge(judgeResults), [judgeResults]);
+  const slowestMs = useMemo(
+    () => groups.reduce((m, g) => Math.max(m, g.executionTimeMs ?? 0), 0),
+    [groups]
+  );
+  const slowestLabel = formatSeconds(slowestMs);
 
   return (
     <div className="rounded-lg border border-indigo-200 bg-white shadow-xs">
-      <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">
-        <span className="text-sm font-semibold text-indigo-800">{title}</span>
-        <p className="mt-0.5 text-[11px] text-indigo-700/80">
-          {groups.length} {groups.length === 1 ? 'judge' : 'judges'} · {judgeResults.length} {judgeResults.length === 1 ? 'evaluation' : 'evaluations'} across candidates
-        </p>
+      <div className="flex flex-wrap items-baseline gap-x-3 border-b border-indigo-200 bg-indigo-50 px-4 py-3">
+        <div className="flex-1">
+          <span className="text-sm font-semibold text-indigo-800">{title}</span>
+          <p className="mt-0.5 text-[11px] text-indigo-700/80">
+            {groups.length} {groups.length === 1 ? 'judge' : 'judges'} · {judgeResults.length} {judgeResults.length === 1 ? 'evaluation' : 'evaluations'} across candidates
+          </p>
+        </div>
+        {slowestLabel && (
+          <span
+            className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-indigo-800"
+            title="Slowest judge invocation"
+          >
+            Slowest: {slowestLabel}
+          </span>
+        )}
       </div>
       <div className="space-y-3 p-4">
         {groups.map((g) => (
