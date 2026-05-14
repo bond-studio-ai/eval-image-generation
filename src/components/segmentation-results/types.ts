@@ -90,6 +90,21 @@ export interface DriftCategoryHeader {
   absenceReason?: DriftAbsenceReason;
 }
 
+/**
+ * Concept-group-aware recall of the dollhouse mask, per category.
+ * Mirrors `ProductMaskCoverage` in the service. The backend now
+ * uses this as the authoritative "did SAM identify this surface?"
+ * signal — `recall = matched / dollhousePixels` is what reviewers
+ * should look at when judging whether the model correctly placed
+ * the product. `null` overall when the dollhouse has no pixels for
+ * this category.
+ */
+export interface ProductMaskCoverage {
+  matchedPixels: number;
+  dollhousePixels: number;
+  recall: number | null;
+}
+
 export interface LargeObjectDriftMetrics extends DriftCategoryHeader {
   iou: number | null;
   centroidDriftPx: number | null;
@@ -98,6 +113,7 @@ export interface LargeObjectDriftMetrics extends DriftCategoryHeader {
   p95RefToPredPx: number | null;
   p95PredToRefPx: number | null;
   areaRatio: number | null;
+  productMaskCoverage: ProductMaskCoverage | null;
 }
 
 export interface SurfaceDriftMetrics extends DriftCategoryHeader {
@@ -106,6 +122,7 @@ export interface SurfaceDriftMetrics extends DriftCategoryHeader {
   boundaryRefToPredPx: number | null;
   boundaryPredToRefPx: number | null;
   pixelClassAccuracy: number | null;
+  productMaskCoverage: ProductMaskCoverage | null;
 }
 
 export interface SmallObjectDriftMetrics extends DriftCategoryHeader {
@@ -113,18 +130,27 @@ export interface SmallObjectDriftMetrics extends DriftCategoryHeader {
   centroidDriftPx: number | null;
   centroidDriftNormalized: number | null;
   p95DistancePx: number | null;
+  productMaskCoverage: ProductMaskCoverage | null;
 }
 
 export interface OverallDriftMetrics {
   /**
-   * Per the user-spec, this is `mismatched_pixels / total_pixels`
-   * (NOT the squared-error MSE). The backend keeps the `mse` field
-   * name for continuity; the UI displays it as "% mismatched" to make
-   * the meaning unambiguous.
+   * Concept-group-aware mismatch rate restricted to dollhouse-labeled
+   * pixels: `num_mismatched / total_pixels` where both counts cover
+   * only pixels the `productMaskUrl` actually labeled, and a pixel
+   * counts as "matched" when **any member** of its dollhouse
+   * category's concept group covered it in SAM. The backend keeps
+   * the field name `mse` for backwards compatibility; the UI labels
+   * the value "% mismatched" to make the meaning unambiguous. `0`
+   * means every dollhouse-labeled pixel was recognized by some
+   * group member.
    */
   mse: number;
   pixelAccuracy: number;
+  /** Dollhouse-labeled pixels not covered by their concept group's
+   *  SAM union. */
   numMismatched: number;
+  /** Total dollhouse-labeled pixels (background excluded). */
   totalPixels: number;
 }
 

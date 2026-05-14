@@ -107,17 +107,19 @@ const DRIFT_METRIC_HINTS = {
   areaRatio:
     'SAM mask area / dollhouse mask area. 1.00 = equal area, >1 = SAM is too big, <1 = SAM is too small.',
   pixelAccuracy:
-    'Fraction of dollhouse pixels labeled with this category that SAM also assigned to it (per-class recall).',
+    'Fraction of dollhouse pixels labeled with this category that the SAM mask for this specific category covered (per-class recall against just this prompt).',
   presence:
     '1 if SAM produced at least one mask for this category, 0 otherwise. Useful for accessories where size/shape vary a lot.',
   pixels:
     'Dollhouse pixel count / SAM pixel count for this category — context for the metric values to the left.',
+  productMaskCoverage:
+    'Share of dollhouse pixels for this category that ANY member of its concept group covered in SAM (e.g. paint pixels can be matched by paint, wallpaper, wainscoting, or shower-wall-tile SAM masks — they all describe the same surface). This is the headline accuracy signal: 100% means the surface was correctly identified, regardless of which group member name SAM used.',
   overallMse:
-    'mismatched_pixels / total_pixels: the share of resized image pixels where SAM and the dollhouse map disagree on the category. 0 = perfect agreement.',
+    "Dollhouse-pixel mismatch rate, concept-group aware: the share of dollhouse-labeled pixels NOT covered by their concept group's SAM union. Background is excluded from both numerator and denominator. 0 = every labeled pixel was recognized as the right surface (or a synonymous one).",
   overallPixelAccuracy:
-    '1 − mismatched ratio: the share of pixels where SAM agrees with the dollhouse map.',
+    '1 − mismatched ratio: the share of dollhouse-labeled pixels recognized by some member of their concept group.',
   overallRaw:
-    'Raw mismatched-pixel count over total compared pixels (at the AI output resolution).',
+    'Mismatched dollhouse-labeled pixels over total dollhouse-labeled pixels (background excluded).',
 } as const;
 
 /**
@@ -216,6 +218,7 @@ const NOT_APPLICABLE_CELL = <span className="text-gray-300">—</span>;
  */
 type SortKey =
   | 'category'
+  | 'coverage'
   | 'iou'
   | 'centroid'
   | 'p95'
@@ -243,6 +246,8 @@ function getSortValue(row: DriftRow, key: SortKey, lookup: CategoryLookup): numb
   switch (key) {
     case 'category':
       return lookup.label(row.key).toLowerCase();
+    case 'coverage':
+      return metrics.productMaskCoverage?.recall ?? null;
     case 'iou':
       if (kind === 'largeObject' || kind === 'surface')
         return (metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou;
@@ -386,6 +391,17 @@ function DriftUnifiedRow({
   const appliesPixelClass = kind === 'surface';
   const appliesPresence = kind === 'smallObject';
 
+  // Concept-group-aware coverage is the new headline signal: how
+  // much of the dollhouse mask for this category did *any* member of
+  // its group cover. Rendered with the matched/total raw counts in a
+  // tooltip so the reviewer can audit the recall without leaving the
+  // table.
+  const coverageMetric = metrics.productMaskCoverage;
+  const coverageCell = coverageMetric ? formatPercent(coverageMetric.recall, 1) : null;
+  const coverageHint = coverageMetric
+    ? `${formatInt(coverageMetric.matchedPixels)} / ${formatInt(coverageMetric.dollhousePixels)} dollhouse-labeled pixels covered by the concept group's SAM union.`
+    : null;
+
   const iouCell = appliesIoU
     ? formatNumber((metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou, 3)
     : null;
@@ -443,6 +459,19 @@ function DriftUnifiedRow({
             </Tooltip>
           )}
         </div>
+      </td>
+      <td className="px-3 py-1.5 text-right tabular-nums">
+        {coverageCell ? (
+          coverageHint ? (
+            <Tooltip hint={coverageHint} width={260} triggerClassName="inline-flex">
+              <span>{coverageCell}</span>
+            </Tooltip>
+          ) : (
+            coverageCell
+          )
+        ) : (
+          NOT_APPLICABLE_CELL
+        )}
       </td>
       <td className="px-3 py-1.5 text-right tabular-nums">{iouCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{centroidCell ?? NOT_APPLICABLE_CELL}</td>
@@ -586,6 +615,14 @@ function DriftUnifiedTable({
                 align="left"
               />
               <SortableHeader
+                sortKey="coverage"
+                label="Coverage"
+                hint={DRIFT_METRIC_HINTS.productMaskCoverage}
+                currentKey={sortKey}
+                currentDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
                 sortKey="iou"
                 label="IoU"
                 hint={DRIFT_METRIC_HINTS.iou}
@@ -654,7 +691,7 @@ function DriftUnifiedTable({
           <tbody className="divide-y divide-gray-100 text-gray-700">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-4 text-center text-[11px] text-gray-500 italic">
+                <td colSpan={10} className="px-3 py-4 text-center text-[11px] text-gray-500 italic">
                   No categories match{filter ? ` "${filter}"` : ''}.
                 </td>
               </tr>
