@@ -354,6 +354,25 @@ export async function fetchAnalyticsStrategyPerformance(params: Record<string, s
   );
 }
 
+export interface AnalyticsStrategyStepRow {
+  stepId: string;
+  stepOrder: number;
+  name: string | null;
+  type: string;
+  model: string | null;
+  sampleCount: number;
+  avgExecTimeMs: number | null;
+  minExecTimeMs: number | null;
+  maxExecTimeMs: number | null;
+}
+
+export async function fetchAnalyticsStrategyStepPerformance(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  return fetchService<{ steps: AnalyticsStrategyStepRow[] }>(
+    `/analytics/strategy-step-performance${qs ? `?${qs}` : ''}`,
+  );
+}
+
 export interface ReliabilityData {
   summary: {
     totalRuns: number;
