@@ -40,12 +40,15 @@ export interface SegmentationCategoryResponse {
 
 /**
  * Persisted shape for SAM responses keyed by
- * `(conceptGroupId → promptSlug → SamResponse)`. Mirrors the backend's
- * `concept_group_results` JSONB column. Older rows that pre-date the
- * concept-group migration have this field absent; the backend
- * read-side adapter projects legacy per-category columns into this
- * shape so the frontend never sees the legacy form (but the type
- * still tolerates the absent case during the cutover).
+ * `(conceptGroupId → memberCategoryKey → SamResponse)`. Mirrors the
+ * backend's `concept_group_results` JSONB column post the
+ * per-category fan-out rollback (PR #82) — SAM now fires one call
+ * per present category and persists each member's response under
+ * its own category key. Older rows that pre-date the concept-group
+ * migration have this field absent; the backend read-side adapter
+ * projects legacy per-category columns into this shape so the
+ * frontend never sees the legacy form (but the type still tolerates
+ * the absent case during the cutover).
  */
 export type ConceptGroupResults = Partial<
   Record<string, Partial<Record<string, SegmentationCategoryResponse>>>
@@ -203,12 +206,13 @@ export interface SegmentationRecord {
   driftStatus?: DriftStatus | null;
   /**
    * Canonical SAM payload, keyed by
-   * `(conceptGroupId → promptSlug → SamResponse)`. New rows always
-   * carry this field; legacy rows get it back-filled by the backend
-   * read-side adapter from the per-category JSONB columns. The eval
-   * modal renders one card per `(group, prompt)` pair from here so
-   * Wall vs. Wainscoting show up as separate cards even though both
-   * feed the same Wall concept group.
+   * `(conceptGroupId → memberCategoryKey → SamResponse)`. New rows
+   * always carry this field; legacy rows get it back-filled by the
+   * backend read-side adapter from the per-category JSONB columns.
+   * The eval modal renders one card per member category so every
+   * present category gets its own preview — even two categories
+   * that share a SAM prompt (e.g. paints + wallpapers both fired
+   * `Wall`) show up as separate cards.
    */
   conceptGroupResults?: ConceptGroupResults | null;
   // Legacy per-category JSONB columns may still appear on rows that
@@ -236,11 +240,11 @@ export interface CategoryRow {
   category: string;
   label: string;
   /**
-   * Category label without the `— Prompt` suffix attached to
-   * group-aware rows. Lets the legend deduplicate by category and
-   * display a stable name (`Wall Tile`) instead of inheriting
-   * whichever prompt's row sorted first (`Wall Tile — Wainscoting`).
-   * Falls back to `label` for legacy non-grouped rows.
+   * Same as `label` today; retained for legacy callsites that
+   * differentiated between the legend label and a `— Prompt`
+   * suffix on the card. Per-category fan-out makes the prompt
+   * distinct from the label, so the legend can always read
+   * `label` directly.
    */
   baseLabel?: string;
   /** Hex color resolved via `CategoryLookup.color`. */
@@ -257,13 +261,21 @@ export interface CategoryRow {
   /** Concept-group id this card belongs to. Present on rows derived
    *  from `conceptGroupResults`. */
   group?: string;
-  /** Stable SAM prompt slug for this card (e.g. `wainscoting`). */
+  /** Member category key on the wire (camelCase or snake_case
+   *  depending on whether the API case converter touched the JSONB
+   *  payload). Used to drive deterministic card keys. */
   promptSlug?: string;
-  /** Human-readable prompt name surfaced in the card subtitle. */
+  /**
+   * Exact SAM prompt string the orchestrator sent to FAL for this
+   * card's category, e.g. `Wall` for `paints`, `Wainscoting` for
+   * `wall_tiles`. Surfaced in the card subtitle so reviewers can
+   * tell at a glance what noun phrase produced the mask.
+   */
   promptLabel?: string;
-  /** Member-category labels that resolve to this group prompt — used
-   *  in the card subtitle so reviewers can see which products read
-   *  from this mask. */
+  /** Sibling member labels the drift comparator considers alongside
+   *  this card's category (per the group's MemberRule). Multi-member
+   *  groups surface the union of their members here so the card
+   *  tooltip can read "drift considers: Paint, Wallpaper, …". */
   consumerLabels?: string[];
 }
 

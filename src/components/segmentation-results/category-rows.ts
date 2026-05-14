@@ -53,45 +53,37 @@ function snakeToCamel(value: string): string {
 }
 
 /**
- * Build a `(category | groupId) → metadata` lookup so the row builder
- * can resolve label / color / consumer-member lists for both the
- * canonical snake_case keys and the camelCase form the case-converter
- * middleware emits over JSON.
+ * Build lookups so the row builder can resolve label / color / sibling
+ * members for both the canonical snake_case keys and the camelCase
+ * form the case-converter middleware emits over JSON.
  *
- * `consumersByGroupPrompt` is keyed by `${camelGroup}/${camelSlug}`
- * because the API case converter recursively rewrites JSONB keys on
- * the wire — `conceptGroupResults` arrives with camelCase group ids
- * (`showerGlass`) and camelCase prompt slugs (`toiletFlusher`) even
- * though the backend persists them snake_case. Storing both forms
- * keeps the row builder agnostic to whichever casing it has on hand,
- * but the camel form is the one `Object.entries(conceptGroupResults)`
- * iterates so we register it explicitly.
+ * - `byKey`: maps either snake_case or camelCase category names to
+ *   the metadata entry.
+ * - `byGroupId`: maps either snake_case or camelCase group ids to
+ *   every member of that group, so the row builder can fill out
+ *   `consumerLabels` without re-traversing `entries`.
+ *
+ * `conceptGroupResults` arrives camelCased on the wire (the API case
+ * converter recursively rewrites JSONB keys), so both lookups
+ * register both casings to stay agnostic.
  */
 function indexMetadata(entries: SegmentationCategoryMetadata[] | null) {
   const byKey = new Map<string, SegmentationCategoryMetadata>();
-  const consumersByGroupPrompt = new Map<string, SegmentationCategoryMetadata[]>();
-  const byGroupKey = new Map<string, SegmentationCategoryMetadata>();
-  if (!entries) return { byKey, consumersByGroupPrompt, byGroupKey };
+  const byGroupId = new Map<string, SegmentationCategoryMetadata[]>();
+  if (!entries) return { byKey, byGroupId };
   for (const entry of entries) {
     byKey.set(entry.key, entry);
     const camelKey = snakeToCamel(entry.key);
     if (camelKey !== entry.key) byKey.set(camelKey, entry);
-    if (!byGroupKey.has(entry.group)) byGroupKey.set(entry.group, entry);
-    const camelGroup = snakeToCamel(entry.group);
-    if (camelGroup !== entry.group && !byGroupKey.has(camelGroup))
-      byGroupKey.set(camelGroup, entry);
-    for (const slug of entry.resolvedPromptSlugs) {
-      const snakeRef = `${entry.group}/${slug}`;
-      const camelRef = `${camelGroup}/${snakeToCamel(slug)}`;
-      const refs = camelRef === snakeRef ? [snakeRef] : [snakeRef, camelRef];
-      for (const key of refs) {
-        const consumers = consumersByGroupPrompt.get(key) ?? [];
-        if (!consumers.includes(entry)) consumers.push(entry);
-        consumersByGroupPrompt.set(key, consumers);
-      }
+
+    const groupKeys = new Set([entry.group, snakeToCamel(entry.group)]);
+    for (const groupKey of groupKeys) {
+      const members = byGroupId.get(groupKey) ?? [];
+      if (!members.includes(entry)) members.push(entry);
+      byGroupId.set(groupKey, members);
     }
   }
-  return { byKey, consumersByGroupPrompt, byGroupKey };
+  return { byKey, byGroupId };
 }
 
 function readResponse(value: unknown): {
@@ -130,11 +122,12 @@ function readResponse(value: unknown): {
  *
  * Two code paths:
  *
- * 1. New rows carry `conceptGroupResults`. Each `(groupId, promptSlug)`
- *    pair becomes its own card — multi-prompt groups (e.g. Wall +
- *    Wainscoting) yield two cards keyed by the group prompt so the
- *    reviewer can compare them side-by-side. Cards inherit the
- *    representative member's color/label for the row title.
+ * 1. New rows carry `conceptGroupResults` keyed by
+ *    `(groupId → memberCategoryKey)`. Each member becomes its own
+ *    card — two categories that share a SAM prompt (e.g. paints and
+ *    wallpapers both firing `Wall`) still each yield a card because
+ *    SAM is called once per category. The card subtitle surfaces
+ *    the exact SAM prompt string fired for that category.
  * 2. Legacy rows (pre-concept-groups) only have per-category JSONB
  *    columns. The row builder falls back to the older flow that
  *    treats every top-level non-metadata key as a category payload.
@@ -158,49 +151,41 @@ export function buildRows(
 
   const rows: CategoryRow[] = [];
   if (conceptGroupResults) {
-    const { byKey, consumersByGroupPrompt, byGroupKey } = indexMetadata(metadata);
+    const { byKey, byGroupId } = indexMetadata(metadata);
     for (const [groupId, bucket] of Object.entries(conceptGroupResults)) {
       if (!bucket) continue;
-      for (const [promptSlug, response] of Object.entries(bucket)) {
+      const groupMembers = byGroupId.get(groupId) ?? [];
+      for (const [memberKey, response] of Object.entries(bucket)) {
         if (!response || typeof response !== 'object') continue;
         const { composite, masks, topScore } = readResponse(response);
         if (masks.length === 0 && composite === null) continue;
         // The API case converter rewrites JSONB keys to camelCase on
-        // the wire, so iterating `conceptGroupResults` yields ids
-        // like `showerGlass` / `toiletFlusher` even though the
-        // backend persists them snake_case. `indexMetadata` registers
-        // both forms in `consumersByGroupPrompt` so this lookup hits
-        // for groups and slugs that contain underscores.
-        const representativeKey = `${groupId}/${promptSlug}`;
-        const consumers = consumersByGroupPrompt.get(representativeKey) ?? [];
-        const fallbackMember =
-          consumers[0] ?? byKey.get(groupId) ?? byGroupKey.get(groupId) ?? null;
-        const categoryKey = fallbackMember?.key ?? groupId;
-        const groupPrompt = fallbackMember?.groupPrompts.find(
-          (p) => p.slug === promptSlug || snakeToCamel(p.slug) === promptSlug,
-        );
-        const baseLabel = fallbackMember ? lookup.label(fallbackMember.key) : lookup.label(groupId);
-        const promptSuffix =
-          groupPrompt?.prompt ??
-          promptSlug
+        // the wire so iterating yields `showerGlass` / `wallTiles`
+        // even though the backend persists them snake_case. The
+        // metadata lookup is indexed under both forms.
+        const member = byKey.get(memberKey) ?? null;
+        const categoryKey = member?.key ?? memberKey;
+        const baseLabel = member ? lookup.label(member.key) : lookup.label(memberKey);
+        const promptLabel =
+          member?.samPrompt ??
+          memberKey
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .replace(/_/g, ' ')
             .replace(/\b\w/g, (c) => c.toUpperCase());
-        const label = `${baseLabel} — ${promptSuffix}`;
-        const consumerLabels = consumers
+        const consumerLabels = groupMembers
           .map((entry) => lookup.label(entry.key))
           .filter((value, idx, all) => all.indexOf(value) === idx);
         rows.push({
           category: categoryKey,
-          label,
+          label: baseLabel,
           baseLabel,
           color: lookup.color(categoryKey),
           composite,
           masks,
           topScore,
           group: groupId,
-          promptSlug,
-          promptLabel: promptSuffix,
+          promptSlug: memberKey,
+          promptLabel,
           consumerLabels,
         });
       }
