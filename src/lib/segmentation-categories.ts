@@ -15,29 +15,38 @@ export interface SegmentationCategoryMetadata {
   label: string;
   /** Hex (`#RRGGBB`) the overlay paints this category in. */
   color: string;
-  /** Primary SAM prompt (fallback / single prompt). */
+  /**
+   * Exact SAM 3.1 prompt string the orchestrator fires for this
+   * category (one SAM call per category). Surfaced on each card in
+   * the eval modal so reviewers can see what noun phrase produced
+   * the mask — two categories may share a prompt string (e.g.
+   * paints + wallpapers both fire `Wall`) but still each get their
+   * own card and their own persisted response.
+   */
   samPrompt: string;
   /** True for scene-shell extras (currently only `ceilings`). */
   isExtra: boolean;
   /**
    * Concept-group identifier this category belongs to. Singleton
    * categories use their own name as the group id. Multi-member
-   * groups (`wall`, `floor`, `shower_glass`, `toilets`) share one
-   * group across multiple member categories so SAM calls are
-   * deduplicated and the drift row tooltip can phrase the resolution
-   * rule correctly.
+   * groups (`wall`, `floor`, `shower_glass`, `toilets`) bundle
+   * categories whose drift comparison considers sibling masks
+   * during resolution.
    */
   group: string;
   /**
-   * Every SAM prompt fired for this category's group. The eval modal
-   * displays one card per `(group, prompt)` pair plus a sub-label
-   * listing which member categories consume that prompt.
+   * Every member of this category's group, with each member's
+   * per-category SAM prompt. `slug` is the member category key;
+   * `prompt` is the exact string sent to SAM for that member. The
+   * eval modal can use this to render a per-member legend hint
+   * without a second round-trip.
    */
   groupPrompts: ReadonlyArray<{ slug: string; prompt: string }>;
   /**
-   * Stable prompt slugs (from `groupPrompts`) the category actually
-   * resolves to during drift. Order is meaningful for `firstNonEmpty`
-   * rules — the first prompt with masks wins.
+   * Member categories whose own SAM masks this category considers
+   * during drift comparison. Order is meaningful for
+   * `firstNonEmpty` rules — the first member with masks wins. For
+   * singletons it's just `[key]`.
    */
   resolvedPromptSlugs: readonly string[];
   /** `'union'` or `'firstNonEmpty'` — drives the tooltip phrasing. */

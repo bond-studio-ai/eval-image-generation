@@ -20,10 +20,19 @@ function CategoryCard({ row }: { row: CategoryRow }) {
   const totalMasks = row.masks.length;
   const showIndividualMasks = totalMasks >= 1;
   const swatch = row.color;
-  const consumerHint =
-    row.consumerLabels && row.consumerLabels.length > 0
-      ? `Used by ${row.consumerLabels.join(', ')}`
-      : null;
+  // The SAM prompt fired for this category. Surfaced prominently so
+  // reviewers can tell at a glance which noun phrase produced the
+  // mask — useful when two cards share a prompt string (e.g. paints
+  // and wallpapers both fire `Wall`) or when a category fires a
+  // narrow prompt (`Wainscoting` for wall_tiles).
+  const promptLine = row.promptLabel ? `SAM prompt: "${row.promptLabel}"` : null;
+  // Sibling members the drift comparator considers alongside this
+  // category. For multi-member groups (Wall, Floor, Toilet, …) this
+  // lists every member so the tooltip can show the union scope.
+  // For singletons there's only one entry (the category itself) so
+  // we hide the hint to avoid noise.
+  const siblings = (row.consumerLabels ?? []).filter((label) => label !== row.label);
+  const consumerHint = siblings.length > 0 ? `Drift considers: ${siblings.join(', ')}` : null;
 
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
@@ -44,6 +53,11 @@ function CategoryCard({ row }: { row: CategoryRow }) {
           </span>
         )}
       </div>
+      {promptLine && (
+        <p className="mt-0.5 truncate text-[10px] text-gray-600" title={promptLine}>
+          {promptLine}
+        </p>
+      )}
       <p className="mt-0.5 text-[10px] text-gray-500">
         {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
       </p>
@@ -118,15 +132,10 @@ function CategoryCard({ row }: { row: CategoryRow }) {
  * called out that the previous flex-wrap version felt ragged.
  */
 export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
-  // Deduplicate by category so the legend lists one swatch per
-  // physical product even when multiple group prompts feed it (e.g.
-  // Wall + Wainscoting both surface as `wall_tiles` cards but a
-  // single Wall Tile swatch suffices for the legend). The displayed
-  // text uses `baseLabel` so the legend keeps the bare category name
-  // ("Wall Tile") regardless of whichever prompt's row was inserted
-  // first; otherwise the dedup would inherit a row-specific suffix
-  // ("Wall Tile — Wainscoting") that confuses the swatch-to-product
-  // mapping for multi-prompt groups.
+  // One swatch per category. With the per-category fan-out, each
+  // category now contributes a single row, so the dedup is largely a
+  // no-op — but we keep it defensively in case an upstream change
+  // produces duplicates (e.g. union of legacy + new rows).
   const seen = new Map<string, { color: string; displayLabel: string; totalMasks: number }>();
   for (const row of rows) {
     const displayLabel = row.baseLabel ?? row.label;

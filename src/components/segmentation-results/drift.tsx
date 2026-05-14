@@ -49,10 +49,17 @@ function indexGroupMetadata(
 function resolutionLabel(entry: SegmentationCategoryMetadata): string {
   const promptByName = new Map(entry.groupPrompts.map((p) => [p.slug, p.prompt]));
   const promptNames = entry.resolvedPromptSlugs.map((slug) => promptByName.get(slug) ?? slug);
-  if (entry.resolutionKind === 'union') {
-    return promptNames.length === 1 ? promptNames[0]! : `${promptNames.join(' + ')}`;
+  // Multiple group members can fire the same SAM prompt string
+  // (paints + wallpapers both send `Wall`); collapse adjacent
+  // duplicates so the tooltip reads cleanly.
+  const deduped: string[] = [];
+  for (const name of promptNames) {
+    if (deduped[deduped.length - 1] !== name) deduped.push(name);
   }
-  return promptNames.join(' fallback ');
+  if (entry.resolutionKind === 'union') {
+    return deduped.length === 1 ? deduped[0]! : `${deduped.join(' + ')}`;
+  }
+  return deduped.join(' fallback ');
 }
 
 /**
