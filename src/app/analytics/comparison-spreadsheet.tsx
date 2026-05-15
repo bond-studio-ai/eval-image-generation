@@ -307,6 +307,13 @@ export function ComparisonSpreadsheet({
 
   return (
     <div className="mt-8 space-y-6">
+      {/* ── Avg Execution Time ── */}
+      <StepExecutionTimeTable
+        slices={slices}
+        dataBySlice={dataBySlice}
+        loading={loading}
+      />
+
       {/* ── Scene Accuracy Issues ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
         <table className="w-full border-collapse text-xs">
@@ -423,13 +430,6 @@ export function ComparisonSpreadsheet({
           </tbody>
         </table>
       </div>
-
-      {/* ── Step Execution Time ── */}
-      <StepExecutionTimeTable
-        slices={slices}
-        dataBySlice={dataBySlice}
-        loading={loading}
-      />
 
       {/* ── Product Category Rates ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
@@ -687,7 +687,7 @@ function StepExecutionTimeTable({
               colSpan={1 + colCount}
               className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900"
             >
-              Step Execution Time (avg wall-clock per run)
+              Avg Execution Time
             </th>
           </tr>
           <tr>
