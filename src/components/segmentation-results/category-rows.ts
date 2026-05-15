@@ -132,10 +132,15 @@ function readResponse(value: unknown): {
  *    columns. The row builder falls back to the older flow that
  *    treats every top-level non-metadata key as a category payload.
  *
- * Rows where SAM produced no usable masks (and no composite) are
- * filtered out so the grid isn't cluttered with empty tiles — the
- * legend / per-category status still surfaces via the timeline panel
- * for anyone debugging a zero-mask run.
+ * Empty-mask categories are KEPT — they render as a card with a
+ * "No masks returned" placeholder. The orchestrator persists the
+ * SAM response even when `masks` is empty (see `runForGeneration`
+ * in `segmentation.ts`), so the frontend treats every present
+ * `(group, category)` bucket as proof that SAM was actually
+ * invoked for it. Surfacing zero-mask cards lets reviewers tell
+ * "SAM ran and found nothing" apart from "SAM was never asked"
+ * — useful when debugging scene-shell extras (`doors`, `windows`,
+ * `ceilings`) that often miss in tight bathroom frames.
  */
 export function buildRows(
   record: SegmentationRecord | null,
@@ -158,7 +163,12 @@ export function buildRows(
       for (const [memberKey, response] of Object.entries(bucket)) {
         if (!response || typeof response !== 'object') continue;
         const { composite, masks, topScore } = readResponse(response);
-        if (masks.length === 0 && composite === null) continue;
+        // Empty-mask buckets are kept — `CategoryCard` renders a
+        // "No masks returned" placeholder so reviewers can confirm
+        // SAM was actually invoked for the category. The presence
+        // of the bucket itself is the signal: the backend only
+        // writes a `(group, category)` entry when SAM returned an
+        // `ok: true` response (even if its `masks` array is empty).
         // The API case converter rewrites JSONB keys to camelCase on
         // the wire so iterating yields `showerGlass` / `wallTiles`
         // even though the backend persists them snake_case. The
@@ -214,6 +224,5 @@ export function buildRows(
         topScore,
       };
     })
-    .filter((row) => row.masks.length > 0 || row.composite !== null)
     .sort((a, b) => a.label.localeCompare(b.label));
 }
