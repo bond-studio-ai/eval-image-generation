@@ -9,7 +9,7 @@ import { serviceUrl } from './api-base';
  * previously-duplicated `SEGMENTATION_COLORS` table did.
  */
 export interface SegmentationCategoryMetadata {
-  /** Canonical snake_case key, e.g. `toilet_flush`. */
+  /** Canonical snake_case key, e.g. `wall_tiles`. */
   key: string;
   /** Human-readable legend label, e.g. `Toilet flush`. */
   label: string;
@@ -24,7 +24,7 @@ export interface SegmentationCategoryMetadata {
    * own card and their own persisted response.
    */
   samPrompt: string;
-  /** True for scene-shell extras (currently only `ceilings`). */
+  /** True for scene-shell extras (`ceilings`, `doors`, `windows`). */
   isExtra: boolean;
   /**
    * Concept-group identifier this category belongs to. Singleton

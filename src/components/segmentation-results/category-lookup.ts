@@ -55,9 +55,9 @@ const FALLBACK_COLORS: Record<string, string> = {
   robeHooks: '#000075',
   towel_rings: '#A9A9A9',
   towelRings: '#A9A9A9',
-  toilet_flush: '#FFFAC8',
-  toiletFlush: '#FFFAC8',
   ceilings: '#C0C0C0',
+  doors: '#5C3317',
+  windows: '#1E90FF',
 };
 
 const NEUTRAL_SWATCH = '#9CA3AF';
