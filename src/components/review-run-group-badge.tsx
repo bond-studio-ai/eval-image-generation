@@ -1,45 +1,45 @@
 'use client';
 
 import {
-  runSegmentationPost,
-  type SegmentationState,
-} from '@/components/segmentation-badge';
+  runReviewPost,
+  type ReviewState,
+} from '@/components/review-badge';
 import { useCallback, useMemo } from 'react';
 
 /**
- * Badge that fans out `POST /generations/:id/segmentation` for every
+ * Badge that fans out `POST /generations/:id/review` for every
  * generation in a batch-run row instead of just the canonical/first one.
  *
  * The component owns no per-id state of its own — it derives an aggregate
  * label from the shared `statuses` map that the per-cell
- * `SegmentationBadge` instances also subscribe to. This means clicking
- * this badge immediately reflects on every individual cell's "Segmented"
+ * `ReviewBadge` instances also subscribe to. This means clicking
+ * this badge immediately reflects on every individual cell's "Reviewed"
  * dot (and vice versa), and a partial in-flight request from a per-cell
  * click never gets clobbered when this badge fires.
  *
  * Per-id `POST`s run *sequentially* (one image at a time). Running them
  * in parallel was overloading SAM upstream — the per-generation handler
- * already fans out across product categories in parallel, so layering
- * row-level parallelism on top multiplied the in-flight calls by N. A
- * single failure still doesn't block the rest of the row: we keep
- * walking the queue and surface each id's outcome individually on the
- * shared `statuses` map.
+ * already fans out across product categories and review plugins in
+ * parallel, so layering row-level parallelism on top multiplied the
+ * in-flight calls by N. A single failure still doesn't block the rest
+ * of the row: we keep walking the queue and surface each id's outcome
+ * individually on the shared `statuses` map.
  *
  * Ids that are currently `running` or `checking` are skipped at click
  * time so re-clicking the badge can't double-fire while a previous run
  * is still in flight.
  *
- * When *every* tracked id has already been segmented, clicking the badge
+ * When *every* tracked id has already been reviewed, clicking the badge
  * re-runs all of them with `?force=true` (matches the per-cell badge's
  * "click to re-run" semantics). When the row is mixed (some done, some
- * idle) clicking runs only the un-segmented ids so re-clicking after a
- * partial failure does the right thing without wiping the masks that
+ * idle) clicking runs only the un-reviewed ids so re-clicking after a
+ * partial failure does the right thing without wiping the rows that
  * already exist.
  */
-interface SegmentationRunGroupBadgeProps {
+interface ReviewRunGroupBadgeProps {
   generationIds: string[];
-  statuses: Map<string, SegmentationState>;
-  setStatus: (id: string, state: SegmentationState) => void;
+  statuses: Map<string, ReviewState>;
+  setStatus: (id: string, state: ReviewState) => void;
 }
 
 interface AggregateState {
@@ -67,7 +67,7 @@ interface AggregateState {
 
 function aggregate(
   generationIds: string[],
-  statuses: Map<string, SegmentationState>,
+  statuses: Map<string, ReviewState>,
 ): AggregateState {
   const total = generationIds.length;
   let running = 0;
@@ -95,11 +95,11 @@ function aggregate(
   return { kind, total, running, done, errors, idle };
 }
 
-export function SegmentationRunGroupBadge({
+export function ReviewRunGroupBadge({
   generationIds,
   statuses,
   setStatus,
-}: SegmentationRunGroupBadgeProps) {
+}: ReviewRunGroupBadgeProps) {
   const summary = useMemo(
     () => aggregate(generationIds, statuses),
     [generationIds, statuses],
@@ -118,7 +118,7 @@ export function SegmentationRunGroupBadge({
     if (targets.length === 0) return;
 
     // Optimistic transition so the row badge (and every cell) flips to
-    // "Segmenting" before the network round-trip resolves. We flip *all*
+    // "Reviewing" before the network round-trip resolves. We flip *all*
     // targets up front (not just the one we're about to await) so the
     // row badge's `running` aggregate matches the user's mental model of
     // "I asked for all of them" even though we'll process them one by one.
@@ -127,14 +127,14 @@ export function SegmentationRunGroupBadge({
     }
 
     // Walk the queue sequentially. A single failure must not stop the
-    // rest of the row, so we swallow per-id throws here — `runSegmentationPost`
-    // already maps backend errors into a `SegmentationState` of kind
+    // rest of the row, so we swallow per-id throws here — `runReviewPost`
+    // already maps backend errors into a `ReviewState` of kind
     // `error`, so the only way `await` rejects is a programming bug we'd
     // rather surface as a per-cell error than as an unhandled rejection.
     for (const { id, force } of targets) {
-      let next: SegmentationState;
+      let next: ReviewState;
       try {
-        next = await runSegmentationPost(id, force);
+        next = await runReviewPost(id, force);
       } catch (err) {
         next = {
           kind: 'error',
@@ -163,10 +163,10 @@ export function SegmentationRunGroupBadge({
     return (
       <span
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
-        title={`Segmenting ${completed}/${summary.total} generations`}
+        title={`Reviewing ${completed}/${summary.total} generations`}
       >
         <Spinner className="h-2.5 w-2.5" />
-        Segmenting {completed}/{summary.total}
+        Reviewing {completed}/{summary.total}
       </span>
     );
   }
@@ -179,11 +179,11 @@ export function SegmentationRunGroupBadge({
           e.stopPropagation();
           runForAll();
         }}
-        title="All segmentations complete. Click to re-run all with force=true."
+        title="All reviews complete. Click to re-run all with force=true."
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
         <CheckIcon className="h-2.5 w-2.5" />
-        Segmented {summary.done}/{summary.total}
+        Reviewed {summary.done}/{summary.total}
       </button>
     );
   }
@@ -198,11 +198,11 @@ export function SegmentationRunGroupBadge({
           e.stopPropagation();
           runForAll();
         }}
-        title={`${summary.done}/${summary.total} segmented. Click to finish the rest.`}
+        title={`${summary.done}/${summary.total} reviewed. Click to finish the rest.`}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
         <CheckIcon className="h-2.5 w-2.5" />
-        Segmented {summary.done}/{summary.total}
+        Reviewed {summary.done}/{summary.total}
       </button>
     );
   }
@@ -215,11 +215,11 @@ export function SegmentationRunGroupBadge({
           e.stopPropagation();
           runForAll();
         }}
-        title="All segmentations failed. Click to retry."
+        title="All reviews failed. Click to retry."
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
       >
         <ErrorIcon className="h-2.5 w-2.5" />
-        Segmentation failed
+        Review failed
       </button>
     );
   }
@@ -231,7 +231,7 @@ export function SegmentationRunGroupBadge({
         e.stopPropagation();
         runForAll();
       }}
-      title={`Automate QA (SAM segmentation) for all ${summary.total} generations in this row.`}
+      title={`Automate QA (review) for all ${summary.total} generations in this row.`}
       className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
     >
       <SparkleIcon className="h-2.5 w-2.5" />

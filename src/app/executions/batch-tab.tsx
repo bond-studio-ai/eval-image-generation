@@ -4,12 +4,12 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
-import type { SegmentationState } from '@/components/segmentation-badge';
-import { SegmentationResultsBadge } from '@/components/segmentation-results';
-import { SegmentationRunGroupBadge } from '@/components/segmentation-run-group-badge';
+import type { ReviewState } from '@/components/review-badge';
+import { ReviewResultsBadge } from '@/components/review-results';
+import { ReviewRunGroupBadge } from '@/components/review-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { serviceUrl } from '@/lib/api-base';
-import { useBatchSegmentationStatus } from '@/lib/use-batch-segmentation-status';
+import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -765,7 +765,7 @@ function ListView({
   // that specific run's status. The hook dedupes by id internally.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
   const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
 
   return (
     <div className="space-y-6">
@@ -831,7 +831,7 @@ function ListView({
                         >
                           <span className="block break-words">{displayLabel}</span>
                           {rowGenerationIds.length > 0 && (
-                            <SegmentationRunGroupBadge
+                            <ReviewRunGroupBadge
                               generationIds={rowGenerationIds}
                               statuses={segmentationStatuses}
                               setStatus={setSegmentationStatus}
@@ -967,7 +967,7 @@ function MatrixView({
   // the canonical row id above.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
   const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
 
   return (
     <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
@@ -1079,7 +1079,7 @@ function MatrixView({
                                 judgeTypeUsed={run.judgeTypeUsed}
                                 awaitingJudge={awaitingJudge}
                               />
-                              <SegmentationResultsBadge
+                              <ReviewResultsBadge
                                 generationId={run.lastOutputGenerationId ?? null}
                                 state={
                                   run.lastOutputGenerationId
@@ -1140,7 +1140,7 @@ function MatrixView({
                             judgeTypeUsed={firstRun.judgeTypeUsed}
                             awaitingJudge={awaitingJudge}
                           />
-                          <SegmentationResultsBadge
+                          <ReviewResultsBadge
                             generationId={firstRun.lastOutputGenerationId ?? null}
                             state={
                               firstRun.lastOutputGenerationId
@@ -1200,12 +1200,12 @@ function MatrixRowSegmentationBadge({
   setStatus,
 }: {
   generationIds: string[];
-  statuses: Map<string, SegmentationState>;
-  setStatus: (id: string, state: SegmentationState) => void;
+  statuses: Map<string, ReviewState>;
+  setStatus: (id: string, state: ReviewState) => void;
 }) {
   if (generationIds.length === 0) return null;
   return (
-    <SegmentationRunGroupBadge
+    <ReviewRunGroupBadge
       generationIds={generationIds}
       statuses={statuses}
       setStatus={setStatus}
@@ -1232,7 +1232,7 @@ function RunCell({
   onRetry: (runId: string) => void;
   onRated?: () => void;
   onImageClick: (run: RunRow) => void;
-  segmentationState?: SegmentationState;
+  segmentationState?: ReviewState;
 }) {
   return (
     <td
@@ -1286,7 +1286,7 @@ function RunCell({
               judgeTypeUsed={run.judgeTypeUsed}
               awaitingJudge={awaitingJudge}
             />
-            <SegmentationResultsBadge
+            <ReviewResultsBadge
               generationId={run.lastOutputGenerationId ?? null}
               state={segmentationState}
             />

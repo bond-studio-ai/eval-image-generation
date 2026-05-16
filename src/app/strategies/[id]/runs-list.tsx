@@ -3,14 +3,14 @@
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
-import { SegmentationBadge } from '@/components/segmentation-badge';
-import { SegmentationResultsBadge } from '@/components/segmentation-results';
+import { ReviewBadge } from '@/components/review-badge';
+import { ReviewResultsBadge } from '@/components/review-results';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
 } from '@/lib/service-client';
-import { useBatchSegmentationStatus } from '@/lib/use-batch-segmentation-status';
+import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -741,7 +741,7 @@ function BatchMatrix({
   // so the per-cell masks badge can reflect that specific run's status.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
   const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchSegmentationStatus(segmentationGenerationIds, !!expanded);
+    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
 
   const CELL = 240;
 
@@ -783,7 +783,7 @@ function BatchMatrix({
                 >
                   <span className="block break-words">{presetName}</span>
                   {canonicalGenerationId && (
-                    <SegmentationBadge
+                    <ReviewBadge
                       generationId={canonicalGenerationId}
                       initialState={segmentationStatuses.get(canonicalGenerationId)}
                       onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)}
@@ -846,7 +846,7 @@ function BatchMatrix({
                               judgeResults={run.judgeResults ?? null}
                               awaitingJudge={awaitingJudge}
                             />
-                            <SegmentationResultsBadge
+                            <ReviewResultsBadge
                               generationId={run.lastOutputGenerationId ?? null}
                               state={
                                 run.lastOutputGenerationId

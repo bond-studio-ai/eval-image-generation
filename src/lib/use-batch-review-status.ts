@@ -1,16 +1,16 @@
 'use client';
 
-import type { SegmentationState } from '@/components/segmentation-badge';
+import type { ReviewState } from '@/components/review-badge';
 import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Module-level cache of *resolved* segmentation states only (`idle` /
+ * Module-level cache of *resolved* review states only (`idle` /
  * `done` / `error` — never the transient `checking`). Keyed by the
- * generation id used in `POST /generations/:id/segmentation`. Lets a
+ * generation id used in `POST /generations/:id/review`. Lets a
  * collapse-then-re-expand reuse the prior probe instead of refetching.
  */
-const cache = new Map<string, SegmentationState>();
+const cache = new Map<string, ReviewState>();
 
 /**
  * Promise dedupe for currently-in-flight `GET` probes. Multiple hook
@@ -18,14 +18,14 @@ const cache = new Map<string, SegmentationState>();
  * promise instead of firing parallel requests; the result is written
  * back to `cache` once, regardless of which subscriber's effect "wins".
  */
-const inFlight = new Map<string, Promise<SegmentationState>>();
+const inFlight = new Map<string, Promise<ReviewState>>();
 
 /**
- * Hydrate per-run segmentation badge state for a batch view. While
- * `enabled` is true, the hook fires `GET /generations/:id/segmentation`
+ * Hydrate per-run review badge state for a batch view. While
+ * `enabled` is true, the hook fires `GET /generations/:id/review`
  * in parallel for every previously-unhydrated `generationId` (using
  * `Promise.allSettled` so one slow request doesn't block the others).
- * Results map straight to a `SegmentationBadge` initial state:
+ * Results map straight to a `ReviewBadge` initial state:
  *   - 200 → `done`
  *   - 404 → `idle`
  *   - anything else → `error`
@@ -33,14 +33,14 @@ const inFlight = new Map<string, Promise<SegmentationState>>();
  * The returned `setStatus` is wired into each badge's `onStateChange`
  * so user-driven runs stay reflected here too.
  */
-export function useBatchSegmentationStatus(
+export function useBatchReviewStatus(
   generationIds: ReadonlyArray<string | null | undefined>,
   enabled: boolean,
 ): {
-  statuses: Map<string, SegmentationState>;
-  setStatus: (id: string, state: SegmentationState) => void;
+  statuses: Map<string, ReviewState>;
+  setStatus: (id: string, state: ReviewState) => void;
 } {
-  const [statuses, setStatuses] = useState<Map<string, SegmentationState>>(() =>
+  const [statuses, setStatuses] = useState<Map<string, ReviewState>>(() =>
     snapshotFromCache(generationIds),
   );
   // Stable string key derived from the (possibly fresh-ref each render)
@@ -73,7 +73,7 @@ export function useBatchSegmentationStatus(
         const next = new Map(prev);
         results.forEach((result, i) => {
           const id = targets[i];
-          const resolved: SegmentationState =
+          const resolved: ReviewState =
             result.status === 'fulfilled'
               ? result.value
               : {
@@ -84,7 +84,7 @@ export function useBatchSegmentationStatus(
           // completed) while the GET was racing, that state is more
           // authoritative than the GET probe — don't clobber it.
           const cached = cache.get(id);
-          const winner: SegmentationState =
+          const winner: ReviewState =
             cached && (cached.kind === 'running' || cached.kind === 'done') ? cached : resolved;
           next.set(id, winner);
         });
@@ -97,7 +97,7 @@ export function useBatchSegmentationStatus(
     };
   }, [enabled, idsKey]);
 
-  const setStatus = useCallback((id: string, state: SegmentationState) => {
+  const setStatus = useCallback((id: string, state: ReviewState) => {
     cache.set(id, state);
     setStatuses((prev) => {
       const next = new Map(prev);
@@ -122,8 +122,8 @@ function uniqueIds(ids: ReadonlyArray<string | null | undefined>): string[] {
 
 function snapshotFromCache(
   ids: ReadonlyArray<string | null | undefined>,
-): Map<string, SegmentationState> {
-  const out = new Map<string, SegmentationState>();
+): Map<string, ReviewState> {
+  const out = new Map<string, ReviewState>();
   for (const id of uniqueIds(ids)) {
     const hit = cache.get(id);
     if (hit) out.set(id, hit);
@@ -134,9 +134,9 @@ function snapshotFromCache(
 /** Layer cached resolved states on top of the current local map without
  * dropping any in-flight `checking`/`running` entries we set ourselves. */
 function mergeWithCache(
-  prev: Map<string, SegmentationState>,
+  prev: Map<string, ReviewState>,
   ids: string[],
-): Map<string, SegmentationState> {
+): Map<string, ReviewState> {
   const next = new Map(prev);
   for (const id of ids) {
     const hit = cache.get(id);
@@ -146,12 +146,12 @@ function mergeWithCache(
 }
 
 /**
- * Resolves to the segmentation state for `generationId`, sharing a single
+ * Resolves to the review state for `generationId`, sharing a single
  * `GET` per id across all callers. The result is always written to the
  * module-level cache — even if every observer was unmounted while the
  * fetch was in flight — so the next mount picks it up immediately.
  */
-function probeDeduped(generationId: string): Promise<SegmentationState> {
+function probeDeduped(generationId: string): Promise<ReviewState> {
   const cached = cache.get(generationId);
   if (cached) return Promise.resolve(cached);
   const existing = inFlight.get(generationId);
@@ -161,7 +161,7 @@ function probeDeduped(generationId: string): Promise<SegmentationState> {
     try {
       const resolved = await probe(generationId);
       const prior = cache.get(generationId);
-      const winner: SegmentationState =
+      const winner: ReviewState =
         prior && (prior.kind === 'running' || prior.kind === 'done') ? prior : resolved;
       cache.set(generationId, winner);
       return winner;
@@ -174,13 +174,13 @@ function probeDeduped(generationId: string): Promise<SegmentationState> {
   return promise;
 }
 
-async function probe(generationId: string): Promise<SegmentationState> {
-  const res = await fetch(serviceUrl(`generations/${generationId}/segmentation`), {
+async function probe(generationId: string): Promise<ReviewState> {
+  const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
     cache: 'no-store',
   });
   if (res.status === 404) return { kind: 'idle' };
   if (!res.ok) return { kind: 'error', message: `HTTP ${res.status}` };
   // Successful GET means a record exists. We don't have prompt counts here
-  // (those only come back from POST), so the badge falls back to "Segmented".
+  // (those only come back from POST), so the badge falls back to "Reviewed".
   return { kind: 'done' };
 }

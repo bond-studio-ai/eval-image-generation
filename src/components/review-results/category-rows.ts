@@ -4,15 +4,15 @@ import type {
   CategoryMask,
   CategoryRow,
   ConceptGroupResults,
+  ReviewRecord,
   SegmentationCategoryResponse,
   SegmentationFalAsset,
-  SegmentationRecord,
 } from './types';
 
 /**
- * Top-level keys on the segmentation record that describe the row
- * itself rather than per-category SAM results. Anything outside this
- * set is treated as a category payload by `buildRows`.
+ * Top-level keys on the review record that describe the row itself
+ * rather than per-category SAM results. Anything outside this set is
+ * treated as a category payload by `buildRows`.
  */
 const RECORD_METADATA_KEYS = new Set<string>([
   'id',
@@ -20,17 +20,18 @@ const RECORD_METADATA_KEYS = new Set<string>([
   'createdAt',
   'combinedOverlayUrl',
   'timings',
-  // Drift comparison vs the dollhouse product map. Lives on the row
-  // alongside the per-category JSONB columns; the case-converter
-  // rewrites the column name to `driftAssessment` on response. Treat
-  // it as metadata so the row builder doesn't try to interpret the
-  // metric payload as a SAM category result.
-  'driftAssessment',
+  // Plugin-keyed review envelope (`segmentationDrift`, `depthDrift`,
+  // future plugins). Lives on the row alongside the per-category
+  // JSONB columns; the case-converter rewrites the column name to
+  // `reviewAssessment` on response. Treat it as metadata so the row
+  // builder doesn't try to interpret the plugin payload as a SAM
+  // category result.
+  'reviewAssessment',
   // Only present on the POST response synthesized from the run
   // outcome. The GET endpoint that this modal calls doesn't populate
   // it because it isn't a DB column, but we include it here so the
   // metadata filter ignores it if a caller hands us a POST payload.
-  'driftStatus',
+  'pluginStatuses',
   // Canonical group-keyed payload; `buildRows` reads it directly and
   // ignores its presence at the top-level scan below.
   'conceptGroupResults',
@@ -143,7 +144,7 @@ function readResponse(value: unknown): {
  * `ceilings`) that often miss in tight bathroom frames.
  */
 export function buildRows(
-  record: SegmentationRecord | null,
+  record: ReviewRecord | null,
   lookup: CategoryLookup,
   metadata: SegmentationCategoryMetadata[] | null = null,
 ): CategoryRow[] {
