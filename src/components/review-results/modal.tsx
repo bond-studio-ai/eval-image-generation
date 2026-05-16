@@ -156,11 +156,20 @@ export function ReviewModal({
               <SegmentationLegend rows={rows} />
             </div>
           )}
-          {!loading && !error && rows.length === 0 && !record?.combinedOverlayUrl && (
-            <p className="py-12 text-center text-sm text-gray-500">
-              No review results to display.
-            </p>
-          )}
+          {/* Empty-state copy is suppressed when any plugin renderer
+              produced a card — otherwise a depth-only run (no SAM
+              category rows, no overlay PNG) would show "No review
+              results to display." right next to the Depth drift card,
+              which obviously contradicts itself. */}
+          {!loading &&
+            !error &&
+            rows.length === 0 &&
+            !record?.combinedOverlayUrl &&
+            pluginEntries.length === 0 && (
+              <p className="py-12 text-center text-sm text-gray-500">
+                No review results to display.
+              </p>
+            )}
         </div>
       </div>
     </div>
