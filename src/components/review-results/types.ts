@@ -1,9 +1,9 @@
 /**
- * Type definitions shared across the segmentation results modal pieces.
+ * Type definitions shared across the review results modal pieces.
  *
  * These mirror the wire-format the backend
  * (`service-image-generation`) sends on
- * `GET /image-generation/v1/generations/:id/segmentation`. Keys come
+ * `GET /image-generation/v1/generations/:id/review`. Keys come
  * back camelCased because the case-converter middleware re-cases JSONB
  * on response, so every field name in here matches the actual JSON the
  * modal consumes — no extra mapping layer needed.
@@ -156,7 +156,8 @@ export interface OverallDriftMetrics {
 
 /**
  * Persisted drift report comparing SAM masks against the dollhouse
- * product map. Stored on `generation_segmentation.drift_assessment`;
+ * product map. Stored on
+ * `generation_review.review_assessment.plugins.segmentationDrift`;
  * keys come back camelCased by the case-converter middleware. The
  * per-category records use the same camelCase SAM category keys as
  * the rest of the response (e.g. `wallTiles`, `showerCurbTiles`).
@@ -186,6 +187,55 @@ export interface DriftAssessment {
 }
 
 /**
+ * Affine fit recovered by the depth plugin's least-squares solver.
+ * `null` when the fit was ill-conditioned (uniform predicted values,
+ * too few valid pixels, etc.). When `null`, the `metrics` triplet is
+ * also nulled — only the alignment-free `spearman` survives.
+ */
+export interface DepthAffineFit {
+  scale: number;
+  shift: number;
+}
+
+/**
+ * Per-pixel monocular depth metrics computed after applying the
+ * affine fit. Mirrors the `DepthAssessment.metrics` block on the
+ * service. All values are `null` when the affine fit failed; the
+ * alignment-free `spearman` rank correlation can still be set even
+ * when the others are `null`.
+ */
+export interface DepthMetricsBlock {
+  absRel: number | null;
+  rmse: number | null;
+  delta1: number | null;
+  spearman: number | null;
+}
+
+/**
+ * Persisted depth-drift plugin payload. Lives at
+ * `reviewAssessment.plugins.depthDrift` on the wire and mirrors
+ * the service-side `DepthAssessment` interface. Image dimensions
+ * are the dollhouse EXR's, not the AI output's — the depth plugin
+ * compares everything in the dollhouse depth grid.
+ */
+export interface DepthAssessment {
+  predictedDepthUrl: string;
+  dollhouseDepthUrl: string;
+  width: number;
+  height: number;
+  validPixels: number;
+  alignment: DepthAffineFit | null;
+  metrics: DepthMetricsBlock | null;
+  /**
+   * `'too_few_valid_pixels'` when the dollhouse + predicted intersection
+   * was below `MIN_VALID_PIXELS_FOR_ALIGNMENT`, so neither the affine
+   * fit nor the metric triplet was attempted. Absent on the happy
+   * path.
+   */
+  absenceReason?: 'too_few_valid_pixels';
+}
+
+/**
  * Subset of `DriftOutcome.status` the eval modal might receive on a
  * fresh POST response. The GET endpoint this modal calls doesn't
  * populate the column because it isn't a DB field, but the type
@@ -201,15 +251,41 @@ export type DriftStatus =
   | 'failed';
 
 /**
+ * Per-plugin lifecycle status keyed by plugin id. Mirrors the service's
+ * `ReviewPluginStatuses` — `segmentationDrift`, `depthDrift`, plus any
+ * future plugins. Only present on POST responses; the GET endpoint
+ * omits this field because the per-plugin status isn't persisted on
+ * the JSONB envelope (only the assessment payload is).
+ */
+export type PluginStatuses = Record<string, string>;
+
+/**
+ * Plugin-keyed envelope for the persisted review assessment. Each
+ * registered plugin owns one entry under `plugins[plugin.id]`; the
+ * modal renders one card per known plugin id (see
+ * `plugin-renderers/index.tsx`) and skips ids it doesn't have a
+ * renderer for. `version` is bumped only on a breaking shape change
+ * to one of the plugin payloads.
+ */
+export interface ReviewAssessment {
+  version: 1;
+  plugins: {
+    segmentationDrift?: DriftAssessment;
+    depthDrift?: DepthAssessment;
+    [pluginId: string]: unknown;
+  };
+}
+
+/**
  * Backend response shape for the GET endpoint above. The backend
- * stores one JSONB column per category on the `generation_segmentation`
+ * stores one JSONB column per category on the `generation_review`
  * row, so the response has those categories as top-level keys on
  * `record` alongside row metadata (`id`, `createdAt`,
  * `combinedOverlayUrl`, `timings`). Categories are NOT nested under
  * a `results` field — `buildRows` walks the top-level keys, skipping
  * the metadata fields tracked in `category-rows.ts`.
  */
-export interface SegmentationRecord {
+export interface ReviewRecord {
   id?: string;
   generationResultId?: string;
   createdAt?: string;
@@ -222,14 +298,14 @@ export interface SegmentationRecord {
   combinedOverlayUrl?: string | null;
   timings?: SegmentationTimings | null;
   /**
-   * Drift breakdown vs the dollhouse product map for the same camera
-   * frame. `null` (or absent) means drift couldn't be computed — see
-   * `driftStatus` for the reason on POST responses, otherwise assume
-   * the row predates the column or no dollhouse capture was available.
+   * Plugin-keyed review envelope. `null` (or absent) means no
+   * registered plugin produced an assessment (e.g. one-shot run
+   * with no dollhouse view). The modal iterates the plugin
+   * registry and renders one section per known plugin id.
    */
-  driftAssessment?: DriftAssessment | null;
+  reviewAssessment?: ReviewAssessment | null;
   /** Only present on POST responses; the GET endpoint omits this. */
-  driftStatus?: DriftStatus | null;
+  pluginStatuses?: PluginStatuses | null;
   /**
    * Canonical SAM payload, keyed by
    * `(conceptGroupId → memberCategoryKey → SamResponse)`. New rows

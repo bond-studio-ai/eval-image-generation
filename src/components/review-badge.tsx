@@ -4,40 +4,41 @@ import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * One badge state per `generationId`. Mirrors the lifecycle of
- * SAM segmentation for that generation: not yet kicked off, currently
- * being hydrated from the backend, currently running, finished, or
- * failed. `done` carries the success/total counts when we have them
- * (only after a fresh POST — GET responses don't include the counts).
+ * One badge state per `generationId`. Mirrors the lifecycle of the
+ * review pipeline (SAM fan-out + every registered review plugin) for
+ * that generation: not yet kicked off, currently being hydrated from
+ * the backend, currently running, finished, or failed. `done` carries
+ * the success/total counts when we have them (only after a fresh
+ * POST — GET responses don't include the counts).
  */
-export type SegmentationState =
+export type ReviewState =
   | { kind: 'idle' }
   | { kind: 'checking' }
   | { kind: 'running' }
   | { kind: 'done'; cached?: boolean; succeeded?: number; total?: number }
   | { kind: 'error'; message?: string };
 
-/** ~3 minutes is enough for the synchronous SAM fan-out on the slowest projects. */
-export const SEGMENTATION_POST_TIMEOUT_MS = 180_000;
+/** ~3 minutes is enough for the synchronous SAM fan-out + plugin loop on the slowest projects. */
+export const REVIEW_POST_TIMEOUT_MS = 180_000;
 
 /**
- * Single-generation `POST /generations/:id/segmentation` call that resolves
- * to the final `SegmentationState` for the badge. Shared between the
- * per-generation `SegmentationBadge` and the row-level
- * `SegmentationRunGroupBadge` so both code paths report the same
+ * Single-generation `POST /generations/:id/review` call that resolves
+ * to the final `ReviewState` for the badge. Shared between the
+ * per-generation `ReviewBadge` and the row-level
+ * `ReviewRunGroupBadge` so both code paths report the same
  * `done`/`error` shape (cached flag, success counts, error message).
  */
-export async function runSegmentationPost(
+export async function runReviewPost(
   generationId: string,
   force: boolean,
-): Promise<SegmentationState> {
+): Promise<ReviewState> {
   try {
     const url = serviceUrl(
-      `generations/${generationId}/segmentation${force ? '?force=true' : ''}`,
+      `generations/${generationId}/review${force ? '?force=true' : ''}`,
     );
     const res = await fetch(url, {
       method: 'POST',
-      signal: AbortSignal.timeout(SEGMENTATION_POST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(REVIEW_POST_TIMEOUT_MS),
     });
     const json = (await res.json().catch(() => null)) as {
       data?: { cached?: boolean; succeeded?: number; promptCount?: number };
@@ -48,8 +49,8 @@ export async function runSegmentationPost(
       const message =
         json?.error?.message ??
         (res.status === 422
-          ? 'Nothing to segment'
-          : `Segmentation failed (${res.status})`);
+          ? 'Nothing to review'
+          : `Review failed (${res.status})`);
       return { kind: 'error', message };
     }
 
@@ -70,40 +71,40 @@ interface SegmentationBadgeProps {
   generationId: string | null | undefined;
   /**
    * Initial state seeded by the parent (typically from
-   * `useBatchSegmentationStatus`'s parallel hydration on accordion
+   * `useBatchReviewStatus`'s parallel hydration on accordion
    * expand). Defaults to `idle`. The component takes over once the
    * user clicks the badge.
    */
-  initialState?: SegmentationState;
+  initialState?: ReviewState;
   /** Notified whenever the badge transitions. Used by the parent to keep its
    * shared cache in sync so collapsing + re-expanding doesn't lose progress. */
-  onStateChange?: (next: SegmentationState) => void;
+  onStateChange?: (next: ReviewState) => void;
 }
 
-export function SegmentationBadge({
+export function ReviewBadge({
   generationId,
   initialState,
   onStateChange,
 }: SegmentationBadgeProps) {
-  const [state, setState] = useState<SegmentationState>(initialState ?? { kind: 'idle' });
+  const [state, setState] = useState<ReviewState>(initialState ?? { kind: 'idle' });
 
   useEffect(() => {
     if (initialState) setState(initialState);
   }, [initialState]);
 
   const transition = useCallback(
-    (next: SegmentationState) => {
+    (next: ReviewState) => {
       setState(next);
       onStateChange?.(next);
     },
     [onStateChange],
   );
 
-  const runSegmentation = useCallback(
+  const runReview = useCallback(
     async (force: boolean) => {
       if (!generationId) return;
       transition({ kind: 'running' });
-      const next = await runSegmentationPost(generationId, force);
+      const next = await runReviewPost(generationId, force);
       transition(next);
     },
     [generationId, transition],
@@ -124,10 +125,10 @@ export function SegmentationBadge({
     return (
       <span
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
-        title="SAM segmentation in progress"
+        title="Review in progress"
       >
         <Spinner className="h-2.5 w-2.5" />
-        Segmenting
+        Reviewing
       </span>
     );
   }
@@ -135,16 +136,16 @@ export function SegmentationBadge({
   if (state.kind === 'done') {
     const label =
       typeof state.succeeded === 'number' && typeof state.total === 'number'
-        ? `Segmented ${state.succeeded}/${state.total}`
-        : 'Segmented';
+        ? `Reviewed ${state.succeeded}/${state.total}`
+        : 'Reviewed';
     return (
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runSegmentation(true);
+          runReview(true);
         }}
-        title={state.cached ? 'Cached. Click to re-run.' : 'Click to re-run segmentation.'}
+        title={state.cached ? 'Cached. Click to re-run.' : 'Click to re-run review.'}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
         <CheckIcon className="h-2.5 w-2.5" />
@@ -159,13 +160,13 @@ export function SegmentationBadge({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runSegmentation(false);
+          runReview(false);
         }}
         title={state.message ?? 'Click to retry.'}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
       >
         <ErrorIcon className="h-2.5 w-2.5" />
-        Segmentation failed
+        Review failed
       </button>
     );
   }
@@ -175,7 +176,7 @@ export function SegmentationBadge({
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        runSegmentation(false);
+        runReview(false);
       }}
       className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
     >

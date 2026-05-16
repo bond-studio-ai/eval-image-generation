@@ -4,19 +4,20 @@ import { useMemo } from 'react';
 import { CollapsibleCategoryGrid, SegmentationLegend } from './category-grid';
 import { buildCategoryLookup, useSegmentationCategories } from './category-lookup';
 import { buildRows } from './category-rows';
-import { CollapsibleDrift } from './drift';
 import { OverlayComparison } from './overlay-comparison';
+import { pluginEntriesFor } from './plugin-renderers';
 import { CollapsibleTimeline } from './timeline';
-import type { SegmentationRecord } from './types';
+import type { DriftAssessment, ReviewRecord } from './types';
 
 /**
- * Modal layout for the segmentation results view. Composes the
- * timeline, drift assessment, combined-overlay preview, legend, and
- * per-category grid sections; the actual fetch + state lifecycle
- * lives in the parent `SegmentationResultsBadge` so the modal stays a
- * pure presentational component over `record`.
+ * Modal layout for the review results view. Composes the timeline,
+ * each registered plugin section (segmentation drift, depth drift,
+ * future plugins), combined-overlay preview, legend, and per-category
+ * grid sections; the actual fetch + state lifecycle lives in the
+ * parent `ReviewResultsBadge` so the modal stays a pure presentational
+ * component over `record`.
  */
-export function SegmentationModal({
+export function ReviewModal({
   generationId,
   record,
   loading,
@@ -24,7 +25,7 @@ export function SegmentationModal({
   onClose,
 }: {
   generationId: string;
-  record: SegmentationRecord | null;
+  record: ReviewRecord | null;
   loading: boolean;
   error: string | null;
   onClose: () => void;
@@ -33,6 +34,10 @@ export function SegmentationModal({
   const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
   const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
+  const pluginEntries = useMemo(() => pluginEntriesFor(record?.reviewAssessment ?? null), [record]);
+  const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ?? null) as
+    | DriftAssessment
+    | null;
 
   return (
     <div
@@ -51,7 +56,7 @@ export function SegmentationModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-gray-900">Segmentation masks</h3>
+            <h3 className="text-base font-semibold text-gray-900">Review</h3>
             <p className="mt-0.5 text-xs text-gray-500">
               {rows.length > 0
                 ? `${rows.length} ${rows.length === 1 ? 'category' : 'categories'} · ${totalMasks} ${totalMasks === 1 ? 'mask' : 'masks'}`
@@ -104,7 +109,7 @@ export function SegmentationModal({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              Loading segmentation…
+              Loading review…
             </div>
           )}
           {error && !loading && (
@@ -120,29 +125,25 @@ export function SegmentationModal({
           {!loading && !error && record?.timings && (
             <CollapsibleTimeline timings={record.timings} lookup={lookup} />
           )}
+          {/* Iterate the plugin registry; each renderer pulls its own
+              payload out of `reviewAssessment.plugins[plugin.id]` so
+              new plugins ship a renderer + a registry entry without
+              touching this file. */}
           {!loading &&
             !error &&
-            record !== null &&
-            // Render the section whenever the row has a `driftAssessment`
-            // field at all — including the explicit-null case on GET
-            // responses where drift was attempted but couldn't be
-            // computed. Truthiness gating used to hide the "unavailable"
-            // fallback for those rows. Older rows that predate the
-            // column have `driftAssessment === undefined`, and we keep
-            // those quiet.
-            (record.driftAssessment !== undefined || record.driftStatus !== undefined) && (
-              <CollapsibleDrift
-                assessment={record.driftAssessment ?? null}
-                status={record.driftStatus ?? null}
+            pluginEntries.map(({ renderer, assessment }) => (
+              <renderer.Renderer
+                key={renderer.id}
+                assessment={assessment}
                 lookup={lookup}
                 categories={categories}
               />
-            )}
+            ))}
           {!loading && !error && rows.length > 0 && <CollapsibleCategoryGrid rows={rows} />}
           {!loading && !error && record?.combinedOverlayUrl && (
             <OverlayComparison
               overlayUrl={record.combinedOverlayUrl}
-              productMaskUrl={record.driftAssessment?.productMaskUrl ?? null}
+              productMaskUrl={segmentationDrift?.productMaskUrl ?? null}
             />
           )}
           {/* Render the legend whenever we have categories, even if the
@@ -157,7 +158,7 @@ export function SegmentationModal({
           )}
           {!loading && !error && rows.length === 0 && !record?.combinedOverlayUrl && (
             <p className="py-12 text-center text-sm text-gray-500">
-              No segmentation results to display.
+              No review results to display.
             </p>
           )}
         </div>
