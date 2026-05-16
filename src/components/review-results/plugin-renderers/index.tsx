@@ -46,8 +46,18 @@ export const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
 
 /**
  * Project the persisted envelope down to the (renderer, payload) pairs
- * the modal renders. Renderers without any matching plugin payload
- * are dropped so the modal doesn't render empty headers.
+ * the modal renders.
+ *
+ * - `undefined` (key absent): plugin didn't run for this row → skip.
+ * - `null`: plugin ran but couldn't produce a useful assessment
+ *   (e.g. `status: 'no_dollhouse_view'`). Keep the entry so the
+ *   renderer can display an "unavailable" placeholder instead of
+ *   silently vanishing — reviewers need to see *that* the plugin
+ *   was attempted to distinguish "not run" from "ran but unavailable".
+ *
+ * Renderers are responsible for handling a `null` assessment
+ * gracefully (the shipped `SegmentationDriftRenderer` and
+ * `DepthDriftRenderer` both render an unavailable card in that case).
  */
 export function pluginEntriesFor(
   reviewAssessment: ReviewAssessment | null | undefined,
@@ -55,8 +65,8 @@ export function pluginEntriesFor(
   if (!reviewAssessment?.plugins) return [];
   const entries: Array<{ renderer: PluginRenderer; assessment: unknown }> = [];
   for (const renderer of PLUGIN_RENDERERS) {
+    if (!(renderer.id in reviewAssessment.plugins)) continue;
     const assessment = reviewAssessment.plugins[renderer.id];
-    if (assessment === undefined || assessment === null) continue;
     entries.push({ renderer, assessment });
   }
   return entries;
