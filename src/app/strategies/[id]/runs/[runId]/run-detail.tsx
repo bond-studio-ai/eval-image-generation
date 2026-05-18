@@ -612,7 +612,12 @@ function StepGroupCard({
 }: {
   group: StepGroup;
   defaultOpen: boolean;
-  onViewPrompt: (id: string, name: string | null, processed: string | null) => void;
+  onViewPrompt: (
+    id: string,
+    name: string | null,
+    processedSystemPrompt: string | null,
+    processedUserPrompt: string | null,
+  ) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const isMulti = group.results.length > 1;
@@ -715,7 +720,12 @@ function StepGroupCard({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onViewPrompt(step.promptVersion!.id, step.promptVersion!.name, representative?.processedUserPrompt ?? null);
+                    onViewPrompt(
+                      step.promptVersion!.id,
+                      step.promptVersion!.name,
+                      representative?.processedSystemPrompt ?? null,
+                      representative?.processedUserPrompt ?? null,
+                    );
                   }}
                   className="text-gray-500 underline hover:text-gray-700"
                 >
@@ -833,7 +843,8 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const [markingStatus, setMarkingStatus] = useState<'idle' | 'failed' | 'completed'>('idle');
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
   const [viewingPromptName, setViewingPromptName] = useState<string | null>(null);
-  const [viewingProcessedPrompt, setViewingProcessedPrompt] = useState<string | null>(null);
+  const [viewingProcessedSystemPrompt, setViewingProcessedSystemPrompt] = useState<string | null>(null);
+  const [viewingProcessedUserPrompt, setViewingProcessedUserPrompt] = useState<string | null>(null);
   const [showJudgeModal, setShowJudgeModal] = useState(false);
 
   const [showExecFlow, setShowExecFlow] = useState(false);
@@ -942,10 +953,16 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const hasJudgeInfo = data.judgeResults.length > 0 || data.judgeReasoning || data.judgeSystemPrompt || data.judgeUserPrompt;
   const hasConfig = data.strategy.model != null || data.strategy.aspectRatio != null;
 
-  const handleViewPrompt = useCallback((id: string, name: string | null, processed: string | null) => {
+  const handleViewPrompt = useCallback((
+    id: string,
+    name: string | null,
+    processedSystemPrompt: string | null,
+    processedUserPrompt: string | null,
+  ) => {
     setViewingPromptId(id);
     setViewingPromptName(name);
-    setViewingProcessedPrompt(processed);
+    setViewingProcessedSystemPrompt(processedSystemPrompt);
+    setViewingProcessedUserPrompt(processedUserPrompt);
   }, []);
 
   return (
@@ -1218,8 +1235,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         <ViewPromptModal
           promptVersionId={viewingPromptId}
           promptVersionName={viewingPromptName}
-          processedUserPrompt={viewingProcessedPrompt}
-          onClose={() => { setViewingPromptId(null); setViewingPromptName(null); setViewingProcessedPrompt(null); }}
+          processedSystemPrompt={viewingProcessedSystemPrompt}
+          processedUserPrompt={viewingProcessedUserPrompt}
+          onClose={() => {
+            setViewingPromptId(null);
+            setViewingPromptName(null);
+            setViewingProcessedSystemPrompt(null);
+            setViewingProcessedUserPrompt(null);
+          }}
         />
       )}
     </div>
