@@ -4,6 +4,7 @@
  */
 
 import { imageGenerationBase, imageGenerationV2Base } from './env';
+import type { InputPresetDesignFields } from './input-preset-design';
 
 const getBase = () => imageGenerationBase();
 const getV2Base = () => imageGenerationV2Base();
@@ -74,8 +75,6 @@ export interface StrategyListItem {
   runCount: number;
 }
 
-import type { InputPresetDesignFields } from './input-preset-design';
-
 export interface StrategyStepItem {
   id: string;
   stepOrder: number;
@@ -133,7 +132,14 @@ export interface StrategyRunJudgeResultEntry {
   judgeOutput: string | null;
   judgeSystemPrompt: string | null;
   judgeUserPrompt: string | null;
-  judgeInputImages: { url: string; label: string; isComposite?: boolean; sourceImages?: { url: string; label: string }[] }[] | null;
+  judgeInputImages:
+    | {
+        url: string;
+        label: string;
+        isComposite?: boolean;
+        sourceImages?: { url: string; label: string }[];
+      }[]
+    | null;
   judgeTypeUsed: string | null;
   candidateIndex: number | null;
   /** Wall-clock duration (ms) of the judge invocation, or null for legacy
@@ -204,23 +210,6 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   createdAt: string;
 }
 
-// ─── Models ──────────────────────────────────────────────────────────────────
-
-export interface ModelInfo {
-  id: string;
-  name: string;
-  provider: 'gemini' | 'openai' | 'fal';
-}
-
-export interface ModelListing {
-  generation: ModelInfo[];
-  judge: ModelInfo[];
-}
-
-export async function fetchModels(): Promise<ModelListing> {
-  return fetchService<ModelListing>('/models');
-}
-
 export type ProviderModelUseCase =
   | 'IMAGE_GENERATION'
   | 'PREVIEW_IMAGE_GENERATION'
@@ -261,13 +250,16 @@ export interface StrategyModelCatalog {
   judge: ProviderModelV2[];
 }
 
-export async function fetchProviderModelsV2(params: {
-  productAvailable?: boolean;
-  providerId?: string;
-  useCase?: ProviderModelUseCase;
-} = {}): Promise<ProviderModelV2[]> {
+export async function fetchProviderModelsV2(
+  params: {
+    productAvailable?: boolean;
+    providerId?: string;
+    useCase?: ProviderModelUseCase;
+  } = {},
+): Promise<ProviderModelV2[]> {
   const query = new URLSearchParams();
-  if (params.productAvailable !== undefined) query.set('productAvailable', String(params.productAvailable));
+  if (params.productAvailable !== undefined)
+    query.set('productAvailable', String(params.productAvailable));
   if (params.providerId) query.set('providerId', params.providerId);
   if (params.useCase) query.set('useCase', params.useCase);
   query.set('perPage', '200');
@@ -345,17 +337,30 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       judgeModel: r.judgeModel != null ? String(r.judgeModel) : '',
       judgeName: r.judgeName != null ? String(r.judgeName) : null,
       judgePromptVersionId: r.judgePromptVersionId != null ? String(r.judgePromptVersionId) : '',
-      judgePromptVersionName: r.judgePromptVersionName != null ? String(r.judgePromptVersionName) : null,
+      judgePromptVersionName:
+        r.judgePromptVersionName != null ? String(r.judgePromptVersionName) : null,
       position: typeof r.position === 'number' ? r.position : Number(r.position) || 0,
       judgeType: r.judgeType === 'individual' ? 'individual' : 'batch',
-      judgeScore: typeof r.judgeScore === 'number' ? r.judgeScore : r.judgeScore != null ? Number(r.judgeScore) : null,
+      judgeScore:
+        typeof r.judgeScore === 'number'
+          ? r.judgeScore
+          : r.judgeScore != null
+            ? Number(r.judgeScore)
+            : null,
       judgeReasoning: r.judgeReasoning != null ? String(r.judgeReasoning) : null,
       judgeOutput: r.judgeOutput != null ? String(r.judgeOutput) : null,
       judgeSystemPrompt: r.judgeSystemPrompt != null ? String(r.judgeSystemPrompt) : null,
       judgeUserPrompt: r.judgeUserPrompt != null ? String(r.judgeUserPrompt) : null,
-      judgeInputImages: Array.isArray(imgs) ? (imgs as StrategyRunJudgeResultEntry['judgeInputImages']) : null,
+      judgeInputImages: Array.isArray(imgs)
+        ? (imgs as StrategyRunJudgeResultEntry['judgeInputImages'])
+        : null,
       judgeTypeUsed: r.judgeTypeUsed != null ? String(r.judgeTypeUsed) : null,
-      candidateIndex: typeof r.candidateIndex === 'number' ? r.candidateIndex : r.candidateIndex != null ? Number(r.candidateIndex) : null,
+      candidateIndex:
+        typeof r.candidateIndex === 'number'
+          ? r.candidateIndex
+          : r.candidateIndex != null
+            ? Number(r.candidateIndex)
+            : null,
       executionTimeMs:
         typeof r.executionTimeMs === 'number'
           ? r.executionTimeMs

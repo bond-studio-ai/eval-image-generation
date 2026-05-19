@@ -2,7 +2,7 @@
 
 import { ResourceFormHeader } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
-import type { ModelListing, ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
+import type { ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -33,7 +33,6 @@ interface StepData {
   arbitrary_image_from_step: number | null;
   judges?: JudgeData[];
 }
-
 
 interface StrategySettings {
   model: string;
@@ -71,16 +70,33 @@ interface StrategyBuilderProps {
   initialJudges?: JudgeData[];
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
-  models?: ModelListing;
-  modelCatalog?: StrategyModelCatalog;
+  modelCatalog: StrategyModelCatalog;
 }
 
 const PRODUCT_CATEGORIES = [
-  'faucets', 'floor_tiles', 'lightings', 'lvps', 'mirrors', 'paints',
-  'robe_hooks', 'shelves', 'shower_curb_tiles', 'shower_floor_tiles',
-  'shower_glasses', 'shower_systems', 'shower_wall_tiles',
-  'toilet_paper_holders', 'toilets', 'towel_bars', 'towel_rings',
-  'tub_doors', 'tub_fillers', 'tubs', 'vanities', 'wall_tiles', 'wallpapers',
+  'faucets',
+  'floor_tiles',
+  'lightings',
+  'lvps',
+  'mirrors',
+  'paints',
+  'robe_hooks',
+  'shelves',
+  'shower_curb_tiles',
+  'shower_floor_tiles',
+  'shower_glasses',
+  'shower_systems',
+  'shower_wall_tiles',
+  'toilet_paper_holders',
+  'toilets',
+  'towel_bars',
+  'towel_rings',
+  'tub_doors',
+  'tub_fillers',
+  'tubs',
+  'vanities',
+  'wall_tiles',
+  'wallpapers',
 ] as const;
 
 const IMAGE_TYPE_OPTIONS: { value: ProductImageType; label: string }[] = [
@@ -152,7 +168,11 @@ type ModelOption = { label: string; meta?: string; value: string };
 
 function capabilityDefault(models: ProviderModelV2[], fallbackProviderModelId: string): string {
   const defaultModel = models.find((model) => model.useCases.some((useCase) => useCase.isDefault));
-  return defaultModel?.id ?? models.find((model) => model.providerModelId === fallbackProviderModelId)?.id ?? fallbackProviderModelId;
+  return (
+    defaultModel?.id ??
+    models.find((model) => model.providerModelId === fallbackProviderModelId)?.id ??
+    fallbackProviderModelId
+  );
 }
 
 function catalogOptions(models: ProviderModelV2[]): ModelOption[] {
@@ -163,15 +183,11 @@ function catalogOptions(models: ProviderModelV2[]): ModelOption[] {
   }));
 }
 
-function legacyOptions(models: ModelListing | undefined, bucket: 'generation' | 'judge'): ModelOption[] {
-  return (models?.[bucket] ?? []).map((model) => ({
-    value: model.id,
-    label: model.name,
-    meta: model.id,
-  }));
-}
-
-function ensureSelectedOption(options: ModelOption[], value: string, catalogById: Map<string, ProviderModelV2>): ModelOption[] {
+function ensureSelectedOption(
+  options: ModelOption[],
+  value: string,
+  catalogById: Map<string, ProviderModelV2>,
+): ModelOption[] {
   if (!value || options.some((option) => option.value === value)) return options;
   const model = catalogById.get(value);
   return [
@@ -185,7 +201,9 @@ function ensureSelectedOption(options: ModelOption[], value: string, catalogById
 }
 
 const DEFAULT_IMAGE_TYPE: ProductImageType = 'featured-image';
-const IMAGE_TYPE_VALUES = new Set<ProductImageType>(IMAGE_TYPE_OPTIONS.map((option) => option.value));
+const IMAGE_TYPE_VALUES = new Set<ProductImageType>(
+  IMAGE_TYPE_OPTIONS.map((option) => option.value),
+);
 
 function normalizeProductImageType(value: unknown): ProductImageType {
   return typeof value === 'string' && IMAGE_TYPE_VALUES.has(value as ProductImageType)
@@ -193,10 +211,15 @@ function normalizeProductImageType(value: unknown): ProductImageType {
     : DEFAULT_IMAGE_TYPE;
 }
 
-function normalizeProductImageTypes(value: Record<string, unknown> | null | undefined): Record<string, ProductImageType> {
+function normalizeProductImageTypes(
+  value: Record<string, unknown> | null | undefined,
+): Record<string, ProductImageType> {
   if (!value) return {};
   return Object.fromEntries(
-    Object.entries(value).map(([category, imageType]) => [category, normalizeProductImageType(imageType)]),
+    Object.entries(value).map(([category, imageType]) => [
+      category,
+      normalizeProductImageType(imageType),
+    ]),
   );
 }
 
@@ -257,7 +280,7 @@ function ProductImageTypeOverrides({
         <span className="text-xs font-medium text-gray-700">
           Product Image Types
           {nonDefaultCount > 0 && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-medium text-primary-700 ring-1 ring-inset ring-primary-200">
+            <span className="bg-primary-50 text-primary-700 ring-primary-200 ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset">
               {nonDefaultCount} non-default
             </span>
           )}
@@ -287,14 +310,18 @@ function ProductImageTypeOverrides({
             ))}
           </div>
           <p className="mb-3 text-[11px] text-gray-500">
-            If the selected image type is unavailable for a product, generation falls back to the featured image.
+            If the selected image type is unavailable for a product, generation falls back to the
+            featured image.
           </p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {PRODUCT_CATEGORIES.map((cat) => {
               const current = normalizeProductImageType(value[cat]);
               return (
                 <div key={cat} className="flex items-center justify-between gap-2 py-0.5">
-                  <span className="min-w-0 truncate text-xs text-gray-700" title={categoryLabel(cat)}>
+                  <span
+                    className="min-w-0 truncate text-xs text-gray-700"
+                    title={categoryLabel(cat)}
+                  >
                     {categoryLabel(cat)}
                   </span>
                   <div className="flex shrink-0 gap-1">
@@ -340,7 +367,10 @@ function CandidatePicker({ value, onChange }: { value: number; onChange: (n: num
           <button
             key={n}
             type="button"
-            onClick={() => { setCustom(false); onChange(n); }}
+            onClick={() => {
+              setCustom(false);
+              onChange(n);
+            }}
             className={`${btnBase} ${!custom && value === n ? activeCls : inactiveCls}`}
           >
             {n}
@@ -364,7 +394,7 @@ function CandidatePicker({ value, onChange }: { value: number; onChange: (n: num
               if (!Number.isNaN(v) && v >= 1 && v <= 100) onChange(v);
               else if (e.target.value === '') onChange(1);
             }}
-            className="w-12 rounded-md border border-amber-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-amber-900 [appearance:textfield] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-12 [appearance:textfield] rounded-md border border-amber-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-amber-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
         )}
       </div>
@@ -382,14 +412,16 @@ export function StrategyBuilder({
   initialJudges,
   promptVersions,
   inputPresets,
-  models,
   modelCatalog,
 }: StrategyBuilderProps) {
   const allCatalogModels = useMemo(
-    () => [...(modelCatalog?.generation ?? []), ...(modelCatalog?.preview ?? []), ...(modelCatalog?.judge ?? [])],
+    () => [...modelCatalog.generation, ...modelCatalog.preview, ...modelCatalog.judge],
     [modelCatalog],
   );
-  const catalogById = useMemo(() => new Map(allCatalogModels.map((model) => [model.id, model])), [allCatalogModels]);
+  const catalogById = useMemo(
+    () => new Map(allCatalogModels.map((model) => [model.id, model])),
+    [allCatalogModels],
+  );
   const catalogIdByProviderModelId = useMemo(
     () => new Map(allCatalogModels.map((model) => [model.providerModelId, model.id])),
     [allCatalogModels],
@@ -403,49 +435,62 @@ export function StrategyBuilder({
     [catalogIdByProviderModelId],
   );
   const defaultGenerationModel = useMemo(
-    () => capabilityDefault(modelCatalog?.generation ?? [], FALLBACK_GENERATION_MODEL),
+    () => capabilityDefault(modelCatalog.generation, FALLBACK_GENERATION_MODEL),
     [modelCatalog],
   );
   const defaultPreviewModel = useMemo(
-    () => capabilityDefault(modelCatalog?.preview ?? [], FALLBACK_PREVIEW_MODEL),
+    () => capabilityDefault(modelCatalog.preview, FALLBACK_PREVIEW_MODEL),
     [modelCatalog],
   );
   const defaultJudgeModel = useMemo(
-    () => capabilityDefault(modelCatalog?.judge ?? [], FALLBACK_JUDGE_MODEL),
+    () => capabilityDefault(modelCatalog.judge, FALLBACK_JUDGE_MODEL),
     [modelCatalog],
   );
   const generationModels = useMemo(
     () =>
       ensureSelectedOption(
-        modelCatalog ? catalogOptions(modelCatalog.generation) : legacyOptions(models, 'generation'),
+        catalogOptions(modelCatalog.generation),
         initialStrategySettings?.model
-          ? catalogSelectionForProviderModelId(initialStrategySettings.model, defaultGenerationModel)
+          ? catalogSelectionForProviderModelId(
+              initialStrategySettings.model,
+              defaultGenerationModel,
+            )
           : defaultGenerationModel,
         catalogById,
       ),
-    [catalogById, catalogSelectionForProviderModelId, defaultGenerationModel, initialStrategySettings?.model, modelCatalog, models],
+    [
+      catalogById,
+      catalogSelectionForProviderModelId,
+      defaultGenerationModel,
+      initialStrategySettings?.model,
+      modelCatalog,
+    ],
   );
 
   const previewModels = useMemo(
     () =>
       ensureSelectedOption(
-        modelCatalog ? catalogOptions(modelCatalog.preview) : generationModels,
+        catalogOptions(modelCatalog.preview),
         initialPreviewSettings?.preview_model
-          ? catalogSelectionForProviderModelId(initialPreviewSettings.preview_model, defaultPreviewModel)
+          ? catalogSelectionForProviderModelId(
+              initialPreviewSettings.preview_model,
+              defaultPreviewModel,
+            )
           : defaultPreviewModel,
         catalogById,
       ),
-    [catalogById, catalogSelectionForProviderModelId, defaultPreviewModel, generationModels, initialPreviewSettings?.preview_model, modelCatalog],
+    [
+      catalogById,
+      catalogSelectionForProviderModelId,
+      defaultPreviewModel,
+      initialPreviewSettings?.preview_model,
+      modelCatalog,
+    ],
   );
 
   const judgeModels = useMemo(
-    () =>
-      ensureSelectedOption(
-        modelCatalog ? catalogOptions(modelCatalog.judge) : legacyOptions(models, 'judge'),
-        defaultJudgeModel,
-        catalogById,
-      ),
-    [catalogById, defaultJudgeModel, modelCatalog, models],
+    () => ensureSelectedOption(catalogOptions(modelCatalog.judge), defaultJudgeModel, catalogById),
+    [catalogById, defaultJudgeModel, modelCatalog],
   );
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -454,7 +499,10 @@ export function StrategyBuilder({
     initialStrategySettings
       ? {
           ...initialStrategySettings,
-          model: catalogSelectionForProviderModelId(initialStrategySettings.model, defaultGenerationModel),
+          model: catalogSelectionForProviderModelId(
+            initialStrategySettings.model,
+            defaultGenerationModel,
+          ),
         }
       : { ...defaultStrategySettings, model: defaultGenerationModel },
   );
@@ -463,7 +511,10 @@ export function StrategyBuilder({
       ? {
           ...initialPreviewSettings,
           preview_model: initialPreviewSettings.preview_model
-            ? catalogSelectionForProviderModelId(initialPreviewSettings.preview_model, defaultPreviewModel)
+            ? catalogSelectionForProviderModelId(
+                initialPreviewSettings.preview_model,
+                defaultPreviewModel,
+              )
             : null,
         }
       : defaultPreviewSettings,
@@ -518,13 +569,15 @@ export function StrategyBuilder({
         include_product_categories: [],
         product_image_types: {},
         arbitrary_image_from_step: null,
-        judges: [{
-          name: '',
-          judge_model: defaultJudgeModel,
-          judge_type: 'individual',
-          judge_prompt_version_id: '',
-          tolerance_threshold: 1,
-        }],
+        judges: [
+          {
+            name: '',
+            judge_model: defaultJudgeModel,
+            judge_type: 'individual',
+            judge_prompt_version_id: '',
+            tolerance_threshold: 1,
+          },
+        ],
       },
     ]);
   }, [defaultGenerationModel, defaultJudgeModel]);
@@ -534,10 +587,22 @@ export function StrategyBuilder({
       const next = prev.filter((_, i) => i !== idx);
       return next.map((s) => ({
         ...s,
-        dollhouse_view_from_step: s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length ? null : s.dollhouse_view_from_step,
-        real_photo_from_step: s.real_photo_from_step && s.real_photo_from_step > next.length ? null : s.real_photo_from_step,
-        mood_board_from_step: s.mood_board_from_step && s.mood_board_from_step > next.length ? null : s.mood_board_from_step,
-        arbitrary_image_from_step: s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length ? null : s.arbitrary_image_from_step,
+        dollhouse_view_from_step:
+          s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length
+            ? null
+            : s.dollhouse_view_from_step,
+        real_photo_from_step:
+          s.real_photo_from_step && s.real_photo_from_step > next.length
+            ? null
+            : s.real_photo_from_step,
+        mood_board_from_step:
+          s.mood_board_from_step && s.mood_board_from_step > next.length
+            ? null
+            : s.mood_board_from_step,
+        arbitrary_image_from_step:
+          s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length
+            ? null
+            : s.arbitrary_image_from_step,
       }));
     });
   }, []);
@@ -561,8 +626,12 @@ export function StrategyBuilder({
         tagImages: strategySettings.tag_images,
         groupProductImages: strategySettings.group_product_images,
         checkSceneAccuracy: strategySettings.check_scene_accuracy,
-        previewModel: previewSettings.preview_model ? providerModelIdForSelection(previewSettings.preview_model) : null,
-        previewResolution: previewSettings.preview_model ? previewSettings.preview_resolution : null,
+        previewModel: previewSettings.preview_model
+          ? providerModelIdForSelection(previewSettings.preview_model)
+          : null,
+        previewResolution: previewSettings.preview_model
+          ? previewSettings.preview_resolution
+          : null,
         steps: steps.map((s, i) => ({
           id: s.id ?? undefined,
           type: s.type ?? 'generation',
@@ -587,23 +656,22 @@ export function StrategyBuilder({
           includeProductCategories: s.include_product_categories ?? [],
           productImageTypes: normalizeProductImageTypes(s.product_image_types),
           arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
-          judges: s.type === 'judge' && s.judges?.length
-            ? s.judges.map((j, ji) => ({
-                id: j.id,
-                name: j.name || null,
-                judgeModel: providerModelIdForSelection(j.judge_model),
-                judgeType: j.judge_type,
-                judgePromptVersionId: j.judge_prompt_version_id,
-                toleranceThreshold: j.tolerance_threshold,
-                position: ji + 1,
-              }))
-            : undefined,
+          judges:
+            s.type === 'judge' && s.judges?.length
+              ? s.judges.map((j, ji) => ({
+                  id: j.id,
+                  name: j.name || null,
+                  judgeModel: providerModelIdForSelection(j.judge_model),
+                  judgeType: j.judge_type,
+                  judgePromptVersionId: j.judge_prompt_version_id,
+                  toleranceThreshold: j.tolerance_threshold,
+                  position: ji + 1,
+                }))
+              : undefined,
         })),
       };
 
-      const url = isEditing
-        ? serviceUrl(`strategies/${strategyId}`)
-        : serviceUrl('strategies');
+      const url = isEditing ? serviceUrl(`strategies/${strategyId}`) : serviceUrl('strategies');
       const method = isEditing ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
@@ -626,7 +694,17 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, previewSettings, steps, isEditing, strategyId, router, providerModelIdForSelection]);
+  }, [
+    name,
+    description,
+    strategySettings,
+    previewSettings,
+    steps,
+    isEditing,
+    strategyId,
+    router,
+    providerModelIdForSelection,
+  ]);
 
   const saveButton = (
     <button
@@ -637,13 +715,26 @@ export function StrategyBuilder({
       {saving ? (
         <>
           <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
           Saving...
         </>
+      ) : isEditing ? (
+        'Update Strategy'
       ) : (
-        isEditing ? 'Update Strategy' : 'Create Strategy'
+        'Create Strategy'
       )}
     </button>
   );
@@ -651,9 +742,7 @@ export function StrategyBuilder({
   return (
     <div className="space-y-6">
       {/* Header with save */}
-      <div className="flex justify-end">
-        {saveButton}
-      </div>
+      <div className="flex justify-end">{saveButton}</div>
 
       <ResourceFormHeader
         name={name}
@@ -666,7 +755,10 @@ export function StrategyBuilder({
       {/* Strategy-level settings (Model, Aspect Ratio, etc.) */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <h2 className="text-sm font-semibold text-gray-900 uppercase">Strategy settings</h2>
-        <p className="mt-1 text-xs text-gray-500">Used by all steps. Model, aspect ratio, resolution, temperature, tag images, and Google Search.</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Used by all steps. Model, aspect ratio, resolution, temperature, tag images, and Google
+          Search.
+        </p>
         <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
@@ -681,10 +773,12 @@ export function StrategyBuilder({
             <select
               value={strategySettings.aspect_ratio}
               onChange={(e) => setStrategySettings((s) => ({ ...s, aspect_ratio: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
             >
               {ASPECT_RATIOS.map((ar) => (
-                <option key={ar} value={ar}>{ar}</option>
+                <option key={ar} value={ar}>
+                  {ar}
+                </option>
               ))}
             </select>
           </div>
@@ -692,11 +786,15 @@ export function StrategyBuilder({
             <label className="mb-1 block text-xs font-medium text-gray-600">Resolution</label>
             <select
               value={strategySettings.output_resolution}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, output_resolution: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, output_resolution: e.target.value }))
+              }
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
             >
               {RESOLUTIONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>
+                  {r}
+                </option>
               ))}
             </select>
           </div>
@@ -708,8 +806,10 @@ export function StrategyBuilder({
               max={2}
               step={0.1}
               value={strategySettings.temperature}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, temperature: Number(e.target.value) || 1.0 }))}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, temperature: Number(e.target.value) || 1.0 }))
+              }
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
             />
           </div>
         </div>
@@ -727,7 +827,9 @@ export function StrategyBuilder({
             <input
               type="checkbox"
               checked={strategySettings.use_google_search}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, use_google_search: e.target.checked }))}
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, use_google_search: e.target.checked }))
+              }
               className="rounded border-gray-300"
             />
             Google Search
@@ -736,7 +838,9 @@ export function StrategyBuilder({
             <input
               type="checkbox"
               checked={strategySettings.group_product_images}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, group_product_images: e.target.checked }))}
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, group_product_images: e.target.checked }))
+              }
               className="rounded border-gray-300"
             />
             Group product images
@@ -745,7 +849,9 @@ export function StrategyBuilder({
             <input
               type="checkbox"
               checked={strategySettings.check_scene_accuracy}
-              onChange={(e) => setStrategySettings((s) => ({ ...s, check_scene_accuracy: e.target.checked }))}
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, check_scene_accuracy: e.target.checked }))
+              }
               className="rounded border-gray-300"
             />
             Check scene accuracy
@@ -759,7 +865,8 @@ export function StrategyBuilder({
           <div>
             <h2 className="text-sm font-semibold text-gray-900 uppercase">Preview Generation</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Generate a fast, low-resolution preview in parallel with the main run. Sends an early callback before the full result.
+              Generate a fast, low-resolution preview in parallel with the main run. Sends an early
+              callback before the full result.
             </p>
           </div>
           <label className="relative inline-flex cursor-pointer items-center">
@@ -768,14 +875,17 @@ export function StrategyBuilder({
               checked={previewSettings.preview_model !== null}
               onChange={(e) => {
                 if (e.target.checked) {
-                  setPreviewSettings({ preview_model: defaultPreviewModel, preview_resolution: '512' });
+                  setPreviewSettings({
+                    preview_model: defaultPreviewModel,
+                    preview_resolution: '512',
+                  });
                 } else {
                   setPreviewSettings(defaultPreviewSettings);
                 }
               }}
               className="peer sr-only"
             />
-            <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300" />
+            <div className="peer peer-checked:bg-primary-600 peer-focus:ring-primary-300 h-5 w-9 rounded-full bg-gray-200 peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white" />
           </label>
         </div>
 
@@ -790,14 +900,20 @@ export function StrategyBuilder({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Resolution</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Preview Resolution
+              </label>
               <select
                 value={previewSettings.preview_resolution}
-                onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
-                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                onChange={(e) =>
+                  setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))
+                }
+                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
               >
                 {PREVIEW_RESOLUTIONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
                 ))}
               </select>
             </div>
@@ -809,256 +925,426 @@ export function StrategyBuilder({
       <div>
         <h2 className="text-sm font-semibold text-gray-900 uppercase">Steps</h2>
         <div className="mt-3 space-y-4">
-          {steps.map((step, idx) => step.type === 'judge' ? (
-            <div key={idx} className="rounded-lg border border-amber-200 bg-amber-50/50 p-5 shadow-xs">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                    Step {idx + 1} &mdash; Judge
-                  </span>
-                  <CandidatePicker
-                    value={step.number_of_images ?? 4}
-                    onChange={(n) => updateStep(idx, { number_of_images: n })}
-                  />
-                </div>
-                <button type="button" onClick={() => removeStep(idx)} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-amber-700">
-                Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and picks the best one.
-              </p>
-
-              <div className="mt-4 space-y-3">
-                {(step.judges ?? []).map((judge, jIdx) => (
-                  <div key={jIdx} className="rounded-lg border border-amber-200 bg-white p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">{jIdx + 1}</span>
-                      <div className="flex items-center gap-2">
-                        {JUDGE_TYPES.map((jt) => (
-                          <label key={jt.value} title={jt.description} className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${judge.judge_type === jt.value ? 'border-amber-300 bg-amber-50 font-medium text-amber-800' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
-                            <input type="radio" name={`judge_type_${idx}_${jIdx}`} value={jt.value} checked={judge.judge_type === jt.value} onChange={() => {
-                              const newJudges = [...(step.judges ?? [])];
-                              newJudges[jIdx] = { ...newJudges[jIdx], judge_type: jt.value };
-                              updateStep(idx, { judges: newJudges });
-                            }} className="sr-only" />
-                            {jt.label}
-                          </label>
-                        ))}
-                      </div>
-                      {(step.judges ?? []).length > 1 && (
-                        <button type="button" onClick={() => {
-                          const newJudges = (step.judges ?? []).filter((_, i) => i !== jIdx);
-                          updateStep(idx, { judges: newJudges });
-                        }} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500">
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div className="mb-3">
-                      <label className="mb-1 block text-xs font-medium text-gray-600">Name (optional)</label>
-                      <input type="text" value={judge.name ?? ''} onChange={(e) => {
-                        const newJudges = [...(step.judges ?? [])];
-                        newJudges[jIdx] = { ...newJudges[jIdx], name: e.target.value };
-                        updateStep(idx, { judges: newJudges });
-                      }} placeholder="e.g. Scene Accuracy" className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1" />
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
-                        <SearchableSelect value={judge.judge_model} options={judgeModels} onChange={(v) => {
-                          const newJudges = [...(step.judges ?? [])];
-                          newJudges[jIdx] = { ...newJudges[jIdx], judge_model: v };
-                          updateStep(idx, { judges: newJudges });
-                        }} />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">Prompt</label>
-                        <PromptVersionSelector value={judge.judge_prompt_version_id} promptVersions={promptVersions} onChange={(id) => {
-                          const newJudges = [...(step.judges ?? [])];
-                          newJudges[jIdx] = { ...newJudges[jIdx], judge_prompt_version_id: id };
-                          updateStep(idx, { judges: newJudges });
-                        }} />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
-                        <span>Tolerance</span>
-                        <span className="tabular-nums text-gray-900">{judge.tolerance_threshold}<span className="ml-0.5 text-gray-400">/100</span></span>
-                      </label>
-                      <input type="range" min={1} max={100} value={judge.tolerance_threshold} onChange={(e) => {
-                        const newJudges = [...(step.judges ?? [])];
-                        newJudges[jIdx] = { ...newJudges[jIdx], tolerance_threshold: Number(e.target.value) };
-                        updateStep(idx, { judges: newJudges });
-                      }} className="w-full accent-amber-500" />
-                    </div>
-                  </div>
-                ))}
-                <button type="button" onClick={() => {
-                  const newJudges = [...(step.judges ?? []), { name: '', judge_model: defaultJudgeModel, judge_type: 'individual' as const, judge_prompt_version_id: '', tolerance_threshold: 1 }];
-                  updateStep(idx, { judges: newJudges });
-                }} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Add Judge
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div key={idx} className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
-                    Step {idx + 1}
-                  </span>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={step.name}
-                      onChange={(e) => updateStep(idx, { name: e.target.value })}
-                      placeholder="Name this step..."
-                      className="w-56 rounded-lg border border-gray-300 bg-gray-50 pl-3 pr-8 py-1.5 text-sm font-medium text-gray-800 placeholder:text-gray-400 hover:border-gray-400 hover:bg-white focus:border-primary-500 focus:bg-white focus:ring-primary-500 focus:outline-none focus:ring-1 transition-colors"
+          {steps.map((step, idx) =>
+            step.type === 'judge' ? (
+              <div
+                key={idx}
+                className="rounded-lg border border-amber-200 bg-amber-50/50 p-5 shadow-xs"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                      Step {idx + 1} &mdash; Judge
+                    </span>
+                    <CandidatePicker
+                      value={step.number_of_images ?? 4}
+                      onChange={(n) => updateStep(idx, { number_of_images: n })}
                     />
-                    <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-                    </svg>
                   </div>
-                </div>
-                {steps.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeStep(idx)}
                     className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                      />
                     </svg>
                   </button>
-                )}
-              </div>
+                </div>
+                <p className="mt-2 text-xs text-amber-700">
+                  Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and
+                  picks the best one.
+                </p>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {/* Prompt */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Prompt Version</label>
-                  <PromptVersionSelector
-                    value={step.prompt_version_id}
-                    promptVersions={promptVersions}
-                    onChange={(id) => updateStep(idx, { prompt_version_id: id })}
-                  />
+                <div className="mt-4 space-y-3">
+                  {(step.judges ?? []).map((judge, jIdx) => (
+                    <div key={jIdx} className="rounded-lg border border-amber-200 bg-white p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                          {jIdx + 1}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {JUDGE_TYPES.map((jt) => (
+                            <label
+                              key={jt.value}
+                              title={jt.description}
+                              className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${judge.judge_type === jt.value ? 'border-amber-300 bg-amber-50 font-medium text-amber-800' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+                            >
+                              <input
+                                type="radio"
+                                name={`judge_type_${idx}_${jIdx}`}
+                                value={jt.value}
+                                checked={judge.judge_type === jt.value}
+                                onChange={() => {
+                                  const newJudges = [...(step.judges ?? [])];
+                                  newJudges[jIdx] = { ...newJudges[jIdx], judge_type: jt.value };
+                                  updateStep(idx, { judges: newJudges });
+                                }}
+                                className="sr-only"
+                              />
+                              {jt.label}
+                            </label>
+                          ))}
+                        </div>
+                        {(step.judges ?? []).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newJudges = (step.judges ?? []).filter((_, i) => i !== jIdx);
+                              updateStep(idx, { judges: newJudges });
+                            }}
+                            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                          Name (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={judge.name ?? ''}
+                          onChange={(e) => {
+                            const newJudges = [...(step.judges ?? [])];
+                            newJudges[jIdx] = { ...newJudges[jIdx], name: e.target.value };
+                            updateStep(idx, { judges: newJudges });
+                          }}
+                          placeholder="e.g. Scene Accuracy"
+                          className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Model
+                          </label>
+                          <SearchableSelect
+                            value={judge.judge_model}
+                            options={judgeModels}
+                            onChange={(v) => {
+                              const newJudges = [...(step.judges ?? [])];
+                              newJudges[jIdx] = { ...newJudges[jIdx], judge_model: v };
+                              updateStep(idx, { judges: newJudges });
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Prompt
+                          </label>
+                          <PromptVersionSelector
+                            value={judge.judge_prompt_version_id}
+                            promptVersions={promptVersions}
+                            onChange={(id) => {
+                              const newJudges = [...(step.judges ?? [])];
+                              newJudges[jIdx] = { ...newJudges[jIdx], judge_prompt_version_id: id };
+                              updateStep(idx, { judges: newJudges });
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                          <span>Tolerance</span>
+                          <span className="text-gray-900 tabular-nums">
+                            {judge.tolerance_threshold}
+                            <span className="ml-0.5 text-gray-400">/100</span>
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={100}
+                          value={judge.tolerance_threshold}
+                          onChange={(e) => {
+                            const newJudges = [...(step.judges ?? [])];
+                            newJudges[jIdx] = {
+                              ...newJudges[jIdx],
+                              tolerance_threshold: Number(e.target.value),
+                            };
+                            updateStep(idx, { judges: newJudges });
+                          }}
+                          className="w-full accent-amber-500"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newJudges = [
+                        ...(step.judges ?? []),
+                        {
+                          name: '',
+                          judge_model: defaultJudgeModel,
+                          judge_type: 'individual' as const,
+                          judge_prompt_version_id: '',
+                          tolerance_threshold: 1,
+                        },
+                      ];
+                      updateStep(idx, { judges: newJudges });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                    Add Judge
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div key={idx} className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="bg-primary-100 text-primary-700 inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                      Step {idx + 1}
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={step.name}
+                        onChange={(e) => updateStep(idx, { name: e.target.value })}
+                        placeholder="Name this step..."
+                        className="focus:border-primary-500 focus:ring-primary-500 w-56 rounded-lg border border-gray-300 bg-gray-50 py-1.5 pr-8 pl-3 text-sm font-medium text-gray-800 transition-colors placeholder:text-gray-400 hover:border-gray-400 hover:bg-white focus:bg-white focus:ring-1 focus:outline-none"
+                      />
+                      <svg
+                        className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  {steps.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeStep(idx)}
+                      className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
-              </div>
+                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {/* Prompt */}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Prompt Version
+                    </label>
+                    <PromptVersionSelector
+                      value={step.prompt_version_id}
+                      promptVersions={promptVersions}
+                      onChange={(id) => updateStep(idx, { prompt_version_id: id })}
+                    />
+                  </div>
+                </div>
 
-              {/* Include from run presets: what to pull for this step (presets are chosen when you run) */}
-              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-3 text-xs font-medium text-gray-700">Include from run presets</p>
+                {/* Include from run presets: what to pull for this step (presets are chosen when you run) */}
+                <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="mb-3 text-xs font-medium text-gray-700">Include from run presets</p>
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-4">
-                      {([
-                        { key: 'include_dollhouse', override: 'dollhouse_view_from_step', label: 'Dollhouse' },
-                        { key: 'include_real_photo', override: 'real_photo_from_step', label: 'Real Life' },
-                        { key: 'include_mood_board', override: 'mood_board_from_step', label: 'Mood Board' },
-                      ] as const).map(({ key, override, label }) => {
+                      {(
+                        [
+                          {
+                            key: 'include_dollhouse',
+                            override: 'dollhouse_view_from_step',
+                            label: 'Dollhouse',
+                          },
+                          {
+                            key: 'include_real_photo',
+                            override: 'real_photo_from_step',
+                            label: 'Real Life',
+                          },
+                          {
+                            key: 'include_mood_board',
+                            override: 'mood_board_from_step',
+                            label: 'Mood Board',
+                          },
+                        ] as const
+                      ).map(({ key, override, label }) => {
                         const overridden = step[override] != null;
                         return (
-                          <label key={key} className={`flex items-center gap-2 text-sm ${overridden ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-700'}`}>
+                          <label
+                            key={key}
+                            className={`flex items-center gap-2 text-sm ${overridden ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-700'}`}
+                          >
                             <input
                               type="checkbox"
                               checked={overridden ? false : step[key]}
                               disabled={overridden}
                               onChange={(e) => updateStep(idx, { [key]: e.target.checked })}
-                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                              className="text-primary-600 focus:ring-primary-500 rounded border-gray-300 disabled:opacity-50"
                             />
                             {label}
-                            {overridden && <span className="text-xs text-amber-600">(from step {step[override]})</span>}
+                            {overridden && (
+                              <span className="text-xs text-amber-600">
+                                (from step {step[override]})
+                              </span>
+                            )}
                           </label>
                         );
                       })}
                     </div>
-                    <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
                       <input
                         type="checkbox"
                         checked={step.include_product_images}
-                        onChange={(e) => updateStep(idx, { include_product_images: e.target.checked })}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        onChange={(e) =>
+                          updateStep(idx, { include_product_images: e.target.checked })
+                        }
+                        className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
                       />
                       Product images
                     </label>
                   </div>
                 </div>
 
-              {/* Product Image Type Overrides */}
-              {step.include_product_images && (
-                <ProductImageTypeOverrides
-                  value={step.product_image_types}
-                  onChange={(v) => updateStep(idx, { product_image_types: v })}
-                />
-              )}
+                {/* Product Image Type Overrides */}
+                {step.include_product_images && (
+                  <ProductImageTypeOverrides
+                    value={step.product_image_types}
+                    onChange={(v) => updateStep(idx, { product_image_types: v })}
+                  />
+                )}
 
-              {/* Scene Field Overrides (only for step 2+) */}
-              {idx > 0 && (
-                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                  <p className="mb-2 text-xs font-medium text-amber-800">Use output from a previous step as scene input</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {([
-                      { field: 'dollhouse_view_from_step', includeKey: 'include_dollhouse', label: 'Dollhouse View' },
-                      { field: 'real_photo_from_step', includeKey: 'include_real_photo', label: 'Real Photo' },
-                      { field: 'mood_board_from_step', includeKey: 'include_mood_board', label: 'Mood Board' },
-                    ] as const).map(({ field, includeKey, label }) => (
-                      <div key={field}>
-                        <label className="mb-1 block text-xs text-amber-700">{label}</label>
-                        <select
-                          value={step[field] ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value ? Number(e.target.value) : null;
-                            const updates: Record<string, unknown> = { [field]: val };
-                            if (val != null) updates[includeKey] = false;
-                            updateStep(idx, updates);
-                          }}
-                          className="w-full rounded border border-amber-300 bg-white px-2 py-1 text-xs focus:border-amber-500 focus:ring-amber-500 focus:outline-none focus:ring-1"
-                        >
-                          <option value="">-- None --</option>
-                          {Array.from({ length: idx }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                              Step {i + 1} output
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Include output from previous step as arbitrary image (step 2+) */}
-              {idx > 0 && (
-                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="mb-2 text-xs font-medium text-blue-800">Include output from a previous step as extra image</p>
-                  <div className="max-w-xs">
-                    <select
-                      value={step.arbitrary_image_from_step ?? ''}
-                      onChange={(e) => updateStep(idx, { arbitrary_image_from_step: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full rounded border border-blue-300 bg-white px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1"
-                    >
-                      <option value="">-- None --</option>
-                      {Array.from({ length: idx }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          Step {i + 1} output
-                        </option>
+                {/* Scene Field Overrides (only for step 2+) */}
+                {idx > 0 && (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="mb-2 text-xs font-medium text-amber-800">
+                      Use output from a previous step as scene input
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(
+                        [
+                          {
+                            field: 'dollhouse_view_from_step',
+                            includeKey: 'include_dollhouse',
+                            label: 'Dollhouse View',
+                          },
+                          {
+                            field: 'real_photo_from_step',
+                            includeKey: 'include_real_photo',
+                            label: 'Real Photo',
+                          },
+                          {
+                            field: 'mood_board_from_step',
+                            includeKey: 'include_mood_board',
+                            label: 'Mood Board',
+                          },
+                        ] as const
+                      ).map(({ field, includeKey, label }) => (
+                        <div key={field}>
+                          <label className="mb-1 block text-xs text-amber-700">{label}</label>
+                          <select
+                            value={step[field] ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value ? Number(e.target.value) : null;
+                              const updates: Record<string, unknown> = { [field]: val };
+                              if (val != null) updates[includeKey] = false;
+                              updateStep(idx, updates);
+                            }}
+                            className="w-full rounded border border-amber-300 bg-white px-2 py-1 text-xs focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          >
+                            <option value="">-- None --</option>
+                            {Array.from({ length: idx }, (_, i) => (
+                              <option key={i + 1} value={i + 1}>
+                                Step {i + 1} output
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-            </div>
-          ))}
+                {/* Include output from previous step as arbitrary image (step 2+) */}
+                {idx > 0 && (
+                  <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p className="mb-2 text-xs font-medium text-blue-800">
+                      Include output from a previous step as extra image
+                    </p>
+                    <div className="max-w-xs">
+                      <select
+                        value={step.arbitrary_image_from_step ?? ''}
+                        onChange={(e) =>
+                          updateStep(idx, {
+                            arbitrary_image_from_step: e.target.value
+                              ? Number(e.target.value)
+                              : null,
+                          })
+                        }
+                        className="w-full rounded border border-blue-300 bg-white px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                      >
+                        <option value="">-- None --</option>
+                        {Array.from({ length: idx }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            Step {i + 1} output
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ),
+          )}
         </div>
 
         <div className="mt-4 flex gap-3">
@@ -1067,7 +1353,13 @@ export function StrategyBuilder({
             onClick={addStep}
             className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-800"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             Add Generation Step
@@ -1076,10 +1368,20 @@ export function StrategyBuilder({
             type="button"
             onClick={addJudgeStep}
             disabled={steps.length === 0 || steps[steps.length - 1]?.type === 'judge'}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 px-4 py-3 text-sm font-medium text-amber-700 transition-colors hover:border-amber-400 hover:text-amber-800 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 px-4 py-3 text-sm font-medium text-amber-700 transition-colors hover:border-amber-400 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"
+              />
             </svg>
             Add Judge Step
           </button>
@@ -1092,7 +1394,6 @@ export function StrategyBuilder({
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
-
     </div>
   );
 }
@@ -1130,19 +1431,35 @@ function SearchableSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
       >
         <span className={selectedLabel ? 'truncate text-gray-900' : 'text-gray-400'}>
           {selectedLabel || placeholder}
         </span>
-        <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+        <svg
+          className="h-4 w-4 shrink-0 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
+          />
         </svg>
       </button>
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40 cursor-pointer" onClick={() => { setOpen(false); setSearch(''); }} />
+          <div
+            className="fixed inset-0 z-40 cursor-pointer"
+            onClick={() => {
+              setOpen(false);
+              setSearch('');
+            }}
+          />
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
@@ -1151,7 +1468,7 @@ function SearchableSelect({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search models..."
-                className="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
               />
             </div>
             <div className="max-h-56 overflow-y-auto border-t border-gray-100">
@@ -1162,10 +1479,16 @@ function SearchableSelect({
                 <button
                   key={o.value}
                   type="button"
-                  onClick={() => { onChange(o.value); setOpen(false); setSearch(''); }}
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                    setSearch('');
+                  }}
                   className={`flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-gray-50 ${o.value === value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}
                 >
-                  <span className={`text-sm ${o.value === value ? 'font-medium' : ''}`}>{o.label}</span>
+                  <span className={`text-sm ${o.value === value ? 'font-medium' : ''}`}>
+                    {o.label}
+                  </span>
                   <span className="font-mono text-xs text-gray-400">{o.meta ?? o.value}</span>
                 </button>
               ))}
@@ -1211,19 +1534,35 @@ function PromptVersionSelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
       >
         <span className={selectedName ? 'text-gray-900' : 'text-gray-400'}>
           {selectedName || '-- Select --'}
         </span>
-        <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+        <svg
+          className="h-4 w-4 shrink-0 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
+          />
         </svg>
       </button>
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40 cursor-pointer" onClick={() => { setOpen(false); setSearch(''); }} />
+          <div
+            className="fixed inset-0 z-40 cursor-pointer"
+            onClick={() => {
+              setOpen(false);
+              setSearch('');
+            }}
+          />
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
@@ -1232,13 +1571,17 @@ function PromptVersionSelector({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter prompts..."
-                className="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
               />
             </div>
             <div className="max-h-56 overflow-y-auto border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
+                onClick={() => {
+                  onChange('');
+                  setOpen(false);
+                  setSearch('');
+                }}
                 className="w-full px-3 py-2 text-left text-sm text-gray-400 hover:bg-gray-50"
               >
                 -- None --
@@ -1250,12 +1593,18 @@ function PromptVersionSelector({
                 <button
                   key={pv.id}
                   type="button"
-                  onClick={() => { onChange(pv.id); setOpen(false); setSearch(''); }}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${pv.id === value ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-700'}`}
+                  onClick={() => {
+                    onChange(pv.id);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${pv.id === value ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700'}`}
                 >
                   <span className="truncate">{pv.name || 'Untitled'}</span>
                   {pv.stats?.generationCount ? (
-                    <span className="ml-auto shrink-0 text-xs text-gray-400">{pv.stats.generationCount} gen</span>
+                    <span className="ml-auto shrink-0 text-xs text-gray-400">
+                      {pv.stats.generationCount} gen
+                    </span>
                   ) : null}
                 </button>
               ))}
