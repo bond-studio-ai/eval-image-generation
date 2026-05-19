@@ -15,8 +15,10 @@ export interface PromptVersionListItem {
  *     dollhouse capture step before generation.
  *   - `photo` (+ project_id) hydrates the run from the project's user
  *     photos (real_photo + arbitrary_images).
+ *   - `pdp` targets product-detail-page strategies that consume
+ *     caller-supplied arbitrary images via the PDP runs endpoint.
  */
-export type StrategyRunSource = 'dollhouse' | 'photo';
+export type StrategyRunSource = 'dollhouse' | 'photo' | 'pdp';
 
 export interface StrategyListItem {
   id: string;

@@ -59,7 +59,7 @@ export interface PromptPreviewDollhouseSource {
   areas: PromptPreviewDollhouseArea[];
 }
 
-export type StrategyRunSource = 'dollhouse' | 'photo';
+export type StrategyRunSource = 'dollhouse' | 'photo' | 'pdp';
 
 export interface StrategyListItem {
   id: string;

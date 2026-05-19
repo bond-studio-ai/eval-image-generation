@@ -8,13 +8,14 @@ import { useCallback, useState } from 'react';
 const SOURCES: ReadonlyArray<{ value: StrategyRunSource; label: string }> = [
   { value: 'dollhouse', label: 'Dollhouse' },
   { value: 'photo', label: 'Photo' },
+  { value: 'pdp', label: 'PDP' },
 ];
 
 /**
  * Per-source active toggle. A strategy can be the active one for `dollhouse`,
- * for `photo`, or for neither — but not for both at once. Activating a
- * strategy for a source unseats whichever strategy was previously active for
- * that source.
+ * `photo`, `pdp`, or for none — but not for more than one at a time.
+ * Activating a strategy for a source unseats whichever strategy was previously
+ * active for that source.
  */
 export function ActiveToggleButton({
   strategyId,

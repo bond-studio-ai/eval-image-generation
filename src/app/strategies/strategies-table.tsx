@@ -155,7 +155,8 @@ export function StrategiesTable() {
             </Link>
           );
         }
-        const sourceLabel = s.activeForSource === 'photo' ? 'Photo' : 'Dollhouse';
+        const sourceLabel =
+          s.activeForSource === 'photo' ? 'Photo' : s.activeForSource === 'pdp' ? 'PDP' : 'Dollhouse';
         return (
           <button
             type="button"
