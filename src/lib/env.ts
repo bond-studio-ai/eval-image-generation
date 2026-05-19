@@ -14,6 +14,11 @@ export function imageGenerationBase(): string {
   return `${raw()}/image-generation/v1`;
 }
 
+/** Base URL for the v2 image-generation service API. */
+export function imageGenerationV2Base(): string {
+  return `${raw()}/image-generation/v2`;
+}
+
 /** Base URL for the platform API, protocol-normalized to https. */
 export function platformApiBase(): string {
   return `https://${raw().replace(/^https?:\/\//, '')}`;

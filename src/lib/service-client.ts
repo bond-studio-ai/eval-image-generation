@@ -3,12 +3,23 @@
  * Used by SSR pages to fetch data.
  */
 
-import { imageGenerationBase } from './env';
+import { imageGenerationBase, imageGenerationV2Base } from './env';
 
 const getBase = () => imageGenerationBase();
+const getV2Base = () => imageGenerationV2Base();
 
 async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${getBase()}${path.startsWith('/') ? path : `/${path}`}`;
+  const res = await fetch(url, { cache: 'no-store', ...init });
+  if (!res.ok) {
+    throw new Error(`Service ${res.status}: ${url}`);
+  }
+  const json = await res.json();
+  return json.data as T;
+}
+
+async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${getV2Base()}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, { cache: 'no-store', ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
@@ -208,6 +219,69 @@ export interface ModelListing {
 
 export async function fetchModels(): Promise<ModelListing> {
   return fetchService<ModelListing>('/models');
+}
+
+export type ProviderModelUseCase =
+  | 'IMAGE_GENERATION'
+  | 'PREVIEW_IMAGE_GENERATION'
+  | 'IMAGE_GENERATION_FALLBACK'
+  | 'JUDGING'
+  | 'SEGMENTATION'
+  | 'DEPTH_ANALYSIS';
+
+export interface ProviderModelCapability {
+  id: string;
+  useCase: ProviderModelUseCase;
+  productAvailable: boolean;
+  isDefault: boolean;
+  config: Record<string, unknown>;
+  sortOrder: number;
+}
+
+export interface ProviderModelV2 {
+  id: string;
+  providerId: string;
+  providerKey: 'gemini' | 'openai' | 'fal';
+  providerDisplayName: string;
+  providerModelId: string;
+  displayName: string;
+  shortName: string | null;
+  description: string | null;
+  status: string;
+  metadata: Record<string, unknown>;
+  useCases: ProviderModelCapability[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface StrategyModelCatalog {
+  generation: ProviderModelV2[];
+  preview: ProviderModelV2[];
+  judge: ProviderModelV2[];
+}
+
+export async function fetchProviderModelsV2(params: {
+  productAvailable?: boolean;
+  providerId?: string;
+  useCase?: ProviderModelUseCase;
+} = {}): Promise<ProviderModelV2[]> {
+  const query = new URLSearchParams();
+  if (params.productAvailable !== undefined) query.set('productAvailable', String(params.productAvailable));
+  if (params.providerId) query.set('providerId', params.providerId);
+  if (params.useCase) query.set('useCase', params.useCase);
+  query.set('perPage', '200');
+  const suffix = query.toString();
+  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${suffix ? `?${suffix}` : ''}`);
+}
+
+export async function fetchStrategyModelCatalog(): Promise<StrategyModelCatalog> {
+  const [generation, preview, judge] = await Promise.all([
+    fetchProviderModelsV2({ productAvailable: true, useCase: 'IMAGE_GENERATION' }),
+    fetchProviderModelsV2({ productAvailable: true, useCase: 'PREVIEW_IMAGE_GENERATION' }),
+    fetchProviderModelsV2({ productAvailable: true, useCase: 'JUDGING' }),
+  ]);
+  return { generation, preview, judge };
 }
 
 // ─── Prompt Versions ─────────────────────────────────────────────────────────
