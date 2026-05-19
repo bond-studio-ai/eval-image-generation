@@ -2,7 +2,7 @@
 
 import { ResourceFormHeader } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
-import type { ModelListing } from '@/lib/service-client';
+import type { ModelListing, ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -72,6 +72,7 @@ interface StrategyBuilderProps {
   promptVersions: PromptVersionListItem[];
   inputPresets: InputPresetListItem[];
   models?: ModelListing;
+  modelCatalog?: StrategyModelCatalog;
 }
 
 const PRODUCT_CATEGORIES = [
@@ -93,12 +94,16 @@ function categoryLabel(cat: string): string {
   return cat.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function defaultStep(promptVersionId: string): StepData {
+const FALLBACK_GENERATION_MODEL = 'gemini-3-pro-image-preview';
+const FALLBACK_JUDGE_MODEL = 'gemini-2.5-flash';
+const FALLBACK_PREVIEW_MODEL = 'gemini-3.1-flash-image-preview';
+
+function defaultStep(promptVersionId: string, model = FALLBACK_GENERATION_MODEL): StepData {
   return {
     type: 'generation',
     name: '',
     prompt_version_id: promptVersionId,
-    model: 'gemini-3-pro-image-preview',
+    model,
     aspect_ratio: '1:1',
     output_resolution: '1K',
     temperature: 1.0,
@@ -133,7 +138,7 @@ const defaultPreviewSettings: PreviewSettings = {
 const PREVIEW_RESOLUTIONS = ['512', '1K', '2K', '4K'];
 
 const defaultStrategySettings: StrategySettings = {
-  model: 'gemini-3-pro-image-preview',
+  model: FALLBACK_GENERATION_MODEL,
   aspect_ratio: '1:1',
   output_resolution: '1K',
   temperature: 1.0,
@@ -142,6 +147,42 @@ const defaultStrategySettings: StrategySettings = {
   group_product_images: false,
   check_scene_accuracy: false,
 };
+
+type ModelOption = { label: string; meta?: string; value: string };
+
+function capabilityDefault(models: ProviderModelV2[], fallbackProviderModelId: string): string {
+  const defaultModel = models.find((model) => model.useCases.some((useCase) => useCase.isDefault));
+  return defaultModel?.id ?? models.find((model) => model.providerModelId === fallbackProviderModelId)?.id ?? fallbackProviderModelId;
+}
+
+function catalogOptions(models: ProviderModelV2[]): ModelOption[] {
+  return models.map((model) => ({
+    value: model.id,
+    label: model.displayName,
+    meta: `${model.providerDisplayName} · ${model.providerModelId}`,
+  }));
+}
+
+function legacyOptions(models: ModelListing | undefined, bucket: 'generation' | 'judge'): ModelOption[] {
+  return (models?.[bucket] ?? []).map((model) => ({
+    value: model.id,
+    label: model.name,
+    meta: model.id,
+  }));
+}
+
+function ensureSelectedOption(options: ModelOption[], value: string, catalogById: Map<string, ProviderModelV2>): ModelOption[] {
+  if (!value || options.some((option) => option.value === value)) return options;
+  const model = catalogById.get(value);
+  return [
+    ...options,
+    {
+      value,
+      label: model?.displayName ?? value,
+      meta: model ? `${model.providerDisplayName} · ${model.providerModelId}` : value,
+    },
+  ];
+}
 
 const DEFAULT_IMAGE_TYPE: ProductImageType = 'featured-image';
 const IMAGE_TYPE_VALUES = new Set<ProductImageType>(IMAGE_TYPE_OPTIONS.map((option) => option.value));
@@ -342,32 +383,103 @@ export function StrategyBuilder({
   promptVersions,
   inputPresets,
   models,
+  modelCatalog,
 }: StrategyBuilderProps) {
+  const allCatalogModels = useMemo(
+    () => [...(modelCatalog?.generation ?? []), ...(modelCatalog?.preview ?? []), ...(modelCatalog?.judge ?? [])],
+    [modelCatalog],
+  );
+  const catalogById = useMemo(() => new Map(allCatalogModels.map((model) => [model.id, model])), [allCatalogModels]);
+  const catalogIdByProviderModelId = useMemo(
+    () => new Map(allCatalogModels.map((model) => [model.providerModelId, model.id])),
+    [allCatalogModels],
+  );
+  const providerModelIdForSelection = useCallback(
+    (value: string) => catalogById.get(value)?.providerModelId ?? value,
+    [catalogById],
+  );
+  const catalogSelectionForProviderModelId = useCallback(
+    (value: string, fallback: string) => catalogIdByProviderModelId.get(value) ?? value ?? fallback,
+    [catalogIdByProviderModelId],
+  );
+  const defaultGenerationModel = useMemo(
+    () => capabilityDefault(modelCatalog?.generation ?? [], FALLBACK_GENERATION_MODEL),
+    [modelCatalog],
+  );
+  const defaultPreviewModel = useMemo(
+    () => capabilityDefault(modelCatalog?.preview ?? [], FALLBACK_PREVIEW_MODEL),
+    [modelCatalog],
+  );
+  const defaultJudgeModel = useMemo(
+    () => capabilityDefault(modelCatalog?.judge ?? [], FALLBACK_JUDGE_MODEL),
+    [modelCatalog],
+  );
   const generationModels = useMemo(
-    () => (models?.generation ?? []).map((m) => ({ value: m.id, label: m.name })),
-    [models],
+    () =>
+      ensureSelectedOption(
+        modelCatalog ? catalogOptions(modelCatalog.generation) : legacyOptions(models, 'generation'),
+        initialStrategySettings?.model
+          ? catalogSelectionForProviderModelId(initialStrategySettings.model, defaultGenerationModel)
+          : defaultGenerationModel,
+        catalogById,
+      ),
+    [catalogById, catalogSelectionForProviderModelId, defaultGenerationModel, initialStrategySettings?.model, modelCatalog, models],
+  );
+
+  const previewModels = useMemo(
+    () =>
+      ensureSelectedOption(
+        modelCatalog ? catalogOptions(modelCatalog.preview) : generationModels,
+        initialPreviewSettings?.preview_model
+          ? catalogSelectionForProviderModelId(initialPreviewSettings.preview_model, defaultPreviewModel)
+          : defaultPreviewModel,
+        catalogById,
+      ),
+    [catalogById, catalogSelectionForProviderModelId, defaultPreviewModel, generationModels, initialPreviewSettings?.preview_model, modelCatalog],
   );
 
   const judgeModels = useMemo(
-    () => (models?.judge ?? []).map((m) => ({ value: m.id, label: m.name })),
-    [models],
+    () =>
+      ensureSelectedOption(
+        modelCatalog ? catalogOptions(modelCatalog.judge) : legacyOptions(models, 'judge'),
+        defaultJudgeModel,
+        catalogById,
+      ),
+    [catalogById, defaultJudgeModel, modelCatalog, models],
   );
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [strategySettings, setStrategySettings] = useState<StrategySettings>(
-    initialStrategySettings ?? defaultStrategySettings,
+    initialStrategySettings
+      ? {
+          ...initialStrategySettings,
+          model: catalogSelectionForProviderModelId(initialStrategySettings.model, defaultGenerationModel),
+        }
+      : { ...defaultStrategySettings, model: defaultGenerationModel },
   );
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(
-    initialPreviewSettings ?? defaultPreviewSettings,
+    initialPreviewSettings
+      ? {
+          ...initialPreviewSettings,
+          preview_model: initialPreviewSettings.preview_model
+            ? catalogSelectionForProviderModelId(initialPreviewSettings.preview_model, defaultPreviewModel)
+            : null,
+        }
+      : defaultPreviewSettings,
   );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
       ? initialSteps.map((step) => ({
           ...step,
+          model: catalogSelectionForProviderModelId(step.model, defaultGenerationModel),
+          judges: step.judges?.map((judge) => ({
+            ...judge,
+            judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel),
+          })),
           product_image_types: normalizeProductImageTypes(step.product_image_types),
         }))
-      : [defaultStep(promptVersions[0]?.id ?? '')],
+      : [defaultStep(promptVersions[0]?.id ?? '', defaultGenerationModel)],
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -379,8 +491,8 @@ export function StrategyBuilder({
   }, []);
 
   const addStep = useCallback(() => {
-    setSteps((prev) => [...prev, defaultStep(promptVersions[0]?.id ?? '')]);
-  }, [promptVersions]);
+    setSteps((prev) => [...prev, defaultStep(promptVersions[0]?.id ?? '', defaultGenerationModel)]);
+  }, [defaultGenerationModel, promptVersions]);
 
   const addJudgeStep = useCallback(() => {
     setSteps((prev) => [
@@ -390,7 +502,7 @@ export function StrategyBuilder({
         name: 'Judge',
         number_of_images: 4,
         prompt_version_id: '',
-        model: 'gemini-3-pro-image-preview',
+        model: defaultGenerationModel,
         aspect_ratio: '1:1',
         output_resolution: '1K',
         temperature: 1.0,
@@ -408,14 +520,14 @@ export function StrategyBuilder({
         arbitrary_image_from_step: null,
         judges: [{
           name: '',
-          judge_model: 'gemini-2.5-flash',
+          judge_model: defaultJudgeModel,
           judge_type: 'individual',
           judge_prompt_version_id: '',
           tolerance_threshold: 1,
         }],
       },
     ]);
-  }, []);
+  }, [defaultGenerationModel, defaultJudgeModel]);
 
   const removeStep = useCallback((idx: number) => {
     setSteps((prev) => {
@@ -441,7 +553,7 @@ export function StrategyBuilder({
       const payload = {
         name: name.trim(),
         description: description.trim() || undefined,
-        model: strategySettings.model,
+        model: providerModelIdForSelection(strategySettings.model),
         aspectRatio: strategySettings.aspect_ratio,
         outputResolution: strategySettings.output_resolution,
         temperature: strategySettings.temperature,
@@ -449,7 +561,7 @@ export function StrategyBuilder({
         tagImages: strategySettings.tag_images,
         groupProductImages: strategySettings.group_product_images,
         checkSceneAccuracy: strategySettings.check_scene_accuracy,
-        previewModel: previewSettings.preview_model,
+        previewModel: previewSettings.preview_model ? providerModelIdForSelection(previewSettings.preview_model) : null,
         previewResolution: previewSettings.preview_model ? previewSettings.preview_resolution : null,
         steps: steps.map((s, i) => ({
           id: s.id ?? undefined,
@@ -458,7 +570,7 @@ export function StrategyBuilder({
           name: s.name.trim() || null,
           stepOrder: i + 1,
           promptVersionId: s.type === 'judge' ? null : s.prompt_version_id,
-          model: strategySettings.model,
+          model: providerModelIdForSelection(strategySettings.model),
           aspectRatio: strategySettings.aspect_ratio,
           outputResolution: strategySettings.output_resolution,
           temperature: strategySettings.temperature,
@@ -479,7 +591,7 @@ export function StrategyBuilder({
             ? s.judges.map((j, ji) => ({
                 id: j.id,
                 name: j.name || null,
-                judgeModel: j.judge_model,
+                judgeModel: providerModelIdForSelection(j.judge_model),
                 judgeType: j.judge_type,
                 judgePromptVersionId: j.judge_prompt_version_id,
                 toleranceThreshold: j.tolerance_threshold,
@@ -514,7 +626,7 @@ export function StrategyBuilder({
     } finally {
       setSaving(false);
     }
-  }, [name, description, strategySettings, previewSettings, steps, isEditing, strategyId, router]);
+  }, [name, description, strategySettings, previewSettings, steps, isEditing, strategyId, router, providerModelIdForSelection]);
 
   const saveButton = (
     <button
@@ -656,7 +768,7 @@ export function StrategyBuilder({
               checked={previewSettings.preview_model !== null}
               onChange={(e) => {
                 if (e.target.checked) {
-                  setPreviewSettings({ preview_model: 'gemini-3.1-flash-image-preview', preview_resolution: '512' });
+                  setPreviewSettings({ preview_model: defaultPreviewModel, preview_resolution: '512' });
                 } else {
                   setPreviewSettings(defaultPreviewSettings);
                 }
@@ -673,7 +785,7 @@ export function StrategyBuilder({
               <label className="mb-1 block text-xs font-medium text-gray-600">Preview Model</label>
               <SearchableSelect
                 value={previewSettings.preview_model}
-                options={generationModels}
+                options={previewModels}
                 onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))}
               />
             </div>
@@ -787,7 +899,7 @@ export function StrategyBuilder({
                   </div>
                 ))}
                 <button type="button" onClick={() => {
-                  const newJudges = [...(step.judges ?? []), { name: '', judge_model: 'gemini-2.5-flash', judge_type: 'individual' as const, judge_prompt_version_id: '', tolerance_threshold: 1 }];
+                  const newJudges = [...(step.judges ?? []), { name: '', judge_model: defaultJudgeModel, judge_type: 'individual' as const, judge_prompt_version_id: '', tolerance_threshold: 1 }];
                   updateStep(idx, { judges: newJudges });
                 }} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50">
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -992,7 +1104,7 @@ function SearchableSelect({
   placeholder = '-- Select --',
 }: {
   value: string;
-  options: { value: string; label: string }[];
+  options: ModelOption[];
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
@@ -1054,7 +1166,7 @@ function SearchableSelect({
                   className={`flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-gray-50 ${o.value === value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}
                 >
                   <span className={`text-sm ${o.value === value ? 'font-medium' : ''}`}>{o.label}</span>
-                  <span className="font-mono text-xs text-gray-400">{o.value}</span>
+                  <span className="font-mono text-xs text-gray-400">{o.meta ?? o.value}</span>
                 </button>
               ))}
             </div>

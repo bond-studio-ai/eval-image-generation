@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page-header';
 import { StrategyBuilder } from '@/components/strategy-builder';
-import { fetchInputPresets, fetchModels, fetchPromptVersions, fetchStrategyById } from '@/lib/service-client';
+import { fetchInputPresets, fetchPromptVersions, fetchStrategyById, fetchStrategyModelCatalog } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -12,11 +12,11 @@ interface PageProps {
 export default async function EditStrategyPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [strat, promptVersions, inputPresets, models] = await Promise.all([
+  const [strat, promptVersions, inputPresets, modelCatalog] = await Promise.all([
     fetchStrategyById(id),
     fetchPromptVersions(100),
     fetchInputPresets(100),
-    fetchModels(),
+    fetchStrategyModelCatalog(),
   ]);
 
   if (!strat) {
@@ -78,7 +78,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}
-          models={models}
+          modelCatalog={modelCatalog}
         />
       </div>
     </div>
