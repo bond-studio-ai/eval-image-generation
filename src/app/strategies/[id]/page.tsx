@@ -91,6 +91,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         useGoogleSearch={result.useGoogleSearch}
         tagImages={result.tagImages}
         groupProductImages={result.groupProductImages}
+        enableMultiTurnContext={result.enableMultiTurnContext ?? false}
         checkSceneAccuracy={result.checkSceneAccuracy ?? false}
         description={result.description}
         steps={result.steps.map((s) => ({

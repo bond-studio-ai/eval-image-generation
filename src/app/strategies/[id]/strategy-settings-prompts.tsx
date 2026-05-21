@@ -37,6 +37,7 @@ interface StrategySettingsPromptsProps {
   useGoogleSearch: boolean;
   tagImages: boolean;
   groupProductImages?: boolean;
+  enableMultiTurnContext?: boolean;
   /** Strategy check_scene_accuracy — scene drift vs reference before judge; may regenerate candidates. */
   checkSceneAccuracy?: boolean;
   description: string | null;
@@ -52,6 +53,7 @@ export function StrategySettingsPrompts({
   useGoogleSearch,
   tagImages,
   groupProductImages,
+  enableMultiTurnContext,
   checkSceneAccuracy,
   description,
   steps,
@@ -94,6 +96,9 @@ export function StrategySettingsPrompts({
           </span>
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STRATEGY_PROPERTY_COLORS.sceneAccuracy.bg} ${STRATEGY_PROPERTY_COLORS.sceneAccuracy.text}`}>
             Check scene accuracy: {checkSceneAccuracy ? 'Yes' : 'No'}
+          </span>
+          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+            Multi-turn context: {enableMultiTurnContext ? 'Yes' : 'No'}
           </span>
         </div>
         {preview?.previewModel && (
