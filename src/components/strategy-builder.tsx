@@ -44,6 +44,8 @@ interface StrategySettings {
   group_product_images: boolean;
   /** Maps to API checkSceneAccuracy / DB check_scene_accuracy */
   check_scene_accuracy: boolean;
+  /** Maps to API enableMultiTurnContext / DB enable_multi_turn_context */
+  enable_multi_turn_context: boolean;
 }
 
 interface JudgeData {
@@ -162,6 +164,7 @@ const defaultStrategySettings: StrategySettings = {
   tag_images: true,
   group_product_images: false,
   check_scene_accuracy: false,
+  enable_multi_turn_context: false,
 };
 
 type ModelOption = { label: string; meta?: string; value: string };
@@ -626,6 +629,7 @@ export function StrategyBuilder({
         tagImages: strategySettings.tag_images,
         groupProductImages: strategySettings.group_product_images,
         checkSceneAccuracy: strategySettings.check_scene_accuracy,
+        enableMultiTurnContext: strategySettings.enable_multi_turn_context,
         previewModel: previewSettings.preview_model
           ? providerModelIdForSelection(previewSettings.preview_model)
           : null,
@@ -855,6 +859,20 @@ export function StrategyBuilder({
               className="rounded border-gray-300"
             />
             Check scene accuracy
+          </label>
+          <label
+            className="flex items-center gap-2 text-xs text-gray-600"
+            title="When enabled, every generation step inherits the prior step's chat history (Gemini multi-turn natively; OpenAI image / Fal flatten the chain into prompt + input images)."
+          >
+            <input
+              type="checkbox"
+              checked={strategySettings.enable_multi_turn_context}
+              onChange={(e) =>
+                setStrategySettings((s) => ({ ...s, enable_multi_turn_context: e.target.checked }))
+              }
+              className="rounded border-gray-300"
+            />
+            Multi-turn context
           </label>
         </div>
       </div>

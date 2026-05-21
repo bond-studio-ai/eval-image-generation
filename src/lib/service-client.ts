@@ -166,6 +166,8 @@ export interface StrategyDetailItem {
   groupProductImages: boolean;
   /** When true, service runs scene-accuracy vs scene reference before judging; may regenerate candidates if none pass. */
   checkSceneAccuracy?: boolean;
+  /** When true, every generation step inherits the prior step's chat history (Gemini multi-turn natively; OpenAI image / Fal flatten). */
+  enableMultiTurnContext?: boolean;
   previewModel: string | null;
   previewResolution: string | null;
   steps: StrategyStepItem[];

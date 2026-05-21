@@ -40,6 +40,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
             tag_images: strat.tagImages,
             group_product_images: strat.groupProductImages ?? false,
             check_scene_accuracy: strat.checkSceneAccuracy ?? false,
+            enable_multi_turn_context: strat.enableMultiTurnContext ?? false,
           }}
           initialPreviewSettings={{
             preview_model: strat.previewModel ?? null,
