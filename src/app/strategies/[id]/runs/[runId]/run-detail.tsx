@@ -1095,6 +1095,24 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         );
       })()}
 
+      {/* ──── Failed reasons ──── */}
+      {data.status === 'failed' && (() => {
+        const reasons = sorted
+          .filter((sr) => (sr.status === 'failed' || sr.status === 'skipped') && sr.error)
+          .map((sr) => ({ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error! }));
+        if (reasons.length === 0) return null;
+        return (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800">Why this run failed</p>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-700">
+              {reasons.map(({ step, reason }, i) => (
+                <li key={i}><span className="font-medium">{step}:</span> {reason}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
+
       {/* ──── Collapsible sections ──── */}
       <div className="mt-6 space-y-4">
         {/* Execution Flow */}
