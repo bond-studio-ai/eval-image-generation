@@ -1,6 +1,6 @@
 # AI Image Eval Admin
 
-A Clerk-protected Next.js admin console for evaluating AI image generation, strategy runs, prompt versions, input presets, catalog-confidence runs, and judge calibration workflows.
+A Clerk-protected Next.js admin console for evaluating AI image generation, strategy runs, prompt versions, and input presets.
 
 This repo is a frontend/BFF. It does not own the primary database schema or Drizzle migrations; persistence and business logic live in upstream services.
 
@@ -9,7 +9,7 @@ This repo is a frontend/BFF. It does not own the primary database schema or Driz
 - **Framework:** Next.js App Router, React, TypeScript
 - **Auth:** Clerk
 - **Styling:** Tailwind CSS
-- **Backend access:** Next route handlers proxy image-generation, catalog-feed, platform APIs, and S3 upload
+- **Backend access:** Next route handlers proxy image-generation, platform APIs, and S3 upload
 - **Validation:** Zod and focused type guards at local boundaries
 - **Tests:** Vitest for pure helpers and boundary normalization
 
@@ -30,7 +30,6 @@ Open [http://localhost:3000](http://localhost:3000).
   - platform API URLs
 - Clerk keys are required for all protected admin pages and browser-accessed API proxies.
 - AWS S3 env vars are required only for image upload flows.
-- `CATALOG_FEED_BASE_HOSTNAME` and `CATALOG_FEED_ADMIN_TOKEN` are optional unless you use catalog-confidence admin flows.
 
 ## Scripts
 

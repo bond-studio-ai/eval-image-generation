@@ -50,12 +50,11 @@ interface SearchableSelectProps {
 }
 
 /**
- * SearchableSelect is the app-wide combobox primitive used by the
- * catalog-prompts pages (filter row, proposal form, new-version form).
- * Native <datalist> was the previous shortcut but it offered no
- * keyboard navigation, no group headers, and styled inconsistently
- * across browsers. This component covers those gaps without pulling
- * in a headless-ui dependency.
+ * SearchableSelect is the app-wide combobox primitive. Native
+ * <datalist> was the previous shortcut but it offered no keyboard
+ * navigation, no group headers, and styled inconsistently across
+ * browsers. This component covers those gaps without pulling in a
+ * headless-ui dependency.
  *
  * Behaviour summary:
  *   - Type to filter; matching is case-insensitive substring.

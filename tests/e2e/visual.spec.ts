@@ -19,7 +19,6 @@ const ROUTES = [
   { name: 'strategies-list', path: '/strategies' },
   { name: 'input-presets', path: '/input-presets' },
   { name: 'prompt-versions', path: '/prompt-versions' },
-  { name: 'catalog-runs', path: '/catalog-runs' },
 ] as const;
 
 for (const route of ROUTES) {

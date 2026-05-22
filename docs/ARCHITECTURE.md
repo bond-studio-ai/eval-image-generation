@@ -10,10 +10,8 @@ flowchart LR
   browser --> apiRoutes["/api/v1 Route Handlers"]
   appPages --> serverClients[Server Clients]
   serverClients --> imageGeneration[Image Generation API]
-  serverClients --> catalogFeed[Catalog Feed Admin API]
   serverClients --> platformApis[Platform APIs]
   apiRoutes --> imageGeneration
-  apiRoutes --> catalogFeed
   apiRoutes --> platformApis
   apiRoutes --> s3[S3]
 ```
@@ -31,7 +29,6 @@ flowchart LR
 Server Components call typed server clients:
 
 - `src/lib/service-client.ts` for image-generation reads.
-- `src/lib/catalog-feed-client.ts` for catalog-feed admin reads.
 - Feature-specific parsers live in smaller helper modules such as `src/lib/strategy-run-judge-results.ts`.
 
 ### Browser Mutations And Client Fetches
@@ -40,19 +37,17 @@ Client Components do not call upstream hosts directly. They use:
 
 - `serviceUrl()` for `/api/v1/image-generation/**`.
 - `localUrl()` for local BFF routes such as upload, products, projects, and design packages.
-- `/api/v1/catalog-feed/**` for catalog-confidence admin mutations.
 
 `src/lib/proxy-handler.ts` centralizes upstream proxy behavior: forwarded headers, body handling, network errors, malformed JSON, non-JSON pass-through, and upstream error logging.
 
 ## Service Responsibilities
 
-| Area                                                                        | Owner                     |
-| --------------------------------------------------------------------------- | ------------------------- |
-| Strategies, prompt versions, input presets, generations, analytics          | image-generation service  |
-| Catalog-confidence runs, prompts, calibrations, thresholds, judge baselines | catalog-feed service      |
-| Project/design/package/product metadata                                     | platform APIs             |
-| Uploaded image bytes                                                        | S3 via local upload route |
-| Navigation, forms, tables, review UI, auth gate, BFF proxies                | this repo                 |
+| Area                                                               | Owner                     |
+| ------------------------------------------------------------------ | ------------------------- |
+| Strategies, prompt versions, input presets, generations, analytics | image-generation service  |
+| Project/design/package/product metadata                            | platform APIs             |
+| Uploaded image bytes                                               | S3 via local upload route |
+| Navigation, forms, tables, review UI, auth gate, BFF proxies       | this repo                 |
 
 ## Data Flow Patterns
 
@@ -96,8 +91,6 @@ Important helpers:
 - `imageGenerationBase()`
 - `imageGenerationV2Base()`
 - `platformApiBase()`
-- `catalogFeedBase()`
-- `catalogFeedAdminToken()`
 - `s3UploadConfig()`
 
 ## Quality Gates
