@@ -45,3 +45,36 @@ export function catalogFeedBase(): string {
 export function catalogFeedAdminToken(): string {
   return process.env.CATALOG_FEED_ADMIN_TOKEN ?? '';
 }
+
+export interface S3UploadConfig {
+  bucket: string;
+  region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+export function s3UploadConfig(): S3UploadConfig {
+  const bucket = process.env.AWS_S3_BUCKET;
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const region = process.env.AWS_S3_REGION || 'us-west-2';
+
+  const missing = [
+    ['AWS_S3_BUCKET', bucket],
+    ['AWS_ACCESS_KEY_ID', accessKeyId],
+    ['AWS_SECRET_ACCESS_KEY', secretAccessKey],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing S3 upload configuration: ${missing.join(', ')}`);
+  }
+
+  return {
+    bucket: bucket as string,
+    region,
+    accessKeyId: accessKeyId as string,
+    secretAccessKey: secretAccessKey as string,
+  };
+}

@@ -764,8 +764,10 @@ function ListView({
   // the canonical-per-row one) so each per-cell masks badge can reflect
   // that specific run's status. The hook dedupes by id internally.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
-  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(
+    segmentationGenerationIds,
+    !!expanded,
+  );
 
   return (
     <div className="space-y-6">
@@ -966,8 +968,10 @@ function MatrixView({
   // badge can reflect that specific run, while the inline pill still uses
   // the canonical row id above.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
-  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(
+    segmentationGenerationIds,
+    !!expanded,
+  );
 
   return (
     <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
@@ -1205,11 +1209,7 @@ function MatrixRowSegmentationBadge({
 }) {
   if (generationIds.length === 0) return null;
   return (
-    <ReviewRunGroupBadge
-      generationIds={generationIds}
-      statuses={statuses}
-      setStatus={setStatus}
-    />
+    <ReviewRunGroupBadge generationIds={generationIds} statuses={statuses} setStatus={setStatus} />
   );
 }
 

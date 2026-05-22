@@ -1,6 +1,6 @@
 import { AppShell } from '@/components/app-shell';
-import type { Metadata } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 

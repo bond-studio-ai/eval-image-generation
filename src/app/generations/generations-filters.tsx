@@ -101,7 +101,7 @@ export function GenerationsFilters({
               const id = e.target.value || undefined;
               router.push(buildGenerationsQuery({ ...params, prompt_version_id: id }));
             }}
-            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:ring-1 focus:outline-none"
           >
             <option value="">All prompts</option>
             {promptVersions.map((pv) => (
@@ -142,7 +142,13 @@ export function GenerationsFilters({
             href={buildGenerationsQuery({ source: params.source })}
             className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
             Clear all filters
@@ -163,10 +169,22 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 }
 
 const chipVariants = {
-  green: { active: 'bg-green-100 text-green-800 ring-1 ring-green-300', inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
-  red: { active: 'bg-red-100 text-red-800 ring-1 ring-red-300', inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
-  amber: { active: 'bg-amber-100 text-amber-800 ring-1 ring-amber-300', inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
-  neutral: { active: 'bg-primary-100 text-primary-700 ring-1 ring-primary-300', inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
+  green: {
+    active: 'bg-green-100 text-green-800 ring-1 ring-green-300',
+    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+  },
+  red: {
+    active: 'bg-red-100 text-red-800 ring-1 ring-red-300',
+    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+  },
+  amber: {
+    active: 'bg-amber-100 text-amber-800 ring-1 ring-amber-300',
+    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+  },
+  neutral: {
+    active: 'bg-primary-100 text-primary-700 ring-1 ring-primary-300',
+    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+  },
 };
 
 function FilterChip({
@@ -215,14 +233,14 @@ function DateRangeForm({
         type="date"
         name="from"
         defaultValue={from}
-        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
       <span className="text-xs text-gray-400">–</span>
       <input
         type="date"
         name="to"
         defaultValue={to}
-        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
       <button
         type="submit"

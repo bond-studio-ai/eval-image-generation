@@ -41,11 +41,12 @@ export type AnalyticsSearchParams = Record<string, string | string[] | undefined
 
 export function getParamValues(
   params: URLSearchParams | AnalyticsSearchParams,
-  key: string
+  key: string,
 ): string[] {
   if (params instanceof URLSearchParams) return params.getAll(key);
   const value = params[key];
-  if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === 'string');
+  if (Array.isArray(value))
+    return value.filter((entry): entry is string => typeof entry === 'string');
   return typeof value === 'string' ? [value] : [];
 }
 
@@ -69,7 +70,9 @@ function isComparisonSource(value: string): value is AnalyticsComparisonSource {
   return value === 'preset' || value === 'raw_input' || value === 'benchmark';
 }
 
-export function parseComparisonState(params: URLSearchParams | AnalyticsSearchParams): AnalyticsComparisonState {
+export function parseComparisonState(
+  params: URLSearchParams | AnalyticsSearchParams,
+): AnalyticsComparisonState {
   const enabled = getParamValues(params, COMPARE_QUERY_KEY)[0] === '1';
   const parsedColumns = getParamValues(params, COMPARE_COLUMN_QUERY_KEY)
     .map(parseColumn)
@@ -135,7 +138,7 @@ export function formatComparisonRange(range: AnalyticsComparisonRange): string {
 }
 
 export function createEmptyComparisonColumn(
-  defaults?: Partial<AnalyticsComparisonColumn>
+  defaults?: Partial<AnalyticsComparisonColumn>,
 ): AnalyticsComparisonColumn {
   return {
     from: defaults?.from ?? '',
@@ -151,9 +154,10 @@ export function isComparisonColumnComplete(column: AnalyticsComparisonColumn): b
 
 export function buildComparisonColumnLabel(
   column: AnalyticsComparisonColumn,
-  strategies: AnalyticsComparisonStrategyOption[]
+  strategies: AnalyticsComparisonStrategyOption[],
 ): string {
-  const strategyName = strategies.find((strategy) => strategy.id === column.strategyId)?.name ?? 'Select strategy';
+  const strategyName =
+    strategies.find((strategy) => strategy.id === column.strategyId)?.name ?? 'Select strategy';
   return `${strategyName} | ${formatComparisonSource(column.source)} | ${formatComparisonRange({
     from: column.from,
     to: column.to,
@@ -162,7 +166,7 @@ export function buildComparisonColumnLabel(
 
 export function buildComparisonSlices(
   state: AnalyticsComparisonState,
-  strategies: AnalyticsComparisonStrategyOption[]
+  strategies: AnalyticsComparisonStrategyOption[],
 ): AnalyticsComparisonSlice[] {
   const strategyMap = new Map(strategies.map((strategy) => [strategy.id, strategy.name]));
   const slices: AnalyticsComparisonSlice[] = [];

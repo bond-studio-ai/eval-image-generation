@@ -31,7 +31,9 @@ const PRODUCT_COLUMN_KEYS: { camelKey: string; snakeKey: string }[] = [
 /**
  * Returns snake_case product category keys that have at least one image in the generation input.
  */
-export function getActiveProductCategories(input: Record<string, unknown> | null | undefined): string[] {
+export function getActiveProductCategories(
+  input: Record<string, unknown> | null | undefined,
+): string[] {
   if (!input) return [];
   const out: string[] = [];
   for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {

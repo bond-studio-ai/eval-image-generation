@@ -1,12 +1,12 @@
 'use client';
 
 import { PageHeader, PrimaryButton } from '@/components/page-header';
-import { ResourceFormHeader, ErrorCard } from '@/components/resource-form-header';
+import { PromptTemplateEditor } from '@/components/prompt-template-editor';
+import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
+import { TwoPaneSplit } from '@/components/two-pane-split';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { PromptTemplateEditor } from '@/components/prompt-template-editor';
-import { TwoPaneSplit } from '@/components/two-pane-split';
 
 export default function NewPromptVersionPage() {
   const router = useRouter();
@@ -70,7 +70,11 @@ export default function NewPromptVersionPage() {
         backLabel="Back to Prompt Versions"
         title=""
         actions={
-          <PrimaryButton onClick={handleCreate} disabled={!canCreate || creating} loading={creating}>
+          <PrimaryButton
+            onClick={handleCreate}
+            disabled={!canCreate || creating}
+            loading={creating}
+          >
             {creating ? 'Creating...' : 'Create Prompt Version'}
           </PrimaryButton>
         }
@@ -87,7 +91,11 @@ export default function NewPromptVersionPage() {
         />
       </div>
 
-      {error && <div className="mt-4"><ErrorCard message={error} /></div>}
+      {error && (
+        <div className="mt-4">
+          <ErrorCard message={error} />
+        </div>
+      )}
 
       {/* Stats placeholder — mirrors the detail page structure */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
@@ -104,7 +112,7 @@ export default function NewPromptVersionPage() {
         className="mt-8"
         left={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
               System Prompt <span className="text-red-500">*</span>
             </h2>
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
@@ -120,7 +128,7 @@ export default function NewPromptVersionPage() {
         }
         right={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
               User Prompt <span className="text-red-500">*</span>
             </h2>
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
@@ -143,7 +151,6 @@ export default function NewPromptVersionPage() {
           No generations yet. Create this prompt version first, then generate images.
         </p>
       </div>
-
     </div>
   );
 }

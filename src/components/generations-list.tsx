@@ -1,12 +1,19 @@
 'use client';
 
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
+import {
+  actionsColumn,
+  checkboxColumn,
+  DataTable,
+  SelectAllCheckbox,
+  type DataTableColumn,
+} from '@/components/data-table';
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { GenerationThumbnails } from '@/components/generation-thumbnails';
 import { RatingBadge } from '@/components/rating-badge';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface GenerationRow {
   id: string;
@@ -42,12 +49,21 @@ function Spinner({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg className={`animate-spin ${className}`} fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
     </svg>
   );
 }
 
-export function GenerationsList({ initialData, initialTotal, pageSize, filters }: GenerationsListProps) {
+export function GenerationsList({
+  initialData,
+  initialTotal,
+  pageSize,
+  filters,
+}: GenerationsListProps) {
   const [generations, setGenerations] = useState<GenerationRow[]>(initialData);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
@@ -94,7 +110,8 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     const nextPage = page + 1;
     const params = new URLSearchParams({ page: String(nextPage), limit: String(pageSize) });
     if (filters.sceneAccuracyRating) params.set('sceneAccuracyRating', filters.sceneAccuracyRating);
-    if (filters.productAccuracyRating) params.set('productAccuracyRating', filters.productAccuracyRating);
+    if (filters.productAccuracyRating)
+      params.set('productAccuracyRating', filters.productAccuracyRating);
     if (filters.unrated) params.set('unrated', filters.unrated);
     if (filters.promptVersionId) params.set('promptVersionId', filters.promptVersionId);
     if (filters.from) params.set('from', filters.from);
@@ -150,113 +167,99 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const allSelected = generations.length > 0 && selected.size === generations.length;
+  const columns = useMemo<DataTableColumn<GenerationRow>[]>(
+    () => [
+      checkboxColumn<GenerationRow>({
+        selected,
+        onToggle: toggleSelect,
+        rowId: (gen) => gen.id,
+      }),
+      {
+        header: 'Output',
+        cell: (gen) => <GenerationThumbnails urls={gen.resultUrls} />,
+        cellClassName: 'px-4 py-3',
+      },
+      {
+        header: 'Prompt',
+        cell: (gen) => (
+          <Link
+            href={`/generations/${gen.id}`}
+            className="hover:text-primary-600 font-medium text-gray-900"
+          >
+            {gen.promptName || 'Untitled'}
+          </Link>
+        ),
+      },
+      {
+        header: 'Rating',
+        cell: (gen) => (
+          <div className="flex flex-wrap gap-1">
+            <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
+            <RatingBadge rating={gen.productAccuracyRating} label="Product" />
+          </div>
+        ),
+      },
+      {
+        header: 'Results',
+        cell: (gen) => `${gen.resultCount} result${gen.resultCount !== 1 ? 's' : ''}`,
+      },
+      {
+        header: 'Time',
+        cell: (gen) => (gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : '-'),
+      },
+      {
+        header: 'Created',
+        cell: (gen) => new Date(gen.createdAt).toLocaleDateString(),
+      },
+      actionsColumn<GenerationRow>([
+        { render: (gen) => <DeleteGenerationButton generationId={gen.id} variant="icon" /> },
+      ]),
+    ],
+    [selected, toggleSelect],
+  );
+
+  const toolbar = (
+    <div className="flex items-center justify-end">
+      <SelectAllCheckbox count={selected.size} total={generations.length} onToggle={toggleAll} />
+    </div>
+  );
+
+  const footer = (
+    <div ref={sentinelRef}>
+      {loading && (
+        <div className="divide-y divide-gray-200">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <div className="h-12 w-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!loading && !hasMore && generations.length > 0 && (
+        <div className="flex items-center justify-center py-4">
+          <p className="text-xs text-gray-400">
+            Showing all {total} generation{total !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
-      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="w-10 px-3 py-3">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Output
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Prompt
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Rating
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Results
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Time
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                Created
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {generations.map((gen) => (
-              <tr key={gen.id} className={`hover:bg-gray-50 ${selected.has(gen.id) ? 'bg-primary-50/50' : ''}`}>
-                <td className="w-10 px-3 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(gen.id)}
-                    onChange={() => toggleSelect(gen.id)}
-                    className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <GenerationThumbnails urls={gen.resultUrls} />
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <Link
-                    href={`/generations/${gen.id}`}
-                    className="hover:text-primary-600 font-medium text-gray-900"
-                  >
-                    {gen.promptName || 'Untitled'}
-                  </Link>
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex flex-wrap gap-1">
-                    <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
-                    <RatingBadge rating={gen.productAccuracyRating} label="Product" />
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                  {gen.resultCount} result{gen.resultCount !== 1 ? 's' : ''}
-                </td>
-                <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                  {gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : '-'}
-                </td>
-                <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                  {new Date(gen.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 text-right whitespace-nowrap">
-                  <DeleteGenerationButton generationId={gen.id} variant="icon" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div ref={sentinelRef}>
-          {loading && (
-            <div className="divide-y divide-gray-200">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-4 py-3">
-                  <div className="h-12 w-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                    <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {!loading && !hasMore && generations.length > 0 && (
-            <div className="flex items-center justify-center py-4">
-              <p className="text-xs text-gray-400">
-                Showing all {total} generation{total !== 1 ? 's' : ''}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={generations}
+        rowKey={(gen) => gen.id}
+        rowClassName={(gen) => `hover:bg-gray-50 ${selected.has(gen.id) ? 'bg-primary-50/50' : ''}`}
+        toolbar={toolbar}
+        footer={footer}
+        className="mt-6"
+      />
 
       <BulkDeleteBar
         selectedCount={selected.size}

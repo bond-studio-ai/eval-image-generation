@@ -9,7 +9,8 @@ import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
-} from '@/lib/service-client';
+} from '@/lib/strategy-run-judge-results';
+import { groupStrategyRuns, type StrategyRunBatchGroup } from '@/lib/strategy-runs-view';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -40,25 +41,9 @@ interface Run {
   judgeResults?: StrategyRunJudgeResultEntry[] | null;
 }
 
-type ListItem = {
-  kind: 'batch';
-  id: string;
-  runs: Run[];
-  status: string;
-  createdAt: string;
-  awaitingJudge: boolean;
-  isStandalone: boolean;
-};
+type ListItem = StrategyRunBatchGroup<Run>;
 
 const POLL_INTERVAL = 3000;
-
-function isAwaitingJudge(batchRuns: Run[], hasJudge?: boolean): boolean {
-  if (!hasJudge || batchRuns.length < 2) return false;
-  const allDone = batchRuns.every((r) => r.status === 'completed' || r.status === 'failed');
-  if (!allDone) return false;
-  const hasOutputs = batchRuns.filter((r) => r.lastOutputUrl).length >= 2;
-  return hasOutputs && batchRuns.every((r) => r.judgeScore == null);
-}
 
 export function StrategyRunsList({
   strategyId,
@@ -80,17 +65,8 @@ export function StrategyRunsList({
 
   const hasActiveRun = runs.some((r) => r.status === 'running' || r.status === 'pending');
 
-  const batchGroups = new Map<string, Run[]>();
-  const standaloneKeys = new Set<string>();
-  for (const run of runs) {
-    const realKey = run.groupId ?? run.batchRunId;
-    const runGroupId = realKey ?? run.id;
-    if (!realKey) standaloneKeys.add(runGroupId);
-    if (!batchGroups.has(runGroupId)) batchGroups.set(runGroupId, []);
-    batchGroups.get(runGroupId)!.push(run);
-  }
   const hasAwaitingJudge =
-    hasJudge && [...batchGroups.values()].some((g) => isAwaitingJudge(g, true));
+    hasJudge && groupStrategyRuns(runs, hasJudge).some((group) => group.awaitingJudge);
   const shouldPoll = hasActiveRun || !!hasAwaitingJudge;
 
   const fetchRuns = useCallback(async () => {
@@ -119,32 +95,7 @@ export function StrategyRunsList({
     };
   }, [shouldPoll, fetchRuns]);
 
-  const items: ListItem[] = [];
-
-  for (const [batchId, batchRuns] of batchGroups) {
-    const sorted = [...batchRuns].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
-    const allStatuses = sorted.map((r) => r.status);
-    const status = allStatuses.every((s) => s === 'completed')
-      ? 'completed'
-      : allStatuses.some((s) => s === 'running' || s === 'pending')
-        ? 'running'
-        : allStatuses.some((s) => s === 'failed')
-          ? 'failed'
-          : 'pending';
-    items.push({
-      kind: 'batch',
-      id: batchId,
-      runs: sorted,
-      status,
-      createdAt: sorted[0]?.createdAt ?? '',
-      awaitingJudge: isAwaitingJudge(sorted, hasJudge),
-      isStandalone: standaloneKeys.has(batchId),
-    });
-  }
-
-  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const items: ListItem[] = groupStrategyRuns(runs, hasJudge);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollRef = useRef<number[] | null>(null);
@@ -740,8 +691,10 @@ function BatchMatrix({
   // We track *every* run's generation id (not just the canonical-per-row one)
   // so the per-cell masks badge can reflect that specific run's status.
   const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
-  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } =
-    useBatchReviewStatus(segmentationGenerationIds, !!expanded);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(
+    segmentationGenerationIds,
+    !!expanded,
+  );
 
   const CELL = 240;
 

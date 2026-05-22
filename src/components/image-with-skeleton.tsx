@@ -25,10 +25,7 @@ export function ImageWithSkeleton({
   const content = (
     <>
       {!loaded && (
-        <div
-          className="absolute inset-0 animate-pulse rounded-[inherit] bg-gray-200"
-          aria-hidden
-        />
+        <div className="absolute inset-0 animate-pulse rounded-[inherit] bg-gray-200" aria-hidden />
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -42,9 +39,7 @@ export function ImageWithSkeleton({
   );
 
   if (wrapperClassName) {
-    return (
-      <div className={`relative overflow-hidden ${wrapperClassName}`}>{content}</div>
-    );
+    return <div className={`relative overflow-hidden ${wrapperClassName}`}>{content}</div>;
   }
 
   return <>{content}</>;

@@ -25,9 +25,7 @@ export type TemplateError = {
  *   - Subexpressions and string literals inside expressions
  *     (strings can contain `}}` without prematurely terminating the token).
  */
-export function validateHandlebarsTemplate(
-  template: string,
-): TemplateError[] {
+export function validateHandlebarsTemplate(template: string): TemplateError[] {
   const errors: TemplateError[] = [];
   if (!template.trim()) return errors;
 
@@ -320,10 +318,7 @@ export function validateHandlebarsTemplate(
         // with no useful indentation.
         let matchIdx = -1;
         for (let j = blockStack.length - 1; j >= 0; j--) {
-          if (
-            blockStack[j].name === t.name &&
-            blockStack[j].indent <= t.indent
-          ) {
+          if (blockStack[j].name === t.name && blockStack[j].indent <= t.indent) {
             matchIdx = j;
             break;
           }

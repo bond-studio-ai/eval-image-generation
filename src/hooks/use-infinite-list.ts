@@ -42,7 +42,8 @@ const URL_KEY_SEARCH = 'search';
 const URL_KEY_PAGE = 'page';
 
 function readInitialParams() {
-  if (typeof window === 'undefined') return { search: '', page: 1, filters: {} as Record<string, string> };
+  if (typeof window === 'undefined')
+    return { search: '', page: 1, filters: {} as Record<string, string> };
   const sp = new URLSearchParams(window.location.search);
   const search = sp.get(URL_KEY_SEARCH) ?? '';
   const page = Math.max(1, parseInt(sp.get(URL_KEY_PAGE) ?? '1', 10) || 1);
@@ -77,7 +78,9 @@ export function useInfiniteList<T>(
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // ---------------------------------------------------------------------------

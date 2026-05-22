@@ -32,7 +32,13 @@ function IconButtonWithTip({ label, onClick }: { label: string; onClick: () => v
         onMouseLeave={() => setTip(null)}
         className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -42,7 +48,7 @@ function IconButtonWithTip({ label, onClick }: { label: string; onClick: () => v
       </button>
       {tip && (
         <span
-          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg"
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded bg-gray-900 px-2 py-1 text-xs whitespace-nowrap text-white shadow-lg"
           style={{ left: tip.x, top: tip.y - 4 }}
         >
           {label}
@@ -82,7 +88,8 @@ export function DeployToEnvironmentButton({
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
           throw new Error(
-            (json as { error?: { message?: string } }).error?.message ?? 'Failed to load environments.',
+            (json as { error?: { message?: string } }).error?.message ??
+              'Failed to load environments.',
           );
         }
         return json;
@@ -128,7 +135,8 @@ export function DeployToEnvironmentButton({
         setError((json as { error?: { message?: string } }).error?.message ?? 'Deploy failed.');
         return;
       }
-      const deployResult = (json as { data?: { result?: string; environment?: { name?: string } } }).data;
+      const deployResult = (json as { data?: { result?: string; environment?: { name?: string } } })
+        .data;
       setResult(
         `${deployResult?.result === 'updated' ? 'Updated' : 'Created'} in ${
           deployResult?.environment?.name ?? 'environment'
@@ -152,7 +160,13 @@ export function DeployToEnvironmentButton({
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -175,7 +189,9 @@ export function DeployToEnvironmentButton({
             >
               <div className="border-b border-gray-200 px-5 py-4">
                 <h3 className="text-lg font-semibold text-gray-900">Deploy Strategy</h3>
-                <p className="mt-1 text-sm text-gray-600">Choose an environment to deploy this strategy to.</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  Choose an environment to deploy this strategy to.
+                </p>
               </div>
 
               <div className="space-y-3 px-5 py-4">
@@ -238,7 +254,7 @@ export function DeployToEnvironmentButton({
                   type="button"
                   onClick={handleDeploy}
                   disabled={deploying || !selectedId}
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-400"
+                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed"
                 >
                   {deploying ? 'Deploying...' : 'Deploy'}
                 </button>

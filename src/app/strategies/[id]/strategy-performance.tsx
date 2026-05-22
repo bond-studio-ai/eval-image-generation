@@ -26,12 +26,17 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}/performance`), { cache: 'no-store' });
+      const res = await fetch(serviceUrl(`strategies/${strategyId}/performance`), {
+        cache: 'no-store',
+      });
       if (!res.ok) return;
       const json = await res.json();
       setData(json.data ?? null);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
   }, [strategyId]);
 
   useEffect(() => {
@@ -52,8 +57,15 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
   }
 
   const {
-    generationCount, sceneGoodPct, sceneFailedPct, productGoodPct, productFailedPct,
-    notRatedCount, sceneRatedCount, productRatedCount, avgExecutionTimeMs,
+    generationCount,
+    sceneGoodPct,
+    sceneFailedPct,
+    productGoodPct,
+    productFailedPct,
+    notRatedCount,
+    sceneRatedCount,
+    productRatedCount,
+    avgExecutionTimeMs,
   } = data;
 
   return (

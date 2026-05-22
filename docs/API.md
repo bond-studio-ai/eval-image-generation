@@ -1,5 +1,7 @@
 # AI Image Generator Admin - API Specification
 
+> This document is a historical reference for the image-generation API shapes the UI consumes. The Next.js app does not implement these resources directly; browser code reaches them through `/api/v1/image-generation/**`, and Server Components read them through `src/lib/service-client.ts`.
+
 ## Base URL
 
 ```

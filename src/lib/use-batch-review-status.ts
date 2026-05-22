@@ -133,10 +133,7 @@ function snapshotFromCache(
 
 /** Layer cached resolved states on top of the current local map without
  * dropping any in-flight `checking`/`running` entries we set ourselves. */
-function mergeWithCache(
-  prev: Map<string, ReviewState>,
-  ids: string[],
-): Map<string, ReviewState> {
+function mergeWithCache(prev: Map<string, ReviewState>, ids: string[]): Map<string, ReviewState> {
   const next = new Map(prev);
   for (const id of ids) {
     const hit = cache.get(id);

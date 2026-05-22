@@ -82,7 +82,11 @@ function computeLevels(steps: DagStep[]): Map<number, number> {
   return levels;
 }
 
-function computeLayout(steps: DagStep[]): { positions: Map<number, NodePosition>; width: number; height: number } {
+function computeLayout(steps: DagStep[]): {
+  positions: Map<number, NodePosition>;
+  width: number;
+  height: number;
+} {
   const levels = computeLevels(steps);
   const levelGroups = new Map<number, DagStep[]>();
 
@@ -186,12 +190,23 @@ export interface DagJudge {
   position?: number | null;
 }
 
-export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; judge?: DagJudge | null; judges?: DagJudge[] }) {
+export function StrategyFlowDag({
+  steps,
+  judge,
+  judges,
+}: {
+  steps: DagStep[];
+  judge?: DagJudge | null;
+  judges?: DagJudge[];
+}) {
   if (steps.length === 0) return null;
 
   const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
   const hasJudge = effectiveJudges.length > 0;
-  const judgeNodeHeight = Math.max(NODE_HEIGHT, JUDGE_HEADER_HEIGHT + effectiveJudges.length * JUDGE_ROW_HEIGHT + 16);
+  const judgeNodeHeight = Math.max(
+    NODE_HEIGHT,
+    JUDGE_HEADER_HEIGHT + effectiveJudges.length * JUDGE_ROW_HEIGHT + 16,
+  );
   const { positions, width: baseWidth, height: baseHeight } = computeLayout(steps);
   const height = Math.max(baseHeight, judgeNodeHeight + PADDING * 2);
 
@@ -206,9 +221,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
 
   if (hasJudge) {
     const maxLevel = Math.max(...computeLevels(steps).values(), 0);
-    const lastLevelSteps = steps.filter(
-      (s) => computeLevels(steps).get(s.stepOrder) === maxLevel,
-    );
+    const lastLevelSteps = steps.filter((s) => computeLevels(steps).get(s.stepOrder) === maxLevel);
 
     const judgeX = PADDING + (maxLevel + 1) * (NODE_WIDTH + LEVEL_GAP_X);
     const judgeY = PADDING + (height - 2 * PADDING - judgeNodeHeight) / 2;
@@ -303,7 +316,9 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
               width={NODE_WIDTH}
               height={NODE_HEIGHT}
             >
-              <div className={`flex h-full flex-col overflow-hidden rounded-lg border-2 ${border} ${bg} shadow-sm`}>
+              <div
+                className={`flex h-full flex-col overflow-hidden rounded-lg border-2 ${border} ${bg} shadow-sm`}
+              >
                 {/* Header */}
                 <div className={`flex items-center justify-between px-3 py-2 ${headerBg}`}>
                   <span className={`text-xs font-semibold ${headerText}`}>
@@ -314,12 +329,20 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
                   )}
                   {step.status === 'completed' && (
                     <svg className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   )}
                   {step.status === 'failed' && (
                     <svg className="h-4 w-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   )}
                   {step.status === 'skipped' && (
@@ -337,8 +360,18 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
                   )}
                   {step.promptName && (
                     <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                      <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                      <svg
+                        className="h-3 w-3 shrink-0 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+                        />
                       </svg>
                       <span className="truncate">{truncate(step.promptName, 28)}</span>
                     </div>
@@ -424,13 +457,14 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                        <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700" title={j.model}>
+                        <span
+                          className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700"
+                          title={j.model}
+                        >
                           {MODEL_LABELS[j.model] ?? truncate(j.model, 16)}
                         </span>
                         {j.toleranceThreshold != null && (
-                          <span className="text-amber-700">
-                            tol {j.toleranceThreshold}
-                          </span>
+                          <span className="text-amber-700">tol {j.toleranceThreshold}</span>
                         )}
                       </div>
                       {j.promptName && (

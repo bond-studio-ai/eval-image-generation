@@ -59,9 +59,15 @@ function EllipsisJump({
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit();
-          if (e.key === 'Escape') { setEditing(false); setValue(''); }
+          if (e.key === 'Escape') {
+            setEditing(false);
+            setValue('');
+          }
         }}
-        onBlur={() => { setEditing(false); setValue(''); }}
+        onBlur={() => {
+          setEditing(false);
+          setValue('');
+        }}
         className={`${className} w-12 text-center text-xs text-gray-900 outline-none`}
         placeholder="#"
       />
@@ -93,8 +99,19 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
       <p className="flex items-center gap-2 text-sm text-gray-700">
         {loading && (
           <svg className="h-3.5 w-3.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
         )}
         Page <span className="font-medium">{page}</span> of{' '}
@@ -132,7 +149,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
               disabled={p === page}
               className={`${BASE_BTN} min-w-[2.25rem] justify-center ${
                 p === page
-                  ? 'z-10 bg-primary-50 text-primary-600 ring-primary-500'
+                  ? 'bg-primary-50 text-primary-600 ring-primary-500 z-10'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >

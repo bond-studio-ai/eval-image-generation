@@ -32,7 +32,11 @@ export function MatrixTab() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    runHref: string;
+    generationId: string | null;
+  } | null>(null);
 
   const [presetFilter, setPresetFilter] = useState<Set<string> | null>(null);
   const [strategyFilter, setStrategyFilter] = useState<Set<string> | null>(null);
@@ -44,25 +48,32 @@ export function MatrixTab() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
-        setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
+        setFetchError(
+          msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
+        );
         return;
       }
       const json = await res.json();
       setRuns(json.data ?? []);
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchRuns(); }, [fetchRuns]);
+  useEffect(() => {
+    fetchRuns();
+  }, [fetchRuns]);
 
   const hasActive = runs.some((r) => r.status === 'running' || r.status === 'pending');
   useEffect(() => {
     if (hasActive) {
       intervalRef.current = setInterval(fetchRuns, POLL_INTERVAL);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [hasActive, fetchRuns]);
 
   const allPresets = useMemo(() => {
@@ -86,7 +97,8 @@ export function MatrixTab() {
     setPresetFilter((prev) => {
       const base = prev ?? new Set<string>();
       const next = new Set(base);
-      if (next.has(name)) next.delete(name); else next.add(name);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
       return next;
     });
   }, []);
@@ -95,7 +107,8 @@ export function MatrixTab() {
     setStrategyFilter((prev) => {
       const base = prev ?? new Set<string>();
       const next = new Set(base);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }, []);
@@ -134,10 +147,15 @@ export function MatrixTab() {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
         <p className="text-sm text-amber-800">{fetchError}</p>
-        <p className="mt-1 text-xs text-amber-700">Ensure BASE_API_HOSTNAME points to the image-generation backend.</p>
+        <p className="mt-1 text-xs text-amber-700">
+          Ensure BASE_API_HOSTNAME points to the image-generation backend.
+        </p>
         <button
           type="button"
-          onClick={() => { setLoading(true); fetchRuns(); }}
+          onClick={() => {
+            setLoading(true);
+            fetchRuns();
+          }}
           className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
         >
           Retry
@@ -155,7 +173,9 @@ export function MatrixTab() {
     pendingScrollRef.current = null;
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
     if (!scrollers) return;
-    scrollers.forEach((el, i) => { if (i < saved.length) el.scrollLeft = saved[i]; });
+    scrollers.forEach((el, i) => {
+      if (i < saved.length) el.scrollLeft = saved[i];
+    });
   });
 
   const fetchRunsKeepScroll = useCallback(async () => {
@@ -165,7 +185,11 @@ export function MatrixTab() {
   }, [fetchRuns]);
 
   if (runs.length === 0) {
-    return <p className="text-sm text-gray-600">No individual runs yet. Run a strategy from its detail page.</p>;
+    return (
+      <p className="text-sm text-gray-600">
+        No individual runs yet. Run a strategy from its detail page.
+      </p>
+    );
   }
 
   const cols = matrix.strategies.length;
@@ -192,19 +216,21 @@ export function MatrixTab() {
       </div>
 
       {matrix.presets.length === 0 || matrix.strategies.length === 0 ? (
-        <p className="text-sm text-gray-500">Select presets and strategies above to see the matrix.</p>
+        <p className="text-sm text-gray-500">
+          Select presets and strategies above to see the matrix.
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-xs">
           <div
             className="grid border-b border-gray-200 bg-gray-50"
             style={{ gridTemplateColumns: `220px repeat(${cols}, ${CELL}px)` }}
           >
-            <div className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <div className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">
               Input Preset
             </div>
             {matrix.strategies.map((s) => (
               <div key={s.id} className="flex items-center justify-center px-2 py-3 text-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 line-clamp-2">
+                <span className="line-clamp-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   {s.name}
                 </span>
               </div>
@@ -218,7 +244,10 @@ export function MatrixTab() {
               style={{ gridTemplateColumns: `220px repeat(${cols}, ${CELL}px)` }}
             >
               <div className="sticky left-0 z-10 flex items-center border-r border-gray-200 bg-white px-4">
-                <span className="block max-w-[200px] truncate text-sm font-medium text-gray-900" title={presetName}>
+                <span
+                  className="block max-w-[200px] truncate text-sm font-medium text-gray-900"
+                  title={presetName}
+                >
                   {presetName}
                 </span>
               </div>
@@ -226,7 +255,7 @@ export function MatrixTab() {
                 const cellRuns = matrix.grouped.get(`${presetName}|${s.id}`) ?? [];
                 const run = cellRuns[0];
                 const outputRuns = cellRuns.filter(
-                  (entry): entry is RunRow & { lastOutputUrl: string } => !!entry.lastOutputUrl
+                  (entry): entry is RunRow & { lastOutputUrl: string } => !!entry.lastOutputUrl,
                 );
                 return (
                   <div
@@ -265,12 +294,25 @@ export function MatrixTab() {
                               style={{ aspectRatio: '1' }}
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
-                              <svg className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                              <svg
+                                className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                                />
                               </svg>
                             </div>
                             {outputRun.lastOutputGenerationId && (
-                              <MatrixCellRatingOverlay generationId={outputRun.lastOutputGenerationId} onRated={fetchRunsKeepScroll} />
+                              <MatrixCellRatingOverlay
+                                generationId={outputRun.lastOutputGenerationId}
+                                onRated={fetchRunsKeepScroll}
+                              />
                             )}
                           </button>
                         ))}
@@ -279,7 +321,11 @@ export function MatrixTab() {
                       <button
                         type="button"
                         onClick={() =>
-                          setLightbox({ src: run.lastOutputUrl!, runHref: `/strategies/${run.strategyId}/runs/${run.id}`, generationId: run.lastOutputGenerationId ?? null })
+                          setLightbox({
+                            src: run.lastOutputUrl!,
+                            runHref: `/strategies/${run.strategyId}/runs/${run.id}`,
+                            generationId: run.lastOutputGenerationId ?? null,
+                          })
                         }
                         className="group relative block"
                       >
@@ -291,12 +337,25 @@ export function MatrixTab() {
                           style={{ width: IMG, height: IMG }}
                         />
                         <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                          <svg className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                          <svg
+                            className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                            />
                           </svg>
                         </div>
                         {run.lastOutputGenerationId && (
-                          <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={fetchRunsKeepScroll} />
+                          <MatrixCellRatingOverlay
+                            generationId={run.lastOutputGenerationId}
+                            onRated={fetchRunsKeepScroll}
+                          />
                         )}
                       </button>
                     ) : (
@@ -350,24 +409,50 @@ function FilterPanel({
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
       <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</span>
+        <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+          {label}
+        </span>
         <div className="flex items-center gap-1">
-          <span className="mr-1 text-xs text-gray-400">{selected.size}/{items.length}</span>
-          <button type="button" onClick={onSelectAll} className="rounded px-1.5 py-0.5 text-xs font-medium text-primary-600 hover:bg-primary-50">All</button>
-          <button type="button" onClick={onClear} className="rounded px-1.5 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100">None</button>
+          <span className="mr-1 text-xs text-gray-400">
+            {selected.size}/{items.length}
+          </span>
+          <button
+            type="button"
+            onClick={onSelectAll}
+            className="text-primary-600 hover:bg-primary-50 rounded px-1.5 py-0.5 text-xs font-medium"
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded px-1.5 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100"
+          >
+            None
+          </button>
         </div>
       </div>
       <div className="px-3 pt-2 pb-1">
         <div className="relative">
-          <svg className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          <svg
+            className="absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+            />
           </svg>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter…"
-            className="w-full rounded-md border border-gray-200 py-1 pl-7 pr-2 text-xs focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none"
+            className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 py-1 pr-2 pl-7 text-xs focus:ring-1 focus:outline-none"
           />
         </div>
       </div>
@@ -384,7 +469,9 @@ function FilterPanel({
                   type="button"
                   onClick={() => onToggle(item.id)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                    on ? 'border-primary-400 bg-primary-50 text-primary-800 shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                    on
+                      ? 'border-primary-400 bg-primary-50 text-primary-800 shadow-sm'
+                      : 'border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-300 hover:text-gray-600'
                   }`}
                 >
                   {item.name}
@@ -406,7 +493,9 @@ function StatusBadge({ status }: { status: string }) {
     failed: 'bg-red-100 text-red-700',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}
+    >
       {status}
     </span>
   );

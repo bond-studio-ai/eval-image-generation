@@ -35,9 +35,8 @@ export function ReviewModal({
   const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
   const pluginEntries = useMemo(() => pluginEntriesFor(record?.reviewAssessment ?? null), [record]);
-  const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ?? null) as
-    | DriftAssessment
-    | null;
+  const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ??
+    null) as DriftAssessment | null;
 
   return (
     <div

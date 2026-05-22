@@ -9,7 +9,11 @@ export default function EnvironmentsPage() {
       <PageHeader
         title="Environments"
         subtitle="Manage remote environments for strategy deployment."
-        actions={<PrimaryLinkButton href="/environments/new" icon>New Environment</PrimaryLinkButton>}
+        actions={
+          <PrimaryLinkButton href="/environments/new" icon>
+            New Environment
+          </PrimaryLinkButton>
+        }
       />
       <EnvironmentsTable />
     </div>

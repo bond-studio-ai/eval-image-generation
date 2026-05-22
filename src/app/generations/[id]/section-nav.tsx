@@ -14,9 +14,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    const els = sections
-      .map((s) => document.getElementById(s.id))
-      .filter(Boolean) as HTMLElement[];
+    const els = sections.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
     if (els.length === 0) return;
 
     const observer = new IntersectionObserver(
@@ -49,7 +47,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
   };
 
   return (
-    <nav className="fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-1.5 xl:flex">
+    <nav className="fixed top-1/2 right-4 z-40 hidden -translate-y-1/2 flex-col gap-1.5 xl:flex">
       <div className="flex flex-col gap-1.5 rounded-full border border-gray-200 bg-white/90 px-1.5 py-2 shadow-lg backdrop-blur">
         {sections.map((s) => {
           const isActive = activeId === s.id;
@@ -66,7 +64,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
               aria-label={s.label}
             >
               {s.icon}
-              <span className="pointer-events-none absolute right-full mr-2.5 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              <span className="pointer-events-none absolute right-full mr-2.5 rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                 {s.label}
               </span>
             </button>

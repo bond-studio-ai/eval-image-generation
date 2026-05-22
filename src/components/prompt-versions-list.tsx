@@ -2,14 +2,14 @@
 
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
+  actionsColumn,
+  checkboxColumn,
   DataTable,
   DateCell,
   NameCell,
   SearchBar,
   SelectAllCheckbox,
   StatusBadge,
-  actionsColumn,
-  checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
 import { Pagination } from '@/components/pagination';
@@ -78,55 +78,71 @@ export function PromptVersionsList() {
     }
   }, [selected, refresh]);
 
-  const handleClone = useCallback(async (pv: PromptVersionRow) => {
-    setCloningId(pv.id);
-    try {
-      const res = await fetch(serviceUrl('prompt-versions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `Copy of ${pv.name || 'Untitled'}`,
-          description: pv.description || undefined,
-          system_prompt: pv.systemPrompt,
-          user_prompt: pv.userPrompt,
-        }),
-      });
-      if (!res.ok) return;
-      const json = await res.json();
-      const newId = json.data?.id;
-      if (newId) router.push(`/prompt-versions/${newId}`);
-    } catch { /* ignore */ }
-    finally { setCloningId(null); }
-  }, [router]);
+  const handleClone = useCallback(
+    async (pv: PromptVersionRow) => {
+      setCloningId(pv.id);
+      try {
+        const res = await fetch(serviceUrl('prompt-versions'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `Copy of ${pv.name || 'Untitled'}`,
+            description: pv.description || undefined,
+            system_prompt: pv.systemPrompt,
+            user_prompt: pv.userPrompt,
+          }),
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const newId = json.data?.id;
+        if (newId) router.push(`/prompt-versions/${newId}`);
+      } catch {
+        /* ignore */
+      } finally {
+        setCloningId(null);
+      }
+    },
+    [router],
+  );
 
-  const columns = useMemo<DataTableColumn<PromptVersionRow>[]>(() => [
-    checkboxColumn<PromptVersionRow>({
-      selected,
-      onToggle: toggleSelect,
-      rowId: (pv) => pv.id,
-      isSelectable: (pv) => !pv.deletedAt,
-    }),
-    {
-      header: 'Name',
-      cell: (pv) => <NameCell href={`/prompt-versions/${pv.id}`} name={pv.name} subtitle={pv.userPrompt} />,
-      cellClassName: 'px-6 py-4',
-    },
-    {
-      header: 'Generations',
-      cell: (pv) => pv.stats?.generationCount ?? 0,
-    },
-    {
-      header: 'Created',
-      cell: (pv) => <DateCell date={pv.createdAt} />,
-    },
-    {
-      header: 'Status',
-      cell: (pv) => <StatusBadge status={pv.deletedAt ? 'deleted' : 'active'} />,
-    },
-    actionsColumn<PromptVersionRow>([
-      { icon: 'clone', label: 'Clone prompt version', onClick: (pv) => handleClone(pv), loading: (pv) => cloningId === pv.id },
-    ]),
-  ], [selected, toggleSelect, handleClone, cloningId]);
+  const columns = useMemo<DataTableColumn<PromptVersionRow>[]>(
+    () => [
+      checkboxColumn<PromptVersionRow>({
+        selected,
+        onToggle: toggleSelect,
+        rowId: (pv) => pv.id,
+        isSelectable: (pv) => !pv.deletedAt,
+      }),
+      {
+        header: 'Name',
+        cell: (pv) => (
+          <NameCell href={`/prompt-versions/${pv.id}`} name={pv.name} subtitle={pv.userPrompt} />
+        ),
+        cellClassName: 'px-6 py-4',
+      },
+      {
+        header: 'Generations',
+        cell: (pv) => pv.stats?.generationCount ?? 0,
+      },
+      {
+        header: 'Created',
+        cell: (pv) => <DateCell date={pv.createdAt} />,
+      },
+      {
+        header: 'Status',
+        cell: (pv) => <StatusBadge status={pv.deletedAt ? 'deleted' : 'active'} />,
+      },
+      actionsColumn<PromptVersionRow>([
+        {
+          icon: 'clone',
+          label: 'Clone prompt version',
+          onClick: (pv) => handleClone(pv),
+          loading: (pv) => cloningId === pv.id,
+        },
+      ]),
+    ],
+    [selected, toggleSelect, handleClone, cloningId],
+  );
 
   const toolbar = (
     <div className="flex items-center gap-4">
@@ -146,10 +162,20 @@ export function PromptVersionsList() {
         data={items}
         rowKey={(pv) => pv.id}
         rowClassName={(pv) => `hover:bg-gray-50 ${selected.has(pv.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage={search ? 'No prompt versions match your search.' : 'No prompt versions found.'}
+        emptyMessage={
+          search ? 'No prompt versions match your search.' : 'No prompt versions found.'
+        }
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
+        footer={
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={goToPage}
+            loading={paginating}
+          />
+        }
       />
 
       <BulkDeleteBar

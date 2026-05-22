@@ -40,10 +40,20 @@ type BreakdownData = {
   } | null;
 };
 
-function RatingSummaryBar({ good, failed, unset, label }: { good: number; failed: number; unset: number; label: string }) {
+function RatingSummaryBar({
+  good,
+  failed,
+  unset,
+  label,
+}: {
+  good: number;
+  failed: number;
+  unset: number;
+  label: string;
+}) {
   const rated = good + failed;
   if (rated === 0 && unset === 0) return null;
-  const pct = (n: number) => rated > 0 ? Math.round((n / rated) * 100) : 0;
+  const pct = (n: number) => (rated > 0 ? Math.round((n / rated) * 100) : 0);
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-gray-600">{label}</p>
@@ -74,26 +84,44 @@ function RatingSummaryBar({ good, failed, unset, label }: { good: number; failed
         </div>
       )}
       <div className="flex gap-3 text-[10px] text-gray-500">
-        <span><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Good {good}</span>
-        <span><span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> Failed {failed}</span>
+        <span>
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Good {good}
+        </span>
+        <span>
+          <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> Failed {failed}
+        </span>
         {unset > 0 && <span className="text-gray-400">({unset} unrated)</span>}
       </div>
     </div>
   );
 }
 
-function IssueList({ title, items, total, colorClass }: { title: string; items: IssueItem[]; total: number; colorClass: string }) {
+function IssueList({
+  title,
+  items,
+  total,
+  colorClass,
+}: {
+  title: string;
+  items: IssueItem[];
+  total: number;
+  colorClass: string;
+}) {
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">{title}</p>
+      <p className="mb-1.5 text-xs font-medium tracking-wider text-gray-500 uppercase">{title}</p>
       <ul className="space-y-1">
         {items.map((item) => {
           const pctVal = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
             <li key={item.issue} className="flex items-center justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate text-gray-700" title={item.issue}>{item.issue}</span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}>
+              <span className="min-w-0 truncate text-gray-700" title={item.issue}>
+                {item.issue}
+              </span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
+              >
                 {pctVal}%
               </span>
             </li>
@@ -104,12 +132,24 @@ function IssueList({ title, items, total, colorClass }: { title: string; items: 
   );
 }
 
-type SortKey = 'name' | 'generationCount' | 'sceneGoodPct' | 'sceneFailedPct' | 'productGoodPct' | 'productFailedPct' | 'notRatedCount' | 'avgExecTimeMs';
+type SortKey =
+  | 'name'
+  | 'generationCount'
+  | 'sceneGoodPct'
+  | 'sceneFailedPct'
+  | 'productGoodPct'
+  | 'productFailedPct'
+  | 'notRatedCount'
+  | 'avgExecTimeMs';
 type SortDir = 'asc' | 'desc';
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
-    <svg className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`} viewBox="0 0 10 14" fill="currentColor">
+    <svg
+      className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`}
+      viewBox="0 0 10 14"
+      fill="currentColor"
+    >
       {dir === 'asc' || !active ? (
         <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === 'asc' ? 1 : 0.3} />
       ) : null}
@@ -151,71 +191,90 @@ export function StrategyPerformanceSection({
         if (source && source !== 'all') params.set('source', source);
         const tz = browserTimezone();
         if (tz) params.set('tz', tz);
-        const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), { cache: 'no-store' });
+        const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), {
+          cache: 'no-store',
+        });
         if (!res.ok || cancelled) return;
         const json = await res.json();
         if (json.data && !cancelled) setRows(json.data.rows ?? json.data);
-      } catch { /* ignore */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [from, to, model, source]);
 
-  const fetchBreakdown = useCallback(async (strategyId: string) => {
-    setLoadingIds((prev) => new Set(prev).add(strategyId));
-    try {
-      const params = new URLSearchParams({ strategy_id: strategyId });
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      if (model) params.set('model', model);
-      if (source && source !== 'all') params.set('source', source);
-      const tz = browserTimezone();
-      if (tz) params.set('tz', tz);
-      const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), { cache: 'no-store' });
-      if (!res.ok) return;
-      const json = await res.json();
-      const raw = json.data;
-      if (!raw) {
+  const fetchBreakdown = useCallback(
+    async (strategyId: string) => {
+      setLoadingIds((prev) => new Set(prev).add(strategyId));
+      try {
+        const params = new URLSearchParams({ strategy_id: strategyId });
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (model) params.set('model', model);
+        if (source && source !== 'all') params.set('source', source);
+        const tz = browserTimezone();
+        if (tz) params.set('tz', tz);
+        const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const raw = json.data;
+        if (!raw) {
+          setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
+          return;
+        }
+        const executionErrors = raw.executionErrors ?? raw.execution_errors;
+        const sceneIssues = raw.sceneIssues ?? raw.scene_issues;
+        const productIssues = raw.productIssues ?? raw.product_issues;
+        const ratingSummary = raw.ratingSummary ?? raw.rating_summary;
+        const normalized: BreakdownData = {
+          execution_errors: Array.isArray(executionErrors) ? executionErrors : [],
+          scene_issues: Array.isArray(sceneIssues) ? sceneIssues : [],
+          product_issues: Array.isArray(productIssues) ? productIssues : [],
+          rating_summary: ratingSummary
+            ? {
+                total: ratingSummary.total ?? 0,
+                scene_good: ratingSummary.sceneGood ?? ratingSummary.scene_good ?? 0,
+                scene_failed: ratingSummary.sceneFailed ?? ratingSummary.scene_failed ?? 0,
+                scene_unset: ratingSummary.sceneUnset ?? ratingSummary.scene_unset ?? 0,
+                product_good: ratingSummary.productGood ?? ratingSummary.product_good ?? 0,
+                product_failed: ratingSummary.productFailed ?? ratingSummary.product_failed ?? 0,
+                product_unset: ratingSummary.productUnset ?? ratingSummary.product_unset ?? 0,
+              }
+            : null,
+        };
+        setBreakdowns((prev) => ({ ...prev, [strategyId]: normalized }));
+      } catch {
         setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
-        return;
+      } finally {
+        setLoadingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(strategyId);
+          return next;
+        });
       }
-      const executionErrors = raw.executionErrors ?? raw.execution_errors;
-      const sceneIssues = raw.sceneIssues ?? raw.scene_issues;
-      const productIssues = raw.productIssues ?? raw.product_issues;
-      const ratingSummary = raw.ratingSummary ?? raw.rating_summary;
-      const normalized: BreakdownData = {
-        execution_errors: Array.isArray(executionErrors) ? executionErrors : [],
-        scene_issues: Array.isArray(sceneIssues) ? sceneIssues : [],
-        product_issues: Array.isArray(productIssues) ? productIssues : [],
-        rating_summary: ratingSummary
-          ? {
-              total: ratingSummary.total ?? 0,
-              scene_good: ratingSummary.sceneGood ?? ratingSummary.scene_good ?? 0,
-              scene_failed: ratingSummary.sceneFailed ?? ratingSummary.scene_failed ?? 0,
-              scene_unset: ratingSummary.sceneUnset ?? ratingSummary.scene_unset ?? 0,
-              product_good: ratingSummary.productGood ?? ratingSummary.product_good ?? 0,
-              product_failed: ratingSummary.productFailed ?? ratingSummary.product_failed ?? 0,
-              product_unset: ratingSummary.productUnset ?? ratingSummary.product_unset ?? 0,
-            }
-          : null,
-      };
-      setBreakdowns((prev) => ({ ...prev, [strategyId]: normalized }));
-    } catch {
-      setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
-    } finally {
-      setLoadingIds((prev) => { const next = new Set(prev); next.delete(strategyId); return next; });
-    }
-  }, [from, model, source, to]);
+    },
+    [from, model, source, to],
+  );
 
-  const toggleExpand = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    if (!breakdowns[id]) fetchBreakdown(id);
-  }, [fetchBreakdown, breakdowns]);
+  const toggleExpand = useCallback(
+    (id: string) => {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      if (!breakdowns[id]) fetchBreakdown(id);
+    },
+    [fetchBreakdown, breakdowns],
+  );
 
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -255,36 +314,56 @@ export function StrategyPerformanceSection({
   }
 
   const COL_SPAN = 7;
-  const thClass = 'px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors';
+  const thClass =
+    'px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors';
 
   return (
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
       <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
       <p className="mt-1 text-sm text-gray-600">
-        Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue breakdown, failure reasons, and product category rates.
+        Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue
+        breakdown, failure reasons, and product category rates.
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
-              <th className="py-3 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase" style={{ width: 40 }} />
-              <th className="py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
-                Strategy<SortIcon active={sortKey === 'name'} dir={sortDir} />
+              <th
+                className="py-3 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
+                style={{ width: 40 }}
+              />
+              <th
+                className="cursor-pointer py-3 pr-6 text-left text-xs font-medium tracking-wider text-gray-600 uppercase transition-colors select-none hover:text-gray-900"
+                onClick={() => toggleSort('name')}
+              >
+                Strategy
+                <SortIcon active={sortKey === 'name'} dir={sortDir} />
               </th>
               <th className={thClass} onClick={() => toggleSort('generationCount')}>
-                Gens<SortIcon active={sortKey === 'generationCount'} dir={sortDir} />
+                Gens
+                <SortIcon active={sortKey === 'generationCount'} dir={sortDir} />
               </th>
               <th className={thClass} onClick={() => toggleSort('sceneGoodPct')}>
-                Scene<SortIcon active={sortKey === 'sceneGoodPct' || sortKey === 'sceneFailedPct'} dir={sortDir} />
+                Scene
+                <SortIcon
+                  active={sortKey === 'sceneGoodPct' || sortKey === 'sceneFailedPct'}
+                  dir={sortDir}
+                />
               </th>
               <th className={thClass} onClick={() => toggleSort('productGoodPct')}>
-                Product<SortIcon active={sortKey === 'productGoodPct' || sortKey === 'productFailedPct'} dir={sortDir} />
+                Product
+                <SortIcon
+                  active={sortKey === 'productGoodPct' || sortKey === 'productFailedPct'}
+                  dir={sortDir}
+                />
               </th>
               <th className={thClass} onClick={() => toggleSort('notRatedCount')}>
-                Unrated<SortIcon active={sortKey === 'notRatedCount'} dir={sortDir} />
+                Unrated
+                <SortIcon active={sortKey === 'notRatedCount'} dir={sortDir} />
               </th>
               <th className={thClass} onClick={() => toggleSort('avgExecTimeMs')}>
-                Avg time<SortIcon active={sortKey === 'avgExecTimeMs'} dir={sortDir} />
+                Avg time
+                <SortIcon active={sortKey === 'avgExecTimeMs'} dir={sortDir} />
               </th>
             </tr>
           </thead>
@@ -310,25 +389,36 @@ export function StrategyPerformanceSection({
                           strokeWidth={2}
                           stroke="currentColor"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                          />
                         </svg>
                       </button>
                     </td>
                     <td className="py-3 pr-6 text-sm font-medium text-gray-900">
                       <StrategyHoverCard strategyId={row.id}>
-                        <Link href={`/strategies/${row.id}`} className="text-primary-600 hover:text-primary-500">
+                        <Link
+                          href={`/strategies/${row.id}`}
+                          className="text-primary-600 hover:text-primary-500"
+                        >
                           {row.name || 'Unnamed'}
                         </Link>
                       </StrategyHoverCard>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-700">{row.generationCount}</td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-700">
+                      {row.generationCount}
+                    </td>
                     <td className="px-4 py-3 text-right text-sm">
                       {row.sceneRatedCount > 0 ? (
                         <>
                           <span className="text-green-600">{row.sceneGoodPct}%</span>
                           <span className="text-gray-400"> / </span>
                           <span className="text-orange-600">{row.sceneFailedPct}%</span>
-                          <span className="block text-[10px] text-gray-400">{row.sceneRatedCount} rated</span>
+                          <span className="block text-[10px] text-gray-400">
+                            {row.sceneRatedCount} rated
+                          </span>
                         </>
                       ) : (
                         <span className="text-gray-400">—</span>
@@ -340,7 +430,9 @@ export function StrategyPerformanceSection({
                           <span className="text-green-600">{row.productGoodPct}%</span>
                           <span className="text-gray-400"> / </span>
                           <span className="text-orange-600">{row.productFailedPct}%</span>
-                          <span className="block text-[10px] text-gray-400">{row.productRatedCount} rated</span>
+                          <span className="block text-[10px] text-gray-400">
+                            {row.productRatedCount} rated
+                          </span>
                         </>
                       ) : (
                         <span className="text-gray-400">—</span>
@@ -357,12 +449,17 @@ export function StrategyPerformanceSection({
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-700">
-                      {row.avgExecTimeMs != null ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s` : '—'}
+                      {row.avgExecTimeMs != null
+                        ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s`
+                        : '—'}
                     </td>
                   </tr>
                   {isExpanded && (
                     <tr key={`${row.id}-breakdown`}>
-                      <td colSpan={COL_SPAN} className="bg-gray-50/80 py-6 pl-10 pr-6 border-b-2 border-gray-200">
+                      <td
+                        colSpan={COL_SPAN}
+                        className="border-b-2 border-gray-200 bg-gray-50/80 py-6 pr-6 pl-10"
+                      >
                         {isLoadingBreakdown ? (
                           <p className="text-sm text-gray-500">Loading breakdown…</p>
                         ) : !rowBreakdown ? (
@@ -372,7 +469,9 @@ export function StrategyPerformanceSection({
                             {/* Rating summary bars */}
                             {rowBreakdown.rating_summary && (
                               <div className="space-y-3 lg:col-span-2">
-                                <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Rating distribution</p>
+                                <p className="text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                  Rating distribution
+                                </p>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                   <RatingSummaryBar
                                     label="Scene accuracy"
@@ -406,7 +505,10 @@ export function StrategyPerformanceSection({
                             <IssueList
                               title="Scene accuracy issues"
                               items={rowBreakdown.scene_issues}
-                              total={(rowBreakdown.rating_summary?.scene_good ?? 0) + (rowBreakdown.rating_summary?.scene_failed ?? 0)}
+                              total={
+                                (rowBreakdown.rating_summary?.scene_good ?? 0) +
+                                (rowBreakdown.rating_summary?.scene_failed ?? 0)
+                              }
                               colorClass="bg-red-100 text-red-700"
                             />
 
@@ -414,18 +516,31 @@ export function StrategyPerformanceSection({
                             <IssueList
                               title="Product accuracy issues"
                               items={rowBreakdown.product_issues}
-                              total={(rowBreakdown.rating_summary?.product_good ?? 0) + (rowBreakdown.rating_summary?.product_failed ?? 0)}
+                              total={
+                                (rowBreakdown.rating_summary?.product_good ?? 0) +
+                                (rowBreakdown.rating_summary?.product_failed ?? 0)
+                              }
                               colorClass="bg-amber-100 text-amber-700"
                             />
 
                             {/* Execution errors */}
                             {rowBreakdown.execution_errors.length > 0 && (
                               <div className="lg:col-span-2">
-                                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">Execution errors</p>
+                                <p className="mb-1.5 text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                  Execution errors
+                                </p>
                                 <ul className="max-h-40 space-y-1 overflow-y-auto">
                                   {rowBreakdown.execution_errors.map((item, i) => (
-                                    <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                                      <span className="min-w-0 truncate text-gray-700" title={item.reason}>{item.reason}</span>
+                                    <li
+                                      key={i}
+                                      className="flex items-center justify-between gap-3 text-sm"
+                                    >
+                                      <span
+                                        className="min-w-0 truncate text-gray-700"
+                                        title={item.reason}
+                                      >
+                                        {item.reason}
+                                      </span>
                                       <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">
                                         {item.count}
                                       </span>
@@ -440,7 +555,9 @@ export function StrategyPerformanceSection({
                               rowBreakdown.product_issues.length === 0 &&
                               rowBreakdown.execution_errors.length === 0 &&
                               !rowBreakdown.rating_summary && (
-                                <p className="text-sm text-gray-500 lg:col-span-2">No evaluation data or errors for this strategy.</p>
+                                <p className="text-sm text-gray-500 lg:col-span-2">
+                                  No evaluation data or errors for this strategy.
+                                </p>
                               )}
                           </div>
                         )}

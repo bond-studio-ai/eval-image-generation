@@ -8,9 +8,7 @@ const CATALOG_INCLUDE_PARAMS =
   'include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image';
 
 /** Kebab-case URL segments; kept in sync with Reference picker (`PRODUCT_CATEGORIES`). */
-const VALID_CATEGORY_SEGMENTS = new Set(
-  PRODUCT_CATEGORIES.map((k) => k.replace(/_/g, '-')),
-);
+const VALID_CATEGORY_SEGMENTS = new Set(PRODUCT_CATEGORIES.map((k) => k.replace(/_/g, '-')));
 
 const TILE_SNAKE = new Set([
   'floor_tiles',
@@ -57,11 +55,7 @@ function extractProductRecords(json: unknown): Record<string, unknown>[] {
 const SKIP_KEYS = new Set(['preferredRetailer', 'variants', 'images']);
 
 /** Recursively collect all dot paths from a product object so nested props appear in References. */
-function collectPaths(
-  obj: Record<string, unknown>,
-  paths: Set<string>,
-  prefix = '',
-): void {
+function collectPaths(obj: Record<string, unknown>, paths: Set<string>, prefix = ''): void {
   for (const [key, val] of Object.entries(obj)) {
     if (SKIP_KEYS.has(key)) continue;
     const path = prefix ? `${prefix}.${key}` : key;

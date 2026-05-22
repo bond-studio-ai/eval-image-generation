@@ -244,11 +244,7 @@ export function CatalogPromptForm({
         <StatCard label="Kind" value={KIND_LABEL_MAP[kind]} />
         <StatCard label="Context" value={contextLabelForPrompt(kind, scope)} mono />
         <StatCard label="Variables" value={`${variables.length}`} />
-        <StatCard
-          label="Status on submit"
-          value="proposed"
-          tone="amber"
-        />
+        <StatCard label="Status on submit" value="proposed" tone="amber" />
       </div>
 
       {/* Prompts — TwoPaneSplit with System (left) and User (right),
@@ -298,16 +294,14 @@ export function CatalogPromptForm({
           value={rationale}
           onChange={(e) => setRationale(e.target.value)}
           rows={3}
-          className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+          className="focus:border-primary-500 focus:ring-primary-500 mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:ring-1 focus:outline-none"
           placeholder={
             isNewVersion
               ? 'Why is this proposal better than the active prompt?'
               : 'Why are we adding this scope or kind?'
           }
         />
-        {createdBy && (
-          <p className="mt-2 text-[11px] text-gray-500">Proposing as {createdBy}</p>
-        )}
+        {createdBy && <p className="mt-2 text-[11px] text-gray-500">Proposing as {createdBy}</p>}
       </div>
 
       {isNewVersion && parent && <ParentPromptSection parent={parent} />}
@@ -336,7 +330,7 @@ function PromptPaneCard({
   return (
     <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
       <div className="shrink-0">
-        <h2 className="text-sm font-semibold uppercase text-gray-900">
+        <h2 className="text-sm font-semibold text-gray-900 uppercase">
           {heading}
           {required && <span className="ml-1 text-red-500">*</span>}
         </h2>
@@ -404,7 +398,7 @@ function ParentPromptSection({ parent }: { parent: PromptVersion }) {
         height={360}
         left={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
+            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
               System Prompt
             </h2>
             <div className="mt-3 min-h-0 flex-1 overflow-auto">
@@ -418,9 +412,7 @@ function ParentPromptSection({ parent }: { parent: PromptVersion }) {
         }
         right={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold uppercase text-gray-900">
-              User Prompt
-            </h2>
+            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">User Prompt</h2>
             <div className="mt-3 min-h-0 flex-1 overflow-auto">
               <PromptTemplateDisplay
                 template={envelope.user}

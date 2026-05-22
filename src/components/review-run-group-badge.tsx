@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  runReviewPost,
-  type ReviewState,
-} from '@/components/review-badge';
+import { runReviewPost, type ReviewState } from '@/components/review-badge';
 import { useCallback, useMemo } from 'react';
 
 /**
@@ -65,10 +62,7 @@ interface AggregateState {
   idle: number;
 }
 
-function aggregate(
-  generationIds: string[],
-  statuses: Map<string, ReviewState>,
-): AggregateState {
+function aggregate(generationIds: string[], statuses: Map<string, ReviewState>): AggregateState {
   const total = generationIds.length;
   let running = 0;
   let done = 0;
@@ -100,10 +94,7 @@ export function ReviewRunGroupBadge({
   statuses,
   setStatus,
 }: ReviewRunGroupBadgeProps) {
-  const summary = useMemo(
-    () => aggregate(generationIds, statuses),
-    [generationIds, statuses],
-  );
+  const summary = useMemo(() => aggregate(generationIds, statuses), [generationIds, statuses]);
 
   const runForAll = useCallback(async () => {
     // Capture targets at click time so a state-change race (e.g. a

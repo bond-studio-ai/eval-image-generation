@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { useState } from 'react';
 
 interface ExpandableImageProps {
   src: string;
@@ -15,12 +15,7 @@ interface ExpandableImageProps {
 /**
  * Renders an image with skeleton that expands into a full-screen lightbox when clicked.
  */
-export function ExpandableImage({
-  src,
-  alt,
-  wrapperClassName,
-  className,
-}: ExpandableImageProps) {
+export function ExpandableImage({ src, alt, wrapperClassName, className }: ExpandableImageProps) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -32,12 +27,7 @@ export function ExpandableImage({
         className={`cursor-pointer ${wrapperClassName ?? ''}`}
         aria-label={`Expand ${alt}`}
       >
-        <ImageWithSkeleton
-          src={src}
-          alt={alt}
-          loading="lazy"
-          className={className}
-        />
+        <ImageWithSkeleton src={src} alt={alt} loading="lazy" className={className} />
       </button>
 
       {open && (
@@ -57,7 +47,13 @@ export function ExpandableImage({
                 onClick={() => setOpen(false)}
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -66,9 +62,7 @@ export function ExpandableImage({
             {/* Image */}
             <div className="flex-1 overflow-auto p-4">
               <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
-                {!loaded && (
-                  <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />
-                )}
+                {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}

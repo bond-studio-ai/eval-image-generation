@@ -229,13 +229,16 @@ export const createGenerationSchema = z.object({
   execution_time: z.number().int().optional(),
 });
 
-export const rateGenerationSchema = z.object({
-  scene_accuracy_rating: ratingSchema.optional(),
-  product_accuracy_rating: ratingSchema.optional(),
-}).refine(
-  (data) => data.scene_accuracy_rating !== undefined || data.product_accuracy_rating !== undefined,
-  { message: 'At least one rating field must be provided' },
-);
+export const rateGenerationSchema = z
+  .object({
+    scene_accuracy_rating: ratingSchema.optional(),
+    product_accuracy_rating: ratingSchema.optional(),
+  })
+  .refine(
+    (data) =>
+      data.scene_accuracy_rating !== undefined || data.product_accuracy_rating !== undefined,
+    { message: 'At least one rating field must be provided' },
+  );
 
 export const listGenerationsSchema = paginationSchema.extend({
   prompt_version_id: z.string().uuid().optional(),
@@ -333,17 +336,9 @@ export const CATEGORY_SPECIFIC_ISSUES: Record<string, readonly string[]> = {
     'Incorrect detailing',
     'Incorrect handle placement',
   ],
-  lightings: [
-    'Incorrect armature shape',
-    'Incorrect number of lights',
-  ],
-  vanities: [
-    'Incorrect base/legs shape',
-    'Incorrect cabinet doors & drawers detailing',
-  ],
-  mirrors: [
-    'Incorrect shape',
-  ],
+  lightings: ['Incorrect armature shape', 'Incorrect number of lights'],
+  vanities: ['Incorrect base/legs shape', 'Incorrect cabinet doors & drawers detailing'],
+  mirrors: ['Incorrect shape'],
   shower_systems: [
     'Added a hand shower',
     'Incorrect shower head shape',
@@ -351,14 +346,8 @@ export const CATEGORY_SPECIFIC_ISSUES: Record<string, readonly string[]> = {
     'Incorrect tub spout shape',
     'Added an extra tub spout',
   ],
-  toilets: [
-    'Flush hardware missing',
-    'Incorrect flush hardware location',
-  ],
-  tub_fillers: [
-    'Incorrect shape',
-    'Incorrect detailing',
-  ],
+  toilets: ['Flush hardware missing', 'Incorrect flush hardware location'],
+  tub_fillers: ['Incorrect shape', 'Incorrect detailing'],
 };
 
 export const SCENE_ACCURACY_ISSUES = [

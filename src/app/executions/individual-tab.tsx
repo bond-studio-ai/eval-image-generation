@@ -41,45 +41,56 @@ export function IndividualExecutionsTab() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLTableRowElement | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; runHref: string; generationId: string | null } | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    runHref: string;
+    generationId: string | null;
+  } | null>(null);
 
   const hasMore = runs.length < total;
 
-  const fetchRuns = useCallback(async (opts: { replace?: boolean; pageToFetch?: number; limit?: number } = {}) => {
-    const replace = opts.replace ?? false;
-    const pageToFetch = opts.pageToFetch ?? 1;
-    const limit = opts.limit ?? (replace && runs.length > 0 ? Math.max(PAGE_SIZE, runs.length) : PAGE_SIZE);
-    if (replace) setFetchError(null);
-    else setLoadingMore(true);
-    try {
-      const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
-      const res = await fetch(serviceUrl(`strategy-runs?${params}`), { cache: 'no-store' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        const msg = (err as { error?: { message?: string } })?.error?.message;
-        setFetchError(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
-        return;
+  const fetchRuns = useCallback(
+    async (opts: { replace?: boolean; pageToFetch?: number; limit?: number } = {}) => {
+      const replace = opts.replace ?? false;
+      const pageToFetch = opts.pageToFetch ?? 1;
+      const limit =
+        opts.limit ?? (replace && runs.length > 0 ? Math.max(PAGE_SIZE, runs.length) : PAGE_SIZE);
+      if (replace) setFetchError(null);
+      else setLoadingMore(true);
+      try {
+        const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
+        const res = await fetch(serviceUrl(`strategy-runs?${params}`), { cache: 'no-store' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const msg = (err as { error?: { message?: string } })?.error?.message;
+          setFetchError(
+            msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
+          );
+          return;
+        }
+        const json = await res.json();
+        const data = (json.data ?? []) as RunRow[];
+        const paginationTotal = Number(json.pagination?.total ?? 0);
+        if (replace) {
+          setRuns(data);
+          setTotal(paginationTotal);
+          setPage(1);
+        } else {
+          setRuns((prev) => [...prev, ...data]);
+          setTotal(paginationTotal);
+          setPage(pageToFetch);
+        }
+      } catch (e) {
+        setFetchError(
+          e instanceof Error ? e.message : 'Network error. Check backend and try again.',
+        );
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      const json = await res.json();
-      const data = (json.data ?? []) as RunRow[];
-      const paginationTotal = Number(json.pagination?.total ?? 0);
-      if (replace) {
-        setRuns(data);
-        setTotal(paginationTotal);
-        setPage(1);
-      } else {
-        setRuns((prev) => [...prev, ...data]);
-        setTotal(paginationTotal);
-        setPage(pageToFetch);
-      }
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Network error. Check backend and try again.');
-    }
-    finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [runs.length]);
+    },
+    [runs.length],
+  );
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -88,15 +99,17 @@ export function IndividualExecutionsTab() {
 
   useEffect(() => {
     fetchRuns({ replace: true });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !hasMore || loadingMore) return;
     const obs = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) loadMore(); },
-      { rootMargin: '200px', threshold: 0 }
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: '200px', threshold: 0 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -110,7 +123,9 @@ export function IndividualExecutionsTab() {
     if (hasActive) {
       intervalRef.current = setInterval(refreshRuns, POLL_INTERVAL);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [hasActive, refreshRuns]);
 
   if (loading) {
@@ -121,10 +136,15 @@ export function IndividualExecutionsTab() {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
         <p className="text-sm text-amber-800">{fetchError}</p>
-        <p className="mt-1 text-xs text-amber-700">Ensure BASE_API_HOSTNAME points to the image-generation backend.</p>
+        <p className="mt-1 text-xs text-amber-700">
+          Ensure BASE_API_HOSTNAME points to the image-generation backend.
+        </p>
         <button
           type="button"
-          onClick={() => { setLoading(true); fetchRuns(); }}
+          onClick={() => {
+            setLoading(true);
+            fetchRuns();
+          }}
           className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
         >
           Retry
@@ -142,7 +162,9 @@ export function IndividualExecutionsTab() {
     pendingScrollRef.current = null;
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
     if (!scrollers) return;
-    scrollers.forEach((el, i) => { if (i < saved.length) el.scrollLeft = saved[i]; });
+    scrollers.forEach((el, i) => {
+      if (i < saved.length) el.scrollLeft = saved[i];
+    });
   });
 
   const fetchRunsKeepScroll = useCallback(async () => {
@@ -152,45 +174,56 @@ export function IndividualExecutionsTab() {
   }, [fetchRuns]);
 
   if (runs.length === 0) {
-    return <p className="text-sm text-gray-600">No individual runs yet. Run a strategy from its detail page.</p>;
+    return (
+      <p className="text-sm text-gray-600">
+        No individual runs yet. Run a strategy from its detail page.
+      </p>
+    );
   }
 
   return (
-    <div ref={containerRef} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+    <div
+      ref={containerRef}
+      className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
+    >
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Last output
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Strategy
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Input preset
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
                 Created
               </th>
-              <th className="relative w-10 px-4 py-3"><span className="sr-only">View</span></th>
+              <th className="relative w-10 px-4 py-3">
+                <span className="sr-only">View</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {runs.map((run) => (
               <tr key={run.id} className="hover:bg-gray-50/60">
-                <td className="whitespace-nowrap px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
                   {run.lastOutputUrl ? (
                     <button
                       type="button"
-                      onClick={() => setLightbox({
-                        src: run.lastOutputUrl!,
-                        runHref: `/strategies/${run.strategyId}/runs/${run.id}`,
-                        generationId: run.lastOutputGenerationId ?? null,
-                      })}
+                      onClick={() =>
+                        setLightbox({
+                          src: run.lastOutputUrl!,
+                          runHref: `/strategies/${run.strategyId}/runs/${run.id}`,
+                          generationId: run.lastOutputGenerationId ?? null,
+                        })
+                      }
                       className="block"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -208,27 +241,30 @@ export function IndividualExecutionsTab() {
                     </span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
                   <Link
                     href={`/strategies/${run.strategyId}`}
-                    className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                    className="text-primary-600 hover:text-primary-500 text-sm font-medium"
                   >
                     {run.strategyName ?? 'Unknown'}
                   </Link>
                 </td>
-                <td className="max-w-[200px] truncate px-4 py-2 text-sm text-gray-700" title={run.inputPresetName ?? undefined}>
+                <td
+                  className="max-w-[200px] truncate px-4 py-2 text-sm text-gray-700"
+                  title={run.inputPresetName ?? undefined}
+                >
                   {run.inputPresetName ?? '—'}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
                   <StatusBadge status={deriveRunReviewStatus(run)} />
                 </td>
-                <td className="whitespace-nowrap px-4 py-2 text-sm text-gray-500">
+                <td className="px-4 py-2 text-sm whitespace-nowrap text-gray-500">
                   {new Date(run.createdAt).toLocaleString()}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
                   <Link
                     href={`/strategies/${run.strategyId}/runs/${run.id}`}
-                    className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                    className="text-primary-600 hover:text-primary-500 text-sm font-medium"
                   >
                     View
                   </Link>
@@ -267,7 +303,9 @@ function StatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? config.pending;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}
+    >
       {c.label}
     </span>
   );

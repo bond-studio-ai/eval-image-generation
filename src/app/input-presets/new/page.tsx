@@ -1,12 +1,14 @@
 'use client';
 
+import { DesignPackageSelect } from '@/components/design-package-select';
 import {
   DesignSettingsEditor,
   designSettingsHasValues,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
-import { DesignPackageSelect } from '@/components/design-package-select';
 import { LayoutPresetSelect } from '@/components/layout-preset-select';
+import { PageHeader, PrimaryButton } from '@/components/page-header';
+import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { serviceUrl } from '@/lib/api-base';
 import {
@@ -14,10 +16,11 @@ import {
   isPowderRoomLayoutName,
   type DesignPackageOption,
 } from '@/lib/design-package';
-import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from '@/lib/input-preset-design';
+import {
+  INPUT_PRESET_DESIGN_FIELD_KEYS,
+  INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
+} from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
-import { PageHeader, PrimaryButton } from '@/components/page-header';
-import { ResourceFormHeader, ErrorCard } from '@/components/resource-form-header';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -33,7 +36,9 @@ export default function NewInputPresetPage() {
   const [dollhouseView, setDollhouseView] = useState<string | null>(null);
   const [realPhoto, setRealPhoto] = useState<string | null>(null);
   const [moodBoard, setMoodBoard] = useState<string | null>(null);
-  const [arbitraryImagesBySlot, setArbitraryImagesBySlot] = useState<Record<string, string | null>>({});
+  const [arbitraryImagesBySlot, setArbitraryImagesBySlot] = useState<Record<string, string | null>>(
+    {},
+  );
   const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(null);
 
   const [creating, setCreating] = useState(false);
@@ -57,7 +62,7 @@ export default function NewInputPresetPage() {
     if (!pkg) return;
     setArbitraryImagesBySlot({});
     setDesignSettings(
-      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(layoutTypeName) })
+      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(layoutTypeName) }),
     );
   }
 
@@ -129,7 +134,11 @@ export default function NewInputPresetPage() {
         backLabel="Back to Input Presets"
         title=""
         actions={
-          <PrimaryButton onClick={handleCreate} disabled={!canCreate || creating} loading={creating}>
+          <PrimaryButton
+            onClick={handleCreate}
+            disabled={!canCreate || creating}
+            loading={creating}
+          >
             {creating ? 'Creating...' : 'Create Input Preset'}
           </PrimaryButton>
         }
@@ -145,7 +154,11 @@ export default function NewInputPresetPage() {
         />
       </div>
 
-      {error && <div className="mt-4"><ErrorCard message={error} /></div>}
+      {error && (
+        <div className="mt-4">
+          <ErrorCard message={error} />
+        </div>
+      )}
 
       {/* Room preset */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
@@ -169,7 +182,10 @@ export default function NewInputPresetPage() {
         ) : null}
       </div>
 
-      <details className="mt-6 rounded-lg border border-gray-200 bg-white shadow-xs" open={hasAnyImage}>
+      <details
+        className="mt-6 rounded-lg border border-gray-200 bg-white shadow-xs"
+        open={hasAnyImage}
+      >
         <summary className="cursor-pointer list-none px-6 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -185,7 +201,11 @@ export default function NewInputPresetPage() {
         </summary>
         <div className="border-t border-gray-100 px-6 py-6">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <SceneImageInput label="Dollhouse View" value={dollhouseView} onChange={setDollhouseView} />
+            <SceneImageInput
+              label="Dollhouse View"
+              value={dollhouseView}
+              onChange={setDollhouseView}
+            />
             <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
             <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
           </div>
@@ -202,7 +222,6 @@ export default function NewInputPresetPage() {
           retailerId={INPUT_PRESET_RETAILER_ID}
         />
       </div>
-
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { PromptStatusBadge, formatDateTime } from '@/components/catalog-confidence/badges';
+import { formatDateTime, PromptStatusBadge } from '@/components/catalog-confidence/badges';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { TwoPaneSplit } from '@/components/two-pane-split';
 import type { PromptKind, PromptVersion } from '@/lib/catalog-feed-client';
@@ -120,7 +120,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
         left={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
             <div className="shrink-0">
-              <h2 className="text-sm font-semibold uppercase text-gray-900">System Prompt</h2>
+              <h2 className="text-sm font-semibold text-gray-900 uppercase">System Prompt</h2>
               <p className="mt-1 text-[11px] text-gray-500">
                 Sent as the system message — sets the model&apos;s role and output contract.
               </p>
@@ -137,7 +137,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
         right={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
             <div className="shrink-0">
-              <h2 className="text-sm font-semibold uppercase text-gray-900">User Prompt</h2>
+              <h2 className="text-sm font-semibold text-gray-900 uppercase">User Prompt</h2>
               <p className="mt-1 text-[11px] text-gray-500">
                 Sent as the user message — describes the task and substitutes the typed values.
               </p>
@@ -157,9 +157,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
 
       {prompt.rationale && (
         <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">
-            Rationale
-          </h2>
+          <h2 className="text-sm font-semibold tracking-wide text-gray-900 uppercase">Rationale</h2>
           <p className="mt-3 text-sm whitespace-pre-wrap text-gray-700">{prompt.rationale}</p>
         </div>
       )}
@@ -169,8 +167,8 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
           History for {prompt.kind}:{prompt.scope}
         </h2>
         <p className="mt-1 text-[11px] text-gray-500">
-          Every proposal and approval that has ever existed at this (kind, scope). Active rows
-          are what the worker reads at runtime; retired rows kept for audit.
+          Every proposal and approval that has ever existed at this (kind, scope). Active rows are
+          what the worker reads at runtime; retired rows kept for audit.
         </p>
         <div className="mt-3 overflow-clip rounded-md border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
@@ -202,7 +200,7 @@ export function CatalogPromptDetail({ prompt, history }: CatalogPromptDetailProp
                   <td className="px-4 py-2 align-top">
                     <Link
                       href={`/catalog-prompts/${row.id}`}
-                      className="text-xs text-primary-600 hover:text-primary-500"
+                      className="text-primary-600 hover:text-primary-500 text-xs"
                     >
                       <PromptStatusBadge status={row.status} />
                     </Link>
@@ -285,9 +283,8 @@ function ReferenceVariablesCard({
         </h2>
         <p className="mt-2 text-xs text-gray-500">
           This prompt has no documented runtime variables for ({prompt.kind}, {prompt.scope}).
-          Anything you reference with <code>{'{{.Field}}'}</code> will resolve to the zero
-          value of the worker&apos;s data struct (or fail at render time if the field does
-          not exist).
+          Anything you reference with <code>{'{{.Field}}'}</code> will resolve to the zero value of
+          the worker&apos;s data struct (or fail at render time if the field does not exist).
         </p>
       </section>
     );
@@ -306,8 +303,8 @@ function ReferenceVariablesCard({
         Reference variables
       </h2>
       <p className="mt-1 text-[11px] text-gray-500">
-        These are the typed fields the worker injects when rendering this prompt. Insert
-        them in a new version with the dropdown on the editor screen.
+        These are the typed fields the worker injects when rendering this prompt. Insert them in a
+        new version with the dropdown on the editor screen.
       </p>
       <div className="mt-4 space-y-4">
         {[...groups.entries()].map(([group, vars]) => (

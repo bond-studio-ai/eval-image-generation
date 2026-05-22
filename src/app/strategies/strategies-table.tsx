@@ -2,6 +2,8 @@
 
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
+  actionsColumn,
+  checkboxColumn,
   DataTable,
   DateCell,
   NameCell,
@@ -9,8 +11,6 @@ import {
   SelectAllCheckbox,
   StatusBadge,
   ToggleFilter,
-  actionsColumn,
-  checkboxColumn,
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
@@ -45,10 +45,13 @@ export function StrategiesTable() {
     setFilters,
   } = useInfiniteList<StrategyListItem>('strategies', { limit: 20 });
 
-  const updateActiveOnly = useCallback((on: boolean) => {
-    setActiveOnly(on);
-    setFilters(on ? { is_active: 'true' } : {});
-  }, [setFilters]);
+  const updateActiveOnly = useCallback(
+    (on: boolean) => {
+      setActiveOnly(on);
+      setFilters(on ? { is_active: 'true' } : {});
+    },
+    [setFilters],
+  );
 
   const handleClone = useCallback(
     async (id: string) => {
@@ -121,69 +124,90 @@ export function StrategiesTable() {
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    await Promise.all(
-      ids.map((id) => fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' })),
-    );
+    await Promise.all(ids.map((id) => fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' })));
     setSelected(new Set());
     refresh();
   }, [selected, refresh]);
 
-  const actions = useMemo<RowAction<StrategyListItem>[]>(() => [
-    { icon: 'clone', label: 'Clone strategy', onClick: (s) => handleClone(s.id), loading: (s) => cloningId === s.id },
-    { render: (s) => <DeployToEnvironmentButton strategyId={s.id} variant="icon" /> },
-    { icon: 'delete', label: 'Delete strategy', onClick: (s) => handleDelete(s.id, s.name), variant: 'danger', loading: (s) => deletingId === s.id },
-  ], [handleClone, handleDelete, cloningId, deletingId]);
-
-  const columns = useMemo<DataTableColumn<StrategyListItem>[]>(() => [
-    checkboxColumn<StrategyListItem>({
-      selected,
-      onToggle: toggleSelect,
-      rowId: (s) => s.id,
-    }),
-    {
-      header: 'Name',
-      cell: (s) => <NameCell href={`/strategies/${s.id}`} name={s.name} subtitle={s.description} />,
-      cellClassName: 'px-6 py-4',
-    },
-    {
-      header: 'Status',
-      cell: (s) => {
-        if (!s.activeForSource) {
-          return (
-            <Link href={`/strategies/${s.id}`} title="Open strategy to activate it">
-              <StatusBadge status="inactive" />
-            </Link>
-          );
-        }
-        const sourceLabel =
-          s.activeForSource === 'photo' ? 'Photo' : s.activeForSource === 'pdp' ? 'PDP' : 'Dollhouse';
-        return (
-          <button
-            type="button"
-            onClick={() => handleDeactivate(s.id)}
-            disabled={togglingId === s.id}
-            className="disabled:opacity-50"
-            title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}
-          >
-            <StatusBadge status="active" label={`Active · ${sourceLabel}`} />
-          </button>
-        );
+  const actions = useMemo<RowAction<StrategyListItem>[]>(
+    () => [
+      {
+        icon: 'clone',
+        label: 'Clone strategy',
+        onClick: (s) => handleClone(s.id),
+        loading: (s) => cloningId === s.id,
       },
-    },
-    {
-      header: 'Steps',
-      cell: (s) => `${s.stepCount} step${s.stepCount !== 1 ? 's' : ''}`,
-    },
-    {
-      header: 'Runs',
-      cell: (s) => `${s.runCount} run${s.runCount !== 1 ? 's' : ''}`,
-    },
-    {
-      header: 'Created',
-      cell: (s) => <DateCell date={s.createdAt} />,
-    },
-    actionsColumn(actions),
-  ], [actions, handleDeactivate, togglingId, selected, toggleSelect]);
+      { render: (s) => <DeployToEnvironmentButton strategyId={s.id} variant="icon" /> },
+      {
+        icon: 'delete',
+        label: 'Delete strategy',
+        onClick: (s) => handleDelete(s.id, s.name),
+        variant: 'danger',
+        loading: (s) => deletingId === s.id,
+      },
+    ],
+    [handleClone, handleDelete, cloningId, deletingId],
+  );
+
+  const columns = useMemo<DataTableColumn<StrategyListItem>[]>(
+    () => [
+      checkboxColumn<StrategyListItem>({
+        selected,
+        onToggle: toggleSelect,
+        rowId: (s) => s.id,
+      }),
+      {
+        header: 'Name',
+        cell: (s) => (
+          <NameCell href={`/strategies/${s.id}`} name={s.name} subtitle={s.description} />
+        ),
+        cellClassName: 'px-6 py-4',
+      },
+      {
+        header: 'Status',
+        cell: (s) => {
+          if (!s.activeForSource) {
+            return (
+              <Link href={`/strategies/${s.id}`} title="Open strategy to activate it">
+                <StatusBadge status="inactive" />
+              </Link>
+            );
+          }
+          const sourceLabel =
+            s.activeForSource === 'photo'
+              ? 'Photo'
+              : s.activeForSource === 'pdp'
+                ? 'PDP'
+                : 'Dollhouse';
+          return (
+            <button
+              type="button"
+              onClick={() => handleDeactivate(s.id)}
+              disabled={togglingId === s.id}
+              className="disabled:opacity-50"
+              title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}
+            >
+              <StatusBadge status="active" label={`Active · ${sourceLabel}`} />
+            </button>
+          );
+        },
+      },
+      {
+        header: 'Steps',
+        cell: (s) => `${s.stepCount} step${s.stepCount !== 1 ? 's' : ''}`,
+      },
+      {
+        header: 'Runs',
+        cell: (s) => `${s.runCount} run${s.runCount !== 1 ? 's' : ''}`,
+      },
+      {
+        header: 'Created',
+        cell: (s) => <DateCell date={s.createdAt} />,
+      },
+      actionsColumn(actions),
+    ],
+    [actions, handleDeactivate, togglingId, selected, toggleSelect],
+  );
 
   const toolbar = (
     <div className="flex items-center gap-4">
@@ -204,10 +228,20 @@ export function StrategiesTable() {
         data={items}
         rowKey={(s) => s.id}
         rowClassName={(s) => `hover:bg-gray-50 ${selected.has(s.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage={search || activeOnly ? 'No strategies match your filters.' : 'No strategies found.'}
+        emptyMessage={
+          search || activeOnly ? 'No strategies match your filters.' : 'No strategies found.'
+        }
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
+        footer={
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={goToPage}
+            loading={paginating}
+          />
+        }
       />
 
       <BulkDeleteBar

@@ -176,18 +176,14 @@ export function HumanReviewForm({
         </div>
       </div>
 
-      {submitting && (
-        <p className="mt-2 text-xs text-gray-500">Saving verdict…</p>
-      )}
+      {submitting && <p className="mt-2 text-xs text-gray-500">Saving verdict…</p>}
 
       {error && (
         <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800">
           {error}
         </div>
       )}
-      {reviewerId && (
-        <p className="mt-2 text-[11px] text-gray-500">Reviewing as {reviewerId}</p>
-      )}
+      {reviewerId && <p className="mt-2 text-[11px] text-gray-500">Reviewing as {reviewerId}</p>}
     </div>
   );
 }

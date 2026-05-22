@@ -29,19 +29,17 @@ export function ResourceFormHeader({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder={namePlaceholder}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Description
-          </label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
           <textarea
             rows={2}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder={descriptionPlaceholder}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1"
+            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
           />
         </div>
       </div>

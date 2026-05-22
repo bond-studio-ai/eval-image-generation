@@ -1,21 +1,28 @@
-import { errorResponse, successResponse } from '@/lib/api-response';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { errorResponse, successResponse } from '@/lib/api-response';
+import { s3UploadConfig } from '@/lib/env';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { auth } from '@clerk/nextjs/server';
 
-const s3 = new S3Client({
-  region: process.env.AWS_S3_REGION || 'us-west-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const BUCKET = process.env.AWS_S3_BUCKET!;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return errorResponse('UNAUTHORIZED', 'Sign in is required to upload images');
+    }
+
+    const config = s3UploadConfig();
+    const s3 = new S3Client({
+      region: config.region,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
@@ -24,7 +31,10 @@ export async function POST(request: Request) {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return errorResponse('VALIDATION_ERROR', `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`);
+      return errorResponse(
+        'VALIDATION_ERROR',
+        `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`,
+      );
     }
 
     if (file.size > MAX_SIZE) {
@@ -38,14 +48,14 @@ export async function POST(request: Request) {
 
     await s3.send(
       new PutObjectCommand({
-        Bucket: BUCKET,
+        Bucket: config.bucket,
         Key: key,
         Body: buffer,
         ContentType: file.type,
       }),
     );
 
-    const publicUrl = `https://${BUCKET}.s3.${process.env.AWS_S3_REGION || 'us-west-2'}.amazonaws.com/${key}`;
+    const publicUrl = `https://${config.bucket}.s3.${config.region}.amazonaws.com/${key}`;
 
     return successResponse({ publicUrl, key });
   } catch (error) {

@@ -1,13 +1,11 @@
-import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { InputPresetDetail } from '@/components/input-preset-detail';
+import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { fetchGenerations, fetchInputPresetById } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-const IMAGE_COLUMNS = [
-  'dollhouseView', 'realPhoto', 'moodBoard',
-] as const;
+const IMAGE_COLUMNS = ['dollhouseView', 'realPhoto', 'moodBoard'] as const;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +32,8 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     const val = ipData[col];
     if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) keyedImageCount++;
   }
-  const imageCount = keyedImageCount + getInputPresetStoredImages(ipData as Record<string, unknown>).length;
+  const imageCount =
+    keyedImageCount + getInputPresetStoredImages(ipData as Record<string, unknown>).length;
 
   const serializedData = {
     ...ipData,
@@ -52,8 +51,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     promptVersionName: g.promptName ?? null,
   }));
 
-  const generationCount =
-    stats?.generationCount ?? stats?.generation_count ?? generations.length;
+  const generationCount = stats?.generationCount ?? stats?.generation_count ?? generations.length;
 
   return (
     <InputPresetDetail

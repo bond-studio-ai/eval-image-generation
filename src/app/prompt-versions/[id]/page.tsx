@@ -42,8 +42,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     outputImageCount: g.resultCount ?? 0,
   }));
 
-  const generationCount =
-    stats?.generationCount ?? generations.length;
+  const generationCount = stats?.generationCount ?? generations.length;
   const ratedCount =
     stats?.ratedCount ??
     serializedGenerations.filter(

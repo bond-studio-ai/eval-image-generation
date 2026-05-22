@@ -2,209 +2,79 @@
 
 ## Prerequisites
 
-- Node.js 18+
-- [Yarn](https://yarnpkg.com/) package manager
-- A PostgreSQL database (e.g. [Amazon RDS](https://aws.amazon.com/rds/))
+- Node.js 20 or newer
+- Yarn
+- Access to Clerk keys for the admin app
+- Access to the image-generation service host
+- Optional: catalog-feed admin service credentials and AWS S3 upload credentials
 
----
-
-## Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd ai-image-generator-admin
-```
-
-### 2. Install Dependencies
+## Local Setup
 
 ```bash
 yarn
-```
-
-### 3. Set Up Database
-
-Configure your PostgreSQL database (e.g. Amazon RDS). Ensure it accepts connections on port 5432 and supports SSL.
-
-### 4. Configure Environment Variables
-
-Create a `.env.local` file:
-
-```bash
 cp .env.example .env.local
-```
-
-Set the PG* environment variables from your database connection details:
-
-```bash
-PGHOST=your-db-host.rds.amazonaws.com
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=your_password
-PGDATABASE=eval_image_generation
-PGSSLMODE=require
-```
-
-Using separate PG* vars supports password rotation—the app reads credentials on each connection.
-
-### 5. Push Database Schema
-
-```bash
-yarn db:push
-```
-
-This uses Drizzle Kit to push the schema defined in `src/db/schema.ts` directly to your database.
-
-### 6. Start Development Server
-
-```bash
 yarn dev
 ```
 
-The application will start at [http://localhost:3000](http://localhost:3000).
+The app runs at [http://localhost:3000](http://localhost:3000).
 
----
-
-## Project Structure
-
-```
-ai-image-generator-admin/
-├── src/
-│   ├── app/                        # Next.js App Router
-│   │   ├── layout.tsx              # Root layout with sidebar
-│   │   ├── page.tsx                # Dashboard
-│   │   ├── globals.css             # Global styles + Tailwind
-│   │   ├── api/v1/                 # API route handlers
-│   │   │   ├── prompt-versions/    # CRUD for prompt versions
-│   │   │   ├── generations/        # CRUD for generations + rating
-│   │   │   ├── images/             # Image deletion
-│   │   │   └── analytics/          # Rating distribution, trends
-│   │   ├── analytics/              # Analytics dashboard page
-│   │   ├── generations/            # Generation list + detail pages
-│   │   └── prompt-versions/        # Prompt version list + CRUD pages
-│   ├── components/                 # Shared UI components
-│   │   ├── sidebar.tsx             # Navigation sidebar
-│   │   ├── rating-badge.tsx        # Color-coded rating display
-│   │   ├── pagination.tsx          # Pagination controls
-│   │   ├── empty-state.tsx         # Empty state placeholder
-│   │   └── loading-state.tsx       # Loading spinner
-│   ├── db/                         # Database layer
-│   │   ├── schema.ts              # Drizzle ORM schema definitions
-│   │   └── index.ts               # Database client (PostgreSQL + Drizzle)
-│   └── lib/                        # Shared utilities
-│       ├── api-response.ts         # Consistent API response helpers
-│       └── validation.ts           # Zod validation schemas
-├── database/
-│   └── schema.sql                  # Reference SQL schema
-├── docs/                           # Documentation
-├── drizzle.config.ts               # Drizzle Kit configuration
-├── next.config.ts                  # Next.js configuration
-├── tailwind.config.ts              # Tailwind configuration
-├── tsconfig.json                   # TypeScript configuration
-└── package.json
-```
-
----
-
-## Database Management
-
-### Push Schema Changes
-
-When you modify `src/db/schema.ts`, push changes to the database:
+## Environment Variables
 
 ```bash
-yarn db:push
+# Shared API host. image-generation routes derive /image-generation/v1 and /v2 from this.
+BASE_API_HOSTNAME=http://localhost:3001
+
+# Clerk Auth
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# Optional catalog-feed admin API override/token
+CATALOG_FEED_BASE_HOSTNAME=http://localhost:3002
+CATALOG_FEED_ADMIN_TOKEN=...
+
+# Optional S3 upload support
+AWS_S3_BUCKET=your-bucket-name
+AWS_S3_REGION=us-west-2
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
 ```
 
-### Generate Migrations
+## Verification
 
-For production environments, generate migration files:
+Run the full local quality gate before opening a PR:
 
 ```bash
-yarn db:generate
-yarn db:migrate
+yarn verify
 ```
 
-### Inspect Database
-
-Use Drizzle Studio to browse your data:
+For narrower loops:
 
 ```bash
-yarn db:studio
+yarn typecheck
+yarn lint
+yarn test
+yarn format:check
 ```
 
----
+## How Data Flows
+
+- Pages and Server Components read directly from upstream services through server-only clients in `src/lib`.
+- Client Components call local route handlers under `/api/v1/**`.
+- `/api/v1/image-generation/**` proxies browser requests to the image-generation service after Clerk auth.
+- `/api/v1/catalog-feed/**` proxies browser requests to catalog-feed after Clerk auth and injects the server-side admin token when configured.
+- Local routes such as upload/products/projects act as small BFF adapters for platform APIs or S3.
 
 ## Development Workflow
 
-### Creating a Prompt Version
-
-1. Navigate to **Prompt Versions** in the sidebar
-2. Click **New Prompt Version**
-3. Fill in the system prompt, user prompt, and model settings
-4. Click **Create**
-
-### Recording a Generation
-
-Use the API to record generation results:
-
-```bash
-curl -X POST http://localhost:3000/api/v1/generations \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt_version_id": "<uuid>",
-    "output_images": [
-      {"url": "https://example.com/output.jpg"}
-    ]
-  }'
-```
-
-### Rating a Generation
-
-1. Navigate to **Generations** in the sidebar
-2. Click on a generation to view details
-3. Use the rating buttons to assign a quality rating
-
----
-
-## Code Quality
-
-### Linting
-
-```bash
-yarn lint
-```
-
-### Formatting
-
-```bash
-yarn format        # Fix formatting
-yarn format:check  # Check formatting
-```
-
----
+1. Use existing shared UI primitives before creating new styling or table/form patterns.
+2. Put server-only env access in `src/lib/env.ts`.
+3. Keep proxy behavior in `src/lib/proxy-handler.ts` so upstream errors are surfaced consistently.
+4. Add tests around pure parsers, normalizers, and feature-state helpers before refactoring larger UI files.
+5. Use Yarn for all package and script commands.
 
 ## Troubleshooting
 
-### Database Connection Issues
-
-- Verify PGHOST, PGUSER, PGPASSWORD, PGDATABASE are set and PGSSLMODE=require
-- Ensure the database is running and accepting connections
-- Check security groups / firewall allow connections from your IP
-
-### Build Errors
-
-```bash
-# Clear Next.js cache and rebuild
-rm -rf .next
-yarn build
-```
-
----
-
-## Next Steps
-
-1. Read the [API specification](API.md) for all available endpoints
-2. Review the [Architecture](ARCHITECTURE.md) for system design details
-3. Check the [Database Schema](README.md) for table definitions
+- If a proxied browser request returns `401`, sign in through Clerk and confirm `src/proxy.ts` is running for `/api/**`.
+- If upstream calls return `502`, check `BASE_API_HOSTNAME`, `CATALOG_FEED_BASE_HOSTNAME`, and the service logs.
+- If upload fails with an internal config error, verify all required AWS env vars are present.
+- If a page renders no data locally, confirm the corresponding upstream service has reachable seed data.

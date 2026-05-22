@@ -63,7 +63,7 @@ function RunPickerCard({
       onClick={onSelect}
       className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
         isSelected
-          ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-400'
+          ? 'border-primary-400 bg-primary-50 ring-primary-400 ring-1'
           : 'border-gray-200 bg-white hover:bg-gray-50'
       }`}
     >
@@ -93,8 +93,7 @@ function RunPickerCard({
           {run.strategyName ?? 'Unknown strategy'}
         </p>
         <p className="truncate text-[11px] text-gray-500">
-          {run.inputPresetName ?? 'No preset'} &middot;{' '}
-          {new Date(run.createdAt).toLocaleString()}
+          {run.inputPresetName ?? 'No preset'} &middot; {new Date(run.createdAt).toLocaleString()}
         </p>
         <div className="mt-0.5 flex flex-wrap gap-1">
           <span
@@ -122,7 +121,7 @@ function RunPickerCard({
       </div>
       <div className="shrink-0">
         {isSelected ? (
-          <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="text-primary-600 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
@@ -264,7 +263,7 @@ export function AuditComparePage() {
       ? true
       : sourceFilter === 'preset'
         ? run.source === 'preset' || !!run.inputPresetName
-        : run.source === 'raw_input'
+        : run.source === 'raw_input',
   );
   const runGroups = useMemo<AuditRunGroup[]>(() => {
     const groups = new Map<string, AuditRunGroup>();
@@ -290,7 +289,7 @@ export function AuditComparePage() {
       .map((group) => ({
         ...group,
         runs: [...group.runs].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         ),
       }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -311,15 +310,27 @@ export function AuditComparePage() {
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-gray-800">Select Runs</span>
             {leftId && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-medium text-primary-700">
+              <span className="bg-primary-100 text-primary-700 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium">
                 Left: {leftId.slice(0, 8)}...
-                <button type="button" onClick={() => setLeftId(null)} className="ml-0.5 hover:text-primary-900">&times;</button>
+                <button
+                  type="button"
+                  onClick={() => setLeftId(null)}
+                  className="hover:text-primary-900 ml-0.5"
+                >
+                  &times;
+                </button>
               </span>
             )}
             {rightId && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-medium text-primary-700">
+              <span className="bg-primary-100 text-primary-700 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium">
                 Right: {rightId.slice(0, 8)}...
-                <button type="button" onClick={() => setRightId(null)} className="ml-0.5 hover:text-primary-900">&times;</button>
+                <button
+                  type="button"
+                  onClick={() => setRightId(null)}
+                  className="hover:text-primary-900 ml-0.5"
+                >
+                  &times;
+                </button>
               </span>
             )}
           </div>
@@ -327,7 +338,10 @@ export function AuditComparePage() {
             {(leftId || rightId) && (
               <button
                 type="button"
-                onClick={() => { setLeftId(null); setRightId(null); }}
+                onClick={() => {
+                  setLeftId(null);
+                  setRightId(null);
+                }}
                 className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Clear
@@ -344,7 +358,7 @@ export function AuditComparePage() {
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
                 placeholder="Filter by strategy name, preset, source, or run ID..."
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
               />
             </div>
             <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
@@ -370,7 +384,7 @@ export function AuditComparePage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-0.5">
@@ -379,13 +393,16 @@ export function AuditComparePage() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
                 />
               </label>
               {(dateFrom || dateTo) && (
                 <button
                   type="button"
-                  onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  onClick={() => {
+                    setDateFrom('');
+                    setDateTo('');
+                  }}
                   className="mt-3.5 text-xs text-gray-500 hover:text-gray-700"
                 >
                   Clear dates
@@ -397,8 +414,19 @@ export function AuditComparePage() {
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <svg className="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
             </div>
           ) : error ? (
@@ -417,7 +445,10 @@ export function AuditComparePage() {
                   runGroups.map((group) => {
                     const isExpanded = expandedRuns[group.id] ?? false;
                     return (
-                      <div key={group.id} className="rounded-lg border border-gray-200 bg-gray-50/40">
+                      <div
+                        key={group.id}
+                        className="rounded-lg border border-gray-200 bg-gray-50/40"
+                      >
                         <button
                           type="button"
                           onClick={() =>
@@ -429,21 +460,22 @@ export function AuditComparePage() {
                           className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-semibold uppercase tracking-wide text-gray-600">
+                            <span className="block truncate text-xs font-semibold tracking-wide text-gray-600 uppercase">
                               {group.groupId || group.batchRunId
                                 ? `Group ${group.id.slice(0, 8)}`
                                 : `Run ${group.id.slice(0, 8)}`}
                             </span>
                             <span className="mt-0.5 block truncate text-xs text-gray-500">
-                              {group.strategyName ?? 'Unknown strategy'} · {new Date(group.createdAt).toLocaleString()}
+                              {group.strategyName ?? 'Unknown strategy'} ·{' '}
+                              {new Date(group.createdAt).toLocaleString()}
                             </span>
                           </span>
                           <span className="flex items-center gap-2">
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500 ring-1 ring-inset ring-gray-200">
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500 ring-1 ring-gray-200 ring-inset">
                               {group.runs.length} run{group.runs.length === 1 ? '' : 's'}
                             </span>
                             {group.source ? (
-                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">
                                 {SOURCE_LABELS[group.source] ?? group.source}
                               </span>
                             ) : null}
@@ -456,7 +488,11 @@ export function AuditComparePage() {
                               strokeWidth={1.5}
                               stroke="currentColor"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                              />
                             </svg>
                           </span>
                         </button>
@@ -479,9 +515,24 @@ export function AuditComparePage() {
                 {hasMore && (
                   <div ref={sentinelRef} className="flex items-center justify-center py-3">
                     {loadingMore && (
-                      <svg className="h-4 w-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      <svg
+                        className="h-4 w-4 animate-spin text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
                       </svg>
                     )}
                   </div>

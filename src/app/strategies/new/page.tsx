@@ -1,5 +1,9 @@
-import { fetchInputPresets, fetchPromptVersions, fetchStrategyModelCatalog } from '@/lib/service-client';
 import { StrategyBuilder } from '@/components/strategy-builder';
+import {
+  fetchInputPresets,
+  fetchPromptVersions,
+  fetchStrategyModelCatalog,
+} from '@/lib/service-client';
 
 export const dynamic = 'force-dynamic';
 

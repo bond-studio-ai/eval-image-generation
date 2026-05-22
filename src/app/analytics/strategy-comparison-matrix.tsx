@@ -45,7 +45,9 @@ function buildSliceParams(slice: AnalyticsComparisonSlice, model?: string): URLS
   return params;
 }
 
-function topCount(items: Array<{ issue: string; count: number }> | Array<{ reason: string; count: number }>) {
+function topCount(
+  items: Array<{ issue: string; count: number }> | Array<{ reason: string; count: number }>,
+) {
   return items[0] ?? null;
 }
 
@@ -60,7 +62,7 @@ function renderMetricCell(
     | 'avgTime'
     | 'sceneIssue'
     | 'productIssue'
-    | 'executionError'
+    | 'executionError',
 ) {
   if (!row && metric !== 'sceneIssue' && metric !== 'productIssue' && metric !== 'executionError') {
     return <span className="text-gray-400">-</span>;
@@ -114,7 +116,10 @@ function renderMetricCell(
       const item = topCount(breakdown?.scene_issues ?? []);
       return item ? (
         <div className="space-y-0.5">
-          <div className="truncate text-sm text-gray-900" title={'issue' in item ? item.issue : item.reason}>
+          <div
+            className="truncate text-sm text-gray-900"
+            title={'issue' in item ? item.issue : item.reason}
+          >
             {'issue' in item ? item.issue : item.reason}
           </div>
           <div className="text-[11px] text-gray-500">{item.count} flagged</div>
@@ -127,7 +132,10 @@ function renderMetricCell(
       const item = topCount(breakdown?.product_issues ?? []);
       return item ? (
         <div className="space-y-0.5">
-          <div className="truncate text-sm text-gray-900" title={'issue' in item ? item.issue : item.reason}>
+          <div
+            className="truncate text-sm text-gray-900"
+            title={'issue' in item ? item.issue : item.reason}
+          >
             {'issue' in item ? item.issue : item.reason}
           </div>
           <div className="text-[11px] text-gray-500">{item.count} flagged</div>
@@ -140,7 +148,10 @@ function renderMetricCell(
       const item = topCount(breakdown?.execution_errors ?? []);
       return item ? (
         <div className="space-y-0.5">
-          <div className="truncate text-sm text-gray-900" title={'issue' in item ? item.issue : item.reason}>
+          <div
+            className="truncate text-sm text-gray-900"
+            title={'issue' in item ? item.issue : item.reason}
+          >
             {'issue' in item ? item.issue : item.reason}
           </div>
           <div className="text-[11px] text-gray-500">{item.count} runs</div>
@@ -160,7 +171,9 @@ export function StrategyComparisonMatrix({
   model?: string;
 }) {
   const [rowsBySlice, setRowsBySlice] = useState<Record<string, StrategyRow | null>>({});
-  const [breakdownsBySlice, setBreakdownsBySlice] = useState<Record<string, BreakdownData | null>>({});
+  const [breakdownsBySlice, setBreakdownsBySlice] = useState<Record<string, BreakdownData | null>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -204,9 +217,7 @@ export function StrategyComparisonMatrix({
 
         if (cancelled) return;
 
-        setRowsBySlice(
-          Object.fromEntries(results.map((result) => [result.key, result.row])),
-        );
+        setRowsBySlice(Object.fromEntries(results.map((result) => [result.key, result.row])));
         setBreakdownsBySlice(
           Object.fromEntries(results.map((result) => [result.key, result.breakdown])),
         );
@@ -221,16 +232,17 @@ export function StrategyComparisonMatrix({
   }, [model, slices]);
 
   const metrics = useMemo(
-    () => [
-      { key: 'generationCount', label: 'Generations' },
-      { key: 'scene', label: 'Scene accuracy' },
-      { key: 'product', label: 'Product accuracy' },
-      { key: 'notRated', label: 'Unrated' },
-      { key: 'avgTime', label: 'Avg execution time' },
-      { key: 'sceneIssue', label: 'Top scene issue' },
-      { key: 'productIssue', label: 'Top product issue' },
-      { key: 'executionError', label: 'Top execution error' },
-    ] as const,
+    () =>
+      [
+        { key: 'generationCount', label: 'Generations' },
+        { key: 'scene', label: 'Scene accuracy' },
+        { key: 'product', label: 'Product accuracy' },
+        { key: 'notRated', label: 'Unrated' },
+        { key: 'avgTime', label: 'Avg execution time' },
+        { key: 'sceneIssue', label: 'Top scene issue' },
+        { key: 'productIssue', label: 'Top product issue' },
+        { key: 'executionError', label: 'Top execution error' },
+      ] as const,
     [],
   );
 
@@ -251,7 +263,8 @@ export function StrategyComparisonMatrix({
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Strategy comparison</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Horizontally compare strategy metrics and aligned error breakdowns across date ranges and run sources.
+            Horizontally compare strategy metrics and aligned error breakdowns across date ranges
+            and run sources.
           </p>
         </div>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
@@ -265,7 +278,7 @@ export function StrategyComparisonMatrix({
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 min-w-56 border-b border-gray-200 bg-white px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+              <th className="sticky left-0 z-10 min-w-56 border-b border-gray-200 bg-white px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Metric
               </th>
               {slices.map((slice) => (
@@ -274,7 +287,10 @@ export function StrategyComparisonMatrix({
                   className="min-w-56 border-b border-l border-gray-200 bg-gray-50 px-4 py-3 text-left align-top"
                 >
                   <div className="text-sm font-semibold text-gray-900">
-                    <Link href={`/strategies/${slice.strategyId}`} className="hover:text-primary-600">
+                    <Link
+                      href={`/strategies/${slice.strategyId}`}
+                      className="hover:text-primary-600"
+                    >
                       {slice.strategyName}
                     </Link>
                   </div>

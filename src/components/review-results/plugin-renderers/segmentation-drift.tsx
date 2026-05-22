@@ -14,5 +14,12 @@ import type { PluginRendererProps } from './index';
  */
 export function SegmentationDriftRenderer({ assessment, lookup, categories }: PluginRendererProps) {
   const drift = (assessment as DriftAssessment | null | undefined) ?? null;
-  return <CollapsibleDrift assessment={drift} status="computed" lookup={lookup} categories={categories} />;
+  return (
+    <CollapsibleDrift
+      assessment={drift}
+      status="computed"
+      lookup={lookup}
+      categories={categories}
+    />
+  );
 }

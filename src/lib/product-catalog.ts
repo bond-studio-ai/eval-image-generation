@@ -50,7 +50,11 @@ function getCacheKey(category: string, productId: string): string {
 }
 
 const TILE_CATEGORIES = new Set([
-  'floor_tiles', 'wall_tiles', 'shower_wall_tiles', 'shower_floor_tiles', 'shower_curb_tiles',
+  'floor_tiles',
+  'wall_tiles',
+  'shower_wall_tiles',
+  'shower_floor_tiles',
+  'shower_curb_tiles',
 ]);
 
 /** Convert internal category (snake_case) to API URL segment (plural kebab-case). */
@@ -73,7 +77,6 @@ async function fetchProduct(category: string, productId: string): Promise<Catalo
       headers: { Accept: 'application/json' },
       next: { revalidate: 600 },
     });
-
 
     if (!res.ok) return null;
 
@@ -132,7 +135,7 @@ export async function enrichProductImages(
     result[category] = urls.map((url) => {
       const productId = extractProductIdFromUrl(url);
       const key = productId ? getCacheKey(category, productId) : null;
-      const product = key ? productByKey[key] ?? null : null;
+      const product = key ? (productByKey[key] ?? null) : null;
       if (product) return product as ProductItem;
       return { url };
     });

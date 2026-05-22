@@ -1,6 +1,7 @@
 'use client';
 
 import { localUrl } from '@/lib/api-base';
+import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 import {
   CONDITIONAL_OPTIONS,
   DOLLHOUSE_ATTRIBUTES,
@@ -10,11 +11,10 @@ import {
   toDollhousePathKey,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
-import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
 import {
-  Fragment,
   forwardRef,
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -48,12 +48,7 @@ interface PromptTemplateEditorProps {
  * a synthetic `input` event, which keeps React's controlled value in sync
  * but will not be undoable in that rare case.
  */
-function insertWithUndo(
-  el: HTMLTextAreaElement,
-  start: number,
-  end: number,
-  text: string,
-): void {
+function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, text: string): void {
   el.focus();
   el.setSelectionRange(start, end);
   // `document.execCommand` is marked deprecated in lib.dom but is still
@@ -61,15 +56,14 @@ function insertWithUndo(
   // the native undo stack intact. Route the call through a local,
   // non-deprecated signature to avoid the editor warning at the call
   // site without suppressing unrelated deprecations.
-  const exec = (document as unknown as {
-    execCommand(command: string, showUi?: boolean, value?: string): boolean;
-  }).execCommand;
+  const exec = (
+    document as unknown as {
+      execCommand(command: string, showUi?: boolean, value?: string): boolean;
+    }
+  ).execCommand;
   const ok = exec.call(document, 'insertText', false, text);
   if (ok) return;
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLTextAreaElement.prototype,
-    'value',
-  )?.set;
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
   setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
   el.dispatchEvent(new Event('input', { bubbles: true }));
   const caret = start + text.length;
@@ -118,28 +112,25 @@ export function PromptTemplateEditor({
     insertWithUndo(el, el.selectionStart, el.selectionEnd, toInsert);
   }, []);
 
-  const handleConditionalSelect = useCallback(
-    (opt: (typeof CONDITIONAL_OPTIONS)[number]) => {
-      const el = textareaRef.current;
-      if (!el) return;
-      const condition = opt.isProduct ? `products.${opt.value}` : opt.value;
-      const start = el.selectionStart;
-      const end = el.selectionEnd;
-      const selected = el.value.slice(start, end);
-      const prefix = `{{#if ${condition}}}`;
-      const inner = selected || '\n  \n';
-      const wrapper = `${prefix}${inner}{{/if}}`;
-      insertWithUndo(el, start, end, wrapper);
-      setConditionalOpen(false);
-      // When the user had no selection, put the caret on the blank line
-      // inside the wrapper (matches the previous behaviour).
-      if (!selected) {
-        const caret = start + prefix.length + 1;
-        requestAnimationFrame(() => el.setSelectionRange(caret, caret));
-      }
-    },
-    [],
-  );
+  const handleConditionalSelect = useCallback((opt: (typeof CONDITIONAL_OPTIONS)[number]) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const condition = opt.isProduct ? `products.${opt.value}` : opt.value;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = el.value.slice(start, end);
+    const prefix = `{{#if ${condition}}}`;
+    const inner = selected || '\n  \n';
+    const wrapper = `${prefix}${inner}{{/if}}`;
+    insertWithUndo(el, start, end, wrapper);
+    setConditionalOpen(false);
+    // When the user had no selection, put the caret on the blank line
+    // inside the wrapper (matches the previous behaviour).
+    if (!selected) {
+      const caret = start + prefix.length + 1;
+      requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+    }
+  }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
     setAttributesLoading(true);
@@ -212,18 +203,14 @@ export function PromptTemplateEditor({
   const filteredConditionalOptions = useMemo(() => {
     const q = conditionalSearch.trim().toLowerCase();
     if (!q) return CONDITIONAL_OPTIONS;
-    return CONDITIONAL_OPTIONS.filter((opt) =>
-      opt.label.toLowerCase().includes(q),
-    );
+    return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q));
   }, [conditionalSearch]);
 
   const filteredReferenceOptions = useMemo(() => {
     const q = referenceSearch.trim().toLowerCase();
     if (!q) return REFERENCE_OPTIONS;
     return REFERENCE_OPTIONS.filter(
-      (opt) =>
-        opt.label.toLowerCase().includes(q) ||
-        opt.value.toLowerCase().includes(q),
+      (opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q),
     );
   }, [referenceSearch]);
 
@@ -258,9 +245,7 @@ export function PromptTemplateEditor({
           placeholder={placeholder}
           rows={rows}
           className={
-            fillHeight
-              ? `min-h-0 flex-1 resize-none ${textareaClass}`
-              : `resize-y ${textareaClass}`
+            fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`
           }
           fillHeight={fillHeight}
         />
@@ -270,10 +255,7 @@ export function PromptTemplateEditor({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`flex flex-col gap-2 ${fillHeight ? 'min-h-0 flex-1' : ''}`}
-    >
+    <div ref={containerRef} className={`flex flex-col gap-2 ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
       <div className="grid shrink-0 grid-cols-3 gap-1.5">
         <div className="relative">
           <button
@@ -296,34 +278,39 @@ export function PromptTemplateEditor({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           {conditionalOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute top-full left-0 z-20 mt-1 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
               <div className="border-b border-gray-200 p-2">
                 <input
                   type="text"
                   value={conditionalSearch}
                   onChange={(e) => setConditionalSearch(e.target.value)}
                   placeholder="Search…"
-                  className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                 />
               </div>
               <div className="max-h-48 overflow-auto py-1">
-              {filteredConditionalOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleConditionalSelect(opt)}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                >
-                  {opt.label}
-                </button>
-              ))}
-              {filteredConditionalOptions.length === 0 && (
-                <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
-              )}
+                {filteredConditionalOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleConditionalSelect(opt)}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                {filteredConditionalOptions.length === 0 && (
+                  <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
+                )}
               </div>
             </div>
           )}
@@ -354,11 +341,16 @@ export function PromptTemplateEditor({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           {referenceOpen && (
-            <div className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
               {!referenceCategory ? (
                 <>
                   <div className="border-b border-gray-200 p-2">
@@ -367,7 +359,7 @@ export function PromptTemplateEditor({
                       value={referenceSearch}
                       onChange={(e) => setReferenceSearch(e.target.value)}
                       placeholder="Search products…"
-                      className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                      className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                     />
                   </div>
                   <div className="max-h-60 overflow-auto py-1">
@@ -396,7 +388,7 @@ export function PromptTemplateEditor({
                         setAttributes([]);
                         setAttributesError(null);
                       }}
-                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
+                      className="text-primary-700 hover:bg-primary-50 rounded px-2 py-1 text-xs font-medium"
                     >
                       ← Back
                     </button>
@@ -467,18 +459,23 @@ export function PromptTemplateEditor({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           {dollhouseOpen && (
-            <div className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
               {!dollhouseProduct ? (
                 <>
                   <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
                     Pick a <strong>product</strong>. Inserts a{' '}
                     <code className="rounded bg-gray-100 px-0.5">{`{{#each dollhouse.{product}.visibility}}…{{/each}}`}</code>{' '}
-                    block — the <code className="rounded bg-gray-100 px-0.5">dollhouse</code> namespace
-                    is bound per image at render time.
+                    block — the <code className="rounded bg-gray-100 px-0.5">dollhouse</code>{' '}
+                    namespace is bound per image at render time.
                   </p>
                   <div className="border-b border-gray-200 p-2">
                     <input
@@ -486,16 +483,19 @@ export function PromptTemplateEditor({
                       value={dollhouseSearch}
                       onChange={(e) => setDollhouseSearch(e.target.value)}
                       placeholder="Search or type a custom product key…"
-                      className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                      className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                     />
                     {customDollhouseProduct &&
-                      !DOLLHOUSE_PRODUCT_TYPES.some((product) => product === customDollhouseProduct) && (
+                      !DOLLHOUSE_PRODUCT_TYPES.some(
+                        (product) => product === customDollhouseProduct,
+                      ) && (
                         <button
                           type="button"
                           onClick={() => setDollhouseProduct(customDollhouseProduct)}
-                          className="mt-2 w-full rounded-md border border-dashed border-primary-300 bg-primary-50 px-3 py-2 text-left text-sm text-primary-800 hover:bg-primary-100"
+                          className="border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 mt-2 w-full rounded-md border border-dashed px-3 py-2 text-left text-sm"
                         >
-                          Use custom product key <span className="font-mono">{customDollhouseProduct}</span>
+                          Use custom product key{' '}
+                          <span className="font-mono">{customDollhouseProduct}</span>
                         </button>
                       )}
                   </div>
@@ -524,7 +524,7 @@ export function PromptTemplateEditor({
                         setDollhouseProduct(null);
                         setDollhouseSearch('');
                       }}
-                      className="rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50"
+                      className="text-primary-700 hover:bg-primary-50 rounded px-2 py-1 text-xs font-medium"
                     >
                       ← Back
                     </button>
@@ -566,9 +566,7 @@ export function PromptTemplateEditor({
         placeholder={placeholder}
         rows={rows}
         className={
-          fillHeight
-            ? `min-h-0 flex-1 resize-none ${textareaClass}`
-            : `resize-y ${textareaClass}`
+          fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`
         }
         fillHeight={fillHeight}
       />
@@ -725,12 +723,10 @@ const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaP
           >
             {lines.map((line, i) => (
               <Fragment key={i}>
-                <div className="select-none self-start pr-2 text-right font-mono text-sm tabular-nums leading-5 text-gray-400">
+                <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">
                   {i + 1}
                 </div>
-                <div
-                  className="whitespace-pre-wrap break-words pr-3 font-mono text-sm leading-5 text-gray-900"
-                >
+                <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">
                   {line}
                 </div>
               </Fragment>

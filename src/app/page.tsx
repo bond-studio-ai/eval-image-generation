@@ -1,10 +1,10 @@
+import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
+import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import {
   buildComparisonSlices,
   getParamValues,
   parseComparisonState,
 } from '@/app/analytics/comparison-utils';
-import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
-import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
@@ -104,10 +104,11 @@ function TabNav({
         <Link
           key={tab.key}
           href={buildHref(tab.key)}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active === tab.key
+          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+            active === tab.key
               ? 'border-primary-600 text-primary-700'
               : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
+          }`}
         >
           {tab.label}
         </Link>
@@ -212,9 +213,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
               <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Success and failure rates for each product category based on evaluation data. Expand a row to see
-                checklist issue counts and freeform notes from failing evaluations; one eval can add to several issue
-                counts.
+                Success and failure rates for each product category based on evaluation data. Expand
+                a row to see checklist issue counts and freeform notes from failing evaluations; one
+                eval can add to several issue counts.
               </p>
               <div className="mt-4">
                 <ProductCategoryRates from={from} to={to} model={model} source={source} />

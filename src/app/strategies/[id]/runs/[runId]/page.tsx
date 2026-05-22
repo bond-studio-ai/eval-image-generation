@@ -1,4 +1,5 @@
-import { fetchStrategyRunById, parseStrategyRunJudgeResults } from '@/lib/service-client';
+import { fetchStrategyRunById } from '@/lib/service-client';
+import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
 import { notFound } from 'next/navigation';
 import { RunDetail } from './run-detail';
 

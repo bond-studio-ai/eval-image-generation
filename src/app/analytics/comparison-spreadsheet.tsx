@@ -166,18 +166,15 @@ export function ComparisonSpreadsheet({
   type SortCol = { sliceKey: string; field: 'successPct' | 'failurePct'; dir: 'asc' | 'desc' };
   const [categorySort, setCategorySort] = useState<SortCol | null>(null);
 
-  const toggleCategorySort = useCallback(
-    (sliceKey: string, field: 'successPct' | 'failurePct') => {
-      setCategorySort((prev) => {
-        if (prev?.sliceKey === sliceKey && prev.field === field) {
-          if (prev.dir === 'desc') return { sliceKey, field, dir: 'asc' };
-          return null;
-        }
-        return { sliceKey, field, dir: 'desc' };
-      });
-    },
-    [],
-  );
+  const toggleCategorySort = useCallback((sliceKey: string, field: 'successPct' | 'failurePct') => {
+    setCategorySort((prev) => {
+      if (prev?.sliceKey === sliceKey && prev.field === field) {
+        if (prev.dir === 'desc') return { sliceKey, field, dir: 'asc' };
+        return null;
+      }
+      return { sliceKey, field, dir: 'desc' };
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,14 +199,12 @@ export function ComparisonSpreadsheet({
             if (tz) baseParams.set('tz', tz);
 
             const [catRes, stepRes] = await Promise.all([
-              fetch(
-                serviceUrl(`analytics/product-category-rates?${baseParams}`),
-                { cache: 'no-store' },
-              ),
-              fetch(
-                serviceUrl(`analytics/strategy-step-performance?${baseParams}`),
-                { cache: 'no-store' },
-              ),
+              fetch(serviceUrl(`analytics/product-category-rates?${baseParams}`), {
+                cache: 'no-store',
+              }),
+              fetch(serviceUrl(`analytics/strategy-step-performance?${baseParams}`), {
+                cache: 'no-store',
+              }),
             ]);
 
             const catJson = catRes.ok ? await catRes.json() : {};
@@ -228,9 +223,7 @@ export function ComparisonSpreadsheet({
         );
 
         if (cancelled) return;
-        setDataBySlice(
-          Object.fromEntries(results.map((r) => [r.key, r.data])),
-        );
+        setDataBySlice(Object.fromEntries(results.map((r) => [r.key, r.data])));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -308,11 +301,7 @@ export function ComparisonSpreadsheet({
   return (
     <div className="mt-8 space-y-6">
       {/* ── Avg Execution Time ── */}
-      <StepExecutionTimeTable
-        slices={slices}
-        dataBySlice={dataBySlice}
-        loading={loading}
-      />
+      <StepExecutionTimeTable slices={slices} dataBySlice={dataBySlice} loading={loading} />
 
       {/* ── Scene Accuracy Issues ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
@@ -327,18 +316,16 @@ export function ComparisonSpreadsheet({
               </th>
             </tr>
             <tr>
-              <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
+              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
                   <th
                     key={slice.key}
-                    className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
+                    className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`}
                     style={{ minWidth: 160 }}
                   >
-                    <div className="text-xs font-bold text-gray-900">
-                      {slice.strategyName}
-                    </div>
+                    <div className="text-xs font-bold text-gray-900">{slice.strategyName}</div>
                     <div className="mt-0.5 text-[10px] font-medium text-gray-600">
                       {formatComparisonSource(slice.source)} ({formatComparisonRange(slice.range)})
                     </div>
@@ -348,7 +335,7 @@ export function ComparisonSpreadsheet({
             </tr>
             {/* Scene Accuracy Overall */}
             <tr className="bg-gray-50/60">
-              <th className="border-b border-r border-gray-200 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
+              <th className="border-r border-b border-gray-200 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
                 Overall
               </th>
               {slices.map((slice, i) => {
@@ -357,7 +344,7 @@ export function ComparisonSpreadsheet({
                 return (
                   <td
                     key={slice.key}
-                    className={`border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] ${color.header}`}
+                    className={`border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] ${color.header}`}
                   >
                     {s ? (
                       <>
@@ -367,19 +354,21 @@ export function ComparisonSpreadsheet({
                         <span className="text-gray-400"> / </span>
                         <span className="font-semibold text-red-600">{s.sceneFailedPct}%</span>
                       </>
-                    ) : '-'}
+                    ) : (
+                      '-'
+                    )}
                   </td>
                 );
               })}
             </tr>
             <tr className="bg-gray-100">
-              <th className="sticky left-0 z-10 border-b border-r border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600">
+              <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">
                 Issue
               </th>
               {slices.map((slice) => (
                 <th
                   key={slice.key}
-                  className="border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500"
+                  className="border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
                 >
                   Count (% of failed)
                 </th>
@@ -404,7 +393,7 @@ export function ComparisonSpreadsheet({
             {!loading &&
               sceneIssueRows.map((issueName) => (
                 <tr key={issueName} className="bg-white">
-                  <th className="sticky left-0 z-10 border-b border-r border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-normal text-gray-700">
+                  <th className="sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-normal text-gray-700">
                     {issueName}
                   </th>
                   {slices.map((slice) => {
@@ -413,13 +402,12 @@ export function ComparisonSpreadsheet({
                     const sceneFailed = d?.summary
                       ? Math.round((d.summary.sceneFailedPct / 100) * d.summary.sceneRatedCount)
                       : 0;
-                    const pct = item && sceneFailed > 0
-                      ? Math.round((item.count / sceneFailed) * 100)
-                      : 0;
+                    const pct =
+                      item && sceneFailed > 0 ? Math.round((item.count / sceneFailed) * 100) : 0;
                     return (
                       <td
                         key={slice.key}
-                        className="border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] text-red-600"
+                        className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-red-600"
                       >
                         {item ? `${item.count} (${pct}%)` : '-'}
                       </td>
@@ -446,7 +434,7 @@ export function ComparisonSpreadsheet({
 
             {/* Slice group headers */}
             <tr>
-              <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
+              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 const s = dataBySlice[slice.key]?.summary;
@@ -455,12 +443,10 @@ export function ComparisonSpreadsheet({
                   <th
                     key={slice.key}
                     colSpan={3}
-                    className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
+                    className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`}
                     style={{ minWidth: 320 }}
                   >
-                    <div className="text-xs font-bold text-gray-900">
-                      {slice.strategyName}
-                    </div>
+                    <div className="text-xs font-bold text-gray-900">{slice.strategyName}</div>
                     <div className="mt-0.5 text-[10px] font-medium text-gray-600">
                       {formatComparisonSource(slice.source)} ({formatComparisonRange(slice.range)})
                     </div>
@@ -474,7 +460,7 @@ export function ComparisonSpreadsheet({
 
             {/* Overall accuracy row */}
             <tr className="bg-gray-50/60">
-              <th className="border-b border-r border-gray-300 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
+              <th className="border-r border-b border-gray-300 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">
                 Product Accuracy (Overall)
               </th>
               {slices.map((slice, i) => {
@@ -482,13 +468,19 @@ export function ComparisonSpreadsheet({
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
                   <Fragment key={slice.key}>
-                    <td className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] text-gray-500 ${color.header}`}>
+                    <td
+                      className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] text-gray-500 ${color.header}`}
+                    >
                       {s?.productRatedCount ?? ''}
                     </td>
-                    <td className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-green-700 ${color.header}`}>
+                    <td
+                      className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-green-700 ${color.header}`}
+                    >
                       {s ? `${s.productGoodPct}%` : '-'}
                     </td>
-                    <td className={`border-b border-r border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-red-600 ${color.header}`}>
+                    <td
+                      className={`border-r border-b border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-red-600 ${color.header}`}
+                    >
                       {s ? `${s.productFailedPct}%` : '-'}
                     </td>
                   </Fragment>
@@ -498,27 +490,37 @@ export function ComparisonSpreadsheet({
 
             {/* Sub-column headers */}
             <tr className="bg-gray-100">
-              <th className="sticky left-0 z-10 border-b border-r border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600">
+              <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">
                 Category
               </th>
               {slices.map((slice) => (
                 <Fragment key={slice.key}>
-                  <th className="border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  <th className="border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                     Rated Images
                   </th>
                   <th
-                    className="cursor-pointer border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-green-700 select-none hover:bg-gray-200"
+                    className="cursor-pointer border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-green-700 uppercase select-none hover:bg-gray-200"
                     onClick={() => toggleCategorySort(slice.key, 'successPct')}
                   >
                     Success{' '}
-                    <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === 'successPct'} dir={categorySort?.dir} />
+                    <SortArrow
+                      active={
+                        categorySort?.sliceKey === slice.key && categorySort.field === 'successPct'
+                      }
+                      dir={categorySort?.dir}
+                    />
                   </th>
                   <th
-                    className="cursor-pointer border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-red-600 select-none hover:bg-gray-200"
+                    className="cursor-pointer border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-red-600 uppercase select-none hover:bg-gray-200"
                     onClick={() => toggleCategorySort(slice.key, 'failurePct')}
                   >
                     Fail{' '}
-                    <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === 'failurePct'} dir={categorySort?.dir} />
+                    <SortArrow
+                      active={
+                        categorySort?.sliceKey === slice.key && categorySort.field === 'failurePct'
+                      }
+                      dir={categorySort?.dir}
+                    />
                   </th>
                 </Fragment>
               ))}
@@ -528,10 +530,7 @@ export function ComparisonSpreadsheet({
           <tbody>
             {loading && (
               <tr>
-                <td
-                  colSpan={fullColSpan}
-                  className="px-4 py-6 text-center text-sm text-gray-400"
-                >
+                <td colSpan={fullColSpan} className="px-4 py-6 text-center text-sm text-gray-400">
                   Loading comparison data…
                 </td>
               </tr>
@@ -539,10 +538,7 @@ export function ComparisonSpreadsheet({
 
             {!loading && categoryRows.length === 0 && (
               <tr>
-                <td
-                  colSpan={fullColSpan}
-                  className="px-4 py-6 text-center text-sm text-gray-400"
-                >
+                <td colSpan={fullColSpan} className="px-4 py-6 text-center text-sm text-gray-400">
                   No product category data available.
                 </td>
               </tr>
@@ -557,30 +553,19 @@ export function ComparisonSpreadsheet({
                     : `${row.categoryName}:${row.issueName}`;
 
                 return (
-                  <tr
-                    key={rowKey}
-                    className={
-                      isCategory
-                        ? 'bg-white font-semibold'
-                        : 'bg-white'
-                    }
-                  >
+                  <tr key={rowKey} className={isCategory ? 'bg-white font-semibold' : 'bg-white'}>
                     <th
-                      className={`sticky left-0 z-10 border-b border-r border-gray-200 bg-white px-3 py-1.5 text-left ${
+                      className={`sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left ${
                         isCategory
                           ? 'text-[11px] font-bold text-gray-900'
                           : 'pl-6 text-[11px] font-normal text-gray-500'
                       }`}
                     >
-                      {isCategory
-                        ? formatCategoryName(row.categoryName)
-                        : row.issueName}
+                      {isCategory ? formatCategoryName(row.categoryName) : row.issueName}
                     </th>
                     {slices.map((slice) => {
                       const cats = dataBySlice[slice.key]?.categories ?? [];
-                      const cat = cats.find(
-                        (c) => c.name === row.categoryName,
-                      );
+                      const cat = cats.find((c) => c.name === row.categoryName);
 
                       if (isCategory) {
                         return (
@@ -589,22 +574,16 @@ export function ComparisonSpreadsheet({
                               {cat ? cat.total : '-'}
                             </td>
                             <td className="border-b border-gray-200 px-2 py-1.5 text-center text-[11px] font-medium text-green-700">
-                              {cat
-                                ? `${cat.success} (${cat.successPct}%)`
-                                : '-'}
+                              {cat ? `${cat.success} (${cat.successPct}%)` : '-'}
                             </td>
-                            <td className="border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] font-medium text-red-600">
-                              {cat
-                                ? `${cat.failure} (${cat.failurePct}%)`
-                                : '-'}
+                            <td className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] font-medium text-red-600">
+                              {cat ? `${cat.failure} (${cat.failurePct}%)` : '-'}
                             </td>
                           </Fragment>
                         );
                       }
 
-                      const issue = cat?.issues.find(
-                        (i) => i.issue === row.issueName,
-                      );
+                      const issue = cat?.issues.find((i) => i.issue === row.issueName);
                       const issuePct =
                         issue && cat && cat.failure > 0
                           ? Math.round((issue.count / cat.failure) * 100)
@@ -614,7 +593,7 @@ export function ComparisonSpreadsheet({
                         <Fragment key={slice.key}>
                           <td className="border-b border-gray-100 px-2 py-1 text-center" />
                           <td className="border-b border-gray-100 px-2 py-1 text-center" />
-                          <td className="border-b border-r border-gray-100 px-2 py-1 text-center text-[11px] text-red-500">
+                          <td className="border-r border-b border-gray-100 px-2 py-1 text-center text-[11px] text-red-500">
                             {issue ? `${issue.count} (${issuePct}%)` : ''}
                           </td>
                         </Fragment>
@@ -691,13 +670,13 @@ function StepExecutionTimeTable({
             </th>
           </tr>
           <tr>
-            <th className="w-48 min-w-[180px] border-b border-r border-gray-300 bg-white px-3 py-2" />
+            <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               return (
                 <th
                   key={slice.key}
-                  className={`border-b border-r border-gray-300 px-3 py-2.5 text-center ${color.header}`}
+                  className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`}
                   style={{ minWidth: 200 }}
                 >
                   <div className="text-xs font-bold text-gray-900">{slice.strategyName}</div>
@@ -709,13 +688,13 @@ function StepExecutionTimeTable({
             })}
           </tr>
           <tr className="bg-gray-100">
-            <th className="sticky left-0 z-10 border-b border-r border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600">
+            <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">
               Step
             </th>
             {slices.map((slice) => (
               <th
                 key={slice.key}
-                className="border-b border-r border-gray-300 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500"
+                className="border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
               >
                 Avg time (n)
               </th>
@@ -725,20 +704,14 @@ function StepExecutionTimeTable({
         <tbody>
           {loading && (
             <tr>
-              <td
-                colSpan={1 + colCount}
-                className="px-4 py-6 text-center text-sm text-gray-400"
-              >
+              <td colSpan={1 + colCount} className="px-4 py-6 text-center text-sm text-gray-400">
                 Loading step times…
               </td>
             </tr>
           )}
           {!loading && maxStepCount === 0 && (
             <tr>
-              <td
-                colSpan={1 + colCount}
-                className="px-4 py-4 text-center text-sm text-gray-400"
-              >
+              <td colSpan={1 + colCount} className="px-4 py-4 text-center text-sm text-gray-400">
                 No step execution data available for the selected ranges.
               </td>
             </tr>
@@ -748,7 +721,7 @@ function StepExecutionTimeTable({
               const stepIndex = idx;
               return (
                 <tr key={stepIndex} className="bg-white">
-                  <th className="sticky left-0 z-10 border-b border-r border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-medium text-gray-700">
+                  <th className="sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-medium text-gray-700">
                     Step {stepIndex + 1}
                   </th>
                   {slices.map((slice) => {
@@ -758,7 +731,7 @@ function StepExecutionTimeTable({
                       return (
                         <td
                           key={slice.key}
-                          className="border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-400"
+                          className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-400"
                         >
                           —
                         </td>
@@ -767,7 +740,7 @@ function StepExecutionTimeTable({
                     return (
                       <td
                         key={slice.key}
-                        className="border-b border-r border-gray-200 px-2 py-1.5 text-center text-[11px]"
+                        className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px]"
                       >
                         <div className="font-semibold text-gray-900">
                           {formatExecMs(step.avgExecTimeMs)}

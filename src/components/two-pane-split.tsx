@@ -5,8 +5,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
 } from 'react';
 
 interface TwoPaneSplitProps {
@@ -50,9 +50,7 @@ export function TwoPaneSplit({
   const hDividerRef = useRef<HTMLDivElement>(null);
   const hDragging = useRef(false);
 
-  const [ratio, setRatio] = useState(() =>
-    Math.min(0.85, Math.max(0.15, defaultRatio)),
-  );
+  const [ratio, setRatio] = useState(() => Math.min(0.85, Math.max(0.15, defaultRatio)));
 
   const onHPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -118,9 +116,9 @@ export function TwoPaneSplit({
         onDoubleClick={resetRatio}
         className="group relative hidden w-6 shrink-0 cursor-col-resize touch-none select-none sm:block"
       >
-        <div className="absolute left-1/2 top-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors group-hover:border-primary-400 group-active:border-primary-500">
+        <div className="group-hover:border-primary-400 group-active:border-primary-500 absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
           <svg
-            className="h-2.5 w-2.5 text-gray-500 group-hover:text-primary-500"
+            className="group-hover:text-primary-500 h-2.5 w-2.5 text-gray-500"
             viewBox="0 0 10 10"
             fill="currentColor"
             aria-hidden="true"
