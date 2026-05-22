@@ -79,7 +79,11 @@ function formatCategoryName(name: string): string {
 
 function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   return (
-    <svg className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`} viewBox="0 0 10 14" fill="currentColor">
+    <svg
+      className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`}
+      viewBox="0 0 10 14"
+      fill="currentColor"
+    >
       {dir === 'asc' || !active ? (
         <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === 'asc' ? 1 : 0.3} />
       ) : null}
@@ -117,12 +121,12 @@ function NoteInlineBar({ count, failureCount }: { count: number; failureCount: n
 }
 
 const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
-  'w-10',     // Expand (chevron)
-  '',         // Product category
+  'w-10', // Expand (chevron)
+  '', // Product category
   'w-[11rem]', // Evaluated
   'w-[11rem]', // Success
   'w-[11rem]', // Failure
-  'w-60',     // Rate
+  'w-60', // Rate
 ] as const;
 const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
 const PRODUCT_CATEGORY_BODY_COLSPAN = PRODUCT_CATEGORY_TABLE_COL_COUNT - 1;
@@ -170,8 +174,7 @@ function CategoryIssueBreakdownRows({
   }
 
   return items.map((item, index) => {
-    const pctOfFailures =
-      failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
+    const pctOfFailures = failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
     const isLast = index === items.length - 1;
     const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
     return (
@@ -194,7 +197,7 @@ function CategoryIssueBreakdownRows({
           className={cn(
             'px-4',
             rowPy,
-            'text-right text-xs leading-tight tabular-nums font-normal text-orange-600',
+            'text-right text-xs leading-tight font-normal text-orange-600 tabular-nums',
             isLast && ISSUE_ROW_LAST_TD,
           )}
         >
@@ -225,10 +228,10 @@ function CategoryNoteBreakdownRows({
 
   const headerRow = (
     <tr className={ISSUE_BREAKDOWN_TR}>
-      <td className="border-t border-gray-100 pt-3 pb-1 pr-0" aria-hidden />
+      <td className="border-t border-gray-100 pt-3 pr-0 pb-1" aria-hidden />
       <td
         colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
-        className="border-t border-gray-100 pt-3 pb-1 pr-6 text-xs font-medium uppercase tracking-wider text-gray-500"
+        className="border-t border-gray-100 pt-3 pr-6 pb-1 text-xs font-medium tracking-wider text-gray-500 uppercase"
       >
         Freeform notes ({notesTotalCount})
       </td>
@@ -239,8 +242,7 @@ function CategoryNoteBreakdownRows({
     <>
       {headerRow}
       {items.map((item, index) => {
-        const pctOfFailures =
-          failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
+        const pctOfFailures = failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
         const isLast = index === items.length - 1 && !notesTruncated;
         const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
         const preview =
@@ -267,7 +269,7 @@ function CategoryNoteBreakdownRows({
               className={cn(
                 'px-4',
                 rowPy,
-                'text-right text-xs leading-tight tabular-nums font-normal text-slate-600',
+                'text-right text-xs leading-tight font-normal text-slate-600 tabular-nums',
                 isLast && ISSUE_ROW_LAST_TD,
               )}
             >
@@ -281,10 +283,7 @@ function CategoryNoteBreakdownRows({
       })}
       {notesTruncated ? (
         <tr className={ISSUE_BREAKDOWN_TR}>
-          <td
-            className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)}
-            aria-hidden
-          />
+          <td className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
           <td
             colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
             className={cn(
@@ -358,17 +357,24 @@ export function ProductCategoryRates({
         if (strategyId) params.set('strategy_id', strategyId);
         const tz = browserTimezone();
         if (tz) params.set('tz', tz);
-        const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), { cache: 'no-store' });
+        const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), {
+          cache: 'no-store',
+        });
         if (!res.ok || cancelled) return;
         const json = await res.json();
         if (!cancelled) {
           setCategories(normalizeCategoryRows(json.data?.categories));
           setExpandedIds(new Set());
         }
-      } catch { /* ignore */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [from, to, model, source, strategyId]);
 
   if (loading) {
@@ -381,7 +387,8 @@ export function ProductCategoryRates({
 
   const sortedCompact = [...categories].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortKey === 'name') return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    if (sortKey === 'name')
+      return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
     return dir * ((a[sortKey] as number) - (b[sortKey] as number));
   });
 
@@ -389,14 +396,16 @@ export function ProductCategoryRates({
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Product category rates</p>
+          <p className="text-xs font-medium tracking-wider text-gray-500 uppercase">
+            Product category rates
+          </p>
           <div className="flex gap-1">
-            {([
+            {[
               { key: 'name' as ProdSortKey, label: 'Name' },
               { key: 'total' as ProdSortKey, label: 'Count' },
               { key: 'successPct' as ProdSortKey, label: 'Success' },
               { key: 'failurePct' as ProdSortKey, label: 'Failure' },
-            ]).map(({ key, label }) => (
+            ].map(({ key, label }) => (
               <button
                 key={key}
                 type="button"
@@ -416,7 +425,10 @@ export function ProductCategoryRates({
         <div className="space-y-1.5">
           {sortedCompact.map((cat) => (
             <div key={cat.name} className="flex items-center gap-2">
-              <span className="w-28 truncate text-xs text-gray-700" title={formatCategoryName(cat.name)}>
+              <span
+                className="w-28 truncate text-xs text-gray-700"
+                title={formatCategoryName(cat.name)}
+              >
                 {formatCategoryName(cat.name)}
               </span>
               <div className="flex h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
@@ -449,11 +461,13 @@ export function ProductCategoryRates({
 
   const sorted = [...categories].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortKey === 'name') return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    if (sortKey === 'name')
+      return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
     return dir * ((a[sortKey] as number) - (b[sortKey] as number));
   });
 
-  const thBase = 'px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors';
+  const thBase =
+    'px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors';
 
   return (
     <div className="overflow-x-auto">
@@ -466,19 +480,26 @@ export function ProductCategoryRates({
         <thead>
           <tr>
             <th className="w-10 py-2 pr-0" aria-hidden />
-            <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors" onClick={() => toggleSort('name')}>
-              Product Category<ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
+            <th
+              className="cursor-pointer py-2 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase transition-colors select-none hover:text-gray-900"
+              onClick={() => toggleSort('name')}
+            >
+              Product Category
+              <ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
             </th>
             <th className={thBase} onClick={() => toggleSort('total')}>
-              Evaluated<ProdSortIcon active={sortKey === 'total'} dir={sortDir} />
+              Evaluated
+              <ProdSortIcon active={sortKey === 'total'} dir={sortDir} />
             </th>
             <th className={thBase} onClick={() => toggleSort('successPct')}>
-              Success<ProdSortIcon active={sortKey === 'successPct'} dir={sortDir} />
+              Success
+              <ProdSortIcon active={sortKey === 'successPct'} dir={sortDir} />
             </th>
             <th className={thBase} onClick={() => toggleSort('failurePct')}>
-              Failure<ProdSortIcon active={sortKey === 'failurePct'} dir={sortDir} />
+              Failure
+              <ProdSortIcon active={sortKey === 'failurePct'} dir={sortDir} />
             </th>
-            <th className="w-60 px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+            <th className="w-60 px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
               Rate
             </th>
           </tr>
@@ -504,11 +525,17 @@ export function ProductCategoryRates({
                         strokeWidth={2}
                         stroke="currentColor"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                        />
                       </svg>
                     </button>
                   </td>
-                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">{formatCategoryName(cat.name)}</td>
+                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">
+                    {formatCategoryName(cat.name)}
+                  </td>
                   <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
                   <td className="px-4 py-2 text-right text-sm text-green-600">
                     {cat.success} ({cat.successPct}%)

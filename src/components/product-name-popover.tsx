@@ -2,7 +2,15 @@
 
 import { type CatalogProduct } from '@/components/product-picker';
 import { localUrl } from '@/lib/api-base';
-import { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 function extractProductId(url: string): string | null {
@@ -66,7 +74,12 @@ interface ProductNamePopoverProps {
   className?: string;
 }
 
-export function ProductNamePopover({ imageUrl, getProductName, children, className }: ProductNamePopoverProps) {
+export function ProductNamePopover({
+  imageUrl,
+  getProductName,
+  children,
+  className,
+}: ProductNamePopoverProps) {
   const name = getProductName(imageUrl);
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -88,7 +101,9 @@ export function ProductNamePopover({ imageUrl, getProductName, children, classNa
   }, []);
 
   useEffect(() => {
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
   if (!name) {
@@ -99,24 +114,21 @@ export function ProductNamePopover({ imageUrl, getProductName, children, classNa
 
   return (
     <>
-      <div
-        ref={triggerRef}
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        className={className}
-      >
+      <div ref={triggerRef} onMouseEnter={show} onMouseLeave={hide} className={className}>
         {children}
       </div>
-      {open && anchor && createPortal(
-        <PopoverCard
-          name={name}
-          anchorTop={anchor.top - 4}
-          anchorCenterX={anchor.left + anchor.width / 2}
-          onMouseEnter={keepOpen}
-          onMouseLeave={hide}
-        />,
-        document.body,
-      )}
+      {open &&
+        anchor &&
+        createPortal(
+          <PopoverCard
+            name={name}
+            anchorTop={anchor.top - 4}
+            anchorCenterX={anchor.left + anchor.width / 2}
+            onMouseEnter={keepOpen}
+            onMouseLeave={hide}
+          />,
+          document.body,
+        )}
     </>
   );
 }
@@ -129,41 +141,45 @@ interface PopoverCardProps {
   onMouseLeave: () => void;
 }
 
-const PopoverCard = forwardRef<HTMLDivElement, PopoverCardProps>(
-  function PopoverCard({ name, anchorTop, anchorCenterX, onMouseEnter, onMouseLeave }, ref) {
-    const innerRef = useRef<HTMLDivElement>(null);
-    const [style, setStyle] = useState<React.CSSProperties>({ visibility: 'hidden', position: 'fixed' });
+const PopoverCard = forwardRef<HTMLDivElement, PopoverCardProps>(function PopoverCard(
+  { name, anchorTop, anchorCenterX, onMouseEnter, onMouseLeave },
+  ref,
+) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useState<React.CSSProperties>({
+    visibility: 'hidden',
+    position: 'fixed',
+  });
 
-    useLayoutEffect(() => {
-      const el = innerRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const vw = window.innerWidth;
+  useLayoutEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
 
-      let left = anchorCenterX - rect.width / 2;
-      if (left + rect.width > vw - 8) left = vw - rect.width - 8;
-      if (left < 8) left = 8;
+    let left = anchorCenterX - rect.width / 2;
+    if (left + rect.width > vw - 8) left = vw - rect.width - 8;
+    if (left < 8) left = 8;
 
-      let top = anchorTop - rect.height;
-      if (top < 8) top = anchorTop + 40;
+    let top = anchorTop - rect.height;
+    if (top < 8) top = anchorTop + 40;
 
-      setStyle({ position: 'fixed', top, left, zIndex: 9999 });
-    }, [anchorTop, anchorCenterX]);
+    setStyle({ position: 'fixed', top, left, zIndex: 9999 });
+  }, [anchorTop, anchorCenterX]);
 
-    return (
-      <div
-        ref={(node) => {
-          (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-          if (typeof ref === 'function') ref(node);
-          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        className="max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-xl"
-        style={style}
-      >
-        <p className="text-xs font-medium text-gray-900 whitespace-nowrap">{name}</p>
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={(node) => {
+        (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-xl"
+      style={style}
+    >
+      <p className="text-xs font-medium whitespace-nowrap text-gray-900">{name}</p>
+    </div>
+  );
+});

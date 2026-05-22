@@ -14,8 +14,15 @@ export function buildGenerationsQuery(params: FilterParams): string {
   const sp = new URLSearchParams();
   sp.set('tab', 'generations');
   const keys: (keyof FilterParams)[] = [
-    'prompt_version_id', 'scene_accuracy_rating', 'product_accuracy_rating',
-    'unrated', 'from', 'to', 'sort', 'order', 'source',
+    'prompt_version_id',
+    'scene_accuracy_rating',
+    'product_accuracy_rating',
+    'unrated',
+    'from',
+    'to',
+    'sort',
+    'order',
+    'source',
   ];
   for (const k of keys) {
     const v = params[k];

@@ -1,12 +1,12 @@
 'use client';
 
 import {
+  actionsColumn,
   DataTable,
   DateCell,
   NameCell,
   SearchBar,
   StatusBadge,
-  actionsColumn,
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
@@ -51,40 +51,56 @@ export function EnvironmentsTable() {
     [refresh],
   );
 
-  const actions = useMemo<RowAction<EnvironmentListItem>[]>(() => [
-    { icon: 'edit', label: 'Edit environment', onClick: (item) => router.push(`/environments/${item.id}/edit`) },
-    { icon: 'delete', label: 'Delete environment', onClick: (item) => handleDelete(item.id, item.name), variant: 'danger', loading: (item) => deletingId === item.id },
-  ], [handleDelete, deletingId, router]);
+  const actions = useMemo<RowAction<EnvironmentListItem>[]>(
+    () => [
+      {
+        icon: 'edit',
+        label: 'Edit environment',
+        onClick: (item) => router.push(`/environments/${item.id}/edit`),
+      },
+      {
+        icon: 'delete',
+        label: 'Delete environment',
+        onClick: (item) => handleDelete(item.id, item.name),
+        variant: 'danger',
+        loading: (item) => deletingId === item.id,
+      },
+    ],
+    [handleDelete, deletingId, router],
+  );
 
-  const columns = useMemo<DataTableColumn<EnvironmentListItem>[]>(() => [
-    {
-      header: 'Name',
-      cell: (item) => <NameCell href={`/environments/${item.id}/edit`} name={item.name} />,
-      cellClassName: 'px-6 py-4',
-    },
-    {
-      header: 'Hostname',
-      cell: (item) => item.apiHostname,
-    },
-    {
-      header: 'Status',
-      cell: (item) => <StatusBadge status={item.isActive ? 'active' : 'inactive'} />,
-    },
-    {
-      header: 'Auth',
-      cell: (item) => (
-        <StatusBadge
-          status={item.hasAuthToken ? 'active' : 'inactive'}
-          label={item.hasAuthToken ? 'Configured' : 'Missing'}
-        />
-      ),
-    },
-    {
-      header: 'Created',
-      cell: (item) => <DateCell date={item.createdAt} />,
-    },
-    actionsColumn(actions),
-  ], [actions]);
+  const columns = useMemo<DataTableColumn<EnvironmentListItem>[]>(
+    () => [
+      {
+        header: 'Name',
+        cell: (item) => <NameCell href={`/environments/${item.id}/edit`} name={item.name} />,
+        cellClassName: 'px-6 py-4',
+      },
+      {
+        header: 'Hostname',
+        cell: (item) => item.apiHostname,
+      },
+      {
+        header: 'Status',
+        cell: (item) => <StatusBadge status={item.isActive ? 'active' : 'inactive'} />,
+      },
+      {
+        header: 'Auth',
+        cell: (item) => (
+          <StatusBadge
+            status={item.hasAuthToken ? 'active' : 'inactive'}
+            label={item.hasAuthToken ? 'Configured' : 'Missing'}
+          />
+        ),
+      },
+      {
+        header: 'Created',
+        cell: (item) => <DateCell date={item.createdAt} />,
+      },
+      actionsColumn(actions),
+    ],
+    [actions],
+  );
 
   const toolbar = (
     <div className="flex items-center gap-3">
@@ -102,7 +118,15 @@ export function EnvironmentsTable() {
       emptyMessage={search ? 'No environments match your search.' : 'No environments created yet.'}
       loading={loading}
       toolbar={toolbar}
-      footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
+      footer={
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPageChange={goToPage}
+          loading={paginating}
+        />
+      }
     />
   );
 }

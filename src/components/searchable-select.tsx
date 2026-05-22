@@ -210,7 +210,10 @@ export function SearchableSelect({
   // appears in `filtered`, keeping behaviour deterministic for
   // consumers that already pre-sort.
   const grouped = useMemo(() => {
-    const byKey = new Map<string, { group: string | undefined; options: SearchableSelectOption[] }>();
+    const byKey = new Map<
+      string,
+      { group: string | undefined; options: SearchableSelectOption[] }
+    >();
     const order: string[] = [];
     for (const opt of filtered) {
       const key = opt.group ?? '__ungrouped__';
@@ -240,9 +243,7 @@ export function SearchableSelect({
           aria-controls={listboxId}
           aria-expanded={open}
           aria-autocomplete="list"
-          aria-activedescendant={
-            highlight >= 0 ? `${inputId}-option-${highlight}` : undefined
-          }
+          aria-activedescendant={highlight >= 0 ? `${inputId}-option-${highlight}` : undefined}
           aria-label={ariaLabel}
           autoComplete="off"
           spellCheck={false}
@@ -261,7 +262,7 @@ export function SearchableSelect({
           onFocus={() => setOpen(true)}
           onClick={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 pr-8 text-sm text-gray-900 shadow-xs focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+          className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 pr-8 text-sm text-gray-900 shadow-xs focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
         />
         <button
           type="button"
@@ -273,7 +274,7 @@ export function SearchableSelect({
             setOpen((o) => !o);
             inputRef.current?.focus();
           }}
-          className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
+          className="absolute top-1/2 right-1 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
         >
           <svg
             className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -292,7 +293,7 @@ export function SearchableSelect({
         <div
           id={listboxId}
           role="listbox"
-          className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg"
+          className="absolute right-0 left-0 z-20 mt-1 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg"
         >
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-gray-500">{emptyMessage}</div>
@@ -329,7 +330,7 @@ export function SearchableSelect({
                     <span className="block truncate font-mono text-xs">
                       {typeof opt.label === 'string' || typeof opt.label === 'number'
                         ? opt.label
-                        : opt.label ?? opt.value}
+                        : (opt.label ?? opt.value)}
                     </span>
                     {opt.description && (
                       <span className="block truncate text-[10px] text-gray-500">
@@ -339,18 +340,14 @@ export function SearchableSelect({
                   </span>
                   {isSelected && (
                     <svg
-                      className="ml-2 h-3.5 w-3.5 shrink-0 text-primary-600"
+                      className="text-primary-600 ml-2 h-3.5 w-3.5 shrink-0"
                       viewBox="0 0 20 20"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M4 10l4 4 8-8"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 10l4 4 8-8" />
                     </svg>
                   )}
                 </div>

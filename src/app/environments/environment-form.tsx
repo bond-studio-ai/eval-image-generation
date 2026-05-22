@@ -57,7 +57,8 @@ export function EnvironmentForm({ initialData }: EnvironmentFormProps) {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(
-          (json as { error?: { message?: string } }).error?.message ?? 'Failed to save environment.',
+          (json as { error?: { message?: string } }).error?.message ??
+            'Failed to save environment.',
         );
       }
 
@@ -82,7 +83,11 @@ export function EnvironmentForm({ initialData }: EnvironmentFormProps) {
         }
       />
 
-      {error && <div className="mt-6"><ErrorCard message={error} /></div>}
+      {error && (
+        <div className="mt-6">
+          <ErrorCard message={error} />
+        </div>
+      )}
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <div className="space-y-4">
@@ -95,7 +100,7 @@ export function EnvironmentForm({ initialData }: EnvironmentFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
             />
           </label>
           <label className="block">
@@ -107,7 +112,7 @@ export function EnvironmentForm({ initialData }: EnvironmentFormProps) {
               value={apiHostname}
               onChange={(e) => setApiHostname(e.target.value)}
               placeholder="api.example.com"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
             />
           </label>
           <label className="block">
@@ -121,7 +126,7 @@ export function EnvironmentForm({ initialData }: EnvironmentFormProps) {
                 onChange={(e) => setAuthToken(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
               />
               <button
                 type="button"

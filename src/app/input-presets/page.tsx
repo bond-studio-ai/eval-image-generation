@@ -1,5 +1,5 @@
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { InputPresetsList } from '@/components/input-presets-list';
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,11 @@ export default function InputPresetsPage() {
       <PageHeader
         title="Input Presets"
         subtitle="Manage reusable sets of input images for generation."
-        actions={<PrimaryLinkButton href="/input-presets/new" icon>New Input Preset</PrimaryLinkButton>}
+        actions={
+          <PrimaryLinkButton href="/input-presets/new" icon>
+            New Input Preset
+          </PrimaryLinkButton>
+        }
       />
       <InputPresetsList />
     </div>

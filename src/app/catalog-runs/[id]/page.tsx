@@ -140,15 +140,16 @@ export default async function CatalogRunDetailPage({ params }: PageProps) {
             </h2>
             <p className="mt-1 text-xs text-gray-500">
               Verdicts feed the nightly isotonic calibration and the Evals prompt-promotion gate.
-              Use the notes field if you want context, then click Pass or Fail to save the verdict and
-              notes together.
+              Use the notes field if you want context, then click Pass or Fail to save the verdict
+              and notes together.
             </p>
             {detail.humanReviews.length === 0 ? (
               <ReviewForm runId={run.id} />
             ) : detail.humanReviews[0].verdict === 'reject' ? (
               <>
                 <p className="mt-4 text-xs text-gray-500">
-                  Fail is recorded. Add or edit notes below; changes save automatically while you type.
+                  Fail is recorded. Add or edit notes below; changes save automatically while you
+                  type.
                 </p>
                 <HumanReviewForm
                   runId={run.id}

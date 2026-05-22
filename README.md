@@ -1,69 +1,75 @@
-# AI Image Generator Admin
+# AI Image Eval Admin
 
-A quality assurance and testing platform for evaluating AI image generation results based on input images and prompts.
+A Clerk-protected Next.js admin console for evaluating AI image generation, strategy runs, prompt versions, input presets, catalog-confidence runs, and judge calibration workflows.
+
+This repo is a frontend/BFF. It does not own the primary database schema or Drizzle migrations; persistence and business logic live in upstream services.
 
 ## Tech Stack
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router, TypeScript)
-- **Database**: PostgreSQL (e.g. [Amazon RDS](https://aws.amazon.com/rds/))
-- **ORM**: [Drizzle](https://orm.drizzle.team/) with node-postgres
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Validation**: [Zod](https://zod.dev/)
+- **Framework:** Next.js App Router, React, TypeScript
+- **Auth:** Clerk
+- **Styling:** Tailwind CSS
+- **Backend access:** Next route handlers proxy image-generation, catalog-feed, platform APIs, and S3 upload
+- **Validation:** Zod and focused type guards at local boundaries
+- **Tests:** Vitest for pure helpers and boundary normalization
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 yarn
-
-# Copy environment file and add your database connection string
 cp .env.example .env.local
-
-# Push schema to database
-yarn db:push
-
-# Start development server
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the admin dashboard.
+Open [http://localhost:3000](http://localhost:3000).
+
+## Required Services
+
+- `BASE_API_HOSTNAME` points to the shared API host. The app derives:
+  - image-generation v1/v2 service URLs
+  - platform API URLs
+- Clerk keys are required for all protected admin pages and browser-accessed API proxies.
+- AWS S3 env vars are required only for image upload flows.
+- `CATALOG_FEED_BASE_HOSTNAME` and `CATALOG_FEED_ADMIN_TOKEN` are optional unless you use catalog-confidence admin flows.
 
 ## Scripts
 
-| Command              | Description                     |
-| -------------------- | ------------------------------- |
-| `yarn dev`           | Start development server        |
-| `yarn build`         | Build for production            |
-| `yarn start`         | Start production server         |
-| `yarn lint`          | Run ESLint                      |
-| `yarn format`        | Format code with Prettier       |
-| `yarn db:push`       | Push schema changes to database |
-| `yarn db:generate`   | Generate migration files        |
-| `yarn db:migrate`    | Run migrations                  |
-| `yarn db:studio`     | Open Drizzle Studio             |
-
-## Documentation
-
-- [Getting Started](docs/GETTING_STARTED.md) - Setup and development guide
-- [API Specification](docs/API.md) - REST API endpoints
-- [Architecture](docs/ARCHITECTURE.md) - System design and data flow
-- [Database Schema](docs/README.md) - Schema documentation
+| Command             | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `yarn dev`          | Start the development server                 |
+| `yarn build`        | Build for production                         |
+| `yarn start`        | Start the production server                  |
+| `yarn typecheck`    | Run TypeScript without emitting files        |
+| `yarn lint`         | Run ESLint                                   |
+| `yarn test`         | Run Vitest tests                             |
+| `yarn verify`       | Run typecheck, lint, tests, and format check |
+| `yarn format`       | Format code with Prettier                    |
+| `yarn format:check` | Check formatting                             |
 
 ## Project Structure
 
+```text
+src/
+  app/                  Next.js routes and route handlers
+  app/api/v1/           Local BFF routes and upstream service proxies
+  components/           Shared UI and feature components
+  hooks/                Shared client hooks
+  lib/                  Service clients, proxy helpers, env helpers, parsers, utilities
+  proxy.ts              Clerk route protection
+docs/                   Architecture and developer workflow docs
 ```
-ai-image-generator-admin/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/v1/             # API route handlers
-│   │   ├── analytics/          # Analytics page
-│   │   ├── generations/        # Generations pages
-│   │   └── prompt-versions/    # Prompt version pages
-│   ├── components/             # Shared UI components
-│   ├── db/                     # Drizzle schema and client
-│   └── lib/                    # Utilities and validation
-├── database/                   # Reference SQL schema
-├── docs/                       # Project documentation
-├── drizzle/                    # Generated migrations
-└── drizzle.config.ts           # Drizzle Kit configuration
-```
+
+## Key Patterns
+
+- Server Components use typed server clients in `src/lib` for direct upstream reads.
+- Client Components call local `/api/v1/**` routes through `serviceUrl()` or `localUrl()`.
+- Browser-accessed admin proxies perform their own `auth()` checks in route handlers.
+- List/table screens should prefer `DataTable`, `Pagination`, `BulkDeleteBar`, and `useInfiniteList`.
+- Resource pages should use `PageHeader`, `PrimaryButton`, `PrimaryLinkButton`, `ResourceFormHeader`, and `ErrorCard`.
+
+## Documentation
+
+- [Getting Started](docs/GETTING_STARTED.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Frontend Patterns](docs/FRONTEND_PATTERNS.md)
+- [API Notes](docs/API.md)

@@ -1,5 +1,5 @@
-import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
+import { platformApiBase } from '@/lib/env';
 
 const API_BASE = platformApiBase();
 const STUDIO_API_BASE = `${API_BASE}/studio/v1`;
@@ -76,11 +76,15 @@ function sanitizeStudioDesign(design: Record<string, unknown>): Record<string, u
   return out;
 }
 
-function extractRoomLayout(room: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
+function extractRoomLayout(
+  room: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
   return asRecord(room?.layout);
 }
 
-function extractRoomDesign(room: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
+function extractRoomDesign(
+  room: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
   return asRecord(extractRoomLayout(room)?.design);
 }
 
@@ -143,12 +147,15 @@ export async function POST(
         return errorResponse('INTERNAL_ERROR', `Studio design update failed: ${res.status}`);
       }
     } else {
-      const res = await fetch(`${STUDIO_API_BASE}/projects/${encodeURIComponent(projectId)}/designs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sanitized),
-        cache: 'no-store',
-      });
+      const res = await fetch(
+        `${STUDIO_API_BASE}/projects/${encodeURIComponent(projectId)}/designs`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sanitized),
+          cache: 'no-store',
+        },
+      );
       if (!res.ok) {
         return errorResponse('INTERNAL_ERROR', `Studio design creation failed: ${res.status}`);
       }

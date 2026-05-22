@@ -28,14 +28,9 @@ export const REVIEW_POST_TIMEOUT_MS = 180_000;
  * `ReviewRunGroupBadge` so both code paths report the same
  * `done`/`error` shape (cached flag, success counts, error message).
  */
-export async function runReviewPost(
-  generationId: string,
-  force: boolean,
-): Promise<ReviewState> {
+export async function runReviewPost(generationId: string, force: boolean): Promise<ReviewState> {
   try {
-    const url = serviceUrl(
-      `generations/${generationId}/review${force ? '?force=true' : ''}`,
-    );
+    const url = serviceUrl(`generations/${generationId}/review${force ? '?force=true' : ''}`);
     const res = await fetch(url, {
       method: 'POST',
       signal: AbortSignal.timeout(REVIEW_POST_TIMEOUT_MS),
@@ -48,9 +43,7 @@ export async function runReviewPost(
     if (!res.ok) {
       const message =
         json?.error?.message ??
-        (res.status === 422
-          ? 'Nothing to review'
-          : `Review failed (${res.status})`);
+        (res.status === 422 ? 'Nothing to review' : `Review failed (${res.status})`);
       return { kind: 'error', message };
     }
 
@@ -81,11 +74,7 @@ interface SegmentationBadgeProps {
   onStateChange?: (next: ReviewState) => void;
 }
 
-export function ReviewBadge({
-  generationId,
-  initialState,
-  onStateChange,
-}: SegmentationBadgeProps) {
+export function ReviewBadge({ generationId, initialState, onStateChange }: SegmentationBadgeProps) {
   const [state, setState] = useState<ReviewState>(initialState ?? { kind: 'idle' });
 
   useEffect(() => {

@@ -118,8 +118,10 @@ function CalendarMonth({
 
           let cellBg = '';
           if (isInRange) cellBg = 'bg-primary-50';
-          if (isStart && hi && lo !== hi) cellBg = 'bg-gradient-to-r from-transparent via-primary-50 to-primary-50';
-          if (isEnd && lo && lo !== hi) cellBg = 'bg-gradient-to-l from-transparent via-primary-50 to-primary-50';
+          if (isStart && hi && lo !== hi)
+            cellBg = 'bg-gradient-to-r from-transparent via-primary-50 to-primary-50';
+          if (isEnd && lo && lo !== hi)
+            cellBg = 'bg-gradient-to-l from-transparent via-primary-50 to-primary-50';
           if (isStart && isEnd) cellBg = '';
 
           let dayClass =
@@ -127,7 +129,8 @@ function CalendarMonth({
           if (isSelected) {
             dayClass += 'bg-primary-600 font-semibold text-white shadow-sm';
           } else if (isToday) {
-            dayClass += 'font-semibold text-primary-600 ring-1 ring-primary-300 hover:bg-primary-100';
+            dayClass +=
+              'font-semibold text-primary-600 ring-1 ring-primary-300 hover:bg-primary-100';
           } else {
             dayClass += 'text-gray-700 hover:bg-gray-100';
           }
@@ -309,7 +312,7 @@ export function DateRangePicker({
           </button>
 
           {showCustom && (
-            <div className="absolute right-0 top-full z-50 mt-2 rounded-xl border border-gray-200 bg-white shadow-xl">
+            <div className="absolute top-full right-0 z-50 mt-2 rounded-xl border border-gray-200 bg-white shadow-xl">
               {/* Header with nav */}
               <div className="flex items-center justify-between border-b border-gray-100 px-4 pt-4 pb-2">
                 <button
@@ -332,9 +335,7 @@ export function DateRangePicker({
                   </svg>
                 </button>
                 <p className="text-xs font-medium text-gray-500">
-                  {picking === 'end' && rangeStart
-                    ? `Select end date`
-                    : 'Select start date'}
+                  {picking === 'end' && rangeStart ? `Select end date` : 'Select start date'}
                 </p>
                 <button
                   type="button"
@@ -424,7 +425,7 @@ export function DateRangePicker({
                     type="button"
                     onClick={handleApply}
                     disabled={!rangeStart || !rangeEnd}
-                    className="rounded-lg bg-primary-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-40"
+                    className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
                   >
                     Apply
                   </button>

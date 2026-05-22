@@ -1,8 +1,8 @@
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
 } from '@/lib/input-preset-design';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { fetchInputPresetById } from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
@@ -38,10 +38,14 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
         />
         <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
           <p className="text-sm text-amber-800">
-            This preset has been used in {generationCount} generation{generationCount !== 1 ? 's' : ''}. To change it, clone the preset first, then edit the copy.
+            This preset has been used in {generationCount} generation
+            {generationCount !== 1 ? 's' : ''}. To change it, clone the preset first, then edit the
+            copy.
           </p>
           <div className="mt-4">
-            <PrimaryLinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</PrimaryLinkButton>
+            <PrimaryLinkButton href={`/input-presets/${id}`}>
+              Back to preset (use Clone there)
+            </PrimaryLinkButton>
           </div>
         </div>
       </div>
@@ -52,13 +56,14 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     const value = preset[key];
     return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
   });
-  const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
+  const designSettings =
+    designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
   const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
   const arbitraryImagesBySlot = Object.fromEntries(
-    storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url])
+    storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url]),
   );
   const savedImageUrlsBySlot = Object.fromEntries(
-    storedImages.map((image) => [image.slot, image.url])
+    storedImages.map((image) => [image.slot, image.url]),
   );
 
   const initialData = {

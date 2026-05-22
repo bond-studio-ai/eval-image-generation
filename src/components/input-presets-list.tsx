@@ -2,14 +2,14 @@
 
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
+  actionsColumn,
+  checkboxColumn,
   DataTable,
   DateCell,
   NameCell,
   SearchBar,
   SelectAllCheckbox,
   StatusBadge,
-  actionsColumn,
-  checkboxColumn,
   type DataTableColumn,
 } from '@/components/data-table';
 import { Pagination } from '@/components/pagination';
@@ -49,20 +49,23 @@ export function InputPresetsList() {
     refresh,
   } = useInfiniteList<InputPresetRow>('input-presets', { limit: 20 });
 
-  const handleClone = useCallback(async (id: string) => {
-    setCloningId(id);
-    try {
-      const res = await fetch(serviceUrl(`input-presets/${id}/clone`), { method: 'POST' });
-      if (!res.ok) return;
-      const json = await res.json();
-      const newId = json.data?.id;
-      if (newId) {
-        router.push(`/input-presets/${newId}/edit`);
+  const handleClone = useCallback(
+    async (id: string) => {
+      setCloningId(id);
+      try {
+        const res = await fetch(serviceUrl(`input-presets/${id}/clone`), { method: 'POST' });
+        if (!res.ok) return;
+        const json = await res.json();
+        const newId = json.data?.id;
+        if (newId) {
+          router.push(`/input-presets/${newId}/edit`);
+        }
+      } finally {
+        setCloningId(null);
       }
-    } finally {
-      setCloningId(null);
-    }
-  }, [router]);
+    },
+    [router],
+  );
 
   const activeItems = useMemo(() => items.filter((ip) => !ip.deletedAt), [items]);
 
@@ -95,34 +98,45 @@ export function InputPresetsList() {
     }
   }, [selected, refresh]);
 
-  const columns = useMemo<DataTableColumn<InputPresetRow>[]>(() => [
-    checkboxColumn<InputPresetRow>({
-      selected,
-      onToggle: toggleSelect,
-      rowId: (ip) => ip.id,
-      isSelectable: (ip) => !ip.deletedAt,
-    }),
-    {
-      header: 'Name',
-      cell: (ip) => <NameCell href={`/input-presets/${ip.id}`} name={ip.name} subtitle={ip.description} />,
-      cellClassName: 'px-6 py-4',
-    },
-    {
-      header: 'Generations',
-      cell: (ip) => ip.stats?.generationCount ?? 0,
-    },
-    {
-      header: 'Created',
-      cell: (ip) => <DateCell date={ip.createdAt} />,
-    },
-    {
-      header: 'Status',
-      cell: (ip) => <StatusBadge status={ip.deletedAt ? 'deleted' : 'active'} />,
-    },
-    actionsColumn<InputPresetRow>([
-      { icon: 'clone', label: 'Clone preset', onClick: (ip) => handleClone(ip.id), loading: (ip) => cloningId === ip.id, hidden: (ip) => !!ip.deletedAt },
-    ]),
-  ], [selected, toggleSelect, handleClone, cloningId]);
+  const columns = useMemo<DataTableColumn<InputPresetRow>[]>(
+    () => [
+      checkboxColumn<InputPresetRow>({
+        selected,
+        onToggle: toggleSelect,
+        rowId: (ip) => ip.id,
+        isSelectable: (ip) => !ip.deletedAt,
+      }),
+      {
+        header: 'Name',
+        cell: (ip) => (
+          <NameCell href={`/input-presets/${ip.id}`} name={ip.name} subtitle={ip.description} />
+        ),
+        cellClassName: 'px-6 py-4',
+      },
+      {
+        header: 'Generations',
+        cell: (ip) => ip.stats?.generationCount ?? 0,
+      },
+      {
+        header: 'Created',
+        cell: (ip) => <DateCell date={ip.createdAt} />,
+      },
+      {
+        header: 'Status',
+        cell: (ip) => <StatusBadge status={ip.deletedAt ? 'deleted' : 'active'} />,
+      },
+      actionsColumn<InputPresetRow>([
+        {
+          icon: 'clone',
+          label: 'Clone preset',
+          onClick: (ip) => handleClone(ip.id),
+          loading: (ip) => cloningId === ip.id,
+          hidden: (ip) => !!ip.deletedAt,
+        },
+      ]),
+    ],
+    [selected, toggleSelect, handleClone, cloningId],
+  );
 
   const toolbar = (
     <div className="flex items-center gap-4">
@@ -145,7 +159,15 @@ export function InputPresetsList() {
         emptyMessage={search ? 'No input presets match your search.' : 'No input presets found.'}
         loading={loading}
         toolbar={toolbar}
-        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
+        footer={
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={goToPage}
+            loading={paginating}
+          />
+        }
       />
 
       <BulkDeleteBar

@@ -45,99 +45,168 @@ export function StrategyRunButton({
         body: JSON.stringify(requestBody),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
+      if (!res.ok) {
+        setError(data.error?.message || 'Failed');
+        return;
+      }
       setShowModal(false);
       setSelectedId(null);
       setSearch('');
       onRunCreated?.();
-    } catch { setError('Network error'); }
-    finally { setSubmitting(false); }
+    } catch {
+      setError('Network error');
+    } finally {
+      setSubmitting(false);
+    }
   }, [strategyId, selectedId, onRunCreated]);
 
   return (
     <>
       <button
-        onClick={() => { setShowModal(true); setError(null); }}
+        onClick={() => {
+          setShowModal(true);
+          setError(null);
+        }}
         className="bg-primary-600 hover:bg-primary-700 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"
+          />
         </svg>
         Run
       </button>
 
-      {showModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}>
+      {showModal &&
+        createPortal(
           <div
-            className="flex w-full max-w-md flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
-            style={{ height: '400px' }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4"
+            onClick={() => {
+              setShowModal(false);
+              setError(null);
+              setSearch('');
+            }}
           >
-            <div className="shrink-0 border-b border-gray-200 px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">Run strategy</h3>
-              <p className="mt-1 text-sm text-gray-600">Select an input preset to run (creates a batch of one).</p>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-3">
-              <div className="relative mb-3 shrink-0">
-                <svg className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-                <input
-                  type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search..." autoFocus
-                  className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                />
+            <div
+              className="flex w-full max-w-md flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+              style={{ height: '400px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="shrink-0 border-b border-gray-200 px-5 py-4">
+                <h3 className="text-lg font-semibold text-gray-900">Run strategy</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Select an input preset to run (creates a batch of one).
+                </p>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {filteredPresets.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-gray-400">
-                    {inputPresets.length === 0 ? 'No presets exist.' : 'No matches.'}
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {filteredPresets.map((p) => (
-                      <button
-                        key={p.id} type="button"
-                        onClick={() => setSelectedId(p.id)}
-                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${selectedId === p.id ? 'bg-primary-50 ring-1 ring-primary-500' : 'hover:bg-gray-50'}`}
-                      >
-                        <span className="truncate font-medium text-gray-900">{p.name || 'Untitled'}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+
+              <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-3">
+                <div className="relative mb-3 shrink-0">
+                  <svg
+                    className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search..."
+                    autoFocus
+                    className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 py-1.5 pr-3 pl-9 text-sm focus:ring-1 focus:outline-none"
+                  />
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {filteredPresets.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-gray-400">
+                      {inputPresets.length === 0 ? 'No presets exist.' : 'No matches.'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {filteredPresets.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setSelectedId(p.id)}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${selectedId === p.id ? 'bg-primary-50 ring-primary-500 ring-1' : 'hover:bg-gray-50'}`}
+                        >
+                          <span className="truncate font-medium text-gray-900">
+                            {p.name || 'Untitled'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
+
+              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
+                <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+              </div>
+
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setError(null);
+                    setSearch('');
+                  }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  disabled={submitting || !selectedId}
+                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Starting...
+                    </>
+                  ) : (
+                    'Start run'
+                  )}
+                </button>
               </div>
             </div>
-
-            {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
-
-            <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
-              <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-              <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="button" onClick={handleStart} disabled={submitting || !selectedId}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
-                {submitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Starting...
-                  </>
-                ) : 'Start run'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
@@ -160,10 +229,7 @@ export function StrategyBatchRunButton({
   const [search, setSearch] = useState('');
   const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
 
-  const presetMap = useMemo(
-    () => new Map(inputPresets.map((p) => [p.id, p])),
-    [inputPresets],
-  );
+  const presetMap = useMemo(() => new Map(inputPresets.map((p) => [p.id, p])), [inputPresets]);
 
   const filteredPresets = useMemo(() => {
     const selectedSet = new Set(selectedIds);
@@ -226,134 +292,239 @@ export function StrategyBatchRunButton({
       setSelectedIds([]);
       setSearch('');
       onRunCreated?.();
-    } catch { setError('Network error'); }
-    finally { setSubmitting(false); }
+    } catch {
+      setError('Network error');
+    } finally {
+      setSubmitting(false);
+    }
   }, [strategyId, selectedIds, onRunCreated]);
 
   return (
     <>
       <button
-        onClick={() => { setShowModal(true); setError(null); }}
+        onClick={() => {
+          setShowModal(true);
+          setError(null);
+        }}
         className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"
+          />
         </svg>
         Run Batch
       </button>
 
-      {showModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}>
+      {showModal &&
+        createPortal(
           <div
-            className="flex w-full max-w-2xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
-            style={{ height: '560px' }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4"
+            onClick={() => {
+              setShowModal(false);
+              setError(null);
+              setSearch('');
+            }}
           >
-            <div className="shrink-0 border-b border-gray-200 px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">Run batch</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Select input presets and how many times to run each. Results are grouped as a batch.
-              </p>
-            </div>
+            <div
+              className="flex w-full max-w-2xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+              style={{ height: '560px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="shrink-0 border-b border-gray-200 px-5 py-4">
+                <h3 className="text-lg font-semibold text-gray-900">Run batch</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Select input presets and how many times to run each. Results are grouped as a
+                  batch.
+                </p>
+              </div>
 
-            <div className="flex min-h-0 flex-1">
-              {/* Left: available presets */}
-              <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200">
-                <div className="shrink-0 px-4 pt-3 pb-2">
-                  <p className="mb-2 text-xs font-medium text-gray-500 uppercase">Available presets</p>
-                  <div className="relative">
-                    <svg className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                    <input
-                      type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search..." autoFocus
-                      className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                    />
+              <div className="flex min-h-0 flex-1">
+                {/* Left: available presets */}
+                <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200">
+                  <div className="shrink-0 px-4 pt-3 pb-2">
+                    <p className="mb-2 text-xs font-medium text-gray-500 uppercase">
+                      Available presets
+                    </p>
+                    <div className="relative">
+                      <svg
+                        className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                        />
+                      </svg>
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search..."
+                        autoFocus
+                        className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 py-1.5 pr-3 pl-9 text-sm focus:ring-1 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+                    {filteredPresets.length === 0 ? (
+                      <p className="py-4 text-center text-xs text-gray-400">
+                        {inputPresets.length === 0
+                          ? 'No presets exist.'
+                          : search
+                            ? 'No matches.'
+                            : 'All presets added.'}
+                      </p>
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredPresets.map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => addPreset(preset.id)}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-gray-50"
+                          >
+                            <svg
+                              className="text-primary-500 h-4 w-4 shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 4.5v15m7.5-7.5h-15"
+                              />
+                            </svg>
+                            <span className="truncate font-medium text-gray-900">
+                              {preset.name || 'Untitled'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
-                  {filteredPresets.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-gray-400">
-                      {inputPresets.length === 0 ? 'No presets exist.' : search ? 'No matches.' : 'All presets added.'}
+
+                {/* Right: selected presets */}
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <div className="shrink-0 px-4 pt-3 pb-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase">
+                      Selected ({selectedIds.length})
                     </p>
-                  ) : (
-                    <div className="space-y-1">
-                      {filteredPresets.map((preset) => (
-                        <button
-                          key={preset.id} type="button"
-                          onClick={() => addPreset(preset.id)}
-                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-gray-50"
-                        >
-                          <svg className="h-4 w-4 shrink-0 text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                          <span className="truncate font-medium text-gray-900">{preset.name || 'Untitled'}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+                    {selectedIds.length === 0 ? (
+                      <p className="py-4 text-center text-xs text-gray-400">
+                        Click presets on the left to add them
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {selectedIds.map((id) => {
+                          const preset = presetMap.get(id);
+                          return (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+                            >
+                              <span className="truncate text-sm font-medium text-gray-900">
+                                {preset?.name || 'Untitled'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removePreset(id)}
+                                className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              >
+                                <svg
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Right: selected presets */}
-              <div className="flex min-h-0 flex-1 flex-col">
-                <div className="shrink-0 px-4 pt-3 pb-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase">Selected ({selectedIds.length})</p>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
-                  {selectedIds.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-gray-400">Click presets on the left to add them</p>
+              {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
+
+              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
+                <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+              </div>
+
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setError(null);
+                    setSearch('');
+                  }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStartBatch}
+                  disabled={submitting || selectedIds.length === 0}
+                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Starting...
+                    </>
+                  ) : selectedIds.length === 0 ? (
+                    'Select presets'
                   ) : (
-                    <div className="space-y-1.5">
-                      {selectedIds.map((id) => {
-                        const preset = presetMap.get(id);
-                        return (
-                          <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                            <span className="truncate text-sm font-medium text-gray-900">{preset?.name || 'Untitled'}</span>
-                            <button type="button" onClick={() => removePreset(id)}
-                              className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600">
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    `Start batch (${selectedIds.length} preset${selectedIds.length === 1 ? '' : 's'})`
                   )}
-                </div>
+                </button>
               </div>
             </div>
-
-            {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
-
-            <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
-              <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-              <button type="button" onClick={() => { setShowModal(false); setError(null); setSearch(''); }}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="button" onClick={handleStartBatch} disabled={submitting || selectedIds.length === 0}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed">
-                {submitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Starting...
-                  </>
-                ) : selectedIds.length === 0 ? 'Select presets' : `Start batch (${selectedIds.length} preset${selectedIds.length === 1 ? '' : 's'})`}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
@@ -372,7 +543,8 @@ function NumberOfImagesInput({
   const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
 
   const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
-  const inactiveCls = 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50';
+  const inactiveCls =
+    'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50';
 
   return (
     <div className="flex items-center gap-3">
@@ -380,7 +552,10 @@ function NumberOfImagesInput({
       <div className="inline-flex items-center gap-1.5">
         <button
           type="button"
-          onClick={() => { onChange(null); setCustomImages(false); }}
+          onClick={() => {
+            onChange(null);
+            setCustomImages(false);
+          }}
           className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${isDefault ? activeCls : inactiveCls}`}
         >
           Default
@@ -389,7 +564,10 @@ function NumberOfImagesInput({
           <button
             key={n}
             type="button"
-            onClick={() => { onChange(n); setCustomImages(false); }}
+            onClick={() => {
+              onChange(n);
+              setCustomImages(false);
+            }}
             className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${!isDefault && !customImages && value === n ? activeCls : inactiveCls}`}
           >
             {n}
@@ -397,7 +575,10 @@ function NumberOfImagesInput({
         ))}
         <button
           type="button"
-          onClick={() => { setCustomImages(true); if (isDefault || [1, 2, 4, 8].includes(value!)) onChange(3); }}
+          onClick={() => {
+            setCustomImages(true);
+            if (isDefault || [1, 2, 4, 8].includes(value!)) onChange(3);
+          }}
           className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${customImages ? activeCls : inactiveCls}`}
         >
           Custom
@@ -410,7 +591,13 @@ function NumberOfImagesInput({
               disabled={(value ?? 1) <= 1}
               className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
               </svg>
             </button>
@@ -420,8 +607,10 @@ function NumberOfImagesInput({
               max={100}
               autoFocus
               value={value ?? 1}
-              onChange={(e) => onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
-              className="h-8 w-12 border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              onChange={(e) =>
+                onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
+              }
+              className="h-8 w-12 [appearance:textfield] border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
             <button
               type="button"
@@ -429,7 +618,13 @@ function NumberOfImagesInput({
               disabled={(value ?? 1) >= 100}
               className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
             </button>

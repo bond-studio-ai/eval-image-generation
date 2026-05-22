@@ -50,10 +50,12 @@ export function PreviewPromptPage({
   initialPresets,
   initialDollhouseSource,
 }: PreviewPromptPageProps) {
-  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(initialPromptVersions ?? []);
+  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(
+    initialPromptVersions ?? [],
+  );
   const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
   const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(
-    initialDollhouseSource ?? null
+    initialDollhouseSource ?? null,
   );
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
@@ -101,10 +103,16 @@ export function PreviewPromptPage({
         const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
         const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
         setPromptVersions(
-          pvData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null }))
+          pvData.map((p: { id: string; name?: string | null }) => ({
+            id: p.id,
+            name: p.name ?? null,
+          })),
         );
         setPresets(
-          presetData.map((p: { id: string; name?: string | null }) => ({ id: p.id, name: p.name ?? null }))
+          presetData.map((p: { id: string; name?: string | null }) => ({
+            id: p.id,
+            name: p.name ?? null,
+          })),
         );
         try {
           const dollhouseRes = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
@@ -112,11 +120,15 @@ export function PreviewPromptPage({
           if (!cancelled && dollhouseRes.ok) {
             setDollhouseSource(dollhouseJson.data ?? null);
           } else if (!cancelled && !dollhouseRes.ok) {
-            setLoadError('Dollhouse preview is temporarily unavailable. Preset preview still works.');
+            setLoadError(
+              'Dollhouse preview is temporarily unavailable. Preset preview still works.',
+            );
           }
         } catch {
           if (!cancelled) {
-            setLoadError('Dollhouse preview is temporarily unavailable. Preset preview still works.');
+            setLoadError(
+              'Dollhouse preview is temporarily unavailable. Preset preview still works.',
+            );
           }
         }
       } catch (err) {
@@ -128,7 +140,9 @@ export function PreviewPromptPage({
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [hasInitialOptions]);
 
   const filteredPrompts = useMemo(() => {
@@ -218,7 +232,7 @@ export function PreviewPromptPage({
           setLoadError((current) =>
             current === 'Dollhouse preview is temporarily unavailable. Preset preview still works.'
               ? null
-              : current
+              : current,
           );
         }
       } catch {
@@ -277,7 +291,7 @@ export function PreviewPromptPage({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:ring-1"
       >
         <span className={selectedLabel ? 'text-gray-900' : 'text-gray-500'}>
           {selectedLabel || placeholder}
@@ -292,14 +306,14 @@ export function PreviewPromptPage({
         </svg>
       </button>
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
           <div className="border-b border-gray-200 p-2">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
-              className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
               autoFocus
             />
           </div>
@@ -345,9 +359,12 @@ export function PreviewPromptPage({
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
         <p className="text-sm font-medium text-gray-700">Hardcoded dollhouse source</p>
-        <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? 'Unavailable'}</p>
+        <p className="mt-1 text-sm text-gray-900">
+          {dollhouseSource?.projectLabel ?? 'Unavailable'}
+        </p>
         <p className="mt-2 text-sm text-gray-600">
-          Input presets remain the base preview context. Selecting an area layers in hardcoded `dollhouse.*` attributes on top.
+          Input presets remain the base preview context. Selecting an area layers in hardcoded
+          `dollhouse.*` attributes on top.
         </p>
       </div>
 
@@ -355,7 +372,9 @@ export function PreviewPromptPage({
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Prompt version</label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+              Loading…
+            </p>
           ) : (
             <DropdownWithSearch
               containerRef={promptRef}
@@ -364,7 +383,10 @@ export function PreviewPromptPage({
               search={promptSearch}
               setSearch={setPromptSearch}
               placeholder="Select prompt version…"
-              options={filteredPrompts.map((prompt) => ({ id: prompt.id, label: prompt.name || 'Untitled' }))}
+              options={filteredPrompts.map((prompt) => ({
+                id: prompt.id,
+                label: prompt.name || 'Untitled',
+              }))}
               selectedId={selectedPrompt?.id ?? null}
               selectedLabel={selectedPrompt?.name || null}
               onSelectId={setSelectedPromptId}
@@ -375,7 +397,9 @@ export function PreviewPromptPage({
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+              Loading…
+            </p>
           ) : (
             <DropdownWithSearch
               containerRef={presetRef}
@@ -384,7 +408,10 @@ export function PreviewPromptPage({
               search={presetSearch}
               setSearch={setPresetSearch}
               placeholder="Select input preset…"
-              options={filteredPresets.map((preset) => ({ id: preset.id, label: preset.name || 'Untitled' }))}
+              options={filteredPresets.map((preset) => ({
+                id: preset.id,
+                label: preset.name || 'Untitled',
+              }))}
               selectedId={selectedPreset?.id ?? null}
               selectedLabel={selectedPreset?.name || null}
               onSelectId={setSelectedPresetId}
@@ -395,7 +422,9 @@ export function PreviewPromptPage({
         <div className="min-w-0">
           <label className="mb-1.5 block text-xs font-medium text-gray-600">Dollhouse area</label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+              Loading…
+            </p>
           ) : (
             <DropdownWithSearch
               containerRef={areaRef}
@@ -408,7 +437,9 @@ export function PreviewPromptPage({
               selectedId={selectedArea?.summary ?? null}
               selectedLabel={selectedArea?.summary || null}
               onSelectId={setSelectedAreaSummary}
-              emptyMessage={dollhouseSource ? 'No dollhouse areas' : 'Dollhouse preview unavailable'}
+              emptyMessage={
+                dollhouseSource ? 'No dollhouse areas' : 'Dollhouse preview unavailable'
+              }
             />
           )}
         </div>
@@ -425,8 +456,9 @@ export function PreviewPromptPage({
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
           <p className="text-sm font-medium text-gray-700">Selected dollhouse area</p>
           <p className="mt-1 text-sm text-gray-900">{selectedArea?.summary ?? 'None selected'}</p>
-          <p className="mt-2 break-all text-xs text-gray-500">
-            {selectedArea?.imageUrl ?? 'The selected preset will still preview normally without dollhouse attributes.'}
+          <p className="mt-2 text-xs break-all text-gray-500">
+            {selectedArea?.imageUrl ??
+              'The selected preset will still preview normally without dollhouse attributes.'}
           </p>
         </div>
       </div>
@@ -441,14 +473,18 @@ export function PreviewPromptPage({
       {previews.length > 0 && !loading && (
         <div className="mt-8 grid h-[65vh] min-h-[300px] grid-cols-1 grid-rows-1 gap-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:grid-cols-2">
           <div className="flex min-h-0 min-w-0 flex-col">
-            <h2 className="mb-2 shrink-0 text-sm font-semibold uppercase text-gray-500">System prompt</h2>
-            <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
+            <h2 className="mb-2 shrink-0 text-sm font-semibold text-gray-500 uppercase">
+              System prompt
+            </h2>
+            <pre className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap text-gray-800">
               {previews[0]?.systemPrompt || '(empty)'}
             </pre>
           </div>
           <div className="flex min-h-0 min-w-0 flex-col">
-            <h2 className="mb-2 shrink-0 text-sm font-semibold uppercase text-gray-500">User prompt</h2>
-            <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
+            <h2 className="mb-2 shrink-0 text-sm font-semibold text-gray-500 uppercase">
+              User prompt
+            </h2>
+            <pre className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap text-gray-800">
               {previews[0]?.userPrompt || '(empty)'}
             </pre>
           </div>

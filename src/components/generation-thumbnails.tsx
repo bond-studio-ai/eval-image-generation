@@ -12,9 +12,7 @@ function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
 
   return (
     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded border border-gray-200">
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-gray-200" />
-      )}
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={withImageParams(url, 96)}
@@ -33,9 +31,7 @@ function LightboxImage({ url, alt }: { url: string; alt: string }) {
   return (
     <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
       {/* Skeleton placeholder — maintains a 4:3 aspect ratio until image loads */}
-      {!loaded && (
-        <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />
-      )}
+      {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}
@@ -53,8 +49,18 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
   if (urls.length === 0) {
     return (
       <div className="flex h-12 w-12 items-center justify-center rounded border border-gray-200 bg-gray-50">
-        <svg className="h-4 w-4 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+        <svg
+          className="h-4 w-4 text-gray-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z"
+          />
         </svg>
       </div>
     );
@@ -102,7 +108,13 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
                 onClick={() => setExpanded(false)}
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -110,7 +122,9 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
             {/* Image grid */}
             <div className="flex-1 overflow-auto p-4">
-              <div className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              <div
+                className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
+              >
                 {urls.map((url, i) => (
                   <LightboxImage key={i} url={url} alt={`Result ${i + 1}`} />
                 ))}

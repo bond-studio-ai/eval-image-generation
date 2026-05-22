@@ -38,8 +38,12 @@ export function MatrixCellRatingOverlay({
         ratingCache.set(generationId, { scene, product });
         setFetched(true);
       })
-      .catch(() => { if (!cancelled) setFetched(true); });
-    return () => { cancelled = true; };
+      .catch(() => {
+        if (!cancelled) setFetched(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [generationId, fetched]);
 
   const rate = useCallback(
@@ -112,28 +116,50 @@ export function MatrixCellRatingOverlay({
 
   return (
     <div
-      className={`absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-8 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
+      className={`absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2 pt-8 pb-2 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex gap-4 text-white">
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Scene</span>
+          <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">Scene</span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate('GOOD')} className={thumbBtnClass(sceneRating, 'GOOD')} title="Scene good">
+            <button
+              type="button"
+              onClick={() => rate('GOOD')}
+              className={thumbBtnClass(sceneRating, 'GOOD')}
+              title="Scene good"
+            >
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate('FAILED')} className={thumbBtnClass(sceneRating, 'FAILED')} title="Scene failed">
+            <button
+              type="button"
+              onClick={() => rate('FAILED')}
+              className={thumbBtnClass(sceneRating, 'FAILED')}
+              title="Scene failed"
+            >
               {thumbDown}
             </button>
           </div>
         </div>
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] font-medium uppercase tracking-wide drop-shadow">Product</span>
+          <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">
+            Product
+          </span>
           <div className="flex gap-1">
-            <button type="button" onClick={() => rate(undefined, 'GOOD')} className={thumbBtnClass(productRating, 'GOOD')} title="Product good">
+            <button
+              type="button"
+              onClick={() => rate(undefined, 'GOOD')}
+              className={thumbBtnClass(productRating, 'GOOD')}
+              title="Product good"
+            >
               {thumbUp}
             </button>
-            <button type="button" onClick={() => rate(undefined, 'FAILED')} className={thumbBtnClass(productRating, 'FAILED')} title="Product failed">
+            <button
+              type="button"
+              onClick={() => rate(undefined, 'FAILED')}
+              className={thumbBtnClass(productRating, 'FAILED')}
+              title="Product failed"
+            >
               {thumbDown}
             </button>
           </div>

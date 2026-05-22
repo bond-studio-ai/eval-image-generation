@@ -79,7 +79,11 @@ export function encodePromptTemplate(system: string, user: string): string {
 export type TemplateToken =
   | { kind: 'text'; raw: string }
   | { kind: 'variable'; raw: string; name: string }
-  | { kind: 'directive'; raw: string; name: 'if' | 'else' | 'end' | 'range' | 'with' | 'block' | 'define' | 'template' }
+  | {
+      kind: 'directive';
+      raw: string;
+      name: 'if' | 'else' | 'end' | 'range' | 'with' | 'block' | 'define' | 'template';
+    }
   | { kind: 'expression'; raw: string };
 
 const ACTION_RE = /\{\{[\s\S]*?\}\}/g;
@@ -204,7 +208,8 @@ const GENERATION_VARIABLES: PromptVariable[] = [
   {
     name: 'ProductTypeLabel',
     type: 'string',
-    description: 'Human-readable noun for the product type (e.g. "vanity", "faucet"). Falls back to the productType slug.',
+    description:
+      'Human-readable noun for the product type (e.g. "vanity", "faucet"). Falls back to the productType slug.',
     group: 'GenerationData',
   },
   {
@@ -246,7 +251,8 @@ const STYLE_EXTRACTION_VARIABLES: PromptVariable[] = [
   {
     name: 'Title',
     type: 'string',
-    description: 'Product title from the catalogue. Empty when the catalogue has no title for the product.',
+    description:
+      'Product title from the catalogue. Empty when the catalogue has no title for the product.',
     group: 'aidomain.Context',
   },
   {

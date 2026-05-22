@@ -16,7 +16,7 @@ export function isPowderRoomLayoutName(value: string | null | undefined): boolea
 
 export function designSettingsFromPackage(
   pkg: DesignPackageOption | null | undefined,
-  options?: { isPowderRoom?: boolean }
+  options?: { isPowderRoom?: boolean },
 ): Record<string, unknown> | null {
   const root =
     pkg && typeof pkg === 'object' && !Array.isArray(pkg)
@@ -43,15 +43,19 @@ export function designSettingsFromPackage(
   const vanityDict =
     root?.vanityDict && typeof root.vanityDict === 'object' && !Array.isArray(root.vanityDict)
       ? (root.vanityDict as Record<string, string>)
-      : materials?.vanityDict && typeof materials.vanityDict === 'object' && !Array.isArray(materials.vanityDict)
+      : materials?.vanityDict &&
+          typeof materials.vanityDict === 'object' &&
+          !Array.isArray(materials.vanityDict)
         ? (materials.vanityDict as Record<string, string>)
-      : null;
+        : null;
   const faucetDict =
     root?.faucetDict && typeof root.faucetDict === 'object' && !Array.isArray(root.faucetDict)
       ? (root.faucetDict as Record<string, string>)
-      : materials?.faucetDict && typeof materials.faucetDict === 'object' && !Array.isArray(materials.faucetDict)
+      : materials?.faucetDict &&
+          typeof materials.faucetDict === 'object' &&
+          !Array.isArray(materials.faucetDict)
         ? (materials.faucetDict as Record<string, string>)
-      : null;
+        : null;
   const vanitySizes = vanityDict
     ? Object.keys(vanityDict)
         .map((key) => Number(key))

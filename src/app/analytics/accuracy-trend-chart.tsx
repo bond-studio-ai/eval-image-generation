@@ -71,7 +71,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary-600" />
+        <div className="border-t-primary-600 h-8 w-8 animate-spin rounded-full border-4 border-gray-300" />
       </div>
     );
   }
@@ -107,12 +107,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}>
             <CartesianGrid stroke="#e5e7eb" />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 12 }}
-              stroke="#9ca3af"
-              tickLine={false}
-            />
+            <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#9ca3af" tickLine={false} />
             <YAxis
               domain={[0, 100]}
               ticks={Y_TICKS}
@@ -131,7 +126,20 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
                 if (!point?.date) return String(_label);
                 const [y, m, d] = point.date.split('-');
                 if (y && m && d) {
-                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  const months = [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec',
+                  ];
                   return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
                 }
                 return String(_label);

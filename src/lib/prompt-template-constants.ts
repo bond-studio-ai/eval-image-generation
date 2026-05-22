@@ -239,5 +239,8 @@ export function toDollhousePathKey(input: string): string {
 }
 
 function toTitleCase(s: string): string {
-  return s.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
+  return s
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim();
 }

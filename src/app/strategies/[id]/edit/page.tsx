@@ -1,6 +1,11 @@
 import { PageHeader } from '@/components/page-header';
 import { StrategyBuilder } from '@/components/strategy-builder';
-import { fetchInputPresets, fetchPromptVersions, fetchStrategyById, fetchStrategyModelCatalog } from '@/lib/service-client';
+import {
+  fetchInputPresets,
+  fetchPromptVersions,
+  fetchStrategyById,
+  fetchStrategyModelCatalog,
+} from '@/lib/service-client';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +30,13 @@ export default async function EditStrategyPage({ params }: PageProps) {
 
   return (
     <div>
-      <PageHeader backHref={`/strategies/${id}`} backLabel={`Back to ${strat.name}`} title="Edit Strategy" />
+      <PageHeader
+        backHref={`/strategies/${id}`}
+        backLabel={`Back to ${strat.name}`}
+        title="Edit Strategy"
+      />
       <div className="mt-6">
-      <StrategyBuilder
+        <StrategyBuilder
           strategyId={strat.id}
           initialName={strat.name}
           initialDescription={strat.description ?? ''}
@@ -66,16 +75,22 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_mood_board: s.includeMoodBoard ?? true,
             include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
-            product_image_types: (s.productImageTypes ?? {}) as Record<string, 'featured-image' | 'photo-image' | 'line-drawing' | 'tear-sheet'>,
+            product_image_types: (s.productImageTypes ?? {}) as Record<
+              string,
+              'featured-image' | 'photo-image' | 'line-drawing' | 'tear-sheet'
+            >,
             arbitrary_image_from_step: s.arbitraryImageFromStep,
-            judges: s.type === 'judge' ? (s.judges ?? []).map((j) => ({
-              id: j.id,
-              name: j.name ?? '',
-              judge_model: j.judgeModel,
-              judge_type: j.judgeType as 'batch' | 'individual',
-              judge_prompt_version_id: j.judgePromptVersionId,
-              tolerance_threshold: j.toleranceThreshold,
-            })) : undefined,
+            judges:
+              s.type === 'judge'
+                ? (s.judges ?? []).map((j) => ({
+                    id: j.id,
+                    name: j.name ?? '',
+                    judge_model: j.judgeModel,
+                    judge_type: j.judgeType as 'batch' | 'individual',
+                    judge_prompt_version_id: j.judgePromptVersionId,
+                    tolerance_threshold: j.toleranceThreshold,
+                  }))
+                : undefined,
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

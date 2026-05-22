@@ -61,15 +61,19 @@ export function ViewPromptModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
       <div className="relative flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
         <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {promptVersionName || 'Prompt'}
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">{promptVersionName || 'Prompt'}</h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -80,19 +84,19 @@ export function ViewPromptModal({
           {data && (
             <div className="grid min-h-0 grid-cols-2 gap-5">
               <div className="flex flex-col">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   System prompt{processedSystemPrompt ? ' (processed)' : ''}
                 </h3>
-                <pre className="flex-1 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">
-                  {(processedSystemPrompt || data.systemPrompt) || '(empty)'}
+                <pre className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed whitespace-pre-wrap text-gray-800">
+                  {processedSystemPrompt || data.systemPrompt || '(empty)'}
                 </pre>
               </div>
               <div className="flex flex-col">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   User prompt{processedUserPrompt ? ' (processed)' : ''}
                 </h3>
-                <pre className="flex-1 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">
-                  {(processedUserPrompt || data.userPrompt) || '(empty)'}
+                <pre className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed whitespace-pre-wrap text-gray-800">
+                  {processedUserPrompt || data.userPrompt || '(empty)'}
                 </pre>
               </div>
             </div>

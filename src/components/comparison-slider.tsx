@@ -72,7 +72,7 @@ export function ComparisonSlider({
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full select-none overflow-hidden rounded-lg"
+      className="relative h-full w-full overflow-hidden rounded-lg select-none"
       onMouseDown={(e) => {
         e.preventDefault();
         isDragging.current = true;
@@ -117,16 +117,16 @@ export function ComparisonSlider({
       {/* Side labels: left moves with scene, right stays on output side */}
       {leftLabel != null && leftLabel !== '' && (
         <div
-          className="absolute inset-0 z-20 pointer-events-none"
+          className="pointer-events-none absolute inset-0 z-20"
           style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
         >
-          <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
+          <span className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
             {leftLabel}
           </span>
         </div>
       )}
       {rightLabel != null && rightLabel !== '' && (
-        <div className="absolute right-2 top-2 z-20 pointer-events-none rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
+        <div className="pointer-events-none absolute top-2 right-2 z-20 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
           {rightLabel}
         </div>
       )}
@@ -135,7 +135,7 @@ export function ComparisonSlider({
         className="absolute top-0 bottom-0 z-10 w-1 cursor-ew-resize bg-white shadow-lg"
         style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
       >
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-0.5 rounded-full border border-gray-300 bg-gray-100 px-1.5 py-1">
+        <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-0.5 rounded-full border border-gray-300 bg-gray-100 px-1.5 py-1">
           <div className="h-3 w-0.5 rounded-full bg-gray-400" />
           <div className="h-3 w-0.5 rounded-full bg-gray-400" />
         </div>

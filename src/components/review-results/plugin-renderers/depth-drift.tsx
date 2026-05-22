@@ -38,7 +38,9 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
           <ChevronIcon
             className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
           />
-          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Depth drift</span>
+          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+            Depth drift
+          </span>
           {computed && depth && (
             <span className="text-[11px] font-normal text-gray-500">
               {depth.width}×{depth.height}
@@ -65,11 +67,12 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
                 : 'Depth assessment is not available for this row.'}
             </div>
           )}
-          {depth && (
-            <DepthMetricsCard depth={depth} />
-          )}
+          {depth && <DepthMetricsCard depth={depth} />}
           {depth && (depth.predictedDepthUrl || depth.dollhouseDepthUrl) && (
-            <DepthThumbnails predictedUrl={depth.predictedDepthUrl} dollhouseUrl={depth.dollhouseDepthUrl} />
+            <DepthThumbnails
+              predictedUrl={depth.predictedDepthUrl}
+              dollhouseUrl={depth.dollhouseDepthUrl}
+            />
           )}
         </div>
       )}
@@ -83,13 +86,33 @@ function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
   return (
     <div className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
-        <Metric label="AbsRel" value={formatNumber(metrics?.absRel, 3)} hint="Mean absolute relative error after affine fit." />
-        <Metric label="RMSE" value={formatNumber(metrics?.rmse, 3)} hint="Root mean squared error after affine fit." />
-        <Metric label="δ<1.25" value={formatPercent(metrics?.delta1, 1)} hint="Fraction of pixels within 1.25× of truth." />
-        <Metric label="Spearman" value={formatNumber(metrics?.spearman, 3)} hint="Rank correlation; alignment-free." />
+        <Metric
+          label="AbsRel"
+          value={formatNumber(metrics?.absRel, 3)}
+          hint="Mean absolute relative error after affine fit."
+        />
+        <Metric
+          label="RMSE"
+          value={formatNumber(metrics?.rmse, 3)}
+          hint="Root mean squared error after affine fit."
+        />
+        <Metric
+          label="δ<1.25"
+          value={formatPercent(metrics?.delta1, 1)}
+          hint="Fraction of pixels within 1.25× of truth."
+        />
+        <Metric
+          label="Spearman"
+          value={formatNumber(metrics?.spearman, 3)}
+          hint="Rank correlation; alignment-free."
+        />
       </dl>
       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
-        <Metric label="Valid pixels" value={formatInt(depth.validPixels)} hint="Pixels valid in both depth maps." />
+        <Metric
+          label="Valid pixels"
+          value={formatInt(depth.validPixels)}
+          hint="Pixels valid in both depth maps."
+        />
         <Metric
           label="Scale"
           value={formatNumber(alignment?.scale, 3)}
@@ -116,12 +139,18 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
       <dt className="font-medium text-gray-500" title={hint}>
         {label}
       </dt>
-      <dd className="font-mono tabular-nums text-gray-800">{value}</dd>
+      <dd className="font-mono text-gray-800 tabular-nums">{value}</dd>
     </div>
   );
 }
 
-function DepthThumbnails({ predictedUrl, dollhouseUrl }: { predictedUrl?: string; dollhouseUrl?: string }) {
+function DepthThumbnails({
+  predictedUrl,
+  dollhouseUrl,
+}: {
+  predictedUrl?: string;
+  dollhouseUrl?: string;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <DepthThumbnail label="Predicted (Depth Anything v2)" url={predictedUrl ?? null} />

@@ -58,9 +58,7 @@ export function renderHighlightedHandlebars(source: string): ReactNode[] {
   while ((match = re.exec(source)) !== null) {
     const [token] = match;
     if (match.index > cursor) {
-      nodes.push(
-        <span key={`t-${cursor}`}>{source.slice(cursor, match.index)}</span>,
-      );
+      nodes.push(<span key={`t-${cursor}`}>{source.slice(cursor, match.index)}</span>);
     }
     nodes.push(
       <span key={`m-${match.index}`} className={CLASS_BY_KIND[classify(token)]}>

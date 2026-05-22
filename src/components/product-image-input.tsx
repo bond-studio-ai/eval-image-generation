@@ -9,20 +9,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export const PRODUCT_CATEGORIES = [
   { key: 'faucets', label: 'Faucets', apiCategories: ['Faucets', 'Faucet Accessories'] },
-  { key: 'lightings', label: 'Lightings', apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'] },
+  {
+    key: 'lightings',
+    label: 'Lightings',
+    apiCategories: ['Decorative Lighting', 'Recessed Lights', 'Light Bulbs'],
+  },
   { key: 'lvps', label: 'LVPs', apiCategories: ['LVP'] },
   { key: 'mirrors', label: 'Mirrors', apiCategories: ['Mirror'] },
   { key: 'paints', label: 'Paints', apiCategories: ['Paint'] },
   { key: 'robe_hooks', label: 'Robe Hooks', apiCategories: ['Robe Hooks'] },
   { key: 'shelves', label: 'Shelves', apiCategories: ['Shelves'] },
   { key: 'shower_glasses', label: 'Shower Glasses', apiCategories: ['Shower Glass'] },
-  { key: 'shower_systems', label: 'Shower Systems', apiCategories: ['Shower Systems', 'Shower System Components'] },
+  {
+    key: 'shower_systems',
+    label: 'Shower Systems',
+    apiCategories: ['Shower Systems', 'Shower System Components'],
+  },
   { key: 'floor_tiles', label: 'Floor Tiles', apiCategories: ['Tile'] },
   { key: 'wall_tiles', label: 'Wall Tiles', apiCategories: ['Tile'] },
   { key: 'shower_wall_tiles', label: 'Shower Wall Tiles', apiCategories: ['Tile'] },
   { key: 'shower_floor_tiles', label: 'Shower Floor Tiles', apiCategories: ['Tile'] },
   { key: 'shower_curb_tiles', label: 'Shower Curb Tiles', apiCategories: ['Tile'] },
-  { key: 'toilet_paper_holders', label: 'Toilet Paper Holders', apiCategories: ['Toilet Paper Holders'] },
+  {
+    key: 'toilet_paper_holders',
+    label: 'Toilet Paper Holders',
+    apiCategories: ['Toilet Paper Holders'],
+  },
   { key: 'toilets', label: 'Toilets', apiCategories: ['Toilet', 'Toilet Accessories'] },
   { key: 'towel_bars', label: 'Towel Bars', apiCategories: ['Towel Bars'] },
   { key: 'towel_rings', label: 'Towel Rings', apiCategories: ['Towel Rings'] },
@@ -110,13 +122,22 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
     <div>
       {hasAnyImage && (
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs text-gray-500">{totalImages} image{totalImages !== 1 ? 's' : ''} across {Object.values(value).filter((a) => a && a.length > 0).length} categories</span>
+          <span className="text-xs text-gray-500">
+            {totalImages} image{totalImages !== 1 ? 's' : ''} across{' '}
+            {Object.values(value).filter((a) => a && a.length > 0).length} categories
+          </span>
           <button
             type="button"
             onClick={clearAll}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
             Clear All
@@ -146,7 +167,13 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                     className="ml-1 shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
                     title="Remove all images"
                   >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -157,7 +184,12 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                 <div className="p-1.5">
                   <div className="grid grid-cols-2 gap-1">
                     {images.map((url, idx) => (
-                      <ProductNamePopover key={idx} imageUrl={url} getProductName={getProductName} className="group relative">
+                      <ProductNamePopover
+                        key={idx}
+                        imageUrl={url}
+                        getProductName={getProductName}
+                        className="group relative"
+                      >
                         <ImageWithSkeleton
                           src={withImageParams(url)}
                           alt={getProductName(url) ?? `${cat.label} ${idx + 1}`}
@@ -167,10 +199,20 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                         <button
                           type="button"
                           onClick={() => removeCategoryImage(cat.key, idx)}
-                          className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+                          className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
                         >
-                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            className="h-2.5 w-2.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       </ProductNamePopover>
@@ -180,8 +222,18 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                       onClick={() => setActiveCategory(cat.key)}
                       className="flex h-16 items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-600"
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -192,7 +244,13 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                   onClick={() => setActiveCategory(cat.key)}
                   className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                   <span className="text-[10px] font-medium">Add Image</span>
@@ -206,7 +264,9 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
       {activeCategory && (
         <CategoryPickerModal
           categoryKey={activeCategory}
-          categoryLabel={PRODUCT_CATEGORIES.find((c) => c.key === activeCategory)?.label ?? activeCategory}
+          categoryLabel={
+            PRODUCT_CATEGORIES.find((c) => c.key === activeCategory)?.label ?? activeCategory
+          }
           products={products}
           loadingProducts={loadingProducts}
           onSelect={(url) => {
@@ -274,27 +334,30 @@ function CategoryPickerModal({
       .slice(0, 50);
   }, [products, search, apiCategoryNames]);
 
-  const fetchProductImages = useCallback(async (productId: string) => {
-    if (expandedProductId === productId) {
-      setExpandedProductId(null);
-      return;
-    }
-    setExpandedProductId(productId);
-    setLoadingImages(true);
-    setExpandedImages([]);
-    try {
-      const res = await fetch(localUrl(`products/${productId}`));
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = await res.json();
-      const product = json.data;
-      const imgs: ProductImage[] = product?.images ?? [];
-      setExpandedImages(imgs);
-    } catch {
+  const fetchProductImages = useCallback(
+    async (productId: string) => {
+      if (expandedProductId === productId) {
+        setExpandedProductId(null);
+        return;
+      }
+      setExpandedProductId(productId);
+      setLoadingImages(true);
       setExpandedImages([]);
-    } finally {
-      setLoadingImages(false);
-    }
-  }, [expandedProductId]);
+      try {
+        const res = await fetch(localUrl(`products/${productId}`));
+        if (!res.ok) throw new Error('Failed to fetch');
+        const json = await res.json();
+        const product = json.data;
+        const imgs: ProductImage[] = product?.images ?? [];
+        setExpandedImages(imgs);
+      } catch {
+        setExpandedImages([]);
+      } finally {
+        setLoadingImages(false);
+      }
+    },
+    [expandedProductId],
+  );
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
@@ -311,7 +374,9 @@ function CategoryPickerModal({
 
       if (!res.ok) throw new Error('Upload API unavailable');
 
-      const { uploadUrl, publicUrl } = await res.json().then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
+      const { uploadUrl, publicUrl } = await res
+        .json()
+        .then((r: { data: { uploadUrl: string; publicUrl: string } }) => r.data);
 
       const s3Res = await fetch(uploadUrl, {
         method: 'PUT',
@@ -334,12 +399,15 @@ function CategoryPickerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {categoryLabel}
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900">{categoryLabel}</h3>
           <span className="text-xs text-gray-400">Modal stays open — add multiple</span>
         </div>
 
@@ -377,7 +445,7 @@ function CategoryPickerModal({
               onChange={(e) => setSearch(e.target.value)}
               placeholder={loadingProducts ? 'Loading products...' : 'Search products...'}
               disabled={loadingProducts}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1 disabled:bg-gray-50"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50"
             />
             <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-gray-200">
               {filteredProducts.length === 0 && (
@@ -397,7 +465,7 @@ function CategoryPickerModal({
                             onSelect(product.featuredImage.url);
                           }
                         }}
-                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:bg-gray-50 rounded -m-1 p-1"
+                        className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded p-1 transition-colors hover:bg-gray-50"
                       >
                         {product.featuredImage?.url && (
                           <ImageWithSkeleton
@@ -410,7 +478,9 @@ function CategoryPickerModal({
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium text-gray-900">{product.name}</p>
-                          <p className="truncate text-xs text-gray-500">{product.category?.name ?? 'No category'}</p>
+                          <p className="truncate text-xs text-gray-500">
+                            {product.category?.name ?? 'No category'}
+                          </p>
                         </div>
                       </button>
                       <button
@@ -423,17 +493,31 @@ function CategoryPickerModal({
                         }`}
                         title="View all product images"
                       >
-                        <svg className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                        <svg
+                          className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                          />
                         </svg>
                       </button>
                     </div>
                     {isExpanded && (
                       <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
                         {loadingImages ? (
-                          <p className="py-2 text-center text-xs text-gray-500">Loading images...</p>
+                          <p className="py-2 text-center text-xs text-gray-500">
+                            Loading images...
+                          </p>
                         ) : expandedImages.length === 0 ? (
-                          <p className="py-2 text-center text-xs text-gray-500">No additional images available</p>
+                          <p className="py-2 text-center text-xs text-gray-500">
+                            No additional images available
+                          </p>
                         ) : (
                           <div className="grid grid-cols-4 gap-1.5">
                             {expandedImages.map((img) => {
@@ -443,7 +527,7 @@ function CategoryPickerModal({
                                   key={img.id}
                                   type="button"
                                   onClick={() => onSelect(img.url)}
-                                  className="group relative overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:border-primary-400 hover:shadow-sm"
+                                  className="group hover:border-primary-400 relative overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:shadow-sm"
                                 >
                                   <ImageWithSkeleton
                                     src={withImageParams(img.url, 512)}
@@ -453,13 +537,23 @@ function CategoryPickerModal({
                                     className="object-cover"
                                   />
                                   {isFeatured && (
-                                    <span className="absolute top-0.5 left-0.5 rounded bg-primary-600 px-1 py-0.5 text-[8px] font-bold text-white leading-none">
+                                    <span className="bg-primary-600 absolute top-0.5 left-0.5 rounded px-1 py-0.5 text-[8px] leading-none font-bold text-white">
                                       MAIN
                                     </span>
                                   )}
                                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-                                    <svg className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    <svg
+                                      className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      strokeWidth={2}
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 4.5v15m7.5-7.5h-15"
+                                      />
                                     </svg>
                                   </div>
                                 </button>
@@ -497,16 +591,41 @@ function CategoryPickerModal({
             >
               {uploading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <svg className="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="h-5 w-5 animate-spin text-gray-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   <span className="text-sm text-gray-600">Uploading...</span>
                 </div>
               ) : (
                 <div>
-                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  <svg
+                    className="mx-auto h-8 w-8 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                    />
                   </svg>
                   <p className="mt-2 text-sm text-gray-600">Click to upload a custom image</p>
                   <p className="mt-1 text-xs text-gray-500">JPEG, PNG, WebP, GIF up to 10MB</p>

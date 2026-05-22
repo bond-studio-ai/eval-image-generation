@@ -1,306 +1,111 @@
-# Architecture Overview
+# Architecture
 
-## Tech Stack
-
-- **Next.js** (App Router) -- fullstack React framework
-- **PostgreSQL** (e.g. Amazon RDS) -- relational database
-- **Drizzle ORM** -- type-safe ORM with node-postgres driver
-- **Tailwind CSS** -- utility-first styling
-- **Zod** -- runtime validation for API requests
+This app is a Next.js admin BFF for AI image evaluation workflows. It owns the admin UI, authentication boundary, lightweight proxy routes, and a few local adapters. It does not own the primary persistence layer.
 
 ## System Context
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    AI Image Generator Admin (Next.js)                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────┐ │
-│  │              │     │   Next.js    │     │   PostgreSQL (RDS)       │ │
-│  │   Web UI     │────▶│   API Routes │────▶│                          │ │
-│  │   (React)    │     │   (Drizzle)  │     │                          │ │
-│  │              │     │              │     │   - prompt_version       │ │
-│  └──────────────┘     └──────┬───────┘     │   - generation           │ │
-│                              │             │   - generation_image_*   │ │
-│                              │             │                          │ │
-│                              ▼             └──────────────────────────┘ │
-│                       ┌──────────────┐                                  │
-│                       │              │                                  │
-│                       │   Cloud      │                                  │
-│                       │   Storage    │                                  │
-│                       │   (S3)       │                                  │
-│                       │              │                                  │
-│                       └──────────────┘                                  │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ API Calls
-                                    ▼
-                        ┌──────────────────────┐
-                        │                      │
-                        │   AI Image Service   │
-                        │   (External)         │
-                        │                      │
-                        └──────────────────────┘
+```mermaid
+flowchart LR
+  browser[Browser Admin UI] --> appPages[Next App Router]
+  browser --> apiRoutes["/api/v1 Route Handlers"]
+  appPages --> serverClients[Server Clients]
+  serverClients --> imageGeneration[Image Generation API]
+  serverClients --> catalogFeed[Catalog Feed Admin API]
+  serverClients --> platformApis[Platform APIs]
+  apiRoutes --> imageGeneration
+  apiRoutes --> catalogFeed
+  apiRoutes --> platformApis
+  apiRoutes --> s3[S3]
 ```
 
----
+## Runtime Boundaries
 
-## Data Flow
+### App Shell And Auth
 
-### 1. Prompt Creation Flow
+- `src/app/layout.tsx` wraps the app with Clerk and `AppShell`.
+- `src/proxy.ts` protects admin pages and initializes Clerk context for `/api/**`.
+- Browser-accessed admin route handlers perform their own `auth()` checks because proxy/middleware protection alone does not authorize API routes.
 
-```
-Admin User ──▶ Create Prompt Form ──▶ API POST /prompt-versions ──▶ Database
-                                                                         │
-                                                                         ▼
-                                                              prompt_version table
-```
+### Server Reads
 
-### 2. Generation Flow
+Server Components call typed server clients:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  1. Select Prompt     2. Upload Inputs    3. Call AI Service   4. Store     │
-│     Version              (optional)                              Results    │
-│                                                                              │
-│  ┌─────────────┐      ┌─────────────┐     ┌─────────────┐    ┌───────────┐  │
-│  │  prompt_    │      │   Input     │     │     AI      │    │ Database  │  │
-│  │  version    │─────▶│   Images    │────▶│   Service   │───▶│           │  │
-│  │             │      │             │     │             │    │ generation│  │
-│  └─────────────┘      └─────────────┘     └──────┬──────┘    │ *_image_* │  │
-│                                                  │           └───────────┘  │
-│                                                  │                          │
-│                                                  ▼                          │
-│                                           ┌─────────────┐                   │
-│                                           │   Output    │                   │
-│                                           │   Images    │                   │
-│                                           └─────────────┘                   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+- `src/lib/service-client.ts` for image-generation reads.
+- `src/lib/catalog-feed-client.ts` for catalog-feed admin reads.
+- Feature-specific parsers live in smaller helper modules such as `src/lib/strategy-run-judge-results.ts`.
 
-### 3. Evaluation Flow
+### Browser Mutations And Client Fetches
 
-```
-Evaluator ──▶ Review Queue ──▶ View Generation ──▶ Assign Rating ──▶ Database
-                    │               │                    │
-                    │               │                    │
-                    ▼               ▼                    ▼
-              Unrated         Input/Output        result_rating
-              Generations      Images              field updated
-```
+Client Components do not call upstream hosts directly. They use:
 
----
+- `serviceUrl()` for `/api/v1/image-generation/**`.
+- `localUrl()` for local BFF routes such as upload, products, projects, and design packages.
+- `/api/v1/catalog-feed/**` for catalog-confidence admin mutations.
 
-## Component Details
+`src/lib/proxy-handler.ts` centralizes upstream proxy behavior: forwarded headers, body handling, network errors, malformed JSON, non-JSON pass-through, and upstream error logging.
 
-### Database Layer
+## Service Responsibilities
 
-| Table                     | Purpose                                     | Key Relationships      |
-| ------------------------- | ------------------------------------------- | ---------------------- |
-| `prompt_version`          | Store versioned prompts with model settings | Parent of generations  |
-| `generation`              | Track generation runs                       | Links prompt to images |
-| `generation_image_input`  | Reference images                            | Belongs to generation  |
-| `generation_image_output` | Generated results                           | Belongs to generation  |
+| Area                                                                        | Owner                     |
+| --------------------------------------------------------------------------- | ------------------------- |
+| Strategies, prompt versions, input presets, generations, analytics          | image-generation service  |
+| Catalog-confidence runs, prompts, calibrations, thresholds, judge baselines | catalog-feed service      |
+| Project/design/package/product metadata                                     | platform APIs             |
+| Uploaded image bytes                                                        | S3 via local upload route |
+| Navigation, forms, tables, review UI, auth gate, BFF proxies                | this repo                 |
 
-### Key Design Decisions
+## Data Flow Patterns
 
-1. **Soft Deletes for Prompts**
-   - Preserves historical data integrity
-   - Allows auditing of past experiments
-   - Prevents orphaned generation records
+### Server-rendered page
 
-2. **Nullable Ratings**
-   - Generations can exist without immediate evaluation
-   - Supports async review workflows
-   - Enables tracking of unrated backlog
-
-3. **Separate Input/Output Tables**
-   - Supports multiple images per generation
-   - Flexible for different generation modes (1-to-1, 1-to-many)
-   - Easy to extend with additional metadata
-
-4. **URL-Based Image Storage**
-   - Decouples storage from application
-   - Supports multiple storage backends
-   - Enables CDN distribution
-
----
-
-## Deployment Architecture
-
-### Development
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Developer Machine                                   │
-│                                                      │
-│  ┌─────────────────────┐     ┌──────────────────┐   │
-│  │  Next.js Dev Server │     │  PostgreSQL       │   │
-│  │  (SSR + API Routes) │────▶│  (Cloud)          │   │
-│  │  :3000              │     │                   │   │
-│  └─────────────────────┘     └──────────────────┘   │
-│                                                      │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  page[Server Component] --> client[Server Client]
+  client --> upstream[Upstream Service]
+  upstream --> page
+  page --> html[Rendered Page]
 ```
 
-### Production (Vercel + RDS)
+### Client mutation
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                                                             │
-│  ┌────────────────────┐       ┌─────────────────────────┐  │
-│  │  Vercel Edge       │       │  PostgreSQL (RDS)        │  │
-│  │  Network / CDN     │       │                          │  │
-│  │                    │       │  - Managed PostgreSQL    │  │
-│  │  ┌──────────────┐  │       │  - Connection pooling    │  │
-│  │  │  Next.js     │  │──────▶│  - Automated backups     │  │
-│  │  │  (Serverless) │  │       │                          │  │
-│  │  │              │  │       │                          │  │
-│  │  └──────────────┘  │       └─────────────────────────┘  │
-│  │                    │                                     │
-│  └────────────────────┘                                     │
-│                                                             │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  component[Client Component] --> localRoute["/api/v1/*"]
+  localRoute --> authCheck[Clerk auth]
+  authCheck --> proxyHelper[proxyUpstream]
+  proxyHelper --> upstream[Upstream Service]
 ```
 
----
+## UI Architecture
 
-## Security Considerations
+Shared primitives are intentionally small and reusable:
 
-### Authentication & Authorization
+- `PageHeader`, `PrimaryButton`, `PrimaryLinkButton`
+- `ResourceFormHeader`, `ErrorCard`
+- `DataTable`, `Pagination`, `BulkDeleteBar`
+- `useInfiniteList`
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Recommended: Role-Based Access Control (RBAC)          │
-│                                                          │
-│  Roles:                                                  │
-│  ├── Admin                                               │
-│  │   ├── Create/Delete prompt versions                   │
-│  │   ├── Delete generations                              │
-│  │   └── Manage users                                    │
-│  │                                                       │
-│  ├── Evaluator                                           │
-│  │   ├── View generations                                │
-│  │   ├── Assign ratings                                  │
-│  │   └── Add notes                                       │
-│  │                                                       │
-│  └── Viewer (Read-only)                                  │
-│      ├── View prompt versions                            │
-│      ├── View generations                                │
-│      └── View analytics                                  │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
+Feature components should keep rendering separate from domain derivation. Pure helpers in `src/lib` should own normalization, grouping, parser, and status logic where possible so they can be tested without rendering React.
 
-### Data Protection
+## Configuration
 
-- **Image URLs:** Use signed URLs with expiration for cloud storage
-- **Database:** Encrypt at rest and in transit
-- **API:** HTTPS only, rate limiting enabled
-- **Secrets:** Use environment variables or secret manager
+Use `src/lib/env.ts` for server-side environment access. Browser code should never import env helpers directly; it should call local API routes instead.
 
----
+Important helpers:
 
-## Scalability Patterns
+- `imageGenerationBase()`
+- `imageGenerationV2Base()`
+- `platformApiBase()`
+- `catalogFeedBase()`
+- `catalogFeedAdminToken()`
+- `s3UploadConfig()`
 
-### Horizontal Scaling
+## Quality Gates
 
-| Component     | Strategy                              |
-| ------------- | ------------------------------------- |
-| API Server    | Stateless, scale behind load balancer |
-| Database      | Read replicas for analytics queries   |
-| Image Storage | Cloud object storage with CDN         |
+The expected local verification command is:
 
-### Performance Optimizations
-
-1. **Database Indexes** (already included in schema)
-   - Prompt version active lookups
-   - Generation filtering by rating/date
-   - Image lookups by generation
-
-2. **Caching Layer** (optional)
-   - Cache prompt version stats
-   - Cache analytics aggregations
-   - Redis/Memcached recommended
-
-3. **Pagination**
-   - All list endpoints paginated
-   - Cursor-based pagination for large datasets
-
----
-
-## Integration Points
-
-### AI Service Integration
-
-```typescript
-interface AIServiceAdapter {
-  // Generate images from prompt
-  generate(options: {
-    systemPrompt: string;
-    userPrompt: string;
-    inputImages?: string[];
-    parameters?: Record<string, unknown>;
-  }): Promise<{
-    outputUrls: string[];
-    metadata: Record<string, unknown>;
-  }>;
-}
+```bash
+yarn verify
 ```
 
-### Storage Integration
-
-```typescript
-interface StorageAdapter {
-  upload(file: Buffer, path: string): Promise<string>;
-  getSignedUrl(path: string, expiresIn: number): Promise<string>;
-  delete(path: string): Promise<void>;
-}
-```
-
----
-
-## Monitoring & Observability
-
-### Recommended Metrics
-
-| Metric                        | Type      | Purpose                    |
-| ----------------------------- | --------- | -------------------------- |
-| `generations_total`           | Counter   | Track generation volume    |
-| `generation_duration_seconds` | Histogram | Monitor AI service latency |
-| `rating_distribution`         | Gauge     | Track quality over time    |
-| `unrated_generations`         | Gauge     | Monitor evaluation backlog |
-| `api_request_duration`        | Histogram | API performance            |
-
-### Logging Strategy
-
-```
-Level: INFO
-- API requests (method, path, status, duration)
-- Generation events (created, rated)
-
-Level: WARN
-- Slow queries (> 1s)
-- High unrated backlog (> 100)
-
-Level: ERROR
-- AI service failures
-- Database connection issues
-- Image storage errors
-```
-
----
-
-## Future Considerations
-
-### Potential Enhancements
-
-1. **Multi-tenancy** - Support multiple teams/projects
-2. **A/B Testing Framework** - Statistical significance testing
-3. **Auto-rating** - ML-based quality assessment
-4. **Prompt Templates** - Reusable prompt components
-5. **Batch Processing** - Queue-based bulk generation
-6. **Export/Import** - Data portability features
+It runs typecheck, lint, tests, and format check. New refactors should add or update Vitest coverage around pure helpers before changing large UI components.

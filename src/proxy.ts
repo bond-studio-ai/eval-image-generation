@@ -4,15 +4,20 @@ import type { NextRequest } from 'next/server';
 
 const isProtectedRoute = createRouteMatcher([
   '/',
+  '/analytics(.*)',
+  '/audit(.*)',
   '/executions(.*)',
+  '/generations(.*)',
   '/strategies(.*)',
   '/input-presets(.*)',
   '/prompt-versions(.*)',
   '/prompt-preview(.*)',
+  '/environments(.*)',
   '/catalog-runs(.*)',
   '/catalog-prompts(.*)',
   '/catalog-calibrations(.*)',
   '/catalog-thresholds(.*)',
+  '/judge-baselines(.*)',
 ]);
 
 const clerkWithProtection = clerkMiddleware(
@@ -38,10 +43,9 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
 // gate browser-side admin mutations behind sign-in). Excluding /api here
 // caused Clerk's `auth()` to throw with no body, surfacing as a Vercel
 // HTTP 500 with `content-length: 0` for every browser-side mutation.
-// `isProtectedRoute` still controls which paths actually require sign-in
-// (only app pages, never API routes), so running the middleware on /api
-// just initializes context — it does not gate the existing unauthenticated
-// API routes (upload, projects, products, etc.).
+// `isProtectedRoute` still controls which pages require sign-in. Route
+// handlers that proxy or mutate admin data must perform their own `auth()`
+// check because middleware only initializes Clerk context for `/api/**`.
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|auth).*)'],
 };

@@ -10,8 +10,8 @@ import {
   type AnalyticsComparisonSource,
 } from '@/app/analytics/comparison-utils';
 import { DateRangePicker } from '@/components/date-range-picker';
-import type { StrategyListItem } from '@/lib/service-client';
 import { browserTimezone } from '@/lib/api-base';
+import type { StrategyListItem } from '@/lib/service-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -59,9 +59,7 @@ function StrategyDropdown({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = q
-      ? strategies.filter((s) => s.name.toLowerCase().includes(q))
-      : strategies;
+    const list = q ? strategies.filter((s) => s.name.toLowerCase().includes(q)) : strategies;
     return list.slice(0, 30);
   }, [search, strategies]);
 
@@ -72,13 +70,11 @@ function StrategyDropdown({
         onClick={() => setOpen(!open)}
         className={`flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 py-1.5 text-left text-xs transition-colors ${
           open
-            ? 'border-primary-400 ring-1 ring-primary-400'
+            ? 'border-primary-400 ring-primary-400 ring-1'
             : 'border-gray-200 hover:border-gray-300'
         }`}
       >
-        <span
-          className={`truncate ${selected ? 'font-medium text-gray-900' : 'text-gray-400'}`}
-        >
+        <span className={`truncate ${selected ? 'font-medium text-gray-900' : 'text-gray-400'}`}>
           {selected?.name ?? 'Select strategy…'}
         </span>
         <svg
@@ -97,7 +93,7 @@ function StrategyDropdown({
           <div className="border-b border-gray-100 p-2">
             <div className="relative">
               <svg
-                className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400"
+                className="absolute top-1/2 left-2.5 h-3 w-3 -translate-y-1/2 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -115,7 +111,7 @@ function StrategyDropdown({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search strategies…"
                 autoFocus
-                className="w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs text-gray-700 placeholder:text-gray-400 focus:border-primary-300 focus:bg-white focus:ring-1 focus:ring-primary-300 focus:outline-none"
+                className="focus:border-primary-300 focus:ring-primary-300 w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 pr-3 pl-8 text-xs text-gray-700 placeholder:text-gray-400 focus:bg-white focus:ring-1 focus:outline-none"
               />
             </div>
           </div>
@@ -133,14 +129,14 @@ function StrategyDropdown({
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
                     value === strategy.id
-                      ? 'bg-primary-50 font-medium text-primary-700'
+                      ? 'bg-primary-50 text-primary-700 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <span className="truncate">{strategy.name}</span>
                   {value === strategy.id && (
                     <svg
-                      className="ml-auto h-3.5 w-3.5 shrink-0 text-primary-600"
+                      className="text-primary-600 ml-auto h-3.5 w-3.5 shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={2}
@@ -246,9 +242,7 @@ export function AnalyticsFilters({
       source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
     updateComparisonColumns([
       ...cols,
-      createEmptyComparisonColumn(
-        lastColumn ?? { from, to, source: defaultSource },
-      ),
+      createEmptyComparisonColumn(lastColumn ?? { from, to, source: defaultSource }),
     ]);
   }, [from, source, to, updateComparisonColumns]);
 
@@ -282,7 +276,7 @@ export function AnalyticsFilters({
             <select
               value={model}
               onChange={(e) => applyFilters({ model: e.target.value })}
-              className={`appearance-none rounded-lg border py-1.5 pl-3 pr-8 text-xs font-medium transition-all focus:ring-2 focus:ring-primary-100 focus:outline-none ${
+              className={`focus:ring-primary-100 appearance-none rounded-lg border py-1.5 pr-8 pl-3 text-xs font-medium transition-all focus:ring-2 focus:outline-none ${
                 model
                   ? 'border-primary-200 bg-primary-50 text-primary-700'
                   : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
@@ -296,8 +290,18 @@ export function AnalyticsFilters({
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-              <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              <svg
+                className="h-3.5 w-3.5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
               </svg>
             </div>
           </div>
@@ -333,7 +337,13 @@ export function AnalyticsFilters({
               onClick={clearAll}
               className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
               Reset
@@ -346,9 +356,19 @@ export function AnalyticsFilters({
       {!isCompare && hasAnyFilter && (
         <div className="flex flex-wrap items-center gap-1.5">
           {hasDateFilter && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-medium text-primary-700 ring-1 ring-primary-200/60">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            <span className="bg-primary-50 text-primary-700 ring-primary-200/60 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1">
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
+                />
               </svg>
               {from && to
                 ? `${formatDisplay(from)} – ${formatDisplay(to)}`
@@ -358,9 +378,15 @@ export function AnalyticsFilters({
               <button
                 type="button"
                 onClick={() => applyFilters({ from: '', to: '' })}
-                className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-primary-200/60"
+                className="hover:bg-primary-200/60 ml-0.5 rounded-full p-0.5 transition-colors"
               >
-                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg
+                  className="h-2.5 w-2.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -368,8 +394,18 @@ export function AnalyticsFilters({
           )}
           {model && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 ring-1 ring-violet-200/60">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                />
               </svg>
               {model}
               <button
@@ -377,7 +413,13 @@ export function AnalyticsFilters({
                 onClick={() => applyFilters({ model: '' })}
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-violet-200/60"
               >
-                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg
+                  className="h-2.5 w-2.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -385,8 +427,18 @@ export function AnalyticsFilters({
           )}
           {source !== 'all' && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/60">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 7.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"
+                />
               </svg>
               {SOURCE_FILTER_OPTIONS.find((option) => option.value === source)?.label ?? source}
               <button
@@ -394,7 +446,13 @@ export function AnalyticsFilters({
                 onClick={() => applyFilters({ source: 'all' })}
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-blue-200/60"
               >
-                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg
+                  className="h-2.5 w-2.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -410,16 +468,19 @@ export function AnalyticsFilters({
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50/80">
-                  <th className="w-10 px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="w-10 px-3 py-2.5 text-center text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
                     #
                   </th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500" style={{ minWidth: 200 }}>
+                  <th
+                    className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase"
+                    style={{ minWidth: 200 }}
+                  >
                     Strategy
                   </th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
                     Date range
                   </th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
                     Source
                   </th>
                   <th className="w-10 px-3 py-2.5" />
@@ -484,15 +545,23 @@ export function AnalyticsFilters({
                       <button
                         type="button"
                         onClick={() =>
-                          updateComparisonColumns(
-                            comparison.columns.filter((_, i) => i !== index),
-                          )
+                          updateComparisonColumns(comparison.columns.filter((_, i) => i !== index))
                         }
                         disabled={comparison.columns.length <= 1}
                         className="rounded-lg p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300"
                       >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     </td>
@@ -508,7 +577,13 @@ export function AnalyticsFilters({
               onClick={addComparisonColumn}
               className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Add column

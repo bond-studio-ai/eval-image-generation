@@ -1,8 +1,8 @@
+import { GenerationsFilters } from '@/app/generations/generations-filters';
 import { EmptyState } from '@/components/empty-state';
 import { GenerationsList, type GenerationRow } from '@/components/generations-list';
 import { fetchGenerations, fetchPromptVersions } from '@/lib/service-client';
 import Link from 'next/link';
-import { GenerationsFilters } from '@/app/generations/generations-filters';
 import { ExecutionsPageHeader } from './executions-page-header';
 import { ExecutionsTabs } from './executions-tabs';
 
@@ -44,7 +44,9 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
 function TabNav({ active, source }: { active: 'batches' | 'generations'; source?: string }) {
   const batchesHref = source === 'benchmark' ? '/executions?source=benchmark' : '/executions';
   const generationsHref =
-    source === 'benchmark' ? '/executions?tab=generations&source=benchmark' : '/executions?tab=generations';
+    source === 'benchmark'
+      ? '/executions?tab=generations&source=benchmark'
+      : '/executions?tab=generations';
   return (
     <div className="mb-6 flex gap-1 border-b border-gray-200">
       <Link
@@ -75,7 +77,8 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
   const queryParams: Record<string, string> = {};
   if (params.prompt_version_id) queryParams.promptVersionId = params.prompt_version_id;
   if (params.scene_accuracy_rating) queryParams.sceneAccuracyRating = params.scene_accuracy_rating;
-  if (params.product_accuracy_rating) queryParams.productAccuracyRating = params.product_accuracy_rating;
+  if (params.product_accuracy_rating)
+    queryParams.productAccuracyRating = params.product_accuracy_rating;
   if (params.unrated) queryParams.unrated = params.unrated;
   if (params.from) queryParams.from = params.from;
   if (params.to) queryParams.to = params.to;
@@ -125,10 +128,18 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
 
       {initialData.length === 0 ? (
         <div className="mt-8">
-          <EmptyState title="No generations found" description="No generations match your current filters." />
+          <EmptyState
+            title="No generations found"
+            description="No generations match your current filters."
+          />
         </div>
       ) : (
-        <GenerationsList initialData={initialData} initialTotal={total} pageSize={PAGE_SIZE} filters={filters} />
+        <GenerationsList
+          initialData={initialData}
+          initialTotal={total}
+          pageSize={PAGE_SIZE}
+          filters={filters}
+        />
       )}
     </div>
   );

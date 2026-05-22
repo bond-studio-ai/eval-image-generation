@@ -46,10 +46,7 @@ function insertAtSelection(el: HTMLTextAreaElement, text: string) {
   if (exec.call(document, 'insertText', false, text)) return;
   const start = el.selectionStart;
   const end = el.selectionEnd;
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLTextAreaElement.prototype,
-    'value',
-  )?.set;
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
   setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
   el.dispatchEvent(new Event('input', { bubbles: true }));
   const caret = start + text.length;
@@ -135,18 +132,14 @@ export function PromptTemplateEditor({
         <span className="text-[11px] font-medium tracking-wide text-gray-500 uppercase">
           {variables.length === 0 ? 'No variables for this kind/scope' : 'Insert variable'}
         </span>
-        <div className="min-w-0 flex-1 max-w-xs">
+        <div className="max-w-xs min-w-0 flex-1">
           <SearchableSelect
             key={pickerResetKey}
             options={options}
             value=""
             onChange={insertVariable}
             ariaLabel={`Insert variable into ${ariaLabel ?? 'prompt template'}`}
-            placeholder={
-              variables.length === 0
-                ? '— no variables —'
-                : 'Search variables…'
-            }
+            placeholder={variables.length === 0 ? '— no variables —' : 'Search variables…'}
             disabled={variables.length === 0}
             emptyMessage="No matching variables."
           />

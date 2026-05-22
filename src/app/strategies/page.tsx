@@ -9,7 +9,11 @@ export default function StrategiesPage() {
       <PageHeader
         title="Strategies"
         subtitle="Multi-step workflows that chain generations together."
-        actions={<PrimaryLinkButton href="/strategies/new" icon>New Strategy</PrimaryLinkButton>}
+        actions={
+          <PrimaryLinkButton href="/strategies/new" icon>
+            New Strategy
+          </PrimaryLinkButton>
+        }
       />
       <StrategiesTable />
     </div>

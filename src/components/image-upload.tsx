@@ -19,7 +19,13 @@ interface ImageUploadProps {
   renderAboveImage?: (index: number, image: UploadedImage) => React.ReactNode;
 }
 
-export function ImageUpload({ label, images, onImagesChange, maxImages = 10, renderAboveImage }: ImageUploadProps) {
+export function ImageUpload({
+  label,
+  images,
+  onImagesChange,
+  maxImages = 10,
+  renderAboveImage,
+}: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +111,7 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
       {/* Upload area */}
       <div
         className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-          dragOver
-            ? 'border-primary-500 bg-primary-50'
-            : 'border-gray-300 hover:border-gray-400'
+          dragOver ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-gray-400'
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -131,11 +135,7 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
 
         {uploading ? (
           <div className="flex items-center justify-center gap-2">
-            <svg
-              className="h-5 w-5 animate-spin text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -178,9 +178,7 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
       </div>
 
       {/* Error message */}
-      {error && (
-        <p className="mt-2 text-xs text-red-600">{error}</p>
-      )}
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 
       {/* Image previews */}
       {images.length > 0 && (
@@ -202,7 +200,13 @@ export function ImageUpload({ label, images, onImagesChange, maxImages = 10, ren
                 }}
                 className="absolute -top-2 -right-2 hidden rounded-full bg-red-500 p-1 text-white shadow-sm group-hover:block"
               >
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>

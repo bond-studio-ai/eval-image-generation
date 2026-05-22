@@ -1,6 +1,9 @@
 'use client';
 
-import { formatComparisonSource, type AnalyticsComparisonSlice } from '@/app/analytics/comparison-utils';
+import {
+  formatComparisonSource,
+  type AnalyticsComparisonSlice,
+} from '@/app/analytics/comparison-utils';
 import { serviceUrl } from '@/lib/api-base';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -172,7 +175,8 @@ export function ProductCategoryComparisonMatrix({
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Product category comparison</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Spreadsheet-style product category comparison across selected ranges, strategies, and run sources.
+            Spreadsheet-style product category comparison across selected ranges, strategies, and
+            run sources.
           </p>
         </div>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
@@ -186,7 +190,7 @@ export function ProductCategoryComparisonMatrix({
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 min-w-64 border-b border-gray-200 bg-white px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+              <th className="sticky left-0 z-10 min-w-64 border-b border-gray-200 bg-white px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase">
                 Category / issue
               </th>
               {slices.map((slice) => (
@@ -204,7 +208,13 @@ export function ProductCategoryComparisonMatrix({
           </thead>
           <tbody>
             {categoryRows.map((row) => (
-              <tr key={row.type === 'category' ? row.categoryName : `${row.categoryName}:${row.issueName}`}>
+              <tr
+                key={
+                  row.type === 'category'
+                    ? row.categoryName
+                    : `${row.categoryName}:${row.issueName}`
+                }
+              >
                 <th
                   className={`sticky left-0 z-10 border-b border-gray-100 bg-white px-4 py-3 text-left ${
                     row.type === 'category'

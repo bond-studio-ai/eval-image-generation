@@ -76,10 +76,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
       .slice(0, 50);
   }, [products, search]);
 
-  const selectedIds = useMemo(
-    () => new Set(selectedProducts.map((p) => p.id)),
-    [selectedProducts],
-  );
+  const selectedIds = useMemo(() => new Set(selectedProducts.map((p) => p.id)), [selectedProducts]);
 
   const addProduct = useCallback(
     (product: CatalogProduct) => {
@@ -122,17 +119,17 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
-          placeholder={loading ? 'Loading products...' : 'Search by name, category, or product ID...'}
+          placeholder={
+            loading ? 'Loading products...' : 'Search by name, category, or product ID...'
+          }
           disabled={loading}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500"
+          className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
         />
 
         {/* Dropdown */}
         {showDropdown && !loading && (
           <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-            {error && (
-              <div className="p-3 text-sm text-red-600">{error}</div>
-            )}
+            {error && <div className="p-3 text-sm text-red-600">{error}</div>}
             {filteredProducts.length === 0 && !error && (
               <div className="p-3 text-sm text-gray-500">
                 {search ? 'No products match your search.' : 'No products available.'}
@@ -152,7 +149,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                       ? 'cursor-default bg-gray-50 text-gray-400'
                       : !hasImage
                         ? 'cursor-not-allowed text-gray-400'
-                        : 'hover:bg-gray-50 text-gray-900'
+                        : 'text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   {product.featuredImage?.url ? (
@@ -165,8 +162,18 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                     />
                   ) : (
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100">
-                      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+                      <svg
+                        className="h-4 w-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z"
+                        />
                       </svg>
                     </div>
                   )}
@@ -207,7 +214,13 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                 onClick={() => removeProduct(product.id)}
                 className="absolute -top-2 -right-2 hidden rounded-full bg-red-500 p-1 text-white shadow-sm group-hover:block"
               >
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>

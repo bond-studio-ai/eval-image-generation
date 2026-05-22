@@ -1,5 +1,5 @@
-import { platformApiBase } from '@/lib/env';
 import { errorResponse, successResponse } from '@/lib/api-response';
+import { platformApiBase } from '@/lib/env';
 
 const API_BASE = platformApiBase();
 const PROJECTS_BASE = `${API_BASE}/v2/projects`;
@@ -78,8 +78,7 @@ export async function POST(request: Request) {
       typeof body.layout_type_id === 'string' && body.layout_type_id.trim()
         ? body.layout_type_id.trim()
         : null;
-    const pkgId =
-      typeof body.pkg_id === 'string' && body.pkg_id.trim() ? body.pkg_id.trim() : null;
+    const pkgId = typeof body.pkg_id === 'string' && body.pkg_id.trim() ? body.pkg_id.trim() : null;
     if (!layoutTypeId) {
       return errorResponse('VALIDATION_ERROR', 'layout_type_id is required');
     }
@@ -105,12 +104,12 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pkgId, bathroomTypeId: layoutTypeId }),
         cache: 'no-store',
-      }
+      },
     );
     if (!initProjectRes.ok) {
       return errorResponse(
         'INTERNAL_ERROR',
-        `Project initialization failed: ${initProjectRes.status}`
+        `Project initialization failed: ${initProjectRes.status}`,
       );
     }
 

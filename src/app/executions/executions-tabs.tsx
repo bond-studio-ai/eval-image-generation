@@ -39,12 +39,16 @@ export function ExecutionsTabs() {
       <div className="mb-6 flex gap-1 border-b border-gray-200">
         <Link
           href={source === 'benchmark' ? '/executions?source=benchmark' : '/executions'}
-          className="border-b-2 border-primary-600 px-4 py-2.5 text-sm font-medium text-primary-700 transition-colors"
+          className="border-primary-600 text-primary-700 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
         >
           Batches
         </Link>
         <Link
-          href={source === 'benchmark' ? '/executions?tab=generations&source=benchmark' : '/executions?tab=generations'}
+          href={
+            source === 'benchmark'
+              ? '/executions?tab=generations&source=benchmark'
+              : '/executions?tab=generations'
+          }
           className="border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700"
         >
           Generations

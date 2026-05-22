@@ -1,12 +1,13 @@
-import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import { fetchStrategyById, fetchStrategyRuns, parseStrategyRunJudgeResults } from '@/lib/service-client';
+import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
+import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
+import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
 import { notFound } from 'next/navigation';
 import { ActiveToggleButton } from './active-toggle-button';
 import { CloneButton } from './clone-button';
-import { StrategyPerformance } from './strategy-performance';
 import { StrategyRunsSection } from './runs-section';
+import { StrategyPerformance } from './strategy-performance';
 import { StrategySettingsPrompts } from './strategy-settings-prompts';
 
 export const dynamic = 'force-dynamic';
@@ -18,10 +19,7 @@ interface PageProps {
 export default async function StrategyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [result, runsRaw] = await Promise.all([
-    fetchStrategyById(id),
-    fetchStrategyRuns(id, 50),
-  ]);
+  const [result, runsRaw] = await Promise.all([fetchStrategyById(id), fetchStrategyRuns(id, 50)]);
 
   if (!result) {
     notFound();
@@ -39,7 +37,9 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             <DeployToEnvironmentButton strategyId={result.id} />
             <ActiveToggleButton strategyId={result.id} activeForSource={result.activeForSource} />
             <CloneButton strategyId={result.id} />
-            <PrimaryLinkButton href={`/strategies/${result.id}/edit`} icon>Edit Strategy</PrimaryLinkButton>
+            <PrimaryLinkButton href={`/strategies/${result.id}/edit`} icon>
+              Edit Strategy
+            </PrimaryLinkButton>
           </>
         }
       />
@@ -48,35 +48,41 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Execution Flow</h2>
         {result.steps.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No steps defined. Edit this strategy to add steps.</p>
+          <p className="mt-4 text-sm text-gray-600">
+            No steps defined. Edit this strategy to add steps.
+          </p>
         ) : (
           <div className="mt-4">
             <StrategyFlowDag
               steps={result.steps
                 .filter((step) => (step.type ?? 'generation') !== 'judge')
-                .map((step): DagStep => ({
-                  stepOrder: step.stepOrder,
-                  label: step.name || `Step ${step.stepOrder}`,
-                  model: step.model ?? result.model,
-                  aspectRatio: step.aspectRatio ?? result.aspectRatio,
-                  outputResolution: step.outputResolution ?? result.outputResolution,
-                  temperature: step.temperature ?? result.temperature,
-                  promptName: step.promptVersionName,
-                  dollhouseViewFromStep: step.dollhouseViewFromStep,
-                  realPhotoFromStep: step.realPhotoFromStep,
-                  moodBoardFromStep: step.moodBoardFromStep,
-                  arbitraryImageFromStep: step.arbitraryImageFromStep,
-                }))}
+                .map(
+                  (step): DagStep => ({
+                    stepOrder: step.stepOrder,
+                    label: step.name || `Step ${step.stepOrder}`,
+                    model: step.model ?? result.model,
+                    aspectRatio: step.aspectRatio ?? result.aspectRatio,
+                    outputResolution: step.outputResolution ?? result.outputResolution,
+                    temperature: step.temperature ?? result.temperature,
+                    promptName: step.promptVersionName,
+                    dollhouseViewFromStep: step.dollhouseViewFromStep,
+                    realPhotoFromStep: step.realPhotoFromStep,
+                    moodBoardFromStep: step.moodBoardFromStep,
+                    arbitraryImageFromStep: step.arbitraryImageFromStep,
+                  }),
+                )}
               judges={result.steps
                 .filter((step) => step.type === 'judge')
-                .flatMap((step) => (step.judges ?? []).map((j, ji) => ({
-                  name: j.name,
-                  type: j.judgeType as 'batch' | 'individual',
-                  model: j.judgeModel,
-                  promptName: j.judgePromptVersionName,
-                  toleranceThreshold: j.toleranceThreshold,
-                  position: ji + 1,
-                })))}
+                .flatMap((step) =>
+                  (step.judges ?? []).map((j, ji) => ({
+                    name: j.name,
+                    type: j.judgeType as 'batch' | 'individual',
+                    model: j.judgeModel,
+                    promptName: j.judgePromptVersionName,
+                    toleranceThreshold: j.toleranceThreshold,
+                    position: ji + 1,
+                  })),
+                )}
             />
           </div>
         )}
@@ -96,7 +102,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         description={result.description}
         steps={result.steps.map((s) => ({
           stepOrder: s.stepOrder,
-          type: s.type ?? 'generation' as const,
+          type: s.type ?? ('generation' as const),
           numberOfImages: s.numberOfImages,
           name: s.name,
           promptVersionId: s.promptVersionId,
@@ -125,7 +131,8 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         initialRuns={runsRaw.map((run) => {
           const inputPresetName =
             (run.inputPresetName as string) ??
-            (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ??
+            (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]
+              ?.inputPresetName ??
             null;
           return {
             id: run.id as string,
@@ -145,10 +152,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
             judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
             judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
-            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
-              id: sr.id,
-              status: sr.status,
-            })),
+            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map(
+              (sr) => ({
+                id: sr.id,
+                status: sr.status,
+              }),
+            ),
           };
         })}
       />

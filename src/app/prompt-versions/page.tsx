@@ -9,7 +9,11 @@ export default function PromptVersionsPage() {
       <PageHeader
         title="Prompt Versions"
         subtitle="Manage versioned prompts for image generation."
-        actions={<PrimaryLinkButton href="/prompt-versions/new" icon>New Prompt Version</PrimaryLinkButton>}
+        actions={
+          <PrimaryLinkButton href="/prompt-versions/new" icon>
+            New Prompt Version
+          </PrimaryLinkButton>
+        }
       />
       <PromptVersionsList />
     </div>

@@ -38,14 +38,12 @@ export function PromptTemplateDisplay({
 }: PromptTemplateDisplayProps) {
   if (!template) {
     return (
-      <p className="rounded-md bg-gray-50 px-3 py-3 text-xs italic text-gray-400">
-        {emptyMessage}
-      </p>
+      <p className="rounded-md bg-gray-50 px-3 py-3 text-xs text-gray-400 italic">{emptyMessage}</p>
     );
   }
   const tokens = tokenizePromptTemplate(template);
   return (
-    <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+    <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-800">
       {tokens.map((token, idx) => {
         if (token.kind === 'text') {
           return <Fragment key={idx}>{token.raw}</Fragment>;

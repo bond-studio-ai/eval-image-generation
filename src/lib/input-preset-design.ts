@@ -62,13 +62,13 @@ export const INPUT_PRESET_DESIGN_FIELD_KEYS = [
   'showerWallTilePattern',
   'showerShortWallTilePattern',
   'wallTilePattern',
-] as const
+] as const;
 
-export type InputPresetDesignFieldKey = (typeof INPUT_PRESET_DESIGN_FIELD_KEYS)[number]
-export type InputPresetDesignFieldValue = string | boolean | null
+export type InputPresetDesignFieldKey = (typeof INPUT_PRESET_DESIGN_FIELD_KEYS)[number];
+export type InputPresetDesignFieldValue = string | boolean | null;
 export type InputPresetDesignFields = Partial<
   Record<InputPresetDesignFieldKey, InputPresetDesignFieldValue>
->
+>;
 
 export const INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY: Record<string, string> = {
   vanity: 'vanities_url',
@@ -96,7 +96,7 @@ export const INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY: Record<string, string> = {
   tubFiller: 'tub_fillers_url',
   wallpaper: 'wallpapers_url',
   lvp: 'lvps_url',
-}
+};
 
 export const INPUT_PRESET_SLOT_LABELS: Record<string, string> = {
   vanity: 'Vanity',
@@ -124,58 +124,59 @@ export const INPUT_PRESET_SLOT_LABELS: Record<string, string> = {
   tubFiller: 'Tub Filler',
   wallpaper: 'Wallpaper',
   lvp: 'LVP',
-}
+};
 
 export interface InputPresetStoredImage {
-  slot: string
-  label: string
-  urlColumn: string
-  url: string
-  isArbitrary: boolean
+  slot: string;
+  label: string;
+  urlColumn: string;
+  url: string;
+  isArbitrary: boolean;
 }
 
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase())
+  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
 }
 
 function camelToSnake(value: string): string {
-  return value.replace(/([A-Z])/g, '_$1').toLowerCase()
+  return value.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
 
-export function readInputPresetValue(
-  data: Record<string, unknown>,
-  key: string
-): unknown {
-  if (key in data) return data[key]
+export function readInputPresetValue(data: Record<string, unknown>, key: string): unknown {
+  if (key in data) return data[key];
 
-  const snakeKey = camelToSnake(key)
-  if (snakeKey in data) return data[snakeKey]
+  const snakeKey = camelToSnake(key);
+  if (snakeKey in data) return data[snakeKey];
 
-  const camelKey = snakeToCamel(key)
-  if (camelKey in data) return data[camelKey]
+  const camelKey = snakeToCamel(key);
+  if (camelKey in data) return data[camelKey];
 
-  return undefined
+  return undefined;
 }
 
 function readStoredUrl(value: unknown): string | null {
-  if (typeof value === 'string' && value.length > 0) return value
+  if (typeof value === 'string' && value.length > 0) return value;
   if (Array.isArray(value)) {
-    return value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0) ?? null
+    return (
+      value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0) ?? null
+    );
   }
-  return null
+  return null;
 }
 
-export function getInputPresetStoredImages(data: Record<string, unknown>): InputPresetStoredImage[] {
-  const entries = new Map<string, InputPresetStoredImage>()
+export function getInputPresetStoredImages(
+  data: Record<string, unknown>,
+): InputPresetStoredImage[] {
+  const entries = new Map<string, InputPresetStoredImage>();
 
   for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
-    const url = readStoredUrl(readInputPresetValue(data, urlColumn))
-    if (!url) continue
+    const url = readStoredUrl(readInputPresetValue(data, urlColumn));
+    if (!url) continue;
 
-    const existing = entries.get(urlColumn)
-    const isArbitrary = readInputPresetValue(data, `${slot}ImageType`) === 'arbitrary'
-    const slotValue = readInputPresetValue(data, slot)
-    const hasProductId = typeof slotValue === 'string' && slotValue.length > 0
+    const existing = entries.get(urlColumn);
+    const isArbitrary = readInputPresetValue(data, `${slot}ImageType`) === 'arbitrary';
+    const slotValue = readInputPresetValue(data, slot);
+    const hasProductId = typeof slotValue === 'string' && slotValue.length > 0;
 
     if (!existing) {
       entries.set(urlColumn, {
@@ -184,8 +185,8 @@ export function getInputPresetStoredImages(data: Record<string, unknown>): Input
         urlColumn,
         url,
         isArbitrary,
-      })
-      continue
+      });
+      continue;
     }
 
     if (!existing.isArbitrary && (isArbitrary || hasProductId)) {
@@ -195,9 +196,9 @@ export function getInputPresetStoredImages(data: Record<string, unknown>): Input
         urlColumn,
         url,
         isArbitrary,
-      })
+      });
     }
   }
 
-  return Array.from(entries.values())
+  return Array.from(entries.values());
 }

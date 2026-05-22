@@ -1,7 +1,7 @@
 'use client';
 
-import { buildDesignMaterials, type UnitySlimDesignMaterials } from './design-materials';
 import { localUrl, serviceUrl } from './api-base';
+import { buildDesignMaterials, type UnitySlimDesignMaterials } from './design-materials';
 import {
   INPUT_PRESET_DESIGN_FIELD_KEYS,
   INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
@@ -54,17 +54,22 @@ type UpsertProjectDesignResponse = {
 function readUrl(value: unknown): string | null {
   if (typeof value === 'string' && value.length > 0) return value;
   if (Array.isArray(value)) {
-    return value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0) ?? null;
+    return (
+      value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0) ?? null
+    );
   }
   return null;
 }
 
-export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): StrategyRunInputPayload {
+export function buildStrategyRunInputFromPreset(
+  data: Record<string, unknown>,
+): StrategyRunInputPayload {
   const scene_images: StrategyRunInputPayload['scene_images'] = {};
   const dollhouseView = readInputPresetValue(data, 'dollhouseView');
   const realPhoto = readInputPresetValue(data, 'realPhoto');
   const moodBoard = readInputPresetValue(data, 'moodBoard');
-  if (typeof dollhouseView === 'string' && dollhouseView) scene_images.dollhouse_view = dollhouseView;
+  if (typeof dollhouseView === 'string' && dollhouseView)
+    scene_images.dollhouse_view = dollhouseView;
   if (typeof realPhoto === 'string' && realPhoto) scene_images.real_photo = realPhoto;
   if (typeof moodBoard === 'string' && moodBoard) scene_images.mood_board = moodBoard;
 
@@ -124,7 +129,8 @@ async function bootstrapLayoutPreset(
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(
-      (json as { error?: { message?: string } }).error?.message || 'Failed to bootstrap layout preset',
+      (json as { error?: { message?: string } }).error?.message ||
+        'Failed to bootstrap layout preset',
     );
   }
   return (json as { data?: LayoutBootstrapResponse }).data as LayoutBootstrapResponse;
@@ -142,7 +148,8 @@ async function upsertProjectDesign(
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(
-      (json as { error?: { message?: string } }).error?.message || 'Failed to persist project design',
+      (json as { error?: { message?: string } }).error?.message ||
+        'Failed to persist project design',
     );
   }
   return (json as { data?: UpsertProjectDesignResponse }).data as UpsertProjectDesignResponse;
@@ -188,14 +195,17 @@ export async function buildPresetRunRequest(
   };
 }
 
-export async function fetchPresetRunInputs(presetIds: string[]): Promise<StrategyRunInputPayload[]> {
+export async function fetchPresetRunInputs(
+  presetIds: string[],
+): Promise<StrategyRunInputPayload[]> {
   const presetDetails = await Promise.all(
     presetIds.map(async (presetId) => {
       const res = await fetch(serviceUrl(`input-presets/${presetId}`), { cache: 'no-store' });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(
-          (json as { error?: { message?: string } }).error?.message || 'Failed to load preset details',
+          (json as { error?: { message?: string } }).error?.message ||
+            'Failed to load preset details',
         );
       }
       return (json as { data?: Record<string, unknown> }).data ?? {};
@@ -215,7 +225,8 @@ export async function fetchPresetRunRequests(
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(
-          (json as { error?: { message?: string } }).error?.message || 'Failed to load preset details',
+          (json as { error?: { message?: string } }).error?.message ||
+            'Failed to load preset details',
         );
       }
       return { presetId, detail: (json as { data?: Record<string, unknown> }).data ?? {} };
@@ -224,7 +235,10 @@ export async function fetchPresetRunRequests(
 
   return Promise.all(
     presetDetails.map(({ presetId, detail }) =>
-      buildPresetRunRequest(buildStrategyRunInputFromPreset(detail), { ...options, preset_id: presetId }),
+      buildPresetRunRequest(buildStrategyRunInputFromPreset(detail), {
+        ...options,
+        preset_id: presetId,
+      }),
     ),
   );
 }
