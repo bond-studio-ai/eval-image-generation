@@ -1,6 +1,7 @@
 'use client';
 
 import { ResourceFormHeader } from '@/components/resource-form-header';
+import { FormSection } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import type { ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
 import type { InputPresetListItem, PromptVersionListItem } from '@/lib/types';
@@ -757,13 +758,11 @@ export function StrategyBuilder({
       />
 
       {/* Strategy-level settings (Model, Aspect Ratio, etc.) */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h2 className="text-sm font-semibold text-gray-900 uppercase">Strategy settings</h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Used by all steps. Model, aspect ratio, resolution, temperature, tag images, and Google
-          Search.
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FormSection
+        title="Strategy settings"
+        description="Used by all steps. Model, aspect ratio, resolution, temperature, tag images, and Google Search."
+      >
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
             <SearchableSelect
@@ -875,14 +874,14 @@ export function StrategyBuilder({
             Multi-turn context
           </label>
         </div>
-      </div>
+      </FormSection>
 
       {/* Preview Generation */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+      <div className="rounded-card border-border bg-surface shadow-card border p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 uppercase">Preview Generation</h2>
-            <p className="mt-1 text-xs text-gray-500">
+            <h2 className="text-h3 text-text-primary font-semibold">Preview Generation</h2>
+            <p className="text-caption text-text-muted mt-1">
               Generate a fast, low-resolution preview in parallel with the main run. Sends an early
               callback before the full result.
             </p>

@@ -1,8 +1,9 @@
 'use client';
 
+import { Button, cn, IconButton, RocketIcon, toast } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type EnvironmentItem = {
@@ -12,51 +13,6 @@ type EnvironmentItem = {
   isActive: boolean;
   hasAuthToken: boolean;
 };
-
-function IconButtonWithTip({ label, onClick }: { label: string; onClick: () => void }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
-
-  const showTip = () => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) setTip({ x: rect.left + rect.width / 2, y: rect.top });
-  };
-
-  return (
-    <>
-      <button
-        ref={ref}
-        type="button"
-        onClick={onClick}
-        onMouseEnter={showTip}
-        onMouseLeave={() => setTip(null)}
-        className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
-      >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
-          />
-        </svg>
-      </button>
-      {tip && (
-        <span
-          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded bg-gray-900 px-2 py-1 text-xs whitespace-nowrap text-white shadow-lg"
-          style={{ left: tip.x, top: tip.y - 4 }}
-        >
-          {label}
-        </span>
-      )}
-    </>
-  );
-}
 
 export function DeployToEnvironmentButton({
   strategyId,
@@ -132,19 +88,23 @@ export function DeployToEnvironmentButton({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError((json as { error?: { message?: string } }).error?.message ?? 'Deploy failed.');
+        const message =
+          (json as { error?: { message?: string } }).error?.message ?? 'Deploy failed.';
+        setError(message);
+        toast.error('Deploy failed', { description: message });
         return;
       }
       const deployResult = (json as { data?: { result?: string; environment?: { name?: string } } })
         .data;
-      setResult(
-        `${deployResult?.result === 'updated' ? 'Updated' : 'Created'} in ${
-          deployResult?.environment?.name ?? 'environment'
-        }.`,
-      );
+      const message = `${deployResult?.result === 'updated' ? 'Updated' : 'Created'} in ${
+        deployResult?.environment?.name ?? 'environment'
+      }.`;
+      setResult(message);
+      toast.success('Strategy deployed', { description: message });
       router.refresh();
     } catch {
       setError('Deploy failed.');
+      toast.error('Deploy failed');
     } finally {
       setDeploying(false);
     }
@@ -153,28 +113,19 @@ export function DeployToEnvironmentButton({
   return (
     <>
       {variant === 'icon' ? (
-        <IconButtonWithTip label={label} onClick={() => setOpen(true)} />
-      ) : (
-        <button
-          type="button"
+        <IconButton
+          label={label}
+          icon={<RocketIcon className="h-4 w-4" />}
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+        />
+      ) : (
+        <Button
+          variant="secondary"
+          onClick={() => setOpen(true)}
+          iconLeft={<RocketIcon className="h-4 w-4" />}
         >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
-            />
-          </svg>
           {label}
-        </button>
+        </Button>
       )}
 
       {open &&
@@ -184,47 +135,56 @@ export function DeployToEnvironmentButton({
             onClick={() => setOpen(false)}
           >
             <div
-              className="w-full max-w-lg rounded-lg border border-gray-200 bg-white shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              className="rounded-card border-border bg-surface shadow-modal w-full max-w-lg border"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="border-b border-gray-200 px-5 py-4">
-                <h3 className="text-lg font-semibold text-gray-900">Deploy Strategy</h3>
-                <p className="mt-1 text-sm text-gray-600">
+              <div className="border-border-subtle border-b px-5 py-4">
+                <h3 className="text-h3 text-text-primary font-semibold">Deploy Strategy</h3>
+                <p className="text-body text-text-secondary mt-1">
                   Choose an environment to deploy this strategy to.
                 </p>
               </div>
 
               <div className="space-y-3 px-5 py-4">
                 {loading ? (
-                  <p className="text-sm text-gray-500">Loading environments...</p>
+                  <p className="text-body text-text-muted">Loading environments...</p>
                 ) : environments.length === 0 ? (
-                  <p className="text-sm text-gray-500">No environments available.</p>
+                  <p className="text-body text-text-muted">No environments available.</p>
                 ) : (
                   <div className="space-y-2">
                     {environments.map((environment) => {
                       const disabled = !environment.isActive || !environment.hasAuthToken;
+                      const checked = selectedId === environment.id;
                       return (
                         <label
                           key={environment.id}
-                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 ${
-                            selectedId === environment.id
+                          className={cn(
+                            'rounded-card flex cursor-pointer items-start gap-3 border px-4 py-3 transition-colors',
+                            checked
                               ? 'border-primary-400 bg-primary-50'
-                              : 'border-gray-200 bg-white'
-                          } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                              : 'border-border bg-surface hover:bg-surface-muted',
+                            disabled && 'cursor-not-allowed opacity-50',
+                          )}
                         >
                           <input
                             type="radio"
                             name="environmentId"
                             value={environment.id}
-                            checked={selectedId === environment.id}
+                            checked={checked}
                             disabled={disabled}
                             onChange={() => setSelectedId(environment.id)}
-                            className="mt-0.5 h-4 w-4"
+                            className="text-primary-600 focus:ring-primary-500 mt-0.5 h-4 w-4"
                           />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{environment.name}</p>
-                            <p className="text-xs text-gray-500">{environment.apiHostname}</p>
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="text-body text-text-primary font-medium">
+                              {environment.name}
+                            </p>
+                            <p className="text-caption text-text-muted">
+                              {environment.apiHostname}
+                            </p>
+                            <p className="text-caption text-text-muted mt-1">
                               {!environment.isActive
                                 ? 'Inactive'
                                 : !environment.hasAuthToken
@@ -238,26 +198,17 @@ export function DeployToEnvironmentButton({
                   </div>
                 )}
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                {result && <p className="text-sm text-green-600">{result}</p>}
+                {error && <p className="text-body text-danger-600">{error}</p>}
+                {result && <p className="text-body text-success-600">{result}</p>}
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
+              <div className="border-border-subtle flex items-center justify-end gap-2 border-t px-5 py-3">
+                <Button variant="secondary" onClick={() => setOpen(false)}>
                   Close
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeploy}
-                  disabled={deploying || !selectedId}
-                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed"
-                >
+                </Button>
+                <Button onClick={handleDeploy} disabled={!selectedId} loading={deploying}>
                   {deploying ? 'Deploying...' : 'Deploy'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>,

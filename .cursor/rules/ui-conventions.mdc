@@ -5,57 +5,149 @@ alwaysApply: true
 
 # UI/UX Conventions
 
+The visual language is defined by tokens in [src/app/globals.css](../../src/app/globals.css) and primitives in [src/components/ui/](../../src/components/ui/). Always reach for those before hand-rolling Tailwind classes.
+
+Full token reference: [docs/DESIGN_TOKENS.md](../../docs/DESIGN_TOKENS.md).
+
 ## Layout
 
-- The app shell (`AppShell`) provides `max-w-7xl` centering, `py-8 pb-24` padding, and scrolling via `overflow-y-auto` on `<main>`.
+- The app shell (`AppShell`) provides a sidebar, top bar with breadcrumbs, `max-w-7xl` centering, `py-8 pb-24` padding, and scrolling via `overflow-y-auto` on `<main>`.
 - `html` and `body` have `overflow: hidden; height: 100%` — never rely on body scroll.
 - Pages render inside the shell; don't add their own max-width or horizontal padding.
 
-## Typography
+## Color tokens
 
-- Page titles: `text-2xl font-bold text-gray-900` (via `PageHeader`)
-- Subtitles: `text-sm text-gray-600` (via `PageHeader`)
-- Section headings: `text-lg font-semibold text-gray-900`
-- Form labels: `text-sm font-medium text-gray-700`
+Prefer the **semantic** tokens over raw `gray-*`:
+
+| Use | Class |
+|---|---|
+| Page background | `bg-bg-app` |
+| Card / row surface | `bg-surface` |
+| Toolbar / table header | `bg-surface-muted` |
+| Inset well / segmented track | `bg-surface-sunken` |
+| Default border | `border-border` |
+| Input border / strong divider | `border-border-strong` |
+| Hairline divider | `border-border-subtle` |
+| Body text | `text-text-primary` |
+| Subtitle / labels | `text-text-secondary` |
+| Metadata | `text-text-muted` |
+| Disabled / placeholder | `text-text-disabled` |
+
+Signals: use `success`, `warning`, `danger`, `info`, `accent` scales, **not** raw `green-*`, `amber-*`, `red-*`, `blue-*`, `purple-*`.
+
+Avoid `text-gray-400` for body content — it fails WCAG AA (2.86:1 on white). Use `text-text-muted` (`#6b7280`, 4.83:1) instead.
+
+## Typography ramp
+
+Use the typography tokens defined in `globals.css`. Do not invent text sizes inline.
+
+| Token | Use |
+|---|---|
+| `text-display-lg` | Hero numbers / dashboard headlines |
+| `text-display` | Page titles (auto-applied by `PageHeader`) |
+| `text-h2` | Section headings |
+| `text-h3` | Card / `FormSection` titles |
+| `text-body-lg` | Lead body |
+| `text-body` | Default body, labels, table cells |
+| `text-caption` | Metadata, helper text, table headers |
 
 ## Cards
 
-- Form/control cards: `rounded-lg border border-gray-200 bg-white p-5 shadow-xs`
-- Content/display cards: `rounded-lg border border-gray-200 bg-white p-6 shadow-xs`
-- Error cards: use `<ErrorCard>` from `@/components/resource-form-header`
+Use the `Card` primitive over the raw `rounded-lg border bg-white shadow-xs` snippet:
 
-## Primary Buttons
+```tsx
+import { Card } from '@/components/ui';
 
-- Solid: `bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs`
-- Disabled: `disabled:bg-primary-300`
-- Link variant: use `PrimaryLinkButton` from `@/components/page-header`
-- Submit variant: use `PrimaryButton` from `@/components/page-header`
+<Card>
+  <h2 className="text-h3 font-semibold">Distribution</h2>
+  ...
+</Card>
+```
+
+Compose `<CardHeader>`, `<CardBody>`, `<CardFooter>` for cards with delimited regions. Use `<StatCard>` for KPIs.
+
+## Buttons
+
+There is exactly **one** button system. Reach for these in priority order:
+
+| Need | Primitive |
+|---|---|
+| Action button | `<Button variant="primary | secondary | ghost | danger | link" />` |
+| Navigation CTA | `<LinkButton href="/..." iconLeft={<PlusIcon />} />` |
+| Square icon button (table actions, toolbar) | `<IconButton label="..." icon={<TrashIcon />} />` |
+| Header overflow menu | `<MoreActionsMenu actions={[...]} />` |
+
+Never write inline `<button className="bg-primary-600 ...">`. The legacy `PrimaryButton`/`PrimaryLinkButton` from `@/components/page-header` are deprecated wrappers that delegate to `Button`/`LinkButton` — prefer the new names.
+
+## Tabs and segmented controls
+
+| Pattern | Primitive |
+|---|---|
+| Page-level navigation between views | `<Tabs items={[...]} active={active} />` (underline) |
+| View-mode switch (List/Matrix, source filter) | `<SegmentedControl options={[...]} value={...} onChange={...} />` |
+
+Never re-implement `border-b-2` or `bg-white shadow-sm` toggle markup inline.
+
+## Badges
+
+The single `Badge` primitive from `@/components/ui` replaces every pill:
+
+```tsx
+<Badge tone="success" variant="soft">Reviewed</Badge>
+<Badge tone="info" variant="outline">Preset</Badge>
+<Badge tone="accent">Multi-Strategy</Badge>
+```
+
+Tones: `neutral | info | success | warning | danger | accent`. Variants: `soft | solid | outline`. Sizes: `sm | md`.
+
+`StatusBadge` (active/inactive/deleted) and the catalog confidence badges in `@/components/catalog-confidence/badges` are domain wrappers over `Badge` — keep using them when applicable.
+
+## Spinners and icons
+
+- Always import icons from `@/components/ui` (which re-exports lucide). Do not import directly from `lucide-react`, and do not paste inline SVG path data.
+- Use `<Spinner size="xs | sm | md | lg" />` for loading indicators. Never paste the spinner SVG inline.
 
 ## Forms
 
-- Place save/create buttons in the `PageHeader` actions slot (top-right), not in sticky footers.
-- Use `ResourceFormHeader` for name/description fields on all resource forms.
-- Use `ErrorCard` for all error messages.
-- Never use `fixed`/`sticky` bottom bars for save actions.
+- Page structure: `<PageHeader>` → `<ResourceFormHeader>` → `<FormSection title="..." description="...">` per logical section.
+- Use `<FormSection>` instead of stacking unlabeled `<div>` sections in long forms.
+- Use `<ErrorCard>` for inline form errors.
+- Place save/create buttons in `PageHeader.actions` (top-right), not sticky footers.
+
+## Confirmations and toasts
+
+- Replace `window.confirm()` with `useConfirm()`:
+  ```tsx
+  const confirm = useConfirm();
+  const ok = await confirm({ title: 'Delete?', tone: 'danger' });
+  ```
+- Use `toast.success()` / `toast.error()` / `toast.warning()` for action feedback. Never silently `catch { /* ignore */ }` — surface failures.
+
+## Filters above lists
+
+Use `<FilterBar>` and `<FilterSearch>` from `@/components/ui` to build filter rows that aren't inside a `DataTable` toolbar. Inside `DataTable`, the existing `SearchBar`/`FilterPills`/`SelectAllCheckbox` continue to be the source of truth.
 
 ## Shared Components
 
 | Component | Import | Purpose |
-|-----------|--------|---------|
+|---|---|---|
+| `Button`, `LinkButton` | `@/components/ui` | All action buttons |
+| `IconButton` | `@/components/ui` | Square icon-only button with tooltip |
+| `MoreActionsMenu` | `@/components/ui` | Overflow dropdown for secondary actions |
+| `Tabs` | `@/components/ui` | Underline tab navigation |
+| `SegmentedControl` | `@/components/ui` | Pill-toggle for view modes |
+| `Badge` | `@/components/ui` | Unified pill primitive |
+| `Spinner` | `@/components/ui` | Loader |
+| `Card`, `CardHeader`, `CardBody`, `CardFooter`, `StatCard` | `@/components/ui` | Card surfaces |
+| `FormSection` | `@/components/ui` | Titled section wrapper for resource forms |
+| `FilterBar`, `FilterSearch` | `@/components/ui` | Filter toolbars above lists |
+| `useConfirm`, `ConfirmProvider` | `@/components/ui` | Styled confirm dialogs |
+| `toast`, `useToast`, `ToasterProvider` | `@/components/ui` | App-wide toast notifications |
+| Lucide icons (`TrashIcon`, etc.) | `@/components/ui` | Icon set re-exported from lucide |
 | `PageHeader` | `@/components/page-header` | All page titles, back links, actions |
-| `PrimaryLinkButton` | `@/components/page-header` | Navigation CTAs with plus icon |
-| `PrimaryButton` | `@/components/page-header` | Form submit buttons with loading |
-| `ResourceFormHeader` | `@/components/resource-form-header` | Name + Description card for any resource |
-| `ErrorCard` | `@/components/resource-form-header` | Error messages in red card |
-| `DataTable` | `@/components/data-table` | Generic typed table with sticky toolbar, skeleton loading, empty states |
-| `useInfiniteList` | `@/hooks/use-infinite-list` | Hook for backend-powered search, pagination, and URL sync |
-| `Pagination` | `@/components/pagination` | Page numbers, prev/next, jump-to-page — used in DataTable footer |
-| `SearchBar` | `@/components/data-table` | Search input for DataTable toolbar (backend-powered) |
-| `SelectAllCheckbox` | `@/components/data-table` | Toolbar checkbox with count label and indeterminate state |
-| `FilterPills` | `@/components/data-table` | Toolbar pill buttons for backend-driven status filtering |
-| `NameCell` | `@/components/data-table` | Linked name + subtitle for table rows |
-| `StatusBadge` | `@/components/data-table` | Consistent active/inactive/deleted pill |
-| `DateCell` | `@/components/data-table` | Formatted date for table rows |
-| `checkboxColumn` | `@/components/data-table` | Factory for bulk-select checkbox column |
-| `actionsColumn` | `@/components/data-table` | Factory for declarative action columns (icon + label + onClick) |
-| `BulkDeleteBar` | `@/components/bulk-delete-bar` | Floating bar for bulk selection actions |
+| `ResourceFormHeader` | `@/components/resource-form-header` | Name + Description card |
+| `ErrorCard` | `@/components/resource-form-header` | Error messages |
+| `DataTable` | `@/components/data-table` | Generic typed table |
+| `useInfiniteList` | `@/hooks/use-infinite-list` | Backend-powered search/pagination |
+| `Pagination` | `@/components/pagination` | DataTable footer |
+| `BulkDeleteBar` | `@/components/bulk-delete-bar` | Bulk selection actions |

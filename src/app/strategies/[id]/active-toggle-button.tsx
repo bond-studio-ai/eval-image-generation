@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge, Button, toast } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyRunSource } from '@/lib/types';
 import { useRouter } from 'next/navigation';
@@ -34,10 +35,18 @@ export function ActiveToggleButton({
         const res = await fetch(serviceUrl(`strategies/${strategyId}/activate?source=${source}`), {
           method: 'POST',
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast.error('Failed to activate strategy', {
+            description: `Server responded with ${res.status}.`,
+          });
+          return;
+        }
+        toast.success(`Activated for ${SOURCES.find((s) => s.value === source)?.label ?? source}`);
         router.refresh();
-      } catch {
-        // ignore
+      } catch (e) {
+        toast.error('Failed to activate strategy', {
+          description: e instanceof Error ? e.message : undefined,
+        });
       } finally {
         setPendingSource(null);
       }
@@ -51,10 +60,18 @@ export function ActiveToggleButton({
       const res = await fetch(serviceUrl(`strategies/${strategyId}/deactivate`), {
         method: 'POST',
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast.error('Failed to deactivate strategy', {
+          description: `Server responded with ${res.status}.`,
+        });
+        return;
+      }
+      toast.success('Strategy deactivated');
       router.refresh();
-    } catch {
-      // ignore
+    } catch (e) {
+      toast.error('Failed to deactivate strategy', {
+        description: e instanceof Error ? e.message : undefined,
+      });
     } finally {
       setPendingSource(null);
     }
@@ -65,41 +82,44 @@ export function ActiveToggleButton({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {activeForSource ? (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
-          <span className="h-2 w-2 rounded-full bg-green-600" />
+        <Badge tone="success" variant="soft">
+          <span className="bg-success-600 mr-1 inline-block h-1.5 w-1.5 rounded-full" />
           Active for {SOURCES.find((s) => s.value === activeForSource)?.label ?? activeForSource}
-        </span>
+        </Badge>
       ) : (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-3 py-1 text-sm font-medium text-gray-600 ring-1 ring-gray-300 ring-inset">
+        <Badge tone="neutral" variant="soft">
           Inactive
-        </span>
+        </Badge>
       )}
 
       {SOURCES.map((source) => {
         if (activeForSource === source.value) return null;
         const isPending = pendingSource === source.value;
         return (
-          <button
+          <Button
             key={source.value}
-            type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => activateFor(source.value)}
-            disabled={busy}
-            className="inline-flex items-center rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 shadow-sm transition-colors hover:bg-green-100 disabled:opacity-50"
+            disabled={busy && !isPending}
+            loading={isPending}
+            className="border-success-300 bg-success-50 text-success-700 hover:bg-success-100"
           >
             {isPending ? 'Activating…' : `Activate for ${source.label}`}
-          </button>
+          </Button>
         );
       })}
 
       {activeForSource && (
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={deactivate}
-          disabled={busy}
-          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-50"
+          disabled={busy && pendingSource !== 'deactivate'}
+          loading={pendingSource === 'deactivate'}
         >
           {pendingSource === 'deactivate' ? 'Deactivating…' : 'Deactivate'}
-        </button>
+        </Button>
       )}
     </div>
   );

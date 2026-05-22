@@ -1,8 +1,8 @@
 import { GenerationsFilters } from '@/app/generations/generations-filters';
 import { EmptyState } from '@/components/empty-state';
 import { GenerationsList, type GenerationRow } from '@/components/generations-list';
+import { Tabs, type TabItem } from '@/components/ui';
 import { fetchGenerations, fetchPromptVersions } from '@/lib/service-client';
-import Link from 'next/link';
 import { ExecutionsPageHeader } from './executions-page-header';
 import { ExecutionsTabs } from './executions-tabs';
 
@@ -41,34 +41,24 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
   );
 }
 
-function TabNav({ active, source }: { active: 'batches' | 'generations'; source?: string }) {
-  const batchesHref = source === 'benchmark' ? '/executions?source=benchmark' : '/executions';
-  const generationsHref =
-    source === 'benchmark'
-      ? '/executions?tab=generations&source=benchmark'
-      : '/executions?tab=generations';
+type ExecTab = 'batches' | 'generations';
+
+function ExecutionsTabNav({ active, source }: { active: ExecTab; source?: string }) {
+  const sourceQs = source === 'benchmark' ? '?source=benchmark' : '';
+  const items: TabItem<ExecTab>[] = [
+    { key: 'batches', label: 'Batches', href: `/executions${sourceQs}` },
+    {
+      key: 'generations',
+      label: 'Generations',
+      href:
+        source === 'benchmark'
+          ? '/executions?tab=generations&source=benchmark'
+          : '/executions?tab=generations',
+    },
+  ];
   return (
-    <div className="mb-6 flex gap-1 border-b border-gray-200">
-      <Link
-        href={batchesHref}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-          active === 'batches'
-            ? 'border-primary-600 text-primary-700'
-            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-        }`}
-      >
-        Batches
-      </Link>
-      <Link
-        href={generationsHref}
-        className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-          active === 'generations'
-            ? 'border-primary-600 text-primary-700'
-            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-        }`}
-      >
-        Generations
-      </Link>
+    <div className="mb-6">
+      <Tabs items={items} active={active} label="Runs view" />
     </div>
   );
 }
@@ -122,7 +112,7 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
   return (
     <div>
       <ExecutionsPageHeader />
-      <TabNav active="generations" source={params.source} />
+      <ExecutionsTabNav active="generations" source={params.source} />
 
       <GenerationsFilters params={params} promptVersions={promptVersions} />
 

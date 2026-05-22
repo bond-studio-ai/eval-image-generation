@@ -12,21 +12,27 @@
     "test:watch": "vitest",
     "verify": "yarn typecheck && yarn lint && yarn test && yarn format:check",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.984.0",
     "@aws-sdk/s3-request-presigner": "^3.984.0",
     "@clerk/nextjs": "^6.39.0",
     "diff": "^8.0.3",
+    "lucide-react": "^1.16.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.8.1",
+    "sonner": "^2.0.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^25.2.1",
     "@types/react": "^19.2.13",

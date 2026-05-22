@@ -7,6 +7,9 @@ body {
 }
 
 @theme {
+  /* ---------------------------------------------------------------- */
+  /* Brand / primary palette (existing)                                */
+  /* ---------------------------------------------------------------- */
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
@@ -18,6 +21,172 @@ body {
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
+
+  /* ---------------------------------------------------------------- */
+  /* Signal scales (success / warning / danger / info / accent).       */
+  /* All Tailwind built-in palettes already exist; we name semantic    */
+  /* aliases so consumers can reach them via util classes if they      */
+  /* prefer (`bg-success-50`, `text-warning-700`, etc.).               */
+  /* ---------------------------------------------------------------- */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-200: #bfdbfe;
+  --color-info-300: #93c5fd;
+  --color-info-400: #60a5fa;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+  --color-info-800: #1e40af;
+  --color-info-900: #1e3a8a;
+
+  --color-accent-50: #f5f3ff;
+  --color-accent-100: #ede9fe;
+  --color-accent-200: #ddd6fe;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
+  --color-accent-700: #6d28d9;
+  --color-accent-800: #5b21b6;
+  --color-accent-900: #4c1d95;
+
+  /* ---------------------------------------------------------------- */
+  /* Semantic surface / text / border tokens.                          */
+  /* These are the preferred usage; mapped to our base palettes today  */
+  /* but isolated so a dark-mode rollout only touches this block.      */
+  /* Use as `bg-surface`, `text-text-secondary`, `border-border`.      */
+  /* ---------------------------------------------------------------- */
+  --color-bg-app: #f9fafb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f9fafb;
+  --color-surface-sunken: #f3f4f6;
+
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-border-subtle: #f3f4f6;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-text-disabled: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  /* ---------------------------------------------------------------- */
+  /* Typography                                                        */
+  /* ---------------------------------------------------------------- */
+  --font-body:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-display:
+    var(--font-inter-display, var(--font-inter)), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Type scale: caption / body / h3 / h2 / display / display-lg.
+     Each token defines size + line-height in Tailwind v4's preferred
+     `text-{name}` shorthand. Letter-spacing tightens slightly on display. */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-caption--letter-spacing: 0;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-body--letter-spacing: 0;
+
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.5rem;
+  --text-body-lg--letter-spacing: 0;
+
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.5rem;
+  --text-h3--letter-spacing: -0.005em;
+  --text-h3--font-weight: 600;
+
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.75rem;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 600;
+
+  --text-display: 1.5rem;
+  --text-display--line-height: 2rem;
+  --text-display--letter-spacing: -0.015em;
+  --text-display--font-weight: 700;
+
+  --text-display-lg: 1.875rem;
+  --text-display-lg--line-height: 2.25rem;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+
+  /* ---------------------------------------------------------------- */
+  /* Spacing rhythm (8px-based supplementary tokens).                  */
+  /* Tailwind already covers 0–96; these are named aliases used for    */
+  /* layout containers so consumers can refer to them by intent.       */
+  /* ---------------------------------------------------------------- */
+  --spacing-page-x: 1.5rem;
+  --spacing-page-y: 2rem;
+  --spacing-section-gap: 2rem;
+  --spacing-card-padding: 1.5rem;
+  --spacing-card-padding-sm: 1.25rem;
+
+  /* ---------------------------------------------------------------- */
+  /* Shadows                                                           */
+  /* ---------------------------------------------------------------- */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px -1px rgb(0 0 0 / 0.05);
+  --shadow-card-hover: 0 2px 4px 0 rgb(0 0 0 / 0.05), 0 4px 8px -2px rgb(0 0 0 / 0.08);
+  --shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 10px 15px -3px rgb(0 0 0 / 0.08);
+  --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --shadow-focus: 0 0 0 3px rgb(37 99 235 / 0.25);
+
+  /* ---------------------------------------------------------------- */
+  /* Radii                                                             */
+  /* ---------------------------------------------------------------- */
+  --radius-card: 0.5rem;
+  --radius-button: 0.5rem;
+  --radius-input: 0.5rem;
+  --radius-pill: 9999px;
+}
+
+/*
+ * Body defaults.
+ */
+body {
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 /*
@@ -39,15 +208,25 @@ button:disabled,
 }
 
 /*
- * Fix form control text color for consistent visibility.
+ * Form control text color & placeholder color.
  */
 input:not([type='checkbox']):not([type='radio']),
 textarea,
 select {
-  color: var(--color-gray-900, #111827);
+  color: var(--color-text-primary);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-text-disabled);
+}
+
+/*
+ * Consistent focus-visible ring across all interactive elements that
+ * don't already paint their own ring. Components opt out by setting
+ * `focus-visible:outline-none` plus their own ring style.
+ */
+:where(a, button, [role='button'], input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
 }

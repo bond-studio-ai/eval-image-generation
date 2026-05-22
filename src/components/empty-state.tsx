@@ -1,27 +1,39 @@
+import { Inbox } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { cn } from './ui/cn';
+
 interface EmptyStateProps {
   title: string;
-  description: string;
-  action?: React.ReactNode;
+  description?: ReactNode;
+  /** Custom illustration / icon. Defaults to a neutral inbox glyph. */
+  icon?: ReactNode;
+  /** Action(s) to render below the description (e.g. a `<LinkButton>`). */
+  action?: ReactNode;
+  className?: string;
+  tone?: 'neutral' | 'subtle';
 }
 
-export function EmptyState({ title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  icon,
+  action,
+  className,
+  tone = 'neutral',
+}: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 px-6 py-16">
-      <svg
-        className="mx-auto h-12 w-12 text-gray-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1}
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
-        />
-      </svg>
-      <h3 className="mt-4 text-sm font-semibold text-gray-900">{title}</h3>
-      <p className="mt-1 text-sm text-gray-600">{description}</p>
+    <div
+      className={cn(
+        'rounded-card flex flex-col items-center justify-center border-2 border-dashed px-6 py-16 text-center',
+        tone === 'neutral' ? 'border-border-strong' : 'border-border bg-surface-muted',
+        className,
+      )}
+    >
+      <div className="text-text-disabled" aria-hidden="true">
+        {icon ?? <Inbox className="h-12 w-12" strokeWidth={1.25} />}
+      </div>
+      <h3 className="text-body text-text-primary mt-4 font-semibold">{title}</h3>
+      {description && <div className="text-body text-text-secondary mt-1">{description}</div>}
       {action && <div className="mt-6">{action}</div>}
     </div>
   );

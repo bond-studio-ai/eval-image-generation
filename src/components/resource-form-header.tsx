@@ -1,3 +1,5 @@
+import { AlertCircleIcon } from '@/components/ui';
+
 interface ResourceFormHeaderProps {
   name: string;
   onNameChange: (value: string) => void;
@@ -18,28 +20,28 @@ export function ResourceFormHeader({
   descriptionPlaceholder = 'Optional description...',
 }: ResourceFormHeaderProps) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+    <div className="rounded-card border-border bg-surface shadow-card border p-5">
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Name {nameRequired && <span className="text-red-500">*</span>}
+          <label className="text-body text-text-primary mb-1 block font-medium">
+            Name {nameRequired && <span className="text-danger-500">*</span>}
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder={namePlaceholder}
-            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+            className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
+          <label className="text-body text-text-primary mb-1 block font-medium">Description</label>
           <textarea
             rows={2}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder={descriptionPlaceholder}
-            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+            className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none"
           />
         </div>
       </div>
@@ -49,8 +51,9 @@ export function ResourceFormHeader({
 
 export function ErrorCard({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-      <p className="text-sm text-red-700">{message}</p>
+    <div className="rounded-card border-danger-200 bg-danger-50 flex items-start gap-3 border p-4">
+      <AlertCircleIcon className="text-danger-600 mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <p className="text-body text-danger-700">{message}</p>
     </div>
   );
 }
