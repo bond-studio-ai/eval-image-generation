@@ -2,18 +2,14 @@
 
 import {
   BarChartIcon,
-  BoxesIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   cn,
   EyeIcon,
-  FileTextIcon,
-  GaugeIcon,
   GitCompareIcon,
   ImagePlusIcon,
   PlayIcon,
   ScrollTextIcon,
-  ShieldCheckIcon,
   SparklesIcon,
   WorkflowIcon,
 } from '@/components/ui';
@@ -56,16 +52,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Insights',
     items: [{ name: 'Analytics', href: '/', icon: BarChartIcon, match: '/' }],
-  },
-  {
-    label: 'Catalog Confidence',
-    items: [
-      { name: 'Catalog Runs', href: '/catalog-runs', icon: BoxesIcon },
-      { name: 'Catalog Prompts', href: '/catalog-prompts', icon: FileTextIcon },
-      { name: 'Calibrations', href: '/catalog-calibrations', icon: GaugeIcon },
-      { name: 'Thresholds', href: '/catalog-thresholds', icon: GaugeIcon },
-      { name: 'Judge Baselines', href: '/judge-baselines', icon: ShieldCheckIcon },
-    ],
   },
 ];
 

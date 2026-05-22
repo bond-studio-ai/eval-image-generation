@@ -100,7 +100,7 @@ The single `Badge` primitive from `@/components/ui` replaces every pill:
 
 Tones: `neutral | info | success | warning | danger | accent`. Variants: `soft | solid | outline`. Sizes: `sm | md`.
 
-`StatusBadge` (active/inactive/deleted) and the catalog confidence badges in `@/components/catalog-confidence/badges` are domain wrappers over `Badge` — keep using them when applicable.
+`StatusBadge` (active/inactive/deleted) is a domain wrapper over `Badge` — keep using it when applicable.
 
 ## Spinners and icons
 
