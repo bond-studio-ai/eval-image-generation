@@ -11,7 +11,6 @@ import {
   GaugeIcon,
   GitCompareIcon,
   ImagePlusIcon,
-  LayersIcon,
   PlayIcon,
   ScrollTextIcon,
   ShieldCheckIcon,
@@ -52,7 +51,6 @@ const NAV_GROUPS: NavGroup[] = [
       { name: 'Input Presets', href: '/input-presets', icon: ImagePlusIcon },
       { name: 'Prompt Versions', href: '/prompt-versions', icon: ScrollTextIcon },
       { name: 'Prompt Preview', href: '/prompt-preview', icon: EyeIcon },
-      { name: 'Environments', href: '/environments', icon: LayersIcon },
     ],
   },
   {

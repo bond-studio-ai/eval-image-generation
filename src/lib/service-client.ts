@@ -426,27 +426,3 @@ export async function fetchAnalyticsAccuracyTrends(params: Record<string, string
     `/analytics/accuracy-trends${qs ? `?${qs}` : ''}`,
   );
 }
-
-// ─── Environments ────────────────────────────────────────────────────────────
-
-export interface EnvironmentListItem {
-  id: string;
-  name: string;
-  apiHostname: string;
-  isActive: boolean;
-  hasAuthToken: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export async function fetchEnvironments(limit = 100): Promise<EnvironmentListItem[]> {
-  return fetchService<EnvironmentListItem[]>(`/environments?limit=${limit}`);
-}
-
-export async function fetchEnvironmentById(id: string): Promise<EnvironmentListItem | null> {
-  try {
-    return await fetchService<EnvironmentListItem>(`/environments/${id}`);
-  } catch {
-    return null;
-  }
-}

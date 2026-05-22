@@ -43,7 +43,7 @@ Use `<ErrorCard>` for all form error messages. Never use bare `<p className="tex
 
 ## Page Structure for Resource Lists
 
-Every resource (strategies, input presets, prompt versions, environments) follows the same pattern:
+Every resource (strategies, input presets, prompt versions) follows the same pattern:
 
 1. **List page** — server component that fetches data, renders `<PageHeader>` with `<PrimaryLinkButton href="/resource/new">`, then `<DataTable>` (or `<EmptyState>` when empty)
 2. **Create page** (`/resource/new`) — `<PageHeader>` with back link + `<PrimaryButton>` save action, form fields below

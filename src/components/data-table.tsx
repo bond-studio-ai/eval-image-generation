@@ -366,7 +366,7 @@ export type RowAction<T> =
       hidden?: (row: T) => boolean;
     }
   | {
-      /** Escape hatch for custom action components (e.g. DeployToEnvironmentButton). */
+      /** Escape hatch for custom action components. */
       render: (row: T) => ReactNode;
     };
 

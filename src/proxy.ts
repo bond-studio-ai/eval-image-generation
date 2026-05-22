@@ -12,7 +12,6 @@ const isProtectedRoute = createRouteMatcher([
   '/input-presets(.*)',
   '/prompt-versions(.*)',
   '/prompt-preview(.*)',
-  '/environments(.*)',
   '/catalog-runs(.*)',
   '/catalog-prompts(.*)',
   '/catalog-calibrations(.*)',

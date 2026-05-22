@@ -1,4 +1,3 @@
-import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
 import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
@@ -34,7 +33,6 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         subtitle={result.description}
         actions={
           <>
-            <DeployToEnvironmentButton strategyId={result.id} />
             <ActiveToggleButton strategyId={result.id} activeForSource={result.activeForSource} />
             <CloneButton strategyId={result.id} />
             <PrimaryLinkButton href={`/strategies/${result.id}/edit`} icon>
