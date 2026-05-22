@@ -38,6 +38,7 @@ interface ConfirmState extends ConfirmOptions {
  */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>({ open: false, title: '' });
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const confirm = useCallback<ConfirmFn>((options) => {
@@ -54,16 +55,24 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     [state],
   );
 
+  // Escape always cancels, regardless of focus. Enter is intentionally NOT
+  // handled at the window level — we let the natural button activation drive
+  // confirm/cancel based on focus, and we set a tone-aware initial focus
+  // (Cancel for destructive actions, Confirm for benign ones) so a user
+  // pressing Enter without first tabbing always gets the safe outcome.
   useEffect(() => {
     if (!state.open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close(false);
-      if (e.key === 'Enter') close(true);
     };
     window.addEventListener('keydown', onKey);
-    confirmButtonRef.current?.focus();
+    if (state.tone === 'danger') {
+      cancelButtonRef.current?.focus();
+    } else {
+      confirmButtonRef.current?.focus();
+    }
     return () => window.removeEventListener('keydown', onKey);
-  }, [state.open, close]);
+  }, [state.open, state.tone, close]);
 
   return (
     <ConfirmContext.Provider value={confirm}>
@@ -88,7 +97,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               <div className="text-body text-text-secondary mt-2">{state.description}</div>
             )}
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => close(false)}>
+              <Button ref={cancelButtonRef} variant="secondary" onClick={() => close(false)}>
                 {state.cancelLabel ?? 'Cancel'}
               </Button>
               <Button
