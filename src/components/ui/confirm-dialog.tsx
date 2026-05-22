@@ -28,50 +28,165 @@ const ConfirmContext = createContext<ConfirmFn | null>(null);
 
 interface ConfirmState extends ConfirmOptions {
   open: boolean;
-  resolve?: (value: boolean) => void;
 }
 
 /**
  * Mounts the confirm dialog and exposes `useConfirm()` to descendants.
  * Use as a thin replacement for `window.confirm()` so destructive actions
  * pause through a styled modal instead of a native browser prompt.
+ *
+ * The pending resolver lives in a ref rather than in state. If `confirm()` is
+ * called while another dialog is already open, the prior promise is settled
+ * with `false` (treated as a cancel) before the new dialog replaces it, so
+ * callers awaiting the original promise never hang.
  */
+/**
+ * Selector for elements considered focusable by the focus trap. Mirrors the
+ * common "tabbable" set; the trap further filters by visibility and the
+ * `disabled` attribute.
+ */
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function getFocusable(root: HTMLElement): HTMLElement[] {
+  const all = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  return all.filter((el) => {
+    if (el.hasAttribute('disabled')) return false;
+    if (el.getAttribute('aria-hidden') === 'true') return false;
+    if (el.tabIndex < 0) return false;
+    // Skip elements rendered with display:none or visibility:hidden.
+    return el.offsetParent !== null || el === document.activeElement;
+  });
+}
+
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>({ open: false, title: '' });
+  const resolverRef = useRef<((value: boolean) => void) | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const confirm = useCallback<ConfirmFn>((options) => {
-    return new Promise<boolean>((resolve) => {
-      setState({ ...options, open: true, resolve });
-    });
+  /**
+   * Settle the currently pending confirm (if any) with `value`, then forget
+   * the resolver. Safe to call multiple times — idempotent after the first.
+   */
+  const settlePending = useCallback((value: boolean) => {
+    const resolver = resolverRef.current;
+    if (resolver) {
+      resolverRef.current = null;
+      resolver(value);
+    }
   }, []);
+
+  const confirm = useCallback<ConfirmFn>(
+    (options) => {
+      // If a previous dialog is still open, the new caller has interrupted it.
+      // Treat the original prompt as cancelled so its caller's promise resolves
+      // and any follow-on "loading" UI clears, instead of hanging forever.
+      settlePending(false);
+      return new Promise<boolean>((resolve) => {
+        resolverRef.current = resolve;
+        setState({ ...options, open: true });
+      });
+    },
+    [settlePending],
+  );
 
   const close = useCallback(
     (value: boolean) => {
-      state.resolve?.(value);
-      setState((s) => ({ ...s, open: false, resolve: undefined }));
+      settlePending(value);
+      setState((s) => ({ ...s, open: false }));
     },
-    [state],
+    [settlePending],
   );
+
+  // Settle any still-pending resolver if the provider unmounts so callers
+  // don't hang past the lifetime of the component tree.
+  useEffect(() => {
+    return () => {
+      settlePending(false);
+    };
+  }, [settlePending]);
 
   // Escape always cancels, regardless of focus. Enter is intentionally NOT
   // handled at the window level — we let the natural button activation drive
   // confirm/cancel based on focus, and we set a tone-aware initial focus
   // (Cancel for destructive actions, Confirm for benign ones) so a user
   // pressing Enter without first tabbing always gets the safe outcome.
+  //
+  // Tab/Shift+Tab is intercepted to keep focus inside the dialog. We also
+  // remember the element that had focus before the dialog opened and restore
+  // it on close, so keyboard flow returns the user where they were.
   useEffect(() => {
     if (!state.open) return;
+
+    // Snapshot the dialog root and the previously-focused element at effect
+    // setup time. Both are stable for the lifetime of this open cycle and
+    // are needed by the cleanup function, so capturing them in locals also
+    // satisfies the react-hooks/exhaustive-deps stale-ref guard.
+    const root = dialogRef.current;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    previouslyFocusedRef.current = previouslyFocused;
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close(false);
+      if (e.key === 'Escape') {
+        close(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !root) return;
+
+      const focusables = getFocusable(root);
+      if (focusables.length === 0) {
+        // No focusable children — keep focus on the dialog itself.
+        e.preventDefault();
+        root.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      const insideDialog = !!active && root.contains(active);
+
+      if (e.shiftKey) {
+        if (!insideDialog || active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (!insideDialog || active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     window.addEventListener('keydown', onKey);
+
     if (state.tone === 'danger') {
       cancelButtonRef.current?.focus();
     } else {
       confirmButtonRef.current?.focus();
     }
-    return () => window.removeEventListener('keydown', onKey);
+
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      // Restore focus to whatever was focused before the dialog opened, but
+      // only if focus is still inside the dialog (or nowhere) — don't yank
+      // focus away from anything the user explicitly focused after close.
+      const active = document.activeElement;
+      const focusEscaped = active && active !== document.body && (!root || !root.contains(active));
+      if (!focusEscaped && previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus();
+      }
+    };
   }, [state.open, state.tone, close]);
 
   return (
@@ -85,9 +200,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             onClick={() => close(false)}
           />
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
+            tabIndex={-1}
             className={cn('rounded-card bg-surface shadow-modal relative w-full max-w-md p-6')}
           >
             <h2 id="confirm-dialog-title" className="text-h3 text-text-primary font-semibold">
