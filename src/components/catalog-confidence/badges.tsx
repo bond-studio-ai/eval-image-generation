@@ -1,3 +1,4 @@
+import { Badge, type BadgeTone } from '@/components/ui';
 import type {
   CalibrationStatus,
   HumanVerdict,
@@ -7,16 +8,16 @@ import type {
 } from '@/lib/catalog-feed-client';
 
 /**
- * Presentation helpers for the calibrated-confidence pages. Every
- * reviewer surface (runs, prompts, calibrations, thresholds) renders a
- * small set of categorical statuses, so we centralize the tailwind
- * colour mapping here instead of duplicating it in each page.
+ * Presentation helpers for the calibrated-confidence pages. Every reviewer
+ * surface (runs, prompts, calibrations, thresholds) renders a small set of
+ * categorical statuses; this module maps each domain status to a tone in the
+ * shared `Badge` primitive so the visual language matches the rest of the app.
  */
 
-const DECISION_STYLES: Record<RoutingDecision, string> = {
-  auto_ship: 'bg-green-100 text-green-800 ring-1 ring-inset ring-green-600/20',
-  spot_check: 'bg-yellow-100 text-yellow-800 ring-1 ring-inset ring-yellow-600/20',
-  hold_for_review: 'bg-red-100 text-red-800 ring-1 ring-inset ring-red-600/20',
+const DECISION_TONE: Record<RoutingDecision, BadgeTone> = {
+  auto_ship: 'success',
+  spot_check: 'warning',
+  hold_for_review: 'danger',
 };
 
 const DECISION_LABELS: Record<RoutingDecision, string> = {
@@ -27,17 +28,15 @@ const DECISION_LABELS: Record<RoutingDecision, string> = {
 
 export function DecisionBadge({ decision }: { decision: RoutingDecision }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${DECISION_STYLES[decision]}`}
-    >
+    <Badge tone={DECISION_TONE[decision]} variant="soft">
       {DECISION_LABELS[decision]}
-    </span>
+    </Badge>
   );
 }
 
-const VERDICT_STYLES: Record<HumanVerdict, string> = {
-  accept: 'bg-green-100 text-green-800',
-  reject: 'bg-red-100 text-red-800',
+const VERDICT_TONE: Record<HumanVerdict, BadgeTone> = {
+  accept: 'success',
+  reject: 'danger',
 };
 
 const VERDICT_LABELS: Record<HumanVerdict, string> = {
@@ -47,61 +46,55 @@ const VERDICT_LABELS: Record<HumanVerdict, string> = {
 
 export function VerdictBadge({ verdict }: { verdict: HumanVerdict }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${VERDICT_STYLES[verdict]}`}
-    >
+    <Badge tone={VERDICT_TONE[verdict]} variant="soft">
       {VERDICT_LABELS[verdict]}
-    </span>
+    </Badge>
   );
 }
 
-const PROMPT_STATUS_STYLES: Record<PromptStatus, string> = {
-  proposed: 'bg-blue-100 text-blue-800',
-  active: 'bg-green-100 text-green-800',
-  retired: 'bg-gray-100 text-gray-700',
+const PROMPT_STATUS_TONE: Record<PromptStatus, BadgeTone> = {
+  proposed: 'info',
+  active: 'success',
+  retired: 'neutral',
 };
 
 export function PromptStatusBadge({ status }: { status: PromptStatus }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${PROMPT_STATUS_STYLES[status]}`}
-    >
+    <Badge tone={PROMPT_STATUS_TONE[status]} variant="soft">
       {status}
-    </span>
+    </Badge>
   );
 }
 
-const CALIBRATION_STATUS_STYLES: Record<CalibrationStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  retired: 'bg-gray-100 text-gray-700',
+const CALIBRATION_STATUS_TONE: Record<CalibrationStatus, BadgeTone> = {
+  active: 'success',
+  retired: 'neutral',
 };
 
 export function CalibrationStatusBadge({ status }: { status: CalibrationStatus }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${CALIBRATION_STATUS_STYLES[status]}`}
-    >
+    <Badge tone={CALIBRATION_STATUS_TONE[status]} variant="soft">
       {status}
-    </span>
+    </Badge>
   );
 }
 
 /**
- * ScoreCell renders a 0..1 confidence score as "0.000" right-aligned,
- * with a thin coloured bar that makes it scannable at a glance. `null`
- * scores render as an em-dash.
+ * ScoreCell renders a 0..1 confidence score as "0.000" right-aligned, with a
+ * thin coloured bar that makes it scannable at a glance. `null` scores render
+ * as an em-dash.
  */
 export function ScoreCell({ value }: { value: number | null | undefined }) {
   if (value == null || Number.isNaN(value)) {
-    return <span className="text-gray-400">—</span>;
+    return <span className="text-text-disabled">—</span>;
   }
   const pct = Math.max(0, Math.min(1, value));
-  const color = pct >= 0.95 ? 'bg-green-500' : pct >= 0.7 ? 'bg-yellow-500' : 'bg-red-500';
+  const color = pct >= 0.95 ? 'bg-success-500' : pct >= 0.7 ? 'bg-warning-500' : 'bg-danger-500';
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-800 tabular-nums">{value.toFixed(3)}</span>
-      <div className="h-1.5 w-16 rounded-full bg-gray-100">
-        <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct * 100}%` }} />
+      <span className="text-body text-text-primary tabular-nums">{value.toFixed(3)}</span>
+      <div className="rounded-pill bg-surface-sunken h-1.5 w-16">
+        <div className={`rounded-pill h-1.5 ${color}`} style={{ width: `${pct * 100}%` }} />
       </div>
     </div>
   );
@@ -120,59 +113,51 @@ export function formatLatency(ms: number): string {
 }
 
 /**
- * StatusBadge surfaces the run's lifecycle state (succeeded, failed,
- * etc.) on the runs list. Today the queue mostly produces `succeeded`
- * or `failed`; we render anything else as a neutral "in progress"
- * affordance so transient states don't render as plain text.
+ * StatusBadge surfaces the run's lifecycle state (succeeded, failed, etc.) on
+ * the runs list. Today the queue mostly produces `succeeded` or `failed`; we
+ * render anything else as a neutral "in progress" affordance so transient
+ * states don't render as plain text.
  */
-const STATUS_STYLES: Record<string, string> = {
-  succeeded: 'bg-green-100 text-green-800 ring-1 ring-inset ring-green-600/20',
-  failed: 'bg-red-100 text-red-800 ring-1 ring-inset ring-red-600/20',
+const STATUS_TONE: Record<string, BadgeTone> = {
+  succeeded: 'success',
+  failed: 'danger',
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const cls =
-    STATUS_STYLES[status] ?? 'bg-blue-100 text-blue-800 ring-1 ring-inset ring-blue-600/20';
+  const tone: BadgeTone = STATUS_TONE[status] ?? 'info';
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${cls}`}>
+    <Badge tone={tone} variant="soft">
       {status || 'pending'}
-    </span>
+    </Badge>
   );
 }
 
 // ─── Judge baselines ────────────────────────────────────────────────────────
 
-/**
- * BaselineExpectedBadge labels what the operator said the judge SHOULD
- * return for this product. Pass is green (treat as gold-standard
- * positive), fail is red (gold-standard negative). Used on the
- * baseline editor and the run-detail judge table.
- */
-const BASELINE_EXPECTED_STYLES: Record<JudgeBaselineExpected, string> = {
-  pass: 'bg-green-100 text-green-800 ring-1 ring-inset ring-green-600/20',
-  fail: 'bg-red-100 text-red-800 ring-1 ring-inset ring-red-600/20',
+const BASELINE_EXPECTED_TONE: Record<JudgeBaselineExpected, BadgeTone> = {
+  pass: 'success',
+  fail: 'danger',
 };
 
 export function BaselineExpectedBadge({ expected }: { expected: JudgeBaselineExpected }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${BASELINE_EXPECTED_STYLES[expected]}`}
-    >
+    <Badge tone={BASELINE_EXPECTED_TONE[expected]} variant="soft" size="sm">
       {expected === 'pass' ? 'Should pass' : 'Should fail'}
-    </span>
+    </Badge>
   );
 }
 
 /**
- * BaselineMatchBadge renders the per-run "did the judge agree with
- * the gold label" outcome. Three branches:
- *   - true  → match (green)
- *   - false → mismatch (red)
- *   - null  → unlabeled product (neutral em-dash)
+ * BaselineMatchBadge renders the per-run "did the judge agree with the gold
+ * label" outcome.
  *
- * Optional `expected` is rendered as a subtitle so reviewers can see
- * the gold label and the observed verdict in one badge cluster
- * without crowding the cell with a second badge.
+ *   - true  → match (success)
+ *   - false → mismatch (danger)
+ *   - null  → unlabeled product (em-dash)
+ *
+ * Optional `expected` and `observedPass` are rendered as caption metadata so
+ * reviewers can see the gold label and the observed verdict in one cluster
+ * without crowding the cell.
  */
 export function BaselineMatchBadge({
   match,
@@ -185,38 +170,34 @@ export function BaselineMatchBadge({
 }) {
   if (match == null) {
     return (
-      <span className="text-[11px] text-gray-400" title="Product is not in the labeled baseline.">
+      <span
+        className="text-text-disabled text-[11px]"
+        title="Product is not in the labeled baseline."
+      >
         —
       </span>
     );
   }
-  const cls = match
-    ? 'bg-green-100 text-green-800 ring-1 ring-inset ring-green-600/20'
-    : 'bg-red-100 text-red-800 ring-1 ring-inset ring-red-600/20';
+  const tone: BadgeTone = match ? 'success' : 'danger';
   const label = match ? 'Match' : 'Mismatch';
   const obs =
     observedPass == null ? null : (
-      <span className="text-[10px] text-gray-500">obs={observedPass ? 'pass' : 'fail'}</span>
+      <span className="text-text-muted text-[10px]">obs={observedPass ? 'pass' : 'fail'}</span>
     );
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span
-        className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ${cls}`}
-      >
+      <Badge tone={tone} variant="soft" size="sm">
         {label}
-      </span>
-      {expected && <span className="text-[10px] text-gray-500">exp={expected}</span>}
+      </Badge>
+      {expected && <span className="text-text-muted text-[10px]">exp={expected}</span>}
       {obs}
     </span>
   );
 }
 
 /**
- * AccuracyCell renders a 0..1 rate (e.g. baseline pass/fail rate)
- * with a thin coloured bar. Mirrors ScoreCell visually but uses
- * percent-formatted text so it reads naturally as accuracy. `null`
- * inputs render as an em-dash so prompts predating the snapshot
- * machinery still render cleanly in tables.
+ * AccuracyCell renders a 0..1 rate (e.g. baseline pass/fail rate) with a thin
+ * coloured bar. Mirrors `ScoreCell` visually but uses percent-formatted text.
  */
 export function AccuracyCell({
   value,
@@ -226,18 +207,18 @@ export function AccuracyCell({
   sample?: number | null;
 }) {
   if (value == null || Number.isNaN(value)) {
-    return <span className="text-gray-400">—</span>;
+    return <span className="text-text-disabled">—</span>;
   }
   const pct = Math.max(0, Math.min(1, value));
-  const color = pct >= 0.95 ? 'bg-green-500' : pct >= 0.8 ? 'bg-yellow-500' : 'bg-red-500';
+  const color = pct >= 0.95 ? 'bg-success-500' : pct >= 0.8 ? 'bg-warning-500' : 'bg-danger-500';
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-800 tabular-nums">{(pct * 100).toFixed(1)}%</span>
-      <div className="h-1.5 w-16 rounded-full bg-gray-100">
-        <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct * 100}%` }} />
+      <span className="text-body text-text-primary tabular-nums">{(pct * 100).toFixed(1)}%</span>
+      <div className="rounded-pill bg-surface-sunken h-1.5 w-16">
+        <div className={`rounded-pill h-1.5 ${color}`} style={{ width: `${pct * 100}%` }} />
       </div>
       {sample != null && sample > 0 && (
-        <span className="text-[10px] text-gray-500">n={sample}</span>
+        <span className="text-text-muted text-[10px]">n={sample}</span>
       )}
     </div>
   );

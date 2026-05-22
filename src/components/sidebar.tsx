@@ -1,309 +1,215 @@
 'use client';
 
-import { UserButton } from '@clerk/nextjs';
+import {
+  BarChartIcon,
+  BoxesIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  cn,
+  EyeIcon,
+  FileTextIcon,
+  GaugeIcon,
+  GitCompareIcon,
+  ImagePlusIcon,
+  LayersIcon,
+  PlayIcon,
+  ScrollTextIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  WorkflowIcon,
+} from '@/components/ui';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 
-const navigation = [
-  { name: 'Runs', href: '/executions', icon: RunsIcon },
-  { name: 'Analytics', href: '/', icon: AnalyticsIcon },
-  { name: 'Environments', href: '/environments', icon: EnvironmentIcon },
-  { name: 'Strategies', href: '/strategies', icon: StrategyIcon },
-  { name: 'Input Presets', href: '/input-presets', icon: InputPresetIcon },
-  { name: 'Prompt Preview', href: '/prompt-preview', icon: PreviewPromptIcon },
-  { name: 'Prompt Versions', href: '/prompt-versions', icon: PromptIcon },
-  { name: 'Audit', href: '/audit/compare', icon: AuditCompareIcon },
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: IconType;
+  /** Match prefix; defaults to `href`. */
+  match?: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    name: 'Catalog Runs',
-    href: '/catalog-runs',
-    icon: CatalogRunsIcon,
-    section: 'Catalog Confidence',
+    label: 'Run',
+    items: [
+      { name: 'Runs', href: '/executions', icon: PlayIcon },
+      { name: 'Audit', href: '/audit/compare', icon: GitCompareIcon },
+    ],
   },
   {
-    name: 'Catalog Prompts',
-    href: '/catalog-prompts',
-    icon: PromptIcon,
-    section: 'Catalog Confidence',
+    label: 'Build',
+    items: [
+      { name: 'Strategies', href: '/strategies', icon: WorkflowIcon },
+      { name: 'Input Presets', href: '/input-presets', icon: ImagePlusIcon },
+      { name: 'Prompt Versions', href: '/prompt-versions', icon: ScrollTextIcon },
+      { name: 'Prompt Preview', href: '/prompt-preview', icon: EyeIcon },
+      { name: 'Environments', href: '/environments', icon: LayersIcon },
+    ],
   },
   {
-    name: 'Calibrations',
-    href: '/catalog-calibrations',
-    icon: CalibrationIcon,
-    section: 'Catalog Confidence',
+    label: 'Insights',
+    items: [{ name: 'Analytics', href: '/', icon: BarChartIcon, match: '/' }],
   },
   {
-    name: 'Thresholds',
-    href: '/catalog-thresholds',
-    icon: ThresholdIcon,
-    section: 'Catalog Confidence',
-  },
-  {
-    name: 'Judge Baselines',
-    href: '/judge-baselines',
-    icon: BaselineIcon,
-    section: 'Catalog Confidence',
+    label: 'Catalog Confidence',
+    items: [
+      { name: 'Catalog Runs', href: '/catalog-runs', icon: BoxesIcon },
+      { name: 'Catalog Prompts', href: '/catalog-prompts', icon: FileTextIcon },
+      { name: 'Calibrations', href: '/catalog-calibrations', icon: GaugeIcon },
+      { name: 'Thresholds', href: '/catalog-thresholds', icon: GaugeIcon },
+      { name: 'Judge Baselines', href: '/judge-baselines', icon: ShieldCheckIcon },
+    ],
   },
 ];
 
+const COLLAPSED_KEY = 'aieval.sidebar.collapsed';
+
 export function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+    try {
+      const v = window.localStorage.getItem(COLLAPSED_KEY);
+      if (v === '1') setCollapsed(true);
+    } catch {
+      // localStorage unavailable; ignore.
+    }
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const isActive = (item: NavItem) => {
+    const match = item.match ?? item.href;
+    if (match === '/') return pathname === '/';
+    return pathname.startsWith(match);
+  };
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
-        <div className="bg-primary-600 flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white">
-          AI
-        </div>
-        <span className="text-sm font-semibold text-gray-900">AI Image Eval</span>
+    <aside
+      className={cn(
+        'border-border bg-surface flex h-screen flex-col border-r transition-[width] duration-200',
+        collapsed ? 'w-16' : 'w-64',
+      )}
+      aria-label="Primary"
+    >
+      {/* Brand */}
+      <div className="border-border flex h-16 items-center justify-between gap-2 border-b px-4">
+        <Link
+          href="/"
+          className={cn('flex min-w-0 items-center gap-2', collapsed && 'justify-center')}
+          aria-label="AI Image Eval home"
+        >
+          <Logomark />
+          {!collapsed && (
+            <span className="text-body text-text-primary truncate font-semibold">
+              AI Image Eval
+            </span>
+          )}
+        </Link>
+        {!collapsed && hydrated && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label="Collapse sidebar"
+            className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary inline-flex h-7 w-7 items-center justify-center rounded-md"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {navigation.map((item, idx) => {
-          const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
-          const prev = idx > 0 ? navigation[idx - 1] : null;
-          const showHeader = item.section && (!prev || prev.section !== item.section);
-
-          return (
-            <div key={item.name}>
-              {showHeader && (
-                <div className="mt-4 mb-1 px-3 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-                  {item.section}
-                </div>
-              )}
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <item.icon
-                  className={`h-5 w-5 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}
-                />
-                {item.name}
-              </Link>
-            </div>
-          );
-        })}
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Sections">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className="mb-4">
+            {!collapsed && (
+              <div className="text-text-disabled mb-1 px-3 text-[10px] font-semibold tracking-wider uppercase">
+                {group.label}
+              </div>
+            )}
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = isActive(item);
+                const Icon = item.icon;
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      title={collapsed ? item.name : undefined}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'text-body flex items-center gap-3 rounded-md px-3 py-2 font-medium transition-colors',
+                        collapsed && 'justify-center px-2',
+                        active
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'h-5 w-5 shrink-0',
+                          active ? 'text-primary-600' : 'text-text-muted',
+                        )}
+                        aria-hidden="true"
+                      />
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
-      <div className="border-t border-gray-200 px-4 py-4">
-        <UserButton />
+      {/* Footer (collapse toggle when collapsed; user button hosted in TopBar) */}
+      <div className="border-border border-t px-3 py-3">
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary flex w-full items-center justify-center rounded-md py-2"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        ) : (
+          <p className="text-text-disabled px-2 text-[10px]">v0.1.0</p>
+        )}
       </div>
     </aside>
   );
 }
 
-function PromptIcon({ className }: { className?: string }) {
+function Logomark() {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
+    <span
+      className="bg-primary-600 text-text-inverse flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-xs"
+      aria-hidden="true"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-      />
-    </svg>
-  );
-}
-
-function StrategyIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-      />
-    </svg>
-  );
-}
-
-function RunsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"
-      />
-    </svg>
-  );
-}
-
-function InputPresetIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a2.25 2.25 0 002.25-2.25V5.25A2.25 2.25 0 0020.25 3H3.75a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 003.75 21zm5.25-12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
-      />
-    </svg>
-  );
-}
-
-function EnvironmentIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.75 7.5h10.5m-10.5 4.5h10.5m-10.5 4.5h10.5M4.5 6.75A2.25 2.25 0 016.75 4.5h10.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 17.25V6.75z"
-      />
-    </svg>
-  );
-}
-
-function PreviewPromptIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
-function AuditCompareIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
-      />
-    </svg>
-  );
-}
-
-function AnalyticsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-      />
-    </svg>
-  );
-}
-
-function CatalogRunsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function CalibrationIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 15l4-6 3 4 4-7" />
-    </svg>
-  );
-}
-
-function ThresholdIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 6h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9 6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
-      />
-    </svg>
-  );
-}
-
-function BaselineIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12.75 11.25 15 15 9.75M3.75 12a8.25 8.25 0 1 0 16.5 0 8.25 8.25 0 0 0-16.5 0Z"
-      />
-    </svg>
+      <SparklesIcon className="h-4 w-4" strokeWidth={2.25} />
+    </span>
   );
 }

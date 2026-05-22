@@ -1,20 +1,54 @@
 # Frontend Patterns
 
+The visual system is documented in [DESIGN_TOKENS.md](DESIGN_TOKENS.md). The conventions below are runtime patterns — what to import, where to put data fetching, how to wire feedback.
+
 ## Page Layout
 
-Pages render inside `AppShell`; do not add page-level max-width wrappers or body scrolling. Use `PageHeader` for page titles, subtitles, back links, and primary actions.
+Pages render inside `AppShell` (sidebar + sticky top bar with breadcrumbs). Do not add page-level max-width wrappers or body scrolling. Use `PageHeader` for page titles, subtitles, back links, and primary actions.
 
 ```tsx
+import { PageHeader } from '@/components/page-header';
+import { LinkButton, PlusIcon } from '@/components/ui';
+
 <PageHeader
   title="Strategies"
   subtitle="Multi-step workflows that chain generations together."
   actions={
-    <PrimaryLinkButton href="/strategies/new" icon>
+    <LinkButton href="/strategies/new" iconLeft={<PlusIcon className="h-4 w-4" />}>
       New Strategy
-    </PrimaryLinkButton>
+    </LinkButton>
   }
-/>
+/>;
 ```
+
+## UI Primitives
+
+All shared UI primitives live in `src/components/ui/` and are re-exported from `@/components/ui`. Always import from there.
+
+```ts
+import {
+  Badge,
+  Button,
+  Card,
+  FilterBar,
+  FilterSearch,
+  FormSection,
+  IconButton,
+  LinkButton,
+  MoreActionsMenu,
+  // icons (lucide re-exports)
+  PlusIcon,
+  SegmentedControl,
+  Spinner,
+  StatCard,
+  Tabs,
+  toast,
+  TrashIcon,
+  useConfirm,
+} from '@/components/ui';
+```
+
+See [.cursor/rules/ui-conventions.mdc](../.cursor/rules/ui-conventions.mdc) for the full mapping of intent → primitive.
 
 ## Resource Forms
 
@@ -23,7 +57,17 @@ Create/edit pages should use this order:
 1. `PageHeader` with save action in `actions`
 2. `ResourceFormHeader` for name/description
 3. `ErrorCard` for form-level errors
-4. Feature-specific fields
+4. One or more `FormSection` blocks for sub-areas (settings, steps, judges, etc.)
+
+```tsx
+<PageHeader title="New Strategy" actions={<Button onClick={save} loading={saving}>Save</Button>} />
+<ResourceFormHeader name={name} onNameChange={setName} description={desc} onDescriptionChange={setDesc} />
+{error && <div className="mt-4"><ErrorCard message={error} /></div>}
+<div className="mt-6 space-y-6">
+  <FormSection title="Settings" description="Used by all steps">…</FormSection>
+  <FormSection title="Preview Generation">…</FormSection>
+</div>
+```
 
 Avoid raw red text for form failures when `ErrorCard` fits.
 
@@ -37,7 +81,48 @@ Use `DataTable` for tabular list views. Pair it with:
 - `BulkDeleteBar` for selection actions
 - `checkboxColumn`, `actionsColumn`, `NameCell`, `StatusBadge`, and `DateCell`
 
-Infinite scroll or polling screens can still use `DataTable`; keep the custom loading sentinel or poll loop outside the table markup.
+`actionsColumn` renders icon buttons via `IconButton` under the hood and uses lucide icons (`clone`/`delete`/`edit`).
+
+For non-tabular lists (custom card layouts like the Executions batch tab), keep the layout custom but use `Card`, `Badge`, `IconButton`, `Button`, and `SegmentedControl` so the visual language stays consistent.
+
+## Feedback
+
+Surface action results with toasts:
+
+```tsx
+import { toast } from '@/components/ui';
+
+try {
+  const res = await fetch(...);
+  if (!res.ok) {
+    toast.error('Failed to delete strategy', { description: `Server responded ${res.status}.` });
+    return;
+  }
+  toast.success('Strategy deleted');
+  refresh();
+} catch (e) {
+  toast.error('Failed to delete strategy', {
+    description: e instanceof Error ? e.message : undefined,
+  });
+}
+```
+
+Replace `window.confirm()` with the styled dialog:
+
+```tsx
+import { useConfirm } from '@/components/ui';
+
+const confirm = useConfirm();
+const ok = await confirm({
+  title: 'Delete strategy?',
+  description: 'This will soft-delete the strategy.',
+  confirmLabel: 'Delete strategy',
+  tone: 'danger',
+});
+if (!ok) return;
+```
+
+Never silently `catch { /* ignore */ }` a mutation failure — at minimum, fire `toast.error()`.
 
 ## Client Data Access
 
@@ -62,7 +147,7 @@ Browser-accessed admin proxies must:
 - use `proxyUpstream()` for consistent upstream behavior
 - return structured `{ error: { code, message } }` envelopes on local failures
 
-Client mutation flows should surface actionable errors with `ErrorCard` or an equivalent inline banner instead of silently swallowing failed responses.
+Client mutation flows should surface actionable errors with `ErrorCard` or `toast.error()` instead of silently swallowing failed responses.
 
 ## Large Components
 

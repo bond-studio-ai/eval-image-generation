@@ -9,12 +9,12 @@ import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
 import { PageHeader } from '@/components/page-header';
+import { Card, StatCard, Tabs, type TabItem } from '@/components/ui';
 import {
   fetchAnalyticsRatings,
   fetchAnalyticsStrategyPerformance,
   fetchStrategies,
 } from '@/lib/service-client';
-import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,90 +31,62 @@ interface PageProps {
 
 type DistEntry = { rating: string; count: number; percentage: number };
 
-const ratingColors: Record<string, string> = {
-  GOOD: 'bg-green-500',
-  FAILED: 'bg-orange-500',
+const RATING_BAR_COLOR: Record<string, string> = {
+  GOOD: 'bg-success-500',
+  FAILED: 'bg-warning-500',
 };
 
 function DistributionChart({ data, title }: { data: DistEntry[]; title: string }) {
   const maxCount = Math.max(...data.map((d) => d.count), 1);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+    <Card>
+      <h2 className="text-h3 text-text-primary font-semibold">{title}</h2>
       <div className="mt-6 space-y-4">
         {data.map((d) => (
           <div key={d.rating} className="flex items-center gap-4">
-            <span className="w-20 text-sm font-medium text-gray-700">{d.rating}</span>
+            <span className="text-body text-text-secondary w-20 font-medium">{d.rating}</span>
             <div className="flex-1">
-              <div className="h-8 w-full rounded-full bg-gray-100">
+              <div className="rounded-pill bg-surface-sunken h-8 w-full">
                 <div
-                  className={`h-8 rounded-full ${ratingColors[d.rating]} transition-all duration-500`}
+                  className={`rounded-pill h-8 ${RATING_BAR_COLOR[d.rating] ?? 'bg-text-disabled'} transition-all duration-500`}
                   style={{ width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%` }}
                 />
               </div>
             </div>
-            <span className="w-12 text-right text-sm font-medium text-gray-900">{d.count}</span>
-            <span className="w-14 text-right text-sm text-gray-700">{d.percentage}%</span>
+            <span className="text-body text-text-primary w-12 text-right font-medium">
+              {d.count}
+            </span>
+            <span className="text-body text-text-secondary w-14 text-right">{d.percentage}%</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
 type TabName = 'strategies' | 'products' | 'reliability' | 'compare';
 
-function TabNav({
-  active,
-  searchParams,
-}: {
-  active: TabName;
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
-  const buildHref = (tab: string) => {
-    const params = new URLSearchParams();
-    if (tab !== 'strategies') params.set('tab', tab);
-    const from = getParamValues(searchParams, 'from')[0];
-    const to = getParamValues(searchParams, 'to')[0];
-    const model = getParamValues(searchParams, 'model')[0];
-    const source = getParamValues(searchParams, 'source')[0];
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    if (model) params.set('model', model);
-    if (source && source !== 'all') params.set('source', source);
-    if (tab === 'compare') {
-      for (const value of getParamValues(searchParams, 'compareColumn'))
-        params.append('compareColumn', value);
-    }
-    const qs = params.toString();
-    return `/${qs ? `?${qs}` : ''}`;
-  };
-
-  const tabs: { key: TabName; label: string }[] = [
-    { key: 'strategies', label: 'Strategies' },
-    { key: 'products', label: 'Products' },
-    { key: 'reliability', label: 'Reliability' },
-    { key: 'compare', label: 'Compare' },
-  ];
-
-  return (
-    <div className="mt-4 flex gap-1 border-b border-gray-200">
-      {tabs.map((tab) => (
-        <Link
-          key={tab.key}
-          href={buildHref(tab.key)}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-            active === tab.key
-              ? 'border-primary-600 text-primary-700'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-          }`}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </div>
-  );
+function buildTabHref(
+  tab: TabName,
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const params = new URLSearchParams();
+  if (tab !== 'strategies') params.set('tab', tab);
+  const from = getParamValues(searchParams, 'from')[0];
+  const to = getParamValues(searchParams, 'to')[0];
+  const model = getParamValues(searchParams, 'model')[0];
+  const source = getParamValues(searchParams, 'source')[0];
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  if (model) params.set('model', model);
+  if (source && source !== 'all') params.set('source', source);
+  if (tab === 'compare') {
+    for (const value of getParamValues(searchParams, 'compareColumn'))
+      params.append('compareColumn', value);
+  }
+  const qs = params.toString();
+  return `/${qs ? `?${qs}` : ''}`;
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
@@ -162,6 +134,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const models = perfData.models;
   const comparisonSlices = buildComparisonSlices(comparison, strategies);
 
+  const tabItems: TabItem<TabName>[] = [
+    { key: 'strategies', label: 'Strategies', href: buildTabHref('strategies', params) },
+    { key: 'products', label: 'Products', href: buildTabHref('products', params) },
+    { key: 'reliability', label: 'Reliability', href: buildTabHref('reliability', params) },
+    { key: 'compare', label: 'Compare', href: buildTabHref('compare', params) },
+  ];
+
+  const ratedPct =
+    overview.totalGenerations > 0
+      ? `${Math.round((overview.ratedGenerations / overview.totalGenerations) * 100)}%`
+      : '0%';
+
   return (
     <div>
       <PageHeader
@@ -172,25 +156,15 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             : 'Insights into generation quality and strategy performance.'
         }
       />
-      <TabNav active={activeTab} searchParams={params} />
+      <div className="mt-4">
+        <Tabs items={tabItems} active={activeTab} label="Analytics views" />
+      </div>
       <AnalyticsFilters models={models} strategies={strategies} activeTab={activeTab} />
 
       {!isCompare && (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <p className="text-sm font-medium text-gray-600">Total Generations</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{overview.totalGenerations}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <p className="text-sm font-medium text-gray-600">Rated</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{overview.ratedGenerations}</p>
-            <p className="mt-1 text-xs text-gray-600">
-              {overview.totalGenerations > 0
-                ? `${Math.round((overview.ratedGenerations / overview.totalGenerations) * 100)}%`
-                : '0%'}{' '}
-              of total
-            </p>
-          </div>
+          <StatCard label="Total Generations" value={overview.totalGenerations} />
+          <StatCard label="Rated" value={overview.ratedGenerations} hint={`${ratedPct} of total`} />
         </div>
       )}
 
@@ -199,20 +173,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       ) : (
         <>
           {activeTab === 'strategies' && (
-            <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <DistributionChart data={sceneDist} title="Scene Accuracy" />
-                <DistributionChart data={productDist} title="Product Accuracy" />
-              </div>
+            <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <DistributionChart data={sceneDist} title="Scene Accuracy" />
+              <DistributionChart data={productDist} title="Product Accuracy" />
             </div>
           )}
           {activeTab === 'strategies' && (
             <StrategyPerformanceSection from={from} to={to} model={model} source={source} />
           )}
           {activeTab === 'products' && (
-            <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-              <h2 className="text-lg font-semibold text-gray-900">Product Category Rates</h2>
-              <p className="mt-1 text-sm text-gray-600">
+            <Card className="mt-8">
+              <h2 className="text-h3 text-text-primary font-semibold">Product Category Rates</h2>
+              <p className="text-body text-text-secondary mt-1">
                 Success and failure rates for each product category based on evaluation data. Expand
                 a row to see checklist issue counts and freeform notes from failing evaluations; one
                 eval can add to several issue counts.
@@ -220,7 +192,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               <div className="mt-4">
                 <ProductCategoryRates from={from} to={to} model={model} source={source} />
               </div>
-            </div>
+            </Card>
           )}
           {activeTab === 'reliability' && (
             <ReliabilityTab from={from} to={to} model={model} source={source} />

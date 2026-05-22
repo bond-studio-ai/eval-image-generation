@@ -8,6 +8,20 @@ import type { ReviewState } from '@/components/review-badge';
 import { ReviewResultsBadge } from '@/components/review-results';
 import { ReviewRunGroupBadge } from '@/components/review-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import {
+  AlertTriangleIcon,
+  Badge,
+  Button,
+  ChevronRightIcon,
+  cn,
+  IconButton,
+  RotateCcwIcon,
+  SegmentedControl,
+  Spinner,
+  toast,
+  TrashIcon,
+  useConfirm,
+} from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
@@ -274,31 +288,41 @@ export function BatchRunsTab({
     [fetchBatches],
   );
 
+  const confirm = useConfirm();
   const handleDeleteBatch = useCallback(
     async (batchId: string, displayName: string) => {
-      if (
-        !confirm(
-          `Delete "${displayName}"? This will permanently remove the batch and all its runs.`,
-        )
-      )
-        return;
+      const ok = await confirm({
+        title: `Delete "${displayName}"?`,
+        description: 'This will permanently remove the batch and all its runs.',
+        confirmLabel: 'Delete batch',
+        tone: 'danger',
+      });
+      if (!ok) return;
       setDeletingBatchId(batchId);
       try {
         const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}`), { method: 'DELETE' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast.error('Failed to delete batch', {
+            description: `Server responded with ${res.status}.`,
+          });
+          return;
+        }
         setExpandedIds((prev) => {
           const next = new Set(prev);
           next.delete(batchId);
           return next;
         });
+        toast.success(`Deleted batch "${displayName}"`);
         await fetchBatches();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        toast.error('Failed to delete batch', {
+          description: e instanceof Error ? e.message : undefined,
+        });
       } finally {
         setDeletingBatchId(null);
       }
     },
-    [fetchBatches],
+    [fetchBatches, confirm],
   );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -328,25 +352,25 @@ export function BatchRunsTab({
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="h-9 w-56 animate-pulse rounded-lg bg-gray-100" />
-          <div className="h-8 w-28 animate-pulse rounded-lg bg-gray-100" />
+          <div className="rounded-button bg-surface-sunken h-9 w-56 animate-pulse" />
+          <div className="rounded-button bg-surface-sunken h-8 w-28 animate-pulse" />
         </div>
         {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+          <div key={i} className="rounded-card border-border bg-surface shadow-card border">
             <div className="flex w-full items-center justify-between px-5 py-3">
               <div className="flex flex-1 items-center gap-3">
-                <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
-                <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
+                <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
                 <div
-                  className="h-4 animate-pulse rounded bg-gray-200"
+                  className="bg-surface-sunken h-4 animate-pulse rounded"
                   style={{ width: 120 + (i % 3) * 40 }}
                 />
-                <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
-                <div className="h-3 w-24 animate-pulse rounded bg-gray-50" />
+                <div className="bg-surface-sunken h-4 w-20 animate-pulse rounded" />
+                <div className="bg-surface-muted h-3 w-24 animate-pulse rounded" />
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
-                <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+                <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                <div className="bg-surface-muted h-3 w-28 animate-pulse rounded" />
               </div>
             </div>
           </div>
@@ -357,21 +381,29 @@ export function BatchRunsTab({
 
   if (fetchError) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm text-amber-800">{fetchError}</p>
-        <p className="mt-1 text-xs text-amber-700">
-          Ensure BASE_API_HOSTNAME points to the image-generation backend.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setLoading(true);
-            fetchBatches();
-          }}
-          className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100"
-        >
-          Retry
-        </button>
+      <div className="rounded-card border-warning-200 bg-warning-50 flex items-start gap-3 border p-4">
+        <AlertTriangleIcon
+          className="text-warning-600 mt-0.5 h-4 w-4 shrink-0"
+          aria-hidden="true"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-body text-warning-800">{fetchError}</p>
+          <p className="text-caption text-warning-700 mt-1">
+            Ensure BASE_API_HOSTNAME points to the image-generation backend.
+          </p>
+          <div className="mt-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setLoading(true);
+                fetchBatches();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -387,47 +419,27 @@ export function BatchRunsTab({
           onClear={handleClearDate}
         />
 
-        <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-          >
-            List
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('matrix')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'matrix' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-          >
-            Matrix
-          </button>
-        </div>
+        <SegmentedControl
+          options={[
+            { value: 'list', label: 'List' },
+            { value: 'matrix', label: 'Matrix' },
+          ]}
+          value={viewMode}
+          onChange={(v) => setViewMode(v)}
+          size="sm"
+          label="View mode"
+        />
       </div>
 
       {refreshing && (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
+        <div className="text-body text-text-muted flex items-center gap-2">
+          <Spinner size="sm" />
           Loading {source === 'benchmark' ? 'benchmark' : 'standard'} runs…
         </div>
       )}
 
       {batches.length === 0 && !loading && !refreshing ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-body text-text-secondary">
           {appliedFrom || appliedTo
             ? 'No runs match the selected date range.'
             : 'No runs yet. Use \u201cRun\u201d to create one.'}
@@ -447,7 +459,10 @@ export function BatchRunsTab({
             const isMultiStrategy = batch.strategies.length > 1;
 
             return (
-              <div key={batch.id} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+              <div
+                key={batch.id}
+                className="rounded-card border-border bg-surface shadow-card border"
+              >
                 <div className="flex w-full items-center justify-between px-5 py-3">
                   <div
                     role="button"
@@ -471,130 +486,69 @@ export function BatchRunsTab({
                         });
                       }
                     }}
-                    className="-my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left hover:bg-gray-50"
+                    className="hover:bg-surface-muted focus-visible:outline-primary-600 -my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
-                    <svg
-                      className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                      />
-                    </svg>
+                    <ChevronRightIcon
+                      className={cn(
+                        'text-text-disabled h-4 w-4 transition-transform',
+                        isExpanded && 'rotate-90',
+                      )}
+                      aria-hidden="true"
+                    />
                     <ReviewStatusBadge status={batch.status} />
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-body text-text-primary font-semibold">
                       {batch.name ?? 'Untitled batch'}
                     </span>
                     {isMultiStrategy ? (
                       <MultiStrategyLabel strategies={batch.strategies} />
                     ) : batch.strategies.length === 1 ? (
                       <StrategyHoverCard strategyId={batch.strategies[0].id}>
-                        <span className="cursor-help text-xs font-medium text-gray-500">
+                        <span className="text-caption text-text-muted cursor-help font-medium">
                           {batch.strategies[0].name}
                         </span>
                       </StrategyHoverCard>
                     ) : null}
-                    <span className="text-sm text-gray-600">
+                    <span className="text-body text-text-secondary">
                       {batch.totalRuns} run{batch.totalRuns === 1 ? '' : 's'} &middot;{' '}
                       {projectKeys.size} {isBenchmark ? 'project' : 'preset'}
                       {projectKeys.size === 1 ? '' : 's'}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-caption text-text-muted">
                       {batch.completedRuns} completed
                       {batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {batch.failedRuns > 0 && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={retryingBatchId === batch.id}
+                        iconLeft={<RotateCcwIcon className="h-3.5 w-3.5" />}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRetryFailed(batch.id);
                         }}
-                        disabled={retryingBatchId === batch.id}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                        className="border-warning-300 bg-warning-50 text-warning-800 hover:bg-warning-100"
                       >
-                        {retryingBatchId === batch.id ? (
-                          <>
-                            <svg
-                              className="h-3.5 w-3.5 animate-spin"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                              />
-                            </svg>
-                            Retrying…
-                          </>
-                        ) : (
-                          <>Retry failed ({batch.failedRuns})</>
-                        )}
-                      </button>
+                        Retry failed ({batch.failedRuns})
+                      </Button>
                     )}
-                    <button
-                      type="button"
+                    <IconButton
+                      label="Delete batch"
+                      icon={<TrashIcon className="h-4 w-4" />}
+                      variant="danger"
+                      loading={deletingBatchId === batch.id}
                       onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
-                      disabled={deletingBatchId === batch.id}
-                      className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                      title="Delete run"
-                    >
-                      {deletingBatchId === batch.id ? (
-                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.11 0 00-7.5 0"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                    <span className="text-xs text-gray-400">
+                    />
+                    <span className="text-caption text-text-muted">
                       {new Date(batch.createdAt).toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-100 p-4">
+                  <div className="border-border-subtle border-t p-4">
                     {viewMode === 'matrix' ? (
                       <MatrixView
                         runs={batch.runs}
@@ -639,18 +593,21 @@ export function BatchRunsTab({
               {loadingMore ? (
                 <div className="space-y-4 pt-1">
                   {Array.from({ length: 3 }, (_, i) => (
-                    <div key={i} className="rounded-lg border border-gray-200 bg-white shadow-xs">
+                    <div
+                      key={i}
+                      className="rounded-card border-border bg-surface shadow-card border"
+                    >
                       <div className="flex w-full items-center justify-between px-5 py-3">
                         <div className="flex flex-1 items-center gap-3">
-                          <div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
-                          <div className="h-5 w-16 animate-pulse rounded-full bg-gray-100" />
+                          <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                          <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
                           <div
-                            className="h-4 animate-pulse rounded bg-gray-200"
+                            className="bg-surface-sunken h-4 animate-pulse rounded"
                             style={{ width: 120 + (i % 3) * 40 }}
                           />
-                          <div className="h-4 w-20 animate-pulse rounded bg-gray-100" />
+                          <div className="bg-surface-sunken h-4 w-20 animate-pulse rounded" />
                         </div>
-                        <div className="h-3 w-28 animate-pulse rounded bg-gray-50" />
+                        <div className="bg-surface-muted h-3 w-28 animate-pulse rounded" />
                       </div>
                     </div>
                   ))}
@@ -688,16 +645,16 @@ function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: st
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <span className="inline-flex cursor-help items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-purple-200">
+      <Badge tone="accent" variant="soft" className="cursor-help">
         Multi-Strategy Run
-      </span>
+      </Badge>
       {showTooltip && (
-        <span className="absolute top-full left-0 z-50 mt-1 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-gray-400 uppercase">
+        <span className="rounded-card border-border bg-surface shadow-popover absolute top-full left-0 z-50 mt-1 w-56 border p-3">
+          <span className="text-text-disabled mb-1.5 block text-[10px] font-medium tracking-wider uppercase">
             Strategies ({strategies.length})
           </span>
           {strategies.map((s) => (
-            <span key={s.id} className="block py-0.5 text-xs text-gray-700">
+            <span key={s.id} className="text-caption text-text-secondary block py-0.5">
               {s.name}
             </span>
           ))}
@@ -779,7 +736,7 @@ function ListView({
         return (
           <div key={stratId}>
             {!isSingleStrategy && (
-              <h3 className="mb-2 text-sm font-semibold text-gray-800">
+              <h3 className="text-body text-text-primary mb-2 font-semibold">
                 <StrategyHoverCard strategyId={stratId}>
                   <Link
                     href={`/strategies/${stratId}`}
@@ -790,15 +747,15 @@ function ListView({
                 </StrategyHoverCard>
               </h3>
             )}
-            <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
+            <div className="rounded-card border-border overflow-x-auto overflow-y-hidden border">
               <table
-                className="divide-y divide-gray-200"
+                className="divide-border divide-y"
                 style={{ borderCollapse: 'separate', borderSpacing: 0 }}
               >
-                <thead className="bg-gray-50">
+                <thead className="bg-surface-muted">
                   <tr>
                     <th
-                      className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
+                      className="border-border bg-surface-muted text-caption text-text-secondary sticky left-0 z-20 border-r px-4 py-2.5 text-left font-medium tracking-wider uppercase"
                       style={{ minWidth: 200, maxWidth: 200 }}
                     >
                       Input preset
@@ -806,7 +763,7 @@ function ListView({
                     {Array.from({ length: maxExec }, (_, i) => (
                       <th
                         key={i}
-                        className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600 uppercase"
+                        className="text-caption text-text-secondary px-2 py-2.5 text-center font-medium tracking-wider uppercase"
                         style={{ width: CELL, minWidth: CELL }}
                       >
                         #{i + 1}
@@ -814,7 +771,7 @@ function ListView({
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-border bg-surface divide-y">
                   {presetNames.map((rowKey) => {
                     const presetRuns = byPreset.get(rowKey)!;
                     const displayLabel = rowLabels.get(rowKey) ?? rowKey;
@@ -826,9 +783,9 @@ function ListView({
                       .map((r) => r.lastOutputGenerationId)
                       .filter((id): id is string => !!id);
                     return (
-                      <tr key={rowKey} className="hover:bg-gray-50/50">
+                      <tr key={rowKey} className="hover:bg-surface-muted/50">
                         <td
-                          className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+                          className="border-border bg-surface text-body text-text-primary sticky left-0 z-20 border-r px-4 py-2 font-medium"
                           style={{ minWidth: 200, maxWidth: 200 }}
                         >
                           <span className="block break-words">{displayLabel}</span>
@@ -974,15 +931,15 @@ function MatrixView({
   );
 
   return (
-    <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
+    <div className="rounded-card border-border overflow-x-auto overflow-y-hidden border">
       <table
-        className="divide-y divide-gray-200"
+        className="divide-border divide-y"
         style={{ borderCollapse: 'separate', borderSpacing: 0 }}
       >
-        <thead className="bg-gray-50">
+        <thead className="bg-surface-muted">
           <tr>
             <th
-              className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
+              className="border-border bg-surface-muted text-caption text-text-secondary sticky left-0 z-20 border-r px-4 py-2.5 text-left font-medium tracking-wider uppercase"
               style={{ minWidth: 200, maxWidth: 200 }}
             >
               Input preset
@@ -990,7 +947,7 @@ function MatrixView({
             {strategyNames.map((name, i) => (
               <th
                 key={strategyIds[i]}
-                className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600"
+                className="text-caption text-text-secondary px-2 py-2.5 text-center font-medium tracking-wider"
                 style={{ minWidth: CELL }}
               >
                 <StrategyHoverCard strategyId={strategyIds[i]}>
@@ -1005,11 +962,11 @@ function MatrixView({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-border bg-surface divide-y">
           {sortedPresets.map((rowKey) => (
-            <tr key={rowKey} className="hover:bg-gray-50/50">
+            <tr key={rowKey} className="hover:bg-surface-muted/50">
               <td
-                className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+                className="border-border bg-surface text-body text-text-primary sticky left-0 z-20 border-r px-4 py-2 font-medium"
                 style={{ minWidth: 200, maxWidth: 200 }}
               >
                 <span className="block break-words">{matrixRowLabels.get(rowKey) ?? rowKey}</span>
@@ -1028,12 +985,12 @@ function MatrixView({
                 return (
                   <td
                     key={stratId}
-                    className="border-l border-gray-100 p-1.5 text-center align-middle"
+                    className="border-border-subtle border-l p-1.5 text-center align-middle"
                     style={{ width: CELL, height: CELL, minWidth: CELL }}
                   >
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                       {!firstRun ? (
-                        <span className="text-gray-200">&mdash;</span>
+                        <span className="text-text-disabled">&mdash;</span>
                       ) : outputRuns.length > 1 ? (
                         <div
                           className="grid gap-1"
@@ -1054,7 +1011,7 @@ function MatrixView({
                                 src={run.lastOutputUrl}
                                 alt=""
                                 loading="lazy"
-                                className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
+                                className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
                                 style={{ aspectRatio: '1' }}
                               />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
@@ -1115,7 +1072,7 @@ function MatrixView({
                             src={firstRun.lastOutputUrl}
                             alt=""
                             loading="lazy"
-                            className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
+                            className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
                             style={{ width: CELL - 20, height: CELL - 20 }}
                           />
                           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
@@ -1174,7 +1131,7 @@ function MatrixView({
                               type="button"
                               onClick={() => onRetry(firstRun.id)}
                               disabled={retryingRunId === firstRun.id}
-                              className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50"
+                              className="text-caption text-warning-700 hover:text-warning-600 font-medium disabled:opacity-50"
                             >
                               {retryingRunId === firstRun.id ? 'Retrying…' : 'Retry'}
                             </button>
@@ -1236,12 +1193,12 @@ function RunCell({
 }) {
   return (
     <td
-      className="border-l border-gray-100 p-1.5 text-center align-middle"
+      className="border-border-subtle border-l p-1.5 text-center align-middle"
       style={{ width: cellSize, height: cellSize, minWidth: cellSize }}
     >
       <div className="flex h-full w-full flex-col items-center justify-center gap-1">
         {!run ? (
-          <span className="text-gray-200">&mdash;</span>
+          <span className="text-text-disabled">&mdash;</span>
         ) : run.lastOutputUrl ? (
           <div
             role="button"
@@ -1257,7 +1214,7 @@ function RunCell({
               src={run.lastOutputUrl}
               alt=""
               loading="lazy"
-              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
+              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
               style={{ width: cellSize - 20, height: cellSize - 20 }}
             />
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
@@ -1307,7 +1264,7 @@ function RunCell({
                 type="button"
                 onClick={() => onRetry(run.id)}
                 disabled={retryingRunId === run.id}
-                className="text-xs font-medium text-amber-600 hover:text-amber-500 disabled:opacity-50"
+                className="text-caption text-warning-700 hover:text-warning-600 font-medium disabled:opacity-50"
               >
                 {retryingRunId === run.id ? 'Retrying…' : 'Retry'}
               </button>
@@ -1320,18 +1277,19 @@ function RunCell({
 }
 
 function ReviewStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { style: string; label: string }> = {
-    running: { style: 'bg-blue-100 text-blue-700', label: 'Running' },
-    pending: { style: 'bg-gray-100 text-gray-700', label: 'Pending' },
-    in_progress: { style: 'bg-amber-100 text-amber-700', label: 'In Progress' },
-    reviewed: { style: 'bg-green-100 text-green-700', label: 'Reviewed' },
+  const config: Record<
+    string,
+    { tone: 'info' | 'neutral' | 'warning' | 'success'; label: string }
+  > = {
+    running: { tone: 'info', label: 'Running' },
+    pending: { tone: 'neutral', label: 'Pending' },
+    in_progress: { tone: 'warning', label: 'In Progress' },
+    reviewed: { tone: 'success', label: 'Reviewed' },
   };
   const c = config[status] ?? config.pending;
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${c.style}`}
-    >
+    <Badge tone={c.tone} variant="soft">
       {c.label}
-    </span>
+    </Badge>
   );
 }

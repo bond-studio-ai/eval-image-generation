@@ -2,11 +2,13 @@
 
 import { PageHeader } from '@/components/page-header';
 import { ScopeToggle } from '@/components/scope-toggle';
-import Link from 'next/link';
+import { Tabs, type TabItem } from '@/components/ui';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { BatchRunsTab } from './batch-tab';
 import { ExecutionsRunButton } from './executions-run-button';
+
+type ExecTab = 'batches' | 'generations';
 
 export function ExecutionsTabs() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,6 +18,19 @@ export function ExecutionsTabs() {
   const handleRunCreated = useCallback(() => {
     setRefreshKey((k) => k + 1);
   }, []);
+
+  const sourceQs = source === 'benchmark' ? '?source=benchmark' : '';
+  const items: TabItem<ExecTab>[] = [
+    { key: 'batches', label: 'Batches', href: `/executions${sourceQs}` },
+    {
+      key: 'generations',
+      label: 'Generations',
+      href:
+        source === 'benchmark'
+          ? '/executions?tab=generations&source=benchmark'
+          : '/executions?tab=generations',
+    },
+  ];
 
   return (
     <div>
@@ -36,23 +51,8 @@ export function ExecutionsTabs() {
         />
       </div>
 
-      <div className="mb-6 flex gap-1 border-b border-gray-200">
-        <Link
-          href={source === 'benchmark' ? '/executions?source=benchmark' : '/executions'}
-          className="border-primary-600 text-primary-700 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
-        >
-          Batches
-        </Link>
-        <Link
-          href={
-            source === 'benchmark'
-              ? '/executions?tab=generations&source=benchmark'
-              : '/executions?tab=generations'
-          }
-          className="border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700"
-        >
-          Generations
-        </Link>
+      <div className="mb-6">
+        <Tabs items={items} active="batches" label="Runs view" />
       </div>
 
       <BatchRunsTab refreshKey={refreshKey} source={source} />

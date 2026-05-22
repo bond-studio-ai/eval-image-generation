@@ -1,6 +1,16 @@
 'use client';
 
 import { PageHeader } from '@/components/page-header';
+import {
+  Badge,
+  Button,
+  CheckCircleIcon,
+  cn,
+  FilterBar,
+  FilterSearch,
+  SegmentedControl,
+  Spinner,
+} from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -57,15 +67,18 @@ function RunPickerCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const statusTone =
+    run.status === 'completed' ? 'success' : run.status === 'failed' ? 'danger' : 'neutral';
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
+      className={cn(
+        'rounded-card flex w-full items-center gap-3 border px-3 py-2 text-left transition-colors',
         isSelected
           ? 'border-primary-400 bg-primary-50 ring-primary-400 ring-1'
-          : 'border-gray-200 bg-white hover:bg-gray-50'
-      }`}
+          : 'border-border bg-surface hover:bg-surface-muted',
+      )}
     >
       <div className="shrink-0">
         {run.lastOutputUrl ? (
@@ -75,13 +88,13 @@ function RunPickerCard({
             alt=""
             width={THUMB}
             height={THUMB}
-            className="rounded border border-gray-200 object-cover"
+            className="border-border rounded border object-cover"
             style={{ width: THUMB, height: THUMB }}
             loading="lazy"
           />
         ) : (
           <span
-            className="inline-flex items-center justify-center rounded border border-gray-200 bg-gray-50 text-[10px] text-gray-400"
+            className="border-border bg-surface-muted text-text-disabled inline-flex items-center justify-center rounded border text-[10px]"
             style={{ width: THUMB, height: THUMB }}
           >
             --
@@ -89,47 +102,36 @@ function RunPickerCard({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">
+        <p className="text-body text-text-primary truncate font-medium">
           {run.strategyName ?? 'Unknown strategy'}
         </p>
-        <p className="truncate text-[11px] text-gray-500">
+        <p className="text-text-muted truncate text-[11px]">
           {run.inputPresetName ?? 'No preset'} &middot; {new Date(run.createdAt).toLocaleString()}
         </p>
         <div className="mt-0.5 flex flex-wrap gap-1">
-          <span
-            className={`inline-flex rounded-full px-1.5 py-0 text-[10px] font-medium ${
-              run.status === 'completed'
-                ? 'bg-green-100 text-green-700'
-                : run.status === 'failed'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-gray-100 text-gray-600'
-            }`}
-          >
+          <Badge tone={statusTone} variant="soft" size="sm">
             {run.status}
-          </span>
+          </Badge>
           {run.source && (
-            <span className="inline-flex rounded-full bg-blue-100 px-1.5 py-0 text-[10px] font-medium text-blue-700">
+            <Badge tone="info" variant="soft" size="sm">
               {SOURCE_LABELS[run.source] ?? run.source}
-            </span>
+            </Badge>
           )}
           {run.judgeScore != null && (
-            <span className="inline-flex rounded-full bg-indigo-100 px-1.5 py-0 text-[10px] font-medium text-indigo-700">
+            <Badge tone="accent" variant="soft" size="sm">
               J:{run.judgeScore}
-            </span>
+            </Badge>
           )}
         </div>
       </div>
       <div className="shrink-0">
         {isSelected ? (
-          <svg className="text-primary-600 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <CheckCircleIcon className="text-primary-600 h-5 w-5" aria-hidden="true" />
         ) : (
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300" />
+          <span
+            className="border-border-strong inline-flex h-5 w-5 items-center justify-center rounded-full border-2"
+            aria-hidden="true"
+          />
         )}
       </div>
     </button>
@@ -305,140 +307,119 @@ export function AuditComparePage() {
       />
 
       {/* Picker section */}
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white shadow-xs">
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+      <div className="rounded-card border-border bg-surface shadow-card mt-6 border">
+        <div className="border-border bg-surface-muted flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-800">Select Runs</span>
+            <span className="text-body text-text-primary font-semibold">Select Runs</span>
             {leftId && (
-              <span className="bg-primary-100 text-primary-700 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium">
+              <Badge tone="info" variant="soft" size="sm">
                 Left: {leftId.slice(0, 8)}...
                 <button
                   type="button"
                   onClick={() => setLeftId(null)}
-                  className="hover:text-primary-900 ml-0.5"
+                  className="hover:text-info-900 ml-0.5"
+                  aria-label="Clear left selection"
                 >
                   &times;
                 </button>
-              </span>
+              </Badge>
             )}
             {rightId && (
-              <span className="bg-primary-100 text-primary-700 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium">
+              <Badge tone="info" variant="soft" size="sm">
                 Right: {rightId.slice(0, 8)}...
                 <button
                   type="button"
                   onClick={() => setRightId(null)}
-                  className="hover:text-primary-900 ml-0.5"
+                  className="hover:text-info-900 ml-0.5"
+                  aria-label="Clear right selection"
                 >
                   &times;
                 </button>
-              </span>
+              </Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
             {(leftId || rightId) && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setLeftId(null);
                   setRightId(null);
                 }}
-                className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Clear
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         <div className="p-4">
-          <div className="flex flex-wrap items-end gap-3">
+          <FilterBar className="items-end">
             <div className="min-w-0 flex-1">
-              <input
-                type="text"
+              <FilterSearch
                 value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
+                onChange={setFilterText}
                 placeholder="Filter by strategy name, preset, source, or run ID..."
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+                width="w-full"
               />
             </div>
-            <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 p-1">
-              {SOURCE_FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSourceFilter(option.value)}
-                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    sourceFilter === option.value
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
+            <SegmentedControl
+              options={SOURCE_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              value={sourceFilter}
+              onChange={(v) => setSourceFilter(v)}
+              size="sm"
+              label="Source filter"
+            />
+            <div className="flex items-end gap-2">
               <label className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-medium text-gray-500">From</span>
+                <span className="text-text-muted text-[10px] font-medium">From</span>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                  className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-medium text-gray-500">To</span>
+                <span className="text-text-muted text-[10px] font-medium">To</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                  className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
               {(dateFrom || dateTo) && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setDateFrom('');
                     setDateTo('');
                   }}
-                  className="mt-3.5 text-xs text-gray-500 hover:text-gray-700"
+                  className="mb-0.5"
                 >
                   Clear dates
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </FilterBar>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <svg className="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
+              <Spinner size="md" className="text-text-disabled" />
             </div>
           ) : error ? (
-            <p className="py-4 text-center text-sm text-red-600">{error}</p>
+            <p className="text-body text-danger-600 py-4 text-center">{error}</p>
           ) : (
             <>
-              <p className="mt-2 text-[11px] text-gray-400">
+              <p className="text-text-disabled mt-2 text-[11px]">
                 Showing {filtered.length} of {total} runs
               </p>
               <div ref={scrollRef} className="mt-2 max-h-[28rem] space-y-1.5 overflow-y-auto">
                 {filtered.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-gray-400">
+                  <p className="text-body text-text-disabled py-4 text-center">
                     {filterText ? 'No runs match your filter.' : 'No runs found.'}
                   </p>
                 ) : (
@@ -447,7 +428,7 @@ export function AuditComparePage() {
                     return (
                       <div
                         key={group.id}
-                        className="rounded-lg border border-gray-200 bg-gray-50/40"
+                        className="rounded-card border-border bg-surface-muted/40 border"
                       >
                         <button
                           type="button"
@@ -460,33 +441,35 @@ export function AuditComparePage() {
                           className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-semibold tracking-wide text-gray-600 uppercase">
+                            <span className="text-caption text-text-secondary block truncate font-semibold tracking-wide uppercase">
                               {group.groupId || group.batchRunId
                                 ? `Group ${group.id.slice(0, 8)}`
                                 : `Run ${group.id.slice(0, 8)}`}
                             </span>
-                            <span className="mt-0.5 block truncate text-xs text-gray-500">
+                            <span className="text-caption text-text-muted mt-0.5 block truncate">
                               {group.strategyName ?? 'Unknown strategy'} ·{' '}
                               {new Date(group.createdAt).toLocaleString()}
                             </span>
                           </span>
                           <span className="flex items-center gap-2">
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500 ring-1 ring-gray-200 ring-inset">
+                            <Badge tone="neutral" variant="outline" size="sm">
                               {group.runs.length} run{group.runs.length === 1 ? '' : 's'}
-                            </span>
+                            </Badge>
                             {group.source ? (
-                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">
+                              <Badge tone="info" variant="outline" size="sm">
                                 {SOURCE_LABELS[group.source] ?? group.source}
-                              </span>
+                              </Badge>
                             ) : null}
                             <svg
-                              className={`h-4 w-4 text-gray-400 transition-transform ${
-                                isExpanded ? 'rotate-180' : ''
-                              }`}
+                              className={cn(
+                                'text-text-disabled h-4 w-4 transition-transform',
+                                isExpanded && 'rotate-180',
+                              )}
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={1.5}
                               stroke="currentColor"
+                              aria-hidden="true"
                             >
                               <path
                                 strokeLinecap="round"
@@ -497,7 +480,7 @@ export function AuditComparePage() {
                           </span>
                         </button>
                         {isExpanded ? (
-                          <div className="space-y-1.5 border-t border-gray-200 bg-white p-2">
+                          <div className="border-border bg-surface space-y-1.5 border-t p-2">
                             {group.runs.map((run) => (
                               <RunPickerCard
                                 key={run.id}
@@ -514,27 +497,7 @@ export function AuditComparePage() {
                 )}
                 {hasMore && (
                   <div ref={sentinelRef} className="flex items-center justify-center py-3">
-                    {loadingMore && (
-                      <svg
-                        className="h-4 w-4 animate-spin text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                    )}
+                    {loadingMore && <Spinner size="sm" className="text-text-disabled" />}
                   </div>
                 )}
               </div>

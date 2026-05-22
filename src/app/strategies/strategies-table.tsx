@@ -16,6 +16,7 @@ import {
 } from '@/components/data-table';
 import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
 import { Pagination } from '@/components/pagination';
+import { toast, useConfirm } from '@/components/ui';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/types';
@@ -25,6 +26,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 export function StrategiesTable() {
   const router = useRouter();
+  const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
@@ -58,14 +60,22 @@ export function StrategiesTable() {
       setCloningId(id);
       try {
         const res = await fetch(serviceUrl(`strategies/${id}/clone`), { method: 'POST' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast.error('Failed to clone strategy', {
+            description: `Server responded with ${res.status}.`,
+          });
+          return;
+        }
         const json = await res.json();
         const newId = json.data?.id;
         if (newId) {
+          toast.success('Strategy cloned');
           router.push(`/strategies/${newId}/edit`);
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        toast.error('Failed to clone strategy', {
+          description: e instanceof Error ? e.message : undefined,
+        });
       } finally {
         setCloningId(null);
       }
@@ -75,19 +85,33 @@ export function StrategiesTable() {
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
-      if (!confirm(`Delete strategy "${name}"? This will soft-delete the strategy.`)) return;
+      const ok = await confirm({
+        title: `Delete strategy "${name}"?`,
+        description: 'This will soft-delete the strategy. You can restore it later if needed.',
+        confirmLabel: 'Delete strategy',
+        tone: 'danger',
+      });
+      if (!ok) return;
       setDeletingId(id);
       try {
         const res = await fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast.error('Failed to delete strategy', {
+            description: `Server responded with ${res.status}.`,
+          });
+          return;
+        }
+        toast.success(`Deleted strategy "${name}"`);
         refresh();
-      } catch {
-        // ignore
+      } catch (e) {
+        toast.error('Failed to delete strategy', {
+          description: e instanceof Error ? e.message : undefined,
+        });
       } finally {
         setDeletingId(null);
       }
     },
-    [refresh],
+    [refresh, confirm],
   );
 
   const handleDeactivate = useCallback(
@@ -95,10 +119,18 @@ export function StrategiesTable() {
       setTogglingId(id);
       try {
         const res = await fetch(serviceUrl(`strategies/${id}/deactivate`), { method: 'POST' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast.error('Failed to deactivate strategy', {
+            description: `Server responded with ${res.status}.`,
+          });
+          return;
+        }
+        toast.success('Strategy deactivated');
         refresh();
-      } catch {
-        // ignore
+      } catch (e) {
+        toast.error('Failed to deactivate strategy', {
+          description: e instanceof Error ? e.message : undefined,
+        });
       } finally {
         setTogglingId(null);
       }
@@ -124,7 +156,21 @@ export function StrategiesTable() {
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    await Promise.all(ids.map((id) => fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' })));
+    const results = await Promise.allSettled(
+      ids.map((id) => fetch(serviceUrl(`strategies/${id}`), { method: 'DELETE' })),
+    );
+    const failed = results.filter(
+      (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok),
+    ).length;
+    if (failed === 0) {
+      toast.success(`Deleted ${ids.length} strateg${ids.length === 1 ? 'y' : 'ies'}`);
+    } else if (failed === ids.length) {
+      toast.error('Failed to delete strategies');
+    } else {
+      toast.warning(`Deleted ${ids.length - failed} of ${ids.length}`, {
+        description: `${failed} failed.`,
+      });
+    }
     setSelected(new Set());
     refresh();
   }, [selected, refresh]);

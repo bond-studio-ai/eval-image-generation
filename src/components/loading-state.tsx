@@ -2,7 +2,7 @@
 
 /** Pulsing block with rounded corners. Use w-*, h-* to size. */
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-gray-200 ${className}`} />;
+  return <div className={`bg-surface-sunken animate-pulse rounded-md ${className}`} />;
 }
 
 /** A page-level skeleton that mimics a heading + subtitle + card grid. */
@@ -18,7 +18,7 @@ export function PageSkeleton() {
       {/* Stat cards row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+          <div key={i} className="rounded-card border-border bg-surface shadow-card border p-4">
             <Skeleton className="mb-2 h-4 w-20" />
             <Skeleton className="h-7 w-12" />
           </div>
@@ -26,7 +26,7 @@ export function PageSkeleton() {
       </div>
 
       {/* Content card */}
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
+      <div className="rounded-card border-border bg-surface shadow-card space-y-4 border p-6">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
@@ -34,15 +34,15 @@ export function PageSkeleton() {
       </div>
 
       {/* Table skeleton */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-        <div className="flex gap-12 bg-gray-50 px-6 py-3">
+      <div className="rounded-card border-border bg-surface shadow-card overflow-hidden border">
+        <div className="bg-surface-muted flex gap-12 px-6 py-3">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-3 w-16" />
         </div>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex gap-12 border-t border-gray-200 px-6 py-4">
+          <div key={i} className="border-border flex gap-12 border-t px-6 py-4">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-4 w-16" />
@@ -54,35 +54,40 @@ export function PageSkeleton() {
   );
 }
 
-/** Skeleton for the full app shell (sidebar + content area). */
+/** Skeleton for the full app shell (sidebar + top bar + content area). */
 export function AppShellSkeleton() {
   return (
     <div className="flex h-screen">
       {/* Sidebar skeleton */}
-      <div className="flex w-64 flex-col border-r border-gray-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-5">
-          <Skeleton className="h-8 w-8 rounded-lg" />
-          <Skeleton className="h-5 w-28" />
+      <div className="border-border bg-surface flex w-64 flex-col border-r">
+        <div className="border-border flex h-16 items-center gap-2 border-b px-4">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-4 w-28" />
         </div>
-        <nav className="mt-4 flex-1 space-y-1 px-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-lg px-3 py-2">
-              <Skeleton className="h-5 w-5 rounded" />
-              <Skeleton className="h-4 w-24" />
+        <nav className="flex-1 space-y-4 px-2 py-4">
+          {Array.from({ length: 3 }).map((_, g) => (
+            <div key={g} className="space-y-1">
+              <Skeleton className="ml-3 h-3 w-20" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-md px-3 py-2">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
             </div>
           ))}
         </nav>
-        <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
       </div>
       {/* Content area skeleton */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <PageSkeleton />
+      <div className="flex flex-1 flex-col">
+        <div className="border-border bg-surface/80 flex h-12 items-center justify-between border-b px-6">
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <PageSkeleton />
+          </div>
         </div>
       </div>
     </div>

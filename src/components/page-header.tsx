@@ -1,3 +1,4 @@
+import { ArrowLeftIcon, Button, LinkButton, PlusIcon } from '@/components/ui';
 import Link from 'next/link';
 
 interface PageHeaderProps {
@@ -14,19 +15,20 @@ export function PageHeader({ title, subtitle, backHref, backLabel, actions }: Pa
       {backHref && (
         <Link
           href={backHref}
-          className="mb-4 inline-block text-sm text-gray-600 hover:text-gray-900"
+          className="text-caption text-text-secondary hover:text-text-primary mb-4 inline-flex items-center gap-1"
         >
-          &larr; {backLabel ?? 'Back'}
+          <ArrowLeftIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          {backLabel ?? 'Back'}
         </Link>
       )}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          {title && <h1 className="text-display text-text-primary">{title}</h1>}
           {subtitle &&
             (typeof subtitle === 'string' ? (
-              <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
+              <p className="text-body text-text-secondary mt-1">{subtitle}</p>
             ) : (
-              <div className="mt-1 text-sm text-gray-600">{subtitle}</div>
+              <div className="text-body text-text-secondary mt-1">{subtitle}</div>
             ))}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-3">{actions}</div>}
@@ -35,6 +37,11 @@ export function PageHeader({ title, subtitle, backHref, backLabel, actions }: Pa
   );
 }
 
+/**
+ * Backward-compatible wrapper around the new `LinkButton` primitive.
+ *
+ * @deprecated Prefer `<LinkButton>` from `@/components/ui` directly.
+ */
 export function PrimaryLinkButton({
   href,
   children,
@@ -45,26 +52,21 @@ export function PrimaryLinkButton({
   icon?: boolean;
 }) {
   return (
-    <Link
+    <LinkButton
       href={href}
-      className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
+      variant="primary"
+      iconLeft={icon ? <PlusIcon className="h-4 w-4" /> : undefined}
     >
-      {icon && (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-      )}
       {children}
-    </Link>
+    </LinkButton>
   );
 }
 
+/**
+ * Backward-compatible wrapper around the new `Button` primitive.
+ *
+ * @deprecated Prefer `<Button>` from `@/components/ui` directly.
+ */
 export function PrimaryButton({
   children,
   onClick,
@@ -77,30 +79,8 @@ export function PrimaryButton({
   loading?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
-    >
-      {loading && (
-        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      )}
+    <Button onClick={onClick} disabled={disabled} loading={loading}>
       {children}
-    </button>
+    </Button>
   );
 }
