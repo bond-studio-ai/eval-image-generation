@@ -213,10 +213,10 @@ actionsColumn<RowType>([
 | `loading` | `(row: T) => boolean` | Shows spinner when true |
 | `hidden` | `(row: T) => boolean` | Hides button when true |
 
-For custom components (e.g. `DeployToEnvironmentButton`), use the render escape hatch:
+For custom components, use the render escape hatch:
 
 ```tsx
-{ render: (row) => <DeployToEnvironmentButton strategyId={row.id} variant="icon" /> }
+{ render: (row) => <CustomActionButton resourceId={row.id} variant="icon" /> }
 ```
 
 ## Class Name Constants

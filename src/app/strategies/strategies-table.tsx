@@ -14,7 +14,6 @@ import {
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
-import { DeployToEnvironmentButton } from '@/components/deploy-to-environment-button';
 import { Pagination } from '@/components/pagination';
 import { toast, useConfirm } from '@/components/ui';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
@@ -183,7 +182,6 @@ export function StrategiesTable() {
         onClick: (s) => handleClone(s.id),
         loading: (s) => cloningId === s.id,
       },
-      { render: (s) => <DeployToEnvironmentButton strategyId={s.id} variant="icon" /> },
       {
         icon: 'delete',
         label: 'Delete strategy',

@@ -19,7 +19,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   'input-presets': 'Input Presets',
   'prompt-versions': 'Prompt Versions',
   'prompt-preview': 'Prompt Preview',
-  environments: 'Environments',
   'catalog-runs': 'Catalog Runs',
   'catalog-prompts': 'Catalog Prompts',
   'catalog-calibrations': 'Calibrations',
