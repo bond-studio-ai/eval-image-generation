@@ -1,7 +1,6 @@
 import { localUrl } from './api-base';
 import {
   normalizeCameraFrame,
-  sanitizeRoomData,
   type DollhouseCameraFrame,
   type UnitySlimDesignMaterials,
   type V2Pagination,
@@ -173,11 +172,11 @@ export async function fetchProjectWithRenderBootstrap(
   return {
     project: summary,
     designMaterials: asUnitySlimDesign(pickFirstDesign(project.designs)),
-    // `sanitizeRoomData` strips unknown keys so the payload survives the
-    // strict v2 `roomDataSchema` (real scans carry entity fields like
-    // `fixture` / `mountingPosition` / `tubIdentifier` that aren't on the
-    // whitelist). Returns `null` when `scan` isn't an object.
-    roomData: sanitizeRoomData(project.scan),
+    // Pass the raw project scan through. The renderer needs fields that are
+    // outside the old v2 strict whitelist (e.g. tub/shower-specific metadata).
+    // service-image-generation#137 updates the v2 create endpoint to preserve
+    // raw `roomData`, matching the proven strategy dollhouse-capture path.
+    roomData: isRecord(project.scan) ? (project.scan as Record<string, unknown>) : null,
     cameraFrames: parseCameraFrames(project.cameraFrames),
   };
 }
