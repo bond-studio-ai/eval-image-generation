@@ -252,7 +252,17 @@ function pickAllowedKeys(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const key of allowed) {
-    if (obj[key] !== undefined) out[key] = obj[key];
+    const value = obj[key];
+    if (value === undefined) continue;
+    // The upstream renderer runs a second validation pass (`parseDollhouse-
+    // RenderRequest` with `strictRoomData: true`) that rejects empty strings
+    // on optional fields like `parentIdentifier`, `shortName`, `swing`,
+    // `identifier`, etc., even though the v2 Zod schema accepts them. Real
+    // scans have these (top-level entities commonly carry
+    // `parentIdentifier: ""`), so we drop them here. `null` is preserved
+    // because `shortName: null` is explicitly allowed.
+    if (value === '') continue;
+    out[key] = value;
   }
   return out;
 }

@@ -104,6 +104,57 @@ describe('sanitizeRoomData', () => {
     ]);
   });
 
+  it('drops empty-string optional fields that the renderer rejects, but keeps null', () => {
+    // Mirrors the real `areas.showers[0]` shape from PRJ-PGVPFGQFX: an empty
+    // `parentIdentifier` would slip past the v2 Zod schema but trip
+    // `parseDollhouseRenderRequest` on the way through. `shortName: null` is
+    // explicitly allowed by the renderer and must survive sanitization.
+    const out = sanitizeRoomData({
+      areas: {
+        showers: [
+          {
+            identifier: 'sh-1',
+            parentIdentifier: '',
+            shortName: null,
+            curbHeight: 0.1,
+            position: { x: 0, y: 0, z: 0 },
+          },
+        ],
+      },
+      ceilings: [
+        {
+          identifier: 'c-1',
+          parentIdentifier: '',
+          shortName: null,
+          position: { x: 0, y: 0, z: 0 },
+        },
+      ],
+      doors: [
+        {
+          identifier: 'd-1',
+          parentIdentifier: 'p-1',
+          shortName: '',
+          swing: '',
+          type: 'SingleSwingDoor',
+        },
+      ],
+    });
+    const showers = (out?.areas as { showers: Record<string, unknown>[] }).showers;
+    expect(showers[0]).toEqual({
+      identifier: 'sh-1',
+      shortName: null,
+      curbHeight: 0.1,
+      position: { x: 0, y: 0, z: 0 },
+    });
+    expect(out?.ceilings).toEqual([
+      { identifier: 'c-1', shortName: null, position: { x: 0, y: 0, z: 0 } },
+    ]);
+    // Empty `shortName` / `swing` get stripped; non-empty `type` stays.
+    expect(out?.doors).toEqual([
+      { identifier: 'd-1', parentIdentifier: 'p-1', type: 'SingleSwingDoor' },
+    ]);
+  });
+
   it('handles empty arrays and missing categories', () => {
     const out = sanitizeRoomData({ cabinets: [], ceilings: [] });
     expect(out).toEqual({ cabinets: [], ceilings: [] });
