@@ -15,11 +15,32 @@ interface ListResponse<T> {
   pagination: PaginationResponse;
 }
 
+/**
+ * Static query params attached to every request the hook makes. Use for
+ * response-shape modifiers (e.g. `include[]=frames`) that aren't part of the
+ * user's filter UI. Values may repeat — pass an array for multi-valued keys.
+ */
+export type StaticParams = Record<string, string | string[]>;
+
 export interface UseInfiniteListOptions {
   /** Items per page. Default 20. */
   limit?: number;
   /** Debounce delay for search input in ms. Default 300. */
   debounceMs?: number;
+  /**
+   * Build the full URL for an endpoint path. Defaults to `serviceUrl` (image-
+   * generation v1 proxy). Use `localUrl` for the projects BFF, `serviceV2Url`
+   * for the v2 image-gen proxy. All upstreams must speak the same `{ page,
+   * limit, total, totalPages }` pagination shape — that's enforced by the
+   * relevant BFF route, not by the hook.
+   */
+  urlFor?: (path: string) => string;
+  /**
+   * Extra always-on query params. Not URL-persisted, not exposed via
+   * `filters`/`setFilters` — for response-shape modifiers like
+   * `include[]=frames` that shouldn't appear to the user as filter state.
+   */
+  staticParams?: StaticParams;
 }
 
 export interface UseInfiniteListReturn<T> {
@@ -55,11 +76,22 @@ function readInitialParams() {
   return { search, page, filters };
 }
 
+function appendStaticParams(qs: URLSearchParams, staticParams: StaticParams | undefined): void {
+  if (!staticParams) return;
+  for (const [key, value] of Object.entries(staticParams)) {
+    if (Array.isArray(value)) {
+      for (const v of value) qs.append(key, v);
+    } else {
+      qs.append(key, value);
+    }
+  }
+}
+
 export function useInfiniteList<T>(
   endpoint: string,
   options: UseInfiniteListOptions = {},
 ): UseInfiniteListReturn<T> {
-  const { limit = 20, debounceMs = 300 } = options;
+  const { limit = 20, debounceMs = 300, urlFor = serviceUrl, staticParams } = options;
 
   const initial = useMemo(() => readInitialParams(), []);
 
@@ -75,6 +107,10 @@ export function useInfiniteList<T>(
 
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
+
+  // Keep a stable identity for staticParams across renders unless the actual
+  // shape changes, so the fetch effect doesn't re-fire on every render.
+  const staticParamsKey = useMemo(() => JSON.stringify(staticParams ?? null), [staticParams]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -134,16 +170,16 @@ export function useInfiniteList<T>(
       }
 
       try {
-        const qs = new URLSearchParams({
-          page: String(pageNum),
-          limit: String(limit),
-        });
+        const qs = new URLSearchParams();
+        qs.set('page', String(pageNum));
+        qs.set('limit', String(limit));
         if (debouncedSearch) qs.set('search', debouncedSearch);
         for (const [key, val] of Object.entries(filters)) {
           if (val !== undefined && val !== '') qs.set(key, val);
         }
+        appendStaticParams(qs, staticParams);
 
-        const res = await fetch(`${serviceUrl(endpoint)}?${qs}`, {
+        const res = await fetch(`${urlFor(endpoint)}?${qs}`, {
           signal: controller.signal,
         });
 
@@ -169,7 +205,10 @@ export function useInfiniteList<T>(
         }
       }
     },
-    [endpoint, limit, debouncedSearch, filters],
+    // staticParams is captured via its stringified key so a fresh object literal
+    // from the caller doesn't refetch on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [endpoint, limit, debouncedSearch, filters, urlFor, staticParamsKey],
   );
 
   const initialPageRef = useRef(initial.page);
