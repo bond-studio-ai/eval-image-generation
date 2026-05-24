@@ -1,6 +1,25 @@
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-type ProxyErrorCode = 'INTERNAL_ERROR' | 'UPSTREAM_NETWORK_ERROR' | 'UPSTREAM_BAD_JSON';
+type ProxyErrorCode =
+  | 'INTERNAL_ERROR'
+  | 'PROXY_CONFIG_ERROR'
+  | 'UPSTREAM_NETWORK_ERROR'
+  | 'UPSTREAM_BAD_JSON';
+
+/**
+ * Optional rewrite of inbound query params before the upstream call (e.g.
+ * translating the v1 `page`/`limit` convention into v2's `currentPage`/`perPage`).
+ * Receives the inbound `URLSearchParams` and must return a new one to use.
+ */
+export type ProxyQueryRewriter = (params: URLSearchParams) => URLSearchParams;
+
+/**
+ * Optional transformation of a parsed JSON body before it's returned to the
+ * caller (e.g. translating the v2 `pagination.lastPage` shape back into the
+ * v1 `pagination.totalPages` shape).
+ */
+export type ProxyJsonTransformer = (json: unknown) => unknown;
 
 interface ProxyUpstreamOptions {
   request: NextRequest;
@@ -8,6 +27,8 @@ interface ProxyUpstreamOptions {
   baseUrl: string;
   serviceName: string;
   extraHeaders?: HeadersInit;
+  rewriteQuery?: ProxyQueryRewriter;
+  transformJson?: ProxyJsonTransformer;
 }
 
 function errorJson(
@@ -71,9 +92,14 @@ export async function proxyUpstream({
   baseUrl,
   serviceName,
   extraHeaders,
+  rewriteQuery,
+  transformJson,
 }: ProxyUpstreamOptions) {
   const path = pathSegments.length > 0 ? pathSegments.join('/') : '';
-  const search = request.nextUrl.searchParams.toString();
+  const outboundParams = rewriteQuery
+    ? rewriteQuery(request.nextUrl.searchParams)
+    : request.nextUrl.searchParams;
+  const search = outboundParams.toString();
   const url = `${baseUrl}${path ? `/${path}` : ''}${search ? `?${search}` : ''}`;
   const headers = forwardedRequestHeaders(request, extraHeaders);
 
@@ -120,8 +146,9 @@ export async function proxyUpstream({
     if (rawBody.length === 0) {
       return NextResponse.json({}, { status: res.status });
     }
+    let parsed: unknown;
     try {
-      return NextResponse.json(JSON.parse(rawBody), { status: res.status });
+      parsed = JSON.parse(rawBody);
     } catch (err) {
       console.error(`${serviceName} proxy JSON parse failed`, {
         url,
@@ -134,6 +161,8 @@ export async function proxyUpstream({
         bodySnippet: rawBody.slice(0, 300),
       });
     }
+    const transformed = transformJson && res.ok ? transformJson(parsed) : parsed;
+    return NextResponse.json(transformed, { status: res.status });
   }
 
   return new NextResponse(rawBody, {
@@ -141,4 +170,77 @@ export async function proxyUpstream({
     statusText: res.statusText,
     headers: forwardedResponseHeaders(res),
   });
+}
+
+interface CreateCatchAllProxyOptions {
+  /** Returns the upstream base URL. Called per-request so env errors surface as 502s. */
+  getBaseUrl: () => string;
+  /** Short label included in log lines (e.g. `'image-generation-v2'`). */
+  serviceName: string;
+  /** When `true` (default) the route requires a Clerk session. */
+  requireAuth?: boolean;
+  rewriteQuery?: ProxyQueryRewriter;
+  transformJson?: ProxyJsonTransformer;
+}
+
+type RouteHandler = (
+  request: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> },
+) => Promise<Response>;
+
+type CatchAllRouteHandlers = {
+  GET: RouteHandler;
+  POST: RouteHandler;
+  PATCH: RouteHandler;
+  PUT: RouteHandler;
+  DELETE: RouteHandler;
+};
+
+/**
+ * Build the five HTTP-method handlers for a Next.js `[[...path]]` proxy route.
+ * Exists so each per-route file is a one-liner and the only difference between
+ * upstreams is which base URL / transformers / auth they need.
+ */
+export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllRouteHandlers {
+  const { getBaseUrl, serviceName, requireAuth = true, rewriteQuery, transformJson } = opts;
+
+  const handle: RouteHandler = async (request, { params }) => {
+    if (requireAuth) {
+      const { userId } = await auth();
+      if (!userId) {
+        return NextResponse.json(
+          {
+            error: {
+              code: 'UNAUTHORIZED',
+              message: `Sign in is required to access the ${serviceName} API.`,
+            },
+          },
+          { status: 401 },
+        );
+      }
+    }
+
+    let baseUrl: string;
+    try {
+      baseUrl = getBaseUrl();
+    } catch (err) {
+      console.error(`${serviceName} proxy base-url error`, err);
+      // 500 (not 502): the proxy itself is misconfigured; we never even tried
+      // to reach upstream. `PROXY_CONFIG_ERROR` distinguishes this from
+      // `UPSTREAM_NETWORK_ERROR` in logs and from any consumer trying to react.
+      return errorJson('PROXY_CONFIG_ERROR', 'Backend BASE_API_HOSTNAME is not configured', 500);
+    }
+
+    const { path = [] } = await params;
+    return proxyUpstream({
+      request,
+      pathSegments: path,
+      baseUrl,
+      serviceName,
+      rewriteQuery,
+      transformJson,
+    });
+  };
+
+  return { GET: handle, POST: handle, PATCH: handle, PUT: handle, DELETE: handle };
 }

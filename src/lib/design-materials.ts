@@ -270,10 +270,13 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
     const res = await fetch(localUrl(`projects/${projectId}`), { cache: 'no-store' });
     if (!res.ok) return null;
     const json = (await res.json()) as Record<string, unknown>;
+    // The BFF passes the upstream body through, which is `{ data: [project] }`.
+    // We also accept the upstream-unwrapped shape and a few legacy variants so
+    // this helper keeps working if it's ever called against a different proxy.
     const candidates: unknown[] = [
+      Array.isArray(json.data) ? json.data[0] : null,
       json.data,
       json,
-      Array.isArray(json.data) ? json.data[0] : null,
       asRecord(json.data)?.project,
       asRecord(json.data)?.data,
     ];

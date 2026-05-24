@@ -186,9 +186,7 @@ export function StatusBadge({
   );
 }
 
-export function DateCell({ date }: { date: string }) {
-  return <>{new Date(date).toLocaleDateString()}</>;
-}
+export { DateCell, DateTimeCell } from './date-cells';
 
 // ---------------------------------------------------------------------------
 // Toolbar components

@@ -7,6 +7,7 @@ import {
   cn,
   EyeIcon,
   GitCompareIcon,
+  ImageIcon,
   ImagePlusIcon,
   PlayIcon,
   ScrollTextIcon,
@@ -37,6 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Run',
     items: [
       { name: 'Runs', href: '/executions', icon: PlayIcon },
+      { name: 'Dollhouse Renders', href: '/dollhouse-renders', icon: ImageIcon },
       { name: 'Audit', href: '/audit/compare', icon: GitCompareIcon },
     ],
   },

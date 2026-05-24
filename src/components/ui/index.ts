@@ -7,6 +7,7 @@ export { cn } from './cn';
 export type { ClassValue } from './cn';
 export { ConfirmProvider, useConfirm } from './confirm-dialog';
 export type { ConfirmOptions } from './confirm-dialog';
+export { Checkbox, Field, TextInput, Textarea } from './field';
 export { FilterBar, FilterSearch } from './filter-bar';
 export { FormSection } from './form-section';
 export { IconButton } from './icon-button';
