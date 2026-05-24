@@ -142,15 +142,21 @@ export class DollhouseRenderUnexpectedResponseError extends Error {
 }
 
 /**
- * Stable per-frame identifier for use as a React key or set member. The
- * upstream renderer doesn't give frames an `id` until after a render job
- * exists, so we derive one from `(priority, summary)` which is stable within
- * a project. Falls back to the array index when both are missing.
+ * Stable, collision-free per-frame identifier for use as a React key or set
+ * member. The upstream renderer doesn't give frames an `id` until after a
+ * render job exists, so we derive one from `(priority, summary, index)`.
+ *
+ * The array index is always included — `(priority, summary)` alone is not
+ * guaranteed unique within a project (two frames can share both), and a
+ * non-unique key would let the include/exclude `Set` collapse multiple frames
+ * into one toggle and submit the wrong subset.
+ *
+ * Index stability is acceptable here because the only writer of the
+ * exclusion set resets it whenever a fresh `cameraFrames[]` is loaded.
  */
 export function cameraFrameKey(frame: DollhouseCameraFrame, index: number): string {
   const summary = frame.summary.trim();
-  if (summary) return `p${frame.priority}|${summary}`;
-  return `p${frame.priority}|#${index}`;
+  return `${index}|p${frame.priority}|${summary}`;
 }
 
 async function parseError(res: Response): Promise<DollhouseRenderApiError> {

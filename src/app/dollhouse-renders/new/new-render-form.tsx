@@ -12,7 +12,7 @@ import {
 } from '@/lib/dollhouse-renders';
 import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from '@/lib/projects';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdvancedSection } from './_components/advanced-section';
 import {
   buildCreateRenderBody,
@@ -51,21 +51,46 @@ export function NewRenderForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Tracks the in-flight bootstrap fetch so a fast second click cancels the
+  // first — otherwise the slower response could land last and overwrite the
+  // newer selection, making the form submit a render for the wrong project.
+  const loadAbortRef = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      loadAbortRef.current?.abort();
+    },
+    [],
+  );
+
   const loadProject = useCallback(async (projectId: string) => {
     const trimmed = projectId.trim();
     if (!trimmed) return;
+
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+
     setProjectIdInput(trimmed);
     setLoadingProject(true);
     setProjectError(null);
     setBootstrap(null);
     setExcludedFrameKeys(new Set());
     try {
-      const result = await fetchProjectWithRenderBootstrap(trimmed);
+      const result = await fetchProjectWithRenderBootstrap(trimmed, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
       setBootstrap(result);
     } catch (err) {
+      // Aborts come through as either a DOMException with `name === 'AbortError'`
+      // or a TypeError depending on runtime; check the controller as the source of truth.
+      if (controller.signal.aborted) return;
       setProjectError(err instanceof Error ? err.message : 'Failed to fetch project');
     } finally {
-      setLoadingProject(false);
+      if (loadAbortRef.current === controller) {
+        loadAbortRef.current = null;
+        setLoadingProject(false);
+      }
     }
   }, []);
 
