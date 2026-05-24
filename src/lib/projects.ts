@@ -1,8 +1,10 @@
 import { localUrl } from './api-base';
-import type {
-  DollhouseCameraFrame,
-  UnitySlimDesignMaterials,
-  V2Pagination,
+import {
+  normalizeCameraFrame,
+  sanitizeRoomData,
+  type DollhouseCameraFrame,
+  type UnitySlimDesignMaterials,
+  type V2Pagination,
 } from './dollhouse-renders';
 
 export interface ProjectSummary {
@@ -119,29 +121,6 @@ function asUnitySlimDesign(value: unknown): UnitySlimDesignMaterials | null {
   };
 }
 
-/**
- * Validate the fields the form actually displays (`summary`, `priority`,
- * `aspect`, `fov`) and pass everything else through opaquely. The renderer is
- * the authority on the rest of the schema — over-policing here only causes
- * silently-dropped frames when the renderer adds new fields or normalizes
- * existing ones (e.g. `products[].category` whitelist drift).
- */
-function asPartialCameraFrame(value: unknown): DollhouseCameraFrame | null {
-  if (!isRecord(value)) return null;
-  const { aspect, fov, priority, summary } = value;
-  if (
-    typeof aspect !== 'number' ||
-    typeof fov !== 'number' ||
-    typeof priority !== 'number' ||
-    typeof summary !== 'string'
-  ) {
-    return null;
-  }
-  // Cast to the structured type while preserving any extra fields the upstream
-  // sent — they round-trip into `createDollhouseRender` unchanged.
-  return value as unknown as DollhouseCameraFrame;
-}
-
 function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
   let array: unknown = raw;
   // `cameraFrames` may arrive as a JSON-encoded string (it's stored as text in
@@ -154,7 +133,12 @@ function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
     }
   }
   if (!Array.isArray(array)) return [];
-  return array.map(asPartialCameraFrame).filter((f): f is DollhouseCameraFrame => f !== null);
+  // Normalize each frame into the exact shape the v2 dollhouse-renders
+  // endpoint expects (numeric position/rotation with defaults, sanitized
+  // products). Passing the raw upstream object through unchanged was
+  // tempting but trips the strict v2 validator on real-world data; see
+  // `normalizeCameraFrame` for the per-field rules.
+  return array.map(normalizeCameraFrame).filter((f): f is DollhouseCameraFrame => f !== null);
 }
 
 export async function fetchProjectWithRenderBootstrap(
@@ -189,7 +173,11 @@ export async function fetchProjectWithRenderBootstrap(
   return {
     project: summary,
     designMaterials: asUnitySlimDesign(pickFirstDesign(project.designs)),
-    roomData: isRecord(project.scan) ? (project.scan as Record<string, unknown>) : null,
+    // `sanitizeRoomData` strips unknown keys so the payload survives the
+    // strict v2 `roomDataSchema` (real scans carry entity fields like
+    // `fixture` / `mountingPosition` / `tubIdentifier` that aren't on the
+    // whitelist). Returns `null` when `scan` isn't an object.
+    roomData: sanitizeRoomData(project.scan),
     cameraFrames: parseCameraFrames(project.cameraFrames),
   };
 }
