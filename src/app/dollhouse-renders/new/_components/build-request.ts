@@ -27,8 +27,8 @@ export interface RenderConfigState {
 }
 
 export const FORMAT_OPTIONS: { value: ImageFormat; label: string }[] = [
-  { value: 'Jpeg', label: 'JPEG' },
   { value: 'Png', label: 'PNG' },
+  { value: 'Jpeg', label: 'JPEG' },
   { value: 'Exr', label: 'EXR' },
 ];
 
@@ -40,9 +40,12 @@ export const RENDER_MODE_OPTIONS: { value: RenderModeOption; label: string }[] =
 ];
 
 export const DEFAULT_IMAGE_CONFIG: ImageConfigState = {
-  format: 'Jpeg',
-  width: '1024',
-  height: '1024',
+  // Match the service's existing dollhouse-capture defaults. The project
+  // camera frames are 4:3 (`aspect: 1.333...`); sending a square 1024x1024 JPEG
+  // can get accepted by the gateway but stall before the final callback.
+  format: 'Png',
+  width: '1920',
+  height: '1440',
   superSamplingMultiplier: '',
 };
 
@@ -66,8 +69,8 @@ export function buildImageConfig(state: ImageConfigState): DollhouseImageConfig 
     : null;
   return {
     format: state.format,
-    width: Number.isFinite(width) && width > 0 ? width : 1024,
-    height: Number.isFinite(height) && height > 0 ? height : 1024,
+    width: Number.isFinite(width) && width > 0 ? width : 1920,
+    height: Number.isFinite(height) && height > 0 ? height : 1440,
     ...(ssm !== null && Number.isFinite(ssm) && ssm > 0 ? { superSamplingMultiplier: ssm } : {}),
   };
 }
