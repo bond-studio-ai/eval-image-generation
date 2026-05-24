@@ -7,6 +7,7 @@ import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-render
 import { imageGenerationV2Base } from '@/lib/env';
 import { withImageParams } from '@/lib/image-utils';
 import { notFound } from 'next/navigation';
+import { RenderAutoRefresh } from './render-auto-refresh';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,7 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
 
   return (
     <div>
+      <RenderAutoRefresh status={render.status} />
       <PageHeader
         backHref="/dollhouse-renders"
         backLabel="Back to Dollhouse Renders"
@@ -135,7 +137,9 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
         {frames.length === 0 ? (
           <Card className="mt-4">
             <p className="text-body text-text-secondary">
-              No frames are available yet. They will appear here once the render completes.
+              {render.status === 'pending' || render.status === 'posted'
+                ? 'This render is still processing. The page refreshes automatically and frames will appear here once the callback completes.'
+                : 'No frames are available for this render.'}
             </p>
           </Card>
         ) : (
