@@ -133,6 +133,29 @@ export class DollhouseRenderApiError extends Error {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Pull out the per-field issues that the upstream `validateRequest` helper
+ * surfaces via `details.issues` (a `Record<string, string[]>` from
+ * `z.flattenError`). Returns a one-line summary so the form can show *what*
+ * failed, not just "Invalid request body".
+ */
+function summarizeZodIssues(details: unknown): string | null {
+  if (!isRecord(details)) return null;
+  const issues = isRecord(details.issues) ? details.issues : null;
+  if (!issues) return null;
+  const lines: string[] = [];
+  for (const [field, messages] of Object.entries(issues)) {
+    const list = Array.isArray(messages) ? messages.map(String) : [String(messages)];
+    if (list.length === 0) continue;
+    lines.push(`${field}: ${list.join('; ')}`);
+  }
+  return lines.length > 0 ? lines.join(' | ') : null;
+}
+
 /** Server returned 2xx but the body wasn't the expected `{ data: [...] }` shape. */
 export class DollhouseRenderUnexpectedResponseError extends Error {
   constructor(message = 'Server returned an unexpected response shape') {
@@ -159,6 +182,184 @@ export function cameraFrameKey(frame: DollhouseCameraFrame, index: number): stri
   return `${index}|p${frame.priority}|${summary}`;
 }
 
+// ─── roomData / cameraFrames sanitization ────────────────────────────────────
+//
+// The v2 `dollhouse-renders` endpoint validates the body with `.strict()` Zod
+// schemas (see `services/service-image-generation/src/routes/v2/dollhouse-
+// renders/schema.ts`). Real-world project scans carry per-entity fields
+// outside that whitelist (e.g. tubFillers' `fixture`/`mountingPosition`/
+// `tubIdentifier`), which would fail the request with "Invalid request body"
+// before the renderer ever sees the payload.
+//
+// We mirror the upstream whitelist here so we can strip unknown keys client-
+// side and still pass review for the fields the renderer cares about. If the
+// upstream schema changes, these lists need to be updated in lockstep.
+
+const ROOM_DATA_TOP_LEVEL_KEYS = [
+  'id',
+  'roomId',
+  'roomType',
+  'type',
+  'layoutType',
+  'scanId',
+  'scannedDate',
+  'areas',
+] as const;
+
+const ROOM_DATA_ARRAY_CATEGORIES = [
+  'cabinets',
+  'ceilings',
+  'dishWashers',
+  'doors',
+  'floors',
+  'lights',
+  'linenCabinets',
+  'niches',
+  'openings',
+  'ovens',
+  'refrigerators',
+  'showerSystems',
+  'sinks',
+  'stoves',
+  'toilets',
+  'tubFillers',
+  'tubs',
+  'vanities',
+  'walls',
+  'windows',
+] as const;
+
+const ROOM_LAYOUT_ENTITY_KEYS = [
+  'identifier',
+  'id',
+  'parentIdentifier',
+  'position',
+  'rotation',
+  'scale',
+  'shortName',
+  'type',
+  'shape',
+  'curbHeight',
+  'curbThickness',
+  'swing',
+  'thickness',
+  'showerAreaIdentifier',
+] as const;
+
+function pickAllowedKeys(
+  obj: Record<string, unknown>,
+  allowed: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (obj[key] !== undefined) out[key] = obj[key];
+  }
+  return out;
+}
+
+function sanitizeRoomLayoutEntity(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  const cleaned = pickAllowedKeys(value, ROOM_LAYOUT_ENTITY_KEYS);
+  // The upstream `roomLayoutEntitySchema` rejects `id` and `identifier`
+  // together; prefer `identifier` since that's what real scans carry.
+  if (cleaned.identifier !== undefined && cleaned.id !== undefined) {
+    delete cleaned.id;
+  }
+  return cleaned;
+}
+
+function sanitizeRoomLayoutEntityArray(value: unknown): Record<string, unknown>[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .map(sanitizeRoomLayoutEntity)
+    .filter((e): e is Record<string, unknown> => e !== null);
+}
+
+/**
+ * Strip unknown keys from a project's `scan` payload so it round-trips through
+ * the strict v2 `roomDataSchema`. Returns `null` if `value` isn't an object.
+ */
+export function sanitizeRoomData(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  const out = pickAllowedKeys(value, ROOM_DATA_TOP_LEVEL_KEYS);
+  // Mutual-exclusion guards mirror the upstream `.superRefine` checks.
+  if (out.id !== undefined && out.roomId !== undefined) delete out.roomId;
+  if (out.roomType !== undefined && out.type !== undefined) delete out.type;
+
+  if (isRecord(out.areas)) {
+    const areas: Record<string, unknown> = {};
+    const showers = sanitizeRoomLayoutEntityArray((out.areas as Record<string, unknown>).showers);
+    if (showers) areas.showers = showers;
+    out.areas = areas;
+  }
+
+  for (const category of ROOM_DATA_ARRAY_CATEGORIES) {
+    const cleaned = sanitizeRoomLayoutEntityArray(value[category]);
+    if (cleaned !== undefined) out[category] = cleaned;
+  }
+
+  return out;
+}
+
+function numberOr(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function trimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function asPoint3(value: unknown): DollhousePoint3 | null {
+  if (!isRecord(value)) return null;
+  return {
+    x: numberOr(value.x, 0),
+    y: numberOr(value.y, 0),
+    z: numberOr(value.z, 0),
+  };
+}
+
+function normalizeCameraFrameProduct(value: unknown): DollhouseCameraFrameProduct | null {
+  // Spatial occasionally serializes `products` entries as bare id strings;
+  // those can't satisfy the upstream `category.min(1)` / `view.min(1)` rules,
+  // so we drop them. Object entries with empty fields are also dropped.
+  if (!isRecord(value)) return null;
+  const id = trimmedString(value.id);
+  const category = trimmedString(value.category);
+  const view = trimmedString(value.view);
+  if (!id || !category || !view) return null;
+  return { id, category, view };
+}
+
+/**
+ * Normalize a single camera frame to the shape the v2 dollhouse-renders
+ * endpoint expects. Returns `null` only when the frame is unrecoverable
+ * (missing `position`/`rotation`). Coerces numeric defaults rather than
+ * silently dropping frames over individual missing fields, mirroring the
+ * normalization the image-generation service applies internally.
+ */
+export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | null {
+  if (!isRecord(value)) return null;
+  const position = asPoint3(value.position);
+  const rotation = asPoint3(value.rotation);
+  if (!position || !rotation) return null;
+
+  const products = Array.isArray(value.products)
+    ? value.products
+        .map(normalizeCameraFrameProduct)
+        .filter((p): p is DollhouseCameraFrameProduct => p !== null)
+    : [];
+
+  return {
+    aspect: numberOr(value.aspect, 0),
+    fov: numberOr(value.fov, 0),
+    position,
+    rotation,
+    priority: numberOr(value.priority, 0),
+    summary: typeof value.summary === 'string' ? value.summary : '',
+    products,
+  };
+}
+
 async function parseError(res: Response): Promise<DollhouseRenderApiError> {
   let body: RequestErrorJson | null = null;
   try {
@@ -166,7 +367,9 @@ async function parseError(res: Response): Promise<DollhouseRenderApiError> {
   } catch {
     // fall through
   }
-  const message = body?.error?.message ?? `Request failed (${res.status})`;
+  const baseMessage = body?.error?.message ?? `Request failed (${res.status})`;
+  const issueSummary = summarizeZodIssues(body?.error?.details);
+  const message = issueSummary ? `${baseMessage} — ${issueSummary}` : baseMessage;
   return new DollhouseRenderApiError(res.status, message, body?.error?.code, body?.error?.details);
 }
 
