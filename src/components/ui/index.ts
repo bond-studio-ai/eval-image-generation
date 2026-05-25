@@ -1,5 +1,7 @@
 export { Badge } from './badge';
 export type { BadgeSize, BadgeTone, BadgeVariant } from './badge';
+export { Banner } from './banner';
+export type { BannerTone } from './banner';
 export { Button, LinkButton } from './button';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './button';
 export { Card, CardBody, CardFooter, CardHeader, StatCard } from './card';
@@ -16,6 +18,8 @@ export type { MoreAction } from './more-actions-menu';
 export { SegmentedControl } from './segmented-control';
 export type { SegmentedOption } from './segmented-control';
 export { Spinner } from './spinner';
+export { Stepper } from './stepper';
+export type { StepperStep, StepperStepState } from './stepper';
 export { Tabs } from './tabs';
 export type { TabItem } from './tabs';
 export { ToasterProvider, toast, useToast } from './toaster';

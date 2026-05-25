@@ -2,7 +2,7 @@ import { DateTimeCell } from '@/components/date-cells';
 import { ExpandableImage } from '@/components/expandable-image';
 import { PageHeader } from '@/components/page-header';
 import { RenderStatusBadge } from '@/components/render-status-badge';
-import { Card } from '@/components/ui';
+import { Card, Spinner } from '@/components/ui';
 import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-renders';
 import { imageGenerationV2Base } from '@/lib/env';
 import { withImageParams } from '@/lib/image-utils';
@@ -70,7 +70,6 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
 
   return (
     <div>
-      <RenderAutoRefresh status={render.status} />
       <PageHeader
         backHref="/dollhouse-renders"
         backLabel="Back to Dollhouse Renders"
@@ -82,6 +81,7 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
         }
         actions={<RenderStatusBadge status={render.status} />}
       />
+      <RenderAutoRefresh status={render.status} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -136,11 +136,19 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
         </div>
         {frames.length === 0 ? (
           <Card className="mt-4">
-            <p className="text-body text-text-secondary">
-              {render.status === 'pending' || render.status === 'posted'
-                ? 'This render is still processing. The page refreshes automatically and frames will appear here once the callback completes.'
-                : 'No frames are available for this render.'}
-            </p>
+            {render.status === 'pending' || render.status === 'posted' ? (
+              <div className="flex items-center gap-3">
+                <Spinner size="sm" />
+                <p className="text-body text-text-secondary">
+                  This render is still processing. The page refreshes automatically and frames will
+                  appear here once the callback completes.
+                </p>
+              </div>
+            ) : (
+              <p className="text-body text-text-secondary">
+                No frames are available for this render.
+              </p>
+            )}
           </Card>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

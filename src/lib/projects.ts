@@ -1,6 +1,7 @@
 import { localUrl } from './api-base';
 import {
   normalizeCameraFrame,
+  validateUnitySlimDesign,
   type DollhouseCameraFrame,
   type UnitySlimDesignMaterials,
   type V2Pagination,
@@ -110,14 +111,8 @@ function pickFirstDesign(value: unknown): unknown {
 }
 
 function asUnitySlimDesign(value: unknown): UnitySlimDesignMaterials | null {
-  if (!isRecord(value)) return null;
-  if (typeof value.id !== 'string' || value.id.length === 0) return null;
-  if (!isRecord(value.objects) || !isRecord(value.surfaces)) return null;
-  return {
-    id: value.id,
-    objects: value.objects as Record<string, unknown>,
-    surfaces: value.surfaces as Record<string, unknown>,
-  };
+  const result = validateUnitySlimDesign(value);
+  return result.ok ? result.value : null;
 }
 
 function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
