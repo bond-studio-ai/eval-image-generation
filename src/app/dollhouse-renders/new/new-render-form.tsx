@@ -44,6 +44,10 @@ export function NewRenderForm() {
   const [excludedFrameKeys, setExcludedFrameKeys] = useState<Set<string>>(new Set());
 
   const overrides = useDollhouseOverrides();
+  // Destructure the stable `reset` callback so the load/clear callbacks
+  // below have stable identity across renders — without this the whole
+  // `overrides` object dep would invalidate them every render.
+  const { reset: resetOverrides } = overrides;
 
   const [imageConfig, setImageConfig] = useState<ImageConfigState>(DEFAULT_IMAGE_CONFIG);
   const [renderConfig, setRenderConfig] = useState<RenderConfigState>(DEFAULT_RENDER_CONFIG);
@@ -64,58 +68,56 @@ export function NewRenderForm() {
     [],
   );
 
-  const loadProject = useCallback(async (projectId: string) => {
-    const trimmed = projectId.trim();
-    if (!trimmed) return;
+  const loadProject = useCallback(
+    async (projectId: string) => {
+      const trimmed = projectId.trim();
+      if (!trimmed) return;
 
-    loadAbortRef.current?.abort();
-    const controller = new AbortController();
-    loadAbortRef.current = controller;
+      loadAbortRef.current?.abort();
+      const controller = new AbortController();
+      loadAbortRef.current = controller;
 
-    setProjectIdInput(trimmed);
-    setLoadingProject(true);
-    setProjectError(null);
-    setBootstrap(null);
-    setExcludedFrameKeys(new Set());
-    try {
-      const result = await fetchProjectWithRenderBootstrap(trimmed, {
-        signal: controller.signal,
-      });
-      if (controller.signal.aborted) return;
-      setBootstrap(result);
-    } catch (err) {
-      // Aborts come through as either a DOMException with `name === 'AbortError'`
-      // or a TypeError depending on runtime; check the controller as the source of truth.
-      if (controller.signal.aborted) return;
-      setProjectError(err instanceof Error ? err.message : 'Failed to fetch project');
-    } finally {
-      if (loadAbortRef.current === controller) {
-        loadAbortRef.current = null;
-        setLoadingProject(false);
+      setProjectIdInput(trimmed);
+      setLoadingProject(true);
+      setProjectError(null);
+      setBootstrap(null);
+      setExcludedFrameKeys(new Set());
+      // Pasted overrides almost certainly target the project being navigated
+      // away from. Reset on every load (not just via the explicit "Change
+      // project" button) so picking project B from the list can't silently
+      // ship project A's override JSON to the renderer.
+      resetOverrides();
+      try {
+        const result = await fetchProjectWithRenderBootstrap(trimmed, {
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        setBootstrap(result);
+      } catch (err) {
+        // Aborts come through as either a DOMException with `name === 'AbortError'`
+        // or a TypeError depending on runtime; check the controller as the source of truth.
+        if (controller.signal.aborted) return;
+        setProjectError(err instanceof Error ? err.message : 'Failed to fetch project');
+      } finally {
+        if (loadAbortRef.current === controller) {
+          loadAbortRef.current = null;
+          setLoadingProject(false);
+        }
       }
-    }
-  }, []);
+    },
+    [resetOverrides],
+  );
 
   const handleManualLoad = useCallback(() => {
     void loadProject(projectIdInput);
   }, [loadProject, projectIdInput]);
 
-  // Destructure the stable `reset` callback so `clearProject` has a stable
-  // identity across renders — without this the whole `overrides` object
-  // dep would invalidate `clearProject` every render and force the picker
-  // section to re-render unnecessarily.
-  const { reset: resetOverrides } = overrides;
   const clearProject = useCallback(() => {
     loadAbortRef.current?.abort();
     setBootstrap(null);
     setProjectError(null);
     setExcludedFrameKeys(new Set());
     setProjectIdInput('');
-    // Pasted overrides were almost certainly intended to apply *to the
-    // project being changed away from*. Clear them too so the next
-    // project's data shows through cleanly — otherwise users hit a
-    // confusing "I picked a new project but it still says my override
-    // is in effect" state.
     resetOverrides();
   }, [resetOverrides]);
 
