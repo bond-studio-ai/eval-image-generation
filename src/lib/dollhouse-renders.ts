@@ -56,6 +56,38 @@ export interface UnitySlimDesignMaterials {
   surfaces: Record<string, unknown>;
 }
 
+export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string };
+
+/**
+ * Single source of truth for "is this a Unity-slim design materials object?".
+ * Used both by the silent project-bootstrap path (which discards the error
+ * message) and by the manual JSON paste UI (which surfaces the field that
+ * failed). Keep new validation in one place — having two copies caused drift
+ * the last time the v2 schema tightened.
+ */
+export function validateUnitySlimDesign(
+  value: unknown,
+): ValidationResult<UnitySlimDesignMaterials> {
+  if (!isRecord(value)) return { ok: false, error: 'Expected a JSON object.' };
+  if (typeof value.id !== 'string' || value.id.length === 0) {
+    return { ok: false, error: 'designMaterials.id is required.' };
+  }
+  if (!isRecord(value.objects)) {
+    return { ok: false, error: 'designMaterials.objects must be an object.' };
+  }
+  if (!isRecord(value.surfaces)) {
+    return { ok: false, error: 'designMaterials.surfaces must be an object.' };
+  }
+  return {
+    ok: true,
+    value: {
+      id: value.id,
+      objects: value.objects,
+      surfaces: value.surfaces,
+    },
+  };
+}
+
 export interface DollhouseRenderFrame {
   id: string;
   renderJobId: string;

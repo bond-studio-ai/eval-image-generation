@@ -1,8 +1,12 @@
 'use client';
 
 import { ErrorCard } from '@/components/resource-form-header';
-import { Button, Field, FormSection, TextInput } from '@/components/ui';
-import { ProjectPickerTable } from '../project-picker-table';
+import { Banner, Button, CheckCircleIcon, Field, FormSection, TextInput } from '@/components/ui';
+import type { ProjectRenderBootstrap } from '@/lib/projects';
+import { ProjectPickerList } from '../project-picker-list';
+
+const LABEL_CLASS =
+  'text-caption text-text-secondary mb-2 block font-medium uppercase tracking-wide';
 
 interface ProjectPickerSectionProps {
   projectIdInput: string;
@@ -11,11 +15,9 @@ interface ProjectPickerSectionProps {
   onSelectFromTable: (projectId: string) => void;
   loadingProject: boolean;
   projectError: string | null;
-  selectedProjectId: string | null;
+  selectedBootstrap: ProjectRenderBootstrap | null;
+  onClearProject: () => void;
 }
-
-const LABEL_CLASS =
-  'text-caption text-text-secondary mb-1 block font-medium uppercase tracking-wide';
 
 export function ProjectPickerSection({
   projectIdInput,
@@ -24,13 +26,30 @@ export function ProjectPickerSection({
   onSelectFromTable,
   loadingProject,
   projectError,
-  selectedProjectId,
+  selectedBootstrap,
+  onClearProject,
 }: ProjectPickerSectionProps) {
   return (
-    <FormSection title="Project" description="Paste a project ID or pick one from the list below.">
-      <div className="flex items-end gap-3">
+    <FormSection
+      title="Project"
+      description="Pick a project from the list, or paste a project ID to load it directly."
+    >
+      {selectedBootstrap && (
+        <div className="mb-4">
+          <SelectedProjectBanner bootstrap={selectedBootstrap} onClear={onClearProject} />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <Field label="Project ID">
+          <Field
+            label="Project ID"
+            hint={
+              selectedBootstrap
+                ? undefined
+                : 'Paste an ID and click Load, or pick from the list below.'
+            }
+          >
             {(id) => (
               <TextInput
                 id={id}
@@ -54,7 +73,7 @@ export function ProjectPickerSection({
           disabled={!projectIdInput.trim() || loadingProject}
           loading={loadingProject}
         >
-          Use this project
+          Load project
         </Button>
       </div>
 
@@ -66,8 +85,39 @@ export function ProjectPickerSection({
 
       <div className="mt-6">
         <p className={LABEL_CLASS}>Or pick from the project list</p>
-        <ProjectPickerTable selectedProjectId={selectedProjectId} onSelect={onSelectFromTable} />
+        <ProjectPickerList
+          selectedProjectId={selectedBootstrap?.project.id ?? null}
+          onSelect={onSelectFromTable}
+        />
       </div>
     </FormSection>
+  );
+}
+
+function SelectedProjectBanner({
+  bootstrap,
+  onClear,
+}: {
+  bootstrap: ProjectRenderBootstrap;
+  onClear: () => void;
+}) {
+  const { project, cameraFrames, designMaterials, roomData } = bootstrap;
+  const summary = [
+    `${cameraFrames.length} camera frame${cameraFrames.length === 1 ? '' : 's'}`,
+    designMaterials ? 'design materials loaded' : 'no design materials',
+    roomData ? 'room data loaded' : 'no room data',
+  ].join(' · ');
+  return (
+    <Banner
+      tone="success"
+      icon={<CheckCircleIcon className="h-5 w-5" aria-hidden />}
+      title={`Selected project ${project.id}`}
+      description={`${project.name ? `${project.name} · ` : ''}${summary}`}
+      actions={
+        <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+          Change project
+        </Button>
+      }
+    />
   );
 }

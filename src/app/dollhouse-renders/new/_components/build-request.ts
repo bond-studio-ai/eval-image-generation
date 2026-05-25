@@ -1,12 +1,13 @@
-import type {
-  CreateDollhouseRenderBody,
-  DollhouseCameraFrame,
-  DollhouseImageConfig,
-  DollhouseRenderConfig,
-  DollhouseRenderMode,
-  DollhouseSsmParams,
-  DollhouseStyleOverride,
-  UnitySlimDesignMaterials,
+import {
+  validateUnitySlimDesign,
+  type CreateDollhouseRenderBody,
+  type DollhouseCameraFrame,
+  type DollhouseImageConfig,
+  type DollhouseRenderConfig,
+  type DollhouseRenderMode,
+  type DollhouseSsmParams,
+  type DollhouseStyleOverride,
+  type UnitySlimDesignMaterials,
 } from '@/lib/dollhouse-renders';
 import type { SsmParamsState } from './ssm-params-editor';
 
@@ -107,6 +108,52 @@ interface BuildCreateBodyInput {
   renderConfig: RenderConfigState;
   ssmParams: SsmParamsState;
   styleOverrides: DollhouseStyleOverride[];
+}
+
+export interface OverrideParseResult<T> {
+  /** `true` when the user typed something we successfully parsed. */
+  provided: boolean;
+  value: T | null;
+  error: string | null;
+}
+
+function parseJsonObject(raw: string): {
+  value: Record<string, unknown> | null;
+  error: string | null;
+} {
+  const trimmed = raw.trim();
+  if (!trimmed) return { value: null, error: null };
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { value: null, error: 'Expected a JSON object.' };
+    }
+    return { value: parsed as Record<string, unknown>, error: null };
+  } catch (err) {
+    return { value: null, error: err instanceof Error ? err.message : 'Invalid JSON.' };
+  }
+}
+
+export function parseDesignMaterialsOverride(
+  raw: string,
+): OverrideParseResult<UnitySlimDesignMaterials> {
+  const trimmed = raw.trim();
+  if (!trimmed) return { provided: false, value: null, error: null };
+  const parsed = parseJsonObject(raw);
+  if (parsed.error || !parsed.value) {
+    return { provided: true, value: null, error: parsed.error ?? 'Invalid JSON.' };
+  }
+  const validated = validateUnitySlimDesign(parsed.value);
+  if (!validated.ok) return { provided: true, value: null, error: validated.error };
+  return { provided: true, value: validated.value, error: null };
+}
+
+export function parseRoomDataOverride(raw: string): OverrideParseResult<Record<string, unknown>> {
+  const trimmed = raw.trim();
+  if (!trimmed) return { provided: false, value: null, error: null };
+  const { value, error } = parseJsonObject(raw);
+  if (error || !value) return { provided: true, value: null, error: error ?? 'Invalid JSON.' };
+  return { provided: true, value, error: null };
 }
 
 /**
