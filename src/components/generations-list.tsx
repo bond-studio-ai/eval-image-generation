@@ -134,8 +134,8 @@ export function GenerationsList({
           notes: row.notes as string | null,
           executionTime: row.executionTime as number | null,
           createdAt: row.createdAt as string,
-          resultUrls: (row.result_urls ?? []) as string[],
-          resultCount: (row.result_count ?? 0) as number,
+          resultUrls: (row.resultUrls ?? []) as string[],
+          resultCount: (row.resultCount ?? 0) as number,
         }));
         setGenerations((prev) => [...prev, ...newRows]);
         setPage(nextPage);
