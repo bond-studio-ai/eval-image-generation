@@ -16,6 +16,42 @@ interface PresetItem {
   name: string | null;
 }
 
+interface ListResponse<T> {
+  data?: T[];
+  items?: T[];
+  pagination?: {
+    page: number;
+    totalPages: number;
+  };
+}
+
+const INPUT_PRESET_PAGE_SIZE = 100;
+
+async function fetchAllInputPresets(): Promise<PresetItem[]> {
+  const presets: PresetItem[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const qs = new URLSearchParams({
+      page: String(page),
+      limit: String(INPUT_PRESET_PAGE_SIZE),
+      minimal: 'true',
+    });
+    const res = await fetch(`${serviceUrl('input-presets')}?${qs}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Failed to load input presets (${res.status})`);
+
+    const json = (await res.json()) as ListResponse<{ id: string; name: string | null }>;
+    const pageItems = json.data ?? json.items ?? [];
+    presets.push(...pageItems.map((p) => ({ id: p.id, name: p.name ?? null })));
+
+    totalPages = json.pagination?.totalPages ?? page;
+    page += 1;
+  } while (page <= totalPages);
+
+  return presets;
+}
+
 const BENCHMARK_PROJECT_IDS = [
   'PRJ-P4YAGU7XW',
   'PRJ-QU6S58FHG',
@@ -82,31 +118,23 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
     setLoading(true);
     Promise.all([
       fetch(serviceUrl('strategies?limit=100'), { cache: 'no-store' }).then((r) => r.json()),
-      fetch(serviceUrl('input-presets?limit=100&minimal=true'), { cache: 'no-store' }).then((r) =>
-        r.json(),
-      ),
+      fetchAllInputPresets(),
     ])
       .then(([stratRes, presetRes]) => {
         if (cancelled) return;
         const stratData = stratRes.data ?? stratRes.items ?? [];
-        const presetData = presetRes.data ?? presetRes.items ?? [];
         setStrategies(
           Array.isArray(stratData)
             ? stratData.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }))
             : [],
         );
-        setPresets(
-          Array.isArray(presetData)
-            ? presetData.map((p: { id: string; name: string | null }) => ({
-                id: p.id,
-                name: p.name ?? null,
-              }))
-            : [],
-        );
+        setPresets(presetRes);
       })
       .catch(() => {
-        if (!cancelled) setStrategies([]);
-        setPresets([]);
+        if (!cancelled) {
+          setStrategies([]);
+          setPresets([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
