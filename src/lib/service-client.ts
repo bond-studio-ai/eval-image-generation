@@ -226,7 +226,7 @@ export interface StrategyModelCatalog {
   judge: ProviderModelV2[];
 }
 
-export async function fetchProviderModelsV2(
+async function fetchProviderModelsV2(
   params: {
     productAvailable?: boolean;
     providerId?: string;
@@ -284,14 +284,6 @@ export async function fetchStrategyById(id: string): Promise<StrategyDetailItem 
   }
 }
 
-export async function fetchActiveStrategy(): Promise<StrategyDetailItem | null> {
-  try {
-    return await fetchService<StrategyDetailItem>('/strategies/active');
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchStrategyRuns(strategyId: string, limit = 50) {
   return fetchService<Record<string, unknown>[]>(`/strategies/${strategyId}/runs?limit=${limit}`);
 }
@@ -332,13 +324,6 @@ export async function fetchGenerations(params: Record<string, string>) {
   return json as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
 }
 
-// ─── Generation Outputs ──────────────────────────────────────────────────────
-
-export async function fetchGenerationOutputs(params: Record<string, string>) {
-  const qs = new URLSearchParams(params).toString();
-  return fetchService<Record<string, unknown>[]>(`/generation-outputs${qs ? `?${qs}` : ''}`);
-}
-
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
 export async function fetchAnalyticsRatings(params: Record<string, string>) {
@@ -354,25 +339,6 @@ export async function fetchAnalyticsStrategyPerformance(params: Record<string, s
   const qs = new URLSearchParams(params).toString();
   return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(
     `/analytics/strategy-performance${qs ? `?${qs}` : ''}`,
-  );
-}
-
-export interface AnalyticsStrategyStepRow {
-  stepId: string;
-  stepOrder: number;
-  name: string | null;
-  type: string;
-  model: string | null;
-  sampleCount: number;
-  avgExecTimeMs: number | null;
-  minExecTimeMs: number | null;
-  maxExecTimeMs: number | null;
-}
-
-export async function fetchAnalyticsStrategyStepPerformance(params: Record<string, string>) {
-  const qs = new URLSearchParams(params).toString();
-  return fetchService<{ steps: AnalyticsStrategyStepRow[] }>(
-    `/analytics/strategy-step-performance${qs ? `?${qs}` : ''}`,
   );
 }
 
@@ -407,22 +373,10 @@ export interface ReliabilityData {
   }[];
 }
 
-export async function fetchAnalyticsReliability(params: Record<string, string>) {
-  const qs = new URLSearchParams(params).toString();
-  return fetchService<ReliabilityData>(`/analytics/reliability${qs ? `?${qs}` : ''}`);
-}
-
 // ─── Accuracy Trends ─────────────────────────────────────────────────────────
 
 export interface AccuracyTrendPoint {
   date: string;
   sceneAccuracy: number;
   productAccuracy: number;
-}
-
-export async function fetchAnalyticsAccuracyTrends(params: Record<string, string>) {
-  const qs = new URLSearchParams(params).toString();
-  return fetchService<{ trends: AccuracyTrendPoint[] }>(
-    `/analytics/accuracy-trends${qs ? `?${qs}` : ''}`,
-  );
 }

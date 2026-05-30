@@ -55,7 +55,7 @@ export function DeleteGenerationButton({
           disabled={deleting}
           className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
         >
-          No
+          Cancel
         </button>
       </div>
     );
@@ -70,8 +70,9 @@ export function DeleteGenerationButton({
           e.stopPropagation();
           setConfirming(true);
         }}
+        aria-label="Delete generation"
         title="Delete generation"
-        className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-500"
       >
         <svg
           className="size-4"

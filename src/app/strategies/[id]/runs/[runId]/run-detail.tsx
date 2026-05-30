@@ -224,9 +224,9 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
         {images.map((img, i) => (
           <div key={i} className="group relative">
             {img.isComposite ? (
-              <div
-                className="aspect-square cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
-                role="button"
+              <button
+                type="button"
+                className="block aspect-square w-full cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
                 onClick={() => setExpandedGroup(expandedGroup === i ? null : i)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -236,7 +236,7 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
-              </div>
+              </button>
             ) : (
               <ExpandableImage
                 src={img.url}

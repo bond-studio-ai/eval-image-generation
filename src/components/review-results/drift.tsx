@@ -204,10 +204,10 @@ function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
   return rows;
 }
 
-/** Faded em-dash for "this metric doesn't apply to this category".
+/** Faded dash for "this metric doesn't apply to this category".
  *  Visually distinct from the regular formatter dash (which means
  *  "metric applies but the value was null"). */
-const NOT_APPLICABLE_CELL = <span className="text-gray-300">—</span>;
+const NOT_APPLICABLE_CELL = <span className="text-gray-300">{'—'}</span>;
 
 /**
  * Stable identifiers for every sortable column. Decoupled from the

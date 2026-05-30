@@ -318,6 +318,7 @@ export function DateRangePicker({
                 <button
                   type="button"
                   onClick={goPrev}
+                  aria-label="Previous month"
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <svg
@@ -340,6 +341,7 @@ export function DateRangePicker({
                 <button
                   type="button"
                   onClick={goNext}
+                  aria-label="Next month"
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <svg
@@ -440,6 +442,7 @@ export function DateRangePicker({
         <button
           type="button"
           onClick={onClear}
+          aria-label="Clear date filter"
           className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           title="Clear date filter"
         >

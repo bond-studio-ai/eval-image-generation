@@ -22,13 +22,13 @@ export interface DataTableColumn<T> {
 }
 
 // ---------------------------------------------------------------------------
-// Default class names — exported so consumers can compose overrides
+// Default class names
 // ---------------------------------------------------------------------------
 
-export const TH_DEFAULT =
+const TH_DEFAULT =
   'px-6 py-3 text-left text-caption font-medium uppercase tracking-wider text-text-secondary';
 
-export const TD_DEFAULT = 'whitespace-nowrap px-6 py-4 text-body text-text-secondary';
+const TD_DEFAULT = 'whitespace-nowrap px-6 py-4 text-body text-text-secondary';
 
 // ---------------------------------------------------------------------------
 // DataTable
@@ -53,7 +53,7 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
   return (
     <tr>
       {Array.from({ length: colCount }, (_, i) => (
-        <td key={i} className="px-6 py-4">
+        <td key={i} aria-hidden="true" tabIndex={-1} className="px-6 py-4">
           <div
             className={`bg-surface-sunken h-4 animate-pulse rounded ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length]}`}
           />
@@ -210,6 +210,7 @@ export function SearchBar({
       />
       <input
         type="text"
+        aria-label={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -334,6 +335,7 @@ export function checkboxColumn<T>({
       return (
         <input
           type="checkbox"
+          aria-label="Select row"
           checked={selected.has(id)}
           onChange={() => onToggle(id)}
           className={CHECKBOX_CLASS}

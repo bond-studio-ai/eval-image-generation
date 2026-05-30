@@ -4,7 +4,6 @@ import {
   validateUnitySlimDesign,
   type DollhouseCameraFrame,
   type UnitySlimDesignMaterials,
-  type V2Pagination,
 } from './dollhouse-renders';
 
 export interface ProjectSummary {
@@ -37,15 +36,6 @@ export interface ProjectsListParams {
   limit?: number;
 }
 
-interface UpstreamProjectsListBody {
-  data?: unknown[];
-  pagination?: Partial<V2Pagination> & {
-    page?: number;
-    limit?: number;
-    totalPages?: number;
-  };
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -61,38 +51,6 @@ function normalizeProjectSummary(raw: unknown): ProjectSummary | null {
     address: typeof rec.address === 'string' ? rec.address : undefined,
     created: typeof rec.created === 'string' ? rec.created : undefined,
     updated: typeof rec.updated === 'string' ? rec.updated : undefined,
-  };
-}
-
-export async function listProjects(
-  params: ProjectsListParams = {},
-  init?: RequestInit,
-): Promise<ProjectsListResponse> {
-  const qs = new URLSearchParams();
-  if (params.status) qs.set('status', params.status);
-  if (params.contractorId) qs.set('contractorId', params.contractorId);
-  if (params.before) qs.set('before', params.before);
-  if (params.after) qs.set('after', params.after);
-  if (params.page) qs.set('page', String(params.page));
-  if (params.limit) qs.set('limit', String(params.limit));
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-
-  const res = await fetch(`${localUrl('projects')}${suffix}`, init);
-  if (!res.ok) throw new Error(`Failed to list projects (${res.status})`);
-  const json = (await res.json()) as UpstreamProjectsListBody;
-
-  const items = Array.isArray(json.data)
-    ? json.data.map(normalizeProjectSummary).filter((p): p is ProjectSummary => p !== null)
-    : [];
-  const pag = json.pagination ?? {};
-  return {
-    data: items,
-    pagination: {
-      page: pag.page ?? pag.currentPage ?? 1,
-      limit: pag.limit ?? pag.perPage ?? items.length,
-      total: pag.total ?? items.length,
-      totalPages: pag.totalPages ?? pag.lastPage ?? 1,
-    },
   };
 }
 

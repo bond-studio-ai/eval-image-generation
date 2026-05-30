@@ -30,7 +30,7 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 
 /** Singular camelCase for template: products.vanity, products.faucet, etc. */
-export const TO_CAMEL_SINGULAR: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
+const TO_CAMEL_SINGULAR: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
   faucets: 'faucet',
   lightings: 'lighting',
   lvps: 'lvp',
@@ -56,8 +56,8 @@ export const TO_CAMEL_SINGULAR: Record<(typeof PRODUCT_CATEGORIES)[number], stri
   wallpapers: 'wallpaper',
 };
 
-export const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
-export const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
+const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
+const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
   dollhouse_view: 'dollhouseView',
   real_photo: 'realPhoto',
   mood_board: 'moodBoard',
@@ -68,7 +68,7 @@ export const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
  * REFERENCE_OPTIONS). Patterns, placements, visibility, niche/short-wall/curb slots where the
  * product key differs (e.g. design.curbTile vs products.showerCurbTile).
  */
-export const DESIGN_PROMPT_PATHS = [
+const DESIGN_PROMPT_PATHS = [
   'design.floorTilePattern',
   'design.nicheTile',
   'design.nicheTilePattern',

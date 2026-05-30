@@ -39,7 +39,7 @@ export interface PluginRenderer {
  * the modal; keep it stable so reviewers can scan the same sections
  * in the same place across runs.
  */
-export const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
+const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
   { id: 'segmentationDrift', title: 'Segmentation drift', Renderer: SegmentationDriftRenderer },
   { id: 'depthDrift', title: 'Depth drift', Renderer: DepthDriftRenderer },
 ];

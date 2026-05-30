@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useRef, useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react';
 import { cn } from './cn';
 import { Spinner } from './spinner';
 
@@ -31,6 +31,7 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   variant?: IconButtonVariant;
   size?: IconButtonSize;
   loading?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -38,22 +39,20 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
  * Replaces the bespoke `ActionButton` inside `actionsColumn` and the various
  * inline icon buttons (delete batch, retry, clear, etc.) across the app.
  */
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  {
-    label,
-    icon,
-    variant = 'default',
-    size = 'md',
-    loading = false,
-    disabled,
-    className,
-    type = 'button',
-    onMouseEnter,
-    onMouseLeave,
-    ...rest
-  },
+export function IconButton({
+  label,
+  icon,
+  variant = 'default',
+  size = 'md',
+  loading = false,
+  disabled,
+  className,
+  type = 'button',
+  onMouseEnter,
+  onMouseLeave,
   ref,
-) {
+  ...rest
+}: IconButtonProps) {
   const localRef = useRef<HTMLButtonElement>(null);
   const setRef = (el: HTMLButtonElement | null) => {
     localRef.current = el;
@@ -94,4 +93,4 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       )}
     </>
   );
-});
+}

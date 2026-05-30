@@ -19,7 +19,7 @@ export type ReviewState =
   | { kind: 'error'; message?: string };
 
 /** ~3 minutes is enough for the synchronous SAM fan-out + plugin loop on the slowest projects. */
-export const REVIEW_POST_TIMEOUT_MS = 180_000;
+const REVIEW_POST_TIMEOUT_MS = 180_000;
 
 /**
  * Single-generation `POST /generations/:id/review` call that resolves

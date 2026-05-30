@@ -3,12 +3,12 @@
 import { RatingForm } from '@/app/generations/[id]/rating-form';
 import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
+import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
 import { withImageParams } from '@/lib/image-utils';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 interface GridLightboxProps {
   src: string;
@@ -110,251 +110,233 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
     return r?.id ?? null;
   }, [generation?.results, src]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (expandedImage) setExpandedImage(null);
-        else onClose();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose, expandedImage]);
-
-  return createPortal(
+  return (
     <>
-      <div
-        className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/80 p-6"
-        onClick={onClose}
+      <Modal
+        onClose={() => {
+          if (!expandedImage) onClose();
+        }}
+        ariaLabel="Generation result"
+        backdropClassName="bg-black/80"
+        containerClassName="z-[9999] p-6"
+        className="relative flex max-h-[90vh] w-[1200px] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
       >
-        <div
-          className="relative flex max-h-[90vh] w-[1200px] max-w-[95vw] cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
-            <div className="flex items-center gap-3">
-              <Link
-                href={runHref}
-                className="text-primary-600 hover:text-primary-500 text-sm font-medium"
-              >
-                View run details &rarr;
-              </Link>
-              {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && (
-                <span className="text-sm text-gray-500">
-                  Comparing with {sceneImages[selectedSceneIndex].label}
-                </span>
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Link
+              href={runHref}
+              className="text-primary-600 hover:text-primary-500 text-sm font-medium"
+            >
+              View run details &rarr;
+            </Link>
+            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && (
+              <span className="text-sm text-gray-500">
+                Comparing with {sceneImages[selectedSceneIndex].label}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+          >
+            <svg
+              className="size-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col overflow-auto p-8">
+          <div className="relative flex flex-col items-center">
+            {/* Fixed-size image area so switching between output-only and comparison doesn't resize */}
+            <div className="flex h-[520px] w-full min-w-0 items-center justify-center rounded-lg bg-[#1a1a1a]">
+              {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] ? (
+                <ComparisonSlider
+                  leftImageUrl={sceneImages[selectedSceneIndex].url}
+                  rightImageUrl={outputUrl}
+                  position={comparisonPosition}
+                  onPositionChange={setComparisonPosition}
+                  leftImageAlt={sceneImages[selectedSceneIndex].label}
+                  rightImageAlt="Output"
+                  leftLabel={sceneImages[selectedSceneIndex].label}
+                  rightLabel="Output"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedImage({ src: outputUrl, alt: 'Output' });
+                  }}
+                  className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={outputUrl}
+                    alt="Output"
+                    className="max-h-full max-w-full rounded-lg object-contain"
+                  />
+                </button>
               )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-            >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex flex-1 flex-col overflow-auto p-8">
-            <div className="relative flex flex-col items-center">
-              {/* Fixed-size image area so switching between output-only and comparison doesn't resize */}
-              <div className="flex h-[520px] w-full min-w-0 items-center justify-center rounded-lg bg-[#1a1a1a]">
-                {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] ? (
-                  <ComparisonSlider
-                    leftImageUrl={sceneImages[selectedSceneIndex].url}
-                    rightImageUrl={outputUrl}
-                    position={comparisonPosition}
-                    onPositionChange={setComparisonPosition}
-                    leftImageAlt={sceneImages[selectedSceneIndex].label}
-                    rightImageAlt="Output"
-                    leftLabel={sceneImages[selectedSceneIndex].label}
-                    rightLabel="Output"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedImage({ src: outputUrl, alt: 'Output' });
-                    }}
-                    className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={outputUrl}
-                      alt="Output"
-                      className="max-h-full max-w-full rounded-lg object-contain"
-                    />
-                  </button>
-                )}
+            {sceneImages.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-500">Compare with:</span>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {sceneImages.map((img, i) => (
+                    <button
+                      key={img.label}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSceneIndex(selectedSceneIndex === i ? null : i);
+                      }}
+                      className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? 'border-primary-500 ring-primary-500 ring-1' : 'border-transparent hover:border-gray-300'}`}
+                      title={
+                        selectedSceneIndex === i
+                          ? 'Click to disable compare'
+                          : 'Click to compare with scene reference'
+                      }
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt={img.label} className="size-14 object-cover" />
+                      <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">
+                        {img.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              {sceneImages.length > 0 && (
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500">Compare with:</span>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {sceneImages.map((img, i) => (
-                      <button
-                        key={img.label}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedSceneIndex(selectedSceneIndex === i ? null : i);
-                        }}
-                        className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? 'border-primary-500 ring-primary-500 ring-1' : 'border-transparent hover:border-gray-300'}`}
-                        title={
-                          selectedSceneIndex === i
-                            ? 'Click to disable compare'
-                            : 'Click to compare with scene reference'
-                        }
+            )}
+          </div>
+          {generationId && (
+            <>
+              {productImages.length > 0 && (
+                <div className="mt-4 border-t border-gray-200 pt-6">
+                  <div className="flex flex-wrap gap-2">
+                    {productImages.map((img) => (
+                      <div
+                        key={img.key}
+                        className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.url} alt={img.label} className="size-14 object-cover" />
-                        <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">
+                        {img.urls.length === 1 ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedImage({ src: img.urls[0], alt: img.label });
+                            }}
+                            className="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={withImageParams(img.urls[0], 96)}
+                              alt={img.label}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <div className="flex gap-0.5">
+                            {img.urls.map((url, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` });
+                                }}
+                                className="size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={withImageParams(url, 80)}
+                                  alt={`${img.label} ${i + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <span className="max-w-[5rem] truncate text-center text-[10px] font-medium text-gray-700">
                           {img.label}
+                          {img.urls.length > 1 && ` (${img.urls.length})`}
                         </span>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-            {generationId && (
-              <>
-                {productImages.length > 0 && (
-                  <div className="mt-4 border-t border-gray-200 pt-6">
-                    <div className="flex flex-wrap gap-2">
-                      {productImages.map((img) => (
-                        <div
-                          key={img.key}
-                          className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5"
-                        >
-                          {img.urls.length === 1 ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedImage({ src: img.urls[0], alt: img.label });
-                              }}
-                              className="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={withImageParams(img.urls[0], 96)}
-                                alt={img.label}
-                                className="h-full w-full object-cover"
-                              />
-                            </button>
-                          ) : (
-                            <div className="flex gap-0.5">
-                              {img.urls.map((url, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` });
-                                  }}
-                                  className="size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={withImageParams(url, 80)}
-                                    alt={`${img.label} ${i + 1}`}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          <span className="max-w-[5rem] truncate text-center text-[10px] font-medium text-gray-700">
-                            {img.label}
-                            {img.urls.length > 1 && ` (${img.urls.length})`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="mt-6 grid grid-cols-1 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-2">
+                {initialResultId && (
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-gray-700">Scene & product issues</p>
+                    <ImageEvaluationForm
+                      resultId={initialResultId}
+                      productCategories={productCategories}
+                    />
                   </div>
                 )}
-                <div className="mt-6 grid grid-cols-1 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-2">
-                  {initialResultId && (
-                    <div>
-                      <p className="mb-2 text-sm font-medium text-gray-700">
-                        Scene & product issues
-                      </p>
-                      <ImageEvaluationForm
-                        resultId={initialResultId}
-                        productCategories={productCategories}
-                      />
-                    </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700">Rate generation</p>
+                  {generation ? (
+                    <RatingForm
+                      generationId={generationId}
+                      currentSceneAccuracyRating={generation.sceneAccuracyRating}
+                      currentProductAccuracyRating={generation.productAccuracyRating}
+                      onRated={handleRated}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-500">Loading…</p>
                   )}
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-gray-700">Rate generation</p>
-                    {generation ? (
-                      <RatingForm
-                        generationId={generationId}
-                        currentSceneAccuracyRating={generation.sceneAccuracyRating}
-                        currentProductAccuracyRating={generation.productAccuracyRating}
-                        onRated={handleRated}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-500">Loading…</p>
-                    )}
-                  </div>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
-      </div>
+      </Modal>
 
       {expandedImage && (
-        <div
-          className="fixed inset-0 z-[10000] flex cursor-pointer items-center justify-center bg-black/80 p-6"
-          onClick={() => setExpandedImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Expanded image"
+        <Modal
+          onClose={() => setExpandedImage(null)}
+          ariaLabel="Expanded image"
+          backdropClassName="bg-black/80"
+          containerClassName="z-[10000] p-6"
+          className="relative max-h-[90vh] w-auto max-w-[90vw] overflow-hidden rounded-lg bg-transparent p-0 shadow-none"
         >
-          <div
-            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={withImageParams(expandedImage.src, 512)}
-              alt={expandedImage.alt}
-              className="max-h-[90vh] max-w-full object-contain"
-            />
-            <div className="absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b from-black/60 to-transparent px-3 py-2">
-              <span className="text-sm font-medium text-white">{expandedImage.alt}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setExpandedImage(null)}
-              className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-              aria-label="Close"
-            >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={withImageParams(expandedImage.src, 512)}
+            alt={expandedImage.alt}
+            className="max-h-[90vh] max-w-full object-contain"
+          />
+          <div className="absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b from-black/60 to-transparent px-3 py-2">
+            <span className="text-sm font-medium text-white">{expandedImage.alt}</span>
           </div>
-        </div>
+          <button
+            type="button"
+            onClick={() => setExpandedImage(null)}
+            className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
+            aria-label="Close"
+          >
+            <svg
+              className="size-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </Modal>
       )}
-    </>,
-    document.body,
+    </>
   );
 }

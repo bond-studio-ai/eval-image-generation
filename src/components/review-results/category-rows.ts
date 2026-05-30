@@ -77,11 +77,13 @@ function indexMetadata(entries: SegmentationCategoryMetadata[] | null) {
     const camelKey = snakeToCamel(entry.key);
     if (camelKey !== entry.key) byKey.set(camelKey, entry);
 
+    // Each entry is visited once, so a group's member list never sees the
+    // same entry twice — push directly without a dedup check.
     const groupKeys = new Set([entry.group, snakeToCamel(entry.group)]);
     for (const groupKey of groupKeys) {
-      const members = byGroupId.get(groupKey) ?? [];
-      if (!members.includes(entry)) members.push(entry);
-      byGroupId.set(groupKey, members);
+      const members = byGroupId.get(groupKey);
+      if (members) members.push(entry);
+      else byGroupId.set(groupKey, [entry]);
     }
   }
   return { byKey, byGroupId };
@@ -183,9 +185,15 @@ export function buildRows(
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .replace(/_/g, ' ')
             .replace(/\b\w/g, (c) => c.toUpperCase());
-        const consumerLabels = groupMembers
-          .map((entry) => lookup.label(entry.key))
-          .filter((value, idx, all) => all.indexOf(value) === idx);
+        const seenLabels = new Set<string>();
+        const consumerLabels: string[] = [];
+        for (const entry of groupMembers) {
+          const value = lookup.label(entry.key);
+          if (!seenLabels.has(value)) {
+            seenLabels.add(value);
+            consumerLabels.push(value);
+          }
+        }
         rows.push({
           category: categoryKey,
           label: baseLabel,

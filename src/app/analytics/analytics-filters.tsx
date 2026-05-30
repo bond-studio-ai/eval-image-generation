@@ -39,12 +39,14 @@ function StrategyDropdown({
   onChange: (strategyId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const selected = strategies.find((s) => s.id === value);
 
   useEffect(() => {
-    if (!open) setSearch('');
+    if (open) searchInputRef.current?.focus();
+    else setSearch('');
   }, [open]);
 
   useEffect(() => {
@@ -106,11 +108,12 @@ function StrategyDropdown({
                 />
               </svg>
               <input
+                ref={searchInputRef}
                 type="text"
+                aria-label="Search strategies"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search strategies…"
-                autoFocus
                 className="focus:border-primary-300 focus:ring-primary-300 w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 pr-3 pl-8 text-xs text-gray-700 placeholder:text-gray-400 focus:bg-white focus:ring-1 focus:outline-none"
               />
             </div>
@@ -377,6 +380,7 @@ export function AnalyticsFilters({
                   : `Until ${formatDisplay(to)}`}
               <button
                 type="button"
+                aria-label="Remove date filter"
                 onClick={() => applyFilters({ from: '', to: '' })}
                 className="hover:bg-primary-200/60 ml-0.5 rounded-full p-0.5 transition-colors"
               >
@@ -410,6 +414,7 @@ export function AnalyticsFilters({
               {model}
               <button
                 type="button"
+                aria-label="Remove model filter"
                 onClick={() => applyFilters({ model: '' })}
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-violet-200/60"
               >
@@ -443,6 +448,7 @@ export function AnalyticsFilters({
               {SOURCE_FILTER_OPTIONS.find((option) => option.value === source)?.label ?? source}
               <button
                 type="button"
+                aria-label="Remove source filter"
                 onClick={() => applyFilters({ source: 'all' })}
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-blue-200/60"
               >
@@ -483,7 +489,7 @@ export function AnalyticsFilters({
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
                     Source
                   </th>
-                  <th className="w-10 px-3 py-2.5" />
+                  <th className="w-10 px-3 py-2.5" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -541,14 +547,15 @@ export function AnalyticsFilters({
                         ))}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5" aria-label="Actions">
                       <button
                         type="button"
+                        aria-label="Remove column"
                         onClick={() =>
                           updateComparisonColumns(comparison.columns.filter((_, i) => i !== index))
                         }
                         disabled={comparison.columns.length <= 1}
-                        className="rounded-lg p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300"
+                        className="text-text-disabled disabled:hover:text-text-disabled rounded-lg p-1 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent"
                       >
                         <svg
                           className="size-3.5"

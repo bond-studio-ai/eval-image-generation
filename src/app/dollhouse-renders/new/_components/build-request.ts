@@ -76,7 +76,7 @@ export function buildImageConfig(state: ImageConfigState): DollhouseImageConfig 
   };
 }
 
-export function buildRenderConfig(state: RenderConfigState): DollhouseRenderConfig | undefined {
+function buildRenderConfig(state: RenderConfigState): DollhouseRenderConfig | undefined {
   const config: DollhouseRenderConfig = {};
   if (state.renderMode !== 'default') {
     config.renderMode = state.renderMode;
@@ -91,7 +91,7 @@ export function buildRenderConfig(state: RenderConfigState): DollhouseRenderConf
   return Object.keys(config).length > 0 ? config : undefined;
 }
 
-export function buildSsmParams(state: SsmParamsState): DollhouseSsmParams | undefined {
+function buildSsmParams(state: SsmParamsState): DollhouseSsmParams | undefined {
   const out: DollhouseSsmParams = {};
   if (state.addressablesCatalog.trim()) out.addressablesCatalog = state.addressablesCatalog.trim();
   if (state.host.trim()) out.host = state.host.trim();

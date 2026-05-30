@@ -1,10 +1,10 @@
 'use client';
 
+import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StrategyItem {
   id: string;
@@ -288,331 +288,327 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
         Run
       </button>
 
-      {showModal &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4"
-            onClick={() => {
-              setShowModal(false);
-              setError(null);
-            }}
-          >
-            <div
-              className="flex w-full max-w-3xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
-              style={{ height: 'min(80vh, 640px)' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="shrink-0 border-b border-gray-200 px-5 py-4">
-                <h3 className="text-lg font-semibold text-gray-900">New Run</h3>
-                <p className="mt-1 text-sm text-gray-600">
-                  {benchmarkMode
-                    ? 'Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies.'
-                    : 'Select strategies and input presets. This creates one batch: strategies × presets × images to generate.'}
-                </p>
-                <label className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={benchmarkMode}
-                    onChange={(e) => {
-                      setBenchmarkMode(e.target.checked);
-                      setSelectedPresetIds([]);
-                      setSelectedBenchmarkProjectIds(
-                        e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
-                      );
-                    }}
-                    className="size-4 rounded border-gray-300"
-                  />
-                  Use benchmark projects
-                </label>
+      {showModal && (
+        <Modal
+          onClose={() => {
+            setShowModal(false);
+            setError(null);
+          }}
+          labelledById="new-run-title"
+          containerClassName="z-[9999]"
+          backdropClassName="cursor-pointer bg-black/50"
+          className="flex h-[min(80vh,640px)] w-full max-w-3xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+        >
+          <div className="shrink-0 border-b border-gray-200 px-5 py-4">
+            <h3 id="new-run-title" className="text-lg font-semibold text-gray-900">
+              New Run
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              {benchmarkMode
+                ? 'Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies.'
+                : 'Select strategies and input presets. This creates one batch: strategies × presets × images to generate.'}
+            </p>
+            <label className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={benchmarkMode}
+                onChange={(e) => {
+                  setBenchmarkMode(e.target.checked);
+                  setSelectedPresetIds([]);
+                  setSelectedBenchmarkProjectIds(
+                    e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+                  );
+                }}
+                className="size-4 rounded border-gray-300"
+              />
+              Use benchmark projects
+            </label>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-12 text-sm text-gray-500">
+              Loading…
+            </div>
+          ) : (
+            <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
+              {/* Strategies */}
+              <div className="flex min-h-0 flex-col">
+                <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+                      Strategies
+                      {selectedStrategyIds.length > 0 && (
+                        <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                          {selectedStrategyIds.length}
+                        </span>
+                      )}
+                    </p>
+                    {selectedStrategyIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStrategyIds([])}
+                        className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative mt-2">
+                    <svg
+                      className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      value={strategySearch}
+                      onChange={(e) => setStrategySearch(e.target.value)}
+                      placeholder="Search strategies…"
+                      aria-label="Search strategies"
+                      className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                  {filteredStrategies.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-gray-400">
+                      {strategies.length === 0 ? 'No strategies available' : 'No matches'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {filteredStrategies.map((s) => {
+                        const selected = selectedStrategyIds.includes(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleStrategy(s.id)}
+                            className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                              selected
+                                ? 'border-primary-400 bg-primary-50 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                selected
+                                  ? 'border-primary-500 bg-primary-500 text-white'
+                                  : 'border-gray-300 bg-white'
+                              }`}
+                            >
+                              {selected && (
+                                <svg
+                                  className="size-3"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={3}
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.5 12.75l6 6 9-13.5"
+                                  />
+                                </svg>
+                              )}
+                            </span>
+                            <span className="truncate font-medium text-gray-900">
+                              {s.name || 'Unnamed'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {loading ? (
-                <div className="flex flex-1 items-center justify-center py-12 text-sm text-gray-500">
-                  Loading…
+              {/* Input presets / benchmark projects */}
+              <div className="flex min-h-0 flex-col">
+                <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+                      {benchmarkMode ? 'Benchmark projects' : 'Input presets'}
+                      {(benchmarkMode
+                        ? selectedBenchmarkProjectIds.length
+                        : selectedPresetIds.length) > 0 && (
+                        <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                          {benchmarkMode
+                            ? selectedBenchmarkProjectIds.length
+                            : selectedPresetIds.length}
+                        </span>
+                      )}
+                    </p>
+                    {(benchmarkMode
+                      ? selectedBenchmarkProjectIds.length
+                      : selectedPresetIds.length) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          benchmarkMode
+                            ? setSelectedBenchmarkProjectIds([])
+                            : setSelectedPresetIds([])
+                        }
+                        className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative mt-2">
+                    <svg
+                      className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      value={presetSearch}
+                      onChange={(e) => setPresetSearch(e.target.value)}
+                      placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
+                      aria-label={benchmarkMode ? 'Search project IDs' : 'Search presets'}
+                      className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
+                    />
+                  </div>
                 </div>
-              ) : (
-                <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
-                  {/* Strategies */}
-                  <div className="flex min-h-0 flex-col">
-                    <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
-                          Strategies
-                          {selectedStrategyIds.length > 0 && (
-                            <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                              {selectedStrategyIds.length}
-                            </span>
-                          )}
-                        </p>
-                        {selectedStrategyIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedStrategyIds([])}
-                            className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative mt-2">
-                        <svg
-                          className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                          />
-                        </svg>
-                        <input
-                          type="text"
-                          value={strategySearch}
-                          onChange={(e) => setStrategySearch(e.target.value)}
-                          placeholder="Search strategies…"
-                          className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                      {filteredStrategies.length === 0 ? (
-                        <p className="py-4 text-center text-xs text-gray-400">
-                          {strategies.length === 0 ? 'No strategies available' : 'No matches'}
-                        </p>
-                      ) : (
-                        <div className="space-y-1">
-                          {filteredStrategies.map((s) => {
-                            const selected = selectedStrategyIds.includes(s.id);
-                            return (
-                              <button
-                                key={s.id}
-                                type="button"
-                                onClick={() => toggleStrategy(s.id)}
-                                className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                  {(benchmarkMode ? filteredBenchmarkProjects.length : filteredPresets.length) ===
+                  0 ? (
+                    <p className="py-4 text-center text-xs text-gray-400">
+                      {benchmarkMode
+                        ? 'No matches'
+                        : presets.length === 0
+                          ? 'No presets available'
+                          : 'No matches'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map(
+                        (entry) => {
+                          const id = typeof entry === 'string' ? entry : entry.id;
+                          const label =
+                            typeof entry === 'string' ? entry : entry.name || 'Untitled';
+                          const selected = benchmarkMode
+                            ? selectedBenchmarkProjectIds.includes(id)
+                            : selectedPresetIds.includes(id);
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() =>
+                                benchmarkMode ? toggleBenchmarkProject(id) : togglePreset(id)
+                              }
+                              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                                selected
+                                  ? 'border-primary-400 bg-primary-50 shadow-sm'
+                                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
                                   selected
-                                    ? 'border-primary-400 bg-primary-50 shadow-sm'
-                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                    ? 'border-primary-500 bg-primary-500 text-white'
+                                    : 'border-gray-300 bg-white'
                                 }`}
                               >
-                                <span
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                    selected
-                                      ? 'border-primary-500 bg-primary-500 text-white'
-                                      : 'border-gray-300 bg-white'
-                                  }`}
-                                >
-                                  {selected && (
-                                    <svg
-                                      className="size-3"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      strokeWidth={3}
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M4.5 12.75l6 6 9-13.5"
-                                      />
-                                    </svg>
-                                  )}
-                                </span>
-                                <span className="truncate font-medium text-gray-900">
-                                  {s.name || 'Unnamed'}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Input presets / benchmark projects */}
-                  <div className="flex min-h-0 flex-col">
-                    <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
-                          {benchmarkMode ? 'Benchmark projects' : 'Input presets'}
-                          {(benchmarkMode
-                            ? selectedBenchmarkProjectIds.length
-                            : selectedPresetIds.length) > 0 && (
-                            <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                              {benchmarkMode
-                                ? selectedBenchmarkProjectIds.length
-                                : selectedPresetIds.length}
-                            </span>
-                          )}
-                        </p>
-                        {(benchmarkMode
-                          ? selectedBenchmarkProjectIds.length
-                          : selectedPresetIds.length) > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              benchmarkMode
-                                ? setSelectedBenchmarkProjectIds([])
-                                : setSelectedPresetIds([])
-                            }
-                            className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative mt-2">
-                        <svg
-                          className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                          />
-                        </svg>
-                        <input
-                          type="text"
-                          value={presetSearch}
-                          onChange={(e) => setPresetSearch(e.target.value)}
-                          placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
-                          className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                      {(benchmarkMode
-                        ? filteredBenchmarkProjects.length
-                        : filteredPresets.length) === 0 ? (
-                        <p className="py-4 text-center text-xs text-gray-400">
-                          {benchmarkMode
-                            ? 'No matches'
-                            : presets.length === 0
-                              ? 'No presets available'
-                              : 'No matches'}
-                        </p>
-                      ) : (
-                        <div className="space-y-1">
-                          {(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map(
-                            (entry) => {
-                              const id = typeof entry === 'string' ? entry : entry.id;
-                              const label =
-                                typeof entry === 'string' ? entry : entry.name || 'Untitled';
-                              const selected = benchmarkMode
-                                ? selectedBenchmarkProjectIds.includes(id)
-                                : selectedPresetIds.includes(id);
-                              return (
-                                <button
-                                  key={id}
-                                  type="button"
-                                  onClick={() =>
-                                    benchmarkMode ? toggleBenchmarkProject(id) : togglePreset(id)
-                                  }
-                                  className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                                    selected
-                                      ? 'border-primary-400 bg-primary-50 shadow-sm'
-                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <span
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                      selected
-                                        ? 'border-primary-500 bg-primary-500 text-white'
-                                        : 'border-gray-300 bg-white'
-                                    }`}
+                                {selected && (
+                                  <svg
+                                    className="size-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={3}
+                                    stroke="currentColor"
                                   >
-                                    {selected && (
-                                      <svg
-                                        className="size-3"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        strokeWidth={3}
-                                        stroke="currentColor"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M4.5 12.75l6 6 9-13.5"
-                                        />
-                                      </svg>
-                                    )}
-                                  </span>
-                                  <span className="truncate font-medium text-gray-900">
-                                    {label}
-                                  </span>
-                                </button>
-                              );
-                            },
-                          )}
-                        </div>
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M4.5 12.75l6 6 9-13.5"
+                                    />
+                                  </svg>
+                                )}
+                              </span>
+                              <span className="truncate font-medium text-gray-900">{label}</span>
+                            </button>
+                          );
+                        },
                       )}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
-
-              <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
-                <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
-              </div>
-
-              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRun}
-                  disabled={
-                    submitting ||
-                    selectedStrategyIds.length === 0 ||
-                    (benchmarkMode
-                      ? selectedBenchmarkProjectIds.length === 0
-                      : selectedPresetIds.length === 0)
-                  }
-                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed"
-                >
-                  {submitting ? (
-                    <>
-                      <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Starting…
-                    </>
-                  ) : benchmarkMode ? (
-                    'Run benchmarks'
-                  ) : (
-                    'Run (1 batch)'
                   )}
-                </button>
+                </div>
               </div>
             </div>
-          </div>,
-          document.body,
-        )}
+          )}
+
+          {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
+
+          <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
+            <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRun}
+              disabled={
+                submitting ||
+                selectedStrategyIds.length === 0 ||
+                (benchmarkMode
+                  ? selectedBenchmarkProjectIds.length === 0
+                  : selectedPresetIds.length === 0)
+              }
+              className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Starting…
+                </>
+              ) : benchmarkMode ? (
+                'Run benchmarks'
+              ) : (
+                'Run (1 batch)'
+              )}
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }
@@ -627,6 +623,10 @@ function NumberOfImagesInput({
   const isDefault = value === null;
   const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
   const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
+  const customInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (customImages) customInputRef.current?.focus();
+  }, [customImages]);
 
   const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
   const inactiveCls =
@@ -675,6 +675,7 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
               disabled={(value ?? 1) <= 1}
+              aria-label="Decrease image count"
               className="flex size-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg
@@ -688,10 +689,11 @@ function NumberOfImagesInput({
               </svg>
             </button>
             <input
+              ref={customInputRef}
               type="number"
               min={1}
               max={100}
-              autoFocus
+              aria-label="Image count"
               value={value ?? 1}
               onChange={(e) =>
                 onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
@@ -702,6 +704,7 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
               disabled={(value ?? 1) >= 100}
+              aria-label="Increase image count"
               className="flex size-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg

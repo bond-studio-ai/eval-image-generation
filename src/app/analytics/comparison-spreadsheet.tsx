@@ -266,10 +266,14 @@ export function ComparisonSpreadsheet({
       }
     }
 
+    const sliceCategoryMaps = Object.values(dataBySlice).map(
+      (data) => new Map(data.categories.map((c) => [c.name, c])),
+    );
+
     return sortedNames.flatMap((catName) => {
       const issueNames = new Set<string>();
-      for (const data of Object.values(dataBySlice)) {
-        const cat = data.categories.find((c) => c.name === catName);
+      for (const catMap of sliceCategoryMaps) {
+        const cat = catMap.get(catName);
         for (const issue of cat?.issues ?? []) issueNames.add(issue.issue);
       }
       return [
@@ -316,7 +320,10 @@ export function ComparisonSpreadsheet({
               </th>
             </tr>
             <tr>
-              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+              <th
+                aria-label="Issue"
+                className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+              />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
@@ -434,7 +441,10 @@ export function ComparisonSpreadsheet({
 
             {/* Slice group headers */}
             <tr>
-              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+              <th
+                aria-label="Category"
+                className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+              />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 const s = dataBySlice[slice.key]?.summary;
@@ -591,8 +601,16 @@ export function ComparisonSpreadsheet({
 
                       return (
                         <Fragment key={slice.key}>
-                          <td className="border-b border-gray-100 px-2 py-1 text-center" />
-                          <td className="border-b border-gray-100 px-2 py-1 text-center" />
+                          <td
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            className="border-b border-gray-100 px-2 py-1 text-center"
+                          />
+                          <td
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            className="border-b border-gray-100 px-2 py-1 text-center"
+                          />
                           <td className="border-r border-b border-gray-100 px-2 py-1 text-center text-[11px] text-red-500">
                             {issue ? `${issue.count} (${issuePct}%)` : ''}
                           </td>
@@ -670,7 +688,10 @@ function StepExecutionTimeTable({
             </th>
           </tr>
           <tr>
-            <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+            <th
+              aria-label="Step"
+              className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+            />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               return (

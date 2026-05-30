@@ -1,8 +1,8 @@
-export const COMPARE_QUERY_KEY = 'compare';
+const COMPARE_QUERY_KEY = 'compare';
 export const COMPARE_COLUMN_QUERY_KEY = 'compareColumn';
-export const COMPARE_RANGE_QUERY_KEY = 'compareRange';
-export const COMPARE_STRATEGY_QUERY_KEY = 'compareStrategy';
-export const COMPARE_SOURCE_QUERY_KEY = 'compareSource';
+const COMPARE_RANGE_QUERY_KEY = 'compareRange';
+const COMPARE_STRATEGY_QUERY_KEY = 'compareStrategy';
+const COMPARE_SOURCE_QUERY_KEY = 'compareSource';
 
 export type AnalyticsComparisonSource = 'preset' | 'raw_input' | 'benchmark';
 
@@ -109,10 +109,6 @@ export function parseComparisonState(
   };
 }
 
-export function encodeComparisonRange(range: AnalyticsComparisonRange): string {
-  return `${range.from}:${range.to}`;
-}
-
 export function encodeComparisonColumn(column: AnalyticsComparisonColumn): string {
   return `${column.from}|${column.to}|${column.strategyId}|${column.source}`;
 }
@@ -148,20 +144,8 @@ export function createEmptyComparisonColumn(
   };
 }
 
-export function isComparisonColumnComplete(column: AnalyticsComparisonColumn): boolean {
+function isComparisonColumnComplete(column: AnalyticsComparisonColumn): boolean {
   return !!(column.from && column.to && column.strategyId);
-}
-
-export function buildComparisonColumnLabel(
-  column: AnalyticsComparisonColumn,
-  strategies: AnalyticsComparisonStrategyOption[],
-): string {
-  const strategyName =
-    strategies.find((strategy) => strategy.id === column.strategyId)?.name ?? 'Select strategy';
-  return `${strategyName} | ${formatComparisonSource(column.source)} | ${formatComparisonRange({
-    from: column.from,
-    to: column.to,
-  })}`;
 }
 
 export function buildComparisonSlices(

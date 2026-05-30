@@ -1,7 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export interface LayoutPresetOption {
   id: string;
@@ -23,6 +23,11 @@ export function LayoutPresetSelect({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) searchInputRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,9 +80,9 @@ export function LayoutPresetSelect({
 
   return (
     <div>
-      <label className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">
+      <span className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">
         Layout
-      </label>
+      </span>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -118,8 +123,10 @@ export function LayoutPresetSelect({
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4 py-6">
-          <div
-            className="absolute inset-0"
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 cursor-default"
             onClick={() => {
               setOpen(false);
               setSearch('');
@@ -133,6 +140,7 @@ export function LayoutPresetSelect({
               </div>
               <button
                 type="button"
+                aria-label="Close"
                 onClick={() => {
                   setOpen(false);
                   setSearch('');
@@ -152,8 +160,9 @@ export function LayoutPresetSelect({
             </div>
             <div className="border-b border-gray-100 p-4">
               <input
-                autoFocus
+                ref={searchInputRef}
                 type="text"
+                aria-label="Search layouts"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search layouts..."

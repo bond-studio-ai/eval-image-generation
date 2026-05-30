@@ -329,6 +329,7 @@ export function StrategyPerformanceSection({
           <thead>
             <tr>
               <th
+                aria-label="Expand row"
                 className="py-3 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase"
                 style={{ width: 40 }}
               />
@@ -375,12 +376,13 @@ export function StrategyPerformanceSection({
               return (
                 <Fragment key={row.id}>
                   <tr className="hover:bg-gray-50/50">
-                    <td className="py-2 pr-2">
+                    <td className="py-2 pr-2" aria-label="Expand row">
                       <button
                         type="button"
                         onClick={() => toggleExpand(row.id)}
                         className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
                         aria-expanded={isExpanded}
+                        aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
                       >
                         <svg
                           className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -421,7 +423,7 @@ export function StrategyPerformanceSection({
                           </span>
                         </>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-400">{'—'}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
@@ -435,7 +437,7 @@ export function StrategyPerformanceSection({
                           </span>
                         </>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-400">{'—'}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-500">

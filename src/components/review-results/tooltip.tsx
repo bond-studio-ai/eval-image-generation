@@ -23,7 +23,7 @@ interface TooltipOptions {
  *    the CSS spec, clipping any tooltip extending below its row.
  * 2. Stacking contexts inside the modal could outrank `z-50`.
  *
- * Portal + `position: fixed` + `zIndex: 9999` makes the popover
+ * Portal + `position: fixed` + a top-layer `zIndex` makes the popover
  * provably visible only while the trigger is currently hovered or
  * keyboard-focused.
  *
@@ -86,7 +86,7 @@ export function useTooltip(hint: ReactNode, options: TooltipOptions = {}) {
                   : align === 'end'
                     ? 'translateX(-100%)'
                     : 'translateX(-50%)',
-              zIndex: 9999,
+              zIndex: 50,
             }}
             className="pointer-events-none rounded bg-gray-900 px-2 py-1.5 text-[11px] leading-snug font-normal tracking-normal whitespace-normal text-white normal-case shadow-lg"
           >
@@ -125,9 +125,9 @@ export function Tooltip({
   });
   return (
     <>
-      <span
+      <button
         ref={ref}
-        tabIndex={0}
+        type="button"
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onFocus={onFocus}
@@ -135,7 +135,7 @@ export function Tooltip({
         className={`inline-flex cursor-help outline-none ${triggerClassName ?? ''}`}
       >
         {children}
-      </span>
+      </button>
       {portal}
     </>
   );

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -84,6 +85,28 @@ export function TwoPaneSplit({
 
   const resetRatio = useCallback(() => setRatio(0.5), []);
 
+  const onHKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLDivElement>) => {
+      const STEP = 0.02;
+      const clamp = (r: number) => {
+        const width = containerRef.current?.getBoundingClientRect().width ?? 0;
+        const minRatio = width > 0 ? Math.min(0.4, minPaneWidth / width) : 0.15;
+        return Math.min(1 - minRatio, Math.max(minRatio, r));
+      };
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setRatio((r) => clamp(r - STEP));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setRatio((r) => clamp(r + STEP));
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setRatio(0.5);
+      }
+    },
+    [minPaneWidth],
+  );
+
   const containerStyle = {
     '--tpane-left-grow': ratio.toFixed(6),
     '--tpane-right-grow': (1 - ratio).toFixed(6),
@@ -103,20 +126,26 @@ export function TwoPaneSplit({
       >
         {left}
       </div>
-      <div
-        ref={hDividerRef}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize prompt panels horizontally"
-        title="Drag to resize — double-click to reset"
-        onPointerDown={onHPointerDown}
-        onPointerMove={onHPointerMove}
-        onPointerUp={endHDrag}
-        onPointerCancel={endHDrag}
-        onDoubleClick={resetRatio}
-        className="group relative hidden w-6 shrink-0 cursor-col-resize touch-none select-none sm:block"
-      >
-        <div className="group-hover:border-primary-400 group-active:border-primary-500 absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
+      <div className="group relative hidden w-6 shrink-0 sm:block">
+        <div
+          ref={hDividerRef}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize prompt panels horizontally"
+          aria-valuenow={Math.round(ratio * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          tabIndex={0}
+          title="Drag to resize — double-click to reset"
+          onPointerDown={onHPointerDown}
+          onPointerMove={onHPointerMove}
+          onPointerUp={endHDrag}
+          onPointerCancel={endHDrag}
+          onKeyDown={onHKeyDown}
+          onDoubleClick={resetRatio}
+          className="absolute inset-0 h-full w-full cursor-col-resize touch-none select-none"
+        />
+        <div className="group-hover:border-primary-400 group-active:border-primary-500 pointer-events-none absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
           <svg
             className="group-hover:text-primary-500 size-2.5 text-gray-500"
             viewBox="0 0 10 10"

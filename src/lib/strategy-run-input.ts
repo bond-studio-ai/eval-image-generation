@@ -74,6 +74,21 @@ export function buildStrategyRunInputFromPreset(
   if (typeof moodBoard === 'string' && moodBoard) scene_images.mood_board = moodBoard;
 
   const product_images: Record<string, string[]> = {};
+  const productImageUrlSets = new Map<string, Set<string>>();
+  const addProductImage = (categoryKey: string, url: string) => {
+    let urls = product_images[categoryKey];
+    let seen = productImageUrlSets.get(categoryKey);
+    if (!urls || !seen) {
+      urls = [];
+      seen = new Set<string>();
+      product_images[categoryKey] = urls;
+      productImageUrlSets.set(categoryKey, seen);
+    }
+    if (!seen.has(url)) {
+      seen.add(url);
+      urls.push(url);
+    }
+  };
   const arbitrary_images: StrategyRunInputPayload['arbitrary_images'] = [];
   for (const [slot, urlKey] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
     const url = readUrl(readInputPresetValue(data, urlKey));
@@ -84,8 +99,7 @@ export function buildStrategyRunInputFromPreset(
 
     if (imageType === 'arbitrary') {
       arbitrary_images.push({ url, slot, tag: slot });
-      const existing = product_images[categoryKey] ?? [];
-      if (!existing.includes(url)) product_images[categoryKey] = [...existing, url];
+      addProductImage(categoryKey, url);
       continue;
     }
 
@@ -93,8 +107,7 @@ export function buildStrategyRunInputFromPreset(
       continue;
     }
 
-    const existing = product_images[categoryKey] ?? [];
-    if (!existing.includes(url)) product_images[categoryKey] = [...existing, url];
+    addProductImage(categoryKey, url);
   }
 
   const design: Record<string, unknown> = {};
@@ -155,7 +168,7 @@ async function upsertProjectDesign(
   return (json as { data?: UpsertProjectDesignResponse }).data as UpsertProjectDesignResponse;
 }
 
-export async function buildPresetRunRequest(
+async function buildPresetRunRequest(
   input: StrategyRunInputPayload,
   options: { preset_id: string; batch?: boolean; group_id?: string; number_of_images?: number },
 ): Promise<CreateStrategyRunRequest> {
@@ -193,26 +206,6 @@ export async function buildPresetRunRequest(
     ...(dollhouseCapture ? { dollhouse_capture: dollhouseCapture } : {}),
     ...(options.number_of_images ? { number_of_images: options.number_of_images } : {}),
   };
-}
-
-export async function fetchPresetRunInputs(
-  presetIds: string[],
-): Promise<StrategyRunInputPayload[]> {
-  const presetDetails = await Promise.all(
-    presetIds.map(async (presetId) => {
-      const res = await fetch(serviceUrl(`input-presets/${presetId}`), { cache: 'no-store' });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(
-          (json as { error?: { message?: string } }).error?.message ||
-            'Failed to load preset details',
-        );
-      }
-      return (json as { data?: Record<string, unknown> }).data ?? {};
-    }),
-  );
-
-  return presetDetails.map((detail) => buildStrategyRunInputFromPreset(detail));
 }
 
 export async function fetchPresetRunRequests(

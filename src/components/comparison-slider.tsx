@@ -72,6 +72,12 @@ export function ComparisonSlider({
   return (
     <div
       ref={containerRef}
+      role="slider"
+      tabIndex={0}
+      aria-label="Before and after comparison"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(position)}
       className="relative h-full w-full overflow-hidden rounded-lg select-none"
       onMouseDown={(e) => {
         e.preventDefault();
@@ -89,6 +95,15 @@ export function ComparisonSlider({
       }}
       onMouseLeave={() => {
         isDragging.current = false;
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          onPositionChange(Math.max(0, position - 5));
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          onPositionChange(Math.min(100, position + 5));
+        }
       }}
     >
       {/* Bottom: right image (always visible as base) */}

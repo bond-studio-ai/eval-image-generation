@@ -6,7 +6,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 }
 
 /** A page-level skeleton that mimics a heading + subtitle + card grid. */
-export function PageSkeleton() {
+function PageSkeleton() {
   return (
     <div className="space-y-6">
       {/* Title + subtitle */}

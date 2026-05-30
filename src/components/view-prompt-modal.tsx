@@ -64,6 +64,7 @@ export function ViewPromptModal({
           <h2 className="text-lg font-semibold text-gray-900">{promptVersionName || 'Prompt'}</h2>
           <button
             type="button"
+            aria-label="Close"
             onClick={onClose}
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >

@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<DollhouseRenderStatus, string> = {
 };
 
 /** Returns true when `value` is one of the known DollhouseRenderStatus literals. */
-export function isDollhouseRenderStatus(value: unknown): value is DollhouseRenderStatus {
+function isDollhouseRenderStatus(value: unknown): value is DollhouseRenderStatus {
   return value === 'pending' || value === 'posted' || value === 'completed' || value === 'failed';
 }
 

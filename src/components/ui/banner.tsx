@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode, type Ref } from 'react';
 import { cn } from './cn';
 
 export type BannerTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -34,6 +34,7 @@ interface BannerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 
   description?: ReactNode;
   /** Right-side slot (buttons, badges, etc.). */
   actions?: ReactNode;
+  ref?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -45,10 +46,16 @@ interface BannerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 
  * use `<ErrorCard>` from `@/components/resource-form-header` (which is still
  * the canonical "something is wrong, fix it before submitting" surface).
  */
-export const Banner = forwardRef<HTMLDivElement, BannerProps>(function Banner(
-  { tone = 'neutral', icon, title, description, actions, className, ...rest },
+export function Banner({
+  tone = 'neutral',
+  icon,
+  title,
+  description,
+  actions,
+  className,
   ref,
-) {
+  ...rest
+}: BannerProps) {
   return (
     <div
       ref={ref}
@@ -71,4 +78,4 @@ export const Banner = forwardRef<HTMLDivElement, BannerProps>(function Banner(
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>
   );
-});
+}

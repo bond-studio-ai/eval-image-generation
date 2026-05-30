@@ -1,8 +1,8 @@
 import {
-  forwardRef,
   useId,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from './cn';
@@ -70,22 +70,28 @@ const CONTROL_CLASS =
  * control inside a `<Field>`. For numeric values prefer the consuming
  * component's own `inputMode='numeric'` / regex constraints.
  */
-export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  function TextInput({ className, type = 'text', ...rest }, ref) {
-    return <input ref={ref} type={type} className={cn(CONTROL_CLASS, className)} {...rest} />;
-  },
-);
+export function TextInput({
+  className,
+  type = 'text',
+  ref,
+  ...rest
+}: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
+  return <input ref={ref} type={type} className={cn(CONTROL_CLASS, className)} {...rest} />;
+}
 
-export const Textarea = forwardRef<
-  HTMLTextAreaElement,
-  TextareaHTMLAttributes<HTMLTextAreaElement>
->(function Textarea({ className, rows = 3, ...rest }, ref) {
+export function Textarea({
+  className,
+  rows = 3,
+  ref,
+  ...rest
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
   return <textarea ref={ref} rows={rows} className={cn(CONTROL_CLASS, className)} {...rest} />;
-});
+}
 
 interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /** Inline label rendered to the right of the checkbox. */
   label?: ReactNode;
+  ref?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -93,10 +99,7 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'typ
  * checkbox and text together; omit `label` when the caller wants to compose
  * the surrounding layout manually.
  */
-export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
-  { label, className, ...rest },
-  ref,
-) {
+export function Checkbox({ label, className, ref, ...rest }: CheckboxProps) {
   const input = (
     <input
       ref={ref}
@@ -115,4 +118,4 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       {label}
     </label>
   );
-});
+}

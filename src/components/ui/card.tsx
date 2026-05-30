@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode, type Ref } from 'react';
 import { cn } from './cn';
 
 type CardPadding = 'sm' | 'md' | 'lg' | 'none';
@@ -10,6 +10,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   borderless?: boolean;
   /** Hover elevation cue (use sparingly; only on clickable cards). */
   interactive?: boolean;
+  ref?: Ref<HTMLDivElement>;
 }
 
 const PADDING: Record<CardPadding, string> = {
@@ -24,10 +25,14 @@ const PADDING: Record<CardPadding, string> = {
  * `rounded-lg border border-gray-200 bg-white p-6 shadow-xs` snippet that's
  * copy-pasted across pages.
  */
-export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
-  { padding = 'lg', borderless = false, interactive = false, className, ...rest },
+export function Card({
+  padding = 'lg',
+  borderless = false,
+  interactive = false,
+  className,
   ref,
-) {
+  ...rest
+}: CardProps) {
   return (
     <div
       ref={ref}
@@ -41,7 +46,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       {...rest}
     />
   );
-});
+}
 
 interface CardHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   title?: ReactNode;
