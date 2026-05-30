@@ -1,4 +1,5 @@
 import { type Dispatch } from 'react';
+import { ChevronDownIcon } from '@/components/ui/icons';
 import { REFERENCE_OPTIONS } from '@/lib/prompt-template-constants';
 import {
   type AttributesAction,
@@ -40,14 +41,9 @@ export function ReferencePopover({
         }`}
       >
         <span className="truncate">Reference</span>
-        <svg
+        <ChevronDownIcon
           className={`h-3.5 w-3.5 flex-none text-gray-400 ${state.open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </button>
       {state.open && (
         <div className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">

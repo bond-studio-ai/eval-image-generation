@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
+import { XIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
 
 interface ExpandableImageProps {
@@ -49,15 +50,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
               onClick={() => setOpen(false)}
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <XIcon className="size-5" />
             </button>
           </div>
 

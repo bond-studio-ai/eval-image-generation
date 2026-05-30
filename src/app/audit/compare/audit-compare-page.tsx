@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
-import { CheckCircleIcon } from '@/components/ui/icons';
+import { CheckCircleIcon, ChevronDownIcon } from '@/components/ui/icons';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
@@ -485,23 +485,13 @@ export function AuditComparePage() {
                                 {SOURCE_LABELS[group.source] ?? group.source}
                               </Badge>
                             ) : null}
-                            <svg
+                            <ChevronDownIcon
                               className={cn(
                                 'text-text-disabled h-4 w-4 transition-transform',
                                 isExpanded && 'rotate-180',
                               )}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={1.5}
-                              stroke="currentColor"
                               aria-hidden="true"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="m19.5 8.25-7.5 7.5-7.5-7.5"
-                              />
-                            </svg>
+                            />
                           </span>
                         </button>
                         {isExpanded ? (

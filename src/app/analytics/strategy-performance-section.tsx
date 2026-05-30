@@ -1,11 +1,63 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { StrategyTableHeader } from './_strategy-performance/strategy-table-header';
 import { StrategyTableRow } from './_strategy-performance/strategy-table-row';
 import type { BreakdownData, SortDir, SortKey, StrategyRow } from './_strategy-performance/types';
+
+type ExpansionState = {
+  expandedIds: Set<string>;
+  breakdowns: Record<string, BreakdownData | null>;
+  loadingIds: Set<string>;
+};
+
+type ExpansionAction =
+  | { type: 'toggle'; id: string }
+  | { type: 'loadStart'; id: string }
+  | { type: 'loadSuccess'; id: string; data: BreakdownData }
+  | { type: 'loadEmpty'; id: string }
+  | { type: 'loadSettled'; id: string };
+
+const INITIAL_EXPANSION: ExpansionState = {
+  expandedIds: new Set(),
+  breakdowns: {},
+  loadingIds: new Set(),
+};
+
+function withoutId(ids: Set<string>, id: string): Set<string> {
+  const next = new Set(ids);
+  next.delete(id);
+  return next;
+}
+
+function expansionReducer(state: ExpansionState, action: ExpansionAction): ExpansionState {
+  switch (action.type) {
+    case 'toggle': {
+      const expandedIds = new Set(state.expandedIds);
+      if (expandedIds.has(action.id)) expandedIds.delete(action.id);
+      else expandedIds.add(action.id);
+      return { ...state, expandedIds };
+    }
+    case 'loadStart':
+      return { ...state, loadingIds: new Set(state.loadingIds).add(action.id) };
+    case 'loadSuccess':
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: action.data },
+        loadingIds: withoutId(state.loadingIds, action.id),
+      };
+    case 'loadEmpty':
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: null },
+        loadingIds: withoutId(state.loadingIds, action.id),
+      };
+    case 'loadSettled':
+      return { ...state, loadingIds: withoutId(state.loadingIds, action.id) };
+  }
+}
 
 export function StrategyPerformanceSection({
   from,
@@ -18,9 +70,10 @@ export function StrategyPerformanceSection({
   model?: string;
   source?: string;
 }) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [breakdowns, setBreakdowns] = useState<Record<string, BreakdownData | null>>({});
-  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+  const [{ expandedIds, breakdowns, loadingIds }, dispatchExpansion] = useReducer(
+    expansionReducer,
+    INITIAL_EXPANSION,
+  );
   const [sortKey, setSortKey] = useState<SortKey>('generationCount');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -46,7 +99,7 @@ export function StrategyPerformanceSection({
 
   const fetchBreakdown = useCallback(
     async (strategyId: string) => {
-      setLoadingIds((prev) => new Set(prev).add(strategyId));
+      dispatchExpansion({ type: 'loadStart', id: strategyId });
       try {
         const params = new URLSearchParams({ strategy_id: strategyId });
         if (from) params.set('from', from);
@@ -58,11 +111,14 @@ export function StrategyPerformanceSection({
         const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), {
           cache: 'no-store',
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          dispatchExpansion({ type: 'loadSettled', id: strategyId });
+          return;
+        }
         const json = await res.json();
         const raw = json.data;
         if (!raw) {
-          setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
+          dispatchExpansion({ type: 'loadEmpty', id: strategyId });
           return;
         }
         const executionErrors = raw.executionErrors ?? raw.execution_errors;
@@ -85,15 +141,9 @@ export function StrategyPerformanceSection({
               }
             : null,
         };
-        setBreakdowns((prev) => ({ ...prev, [strategyId]: normalized }));
+        dispatchExpansion({ type: 'loadSuccess', id: strategyId, data: normalized });
       } catch {
-        setBreakdowns((prev) => ({ ...prev, [strategyId]: null }));
-      } finally {
-        setLoadingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(strategyId);
-          return next;
-        });
+        dispatchExpansion({ type: 'loadEmpty', id: strategyId });
       }
     },
     [from, model, source, to],
@@ -101,12 +151,7 @@ export function StrategyPerformanceSection({
 
   const toggleExpand = useCallback(
     (id: string) => {
-      setExpandedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
+      dispatchExpansion({ type: 'toggle', id });
       if (!breakdowns[id]) fetchBreakdown(id);
     },
     [fetchBreakdown, breakdowns],

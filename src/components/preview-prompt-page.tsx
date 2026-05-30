@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
+import { ChevronDownIcon } from '@/components/ui/icons';
 import { serviceUrl } from '@/lib/api-base';
 
 interface PromptVersionItem {
@@ -89,14 +90,9 @@ function DropdownWithSearch({
         <span className={selectedLabel ? 'text-gray-900' : 'text-gray-500'}>
           {selectedLabel || placeholder}
         </span>
-        <svg
+        <ChevronDownIcon
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </button>
       {open && (
         <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">

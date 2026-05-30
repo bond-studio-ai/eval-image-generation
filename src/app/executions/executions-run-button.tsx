@@ -3,7 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useReducer, useState } from 'react';
+import { PlayIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
+import { Spinner } from '@/components/ui/spinner';
 import { MultiSelectColumn } from './_components/multi-select-column';
 import { NumberOfImagesInput } from './_components/number-of-images-input';
 import {
@@ -142,19 +144,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         }}
         className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
       >
-        <svg
-          className="size-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"
-          />
-        </svg>
+        <PlayIcon className="size-4" />
         Run
       </button>
 
@@ -275,21 +265,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
             >
               {submitting ? (
                 <>
-                  <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
+                  <Spinner size="sm" />
                   Starting…
                 </>
               ) : benchmarkMode ? (

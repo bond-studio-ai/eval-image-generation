@@ -1,5 +1,5 @@
-import { Search } from 'lucide-react';
 import { type HTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+import { SearchIcon } from '@/components/ui/icons';
 import { cn } from './cn';
 
 interface FilterBarProps extends HTMLAttributes<HTMLDivElement> {
@@ -50,7 +50,7 @@ export function FilterSearch({
 }: FilterSearchProps) {
   return (
     <div className={cn('relative', width)}>
-      <Search
+      <SearchIcon
         className="text-text-disabled pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
         aria-hidden="true"
       />

@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Fragment, useCallback, useState } from 'react';
+import { ChevronRightIcon } from '@/components/ui/icons';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
 
 // Shared frozen empty set returned when the expanded state belongs to a stale
@@ -537,19 +538,9 @@ export function ProductCategoryRates({
                       aria-expanded={isExpanded}
                       aria-label={isExpanded ? 'Collapse breakdown' : 'Expand breakdown'}
                     >
-                      <svg
+                      <ChevronRightIcon
                         className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                        />
-                      </svg>
+                      />
                     </button>
                   </td>
                   <td className="py-2 pr-4 text-sm font-medium text-gray-900">

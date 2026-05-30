@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Fragment } from 'react';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import { ChevronRightIcon } from '@/components/ui/icons';
 import { StrategyBreakdownPanel } from './strategy-breakdown-panel';
 import type { BreakdownData, StrategyRow } from './types';
 
@@ -38,15 +39,9 @@ export function StrategyTableRow({
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
           >
-            <svg
+            <ChevronRightIcon
               className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
+            />
           </button>
         </td>
         <td className="py-3 pr-6 text-sm font-medium text-gray-900">

@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
+import { ChevronsUpDownIcon, XIcon } from '@/components/ui/icons';
 import { serviceUrl } from '@/lib/api-base';
 
 export interface LayoutPresetOption {
@@ -100,19 +101,7 @@ export function LayoutPresetSelect({
                 ? 'Loading layouts...'
                 : 'Select a layout')}
         </span>
-        <svg
-          className="size-4 shrink-0 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
-          />
-        </svg>
+        <ChevronsUpDownIcon className="size-4 shrink-0 text-gray-400" />
       </button>
       <p className="mt-2 text-xs text-gray-500">
         Saved instead of a dollhouse upload. Runtime will resolve the room from this preset.
@@ -144,15 +133,7 @@ export function LayoutPresetSelect({
                 }}
                 className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
-                <svg
-                  className="size-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
+                <XIcon className="size-5" />
               </button>
             </div>
             <div className="border-b border-gray-100 p-4">

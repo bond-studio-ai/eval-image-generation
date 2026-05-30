@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
+import { ChevronRightIcon } from '@/components/ui/icons';
 import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
 
 function SectionHeader({ title }: { title: string }) {
@@ -59,7 +60,10 @@ function formatSeconds(ms: number | null | undefined): string | null {
 function JudgeGroupCard({ group }: { group: JudgeGroup }) {
   const [open, setOpen] = useState(false);
 
-  const scores = group.entries.map((e) => e.judgeScore).filter((s): s is number => s != null);
+  const scoredEntries = group.entries.filter(
+    (e): e is typeof e & { judgeScore: number } => e.judgeScore != null,
+  );
+  const scores = scoredEntries.map((e) => e.judgeScore);
   const avgScore =
     scores.length > 0
       ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
@@ -73,15 +77,9 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50"
       >
-        <svg
+        <ChevronRightIcon
           className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
+        />
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {group.judgeName && (
             <span className="text-xs font-semibold text-gray-900">{group.judgeName}</span>
@@ -119,12 +117,12 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
           )}
           {!isSingle && scores.length > 0 && (
             <div className="flex items-center gap-1">
-              {scores.map((s, i) => (
+              {scoredEntries.map((e) => (
                 <span
-                  key={i}
+                  key={e.id}
                   className="inline-flex rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 tabular-nums"
                 >
-                  {s}
+                  {e.judgeScore}
                 </span>
               ))}
             </div>

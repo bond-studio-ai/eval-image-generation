@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckIcon, ChevronDownIcon, SearchIcon } from '@/components/ui/icons';
 import type { StrategyListItem } from '@/lib/service-client';
 
 export function StrategyDropdown({
@@ -55,34 +56,16 @@ export function StrategyDropdown({
         <span className={`truncate ${selected ? 'font-medium text-gray-900' : 'text-gray-400'}`}>
           {selected?.name ?? 'Select strategy…'}
         </span>
-        <svg
+        <ChevronDownIcon
           className={`size-3.5 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        />
       </button>
 
       {open && (
         <div className="absolute left-0 z-50 mt-1 w-full min-w-[240px] rounded-xl border border-gray-200 bg-white shadow-xl">
           <div className="border-b border-gray-100 p-2">
             <div className="relative">
-              <svg
-                className="absolute top-1/2 left-2.5 size-3 -translate-y-1/2 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
+              <SearchIcon className="absolute top-1/2 left-2.5 size-3 -translate-y-1/2 text-gray-400" />
               <input
                 ref={focusOnOpen}
                 type="text"
@@ -115,19 +98,7 @@ export function StrategyDropdown({
                 >
                   <span className="truncate">{strategy.name}</span>
                   {value === strategy.id && (
-                    <svg
-                      className="text-primary-600 ml-auto size-3.5 shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M4.5 12.75l6 6 9-13.5"
-                      />
-                    </svg>
+                    <CheckIcon className="text-primary-600 ml-auto size-3.5 shrink-0" />
                   )}
                 </button>
               ))

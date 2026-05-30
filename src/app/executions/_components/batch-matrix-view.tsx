@@ -8,6 +8,7 @@ import type { ReviewState } from '@/components/review-badge';
 import { ReviewResultsBadge } from '@/components/review-results';
 import { ReviewRunGroupBadge } from '@/components/review-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import { MaximizeIcon } from '@/components/ui/icons';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import { ReviewStatusBadge } from './batch-review-status-badge';
 import { deriveRunReviewStatus, isAwaitingJudgeBatch, type RunRow } from './batch-types';
@@ -185,19 +186,7 @@ export function MatrixView({
                                 className={`rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
                               />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
-                                <svg
-                                  className="size-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  strokeWidth={1.5}
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                                  />
-                                </svg>
+                                <MaximizeIcon className="size-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
                               </div>
                               <JudgeScoreBadge
                                 runId={run.id}
@@ -242,19 +231,10 @@ export function MatrixView({
                               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <svg
+                              <MaximizeIcon
                                 className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
-                                fill="none"
-                                viewBox="0 0 24 24"
                                 strokeWidth={1.5}
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                                />
-                              </svg>
+                              />
                             </div>
                           </button>
                           <JudgeScoreBadge

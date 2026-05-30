@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { GripVerticalIcon } from '@/components/ui/icons';
 
 interface TwoPaneSplitProps {
   left: ReactNode;
@@ -146,19 +147,10 @@ export function TwoPaneSplit({
           className="absolute inset-0 h-full w-full cursor-col-resize touch-none select-none"
         />
         <div className="group-hover:border-primary-400 group-active:border-primary-500 pointer-events-none absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
-          <svg
+          <GripVerticalIcon
             className="group-hover:text-primary-500 size-2.5 text-gray-500"
-            viewBox="0 0 10 10"
-            fill="currentColor"
             aria-hidden="true"
-          >
-            <circle cx="3.5" cy="3" r="0.6" />
-            <circle cx="3.5" cy="5" r="0.6" />
-            <circle cx="3.5" cy="7" r="0.6" />
-            <circle cx="6.5" cy="3" r="0.6" />
-            <circle cx="6.5" cy="5" r="0.6" />
-            <circle cx="6.5" cy="7" r="0.6" />
-          </svg>
+          />
         </div>
       </div>
       <div

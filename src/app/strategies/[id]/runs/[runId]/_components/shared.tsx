@@ -1,3 +1,5 @@
+import { ChevronRightIcon } from '@/components/ui/icons';
+
 const SOURCE_LABELS: Record<string, string> = {
   preset: 'Preset Run',
   raw_input: 'Real Input',
@@ -57,15 +59,9 @@ export function ChevronIcon({
   className?: string;
 }) {
   return (
-    <svg
+    <ChevronRightIcon
       className={`${className} shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-    </svg>
+    />
   );
 }
 

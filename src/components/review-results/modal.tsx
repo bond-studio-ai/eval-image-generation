@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
+import { XIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
+import { Spinner } from '@/components/ui/spinner';
 import { CollapsibleCategoryGrid, SegmentationLegend } from './category-grid';
 import { buildCategoryLookup, useSegmentationCategories } from './category-lookup';
 import { buildRows } from './category-rows';
@@ -74,36 +76,14 @@ export function ReviewModal({
           aria-label="Close"
           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
-          <svg
-            className="size-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XIcon className="size-5" />
         </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {loading && (
           <div className="flex items-center justify-center py-16 text-sm text-gray-500">
-            <svg className="mr-2 size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
+            <Spinner className="mr-2 size-4" />
             Loading review…
           </div>
         )}

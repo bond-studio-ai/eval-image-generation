@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useRef, type KeyboardEvent } from 'react';
+import { XIcon } from '@/components/ui/icons';
 import type { PromptVersionListItem } from '@/lib/types';
 import { buildGenerationsQuery, type FilterParams } from './query-utils';
 
@@ -141,15 +142,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
             href={buildGenerationsQuery({ source: params.source })}
             className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
           >
-            <svg
-              className="size-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="size-3.5" />
             Clear all filters
           </Link>
         </div>

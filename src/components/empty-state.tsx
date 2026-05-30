@@ -1,5 +1,5 @@
-import { Inbox } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { InboxIcon } from '@/components/ui/icons';
 import { cn } from './ui/cn';
 
 interface EmptyStateProps {
@@ -30,7 +30,7 @@ export function EmptyState({
       )}
     >
       <div className="text-text-disabled" aria-hidden="true">
-        {icon ?? <Inbox className="size-12" strokeWidth={1.25} />}
+        {icon ?? <InboxIcon className="size-12" strokeWidth={1.25} />}
       </div>
       <h3 className="text-body text-text-primary mt-4 font-semibold">{title}</h3>
       {description && <div className="text-body text-text-secondary mt-1">{description}</div>}
