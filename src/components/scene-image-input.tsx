@@ -120,7 +120,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
               </div>
             ) : (
               <div>
-                <UploadIcon className="mx-auto size-8 text-gray-400" />
+                <UploadIcon className="mx-auto size-8 text-gray-400" strokeWidth={1.5} />
                 <p className="mt-2 text-xs text-gray-500">Drop image or click to browse</p>
               </div>
             )}

@@ -47,10 +47,6 @@ interface ImageEvaluationFormProps {
   productCategories?: string[];
 }
 
-function ChevronIcon({ open }: { open: boolean }) {
-  return <ChevronDownIcon className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />;
-}
-
 function IssueCheckboxGroup({
   options,
   selected,
@@ -292,7 +288,9 @@ export function ImageEvaluationForm({
               </span>
             )}
           </span>
-          <ChevronIcon open={sceneOpen} />
+          <ChevronDownIcon
+            className={`h-4 w-4 transition-transform ${sceneOpen ? 'rotate-180' : ''}`}
+          />
         </button>
         {sceneOpen && (
           <div className="space-y-3 border-t border-gray-200 p-3">
@@ -331,7 +329,9 @@ export function ImageEvaluationForm({
               </span>
             )}
           </span>
-          <ChevronIcon open={productOpen} />
+          <ChevronDownIcon
+            className={`h-4 w-4 transition-transform ${productOpen ? 'rotate-180' : ''}`}
+          />
         </button>
         {productOpen && (
           <div className="space-y-4 border-t border-gray-200 p-3">

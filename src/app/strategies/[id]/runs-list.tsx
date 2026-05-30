@@ -656,7 +656,10 @@ function BatchMatrix({
                               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <MaximizeIcon className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
+                              <MaximizeIcon
+                                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                strokeWidth={1.5}
+                              />
                             </div>
                             <JudgeScoreBadge
                               runId={run.id}
