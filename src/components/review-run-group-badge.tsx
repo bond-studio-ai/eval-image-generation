@@ -1,6 +1,7 @@
 'use client';
 
-import { runReviewPost, type ReviewState } from '@/components/review-badge';
+import { type ReviewState } from '@/components/review-badge';
+import { runReviewPost } from '@/components/run-review-post';
 import { useCallback, useMemo } from 'react';
 
 /**

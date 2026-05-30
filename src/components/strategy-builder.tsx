@@ -12,6 +12,8 @@ type ProductImageType = 'featured-image' | 'photo-image' | 'line-drawing' | 'tea
 
 interface StepData {
   id?: string;
+  /** Stable client-only key for React list rendering (never sent to the API). */
+  _uid?: string;
   type: 'generation' | 'judge';
   number_of_images?: number;
   name: string;
@@ -51,6 +53,8 @@ interface StrategySettings {
 
 interface JudgeData {
   id?: string;
+  /** Stable client-only key for React list rendering (never sent to the API). */
+  _uid?: string;
   name?: string;
   judge_model: string;
   judge_type: 'batch' | 'individual';
@@ -117,8 +121,16 @@ const FALLBACK_GENERATION_MODEL = 'gemini-3-pro-image-preview';
 const FALLBACK_JUDGE_MODEL = 'gemini-2.5-flash';
 const FALLBACK_PREVIEW_MODEL = 'gemini-3.1-flash-image-preview';
 
+let uidSeq = 0;
+/** Generates a stable client-only id for keying steps/judges in React lists. */
+function nextUid(): string {
+  uidSeq += 1;
+  return `sb-${uidSeq}`;
+}
+
 function defaultStep(promptVersionId: string, model = FALLBACK_GENERATION_MODEL): StepData {
   return {
+    _uid: nextUid(),
     type: 'generation',
     name: '',
     prompt_version_id: promptVersionId,
@@ -528,9 +540,11 @@ export function StrategyBuilder({
     initialSteps?.length
       ? initialSteps.map((step) => ({
           ...step,
+          _uid: step._uid ?? nextUid(),
           model: catalogSelectionForProviderModelId(step.model, defaultGenerationModel),
           judges: step.judges?.map((judge) => ({
             ...judge,
+            _uid: judge._uid ?? nextUid(),
             judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel),
           })),
           product_image_types: normalizeProductImageTypes(step.product_image_types),
@@ -554,6 +568,7 @@ export function StrategyBuilder({
     setSteps((prev) => [
       ...prev,
       {
+        _uid: nextUid(),
         type: 'judge' as const,
         name: 'Judge',
         number_of_images: 4,
@@ -576,6 +591,7 @@ export function StrategyBuilder({
         arbitrary_image_from_step: null,
         judges: [
           {
+            _uid: nextUid(),
             name: '',
             judge_model: defaultJudgeModel,
             judge_type: 'individual',
@@ -982,7 +998,7 @@ export function StrategyBuilder({
           {steps.map((step, idx) =>
             step.type === 'judge' ? (
               <div
-                key={idx}
+                key={step._uid}
                 className="rounded-lg border border-amber-200 bg-amber-50/50 p-5 shadow-xs"
               >
                 <div className="flex items-center justify-between gap-3">
@@ -1023,7 +1039,10 @@ export function StrategyBuilder({
 
                 <div className="mt-4 space-y-3">
                   {(step.judges ?? []).map((judge, jIdx) => (
-                    <div key={jIdx} className="rounded-lg border border-amber-200 bg-white p-4">
+                    <div
+                      key={judge._uid}
+                      className="rounded-lg border border-amber-200 bg-white p-4"
+                    >
                       <div className="mb-3 flex items-center justify-between">
                         <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
                           {jIdx + 1}
@@ -1087,6 +1106,7 @@ export function StrategyBuilder({
                         <input
                           id={`judge-name-${idx}-${jIdx}`}
                           type="text"
+                          aria-label="Judge name"
                           value={judge.name ?? ''}
                           onChange={(e) => {
                             const newJudges = [...(step.judges ?? [])];
@@ -1149,6 +1169,7 @@ export function StrategyBuilder({
                         <input
                           id={`judge-tolerance-${idx}-${jIdx}`}
                           type="range"
+                          aria-label="Judge tolerance threshold"
                           min={1}
                           max={100}
                           value={judge.tolerance_threshold}
@@ -1171,6 +1192,7 @@ export function StrategyBuilder({
                       const newJudges = [
                         ...(step.judges ?? []),
                         {
+                          _uid: nextUid(),
                           name: '',
                           judge_model: defaultJudgeModel,
                           judge_type: 'individual' as const,
@@ -1200,7 +1222,10 @@ export function StrategyBuilder({
                 </div>
               </div>
             ) : (
-              <div key={idx} className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+              <div
+                key={step._uid}
+                className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="bg-primary-100 text-primary-700 inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold">

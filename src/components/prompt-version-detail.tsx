@@ -5,7 +5,7 @@ import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useReducer, useState } from 'react';
 import { DeletePromptVersionButton } from './delete-prompt-version-button';
 import { PromptTemplateEditor } from './prompt-template-editor';
 import { RatingBadge } from './rating-badge';
@@ -46,6 +46,28 @@ interface PromptVersionDetailProps {
   stats: Stats;
 }
 
+interface FormState {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  userPrompt: string;
+}
+
+type FormAction =
+  | {
+      [K in keyof FormState]: { type: 'setField'; field: K; value: FormState[K] };
+    }[keyof FormState]
+  | { type: 'reset'; value: FormState };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'setField':
+      return { ...state, [action.field]: action.value };
+    case 'reset':
+      return action.value;
+  }
+}
+
 // ------------------------------------
 // Component
 // ------------------------------------
@@ -63,10 +85,14 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   });
 
   // Editable field state
-  const [name, setName] = useState(baseline.name);
-  const [description, setDescription] = useState(baseline.description);
-  const [systemPrompt, setSystemPrompt] = useState(baseline.systemPrompt);
-  const [userPrompt, setUserPrompt] = useState(baseline.userPrompt);
+  const [form, dispatch] = useReducer(formReducer, {
+    name: baseline.name,
+    description: baseline.description,
+    systemPrompt: baseline.systemPrompt,
+    userPrompt: baseline.userPrompt,
+  });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
+    dispatch({ type: 'setField', field, value });
 
   const [saving, setSaving] = useState(false);
   const [cloning, setCloning] = useState(false);
@@ -75,12 +101,12 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   const isDirty = useMemo(() => {
     if (!isEditable) return false;
     return (
-      name !== baseline.name ||
-      description !== baseline.description ||
-      systemPrompt !== baseline.systemPrompt ||
-      userPrompt !== baseline.userPrompt
+      form.name !== baseline.name ||
+      form.description !== baseline.description ||
+      form.systemPrompt !== baseline.systemPrompt ||
+      form.userPrompt !== baseline.userPrompt
     );
-  }, [isEditable, baseline, name, description, systemPrompt, userPrompt]);
+  }, [isEditable, baseline, form]);
 
   async function handleSave() {
     setSaving(true);
@@ -91,10 +117,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name || undefined,
-          description: description || undefined,
-          system_prompt: systemPrompt,
-          user_prompt: userPrompt,
+          name: form.name || undefined,
+          description: form.description || undefined,
+          system_prompt: form.systemPrompt,
+          user_prompt: form.userPrompt,
         }),
       });
 
@@ -113,10 +139,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
       // Update baseline so isDirty resets
       setBaseline({
-        name,
-        description,
-        systemPrompt,
-        userPrompt,
+        name: form.name,
+        description: form.description,
+        systemPrompt: form.systemPrompt,
+        userPrompt: form.userPrompt,
       });
       router.refresh();
     } catch (err) {
@@ -127,10 +153,15 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   }
 
   function handleDiscard() {
-    setName(baseline.name);
-    setDescription(baseline.description);
-    setSystemPrompt(baseline.systemPrompt);
-    setUserPrompt(baseline.userPrompt);
+    dispatch({
+      type: 'reset',
+      value: {
+        name: baseline.name,
+        description: baseline.description,
+        systemPrompt: baseline.systemPrompt,
+        userPrompt: baseline.userPrompt,
+      },
+    });
     setError(null);
   }
 
@@ -252,7 +283,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               {cloning ? 'Cloning…' : 'Clone'}
             </button>
             {isEditable && (
-              <DeletePromptVersionButton id={data.id} name={name || 'Untitled Prompt Version'} />
+              <DeletePromptVersionButton
+                id={data.id}
+                name={form.name || 'Untitled Prompt Version'}
+              />
             )}
             {!data.deletedAt && (
               <Link
@@ -274,12 +308,12 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       {isEditable && (
         <div className="mt-6">
           <ResourceFormHeader
-            name={name}
-            onNameChange={setName}
+            name={form.name}
+            onNameChange={(value) => setField('name', value)}
             namePlaceholder="e.g. Bathroom generation v2"
             nameRequired={false}
-            description={description}
-            onDescriptionChange={setDescription}
+            description={form.description}
+            onDescriptionChange={(value) => setField('description', value)}
           />
         </div>
       )}
@@ -315,8 +349,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
             {isEditable ? (
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
-                  value={systemPrompt}
-                  onChange={setSystemPrompt}
+                  value={form.systemPrompt}
+                  onChange={(value) => setField('systemPrompt', value)}
                   placeholder="Enter the system prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight
@@ -335,8 +369,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
             {isEditable ? (
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
-                  value={userPrompt}
-                  onChange={setUserPrompt}
+                  value={form.userPrompt}
+                  onChange={(value) => setField('userPrompt', value)}
                   placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight

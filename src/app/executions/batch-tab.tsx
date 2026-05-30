@@ -26,7 +26,7 @@ import {
 import { serviceUrl } from '@/lib/api-base';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
@@ -97,6 +97,144 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
   return { ...b, runs } as BatchRow;
 }
 
+/**
+ * List-fetch / pagination state machine for {@link BatchRunsTab}. Grouped into a
+ * reducer because `fetchBatches` mutates this whole cluster together and relies on
+ * functional updates (`setBatches(prev => ...)`, `setHasMore(more => ...)`); the
+ * `mergeFirstPage` action reproduces that merge byte-for-byte from current state.
+ */
+interface FetchState {
+  batches: BatchRow[];
+  page: number;
+  hasMore: boolean;
+  loading: boolean;
+  loadingMore: boolean;
+  fetchError: string | null;
+  refreshing: boolean;
+}
+
+type FetchAction =
+  | { type: 'replaceStart'; setRefreshing: boolean }
+  | { type: 'loadMoreStart' }
+  | { type: 'fetchErrorResponse'; error: string; clearHasMore: boolean }
+  | { type: 'mergeFirstPage'; normalized: BatchRow[]; priorFirstPageIds: Set<string> }
+  | { type: 'replaceSuccess'; normalized: BatchRow[]; hasMore: boolean }
+  | { type: 'appendSuccess'; normalized: BatchRow[]; page: number; hasMore: boolean }
+  | { type: 'fetchSettled' }
+  | { type: 'setLoading'; loading: boolean };
+
+const initialFetchState: FetchState = {
+  batches: [],
+  page: 1,
+  hasMore: false,
+  loading: true,
+  loadingMore: false,
+  fetchError: null,
+  refreshing: false,
+};
+
+function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case 'replaceStart':
+      // setFetchError(null), and setRefreshing(true) only when caller was not loading.
+      return {
+        ...state,
+        fetchError: null,
+        refreshing: action.setRefreshing ? true : state.refreshing,
+      };
+    case 'loadMoreStart':
+      return { ...state, loadingMore: true };
+    case 'fetchErrorResponse':
+      return {
+        ...state,
+        fetchError: action.error,
+        hasMore: action.clearHasMore ? false : state.hasMore,
+      };
+    case 'mergeFirstPage': {
+      const { normalized, priorFirstPageIds } = action;
+      const topIds = new Set(normalized.map((b) => b.id));
+      const prevIds = new Set(state.batches.map((b) => b.id));
+      const mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
+      const tail = state.batches.filter((b) => {
+        if (topIds.has(b.id)) return false;
+        if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
+        return true;
+      });
+      return {
+        ...state,
+        fetchError: null,
+        batches: [...normalized, ...tail],
+        hasMore: mergeIncludesNewBatchId ? true : state.hasMore,
+      };
+    }
+    case 'replaceSuccess':
+      return { ...state, batches: action.normalized, page: 1, hasMore: action.hasMore };
+    case 'appendSuccess': {
+      const existingIds = new Set(state.batches.map((b) => b.id));
+      const added = action.normalized.filter((b) => !existingIds.has(b.id));
+      return {
+        ...state,
+        batches: [...state.batches, ...added],
+        page: action.page,
+        hasMore: action.hasMore,
+      };
+    }
+    case 'fetchSettled':
+      return { ...state, loading: false, loadingMore: false, refreshing: false };
+    case 'setLoading':
+      return { ...state, loading: action.loading };
+  }
+}
+
+/** Row-action-in-flight ids (retry run / retry batch / delete batch). */
+interface PendingState {
+  retryingRunId: string | null;
+  retryingBatchId: string | null;
+  deletingBatchId: string | null;
+}
+
+type PendingAction =
+  | { type: 'retryingRun'; id: string | null }
+  | { type: 'retryingBatch'; id: string | null }
+  | { type: 'deletingBatch'; id: string | null };
+
+const initialPendingState: PendingState = {
+  retryingRunId: null,
+  retryingBatchId: null,
+  deletingBatchId: null,
+};
+
+function pendingReducer(state: PendingState, action: PendingAction): PendingState {
+  switch (action.type) {
+    case 'retryingRun':
+      return { ...state, retryingRunId: action.id };
+    case 'retryingBatch':
+      return { ...state, retryingBatchId: action.id };
+    case 'deletingBatch':
+      return { ...state, deletingBatchId: action.id };
+  }
+}
+
+/** Applied date-range filter (from/to), always set together. */
+interface AppliedRangeState {
+  from: string;
+  to: string;
+}
+
+type AppliedRangeAction = { type: 'set'; from: string; to: string };
+
+const initialAppliedRangeState: AppliedRangeState = { from: '', to: '' };
+
+function appliedRangeReducer(
+  state: AppliedRangeState,
+  action: AppliedRangeAction,
+): AppliedRangeState {
+  switch (action.type) {
+    case 'set':
+      return { from: action.from, to: action.to };
+  }
+}
+
 export function BatchRunsTab({
   refreshKey,
   source = 'default',
@@ -104,25 +242,19 @@ export function BatchRunsTab({
   refreshKey?: number;
   source?: 'default' | 'benchmark';
 }) {
-  const [batches, setBatches] = useState<BatchRow[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchState, fetchDispatch] = useReducer(fetchReducer, initialFetchState);
+  const [pending, pendingDispatch] = useReducer(pendingReducer, initialPendingState);
+  const [appliedRange, appliedRangeDispatch] = useReducer(
+    appliedRangeReducer,
+    initialAppliedRangeState,
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
-  const [retryingRunId, setRetryingRunId] = useState<string | null>(null);
-  const [retryingBatchId, setRetryingBatchId] = useState<string | null>(null);
-  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [lightbox, setLightbox] = useState<{
     src: string;
     runHref: string;
     generationId: string | null;
   } | null>(null);
-  const [appliedFrom, setAppliedFrom] = useState('');
-  const [appliedTo, setAppliedTo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   /** Prior page-1 id set; merge uses it to prune likely deletes when the refreshed page 1 has no new batch ids. */
@@ -135,27 +267,27 @@ export function BatchRunsTab({
       const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
       const limit = BATCH_PAGE_SIZE;
       if (replace && !mergeFirstPage) {
-        setFetchError(null);
-        if (!loading) {
-          setRefreshing(true);
+        fetchDispatch({ type: 'replaceStart', setRefreshing: !fetchState.loading });
+        if (!fetchState.loading) {
           setExpandedIds(new Set());
         }
       } else if (!replace && !mergeFirstPage) {
-        setLoadingMore(true);
+        fetchDispatch({ type: 'loadMoreStart' });
       }
       try {
         const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
-        if (appliedFrom) params.set('from', appliedFrom);
-        if (appliedTo) params.set('to', appliedTo);
+        if (appliedRange.from) params.set('from', appliedRange.from);
+        if (appliedRange.to) params.set('to', appliedRange.to);
         if (source === 'benchmark') params.set('source', 'benchmark');
         const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           const msg = (err as { error?: { message?: string } })?.error?.message;
-          setFetchError(
-            msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
-          );
-          if (!mergeFirstPage) setHasMore(false);
+          fetchDispatch({
+            type: 'fetchErrorResponse',
+            error: msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
+            clearHasMore: !mergeFirstPage,
+          });
           return;
         }
         const json = await res.json();
@@ -163,63 +295,49 @@ export function BatchRunsTab({
         const apiHasMore = json.hasMore === true;
         const normalized = raw.map((b) => normalizeBatch(b));
         if (mergeFirstPage) {
-          setFetchError(null);
           const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
-          const topIds = new Set(normalized.map((b) => b.id));
-          let mergeIncludesNewBatchId = false;
-          setBatches((prev) => {
-            const prevIds = new Set(prev.map((b) => b.id));
-            mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
-            const tail = prev.filter((b) => {
-              if (topIds.has(b.id)) return false;
-              if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
-              return true;
-            });
-            return [...normalized, ...tail];
-          });
+          fetchDispatch({ type: 'mergeFirstPage', normalized, priorFirstPageIds });
           lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
-          setHasMore((more) => (mergeIncludesNewBatchId ? true : more));
         } else if (replace) {
-          setBatches(normalized);
-          setPage(1);
-          setHasMore(apiHasMore);
+          fetchDispatch({ type: 'replaceSuccess', normalized, hasMore: apiHasMore });
           lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
         } else {
-          setBatches((prev) => {
-            const existingIds = new Set(prev.map((b) => b.id));
-            const added = normalized.filter((b) => !existingIds.has(b.id));
-            return [...prev, ...added];
+          fetchDispatch({
+            type: 'appendSuccess',
+            normalized,
+            page: pageToFetch,
+            hasMore: apiHasMore,
           });
-          setPage(pageToFetch);
-          setHasMore(apiHasMore);
         }
       } catch (e) {
-        setFetchError(
-          e instanceof Error ? e.message : 'Network error. Check backend and try again.',
-        );
-        if (!mergeFirstPage) setHasMore(false);
+        fetchDispatch({
+          type: 'fetchErrorResponse',
+          error: e instanceof Error ? e.message : 'Network error. Check backend and try again.',
+          clearHasMore: !mergeFirstPage,
+        });
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
-        setRefreshing(false);
+        fetchDispatch({ type: 'fetchSettled' });
       }
     },
-    [appliedFrom, appliedTo, source],
+    // `fetchState.loading` is intentionally read stale (omitted from deps), matching the
+    // pre-reducer behavior where `loading` was captured at callback creation: replace-refetches
+    // triggered by retry/delete must not flip on the refreshing overlay or collapse expanded rows.
+    [appliedRange.from, appliedRange.to, source],
   );
 
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
-    fetchBatches({ replace: false, pageToFetch: page + 1 });
-  }, [hasMore, loadingMore, page, fetchBatches]);
+    if (fetchState.loadingMore || !fetchState.hasMore) return;
+    fetchBatches({ replace: false, pageToFetch: fetchState.page + 1 });
+  }, [fetchState.hasMore, fetchState.loadingMore, fetchState.page, fetchBatches]);
 
   useEffect(() => {
     fetchBatches({ replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedFrom, appliedTo, refreshKey, source]);
+  }, [appliedRange.from, appliedRange.to, refreshKey, source]);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !hasMore || loadingMore) return;
+    if (!el || !fetchState.hasMore || fetchState.loadingMore) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) loadMore();
@@ -228,10 +346,12 @@ export function BatchRunsTab({
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [hasMore, loadingMore, loadMore]);
+  }, [fetchState.hasMore, fetchState.loadingMore, loadMore]);
 
-  const hasActive = batches.some((b) => b.status === 'running');
-  const hasAwaitingJudge = batches.some((b) => isAwaitingJudgeBatch(b.runs, b.numberOfImages));
+  const hasActive = fetchState.batches.some((b) => b.status === 'running');
+  const hasAwaitingJudge = fetchState.batches.some((b) =>
+    isAwaitingJudgeBatch(b.runs, b.numberOfImages),
+  );
   const shouldPoll = hasActive || hasAwaitingJudge;
   useEffect(() => {
     if (shouldPoll) {
@@ -246,18 +366,16 @@ export function BatchRunsTab({
   }, [shouldPoll, fetchBatches]);
 
   const handleDateChange = useCallback((from: string, to: string) => {
-    setAppliedFrom(from);
-    setAppliedTo(to);
+    appliedRangeDispatch({ type: 'set', from, to });
   }, []);
 
   const handleClearDate = useCallback(() => {
-    setAppliedFrom('');
-    setAppliedTo('');
+    appliedRangeDispatch({ type: 'set', from: '', to: '' });
   }, []);
 
   const handleRetry = useCallback(
     async (runId: string) => {
-      setRetryingRunId(runId);
+      pendingDispatch({ type: 'retryingRun', id: runId });
       try {
         const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
         if (!res.ok) return;
@@ -265,7 +383,7 @@ export function BatchRunsTab({
       } catch {
         /* ignore */
       } finally {
-        setRetryingRunId(null);
+        pendingDispatch({ type: 'retryingRun', id: null });
       }
     },
     [fetchBatches],
@@ -273,7 +391,7 @@ export function BatchRunsTab({
 
   const handleRetryFailed = useCallback(
     async (batchId: string) => {
-      setRetryingBatchId(batchId);
+      pendingDispatch({ type: 'retryingBatch', id: batchId });
       try {
         const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-failed`), {
           method: 'POST',
@@ -283,7 +401,7 @@ export function BatchRunsTab({
       } catch {
         /* ignore */
       } finally {
-        setRetryingBatchId(null);
+        pendingDispatch({ type: 'retryingBatch', id: null });
       }
     },
     [fetchBatches],
@@ -299,7 +417,7 @@ export function BatchRunsTab({
         tone: 'danger',
       });
       if (!ok) return;
-      setDeletingBatchId(batchId);
+      pendingDispatch({ type: 'deletingBatch', id: batchId });
       try {
         const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}`), { method: 'DELETE' });
         if (!res.ok) {
@@ -320,7 +438,7 @@ export function BatchRunsTab({
           description: e instanceof Error ? e.message : undefined,
         });
       } finally {
-        setDeletingBatchId(null);
+        pendingDispatch({ type: 'deletingBatch', id: null });
       }
     },
     [fetchBatches, confirm],
@@ -349,7 +467,7 @@ export function BatchRunsTab({
     [fetchBatches],
   );
 
-  if (loading) {
+  if (fetchState.loading) {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -380,12 +498,12 @@ export function BatchRunsTab({
     );
   }
 
-  if (fetchError) {
+  if (fetchState.fetchError) {
     return (
       <div className="rounded-card border-warning-200 bg-warning-50 flex items-start gap-3 border p-4">
         <AlertTriangleIcon className="text-warning-600 mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="text-body text-warning-800">{fetchError}</p>
+          <p className="text-body text-warning-800">{fetchState.fetchError}</p>
           <p className="text-caption text-warning-700 mt-1">
             Ensure BASE_API_HOSTNAME points to the image-generation backend.
           </p>
@@ -394,7 +512,7 @@ export function BatchRunsTab({
               variant="secondary"
               size="sm"
               onClick={() => {
-                setLoading(true);
+                fetchDispatch({ type: 'setLoading', loading: true });
                 fetchBatches();
               }}
             >
@@ -411,8 +529,8 @@ export function BatchRunsTab({
       {/* Date filter + view toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DateRangePicker
-          from={appliedFrom}
-          to={appliedTo}
+          from={appliedRange.from}
+          to={appliedRange.to}
           onChange={handleDateChange}
           onClear={handleClearDate}
         />
@@ -429,24 +547,24 @@ export function BatchRunsTab({
         />
       </div>
 
-      {refreshing && (
+      {fetchState.refreshing && (
         <div className="text-body text-text-muted flex items-center gap-2">
           <Spinner size="sm" />
           Loading {source === 'benchmark' ? 'benchmark' : 'standard'} runs…
         </div>
       )}
 
-      {batches.length === 0 && !loading && !refreshing ? (
+      {fetchState.batches.length === 0 && !fetchState.loading && !fetchState.refreshing ? (
         <p className="text-body text-text-secondary">
-          {appliedFrom || appliedTo
+          {appliedRange.from || appliedRange.to
             ? 'No runs match the selected date range.'
             : 'No runs yet. Use \u201cRun\u201d to create one.'}
         </p>
       ) : (
         <div
-          className={`space-y-4 transition-opacity duration-200 ${refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}
+          className={`space-y-4 transition-opacity duration-200 ${fetchState.refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}
         >
-          {batches.map((batch) => {
+          {fetchState.batches.map((batch) => {
             const isExpanded = expandedIds.has(batch.id);
             const isBenchmark = source === 'benchmark';
             const projectKeys = new Set(
@@ -509,7 +627,7 @@ export function BatchRunsTab({
                       <Button
                         variant="secondary"
                         size="sm"
-                        loading={retryingBatchId === batch.id}
+                        loading={pending.retryingBatchId === batch.id}
                         iconLeft={<RotateCcwIcon className="size-3.5" />}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -524,7 +642,7 @@ export function BatchRunsTab({
                       label="Delete batch"
                       icon={<TrashIcon className="size-4" />}
                       variant="danger"
-                      loading={deletingBatchId === batch.id}
+                      loading={pending.deletingBatchId === batch.id}
                       onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
                     />
                     <span className="text-caption text-text-muted">
@@ -539,7 +657,7 @@ export function BatchRunsTab({
                       <MatrixView
                         runs={batch.runs}
                         numberOfImages={batch.numberOfImages}
-                        retryingRunId={retryingRunId}
+                        retryingRunId={pending.retryingRunId}
                         onRetry={handleRetry}
                         onRated={fetchBatchesKeepScroll}
                         onImageClick={(run) =>
@@ -556,7 +674,7 @@ export function BatchRunsTab({
                         runs={batch.runs}
                         numberOfImages={batch.numberOfImages}
                         isSingleStrategy={!isMultiStrategy}
-                        retryingRunId={retryingRunId}
+                        retryingRunId={pending.retryingRunId}
                         onRetry={handleRetry}
                         onRated={fetchBatchesKeepScroll}
                         onImageClick={(run) =>
@@ -574,9 +692,9 @@ export function BatchRunsTab({
               </div>
             );
           })}
-          {hasMore && (
+          {fetchState.hasMore && (
             <div ref={sentinelRef}>
-              {loadingMore ? (
+              {fetchState.loadingMore ? (
                 <div className="space-y-4 pt-1">
                   {Array.from({ length: 3 }, (_, i) => (
                     <div

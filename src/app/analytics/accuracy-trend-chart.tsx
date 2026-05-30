@@ -2,19 +2,13 @@
 
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import type { AccuracyTrendPoint } from '@/lib/service-client';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
-const Y_TICKS = [0, 20, 40, 60, 80, 100];
+const AccuracyTrendChartGraph = dynamic(
+  () => import('./accuracy-trend-chart-graph').then((m) => m.AccuracyTrendChartGraph),
+  { ssr: false },
+);
 
 interface AccuracyTrendChartProps {
   from?: string;
@@ -104,73 +98,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
         Daily scene and product accuracy percentages based on evaluation ratings.
       </p>
       <div className="mt-4" style={{ width: '100%', height: 360 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}>
-            <CartesianGrid stroke="#e5e7eb" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#9ca3af" tickLine={false} />
-            <YAxis
-              domain={[0, 100]}
-              ticks={Y_TICKS}
-              tickFormatter={(v: number) => `${v}%`}
-              tick={{ fontSize: 12 }}
-              stroke="#9ca3af"
-              tickLine={false}
-            />
-            <Tooltip
-              formatter={(value: unknown, name: unknown) => {
-                const n = Number(value);
-                return [Number.isFinite(n) ? `${n.toFixed(1)}%` : 'N/A', String(name)];
-              }}
-              labelFormatter={(_label, payload) => {
-                const point = payload?.[0]?.payload as { date?: string } | undefined;
-                if (!point?.date) return String(_label);
-                const [y, m, d] = point.date.split('-');
-                if (y && m && d) {
-                  const months = [
-                    'Jan',
-                    'Feb',
-                    'Mar',
-                    'Apr',
-                    'May',
-                    'Jun',
-                    'Jul',
-                    'Aug',
-                    'Sep',
-                    'Oct',
-                    'Nov',
-                    'Dec',
-                  ];
-                  return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
-                }
-                return String(_label);
-              }}
-              contentStyle={{
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb',
-                fontSize: '13px',
-              }}
-            />
-            <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '8px' }} />
-            <Line
-              type="linear"
-              dataKey="sceneAccuracy"
-              name="Scene Accuracy"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
-              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
-            />
-            <Line
-              type="linear"
-              dataKey="productAccuracy"
-              name="Product Accuracy"
-              stroke="#22c55e"
-              strokeWidth={2}
-              dot={{ r: 4, fill: '#22c55e', strokeWidth: 0 }}
-              activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 0 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <AccuracyTrendChartGraph chartData={chartData} />
       </div>
     </div>
   );

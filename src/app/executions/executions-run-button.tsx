@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 interface StrategyItem {
   id: string;
@@ -77,6 +77,92 @@ const BENCHMARK_PROJECT_IDS = [
 
 const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
 
+/* ---------- Modal selection/search state ---------- */
+
+interface SelectionState {
+  selectedStrategyIds: string[];
+  selectedPresetIds: string[];
+  selectedBenchmarkProjectIds: string[];
+  strategySearch: string;
+  presetSearch: string;
+  benchmarkMode: boolean;
+}
+
+type SelectionAction =
+  | { type: 'toggleStrategy'; id: string }
+  | { type: 'togglePreset'; id: string }
+  | { type: 'toggleBenchmarkProject'; id: string }
+  | { type: 'setStrategySearch'; value: string }
+  | { type: 'setPresetSearch'; value: string }
+  | { type: 'clearStrategies' }
+  | { type: 'clearPresets' }
+  | { type: 'clearBenchmarkProjects' }
+  | { type: 'setBenchmarkMode'; benchmarkMode: boolean; benchmarkProjectIds: string[] }
+  | { type: 'openModal'; benchmarkMode: boolean; benchmarkProjectIds: string[] }
+  | { type: 'resetAfterRun'; benchmarkMode: boolean };
+
+const INITIAL_SELECTION: SelectionState = {
+  selectedStrategyIds: [],
+  selectedPresetIds: [],
+  selectedBenchmarkProjectIds: [],
+  strategySearch: '',
+  presetSearch: '',
+  benchmarkMode: false,
+};
+
+function toggleId(ids: string[], id: string): string[] {
+  return ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+}
+
+function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+  switch (action.type) {
+    case 'toggleStrategy':
+      return { ...state, selectedStrategyIds: toggleId(state.selectedStrategyIds, action.id) };
+    case 'togglePreset':
+      return { ...state, selectedPresetIds: toggleId(state.selectedPresetIds, action.id) };
+    case 'toggleBenchmarkProject':
+      return {
+        ...state,
+        selectedBenchmarkProjectIds: toggleId(state.selectedBenchmarkProjectIds, action.id),
+      };
+    case 'setStrategySearch':
+      return { ...state, strategySearch: action.value };
+    case 'setPresetSearch':
+      return { ...state, presetSearch: action.value };
+    case 'clearStrategies':
+      return { ...state, selectedStrategyIds: [] };
+    case 'clearPresets':
+      return { ...state, selectedPresetIds: [] };
+    case 'clearBenchmarkProjects':
+      return { ...state, selectedBenchmarkProjectIds: [] };
+    case 'setBenchmarkMode':
+      return {
+        ...state,
+        benchmarkMode: action.benchmarkMode,
+        selectedPresetIds: [],
+        selectedBenchmarkProjectIds: action.benchmarkProjectIds,
+      };
+    case 'openModal':
+      return {
+        ...state,
+        selectedStrategyIds: [],
+        selectedPresetIds: [],
+        selectedBenchmarkProjectIds: action.benchmarkProjectIds,
+        benchmarkMode: action.benchmarkMode,
+      };
+    case 'resetAfterRun':
+      return {
+        ...state,
+        selectedStrategyIds: [],
+        selectedPresetIds: [],
+        selectedBenchmarkProjectIds: [],
+        strategySearch: '',
+        presetSearch: '',
+        benchmarkMode: action.benchmarkMode,
+      };
+  }
+}
+
 export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
   return (
     <Suspense fallback={null}>
@@ -92,12 +178,15 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
-  const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
-  const [selectedBenchmarkProjectIds, setSelectedBenchmarkProjectIds] = useState<string[]>([]);
-  const [strategySearch, setStrategySearch] = useState('');
-  const [presetSearch, setPresetSearch] = useState('');
-  const [benchmarkMode, setBenchmarkMode] = useState(false);
+  const [selection, dispatchSelection] = useReducer(selectionReducer, INITIAL_SELECTION);
+  const {
+    selectedStrategyIds,
+    selectedPresetIds,
+    selectedBenchmarkProjectIds,
+    strategySearch,
+    presetSearch,
+    benchmarkMode,
+  } = selection;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
@@ -153,21 +242,15 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
   }, [showModal]);
 
   const toggleStrategy = useCallback((id: string) => {
-    setSelectedStrategyIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'toggleStrategy', id });
   }, []);
 
   const togglePreset = useCallback((id: string) => {
-    setSelectedPresetIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'togglePreset', id });
   }, []);
 
   const toggleBenchmarkProject = useCallback((id: string) => {
-    setSelectedBenchmarkProjectIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'toggleBenchmarkProject', id });
   }, []);
 
   const handleRun = useCallback(async () => {
@@ -242,12 +325,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         return;
       }
       setShowModal(false);
-      setSelectedStrategyIds([]);
-      setSelectedPresetIds([]);
-      setSelectedBenchmarkProjectIds([]);
-      setStrategySearch('');
-      setPresetSearch('');
-      setBenchmarkMode(source === 'benchmark');
+      dispatchSelection({ type: 'resetAfterRun', benchmarkMode: source === 'benchmark' });
       onRunCreated?.();
     } catch {
       setError('Network error');
@@ -271,12 +349,11 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         onClick={() => {
           setShowModal(true);
           setError(null);
-          setSelectedStrategyIds([]);
-          setSelectedPresetIds([]);
-          setSelectedBenchmarkProjectIds(
-            source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
-          );
-          setBenchmarkMode(source === 'benchmark');
+          dispatchSelection({
+            type: 'openModal',
+            benchmarkMode: source === 'benchmark',
+            benchmarkProjectIds: source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+          });
         }}
         className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
       >
@@ -321,11 +398,11 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                 type="checkbox"
                 checked={benchmarkMode}
                 onChange={(e) => {
-                  setBenchmarkMode(e.target.checked);
-                  setSelectedPresetIds([]);
-                  setSelectedBenchmarkProjectIds(
-                    e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
-                  );
+                  dispatchSelection({
+                    type: 'setBenchmarkMode',
+                    benchmarkMode: e.target.checked,
+                    benchmarkProjectIds: e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+                  });
                 }}
                 className="size-4 rounded border-gray-300"
               />
@@ -354,7 +431,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                     {selectedStrategyIds.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => setSelectedStrategyIds([])}
+                        onClick={() => dispatchSelection({ type: 'clearStrategies' })}
                         className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
                       >
                         Clear
@@ -378,7 +455,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                     <input
                       type="text"
                       value={strategySearch}
-                      onChange={(e) => setStrategySearch(e.target.value)}
+                      onChange={(e) =>
+                        dispatchSelection({ type: 'setStrategySearch', value: e.target.value })
+                      }
                       placeholder="Search strategies…"
                       aria-label="Search strategies"
                       className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
@@ -461,9 +540,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                       <button
                         type="button"
                         onClick={() =>
-                          benchmarkMode
-                            ? setSelectedBenchmarkProjectIds([])
-                            : setSelectedPresetIds([])
+                          dispatchSelection({
+                            type: benchmarkMode ? 'clearBenchmarkProjects' : 'clearPresets',
+                          })
                         }
                         className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
                       >
@@ -488,7 +567,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                     <input
                       type="text"
                       value={presetSearch}
-                      onChange={(e) => setPresetSearch(e.target.value)}
+                      onChange={(e) =>
+                        dispatchSelection({ type: 'setPresetSearch', value: e.target.value })
+                      }
                       placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
                       aria-label={benchmarkMode ? 'Search project IDs' : 'Search presets'}
                       className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"

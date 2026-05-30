@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  actionsColumn,
   DataTable,
   DateCell,
   FilterPills,
@@ -9,6 +8,7 @@ import {
   SearchBar,
   type DataTableColumn,
 } from '@/components/data-table';
+import { actionsColumn } from '@/components/data-table-utils';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { Pagination } from '@/components/pagination';
 import { RenderStatusBadge } from '@/components/render-status-badge';

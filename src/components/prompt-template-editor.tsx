@@ -17,6 +17,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type ChangeEvent,
@@ -70,6 +71,127 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
   el.setSelectionRange(caret, caret);
 }
 
+// --- Conditional popover state ---
+interface ConditionalState {
+  open: boolean;
+  search: string;
+}
+const conditionalInitial: ConditionalState = { open: false, search: '' };
+type ConditionalAction =
+  | { type: 'toggle' }
+  | { type: 'close' }
+  | { type: 'reset' }
+  | { type: 'setSearch'; value: string };
+function conditionalReducer(state: ConditionalState, action: ConditionalAction): ConditionalState {
+  switch (action.type) {
+    case 'toggle':
+      return { ...state, open: !state.open };
+    case 'close':
+      return { ...state, open: false };
+    case 'reset':
+      return conditionalInitial;
+    case 'setSearch':
+      return { ...state, search: action.value };
+  }
+}
+
+// --- Reference popover state ---
+interface ReferenceState {
+  open: boolean;
+  search: string;
+  category: string | null;
+}
+const referenceInitial: ReferenceState = { open: false, search: '', category: null };
+type ReferenceAction =
+  | { type: 'toggle' }
+  | { type: 'close' }
+  | { type: 'reset' }
+  | { type: 'setSearch'; value: string }
+  | { type: 'setCategory'; value: string }
+  | { type: 'clearCategory' };
+function referenceReducer(state: ReferenceState, action: ReferenceAction): ReferenceState {
+  switch (action.type) {
+    case 'toggle':
+      // Opening the picker resets the drill-down category; closing preserves it.
+      return state.open ? { ...state, open: false } : { ...state, open: true, category: null };
+    case 'close':
+      return { ...state, open: false };
+    case 'reset':
+      return referenceInitial;
+    case 'setSearch':
+      return { ...state, search: action.value };
+    case 'setCategory':
+      return { ...state, category: action.value };
+    case 'clearCategory':
+      return { ...state, category: null };
+  }
+}
+
+// --- Dollhouse popover state ---
+interface DollhouseState {
+  open: boolean;
+  product: DollhouseProductType | null;
+  search: string;
+}
+const dollhouseInitial: DollhouseState = { open: false, product: null, search: '' };
+type DollhouseAction =
+  | { type: 'toggle' }
+  | { type: 'close' }
+  | { type: 'reset' }
+  | { type: 'setSearch'; value: string }
+  | { type: 'setProduct'; value: DollhouseProductType }
+  | { type: 'clearProduct' };
+function dollhouseReducer(state: DollhouseState, action: DollhouseAction): DollhouseState {
+  switch (action.type) {
+    case 'toggle':
+      // Opening the picker clears any selected product and search query.
+      return state.open
+        ? { ...state, open: false }
+        : { ...state, open: true, product: null, search: '' };
+    case 'close':
+      return { ...state, open: false };
+    case 'reset':
+      return dollhouseInitial;
+    case 'setSearch':
+      return { ...state, search: action.value };
+    case 'setProduct':
+      return { ...state, product: action.value };
+    case 'clearProduct':
+      return { ...state, product: null, search: '' };
+  }
+}
+
+// --- Reference attributes fetch state ---
+interface AttributesState {
+  list: string[];
+  loading: boolean;
+  error: string | null;
+}
+const attributesInitial: AttributesState = { list: [], loading: false, error: null };
+type AttributesAction =
+  | { type: 'fetchStart' }
+  | { type: 'fetchSuccess'; list: string[] }
+  | { type: 'fetchError'; error: string }
+  | { type: 'fetchEnd' }
+  | { type: 'clearError' }
+  | { type: 'clear' };
+function attributesReducer(state: AttributesState, action: AttributesAction): AttributesState {
+  switch (action.type) {
+    case 'fetchStart':
+      return { list: [], loading: true, error: null };
+    case 'fetchSuccess':
+      return { ...state, list: action.list };
+    case 'fetchError':
+      return { ...state, list: [], error: action.error };
+    case 'fetchEnd':
+      return { ...state, loading: false };
+    case 'clearError':
+      return { ...state, error: null };
+    case 'clear':
+      return { ...state, list: [], error: null };
+  }
+}
+
 export function PromptTemplateEditor({
   value,
   onChange,
@@ -81,18 +203,10 @@ export function PromptTemplateEditor({
 }: PromptTemplateEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [conditionalOpen, setConditionalOpen] = useState(false);
-  const [conditionalSearch, setConditionalSearch] = useState('');
-  const [referenceOpen, setReferenceOpen] = useState(false);
-  const [referenceSearch, setReferenceSearch] = useState('');
-  const [referenceCategory, setReferenceCategory] = useState<string | null>(null);
-  const [attributes, setAttributes] = useState<string[]>([]);
-  const [attributesLoading, setAttributesLoading] = useState(false);
-  const [attributesError, setAttributesError] = useState<string | null>(null);
-
-  const [dollhouseOpen, setDollhouseOpen] = useState(false);
-  const [dollhouseProduct, setDollhouseProduct] = useState<DollhouseProductType | null>(null);
-  const [dollhouseSearch, setDollhouseSearch] = useState('');
+  const [conditional, dispatchConditional] = useReducer(conditionalReducer, conditionalInitial);
+  const [reference, dispatchReference] = useReducer(referenceReducer, referenceInitial);
+  const [dollhouse, dispatchDollhouse] = useReducer(dollhouseReducer, dollhouseInitial);
+  const [attrState, dispatchAttributes] = useReducer(attributesReducer, attributesInitial);
 
   const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
   const hasErrors = errors.length > 0;
@@ -123,7 +237,7 @@ export function PromptTemplateEditor({
     const inner = selected || '\n  \n';
     const wrapper = `${prefix}${inner}{{/if}}`;
     insertWithUndo(el, start, end, wrapper);
-    setConditionalOpen(false);
+    dispatchConditional({ type: 'close' });
     // When the user had no selection, put the caret on the blank line
     // inside the wrapper (matches the previous behaviour).
     if (!selected) {
@@ -133,9 +247,7 @@ export function PromptTemplateEditor({
   }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
-    setAttributesLoading(true);
-    setAttributes([]);
-    setAttributesError(null);
+    dispatchAttributes({ type: 'fetchStart' });
     try {
       const segment = category.replace(/_/g, '-');
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
@@ -144,23 +256,25 @@ export function PromptTemplateEditor({
         error?: { message?: string };
       } = await res.json();
       if (!res.ok) {
-        setAttributesError(json.error?.message ?? `Could not load attributes (${res.status})`);
+        dispatchAttributes({
+          type: 'fetchError',
+          error: json.error?.message ?? `Could not load attributes (${res.status})`,
+        });
         return;
       }
       const raw = json.data?.attributes;
       const attrs = Array.isArray(raw) ? (raw as string[]) : [];
-      setAttributes(attrs);
+      dispatchAttributes({ type: 'fetchSuccess', list: attrs });
     } catch {
-      setAttributesError('Failed to load attributes');
-      setAttributes([]);
+      dispatchAttributes({ type: 'fetchError', error: 'Failed to load attributes' });
     } finally {
-      setAttributesLoading(false);
+      dispatchAttributes({ type: 'fetchEnd' });
     }
   }, []);
 
   const handleReferenceCategorySelect = useCallback(
     (cat: (typeof REFERENCE_OPTIONS)[number]) => {
-      setReferenceCategory(cat.value);
+      dispatchReference({ type: 'setCategory', value: cat.value });
       fetchAttributes(cat.value);
     },
     [fetchAttributes],
@@ -170,70 +284,63 @@ export function PromptTemplateEditor({
     (attr: string, singular: string) => {
       const ref = `{{products.${singular}.${attr}}}`;
       handleInsert(ref);
-      setReferenceCategory(null);
-      setReferenceOpen(false);
-      setAttributesError(null);
+      dispatchReference({ type: 'clearCategory' });
+      dispatchReference({ type: 'close' });
+      dispatchAttributes({ type: 'clearError' });
     },
     [handleInsert],
   );
 
   const handleDollhouseAttributeSelect = useCallback(
     (attr: (typeof DOLLHOUSE_ATTRIBUTES)[number]) => {
-      if (!dollhouseProduct) return;
-      handleInsert(dollhouseReferencePath(dollhouseProduct, attr));
-      setDollhouseOpen(false);
-      setDollhouseProduct(null);
-      setDollhouseSearch('');
+      if (!dollhouse.product) return;
+      handleInsert(dollhouseReferencePath(dollhouse.product, attr));
+      dispatchDollhouse({ type: 'reset' });
     },
-    [dollhouseProduct, handleInsert],
+    [dollhouse.product, handleInsert],
   );
 
   const closeAll = useCallback(() => {
-    setConditionalOpen(false);
-    setReferenceOpen(false);
-    setReferenceCategory(null);
-    setAttributesError(null);
-    setConditionalSearch('');
-    setReferenceSearch('');
-    setDollhouseOpen(false);
-    setDollhouseProduct(null);
-    setDollhouseSearch('');
+    dispatchConditional({ type: 'reset' });
+    dispatchReference({ type: 'reset' });
+    dispatchDollhouse({ type: 'reset' });
+    dispatchAttributes({ type: 'clearError' });
   }, []);
 
   const filteredConditionalOptions = useMemo(() => {
-    const q = conditionalSearch.trim().toLowerCase();
+    const q = conditional.search.trim().toLowerCase();
     if (!q) return CONDITIONAL_OPTIONS;
     return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q));
-  }, [conditionalSearch]);
+  }, [conditional.search]);
 
   const filteredReferenceOptions = useMemo(() => {
-    const q = referenceSearch.trim().toLowerCase();
+    const q = reference.search.trim().toLowerCase();
     if (!q) return REFERENCE_OPTIONS;
     return REFERENCE_OPTIONS.filter(
       (opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q),
     );
-  }, [referenceSearch]);
+  }, [reference.search]);
 
   const filteredDollhouseProducts = useMemo(() => {
-    const q = dollhouseSearch.trim().toLowerCase();
+    const q = dollhouse.search.trim().toLowerCase();
     if (!q) return DOLLHOUSE_PRODUCT_TYPES;
     return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
-  }, [dollhouseSearch]);
+  }, [dollhouse.search]);
 
   const customDollhouseProduct = useMemo(
-    () => toDollhousePathKey(dollhouseSearch),
-    [dollhouseSearch],
+    () => toDollhousePathKey(dollhouse.search),
+    [dollhouse.search],
   );
 
   useEffect(() => {
-    if (!conditionalOpen && !referenceOpen && !dollhouseOpen) return;
+    if (!conditional.open && !reference.open && !dollhouse.open) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current?.contains(e.target as Node)) return;
       closeAll();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [conditionalOpen, referenceOpen, dollhouseOpen, closeAll]);
+  }, [conditional.open, reference.open, dollhouse.open, closeAll]);
 
   if (!showPicker) {
     return (
@@ -261,19 +368,19 @@ export function PromptTemplateEditor({
           <button
             type="button"
             onClick={() => {
-              setConditionalOpen(!conditionalOpen);
-              setReferenceOpen(false);
-              setDollhouseOpen(false);
+              dispatchConditional({ type: 'toggle' });
+              dispatchReference({ type: 'close' });
+              dispatchDollhouse({ type: 'close' });
             }}
             className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
-              conditionalOpen
+              conditional.open
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
             <span className="truncate">Conditional</span>
             <svg
-              className={`h-3.5 w-3.5 flex-none text-gray-400 ${conditionalOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${conditional.open ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -286,14 +393,16 @@ export function PromptTemplateEditor({
               />
             </svg>
           </button>
-          {conditionalOpen && (
+          {conditional.open && (
             <div className="absolute top-full left-0 z-20 mt-1 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
               <div className="border-b border-gray-200 p-2">
                 <input
                   type="text"
                   aria-label="Search conditionals"
-                  value={conditionalSearch}
-                  onChange={(e) => setConditionalSearch(e.target.value)}
+                  value={conditional.search}
+                  onChange={(e) =>
+                    dispatchConditional({ type: 'setSearch', value: e.target.value })
+                  }
                   placeholder="Search…"
                   className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                 />
@@ -321,23 +430,23 @@ export function PromptTemplateEditor({
           <button
             type="button"
             onClick={() => {
-              setReferenceOpen(!referenceOpen);
-              setConditionalOpen(false);
-              setDollhouseOpen(false);
-              if (!referenceOpen) {
-                setReferenceCategory(null);
-                setAttributesError(null);
+              const wasOpen = reference.open;
+              dispatchReference({ type: 'toggle' });
+              dispatchConditional({ type: 'close' });
+              dispatchDollhouse({ type: 'close' });
+              if (!wasOpen) {
+                dispatchAttributes({ type: 'clearError' });
               }
             }}
             className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
-              referenceOpen
+              reference.open
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
             <span className="truncate">Reference</span>
             <svg
-              className={`h-3.5 w-3.5 flex-none text-gray-400 ${referenceOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${reference.open ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -350,16 +459,18 @@ export function PromptTemplateEditor({
               />
             </svg>
           </button>
-          {referenceOpen && (
+          {reference.open && (
             <div className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-              {!referenceCategory ? (
+              {!reference.category ? (
                 <>
                   <div className="border-b border-gray-200 p-2">
                     <input
                       type="text"
                       aria-label="Search products"
-                      value={referenceSearch}
-                      onChange={(e) => setReferenceSearch(e.target.value)}
+                      value={reference.search}
+                      onChange={(e) =>
+                        dispatchReference({ type: 'setSearch', value: e.target.value })
+                      }
                       placeholder="Search products…"
                       className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                     />
@@ -386,36 +497,35 @@ export function PromptTemplateEditor({
                     <button
                       type="button"
                       onClick={() => {
-                        setReferenceCategory(null);
-                        setAttributes([]);
-                        setAttributesError(null);
+                        dispatchReference({ type: 'clearCategory' });
+                        dispatchAttributes({ type: 'clear' });
                       }}
                       className="text-primary-700 hover:bg-primary-50 rounded px-2 py-1 text-xs font-medium"
                     >
                       ← Back
                     </button>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      {REFERENCE_OPTIONS.find((o) => o.value === referenceCategory)?.label ??
-                        referenceCategory}
+                      {REFERENCE_OPTIONS.find((o) => o.value === reference.category)?.label ??
+                        reference.category}
                     </span>
                   </div>
                   <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
                     Pick a field to insert{' '}
                     <code className="rounded bg-gray-100 px-0.5">
-                      {`{{products.${REFERENCE_OPTIONS.find((o) => o.value === referenceCategory)?.singular ?? referenceCategory}.…}}`}
+                      {`{{products.${REFERENCE_OPTIONS.find((o) => o.value === reference.category)?.singular ?? reference.category}.…}}`}
                     </code>
                   </p>
-                  {attributesLoading ? (
+                  {attrState.loading ? (
                     <p className="px-3 py-4 text-sm text-gray-500">Loading…</p>
-                  ) : attributesError ? (
-                    <p className="px-3 py-4 text-sm text-red-600">{attributesError}</p>
-                  ) : attributes.length === 0 ? (
+                  ) : attrState.error ? (
+                    <p className="px-3 py-4 text-sm text-red-600">{attrState.error}</p>
+                  ) : attrState.list.length === 0 ? (
                     <p className="px-3 py-4 text-sm text-gray-500">No attributes</p>
                   ) : (
                     <div className="max-h-60 overflow-auto py-1">
-                      {attributes.map((attr) => {
-                        const opt = REFERENCE_OPTIONS.find((o) => o.value === referenceCategory);
-                        const singular = opt?.singular ?? referenceCategory;
+                      {attrState.list.map((attr) => {
+                        const opt = REFERENCE_OPTIONS.find((o) => o.value === reference.category);
+                        const singular = opt?.singular ?? reference.category ?? '';
                         return (
                           <button
                             key={attr}
@@ -439,24 +549,20 @@ export function PromptTemplateEditor({
           <button
             type="button"
             onClick={() => {
-              setDollhouseOpen(!dollhouseOpen);
-              setConditionalOpen(false);
-              setReferenceOpen(false);
-              if (!dollhouseOpen) {
-                setDollhouseProduct(null);
-                setDollhouseSearch('');
-              }
+              dispatchDollhouse({ type: 'toggle' });
+              dispatchConditional({ type: 'close' });
+              dispatchReference({ type: 'close' });
             }}
             title="Insert a dollhouse reference like {{dollhouse.vanity.quantity}} or {{#each dollhouse.vanity.visibility}}{{location}} ({{visible}}%){{/each}}"
             className={`inline-flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-xs font-medium shadow-sm transition-colors ${
-              dollhouseOpen
+              dollhouse.open
                 ? 'border-primary-300 bg-primary-50/90 text-primary-800'
                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
             }`}
           >
             <span className="truncate">Dollhouse</span>
             <svg
-              className={`h-3.5 w-3.5 flex-none text-gray-400 ${dollhouseOpen ? 'rotate-180' : ''}`}
+              className={`h-3.5 w-3.5 flex-none text-gray-400 ${dollhouse.open ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -469,9 +575,9 @@ export function PromptTemplateEditor({
               />
             </svg>
           </button>
-          {dollhouseOpen && (
+          {dollhouse.open && (
             <div className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-              {!dollhouseProduct ? (
+              {!dollhouse.product ? (
                 <>
                   <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
                     Pick a <strong>product</strong>. Inserts a{' '}
@@ -483,8 +589,10 @@ export function PromptTemplateEditor({
                     <input
                       type="text"
                       aria-label="Search dollhouse products"
-                      value={dollhouseSearch}
-                      onChange={(e) => setDollhouseSearch(e.target.value)}
+                      value={dollhouse.search}
+                      onChange={(e) =>
+                        dispatchDollhouse({ type: 'setSearch', value: e.target.value })
+                      }
                       placeholder="Search or type a custom product key…"
                       className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
                     />
@@ -494,7 +602,9 @@ export function PromptTemplateEditor({
                       ) && (
                         <button
                           type="button"
-                          onClick={() => setDollhouseProduct(customDollhouseProduct)}
+                          onClick={() =>
+                            dispatchDollhouse({ type: 'setProduct', value: customDollhouseProduct })
+                          }
                           className="border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 mt-2 w-full rounded-md border border-dashed px-3 py-2 text-left text-sm"
                         >
                           Use custom product key{' '}
@@ -507,7 +617,7 @@ export function PromptTemplateEditor({
                       <button
                         key={product}
                         type="button"
-                        onClick={() => setDollhouseProduct(product)}
+                        onClick={() => dispatchDollhouse({ type: 'setProduct', value: product })}
                         className="w-full px-3 py-2 text-left font-mono text-xs text-gray-900 hover:bg-gray-50"
                       >
                         {product}
@@ -523,22 +633,19 @@ export function PromptTemplateEditor({
                   <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        setDollhouseProduct(null);
-                        setDollhouseSearch('');
-                      }}
+                      onClick={() => dispatchDollhouse({ type: 'clearProduct' })}
                       className="text-primary-700 hover:bg-primary-50 rounded px-2 py-1 text-xs font-medium"
                     >
                       ← Back
                     </button>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-gray-600">
-                      <span className="font-mono">{dollhouseProduct}</span>
+                      <span className="font-mono">{dollhouse.product}</span>
                     </span>
                   </div>
                   <p className="border-b border-gray-50 px-3 py-1.5 text-[11px] text-gray-500">
                     Inserts a{' '}
                     <code className="rounded bg-gray-100 px-0.5">
-                      {`{{#each dollhouse.${dollhouseProduct}.visibility}}…{{/each}}`}
+                      {`{{#each dollhouse.${dollhouse.product}.visibility}}…{{/each}}`}
                     </code>{' '}
                     block.
                   </p>

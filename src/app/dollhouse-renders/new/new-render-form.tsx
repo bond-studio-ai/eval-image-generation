@@ -12,7 +12,7 @@ import {
 } from '@/lib/dollhouse-renders';
 import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from '@/lib/projects';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AdvancedSection } from './_components/advanced-section';
 import {
   buildCreateRenderBody,
@@ -30,13 +30,55 @@ import type { SsmParamsState } from './_components/ssm-params-editor';
 import { useDollhouseOverrides } from './_components/use-dollhouse-overrides';
 import { buildWizardModel, WIZARD_SECTION_IDS } from './_components/wizard-model';
 
+type ProjectState = {
+  projectIdInput: string;
+  bootstrap: ProjectRenderBootstrap | null;
+  loadingProject: boolean;
+  projectError: string | null;
+};
+
+type ProjectAction =
+  | { type: 'setInput'; value: string }
+  | { type: 'loadStart'; projectId: string }
+  | { type: 'loadSuccess'; bootstrap: ProjectRenderBootstrap }
+  | { type: 'loadError'; message: string }
+  | { type: 'loadSettled' }
+  | { type: 'clear' };
+
+const INITIAL_PROJECT: ProjectState = {
+  projectIdInput: '',
+  bootstrap: null,
+  loadingProject: false,
+  projectError: null,
+};
+
+function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
+  switch (action.type) {
+    case 'setInput':
+      return { ...state, projectIdInput: action.value };
+    case 'loadStart':
+      return {
+        ...state,
+        projectIdInput: action.projectId,
+        loadingProject: true,
+        projectError: null,
+        bootstrap: null,
+      };
+    case 'loadSuccess':
+      return { ...state, bootstrap: action.bootstrap };
+    case 'loadError':
+      return { ...state, projectError: action.message };
+    case 'loadSettled':
+      return { ...state, loadingProject: false };
+    case 'clear':
+      return { ...state, bootstrap: null, projectError: null, projectIdInput: '' };
+  }
+}
+
 export function NewRenderForm() {
   const router = useRouter();
 
-  const [projectIdInput, setProjectIdInput] = useState('');
-  const [bootstrap, setBootstrap] = useState<ProjectRenderBootstrap | null>(null);
-  const [loadingProject, setLoadingProject] = useState(false);
-  const [projectError, setProjectError] = useState<string | null>(null);
+  const [project, dispatchProject] = useReducer(projectReducer, INITIAL_PROJECT);
 
   // Per-frame include/exclude — keyed by `cameraFrameKey(frame, index)` so the
   // selection survives a (hypothetical) re-fetch that returns frames in a
@@ -77,10 +119,7 @@ export function NewRenderForm() {
       const controller = new AbortController();
       loadAbortRef.current = controller;
 
-      setProjectIdInput(trimmed);
-      setLoadingProject(true);
-      setProjectError(null);
-      setBootstrap(null);
+      dispatchProject({ type: 'loadStart', projectId: trimmed });
       setExcludedFrameKeys(new Set());
       // Pasted overrides almost certainly target the project being navigated
       // away from. Reset on every load (not just via the explicit "Change
@@ -92,16 +131,19 @@ export function NewRenderForm() {
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
-        setBootstrap(result);
+        dispatchProject({ type: 'loadSuccess', bootstrap: result });
       } catch (err) {
         // Aborts come through as either a DOMException with `name === 'AbortError'`
         // or a TypeError depending on runtime; check the controller as the source of truth.
         if (controller.signal.aborted) return;
-        setProjectError(err instanceof Error ? err.message : 'Failed to fetch project');
+        dispatchProject({
+          type: 'loadError',
+          message: err instanceof Error ? err.message : 'Failed to fetch project',
+        });
       } finally {
         if (loadAbortRef.current === controller) {
           loadAbortRef.current = null;
-          setLoadingProject(false);
+          dispatchProject({ type: 'loadSettled' });
         }
       }
     },
@@ -109,15 +151,13 @@ export function NewRenderForm() {
   );
 
   const handleManualLoad = useCallback(() => {
-    void loadProject(projectIdInput);
-  }, [loadProject, projectIdInput]);
+    void loadProject(project.projectIdInput);
+  }, [loadProject, project.projectIdInput]);
 
   const clearProject = useCallback(() => {
     loadAbortRef.current?.abort();
-    setBootstrap(null);
-    setProjectError(null);
+    dispatchProject({ type: 'clear' });
     setExcludedFrameKeys(new Set());
-    setProjectIdInput('');
     resetOverrides();
   }, [resetOverrides]);
 
@@ -135,16 +175,16 @@ export function NewRenderForm() {
   const model = useMemo(
     () =>
       buildWizardModel({
-        bootstrap,
-        projectError,
+        bootstrap: project.bootstrap,
+        projectError: project.projectError,
         designOverride: overrides.designResult,
         roomOverride: overrides.roomResult,
         excludedFrameKeys,
         imageConfig,
       }),
     [
-      bootstrap,
-      projectError,
+      project.bootstrap,
+      project.projectError,
       overrides.designResult,
       overrides.roomResult,
       excludedFrameKeys,
@@ -165,7 +205,7 @@ export function NewRenderForm() {
   const { effectiveDesignMaterials, effectiveRoomData, cameraFrames } = model;
 
   const handleSubmit = useCallback(async () => {
-    if (!bootstrap || !effectiveDesignMaterials || !effectiveRoomData) return;
+    if (!project.bootstrap || !effectiveDesignMaterials || !effectiveRoomData) return;
     setSubmitError(null);
 
     const filteredFrames = cameraFrames.filter(
@@ -177,7 +217,7 @@ export function NewRenderForm() {
     }
 
     const body = buildCreateRenderBody({
-      projectId: bootstrap.project.id,
+      projectId: project.bootstrap.project.id,
       designMaterials: effectiveDesignMaterials,
       roomData: effectiveRoomData,
       cameraFrames: filteredFrames,
@@ -205,7 +245,7 @@ export function NewRenderForm() {
       setSubmitting(false);
     }
   }, [
-    bootstrap,
+    project.bootstrap,
     cameraFrames,
     effectiveDesignMaterials,
     effectiveRoomData,
@@ -233,18 +273,18 @@ export function NewRenderForm() {
       <div className="mt-6 space-y-6">
         <section id={WIZARD_SECTION_IDS.project} className="scroll-mt-32">
           <ProjectPickerSection
-            projectIdInput={projectIdInput}
-            onProjectIdInputChange={setProjectIdInput}
+            projectIdInput={project.projectIdInput}
+            onProjectIdInputChange={(value) => dispatchProject({ type: 'setInput', value })}
             onLoadManualInput={handleManualLoad}
             onSelectFromTable={(id) => void loadProject(id)}
-            loadingProject={loadingProject}
-            projectError={projectError}
-            selectedBootstrap={bootstrap}
+            loadingProject={project.loadingProject}
+            projectError={project.projectError}
+            selectedBootstrap={project.bootstrap}
             onClearProject={clearProject}
           />
         </section>
 
-        {loadingProject && !bootstrap && (
+        {project.loadingProject && !project.bootstrap && (
           <Card className="flex items-center gap-3">
             <Spinner size="sm" />
             <span className="text-body text-text-secondary">Loading project data…</span>
@@ -253,7 +293,7 @@ export function NewRenderForm() {
 
         <section id={WIZARD_SECTION_IDS.data} className="scroll-mt-32">
           <ProjectDataSection
-            bootstrap={bootstrap}
+            bootstrap={project.bootstrap}
             excludedFrameKeys={excludedFrameKeys}
             onToggleFrame={toggleFrame}
             overrides={overrides}

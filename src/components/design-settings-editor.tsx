@@ -1,6 +1,7 @@
 'use client';
 
 import { CdnImage } from '@/components/cdn-image';
+import { isNonEmpty } from '@/components/design-settings-values';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { Modal } from '@/components/ui';
@@ -260,19 +261,7 @@ function readProductImageType(value: unknown): ProductImageType | null {
     : null;
 }
 
-function isNonEmpty(value: unknown): boolean {
-  if (value == null) return false;
-  if (typeof value === 'string') return value.length > 0;
-  if (typeof value === 'boolean') return true;
-  return false;
-}
-
 export type DesignSettingsValue = Record<string, unknown> | null;
-
-export function designSettingsHasValues(value: DesignSettingsValue): boolean {
-  if (!value) return false;
-  return Object.values(value).some(isNonEmpty);
-}
 
 interface CatalogImageVariant {
   tag: CatalogImageTag;

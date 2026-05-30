@@ -52,45 +52,27 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
-interface InitialData {
-  id: string;
-  name: string;
-  description: string;
-  layoutTypeId: string | null;
-  pkgId: string | null;
-  dollhouseView: string | null;
-  realPhoto: string | null;
-  moodBoard: string | null;
-  arbitraryImagesBySlot: Record<string, string | null>;
-  designSettings: Record<string, unknown> | null;
-  savedImageUrlsBySlot: Record<string, string | null>;
-}
+const INITIAL_FORM: FormState = {
+  name: '',
+  description: '',
+  layoutTypeId: '',
+  layoutTypeName: null,
+  pkgId: '',
+  dollhouseView: null,
+  realPhoto: null,
+  moodBoard: null,
+  arbitraryImagesBySlot: {},
+  designSettings: null,
+};
 
-export function InputPresetEditForm({
-  initialData,
-  force,
-}: {
-  initialData: InitialData;
-  force?: boolean;
-}) {
+export function NewInputPresetForm() {
   const router = useRouter();
 
-  const [form, dispatch] = useReducer(formReducer, {
-    name: initialData.name,
-    description: initialData.description,
-    layoutTypeId: initialData.layoutTypeId ?? '',
-    layoutTypeName: null,
-    pkgId: initialData.pkgId ?? '',
-    dollhouseView: initialData.dollhouseView,
-    realPhoto: initialData.realPhoto,
-    moodBoard: initialData.moodBoard,
-    arbitraryImagesBySlot: initialData.arbitraryImagesBySlot,
-    designSettings: initialData.designSettings,
-  });
+  const [form, dispatch] = useReducer(formReducer, INITIAL_FORM);
   const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
     dispatch({ type: 'setField', field, value } as FormAction);
 
-  const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
@@ -101,7 +83,7 @@ export function InputPresetEditForm({
   const layoutRequiresPackage = form.layoutTypeId.trim().length > 0;
   const hasValidLayoutConfig = !layoutRequiresPackage || form.pkgId.trim().length > 0;
 
-  const canSave =
+  const canCreate =
     form.name.trim() &&
     hasValidLayoutConfig &&
     (form.layoutTypeId.trim().length > 0 ||
@@ -123,35 +105,36 @@ export function InputPresetEditForm({
     setField('layoutTypeName', option?.name ?? null);
   }
 
-  async function handleSave() {
-    if (!canSave) return;
-    setSaving(true);
+  async function handleCreate() {
+    if (!canCreate) return;
+    setCreating(true);
     setError(null);
 
     try {
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
-        description: form.description.trim() || null,
-        layout_type_id: form.layoutTypeId.trim() || null,
-        pkg_id: form.pkgId.trim() || null,
-        dollhouse_view: form.dollhouseView,
-        real_photo: form.realPhoto,
-        mood_board: form.moodBoard,
+        description: form.description.trim() || undefined,
       };
-      for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
-        payload[key] = form.designSettings?.[key] ?? null;
+
+      if (form.designSettings) {
+        for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
+          const value = form.designSettings[key];
+          if (value !== undefined) payload[key] = value;
+        }
       }
+      if (form.layoutTypeId.trim()) payload.layout_type_id = form.layoutTypeId.trim();
+      if (form.pkgId.trim()) payload.pkg_id = form.pkgId.trim();
+      if (form.dollhouseView) payload.dollhouse_view = form.dollhouseView;
+      if (form.realPhoto) payload.real_photo = form.realPhoto;
+      if (form.moodBoard) payload.mood_board = form.moodBoard;
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (form.designSettings?.[`${slot}ImageType`] === 'arbitrary') {
           payload[urlColumn] = form.arbitraryImagesBySlot[slot] ?? null;
-        } else {
-          payload[urlColumn] = null;
         }
       }
 
-      const url = serviceUrl(`input-presets/${initialData.id}`) + (force ? '?force=true' : '');
-      const res = await fetch(url, {
-        method: 'PATCH',
+      const res = await fetch(serviceUrl('input-presets'), {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -168,25 +151,29 @@ export function InputPresetEditForm({
       const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(json.error?.message || 'Failed to update');
+        throw new Error(json.error?.message || 'Failed to create');
       }
 
-      router.push(`/input-presets/${initialData.id}`);
+      router.push(`/input-presets/${json.data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-      setSaving(false);
+      setCreating(false);
     }
   }
 
   return (
     <div>
       <PageHeader
-        backHref={`/input-presets/${initialData.id}`}
-        backLabel="Back to preset"
+        backHref="/input-presets"
+        backLabel="Back to Input Presets"
         title=""
         actions={
-          <PrimaryButton onClick={handleSave} disabled={!canSave || saving} loading={saving}>
-            {saving ? 'Saving...' : 'Update Input Preset'}
+          <PrimaryButton
+            onClick={handleCreate}
+            disabled={!canCreate || creating}
+            loading={creating}
+          >
+            {creating ? 'Creating...' : 'Create Input Preset'}
           </PrimaryButton>
         }
       />
@@ -207,6 +194,7 @@ export function InputPresetEditForm({
         </div>
       )}
 
+      {/* Room preset */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset</h2>
         <LayoutPresetSelect
@@ -272,7 +260,7 @@ export function InputPresetEditForm({
           onChange={(value) => setField('designSettings', value)}
           arbitraryImagesBySlot={form.arbitraryImagesBySlot}
           onArbitraryImagesBySlotChange={(value) => setField('arbitraryImagesBySlot', value)}
-          savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
+          savedImageUrlsBySlot={{}}
           retailerId={INPUT_PRESET_RETAILER_ID}
         />
       </div>

@@ -2,8 +2,6 @@
 
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
-  actionsColumn,
-  checkboxColumn,
   DataTable,
   DateCell,
   NameCell,
@@ -14,6 +12,7 @@ import {
   type DataTableColumn,
   type RowAction,
 } from '@/components/data-table';
+import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
 import { Pagination } from '@/components/pagination';
 import { toast, useConfirm } from '@/components/ui';
 import { useInfiniteList } from '@/hooks/use-infinite-list';

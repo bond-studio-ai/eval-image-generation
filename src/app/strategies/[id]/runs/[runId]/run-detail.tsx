@@ -2,7 +2,8 @@
 
 import { CdnImage } from '@/components/cdn-image';
 import { ExpandableImage } from '@/components/expandable-image';
-import { buildPanels, ReasoningModal } from '@/components/judge-score-badge';
+import { ReasoningModal } from '@/components/judge-score-badge';
+import { buildPanels } from '@/components/judge-score-badge-utils';
 import { PageHeader } from '@/components/page-header';
 import { RunJudgeEvaluationsSection } from '@/components/run-judge-evaluations-section';
 import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
@@ -13,7 +14,7 @@ import {
   type StrategyRunJudgeResultEntry,
 } from '@/lib/strategy-run-judge-results';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 interface StepInfo {
   stepOrder: number;
@@ -994,6 +995,49 @@ function StepGroupCard({
   );
 }
 
+/* ---------- Prompt-viewer modal state ---------- */
+
+interface ViewingPromptState {
+  id: string | null;
+  name: string | null;
+  processedSystemPrompt: string | null;
+  processedUserPrompt: string | null;
+}
+
+type ViewingPromptAction =
+  | {
+      type: 'open';
+      id: string;
+      name: string | null;
+      processedSystemPrompt: string | null;
+      processedUserPrompt: string | null;
+    }
+  | { type: 'close' };
+
+const INITIAL_VIEWING_PROMPT: ViewingPromptState = {
+  id: null,
+  name: null,
+  processedSystemPrompt: null,
+  processedUserPrompt: null,
+};
+
+function viewingPromptReducer(
+  state: ViewingPromptState,
+  action: ViewingPromptAction,
+): ViewingPromptState {
+  switch (action.type) {
+    case 'open':
+      return {
+        id: action.id,
+        name: action.name,
+        processedSystemPrompt: action.processedSystemPrompt,
+        processedUserPrompt: action.processedUserPrompt,
+      };
+    case 'close':
+      return INITIAL_VIEWING_PROMPT;
+  }
+}
+
 /* ---------- Main component ---------- */
 
 export function RunDetail({
@@ -1008,12 +1052,10 @@ export function RunDetail({
   const [data, setData] = useState<RunData>(initialData);
   const [retrying, setRetrying] = useState(false);
   const [markingStatus, setMarkingStatus] = useState<'idle' | 'failed' | 'completed'>('idle');
-  const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
-  const [viewingPromptName, setViewingPromptName] = useState<string | null>(null);
-  const [viewingProcessedSystemPrompt, setViewingProcessedSystemPrompt] = useState<string | null>(
-    null,
+  const [viewingPrompt, dispatchViewingPrompt] = useReducer(
+    viewingPromptReducer,
+    INITIAL_VIEWING_PROMPT,
   );
-  const [viewingProcessedUserPrompt, setViewingProcessedUserPrompt] = useState<string | null>(null);
   const [showJudgeModal, setShowJudgeModal] = useState(false);
 
   const [showExecFlow, setShowExecFlow] = useState(false);
@@ -1149,10 +1191,13 @@ export function RunDetail({
       processedSystemPrompt: string | null,
       processedUserPrompt: string | null,
     ) => {
-      setViewingPromptId(id);
-      setViewingPromptName(name);
-      setViewingProcessedSystemPrompt(processedSystemPrompt);
-      setViewingProcessedUserPrompt(processedUserPrompt);
+      dispatchViewingPrompt({
+        type: 'open',
+        id,
+        name,
+        processedSystemPrompt,
+        processedUserPrompt,
+      });
     },
     [],
   );
@@ -1338,8 +1383,8 @@ export function RunDetail({
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm font-medium text-amber-800">Why this run was skipped</p>
               <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-700">
-                {reasons.map(({ step, reason }, i) => (
-                  <li key={i}>
+                {reasons.map(({ step, reason }) => (
+                  <li key={`${step}-${reason}`}>
                     <span className="font-medium">{step}:</span> {reason}
                   </li>
                 ))}
@@ -1361,8 +1406,8 @@ export function RunDetail({
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
               <p className="text-sm font-medium text-red-800">Why this run failed</p>
               <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-700">
-                {reasons.map(({ step, reason }, i) => (
-                  <li key={i}>
+                {reasons.map(({ step, reason }) => (
+                  <li key={`${step}-${reason}`}>
                     <span className="font-medium">{step}:</span> {reason}
                   </li>
                 ))}
@@ -1545,17 +1590,14 @@ export function RunDetail({
         />
       )}
 
-      {viewingPromptId && (
+      {viewingPrompt.id && (
         <ViewPromptModal
-          promptVersionId={viewingPromptId}
-          promptVersionName={viewingPromptName}
-          processedSystemPrompt={viewingProcessedSystemPrompt}
-          processedUserPrompt={viewingProcessedUserPrompt}
+          promptVersionId={viewingPrompt.id}
+          promptVersionName={viewingPrompt.name}
+          processedSystemPrompt={viewingPrompt.processedSystemPrompt}
+          processedUserPrompt={viewingPrompt.processedUserPrompt}
           onClose={() => {
-            setViewingPromptId(null);
-            setViewingPromptName(null);
-            setViewingProcessedSystemPrompt(null);
-            setViewingProcessedUserPrompt(null);
+            dispatchViewingPrompt({ type: 'close' });
           }}
         />
       )}

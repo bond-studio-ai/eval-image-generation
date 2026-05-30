@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 type Preset = { label: string; days: number };
 
@@ -154,6 +154,70 @@ function CalendarMonth({
   );
 }
 
+type CalState = {
+  picking: 'start' | 'end';
+  rangeStart: string | null;
+  rangeEnd: string | null;
+  hoverDate: string | null;
+  viewMonth: number;
+  viewYear: number;
+};
+
+type CalAction =
+  | { type: 'syncRange'; from: string; to: string }
+  | { type: 'open'; from: string; to: string; viewMonth: number; viewYear: number }
+  | { type: 'pickDate'; iso: string }
+  | { type: 'setHover'; value: string | null }
+  | { type: 'prevMonth' }
+  | { type: 'nextMonth' };
+
+function initCal({ from, to }: { from: string; to: string }): CalState {
+  const now = new Date();
+  return {
+    picking: 'start',
+    rangeStart: from || null,
+    rangeEnd: to || null,
+    hoverDate: null,
+    viewMonth: now.getMonth(),
+    viewYear: now.getFullYear(),
+  };
+}
+
+function calReducer(state: CalState, action: CalAction): CalState {
+  switch (action.type) {
+    case 'syncRange':
+      return { ...state, rangeStart: action.from || null, rangeEnd: action.to || null };
+    case 'open':
+      return {
+        ...state,
+        picking: 'start',
+        rangeStart: action.from || null,
+        rangeEnd: action.to || null,
+        viewYear: action.viewYear,
+        viewMonth: action.viewMonth,
+      };
+    case 'pickDate': {
+      if (state.picking === 'start') {
+        return { ...state, rangeStart: action.iso, rangeEnd: null, picking: 'end' };
+      }
+      if (state.rangeStart && action.iso < state.rangeStart) {
+        return { ...state, rangeEnd: state.rangeStart, rangeStart: action.iso, picking: 'start' };
+      }
+      return { ...state, rangeEnd: action.iso, picking: 'start' };
+    }
+    case 'setHover':
+      return { ...state, hoverDate: action.value };
+    case 'prevMonth':
+      return state.viewMonth === 0
+        ? { ...state, viewMonth: 11, viewYear: state.viewYear - 1 }
+        : { ...state, viewMonth: state.viewMonth - 1 };
+    case 'nextMonth':
+      return state.viewMonth === 11
+        ? { ...state, viewMonth: 0, viewYear: state.viewYear + 1 }
+        : { ...state, viewMonth: state.viewMonth + 1 };
+  }
+}
+
 export function DateRangePicker({
   from,
   to,
@@ -166,34 +230,28 @@ export function DateRangePicker({
   onClear: () => void;
 }) {
   const [showCustom, setShowCustom] = useState(false);
-  const [picking, setPicking] = useState<'start' | 'end'>('start');
-  const [rangeStart, setRangeStart] = useState<string | null>(from || null);
-  const [rangeEnd, setRangeEnd] = useState<string | null>(to || null);
-  const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [cal, dispatchCal] = useReducer(calReducer, { from, to }, initCal);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const now = new Date();
-  const [viewMonth, setViewMonth] = useState(now.getMonth());
-  const [viewYear, setViewYear] = useState(now.getFullYear());
 
   useEffect(() => {
-    setRangeStart(from || null);
-    setRangeEnd(to || null);
+    dispatchCal({ type: 'syncRange', from, to });
   }, [from, to]);
 
   useEffect(() => {
     if (showCustom) {
-      setPicking('start');
-      setRangeStart(from || null);
-      setRangeEnd(to || null);
+      let viewYear: number;
+      let viewMonth: number;
       if (from) {
         const d = new Date(from + 'T00:00:00');
-        setViewYear(d.getFullYear());
-        setViewMonth(d.getMonth());
+        viewYear = d.getFullYear();
+        viewMonth = d.getMonth();
       } else {
-        setViewYear(now.getFullYear());
-        setViewMonth(now.getMonth());
+        viewYear = now.getFullYear();
+        viewMonth = now.getMonth();
       }
+      dispatchCal({ type: 'open', from, to, viewYear, viewMonth });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCustom]);
@@ -209,53 +267,31 @@ export function DateRangePicker({
     return () => document.removeEventListener('mousedown', handler);
   }, [showCustom]);
 
-  const handleDateClick = useCallback(
-    (iso: string) => {
-      if (picking === 'start') {
-        setRangeStart(iso);
-        setRangeEnd(null);
-        setPicking('end');
-      } else {
-        if (rangeStart && iso < rangeStart) {
-          setRangeEnd(rangeStart);
-          setRangeStart(iso);
-        } else {
-          setRangeEnd(iso);
-        }
-        setPicking('start');
-      }
-    },
-    [picking, rangeStart],
-  );
+  const handleDateClick = useCallback((iso: string) => {
+    dispatchCal({ type: 'pickDate', iso });
+  }, []);
 
-  const nextMonth = (viewMonth + 1) % 12;
-  const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+  const nextMonth = (cal.viewMonth + 1) % 12;
+  const nextYear = cal.viewMonth === 11 ? cal.viewYear + 1 : cal.viewYear;
 
   const goPrev = useCallback(() => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
-  }, [viewMonth]);
+    dispatchCal({ type: 'prevMonth' });
+  }, []);
 
   const goNext = useCallback(() => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  }, [viewMonth]);
+    dispatchCal({ type: 'nextMonth' });
+  }, []);
 
   const handleApply = useCallback(() => {
-    if (rangeStart && rangeEnd) {
-      const [lo, hi] = rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
+    if (cal.rangeStart && cal.rangeEnd) {
+      const [lo, hi] =
+        cal.rangeStart <= cal.rangeEnd
+          ? [cal.rangeStart, cal.rangeEnd]
+          : [cal.rangeEnd, cal.rangeStart];
       onChange(lo, hi);
       setShowCustom(false);
     }
-  }, [rangeStart, rangeEnd, onChange]);
+  }, [cal.rangeStart, cal.rangeEnd, onChange]);
 
   const activePreset =
     from && to ? DATE_PRESETS.find((p) => matchesPreset(from, to, p.days)) : null;
@@ -336,7 +372,9 @@ export function DateRangePicker({
                   </svg>
                 </button>
                 <p className="text-xs font-medium text-gray-500">
-                  {picking === 'end' && rangeStart ? `Select end date` : 'Select start date'}
+                  {cal.picking === 'end' && cal.rangeStart
+                    ? `Select end date`
+                    : 'Select start date'}
                 </p>
                 <button
                   type="button"
@@ -363,35 +401,35 @@ export function DateRangePicker({
               {/* Calendars */}
               <div className="flex gap-4 p-4">
                 <CalendarMonth
-                  year={viewYear}
-                  month={viewMonth}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  hoverDate={picking === 'end' ? hoverDate : null}
+                  year={cal.viewYear}
+                  month={cal.viewMonth}
+                  rangeStart={cal.rangeStart}
+                  rangeEnd={cal.rangeEnd}
+                  hoverDate={cal.picking === 'end' ? cal.hoverDate : null}
                   onDateClick={handleDateClick}
-                  onDateHover={setHoverDate}
+                  onDateHover={(value) => dispatchCal({ type: 'setHover', value })}
                 />
                 <div className="w-px bg-gray-100" />
                 <CalendarMonth
                   year={nextYear}
                   month={nextMonth}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  hoverDate={picking === 'end' ? hoverDate : null}
+                  rangeStart={cal.rangeStart}
+                  rangeEnd={cal.rangeEnd}
+                  hoverDate={cal.picking === 'end' ? cal.hoverDate : null}
                   onDateClick={handleDateClick}
-                  onDateHover={setHoverDate}
+                  onDateHover={(value) => dispatchCal({ type: 'setHover', value })}
                 />
               </div>
 
               {/* Footer */}
               <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  {rangeStart && (
+                  {cal.rangeStart && (
                     <span className="rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
-                      {formatDisplay(rangeStart)}
+                      {formatDisplay(cal.rangeStart)}
                     </span>
                   )}
-                  {rangeStart && (
+                  {cal.rangeStart && (
                     <svg
                       className="size-3 text-gray-300"
                       fill="none"
@@ -406,12 +444,12 @@ export function DateRangePicker({
                       />
                     </svg>
                   )}
-                  {rangeEnd && (
+                  {cal.rangeEnd && (
                     <span className="rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
-                      {formatDisplay(rangeEnd)}
+                      {formatDisplay(cal.rangeEnd)}
                     </span>
                   )}
-                  {!rangeStart && !rangeEnd && (
+                  {!cal.rangeStart && !cal.rangeEnd && (
                     <span className="text-gray-400">Pick a start date</span>
                   )}
                 </div>
@@ -426,7 +464,7 @@ export function DateRangePicker({
                   <button
                     type="button"
                     onClick={handleApply}
-                    disabled={!rangeStart || !rangeEnd}
+                    disabled={!cal.rangeStart || !cal.rangeEnd}
                     className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
                   >
                     Apply
