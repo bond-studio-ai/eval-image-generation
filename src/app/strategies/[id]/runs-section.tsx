@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { StrategyRunsList } from './runs-list';
+import { StrategyRunsList } from "./runs-list";
 
 interface Run {
   id: string;
@@ -15,15 +15,7 @@ interface Run {
   stepResults: { id: string; status: string }[];
 }
 
-export function StrategyRunsSection({
-  strategyId,
-  hasJudge,
-  initialRuns,
-}: {
-  strategyId: string;
-  hasJudge?: boolean;
-  initialRuns: Run[];
-}) {
+export function StrategyRunsSection({ strategyId, hasJudge, initialRuns }: { strategyId: string; hasJudge?: boolean; initialRuns: Run[] }) {
   return (
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
       <StrategyRunsList strategyId={strategyId} hasJudge={hasJudge} initialRuns={initialRuns} />

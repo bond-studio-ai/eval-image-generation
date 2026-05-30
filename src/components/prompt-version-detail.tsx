@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMemo, useReducer, useState } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
-import { CopyIcon, LockIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
-import { serviceUrl } from '@/lib/api-base';
-import { DeletePromptVersionButton } from './delete-prompt-version-button';
-import { PromptTemplateEditor } from './prompt-template-editor';
-import { RatingBadge } from './rating-badge';
-import { TwoPaneSplit } from './two-pane-split';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useReducer, useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
+import { CopyIcon, LockIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { serviceUrl } from "@/lib/api-base";
+import { DeletePromptVersionButton } from "./delete-prompt-version-button";
+import { PromptTemplateEditor } from "./prompt-template-editor";
+import { RatingBadge } from "./rating-badge";
+import { TwoPaneSplit } from "./two-pane-split";
 
 // ------------------------------------
 // Types
@@ -57,15 +57,15 @@ interface FormState {
 
 type FormAction =
   | {
-      [K in keyof FormState]: { type: 'setField'; field: K; value: FormState[K] };
+      [K in keyof FormState]: { type: "setField"; field: K; value: FormState[K] };
     }[keyof FormState]
-  | { type: 'reset'; value: FormState };
+  | { type: "reset"; value: FormState };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
-    case 'setField':
+    case "setField":
       return { ...state, [action.field]: action.value };
-    case 'reset':
+    case "reset":
       return action.value;
   }
 }
@@ -80,10 +80,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
   // Baseline values (updated on save) — must be state so isDirty recalculates
   const [baseline, setBaseline] = useState({
-    name: data.name ?? '',
-    description: data.description ?? '',
+    name: data.name ?? "",
+    description: data.description ?? "",
     systemPrompt: data.systemPrompt,
-    userPrompt: data.userPrompt,
+    userPrompt: data.userPrompt
   });
 
   // Editable field state
@@ -91,10 +91,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     name: baseline.name,
     description: baseline.description,
     systemPrompt: baseline.systemPrompt,
-    userPrompt: baseline.userPrompt,
+    userPrompt: baseline.userPrompt
   });
-  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
-    dispatch({ type: 'setField', field, value });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => dispatch({ type: "setField", field, value });
 
   const [saving, setSaving] = useState(false);
   const [cloning, setCloning] = useState(false);
@@ -102,12 +101,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
   const isDirty = useMemo(() => {
     if (!isEditable) return false;
-    return (
-      form.name !== baseline.name ||
-      form.description !== baseline.description ||
-      form.systemPrompt !== baseline.systemPrompt ||
-      form.userPrompt !== baseline.userPrompt
-    );
+    return form.name !== baseline.name || form.description !== baseline.description || form.systemPrompt !== baseline.systemPrompt || form.userPrompt !== baseline.userPrompt;
   }, [isEditable, baseline, form]);
 
   async function handleSave() {
@@ -116,27 +110,23 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
     try {
       const res = await fetch(serviceUrl(`prompt-versions/${data.id}`), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name || undefined,
           description: form.description || undefined,
           system_prompt: form.systemPrompt,
-          user_prompt: form.userPrompt,
-        }),
+          user_prompt: form.userPrompt
+        })
       });
 
       if (!res.ok) {
-        const ct = res.headers.get('content-type') ?? '';
-        if (ct.includes('application/json')) {
+        const ct = res.headers.get("content-type") ?? "";
+        if (ct.includes("application/json")) {
           const d = await res.json();
-          throw new Error(d.error?.message || 'Failed to save');
+          throw new Error(d.error?.message || "Failed to save");
         }
-        throw new Error(
-          res.status === 401 || res.redirected
-            ? 'Session expired. Please refresh the page.'
-            : `Failed to save (${res.status})`,
-        );
+        throw new Error(res.status === 401 || res.redirected ? "Session expired. Please refresh the page." : `Failed to save (${res.status})`);
       }
 
       // Update baseline so isDirty resets
@@ -144,11 +134,11 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         name: form.name,
         description: form.description,
         systemPrompt: form.systemPrompt,
-        userPrompt: form.userPrompt,
+        userPrompt: form.userPrompt
       });
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -156,13 +146,13 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
   function handleDiscard() {
     dispatch({
-      type: 'reset',
+      type: "reset",
       value: {
         name: baseline.name,
         description: baseline.description,
         systemPrompt: baseline.systemPrompt,
-        userPrompt: baseline.userPrompt,
-      },
+        userPrompt: baseline.userPrompt
+      }
     });
     setError(null);
   }
@@ -171,40 +161,39 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     setCloning(true);
     setError(null);
     try {
-      const res = await fetch(serviceUrl('prompt-versions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(serviceUrl("prompt-versions"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `Copy of ${data.name || 'Untitled'}`,
+          name: `Copy of ${data.name || "Untitled"}`,
           description: data.description || undefined,
           system_prompt: data.systemPrompt,
-          user_prompt: data.userPrompt,
-        }),
+          user_prompt: data.userPrompt
+        })
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.error?.message || 'Failed to clone');
+        throw new Error(d.error?.message || "Failed to clone");
       }
       const json = await res.json();
       const newId = json.data?.id;
       if (newId) router.push(`/prompt-versions/${newId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Clone failed');
+      setError(err instanceof Error ? err.message : "Clone failed");
     } finally {
       setCloning(false);
     }
   }
 
   // Shared classes for editable inline fields
-  const editableInput =
-    'w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1';
+  const editableInput = "w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
 
   return (
     <div className="flex flex-col">
       <PageHeader
         backHref="/prompt-versions"
         backLabel="Back to Prompt Versions"
-        title={isEditable ? '' : data.name || 'Untitled Prompt Version'}
+        title={isEditable ? "" : data.name || "Untitled Prompt Version"}
         subtitle={!isEditable ? (data.description ?? undefined) : undefined}
         actions={
           <>
@@ -225,7 +214,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                   className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
                 >
                   {saving && <Spinner className="size-4" />}
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? "Saving..." : "Save"}
                 </button>
               </>
             )}
@@ -242,27 +231,15 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
               <CopyIcon className="size-4" />
-              {cloning ? 'Cloning…' : 'Clone'}
+              {cloning ? "Cloning…" : "Clone"}
             </button>
-            {isEditable && (
-              <DeletePromptVersionButton
-                id={data.id}
-                name={form.name || 'Untitled Prompt Version'}
-              />
-            )}
+            {isEditable && <DeletePromptVersionButton id={data.id} name={form.name || "Untitled Prompt Version"} />}
             {!data.deletedAt && (
-              <Link
-                href="/executions"
-                className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
-              >
+              <Link href="/executions" className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors">
                 New Run
               </Link>
             )}
-            {data.deletedAt && (
-              <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">
-                Deleted
-              </span>
-            )}
+            {data.deletedAt && <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">Deleted</span>}
           </>
         }
       />
@@ -271,11 +248,11 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         <div className="mt-6">
           <ResourceFormHeader
             name={form.name}
-            onNameChange={(value) => setField('name', value)}
+            onNameChange={(value) => setField("name", value)}
             namePlaceholder="e.g. Bathroom generation v2"
             nameRequired={false}
             description={form.description}
-            onDescriptionChange={(value) => setField('description', value)}
+            onDescriptionChange={(value) => setField("description", value)}
           />
         </div>
       )}
@@ -292,7 +269,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.avgRating ?? '-'}</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.avgRating ?? "-"}</p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-sm font-medium text-gray-600">Unrated</p>
@@ -305,23 +282,19 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         className="mt-8"
         left={
           <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
-              System Prompt
-            </h2>
+            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">System Prompt</h2>
             {isEditable ? (
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
                   value={form.systemPrompt}
-                  onChange={(value) => setField('systemPrompt', value)}
+                  onChange={(value) => setField("systemPrompt", value)}
                   placeholder="Enter the system prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight
                 />
               </div>
             ) : (
-              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">
-                {data.systemPrompt}
-              </pre>
+              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">{data.systemPrompt}</pre>
             )}
           </div>
         }
@@ -332,16 +305,14 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
                   value={form.userPrompt}
-                  onChange={(value) => setField('userPrompt', value)}
+                  onChange={(value) => setField("userPrompt", value)}
                   placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight
                 />
               </div>
             ) : (
-              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">
-                {data.userPrompt}
-              </pre>
+              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">{data.userPrompt}</pre>
             )}
           </div>
         }
@@ -357,18 +328,10 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Rating
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Inputs
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Outputs
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Created
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Rating</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Inputs</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Outputs</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Created</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -382,15 +345,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {gen.inputImageCount}
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {gen.outputImageCount}
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {new Date(gen.createdAt).toLocaleDateString()}
-                    </td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.inputImageCount}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.outputImageCount}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{new Date(gen.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

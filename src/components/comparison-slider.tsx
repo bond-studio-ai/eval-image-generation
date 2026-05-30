@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef } from 'react';
-import { CdnImage } from '@/components/cdn-image';
+import { useCallback, useEffect, useRef } from "react";
+import { CdnImage } from "@/components/cdn-image";
 
 /** Before/after slider: left image is revealed by position %; drag the bar to compare. */
 export function ComparisonSlider({
@@ -9,10 +9,10 @@ export function ComparisonSlider({
   rightImageUrl,
   position,
   onPositionChange,
-  leftImageAlt = 'Before',
-  rightImageAlt = 'After',
+  leftImageAlt = "Before",
+  rightImageAlt = "After",
   leftLabel,
-  rightLabel,
+  rightLabel
 }: {
   leftImageUrl: string;
   rightImageUrl: string;
@@ -37,7 +37,7 @@ export function ComparisonSlider({
       const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
       onPositionChange(pct);
     },
-    [onPositionChange],
+    [onPositionChange]
   );
 
   useEffect(() => {
@@ -47,11 +47,11 @@ export function ComparisonSlider({
     const onMouseUp = () => {
       isDragging.current = false;
     };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
     };
   }, [handleMove]);
 
@@ -62,11 +62,11 @@ export function ComparisonSlider({
     const onTouchEnd = () => {
       isDragging.current = false;
     };
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
     };
   }, [handleMove]);
 
@@ -98,10 +98,10 @@ export function ComparisonSlider({
         isDragging.current = false;
       }}
       onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') {
+        if (e.key === "ArrowLeft") {
           e.preventDefault();
           onPositionChange(Math.max(0, position - 5));
-        } else if (e.key === 'ArrowRight') {
+        } else if (e.key === "ArrowRight") {
           e.preventDefault();
           onPositionChange(Math.min(100, position + 5));
         }
@@ -109,50 +109,21 @@ export function ComparisonSlider({
     >
       {/* Bottom: right image (always visible as base) */}
       <div className="absolute inset-0">
-        <CdnImage
-          src={rightImageUrl}
-          alt={rightImageAlt}
-          fill
-          sizes="100vw"
-          className="object-contain"
-          draggable={false}
-        />
+        <CdnImage src={rightImageUrl} alt={rightImageAlt} fill sizes="100vw" className="object-contain" draggable={false} />
       </div>
       {/* Top: left image (clipped by position %) */}
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-      >
-        <CdnImage
-          src={leftImageUrl}
-          alt={leftImageAlt}
-          fill
-          sizes="100vw"
-          className="object-contain"
-          draggable={false}
-        />
+      <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+        <CdnImage src={leftImageUrl} alt={leftImageAlt} fill sizes="100vw" className="object-contain" draggable={false} />
       </div>
       {/* Side labels: left moves with scene, right stays on output side */}
-      {leftLabel != null && leftLabel !== '' && (
-        <div
-          className="pointer-events-none absolute inset-0 z-20"
-          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-        >
-          <span className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
-            {leftLabel}
-          </span>
+      {leftLabel != null && leftLabel !== "" && (
+        <div className="pointer-events-none absolute inset-0 z-20" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+          <span className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">{leftLabel}</span>
         </div>
       )}
-      {rightLabel != null && rightLabel !== '' && (
-        <div className="pointer-events-none absolute top-2 right-2 z-20 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
-          {rightLabel}
-        </div>
-      )}
+      {rightLabel != null && rightLabel !== "" && <div className="pointer-events-none absolute top-2 right-2 z-20 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">{rightLabel}</div>}
       {/* Draggable bar */}
-      <div
-        className="absolute top-0 bottom-0 z-10 w-1 cursor-ew-resize bg-white shadow-lg"
-        style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
-      >
+      <div className="absolute top-0 bottom-0 z-10 w-1 cursor-ew-resize bg-white shadow-lg" style={{ left: `${position}%`, transform: "translateX(-50%)" }}>
         <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-0.5 rounded-full border border-gray-300 bg-gray-100 px-1.5 py-1">
           <div className="h-3 w-0.5 rounded-full bg-gray-400" />
           <div className="h-3 w-0.5 rounded-full bg-gray-400" />

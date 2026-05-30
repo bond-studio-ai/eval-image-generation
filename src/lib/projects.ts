@@ -1,10 +1,5 @@
-import { localUrl } from './api-base';
-import {
-  normalizeCameraFrame,
-  validateUnitySlimDesign,
-  type DollhouseCameraFrame,
-  type UnitySlimDesignMaterials,
-} from './dollhouse-renders';
+import { localUrl } from "./api-base";
+import { normalizeCameraFrame, validateUnitySlimDesign, type DollhouseCameraFrame, type UnitySlimDesignMaterials } from "./dollhouse-renders";
 
 export interface ProjectSummary {
   id: string;
@@ -37,20 +32,20 @@ export interface ProjectsListParams {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 function normalizeProjectSummary(raw: unknown): ProjectSummary | null {
   const rec = isRecord(raw) ? raw : null;
-  if (!rec || typeof rec.id !== 'string') return null;
+  if (!rec || typeof rec.id !== "string") return null;
   return {
     id: rec.id,
-    name: typeof rec.name === 'string' ? rec.name : '',
-    appStatus: typeof rec.appStatus === 'string' ? rec.appStatus : '',
-    crmStatus: typeof rec.crmStatus === 'string' ? rec.crmStatus : undefined,
-    address: typeof rec.address === 'string' ? rec.address : undefined,
-    created: typeof rec.created === 'string' ? rec.created : undefined,
-    updated: typeof rec.updated === 'string' ? rec.updated : undefined,
+    name: typeof rec.name === "string" ? rec.name : "",
+    appStatus: typeof rec.appStatus === "string" ? rec.appStatus : "",
+    crmStatus: typeof rec.crmStatus === "string" ? rec.crmStatus : undefined,
+    address: typeof rec.address === "string" ? rec.address : undefined,
+    created: typeof rec.created === "string" ? rec.created : undefined,
+    updated: typeof rec.updated === "string" ? rec.updated : undefined
   };
 }
 
@@ -77,7 +72,7 @@ function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
   let array: unknown = raw;
   // `cameraFrames` may arrive as a JSON-encoded string (it's stored as text in
   // the projects DB and projects-service surfaces it through unchanged).
-  if (typeof array === 'string') {
+  if (typeof array === "string") {
     try {
       array = JSON.parse(array) as unknown;
     } catch {
@@ -93,16 +88,13 @@ function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
   return array.map(normalizeCameraFrame).filter((f): f is DollhouseCameraFrame => f !== null);
 }
 
-export async function fetchProjectWithRenderBootstrap(
-  projectId: string,
-  init?: RequestInit,
-): Promise<ProjectRenderBootstrap> {
+export async function fetchProjectWithRenderBootstrap(projectId: string, init?: RequestInit): Promise<ProjectRenderBootstrap> {
   const trimmed = projectId.trim();
-  if (!trimmed) throw new Error('projectId is required');
+  if (!trimmed) throw new Error("projectId is required");
 
   const qs = new URLSearchParams();
-  qs.append('format[]', 'design:unity-slim');
-  qs.append('include[]', 'camera_frames');
+  qs.append("format[]", "design:unity-slim");
+  qs.append("include[]", "camera_frames");
   const url = `${localUrl(`projects/${encodeURIComponent(trimmed)}`)}?${qs.toString()}`;
 
   const res = await fetch(url, init);
@@ -130,6 +122,6 @@ export async function fetchProjectWithRenderBootstrap(
     // service-image-generation#137 updates the v2 create endpoint to preserve
     // raw `roomData`, matching the proven strategy dollhouse-capture path.
     roomData: isRecord(project.scan) ? (project.scan as Record<string, unknown>) : null,
-    cameraFrames: parseCameraFrames(project.cameraFrames),
+    cameraFrames: parseCameraFrames(project.cameraFrames)
   };
 }

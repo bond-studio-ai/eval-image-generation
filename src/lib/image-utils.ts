@@ -7,8 +7,8 @@
  * @param width - Desired width in pixels (default 256)
  */
 export function withImageParams(url: string, width = 256): string {
-  if (!url || url.startsWith('data:')) return url;
-  const sep = url.includes('?') ? '&' : '?';
+  if (!url || url.startsWith("data:")) return url;
+  const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}w=${width}&f=webp`;
 }
 
@@ -18,7 +18,7 @@ export function withImageParams(url: string, width = 256): string {
  * (array) column types gracefully.
  */
 export function toUrlArray(val: unknown): string[] {
-  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === 'string' && !!v);
-  if (typeof val === 'string' && val) return [val];
+  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string" && !!v);
+  if (typeof val === "string" && val) return [val];
   return [];
 }

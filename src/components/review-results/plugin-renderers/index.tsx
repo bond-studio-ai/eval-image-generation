@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import type { JSX } from 'react';
-import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
-import type { CategoryLookup, ReviewAssessment } from '../types';
-import { DepthDriftRenderer } from './depth-drift';
-import { SegmentationDriftRenderer } from './segmentation-drift';
+import type { JSX } from "react";
+import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
+import type { CategoryLookup, ReviewAssessment } from "../types";
+import { DepthDriftRenderer } from "./depth-drift";
+import { SegmentationDriftRenderer } from "./segmentation-drift";
 
 /**
  * Context every plugin renderer receives. Mirrors what the orchestrator
@@ -40,8 +40,8 @@ export interface PluginRenderer {
  * in the same place across runs.
  */
 const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
-  { id: 'segmentationDrift', title: 'Segmentation drift', Renderer: SegmentationDriftRenderer },
-  { id: 'depthDrift', title: 'Depth drift', Renderer: DepthDriftRenderer },
+  { id: "segmentationDrift", title: "Segmentation drift", Renderer: SegmentationDriftRenderer },
+  { id: "depthDrift", title: "Depth drift", Renderer: DepthDriftRenderer }
 ];
 
 /**
@@ -59,9 +59,7 @@ const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
  * gracefully (the shipped `SegmentationDriftRenderer` and
  * `DepthDriftRenderer` both render an unavailable card in that case).
  */
-export function pluginEntriesFor(
-  reviewAssessment: ReviewAssessment | null | undefined,
-): Array<{ renderer: PluginRenderer; assessment: unknown }> {
+export function pluginEntriesFor(reviewAssessment: ReviewAssessment | null | undefined): Array<{ renderer: PluginRenderer; assessment: unknown }> {
   if (!reviewAssessment?.plugins) return [];
   const entries: Array<{ renderer: PluginRenderer; assessment: unknown }> = [];
   for (const renderer of PLUGIN_RENDERERS) {

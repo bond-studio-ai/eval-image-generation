@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ViewPromptModal } from '@/components/view-prompt-modal';
-import { serviceUrl } from '@/lib/api-base';
-import { STRATEGY_PROPERTY_COLORS } from '@/lib/strategy-property-colors';
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ViewPromptModal } from "@/components/view-prompt-modal";
+import { serviceUrl } from "@/lib/api-base";
+import { STRATEGY_PROPERTY_COLORS } from "@/lib/strategy-property-colors";
 
 interface StrategyData {
   id: string;
@@ -27,19 +27,11 @@ interface StrategyData {
 
 const cache = new Map<string, StrategyData>();
 
-export function StrategyHoverCard({
-  strategyId,
-  children,
-}: {
-  strategyId: string;
-  children: React.ReactNode;
-}) {
+export function StrategyHoverCard({ strategyId, children }: { strategyId: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<StrategyData | null>(cache.get(strategyId) ?? null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(
-    null,
-  );
+  const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,40 +98,22 @@ export function StrategyHoverCard({
 
   return (
     <>
-      <span
-        ref={triggerRef}
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        onFocus={show}
-        onBlur={hide}
-        className="inline"
-      >
+      <span ref={triggerRef} onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide} className="inline">
         {children}
       </span>
       {open &&
         pos &&
         createPortal(
-          <div
-            ref={cardRef}
-            onMouseEnter={keepOpen}
-            onMouseLeave={hide}
-            className="fixed z-[9990] w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
-            style={{ top: pos.top, left: pos.left }}
-          >
+          <div ref={cardRef} onMouseEnter={keepOpen} onMouseLeave={hide} className="fixed z-[9990] w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
             {!data ? (
               <p className="text-xs text-gray-500">Loading…</p>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <Link
-                    href={`/strategies/${data.id}`}
-                    className="text-primary-600 hover:text-primary-500 text-sm font-semibold"
-                  >
+                  <Link href={`/strategies/${data.id}`} className="text-primary-600 hover:text-primary-500 text-sm font-semibold">
                     {data.name}
                   </Link>
-                  {data.description && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{data.description}</p>
-                  )}
+                  {data.description && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{data.description}</p>}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Badge color="model">{data.model}</Badge>
@@ -152,14 +126,11 @@ export function StrategyHoverCard({
                 </div>
                 {data.steps.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium tracking-wider text-gray-400 uppercase">
-                      Steps
-                    </p>
+                    <p className="text-[10px] font-medium tracking-wider text-gray-400 uppercase">Steps</p>
                     <ul className="mt-1 space-y-0.5">
                       {data.steps.map((step) => (
                         <li key={step.stepOrder} className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-800">{step.stepOrder}.</span>{' '}
-                          {step.name ?? 'Untitled'}
+                          <span className="font-medium text-gray-800">{step.stepOrder}.</span> {step.name ?? "Untitled"}
                           {step.promptVersion && (
                             <>
                               <span className="text-gray-400">: </span>
@@ -168,12 +139,12 @@ export function StrategyHoverCard({
                                 onClick={() =>
                                   setViewingPrompt({
                                     id: step.promptVersion!.id,
-                                    name: step.promptVersion!.name,
+                                    name: step.promptVersion!.name
                                   })
                                 }
                                 className="text-primary-600 hover:text-primary-500 hover:underline"
                               >
-                                {step.promptVersion.name || 'Untitled prompt'}
+                                {step.promptVersion.name || "Untitled prompt"}
                               </button>
                             </>
                           )}
@@ -185,32 +156,14 @@ export function StrategyHoverCard({
               </div>
             )}
           </div>,
-          document.body,
+          document.body
         )}
-      {viewingPrompt && (
-        <ViewPromptModal
-          promptVersionId={viewingPrompt.id}
-          promptVersionName={viewingPrompt.name}
-          onClose={() => setViewingPrompt(null)}
-        />
-      )}
+      {viewingPrompt && <ViewPromptModal promptVersionId={viewingPrompt.id} promptVersionName={viewingPrompt.name} onClose={() => setViewingPrompt(null)} />}
     </>
   );
 }
 
-function Badge({
-  children,
-  color,
-}: {
-  children: React.ReactNode;
-  color: keyof typeof STRATEGY_PROPERTY_COLORS;
-}) {
+function Badge({ children, color }: { children: React.ReactNode; color: keyof typeof STRATEGY_PROPERTY_COLORS }) {
   const c = STRATEGY_PROPERTY_COLORS[color];
-  return (
-    <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${c.bg} ${c.text}`}
-    >
-      {children}
-    </span>
-  );
+  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${c.bg} ${c.text}`}>{children}</span>;
 }

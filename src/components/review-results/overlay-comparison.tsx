@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ComparisonSlider } from '@/components/comparison-slider';
-import { SkeletonImage } from './mask-preview';
+import { useState } from "react";
+import { ComparisonSlider } from "@/components/comparison-slider";
+import { SkeletonImage } from "./mask-preview";
 
 /**
  * "Combined overlay" section of the segmentation modal. When the
@@ -21,13 +21,7 @@ import { SkeletonImage } from './mask-preview';
  * available (older runs that pre-date the field, or generations where
  * drift didn't run).
  */
-export function OverlayComparison({
-  overlayUrl,
-  productMaskUrl,
-}: {
-  overlayUrl: string;
-  productMaskUrl?: string | null;
-}) {
+export function OverlayComparison({ overlayUrl, productMaskUrl }: { overlayUrl: string; productMaskUrl?: string | null }) {
   // Local position state — same controlled pattern as the lightbox.
   // Starts at 0 so the reviewer sees 100% of the segmentation overlay
   // before they touch the slider.
@@ -38,15 +32,8 @@ export function OverlayComparison({
   return (
     <div className="mb-5">
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <h4 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
-          {hasComparison ? 'Overlay vs dollhouse mask' : 'Combined overlay'}
-        </h4>
-        <a
-          href={overlayUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[11px] text-purple-700 hover:text-purple-900 hover:underline"
-        >
+        <h4 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">{hasComparison ? "Overlay vs dollhouse mask" : "Combined overlay"}</h4>
+        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-purple-700 hover:text-purple-900 hover:underline">
           Open full image
         </a>
       </div>
@@ -64,23 +51,11 @@ export function OverlayComparison({
               rightLabel="Segmentation overlay"
             />
           </div>
-          <p className="mt-1.5 text-center text-[10px] text-gray-500">
-            Drag the bar to reveal the dollhouse product mask underneath. Defaults to 100% overlay.
-          </p>
+          <p className="mt-1.5 text-center text-[10px] text-gray-500">Drag the bar to reveal the dollhouse product mask underneath. Defaults to 100% overlay.</p>
         </>
       ) : (
-        <a
-          href={overlayUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative block w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50"
-        >
-          <SkeletonImage
-            src={overlayUrl}
-            alt="Combined segmentation overlay (all categories tinted)"
-            containerClassName="aspect-[4/3] max-h-[480px] w-full"
-            imgClassName="block h-full w-full object-contain"
-          />
+        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="relative block w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+          <SkeletonImage src={overlayUrl} alt="Combined segmentation overlay (all categories tinted)" containerClassName="aspect-[4/3] max-h-[480px] w-full" imgClassName="block h-full w-full object-contain" />
         </a>
       )}
     </div>

@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { CdnImage } from '@/components/cdn-image';
-import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/components/ui/cn';
-import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
-import { CheckCircleIcon, ChevronDownIcon } from '@/components/ui/icons';
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Spinner } from '@/components/ui/spinner';
-import { serviceUrl } from '@/lib/api-base';
-import { CompareView } from './compare-view';
-import { SingleRunAuditView } from './single-run-audit-view';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { CdnImage } from "@/components/cdn-image";
+import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/components/ui/cn";
+import { FilterBar, FilterSearch } from "@/components/ui/filter-bar";
+import { CheckCircleIcon, ChevronDownIcon } from "@/components/ui/icons";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Spinner } from "@/components/ui/spinner";
+import { serviceUrl } from "@/lib/api-base";
+import { CompareView } from "./compare-view";
+import { SingleRunAuditView } from "./single-run-audit-view";
 
 interface RunListItem {
   id: string;
@@ -29,19 +29,19 @@ interface RunListItem {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  preset: 'Preset',
-  raw_input: 'Real Input',
-  batch: 'Batch',
-  retry: 'Preset',
+  preset: "Preset",
+  raw_input: "Real Input",
+  batch: "Batch",
+  retry: "Preset"
 };
 
 const SOURCE_FILTER_OPTIONS = [
-  { value: 'all', label: 'All runs' },
-  { value: 'preset', label: 'Preset runs' },
-  { value: 'raw_input', label: 'Real Input runs' },
+  { value: "all", label: "All runs" },
+  { value: "preset", label: "Preset runs" },
+  { value: "raw_input", label: "Real Input runs" }
 ] as const;
 
-type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]['value'];
+type SourceFilter = (typeof SOURCE_FILTER_OPTIONS)[number]["value"];
 type AuditRunGroup = {
   id: string;
   batchRunId: string | null;
@@ -55,53 +55,27 @@ type AuditRunGroup = {
 const THUMB = 48;
 const PAGE_SIZE = 50;
 
-function RunPickerCard({
-  run,
-  isSelected,
-  onSelect,
-}: {
-  run: RunListItem;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  const statusTone =
-    run.status === 'completed' ? 'success' : run.status === 'failed' ? 'danger' : 'neutral';
+function RunPickerCard({ run, isSelected, onSelect }: { run: RunListItem; isSelected: boolean; onSelect: () => void }) {
+  const statusTone = run.status === "completed" ? "success" : run.status === "failed" ? "danger" : "neutral";
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={cn(
-        'rounded-card flex w-full items-center gap-3 border px-3 py-2 text-left transition-colors',
-        isSelected
-          ? 'border-primary-400 bg-primary-50 ring-primary-400 ring-1'
-          : 'border-border bg-surface hover:bg-surface-muted',
-      )}
+      className={cn("rounded-card flex w-full items-center gap-3 border px-3 py-2 text-left transition-colors", isSelected ? "border-primary-400 bg-primary-50 ring-primary-400 ring-1" : "border-border bg-surface hover:bg-surface-muted")}
     >
       <div className="shrink-0">
         {run.lastOutputUrl ? (
-          <CdnImage
-            src={run.lastOutputUrl}
-            alt=""
-            width={THUMB}
-            height={THUMB}
-            className="border-border rounded border object-cover"
-            style={{ width: THUMB, height: THUMB }}
-          />
+          <CdnImage src={run.lastOutputUrl} alt="" width={THUMB} height={THUMB} className="border-border rounded border object-cover" style={{ width: THUMB, height: THUMB }} />
         ) : (
-          <span
-            className="border-border bg-surface-muted text-text-disabled inline-flex items-center justify-center rounded border text-[10px]"
-            style={{ width: THUMB, height: THUMB }}
-          >
+          <span className="border-border bg-surface-muted text-text-disabled inline-flex items-center justify-center rounded border text-[10px]" style={{ width: THUMB, height: THUMB }}>
             --
           </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-body text-text-primary truncate font-medium">
-          {run.strategyName ?? 'Unknown strategy'}
-        </p>
+        <p className="text-body text-text-primary truncate font-medium">{run.strategyName ?? "Unknown strategy"}</p>
         <p className="text-text-muted truncate text-[11px]">
-          {run.inputPresetName ?? 'No preset'} &middot; {new Date(run.createdAt).toLocaleString()}
+          {run.inputPresetName ?? "No preset"} &middot; {new Date(run.createdAt).toLocaleString()}
         </p>
         <div className="mt-0.5 flex flex-wrap gap-1">
           <Badge tone={statusTone} variant="soft" size="sm">
@@ -120,25 +94,18 @@ function RunPickerCard({
         </div>
       </div>
       <div className="shrink-0">
-        {isSelected ? (
-          <CheckCircleIcon className="text-primary-600 size-5" aria-hidden="true" />
-        ) : (
-          <span
-            className="border-border-strong inline-flex size-5 items-center justify-center rounded-full border-2"
-            aria-hidden="true"
-          />
-        )}
+        {isSelected ? <CheckCircleIcon className="text-primary-600 size-5" aria-hidden="true" /> : <span className="border-border-strong inline-flex size-5 items-center justify-center rounded-full border-2" aria-hidden="true" />}
       </div>
     </button>
   );
 }
 
 function toIsoStart(date: string): string {
-  return new Date(date + 'T00:00:00Z').toISOString();
+  return new Date(date + "T00:00:00Z").toISOString();
 }
 
 function toIsoEnd(date: string): string {
-  return new Date(date + 'T23:59:59.999Z').toISOString();
+  return new Date(date + "T23:59:59.999Z").toISOString();
 }
 
 type FiltersState = {
@@ -148,32 +115,27 @@ type FiltersState = {
   sourceFilter: SourceFilter;
 };
 
-type FiltersAction =
-  | { type: 'setFilterText'; value: string }
-  | { type: 'setDateFrom'; value: string }
-  | { type: 'setDateTo'; value: string }
-  | { type: 'setSourceFilter'; value: SourceFilter }
-  | { type: 'clearDates' };
+type FiltersAction = { type: "setFilterText"; value: string } | { type: "setDateFrom"; value: string } | { type: "setDateTo"; value: string } | { type: "setSourceFilter"; value: SourceFilter } | { type: "clearDates" };
 
 const INITIAL_FILTERS: FiltersState = {
-  filterText: '',
-  dateFrom: '',
-  dateTo: '',
-  sourceFilter: 'all',
+  filterText: "",
+  dateFrom: "",
+  dateTo: "",
+  sourceFilter: "all"
 };
 
 function filtersReducer(state: FiltersState, action: FiltersAction): FiltersState {
   switch (action.type) {
-    case 'setFilterText':
+    case "setFilterText":
       return { ...state, filterText: action.value };
-    case 'setDateFrom':
+    case "setDateFrom":
       return { ...state, dateFrom: action.value };
-    case 'setDateTo':
+    case "setDateTo":
       return { ...state, dateTo: action.value };
-    case 'setSourceFilter':
+    case "setSourceFilter":
       return { ...state, sourceFilter: action.value };
-    case 'clearDates':
-      return { ...state, dateFrom: '', dateTo: '' };
+    case "clearDates":
+      return { ...state, dateFrom: "", dateTo: "" };
   }
 }
 
@@ -204,13 +166,13 @@ export function AuditComparePage() {
         const params = new URLSearchParams({
           page: String(pageToFetch),
           limit: String(PAGE_SIZE),
-          individual_only: 'false',
+          individual_only: "false"
         });
-        if (filters.dateFrom) params.set('from', toIsoStart(filters.dateFrom));
-        if (filters.dateTo) params.set('to', toIsoEnd(filters.dateTo));
+        if (filters.dateFrom) params.set("from", toIsoStart(filters.dateFrom));
+        if (filters.dateTo) params.set("to", toIsoEnd(filters.dateTo));
 
         const res = await fetch(serviceUrl(`strategy-runs?${params}`), {
-          cache: 'no-store',
+          cache: "no-store"
         });
         if (!res.ok) {
           setError(`Failed to load runs (${res.status})`);
@@ -230,13 +192,13 @@ export function AuditComparePage() {
           pageRef.current = pageToFetch;
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
+        setError(e instanceof Error ? e.message : "Unknown error");
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [filters.dateFrom, filters.dateTo],
+    [filters.dateFrom, filters.dateTo]
   );
 
   const loadMore = useCallback(() => {
@@ -257,7 +219,7 @@ export function AuditComparePage() {
       (entries) => {
         if (entries[0]?.isIntersecting) loadMore();
       },
-      { root, rootMargin: '200px', threshold: 0 },
+      { root, rootMargin: "200px", threshold: 0 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -280,21 +242,10 @@ export function AuditComparePage() {
   const filteredByText = filters.filterText
     ? runs.filter((r) => {
         const t = filters.filterText.toLowerCase();
-        return (
-          r.id.toLowerCase().includes(t) ||
-          (r.strategyName ?? '').toLowerCase().includes(t) ||
-          (r.inputPresetName ?? '').toLowerCase().includes(t) ||
-          (r.source ?? '').toLowerCase().includes(t)
-        );
+        return r.id.toLowerCase().includes(t) || (r.strategyName ?? "").toLowerCase().includes(t) || (r.inputPresetName ?? "").toLowerCase().includes(t) || (r.source ?? "").toLowerCase().includes(t);
       })
     : runs;
-  const filtered = filteredByText.filter((run) =>
-    filters.sourceFilter === 'all'
-      ? true
-      : filters.sourceFilter === 'preset'
-        ? run.source === 'preset' || !!run.inputPresetName
-        : run.source === 'raw_input',
-  );
+  const filtered = filteredByText.filter((run) => (filters.sourceFilter === "all" ? true : filters.sourceFilter === "preset" ? run.source === "preset" || !!run.inputPresetName : run.source === "raw_input"));
   const runGroups = useMemo<AuditRunGroup[]>(() => {
     const groups = new Map<string, AuditRunGroup>();
     for (const run of filtered) {
@@ -311,16 +262,14 @@ export function AuditComparePage() {
         runs: [run],
         createdAt: run.createdAt,
         strategyName: run.strategyName,
-        source: run.source,
+        source: run.source
       });
     }
 
     return Array.from(groups.values())
       .map((group) => ({
         ...group,
-        runs: group.runs.toSorted(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        ),
+        runs: group.runs.toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [filtered]);
@@ -329,10 +278,7 @@ export function AuditComparePage() {
 
   return (
     <div>
-      <PageHeader
-        title="Audit"
-        subtitle="Select one run to inspect its audit data, or two runs to compare side by side."
-      />
+      <PageHeader title="Audit" subtitle="Select one run to inspect its audit data, or two runs to compare side by side." />
 
       {/* Picker section */}
       <div className="rounded-card border-border bg-surface shadow-card mt-6 border">
@@ -342,12 +288,7 @@ export function AuditComparePage() {
             {leftId && (
               <Badge tone="info" variant="soft" size="sm">
                 Left: {leftId.slice(0, 8)}...
-                <button
-                  type="button"
-                  onClick={() => setLeftId(null)}
-                  className="hover:text-info-900 ml-0.5"
-                  aria-label="Clear left selection"
-                >
+                <button type="button" onClick={() => setLeftId(null)} className="hover:text-info-900 ml-0.5" aria-label="Clear left selection">
                   &times;
                 </button>
               </Badge>
@@ -355,12 +296,7 @@ export function AuditComparePage() {
             {rightId && (
               <Badge tone="info" variant="soft" size="sm">
                 Right: {rightId.slice(0, 8)}...
-                <button
-                  type="button"
-                  onClick={() => setRightId(null)}
-                  className="hover:text-info-900 ml-0.5"
-                  aria-label="Clear right selection"
-                >
+                <button type="button" onClick={() => setRightId(null)} className="hover:text-info-900 ml-0.5" aria-label="Clear right selection">
                   &times;
                 </button>
               </Badge>
@@ -385,17 +321,12 @@ export function AuditComparePage() {
         <div className="p-4">
           <FilterBar className="items-end">
             <div className="min-w-0 flex-1">
-              <FilterSearch
-                value={filters.filterText}
-                onChange={(value) => dispatchFilters({ type: 'setFilterText', value })}
-                placeholder="Filter by strategy name, preset, source, or run ID..."
-                width="w-full"
-              />
+              <FilterSearch value={filters.filterText} onChange={(value) => dispatchFilters({ type: "setFilterText", value })} placeholder="Filter by strategy name, preset, source, or run ID..." width="w-full" />
             </div>
             <SegmentedControl
               options={SOURCE_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               value={filters.sourceFilter}
-              onChange={(v) => dispatchFilters({ type: 'setSourceFilter', value: v })}
+              onChange={(v) => dispatchFilters({ type: "setSourceFilter", value: v })}
               size="sm"
               label="Source filter"
             />
@@ -405,7 +336,7 @@ export function AuditComparePage() {
                 <input
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) => dispatchFilters({ type: 'setDateFrom', value: e.target.value })}
+                  onChange={(e) => dispatchFilters({ type: "setDateFrom", value: e.target.value })}
                   className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
@@ -414,17 +345,12 @@ export function AuditComparePage() {
                 <input
                   type="date"
                   value={filters.dateTo}
-                  onChange={(e) => dispatchFilters({ type: 'setDateTo', value: e.target.value })}
+                  onChange={(e) => dispatchFilters({ type: "setDateTo", value: e.target.value })}
                   className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
               {(filters.dateFrom || filters.dateTo) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => dispatchFilters({ type: 'clearDates' })}
-                  className="mb-0.5"
-                >
+                <Button variant="ghost" size="sm" onClick={() => dispatchFilters({ type: "clearDates" })} className="mb-0.5">
                   Clear dates
                 </Button>
               )}
@@ -444,65 +370,44 @@ export function AuditComparePage() {
               </p>
               <div ref={scrollRef} className="mt-2 max-h-[28rem] space-y-1.5 overflow-y-auto">
                 {filtered.length === 0 ? (
-                  <p className="text-body text-text-disabled py-4 text-center">
-                    {filters.filterText ? 'No runs match your filter.' : 'No runs found.'}
-                  </p>
+                  <p className="text-body text-text-disabled py-4 text-center">{filters.filterText ? "No runs match your filter." : "No runs found."}</p>
                 ) : (
                   runGroups.map((group) => {
                     const isExpanded = expandedRuns[group.id] ?? false;
                     return (
-                      <div
-                        key={group.id}
-                        className="rounded-card border-border bg-surface-muted/40 border"
-                      >
+                      <div key={group.id} className="rounded-card border-border bg-surface-muted/40 border">
                         <button
                           type="button"
                           onClick={() =>
                             setExpandedRuns((prev) => ({
                               ...prev,
-                              [group.id]: !isExpanded,
+                              [group.id]: !isExpanded
                             }))
                           }
                           className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="text-caption text-text-secondary block truncate font-semibold tracking-wide uppercase">
-                              {group.groupId || group.batchRunId
-                                ? `Group ${group.id.slice(0, 8)}`
-                                : `Run ${group.id.slice(0, 8)}`}
-                            </span>
+                            <span className="text-caption text-text-secondary block truncate font-semibold tracking-wide uppercase">{group.groupId || group.batchRunId ? `Group ${group.id.slice(0, 8)}` : `Run ${group.id.slice(0, 8)}`}</span>
                             <span className="text-caption text-text-muted mt-0.5 block truncate">
-                              {group.strategyName ?? 'Unknown strategy'} ·{' '}
-                              {new Date(group.createdAt).toLocaleString()}
+                              {group.strategyName ?? "Unknown strategy"} · {new Date(group.createdAt).toLocaleString()}
                             </span>
                           </span>
                           <span className="flex items-center gap-2">
                             <Badge tone="neutral" variant="outline" size="sm">
-                              {group.runs.length} run{group.runs.length === 1 ? '' : 's'}
+                              {group.runs.length} run{group.runs.length === 1 ? "" : "s"}
                             </Badge>
                             {group.source ? (
                               <Badge tone="info" variant="outline" size="sm">
                                 {SOURCE_LABELS[group.source] ?? group.source}
                               </Badge>
                             ) : null}
-                            <ChevronDownIcon
-                              className={cn(
-                                'text-text-disabled h-4 w-4 transition-transform',
-                                isExpanded && 'rotate-180',
-                              )}
-                              aria-hidden="true"
-                            />
+                            <ChevronDownIcon className={cn("text-text-disabled h-4 w-4 transition-transform", isExpanded && "rotate-180")} aria-hidden="true" />
                           </span>
                         </button>
                         {isExpanded ? (
                           <div className="border-border bg-surface space-y-1.5 border-t p-2">
                             {group.runs.map((run) => (
-                              <RunPickerCard
-                                key={run.id}
-                                run={run}
-                                isSelected={run.id === leftId || run.id === rightId}
-                                onSelect={() => toggle(run.id)}
-                              />
+                              <RunPickerCard key={run.id} run={run} isSelected={run.id === leftId || run.id === rightId} onSelect={() => toggle(run.id)} />
                             ))}
                           </div>
                         ) : null}

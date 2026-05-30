@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import NextImage, { type ImageLoaderProps, type ImageProps } from 'next/image';
-import { withImageParams } from '@/lib/image-utils';
+import NextImage, { type ImageLoaderProps, type ImageProps } from "next/image";
+import { withImageParams } from "@/lib/image-utils";
 
 /**
  * All site images are served from our CDNs, which already do resizing and

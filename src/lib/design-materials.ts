@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
-import { localUrl } from './api-base';
+import { localUrl } from "./api-base";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
-  floorTile: 'floor_tiles',
-  toilet: 'toilets',
-  vanity: 'vanities',
-  faucet: 'faucets',
-  mirror: 'mirrors',
-  robeHook: 'robe_hooks',
-  toiletPaperHolder: 'toilet_paper_holders',
-  towelBar: 'towel_bars',
-  towelRing: 'towel_rings',
-  lighting: 'lightings',
-  nicheTile: 'shower_wall_tiles',
-  paint: 'paints',
-  shelves: 'shelves',
-  showerFloorTile: 'shower_floor_tiles',
-  curbTile: 'shower_curb_tiles',
-  showerSystem: 'shower_systems',
-  showerWallTile: 'shower_wall_tiles',
-  showerShortWallTile: 'shower_wall_tiles',
-  showerGlass: 'shower_glasses',
-  tub: 'tubs',
-  tubDoor: 'tub_doors',
-  tubFiller: 'tub_fillers',
-  wallpaper: 'wallpapers',
-  wallTile: 'wall_tiles',
+  floorTile: "floor_tiles",
+  toilet: "toilets",
+  vanity: "vanities",
+  faucet: "faucets",
+  mirror: "mirrors",
+  robeHook: "robe_hooks",
+  toiletPaperHolder: "toilet_paper_holders",
+  towelBar: "towel_bars",
+  towelRing: "towel_rings",
+  lighting: "lightings",
+  nicheTile: "shower_wall_tiles",
+  paint: "paints",
+  shelves: "shelves",
+  showerFloorTile: "shower_floor_tiles",
+  curbTile: "shower_curb_tiles",
+  showerSystem: "shower_systems",
+  showerWallTile: "shower_wall_tiles",
+  showerShortWallTile: "shower_wall_tiles",
+  showerGlass: "shower_glasses",
+  tub: "tubs",
+  tubDoor: "tub_doors",
+  tubFiller: "tub_fillers",
+  wallpaper: "wallpapers",
+  wallTile: "wall_tiles"
 };
 
 type TextureScale = { x: number | null; y: number | null };
@@ -52,7 +52,7 @@ type ObjectItem = {
   productId?: string;
   asset?: string | null;
   size?: { length: string; width: string; height: string };
-  styling: 'Default' | 'Hidden' | 'Removed';
+  styling: "Default" | "Hidden" | "Removed";
   placement?: string;
   rotation?: number;
   numberOfSinks?: number;
@@ -93,61 +93,27 @@ export type UnitySlimDesignMaterials = {
   };
 };
 
-const SURFACE_SLOTS = [
-  'floorTile',
-  'showerWallTile',
-  'showerFloorTile',
-  'showerShortWallTile',
-  'curbTile',
-  'nicheTile',
-  'paint',
-  'wallpaper',
-  'wallTile',
-] as const;
+const SURFACE_SLOTS = ["floorTile", "showerWallTile", "showerFloorTile", "showerShortWallTile", "curbTile", "nicheTile", "paint", "wallpaper", "wallTile"] as const;
 
-const OBJECT_SLOTS = [
-  'toilet',
-  'tub',
-  'tubDoor',
-  'tubFiller',
-  'vanity',
-  'faucet',
-  'mirror',
-  'lighting',
-  'shelves',
-  'robeHook',
-  'toiletPaperHolder',
-  'towelBar',
-  'towelRing',
-  'showerGlass',
-  'showerSystem',
-] as const;
+const OBJECT_SLOTS = ["toilet", "tub", "tubDoor", "tubFiller", "vanity", "faucet", "mirror", "lighting", "shelves", "robeHook", "toiletPaperHolder", "towelBar", "towelRing", "showerGlass", "showerSystem"] as const;
 
-const TILE_SURFACE_SLOTS = new Set<string>([
-  'curbTile',
-  'floorTile',
-  'nicheTile',
-  'showerFloorTile',
-  'showerShortWallTile',
-  'showerWallTile',
-  'wallTile',
-]);
+const TILE_SURFACE_SLOTS = new Set<string>(["curbTile", "floorTile", "nicheTile", "showerFloorTile", "showerShortWallTile", "showerWallTile", "wallTile"]);
 
 const TILE_PATTERN_BY_ID_KEY: Record<string, string> = {
-  horizontalPatternId: 'Horizontal',
-  verticalPatternId: 'Vertical',
-  thirdOffsetPatternId: 'ThirdOffset',
-  halfOffsetPatternId: 'HalfOffset',
-  herringbonePatternId: 'Herringbone',
-  hexagonPatternId: 'Hexagon',
-  rhomboidCubePatternId: 'RhomboidCube',
-  triangularPatternId: 'Triangular',
-  horizontalPicketPatternId: 'HorizontalPicket',
-  verticalPicketPatternId: 'VerticalPicket',
-  fishScalePatternId: 'FishScale',
-  stackedPatternId: 'Stacked',
-  offsetPatternId: 'Offset',
-  straightPatternId: 'Straight',
+  horizontalPatternId: "Horizontal",
+  verticalPatternId: "Vertical",
+  thirdOffsetPatternId: "ThirdOffset",
+  halfOffsetPatternId: "HalfOffset",
+  herringbonePatternId: "Herringbone",
+  hexagonPatternId: "Hexagon",
+  rhomboidCubePatternId: "RhomboidCube",
+  triangularPatternId: "Triangular",
+  horizontalPicketPatternId: "HorizontalPicket",
+  verticalPicketPatternId: "VerticalPicket",
+  fishScalePatternId: "FishScale",
+  stackedPatternId: "Stacked",
+  offsetPatternId: "Offset",
+  straightPatternId: "Straight"
 };
 
 const TILE_PATTERN_VALUES = new Set(Object.values(TILE_PATTERN_BY_ID_KEY));
@@ -158,24 +124,17 @@ function snakeToCamel(value: string): string {
 
 function toCamelCase(value: unknown): unknown {
   if (Array.isArray(value)) return value.map((entry) => toCamelCase(entry));
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
-      snakeToCamel(key),
-      toCamelCase(entry),
-    ]),
-  );
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), toCamelCase(entry)]));
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value != null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function asNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
@@ -183,7 +142,7 @@ function asNumber(value: unknown): number | null {
 }
 
 function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 function pickHcl(value: unknown): Color | null {
@@ -218,8 +177,7 @@ function projectComponents(product: CatalogProduct): ObjectComponent[] | undefin
     const rec = asRecord(entry);
     if (!rec) continue;
 
-    const categoryComponent =
-      asString(rec.categoryComponent) ?? asString(asRecord(rec.categoryComponent)?.code);
+    const categoryComponent = asString(rec.categoryComponent) ?? asString(asRecord(rec.categoryComponent)?.code);
     const materialType = asString(rec.materialType) ?? asString(asRecord(rec.materialType)?.code);
     const color = pickHcl(rec.color);
 
@@ -231,55 +189,40 @@ function projectComponents(product: CatalogProduct): ObjectComponent[] | undefin
   return out.length > 0 ? out : undefined;
 }
 
-function projectTileExtras(
-  product: CatalogProduct,
-): Pick<SurfaceItem, 'shape' | 'pieceLength' | 'pieceWidth'> {
+function projectTileExtras(product: CatalogProduct): Pick<SurfaceItem, "shape" | "pieceLength" | "pieceWidth"> {
   const shape = asString(product.shape) ?? asString(asRecord(product.shape)?.code);
   const pieceLength = asNumber(product.pieceLength);
   const pieceWidth = asNumber(product.pieceWidth);
   return {
     ...(shape ? { shape } : {}),
     ...(pieceLength != null ? { pieceLength: String(pieceLength) } : {}),
-    ...(pieceWidth != null ? { pieceWidth: String(pieceWidth) } : {}),
+    ...(pieceWidth != null ? { pieceWidth: String(pieceWidth) } : {})
   };
 }
 
-function resolveTilePattern(
-  product: CatalogProduct,
-  slot: string,
-  texture: string,
-  design: Record<string, unknown>,
-): string | undefined {
+function resolveTilePattern(product: CatalogProduct, slot: string, texture: string, design: Record<string, unknown>): string | undefined {
   for (const [key, pattern] of Object.entries(TILE_PATTERN_BY_ID_KEY)) {
     if (product[key] === texture) return pattern;
   }
 
   const fromDesign = design[`${slot}Pattern`];
-  return typeof fromDesign === 'string' && TILE_PATTERN_VALUES.has(fromDesign)
-    ? fromDesign
-    : undefined;
+  return typeof fromDesign === "string" && TILE_PATTERN_VALUES.has(fromDesign) ? fromDesign : undefined;
 }
 
 function isScanLike(value: unknown): value is ScanLike {
   const rec = asRecord(value);
-  return !!rec && ('areas' in rec || 'niches' in rec || 'tubs' in rec);
+  return !!rec && ("areas" in rec || "niches" in rec || "tubs" in rec);
 }
 
 async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
   try {
-    const res = await fetch(localUrl(`projects/${projectId}`), { cache: 'no-store' });
+    const res = await fetch(localUrl(`projects/${projectId}`), { cache: "no-store" });
     if (!res.ok) return null;
     const json = (await res.json()) as Record<string, unknown>;
     // The BFF passes the upstream body through, which is `{ data: [project] }`.
     // We also accept the upstream-unwrapped shape and a few legacy variants so
     // this helper keeps working if it's ever called against a different proxy.
-    const candidates: unknown[] = [
-      Array.isArray(json.data) ? json.data[0] : null,
-      json.data,
-      json,
-      asRecord(json.data)?.project,
-      asRecord(json.data)?.data,
-    ];
+    const candidates: unknown[] = [Array.isArray(json.data) ? json.data[0] : null, json.data, json, asRecord(json.data)?.project, asRecord(json.data)?.data];
     for (const candidate of candidates) {
       const rec = asRecord(candidate);
       if (!rec) continue;
@@ -289,18 +232,13 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
       if (isScanLike(camel)) return camel;
     }
   } catch (err) {
-    console.error('[design-materials] Failed to fetch project scan', err);
+    console.error("[design-materials] Failed to fetch project scan", err);
   }
   return null;
 }
 
-async function resolveScan(params: {
-  roomData?: Record<string, unknown>;
-  projectId?: string;
-}): Promise<ScanLike | null> {
-  const camelRoomData = params.roomData
-    ? (toCamelCase(params.roomData) as Record<string, unknown>)
-    : null;
+async function resolveScan(params: { roomData?: Record<string, unknown>; projectId?: string }): Promise<ScanLike | null> {
+  const camelRoomData = params.roomData ? (toCamelCase(params.roomData) as Record<string, unknown>) : null;
   if (camelRoomData) {
     const roomScan = asRecord(camelRoomData.scan);
     if (roomScan && isScanLike(roomScan)) return roomScan;
@@ -310,59 +248,44 @@ async function resolveScan(params: {
   return null;
 }
 
-async function fetchCatalogProduct(
-  category: string,
-  productId: string,
-): Promise<CatalogProduct | null> {
+async function fetchCatalogProduct(category: string, productId: string): Promise<CatalogProduct | null> {
   try {
     const res = await fetch(localUrl(`catalog/products/${category}/${productId}`), {
-      cache: 'no-store',
+      cache: "no-store"
     });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: CatalogProduct };
     return json.data ?? null;
   } catch (err) {
-    console.error('[design-materials] Failed to fetch catalog product', {
+    console.error("[design-materials] Failed to fetch catalog product", {
       category,
       productId,
-      err,
+      err
     });
     return null;
   }
 }
 
-function getTextureScale(
-  product: CatalogProduct,
-  patternScale?: TextureScale | null,
-): TextureScale {
+function getTextureScale(product: CatalogProduct, patternScale?: TextureScale | null): TextureScale {
   if (patternScale) return patternScale;
-  const textureScale =
-    asRecord(product.textureScale) ?? asRecord(asRecord(product.renderAttributes)?.textureScale);
+  const textureScale = asRecord(product.textureScale) ?? asRecord(asRecord(product.renderAttributes)?.textureScale);
   if (textureScale) {
     return {
       x: asNumber(textureScale.x),
-      y: asNumber(textureScale.y),
+      y: asNumber(textureScale.y)
     };
   }
   return {
     x: asNumber(product.textureScaleX),
-    y: asNumber(product.textureScaleY),
+    y: asNumber(product.textureScaleY)
   };
 }
 
 function getAssetId(product: CatalogProduct): string | null {
-  return (
-    asString(asRecord(product.renderAttributes)?.['3DAssetId']) ??
-    asString(product['3DAssetId']) ??
-    asString(product.assetId) ??
-    null
-  );
+  return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? asString(product["3DAssetId"]) ?? asString(product.assetId) ?? null;
 }
 
-function readPatternTexture(
-  product: CatalogProduct,
-  patternType: unknown,
-): { texture: string | null; scale: TextureScale | null } {
+function readPatternTexture(product: CatalogProduct, patternType: unknown): { texture: string | null; scale: TextureScale | null } {
   const patternName = asString(patternType);
   if (!patternName) return { texture: null, scale: null };
   const key = `${patternName.charAt(0).toLowerCase()}${patternName.slice(1)}PatternId`;
@@ -370,9 +293,7 @@ function readPatternTexture(
   const patternInfo = asRecord(asRecord(product.patternInfo)?.[patternInfoKey]);
   return {
     texture: asString(product[key]),
-    scale: patternInfo
-      ? getTextureScale({}, asRecord(patternInfo.textureScale) as TextureScale | null)
-      : null,
+    scale: patternInfo ? getTextureScale({}, asRecord(patternInfo.textureScale) as TextureScale | null) : null
   };
 }
 
@@ -383,7 +304,7 @@ function buildMaterialLike(product: CatalogProduct, productId: string): CatalogP
     renderAttributes,
     textureScale: asRecord(product.textureScale) ?? {
       x: asNumber(product.textureScaleX),
-      y: asNumber(product.textureScaleY),
+      y: asNumber(product.textureScaleY)
     },
     length: product.length ?? renderAttributes.length ?? null,
     width: product.width ?? renderAttributes.width ?? null,
@@ -414,17 +335,13 @@ function buildMaterialLike(product: CatalogProduct, productId: string): CatalogP
     fishScalePatternId: product.fishScalePatternId ?? null,
     stackedPatternId: product.stackedPatternId ?? null,
     offsetPatternId: product.offsetPatternId ?? null,
-    straightPatternId: product.straightPatternId ?? null,
+    straightPatternId: product.straightPatternId ?? null
   };
 }
 
-function buildSurface(
-  product: CatalogProduct | null,
-  slot: (typeof SURFACE_SLOTS)[number],
-  design: Record<string, unknown>,
-): SurfaceItem | null {
+function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOTS)[number], design: Record<string, unknown>): SurfaceItem | null {
   if (!product) return null;
-  const material = buildMaterialLike(product, asString(product.id) ?? '');
+  const material = buildMaterialLike(product, asString(product.id) ?? "");
   const pattern = readPatternTexture(material, design[`${slot}Pattern`]);
   const texture = pattern.texture ?? getAssetId(material);
   if (!texture) return null;
@@ -433,12 +350,12 @@ function buildSurface(
     productId: asString(material.id) ?? undefined,
     texture,
     scale: {
-      x: scale.x != null ? String(scale.x) : '1',
-      y: scale.y != null ? String(scale.y) : '1',
-    },
+      x: scale.x != null ? String(scale.x) : "1",
+      y: scale.y != null ? String(scale.y) : "1"
+    }
   };
-  if (slot === 'wallpaper') out.placement = asString(design.wallpaperPlacement) ?? 'VanityWall';
-  if (slot === 'wallTile') out.placement = asString(design.wallTilePlacement) ?? 'VanityHalfWall';
+  if (slot === "wallpaper") out.placement = asString(design.wallpaperPlacement) ?? "VanityWall";
+  if (slot === "wallTile") out.placement = asString(design.wallTilePlacement) ?? "VanityHalfWall";
 
   const colorPalette = projectColorPalette(material);
   if (colorPalette) out.colorPalette = colorPalette;
@@ -452,50 +369,41 @@ function buildSurface(
   return out;
 }
 
-function getStylingState(product: CatalogProduct): ObjectItem['styling'] {
-  return product.isRemoved ? 'Removed' : 'Default';
+function getStylingState(product: CatalogProduct): ObjectItem["styling"] {
+  return product.isRemoved ? "Removed" : "Default";
 }
 
 function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTubInScan: boolean } {
-  const showers = Array.isArray(asRecord(scan.areas)?.showers)
-    ? (asRecord(scan.areas)?.showers as unknown[])
-    : [];
-  const hasAlcoveTubInScan = Array.isArray(scan.tubs)
-    ? scan.tubs.some((tub) => asRecord(tub)?.type === 'Alcove')
-    : false;
+  const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
+  const hasAlcoveTubInScan = Array.isArray(scan.tubs) ? scan.tubs.some((tub) => asRecord(tub)?.type === "Alcove") : false;
 
   return {
     hasShowerInScan: showers.length > 0,
-    hasAlcoveTubInScan,
+    hasAlcoveTubInScan
   };
 }
 
-function buildObject(
-  product: CatalogProduct | null,
-  slot: (typeof OBJECT_SLOTS)[number],
-  design: Record<string, unknown>,
-  scan: ScanLike,
-): ObjectItem | null {
+function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)[number], design: Record<string, unknown>, scan: ScanLike): ObjectItem | null {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
 
   if (!product) {
-    if (slot === 'showerGlass' && hasShowerInScan) {
-      return { styling: design.isShowerGlassVisible === false ? 'Hidden' : 'Default' };
+    if (slot === "showerGlass" && hasShowerInScan) {
+      return { styling: design.isShowerGlassVisible === false ? "Hidden" : "Default" };
     }
-    if (slot === 'tubDoor' && hasAlcoveTubInScan) {
-      return { styling: design.isTubDoorVisible === false ? 'Hidden' : 'Default' };
+    if (slot === "tubDoor" && hasAlcoveTubInScan) {
+      return { styling: design.isTubDoorVisible === false ? "Hidden" : "Default" };
     }
     return null;
   }
 
-  const material = buildMaterialLike(product, asString(product.id) ?? '');
+  const material = buildMaterialLike(product, asString(product.id) ?? "");
   const asset = getAssetId(material);
   if (!asset) {
-    if (slot === 'showerGlass' && hasShowerInScan) {
-      return { styling: design.isShowerGlassVisible === false ? 'Hidden' : 'Default' };
+    if (slot === "showerGlass" && hasShowerInScan) {
+      return { styling: design.isShowerGlassVisible === false ? "Hidden" : "Default" };
     }
-    if (slot === 'tubDoor' && hasAlcoveTubInScan) {
-      return { styling: design.isTubDoorVisible === false ? 'Hidden' : 'Default' };
+    if (slot === "tubDoor" && hasAlcoveTubInScan) {
+      return { styling: design.isTubDoorVisible === false ? "Hidden" : "Default" };
     }
     return null;
   }
@@ -504,48 +412,44 @@ function buildObject(
     productId: asString(material.id) ?? undefined,
     asset,
     size: {
-      length: String(material.length ?? ''),
-      width: String(material.width ?? ''),
-      height: String(material.height ?? ''),
+      length: String(material.length ?? ""),
+      width: String(material.width ?? ""),
+      height: String(material.height ?? "")
     },
-    styling: getStylingState(material),
+    styling: getStylingState(material)
   };
 
-  if (slot === 'vanity') {
+  if (slot === "vanity") {
     const numberOfSinks = asNumber(material.numberOfSinks);
     if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight =
-      asString(material.counterHeight) ??
-      (material.counterHeight != null ? String(material.counterHeight) : null);
-    const sinkOffset =
-      asString(material.sinkOffset) ??
-      (material.sinkOffset != null ? String(material.sinkOffset) : null);
+    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight != null ? String(material.counterHeight) : null);
+    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset != null ? String(material.sinkOffset) : null);
     if (counterHeight) out.counterHeight = counterHeight;
     if (sinkOffset) out.sinkOffset = sinkOffset;
   }
-  if (slot === 'mirror') {
-    out.placement = asString(design.mirrorPlacement) ?? 'CenterOnSink';
+  if (slot === "mirror") {
+    out.placement = asString(design.mirrorPlacement) ?? "CenterOnSink";
   }
-  if (slot === 'lighting') {
-    const placement = asString(design.lightingPlacement) ?? 'Above';
+  if (slot === "lighting") {
+    const placement = asString(design.lightingPlacement) ?? "Above";
     out.placement = placement;
-    if (placement === 'Above') out.rotation = asNumber(material.abovePlacementDefaultRotation) ?? 0;
-    if (placement === 'Side') out.rotation = asNumber(material.sidePlacementDefaultRotation) ?? 0;
+    if (placement === "Above") out.rotation = asNumber(material.abovePlacementDefaultRotation) ?? 0;
+    if (placement === "Side") out.rotation = asNumber(material.sidePlacementDefaultRotation) ?? 0;
   }
-  if (slot === 'tubFiller') {
+  if (slot === "tubFiller") {
     const mountingPosition = asString(material.mountingPosition);
     if (mountingPosition) out.placement = mountingPosition;
   }
-  if (slot === 'showerGlass' && design.isShowerGlassVisible === false) {
-    out.styling = 'Hidden';
+  if (slot === "showerGlass" && design.isShowerGlassVisible === false) {
+    out.styling = "Hidden";
     delete out.productId;
   }
-  if (slot === 'tubDoor' && design.isTubDoorVisible === false) {
-    out.styling = 'Hidden';
+  if (slot === "tubDoor" && design.isTubDoorVisible === false) {
+    out.styling = "Hidden";
     delete out.productId;
   }
 
-  if (out.styling === 'Hidden') {
+  if (out.styling === "Hidden") {
     delete out.productId;
   }
 
@@ -555,11 +459,7 @@ function buildObject(
   return out;
 }
 
-export async function buildDesignMaterials(params: {
-  design: Record<string, unknown>;
-  roomData?: Record<string, unknown>;
-  projectId?: string;
-}): Promise<UnitySlimDesignMaterials | null> {
+export async function buildDesignMaterials(params: { design: Record<string, unknown>; roomData?: Record<string, unknown>; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
   const scan = await resolveScan({ roomData: params.roomData, projectId: params.projectId });
   if (!scan) return null;
 
@@ -567,34 +467,31 @@ export async function buildDesignMaterials(params: {
   await Promise.all(
     Object.entries(DESIGN_SLOT_TO_CATEGORY).map(async ([slot, category]) => {
       const productId = params.design[slot];
-      if (typeof productId !== 'string' || !UUID_RE.test(productId)) return;
+      if (typeof productId !== "string" || !UUID_RE.test(productId)) return;
       const product = await fetchCatalogProduct(category, productId);
       productBySlot.set(slot, product ? { ...product, id: productId } : null);
-    }),
+    })
   );
 
   const result: UnitySlimDesignMaterials = {
-    id: (typeof params.design.id === 'string' && params.design.id) || params.projectId || 'unknown',
+    id: (typeof params.design.id === "string" && params.design.id) || params.projectId || "unknown",
     surfaces: {},
-    objects: {},
+    objects: {}
   };
 
   for (const slot of SURFACE_SLOTS) {
     let product = productBySlot.get(slot) ?? null;
-    if (slot === 'showerShortWallTile' && !product)
-      product = productBySlot.get('showerWallTile') ?? null;
-    if (slot === 'nicheTile' && !product && Array.isArray(scan.niches) && scan.niches.length > 0) {
-      product = productBySlot.get('showerWallTile') ?? null;
+    if (slot === "showerShortWallTile" && !product) product = productBySlot.get("showerWallTile") ?? null;
+    if (slot === "nicheTile" && !product && Array.isArray(scan.niches) && scan.niches.length > 0) {
+      product = productBySlot.get("showerWallTile") ?? null;
     }
-    if (slot === 'curbTile') {
-      const showers = Array.isArray(asRecord(scan.areas)?.showers)
-        ? (asRecord(scan.areas)?.showers as unknown[])
-        : [];
+    if (slot === "curbTile") {
+      const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
       const hasCurbInScan = showers.some((shower) => {
         const s = asRecord(shower);
         return (asNumber(s?.curbHeight) ?? 0) > 0 && (asNumber(s?.curbThickness) ?? 0) > 0;
       });
-      if (!product && hasCurbInScan) product = productBySlot.get('showerFloorTile') ?? null;
+      if (!product && hasCurbInScan) product = productBySlot.get("showerFloorTile") ?? null;
     }
     const surface = buildSurface(product, slot, params.design);
     if (surface) result.surfaces[slot] = surface;
@@ -608,12 +505,12 @@ export async function buildDesignMaterials(params: {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
   if (hasShowerInScan && !result.objects.showerGlass) {
     result.objects.showerGlass = {
-      styling: params.design.isShowerGlassVisible === false ? 'Hidden' : 'Default',
+      styling: params.design.isShowerGlassVisible === false ? "Hidden" : "Default"
     };
   }
   if (hasAlcoveTubInScan && !result.objects.tubDoor) {
     result.objects.tubDoor = {
-      styling: params.design.isTubDoorVisible === false ? 'Hidden' : 'Default',
+      styling: params.design.isTubDoorVisible === false ? "Hidden" : "Default"
     };
   }
 

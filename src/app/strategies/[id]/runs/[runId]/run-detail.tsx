@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { serviceUrl } from '@/lib/api-base';
-import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
-import { ExecutionFlowSection } from './_components/execution-flow-section';
-import { JudgeEvaluationSection } from './_components/judge-evaluation-section';
-import { RunDetailModals } from './_components/run-detail-modals';
-import { RunFailureReasons } from './_components/run-failure-reasons';
-import { RunSummaryCard } from './_components/run-summary-card';
-import { StepResultsSection } from './_components/step-results-section';
-import { groupStepResults } from './_components/types';
-import type { RunData, ViewingPromptAction, ViewingPromptState } from './_components/types';
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { serviceUrl } from "@/lib/api-base";
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { ExecutionFlowSection } from "./_components/execution-flow-section";
+import { JudgeEvaluationSection } from "./_components/judge-evaluation-section";
+import { RunDetailModals } from "./_components/run-detail-modals";
+import { RunFailureReasons } from "./_components/run-failure-reasons";
+import { RunSummaryCard } from "./_components/run-summary-card";
+import { StepResultsSection } from "./_components/step-results-section";
+import { groupStepResults } from "./_components/types";
+import type { RunData, ViewingPromptAction, ViewingPromptState } from "./_components/types";
 
 const POLL_INTERVAL = 3000;
 
@@ -21,44 +21,30 @@ const INITIAL_VIEWING_PROMPT: ViewingPromptState = {
   id: null,
   name: null,
   processedSystemPrompt: null,
-  processedUserPrompt: null,
+  processedUserPrompt: null
 };
 
-function viewingPromptReducer(
-  state: ViewingPromptState,
-  action: ViewingPromptAction,
-): ViewingPromptState {
+function viewingPromptReducer(state: ViewingPromptState, action: ViewingPromptAction): ViewingPromptState {
   switch (action.type) {
-    case 'open':
+    case "open":
       return {
         id: action.id,
         name: action.name,
         processedSystemPrompt: action.processedSystemPrompt,
-        processedUserPrompt: action.processedUserPrompt,
+        processedUserPrompt: action.processedUserPrompt
       };
-    case 'close':
+    case "close":
       return INITIAL_VIEWING_PROMPT;
   }
 }
 
 /* ---------- Main component ---------- */
 
-export function RunDetail({
-  strategyId,
-  runId,
-  initialData,
-}: {
-  strategyId: string;
-  runId: string;
-  initialData: RunData;
-}) {
+export function RunDetail({ strategyId, runId, initialData }: { strategyId: string; runId: string; initialData: RunData }) {
   const [data, setData] = useState<RunData>(initialData);
   const [retrying, setRetrying] = useState(false);
-  const [markingStatus, setMarkingStatus] = useState<'idle' | 'failed' | 'completed'>('idle');
-  const [viewingPrompt, dispatchViewingPrompt] = useReducer(
-    viewingPromptReducer,
-    INITIAL_VIEWING_PROMPT,
-  );
+  const [markingStatus, setMarkingStatus] = useState<"idle" | "failed" | "completed">("idle");
+  const [viewingPrompt, dispatchViewingPrompt] = useReducer(viewingPromptReducer, INITIAL_VIEWING_PROMPT);
   const [showJudgeModal, setShowJudgeModal] = useState(false);
 
   const [showExecFlow, setShowExecFlow] = useState(false);
@@ -67,18 +53,18 @@ export function RunDetail({
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isActive = data.status === 'running' || data.status === 'pending';
+  const isActive = data.status === "running" || data.status === "pending";
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
       if (!res.ok) return;
       const json = await res.json();
       if (json.data) {
         const raw = json.data as Record<string, unknown>;
         setData({
           ...(json.data as RunData),
-          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults)
         });
       }
     } catch {
@@ -99,7 +85,7 @@ export function RunDetail({
   const handleRetry = useCallback(async () => {
     setRetrying(true);
     try {
-      const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: "POST" });
       if (!res.ok) return;
       await fetchData();
     } catch {
@@ -110,64 +96,47 @@ export function RunDetail({
   }, [runId, fetchData]);
 
   const handleMarkStatus = useCallback(
-    async (status: 'failed' | 'completed') => {
+    async (status: "failed" | "completed") => {
       setMarkingStatus(status);
       try {
         const res = await fetch(serviceUrl(`strategy-runs/${runId}`), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status })
         });
         if (!res.ok) return;
         await fetchData();
       } catch {
         /* ignore */
       } finally {
-        setMarkingStatus('idle');
+        setMarkingStatus("idle");
       }
     },
-    [runId, fetchData],
+    [runId, fetchData]
   );
 
-  const handleViewPrompt = useCallback(
-    (
-      id: string,
-      name: string | null,
-      processedSystemPrompt: string | null,
-      processedUserPrompt: string | null,
-    ) => {
-      dispatchViewingPrompt({
-        type: 'open',
-        id,
-        name,
-        processedSystemPrompt,
-        processedUserPrompt,
-      });
-    },
-    [],
-  );
+  const handleViewPrompt = useCallback((id: string, name: string | null, processedSystemPrompt: string | null, processedUserPrompt: string | null) => {
+    dispatchViewingPrompt({
+      type: "open",
+      id,
+      name,
+      processedSystemPrompt,
+      processedUserPrompt
+    });
+  }, []);
 
-  const sorted = data.stepResults.toSorted(
-    (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
-  );
+  const sorted = data.stepResults.toSorted((a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0));
 
   const stepGroups = groupStepResults(sorted);
 
   const elapsedStart = data.startedAt ?? data.createdAt;
-  const duration = data.completedAt
-    ? Math.round((new Date(data.completedAt).getTime() - new Date(elapsedStart).getTime()) / 1000)
-    : null;
+  const duration = data.completedAt ? Math.round((new Date(data.completedAt).getTime() - new Date(elapsedStart).getTime()) / 1000) : null;
 
   const hasConfig = data.strategy.model != null || data.strategy.aspectRatio != null;
 
   return (
     <div>
-      <PageHeader
-        backHref={`/strategies/${strategyId}`}
-        backLabel={`Back to ${data.strategy.name}`}
-        title="Strategy Run"
-        subtitle={`${data.strategy.name} · ${new Date(data.createdAt).toLocaleString()}`}
-      />
+      <PageHeader backHref={`/strategies/${strategyId}`} backLabel={`Back to ${data.strategy.name}`} title="Strategy Run" subtitle={`${data.strategy.name} · ${new Date(data.createdAt).toLocaleString()}`} />
 
       <RunSummaryCard
         data={data}
@@ -187,34 +156,14 @@ export function RunDetail({
 
       {/* ──── Collapsible sections ──── */}
       <div className="mt-6 space-y-4">
-        <ExecutionFlowSection
-          stepGroups={stepGroups}
-          judgeResults={data.judgeResults}
-          open={showExecFlow}
-          onToggle={() => setShowExecFlow(!showExecFlow)}
-        />
+        <ExecutionFlowSection stepGroups={stepGroups} judgeResults={data.judgeResults} open={showExecFlow} onToggle={() => setShowExecFlow(!showExecFlow)} />
 
-        <JudgeEvaluationSection
-          data={data}
-          open={showJudge}
-          onToggle={() => setShowJudge(!showJudge)}
-        />
+        <JudgeEvaluationSection data={data} open={showJudge} onToggle={() => setShowJudge(!showJudge)} />
 
-        <StepResultsSection
-          stepGroups={stepGroups}
-          open={showSteps}
-          onToggle={() => setShowSteps(!showSteps)}
-          onViewPrompt={handleViewPrompt}
-        />
+        <StepResultsSection stepGroups={stepGroups} open={showSteps} onToggle={() => setShowSteps(!showSteps)} onViewPrompt={handleViewPrompt} />
       </div>
 
-      <RunDetailModals
-        data={data}
-        showJudgeModal={showJudgeModal}
-        onCloseJudgeModal={() => setShowJudgeModal(false)}
-        viewingPrompt={viewingPrompt}
-        onCloseViewingPrompt={() => dispatchViewingPrompt({ type: 'close' })}
-      />
+      <RunDetailModals data={data} showJudgeModal={showJudgeModal} onCloseJudgeModal={() => setShowJudgeModal(false)} viewingPrompt={viewingPrompt} onCloseViewingPrompt={() => dispatchViewingPrompt({ type: "close" })} />
     </div>
   );
 }

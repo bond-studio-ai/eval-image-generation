@@ -1,14 +1,11 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useState } from 'react';
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
-import type { AccuracyTrendPoint } from '@/lib/service-client';
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import type { AccuracyTrendPoint } from "@/lib/service-client";
 
-const AccuracyTrendChartGraph = dynamic(
-  () => import('./accuracy-trend-chart-graph').then((m) => m.AccuracyTrendChartGraph),
-  { ssr: false },
-);
+const AccuracyTrendChartGraph = dynamic(() => import("./accuracy-trend-chart-graph").then((m) => m.AccuracyTrendChartGraph), { ssr: false });
 
 interface AccuracyTrendChartProps {
   from?: string;
@@ -18,7 +15,7 @@ interface AccuracyTrendChartProps {
 }
 
 function formatDate(dateStr: string): string {
-  const parts = dateStr.split('-');
+  const parts = dateStr.split("-");
   if (parts.length === 3) return `${Number(parts[1])}/${Number(parts[2])}`;
   const d = new Date(dateStr);
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
@@ -34,15 +31,15 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
     setError(false);
     try {
       const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      if (model) params.set('model', model);
-      if (source && source !== 'all') params.set('source', source);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      if (model) params.set("model", model);
+      if (source && source !== "all") params.set("source", source);
       const tz = browserTimezone();
-      if (tz) params.set('tz', tz);
+      if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const res = await fetch(serviceUrl(`analytics/accuracy-trends${qs ? `?${qs}` : ''}`), {
-        cache: 'no-store',
+      const res = await fetch(serviceUrl(`analytics/accuracy-trends${qs ? `?${qs}` : ""}`), {
+        cache: "no-store"
       });
       if (!res.ok) {
         setError(true);
@@ -71,33 +68,23 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   }
 
   if (error) {
-    return (
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-        Failed to load accuracy trend data.
-      </div>
-    );
+    return <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">Failed to load accuracy trend data.</div>;
   }
 
   if (data.length === 0) {
-    return (
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-        No accuracy trend data available for this period.
-      </div>
-    );
+    return <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">No accuracy trend data available for this period.</div>;
   }
 
   const chartData = data.map((point) => ({
     ...point,
-    label: formatDate(point.date),
+    label: formatDate(point.date)
   }));
 
   return (
     <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
       <h2 className="text-lg font-semibold text-gray-900">Accuracy Over Time</h2>
-      <p className="mt-1 text-sm text-gray-600">
-        Daily scene and product accuracy percentages based on evaluation ratings.
-      </p>
-      <div className="mt-4" style={{ width: '100%', height: 360 }}>
+      <p className="mt-1 text-sm text-gray-600">Daily scene and product accuracy percentages based on evaluation ratings.</p>
+      <div className="mt-4" style={{ width: "100%", height: 360 }}>
         <AccuracyTrendChartGraph chartData={chartData} />
       </div>
     </div>

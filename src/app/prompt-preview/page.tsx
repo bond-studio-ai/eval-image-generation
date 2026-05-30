@@ -1,16 +1,12 @@
-import type { Metadata } from 'next';
-import { PreviewPromptPage } from '@/components/preview-prompt-page';
-import {
-  fetchInputPresetsMinimal,
-  fetchPromptPreviewDollhouseSource,
-  fetchPromptVersionsMinimal,
-} from '@/lib/service-client';
+import type { Metadata } from "next";
+import { PreviewPromptPage } from "@/components/preview-prompt-page";
+import { fetchInputPresetsMinimal, fetchPromptPreviewDollhouseSource, fetchPromptVersionsMinimal } from "@/lib/service-client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: 'Prompt Preview',
-  description: 'Preview rendered prompts against input presets and prompt versions.',
+  title: "Prompt Preview",
+  description: "Preview rendered prompts against input presets and prompt versions."
 };
 
 interface PageProps {
@@ -22,12 +18,7 @@ interface PageProps {
 }
 
 export default async function PreviewPromptRoute({ searchParams }: PageProps) {
-  const [params, promptVersions, presets, dollhouseSource] = await Promise.all([
-    searchParams,
-    fetchPromptVersionsMinimal(100),
-    fetchInputPresetsMinimal(100),
-    fetchPromptPreviewDollhouseSource().catch(() => null),
-  ]);
+  const [params, promptVersions, presets, dollhouseSource] = await Promise.all([searchParams, fetchPromptVersionsMinimal(100), fetchInputPresetsMinimal(100), fetchPromptPreviewDollhouseSource().catch(() => null)]);
   return (
     <PreviewPromptPage
       initialPromptVersionId={params.prompt_version_id ?? null}

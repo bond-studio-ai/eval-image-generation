@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react';
-import {
-  getSegmentationCategories,
-  indexByKey,
-  type SegmentationCategoryMetadata,
-} from '@/lib/segmentation-categories';
-import type { CategoryLookup } from './types';
+import { useEffect, useState } from "react";
+import { getSegmentationCategories, indexByKey, type SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
+import type { CategoryLookup } from "./types";
 
 /**
  * Fallback hex palette used when the `/segmentation-categories` endpoint
@@ -19,51 +15,51 @@ import type { CategoryLookup } from './types';
  * categories silently fell through to the neutral gray.
  */
 const FALLBACK_COLORS: Record<string, string> = {
-  vanities: '#E6194B',
-  faucets: '#3CB44B',
-  lightings: '#FFE119',
-  mirrors: '#4363D8',
-  shower_systems: '#F58231',
-  showerSystems: '#F58231',
-  floor_tiles: '#911EB4',
-  floorTiles: '#911EB4',
-  lvps: '#911EB4',
-  wall_tiles: '#46F0F0',
-  wallTiles: '#46F0F0',
-  tubs: '#F032E6',
-  tub_fillers: '#BCF60C',
-  tubFillers: '#BCF60C',
-  tub_doors: '#FABEBE',
-  tubDoors: '#FABEBE',
-  shower_glasses: '#FABEBE',
-  showerGlasses: '#FABEBE',
-  shower_wall_tiles: '#008080',
-  showerWallTiles: '#008080',
-  shower_floor_tiles: '#E6BEFF',
-  showerFloorTiles: '#E6BEFF',
-  shower_curb_tiles: '#9A6324',
-  showerCurbTiles: '#9A6324',
-  toilets: '#FFFAC8',
-  paints: '#46F0F0',
-  wallpapers: '#800000',
-  shelves: '#AAFFC3',
-  toilet_paper_holders: '#808000',
-  toiletPaperHolders: '#808000',
-  towel_bars: '#FFD8B1',
-  towelBars: '#FFD8B1',
-  robe_hooks: '#000075',
-  robeHooks: '#000075',
-  towel_rings: '#A9A9A9',
-  towelRings: '#A9A9A9',
-  ceilings: '#C0C0C0',
-  doors: '#5C3317',
-  windows: '#1E90FF',
+  vanities: "#E6194B",
+  faucets: "#3CB44B",
+  lightings: "#FFE119",
+  mirrors: "#4363D8",
+  shower_systems: "#F58231",
+  showerSystems: "#F58231",
+  floor_tiles: "#911EB4",
+  floorTiles: "#911EB4",
+  lvps: "#911EB4",
+  wall_tiles: "#46F0F0",
+  wallTiles: "#46F0F0",
+  tubs: "#F032E6",
+  tub_fillers: "#BCF60C",
+  tubFillers: "#BCF60C",
+  tub_doors: "#FABEBE",
+  tubDoors: "#FABEBE",
+  shower_glasses: "#FABEBE",
+  showerGlasses: "#FABEBE",
+  shower_wall_tiles: "#008080",
+  showerWallTiles: "#008080",
+  shower_floor_tiles: "#E6BEFF",
+  showerFloorTiles: "#E6BEFF",
+  shower_curb_tiles: "#9A6324",
+  showerCurbTiles: "#9A6324",
+  toilets: "#FFFAC8",
+  paints: "#46F0F0",
+  wallpapers: "#800000",
+  shelves: "#AAFFC3",
+  toilet_paper_holders: "#808000",
+  toiletPaperHolders: "#808000",
+  towel_bars: "#FFD8B1",
+  towelBars: "#FFD8B1",
+  robe_hooks: "#000075",
+  robeHooks: "#000075",
+  towel_rings: "#A9A9A9",
+  towelRings: "#A9A9A9",
+  ceilings: "#C0C0C0",
+  doors: "#5C3317",
+  windows: "#1E90FF"
 };
 
-const NEUTRAL_SWATCH = '#9CA3AF';
+const NEUTRAL_SWATCH = "#9CA3AF";
 
 function fallbackLabel(category: string): string {
-  return category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -79,14 +75,11 @@ function fallbackLabel(category: string): string {
  *
  * Anything that falls through both tiers renders as the neutral swatch.
  */
-export function buildCategoryLookup(
-  entries: SegmentationCategoryMetadata[] | null,
-): CategoryLookup {
+export function buildCategoryLookup(entries: SegmentationCategoryMetadata[] | null): CategoryLookup {
   const indexed = entries ? indexByKey(entries) : null;
   return {
-    color: (category) =>
-      indexed?.get(category)?.color ?? FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
-    label: (category) => indexed?.get(category)?.label ?? fallbackLabel(category),
+    color: (category) => indexed?.get(category)?.color ?? FALLBACK_COLORS[category] ?? NEUTRAL_SWATCH,
+    label: (category) => indexed?.get(category)?.label ?? fallbackLabel(category)
   };
 }
 

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { FormSection } from '@/components/ui/form-section';
-import { SsmParamsEditor, type SsmParamsState } from './ssm-params-editor';
-import { StyleOverridesEditor, type StyleOverrideRow } from './style-overrides-editor';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form-section";
+import { SsmParamsEditor, type SsmParamsState } from "./ssm-params-editor";
+import { StyleOverridesEditor, type StyleOverrideRow } from "./style-overrides-editor";
 
 export function AdvancedSection({
   styleOverrides,
   onStyleOverridesChange,
   ssmParams,
-  onSsmParamsChange,
+  onSsmParamsChange
 }: {
   styleOverrides: StyleOverrideRow[];
   onStyleOverridesChange: (next: StyleOverrideRow[]) => void;
@@ -24,7 +24,7 @@ export function AdvancedSection({
       description="Optional style overrides and SSM parameters."
       actions={
         <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
-          {open ? 'Hide' : 'Show'}
+          {open ? "Hide" : "Show"}
         </Button>
       }
     >
@@ -34,9 +34,7 @@ export function AdvancedSection({
           <SsmParamsEditor value={ssmParams} onChange={onSsmParamsChange} />
         </div>
       ) : (
-        <p className="text-body text-text-muted">
-          Advanced parameters are hidden. Click Show to edit style overrides and SSM configuration.
-        </p>
+        <p className="text-body text-text-muted">Advanced parameters are hidden. Click Show to edit style overrides and SSM configuration.</p>
       )}
     </FormSection>
   );

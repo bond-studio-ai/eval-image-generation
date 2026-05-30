@@ -1,4 +1,4 @@
-import { extendTailwindMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from "tailwind-merge";
 
 /**
  * Our custom design tokens (defined in `@theme` in globals.css) aren't part of
@@ -7,40 +7,38 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * keep both. Teaching it our token names makes consumer overrides of these
  * tokens collapse cleanly, just like the standard utilities.
  */
-const SCALE = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+const SCALE = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
 
 const customColors = [
   // Semantic surface / text / border tokens.
-  'bg-app',
-  'surface',
-  'surface-muted',
-  'surface-sunken',
-  'border',
-  'border-strong',
-  'border-subtle',
-  'text-primary',
-  'text-secondary',
-  'text-muted',
-  'text-disabled',
-  'text-inverse',
+  "bg-app",
+  "surface",
+  "surface-muted",
+  "surface-sunken",
+  "border",
+  "border-strong",
+  "border-subtle",
+  "text-primary",
+  "text-secondary",
+  "text-muted",
+  "text-disabled",
+  "text-inverse",
   // Brand + signal palettes.
-  ...['primary', 'success', 'warning', 'danger', 'info', 'accent'].flatMap((name) =>
-    SCALE.map((step) => `${name}-${step}`),
-  ),
+  ...["primary", "success", "warning", "danger", "info", "accent"].flatMap((name) => SCALE.map((step) => `${name}-${step}`)),
   // primary additionally defines a 950 step.
-  'primary-950',
+  "primary-950"
 ];
 
 const twMergeWithTokens = extendTailwindMerge({
   extend: {
     theme: {
       color: customColors,
-      radius: ['card', 'button', 'input', 'pill'],
-      shadow: ['card', 'card-hover', 'popover', 'modal', 'focus'],
+      radius: ["card", "button", "input", "pill"],
+      shadow: ["card", "card-hover", "popover", "modal", "focus"],
       // Font-size ramp (text-{name}); distinct from text-color names above.
-      text: ['caption', 'body', 'body-lg', 'h3', 'h2', 'display', 'display-lg'],
-    },
-  },
+      text: ["caption", "body", "body-lg", "h3", "h2", "display", "display-lg"]
+    }
+  }
 });
 
 /**
@@ -61,12 +59,12 @@ export function cn(...values: ClassValue[]): string {
   const out: string[] = [];
   const walk = (value: ClassValue) => {
     if (!value) return;
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       out.push(value);
       return;
     }
     for (const item of value) walk(item);
   };
   walk(values);
-  return twMergeWithTokens(out.join(' '));
+  return twMergeWithTokens(out.join(" "));
 }

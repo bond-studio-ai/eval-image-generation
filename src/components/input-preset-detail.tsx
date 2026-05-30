@@ -1,25 +1,19 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-settings-editor';
-import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import { CopyIcon, PencilIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
-import { localUrl, serviceUrl } from '@/lib/api-base';
-import {
-  getInputPresetStoredImages,
-  INPUT_PRESET_DESIGN_FIELD_KEYS,
-  INPUT_PRESET_SLOT_LABELS,
-  INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
-  readInputPresetValue,
-} from '@/lib/input-preset-design';
-import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
-import type { InputPresetDetailItem } from '@/lib/service-client';
-import { RatingBadge } from './rating-badge';
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { DesignSettingsDisplay, useCatalogProducts } from "@/components/design-settings-editor";
+import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { CopyIcon, PencilIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { localUrl, serviceUrl } from "@/lib/api-base";
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_LABELS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY, readInputPresetValue } from "@/lib/input-preset-design";
+import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
+import type { InputPresetDetailItem } from "@/lib/service-client";
+import { RatingBadge } from "./rating-badge";
 
 interface SerializedGeneration {
   id: string;
@@ -53,10 +47,7 @@ interface DesignPackageOption {
   style?: string | null;
 }
 
-function getDesignPackageLabel(
-  option: DesignPackageOption | null,
-  pkgId: string | null,
-): string | null {
+function getDesignPackageLabel(option: DesignPackageOption | null, pkgId: string | null): string | null {
   if (!pkgId) return null;
   if (!option) return pkgId;
   return option.title?.trim() || option.name?.trim() || pkgId;
@@ -68,108 +59,83 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const rawData = data as unknown as Record<string, unknown>;
   const { byId, loaded } = useCatalogProducts(INPUT_PRESET_RETAILER_ID);
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
-  const storedImagesBySlot = useMemo(
-    () => new Map(storedImages.map((image) => [image.slot, image])),
-    [storedImages],
-  );
+  const storedImagesBySlot = useMemo(() => new Map(storedImages.map((image) => [image.slot, image])), [storedImages]);
   const productCards = useMemo(() => {
     const imageTypeLabels: Record<string, string> = {
-      'featured-image': 'Featured Image',
-      'line-drawing': 'Line Drawing',
-      'tear-sheet': 'Tear Sheet',
-      arbitrary: 'Arbitrary',
+      "featured-image": "Featured Image",
+      "line-drawing": "Line Drawing",
+      "tear-sheet": "Tear Sheet",
+      arbitrary: "Arbitrary"
     };
 
     return Object.keys(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY).flatMap((slot) => {
       const storedImage = storedImagesBySlot.get(slot) ?? null;
       const slotValue = readInputPresetValue(rawData, slot);
-      const productId = typeof slotValue === 'string' && slotValue.length > 0 ? slotValue : null;
+      const productId = typeof slotValue === "string" && slotValue.length > 0 ? slotValue : null;
 
       if (!productId && !storedImage) return [];
 
       const product = productId ? (byId.get(productId) ?? null) : null;
       const imageTypeValue = readInputPresetValue(rawData, `${slot}ImageType`);
-      const imageTypeLabel =
-        typeof imageTypeValue === 'string' && imageTypeLabels[imageTypeValue]
-          ? imageTypeLabels[imageTypeValue]
-          : 'Tear Sheet';
+      const imageTypeLabel = typeof imageTypeValue === "string" && imageTypeLabels[imageTypeValue] ? imageTypeLabels[imageTypeValue] : "Tear Sheet";
 
       return [
         {
           slot,
           label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
           previewUrl: storedImage?.url ?? product?.featuredImage?.url ?? null,
-          title:
-            product?.name ??
-            (storedImage?.isArbitrary ? 'Arbitrary image' : (productId ?? 'Saved image')),
-          subtitle: product
-            ? `${product.category?.name ?? 'Selected product'} · ${imageTypeLabel}`
-            : storedImage?.isArbitrary
-              ? `URL-only attachment · ${imageTypeLabel}`
-              : imageTypeLabel,
+          title: product?.name ?? (storedImage?.isArbitrary ? "Arbitrary image" : (productId ?? "Saved image")),
+          subtitle: product ? `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}` : storedImage?.isArbitrary ? `URL-only attachment · ${imageTypeLabel}` : imageTypeLabel,
           isLoadingPreview: !!productId && !product && !storedImage?.url && !loaded,
           url: storedImage?.url ?? null,
-          isArbitrary: storedImage?.isArbitrary ?? false,
-        },
+          isArbitrary: storedImage?.isArbitrary ?? false
+        }
       ];
     });
   }, [byId, loaded, rawData, storedImagesBySlot]);
-  const layoutTypeId =
-    data.layoutTypeId ??
-    (typeof rawData.layout_type_id === 'string' ? rawData.layout_type_id : null);
-  const pkgId = data.pkgId ?? (typeof rawData.pkg_id === 'string' ? rawData.pkg_id : null);
+  const layoutTypeId = data.layoutTypeId ?? (typeof rawData.layout_type_id === "string" ? rawData.layout_type_id : null);
+  const pkgId = data.pkgId ?? (typeof rawData.pkg_id === "string" ? rawData.pkg_id : null);
 
   const { data: layoutPresetOptions = [] } = useQuery({
-    queryKey: ['layout-presets'],
+    queryKey: ["layout-presets"],
     queryFn: async ({ signal }) => {
-      const res = await fetch(serviceUrl('layout-presets'), { signal });
+      const res = await fetch(serviceUrl("layout-presets"), { signal });
       if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
       const json = (await res.json()) as { data?: LayoutPresetOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!layoutTypeId,
+    enabled: !!layoutTypeId
   });
 
   const { data: designPackageOptions = [] } = useQuery({
-    queryKey: ['design-packages', INPUT_PRESET_RETAILER_ID],
+    queryKey: ["design-packages", INPUT_PRESET_RETAILER_ID],
     queryFn: async ({ signal }) => {
-      const url = new URL(localUrl('design-packages'), window.location.origin);
-      url.searchParams.set('retailerId', INPUT_PRESET_RETAILER_ID);
+      const url = new URL(localUrl("design-packages"), window.location.origin);
+      url.searchParams.set("retailerId", INPUT_PRESET_RETAILER_ID);
       const res = await fetch(url.toString(), { signal });
       if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
       const json = (await res.json()) as { data?: DesignPackageOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!pkgId,
+    enabled: !!pkgId
   });
 
-  const selectedLayoutPreset = useMemo(
-    () => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null,
-    [layoutPresetOptions, layoutTypeId],
-  );
-  const selectedDesignPackage = useMemo(
-    () => designPackageOptions.find((option) => option.id === pkgId) ?? null,
-    [designPackageOptions, pkgId],
-  );
+  const selectedLayoutPreset = useMemo(() => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null, [layoutPresetOptions, layoutTypeId]);
+  const selectedDesignPackage = useMemo(() => designPackageOptions.find((option) => option.id === pkgId) ?? null, [designPackageOptions, pkgId]);
 
   return (
     <div>
       <PageHeader
         backHref="/input-presets"
         backLabel="Back to Input Presets"
-        title={data.name || 'Untitled Input Preset'}
+        title={data.name || "Untitled Input Preset"}
         subtitle={data.description}
         actions={
           data.deletedAt ? (
-            <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">
-              Deleted
-            </span>
+            <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">Deleted</span>
           ) : (
             <>
-              <Link
-                href={`/input-presets/${data.id}/edit`}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
+              <Link href={`/input-presets/${data.id}/edit`} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
                 <PencilIcon className="size-4" />
                 Edit
               </Link>
@@ -179,9 +145,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                   setCloning(true);
                   try {
                     const res = await fetch(serviceUrl(`input-presets/${data.id}/clone`), {
-                      method: 'POST',
+                      method: "POST"
                     });
-                    if (!res.ok) throw new Error('Clone failed');
+                    if (!res.ok) throw new Error("Clone failed");
                     const json = await res.json();
                     const newId = json.data?.id;
                     if (newId) {
@@ -196,7 +162,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
               >
                 {cloning ? <Spinner className="size-4" /> : <CopyIcon className="size-4" />}
-                {cloning ? 'Cloning...' : 'Clone'}
+                {cloning ? "Cloning..." : "Clone"}
               </button>
               <PrimaryLinkButton href="/executions">New Run</PrimaryLinkButton>
             </>
@@ -226,12 +192,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {pkgId ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-sm font-medium text-gray-600">Design package</p>
-          <p className="mt-1 text-sm text-gray-900">
-            {getDesignPackageLabel(selectedDesignPackage, pkgId)}
-          </p>
-          {selectedDesignPackage?.style ? (
-            <p className="mt-1 text-xs text-gray-500">{selectedDesignPackage.style}</p>
-          ) : null}
+          <p className="mt-1 text-sm text-gray-900">{getDesignPackageLabel(selectedDesignPackage, pkgId)}</p>
+          {selectedDesignPackage?.style ? <p className="mt-1 text-xs text-gray-500">{selectedDesignPackage.style}</p> : null}
         </div>
       ) : null}
 
@@ -239,9 +201,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {(() => {
         const entries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
           const value = data[key];
-          return value === undefined || value === null || value === ''
-            ? []
-            : [[key, value] as const];
+          return value === undefined || value === null || value === "" ? [] : [[key, value] as const];
         });
         if (entries.length === 0) {
           return null;
@@ -257,23 +217,17 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {(() => {
         const scenes = [
           {
-            label: 'Dollhouse View',
-            url:
-              data.dollhouseView ??
-              (typeof rawData.dollhouse_view === 'string' ? rawData.dollhouse_view : null),
+            label: "Dollhouse View",
+            url: data.dollhouseView ?? (typeof rawData.dollhouse_view === "string" ? rawData.dollhouse_view : null)
           },
           {
-            label: 'Real Photo',
-            url:
-              data.realPhoto ??
-              (typeof rawData.real_photo === 'string' ? rawData.real_photo : null),
+            label: "Real Photo",
+            url: data.realPhoto ?? (typeof rawData.real_photo === "string" ? rawData.real_photo : null)
           },
           {
-            label: 'Mood Board',
-            url:
-              data.moodBoard ??
-              (typeof rawData.mood_board === 'string' ? rawData.mood_board : null),
-          },
+            label: "Mood Board",
+            url: data.moodBoard ?? (typeof rawData.mood_board === "string" ? rawData.mood_board : null)
+          }
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (
@@ -281,18 +235,11 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {scenes.map((s) => (
-                <div
-                  key={s.label}
-                  className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
-                >
+                <div key={s.label} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                   <div className="border-b border-gray-100 px-2.5 py-1.5">
                     <span className="text-xs font-semibold text-gray-700">{s.label}</span>
                   </div>
-                  <ImageWithSkeleton
-                    src={s.url}
-                    alt={s.label}
-                    wrapperClassName="h-48 w-full bg-gray-50 p-1"
-                  />
+                  <ImageWithSkeleton src={s.url} alt={s.label} wrapperClassName="h-48 w-full bg-gray-50 p-1" />
                 </div>
               ))}
             </div>
@@ -307,22 +254,13 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {productCards.map((item) => (
-                <div
-                  key={item.slot}
-                  className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
-                >
+                <div key={item.slot} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                   {item.previewUrl ? (
-                    <ImageWithSkeleton
-                      src={item.previewUrl}
-                      alt={item.label}
-                      wrapperClassName="h-32 w-full bg-gray-50 p-1"
-                    />
+                    <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-gray-50 p-1" />
                   ) : item.isLoadingPreview ? (
                     <div className="h-32 w-full animate-pulse bg-gray-200" aria-hidden />
                   ) : (
-                    <div className="flex h-32 items-center justify-center bg-gray-50 text-xs text-gray-400">
-                      No preview
-                    </div>
+                    <div className="flex h-32 items-center justify-center bg-gray-50 text-xs text-gray-400">No preview</div>
                   )}
                   <div className="border-t border-gray-100 px-2 py-1.5">
                     <p className="truncate text-xs font-medium text-gray-700" title={item.label}>
@@ -339,11 +277,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                         {item.url}
                       </p>
                     ) : null}
-                    {item.isArbitrary ? (
-                      <span className="mt-1 inline-flex rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
-                        Arbitrary
-                      </span>
-                    ) : null}
+                    {item.isArbitrary ? <span className="mt-1 inline-flex rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Arbitrary</span> : null}
                   </div>
                 </div>
               ))}
@@ -362,18 +296,10 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Rating
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Prompt Version
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Outputs
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-                    Created
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Rating</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Prompt Version</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Outputs</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Created</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -387,15 +313,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {gen.promptVersionName || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {gen.outputImageCount}
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
-                      {new Date(gen.createdAt).toLocaleDateString()}
-                    </td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.promptVersionName || "-"}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.outputImageCount}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{new Date(gen.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

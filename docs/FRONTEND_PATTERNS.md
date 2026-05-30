@@ -7,9 +7,9 @@ The visual system is documented in [DESIGN_TOKENS.md](DESIGN_TOKENS.md). The con
 Pages render inside `AppShell` (sidebar + sticky top bar with breadcrumbs). Do not add page-level max-width wrappers or body scrolling. Use `PageHeader` for page titles, subtitles, back links, and primary actions.
 
 ```tsx
-import { PageHeader } from '@/components/page-header';
-import { LinkButton } from '@/components/ui/button';
-import { PlusIcon } from '@/components/ui/icons';
+import { PageHeader } from "@/components/page-header";
+import { LinkButton } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 
 <PageHeader
   title="Strategies"
@@ -27,19 +27,19 @@ import { PlusIcon } from '@/components/ui/icons';
 All shared UI primitives live in `src/components/ui/`. Import each one directly from its own module — there is no barrel; import the thing from where it lives.
 
 ```ts
-import { Badge } from '@/components/ui/badge';
-import { Button, LinkButton } from '@/components/ui/button';
-import { Card, StatCard } from '@/components/ui/card';
-import { useConfirm } from '@/components/ui/confirm-dialog';
-import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
-import { FormSection } from '@/components/ui/form-section';
-import { IconButton } from '@/components/ui/icon-button';
+import { Badge } from "@/components/ui/badge";
+import { Button, LinkButton } from "@/components/ui/button";
+import { Card, StatCard } from "@/components/ui/card";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FilterBar, FilterSearch } from "@/components/ui/filter-bar";
+import { FormSection } from "@/components/ui/form-section";
+import { IconButton } from "@/components/ui/icon-button";
 // icons: curated, aliased lucide re-exports
-import { PlusIcon, TrashIcon } from '@/components/ui/icons';
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Spinner } from '@/components/ui/spinner';
-import { Tabs } from '@/components/ui/tabs';
-import { toast } from '@/components/ui/toaster';
+import { PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Spinner } from "@/components/ui/spinner";
+import { Tabs } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/toaster";
 ```
 
 See [.cursor/rules/ui-conventions.mdc](../.cursor/rules/ui-conventions.mdc) for the full mapping of intent → primitive.
@@ -104,14 +104,14 @@ try {
 Replace `window.confirm()` with the styled dialog:
 
 ```tsx
-import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const confirm = useConfirm();
 const ok = await confirm({
-  title: 'Delete strategy?',
-  description: 'This will soft-delete the strategy.',
-  confirmLabel: 'Delete strategy',
-  tone: 'danger',
+  title: "Delete strategy?",
+  description: "This will soft-delete the strategy.",
+  confirmLabel: "Delete strategy",
+  tone: "danger"
 });
 if (!ok) return;
 ```
@@ -123,8 +123,8 @@ Never silently `catch { /* ignore */ }` a mutation failure — at minimum, fire 
 Client Components should use local URLs:
 
 ```ts
-fetch(serviceUrl('strategies'));
-fetch(localUrl('upload'));
+fetch(serviceUrl("strategies"));
+fetch(localUrl("upload"));
 ```
 
 Do not import server-only env helpers into client files.

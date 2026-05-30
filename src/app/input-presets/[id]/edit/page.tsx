@@ -1,19 +1,16 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import {
-  getInputPresetStoredImages,
-  INPUT_PRESET_DESIGN_FIELD_KEYS,
-} from '@/lib/input-preset-design';
-import { fetchInputPresetById } from '@/lib/service-client';
-import { InputPresetEditForm } from './edit-form';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from "@/lib/input-preset-design";
+import { fetchInputPresetById } from "@/lib/service-client";
+import { InputPresetEditForm } from "./edit-form";
 
 export const metadata: Metadata = {
-  title: 'Edit Input Preset',
-  description: 'Edit an input preset used to seed strategy runs.',
+  title: "Edit Input Preset",
+  description: "Edit an input preset used to seed strategy runs."
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,7 +19,7 @@ interface PageProps {
 
 export default async function InputPresetEditPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const force = query.force === 'true';
+  const force = query.force === "true";
 
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
@@ -34,21 +31,14 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   if (generationCount > 0 && !force) {
     return (
       <div>
-        <PageHeader
-          backHref={`/input-presets/${id}`}
-          backLabel="Back to preset"
-          title="Cannot edit this preset"
-        />
+        <PageHeader backHref={`/input-presets/${id}`} backLabel="Back to preset" title="Cannot edit this preset" />
         <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
           <p className="text-sm text-amber-800">
             This preset has been used in {generationCount} generation
-            {generationCount !== 1 ? 's' : ''}. To change it, clone the preset first, then edit the
-            copy.
+            {generationCount !== 1 ? "s" : ""}. To change it, clone the preset first, then edit the copy.
           </p>
           <div className="mt-4">
-            <PrimaryLinkButton href={`/input-presets/${id}`}>
-              Back to preset (use Clone there)
-            </PrimaryLinkButton>
+            <PrimaryLinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</PrimaryLinkButton>
           </div>
         </div>
       </div>
@@ -57,22 +47,17 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
 
   const designSettingsEntries = INPUT_PRESET_DESIGN_FIELD_KEYS.flatMap((key) => {
     const value = preset[key];
-    return value === undefined || value === null || value === '' ? [] : [[key, value] as const];
+    return value === undefined || value === null || value === "" ? [] : [[key, value] as const];
   });
-  const designSettings =
-    designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
+  const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
   const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
-  const arbitraryImagesBySlot = Object.fromEntries(
-    storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])),
-  );
-  const savedImageUrlsBySlot = Object.fromEntries(
-    storedImages.map((image) => [image.slot, image.url]),
-  );
+  const arbitraryImagesBySlot = Object.fromEntries(storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])));
+  const savedImageUrlsBySlot = Object.fromEntries(storedImages.map((image) => [image.slot, image.url]));
 
   const initialData = {
     id: preset.id,
-    name: preset.name ?? '',
-    description: preset.description ?? '',
+    name: preset.name ?? "",
+    description: preset.description ?? "",
     layoutTypeId: preset.layoutTypeId ?? preset.layout_type_id ?? null,
     pkgId: preset.pkgId ?? preset.pkg_id ?? null,
     dollhouseView: preset.dollhouseView ?? preset.dollhouse_view ?? null,
@@ -80,7 +65,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     moodBoard: preset.moodBoard ?? preset.mood_board ?? null,
     arbitraryImagesBySlot,
     designSettings,
-    savedImageUrlsBySlot,
+    savedImageUrlsBySlot
   };
 
   return <InputPresetEditForm initialData={initialData} force={force} />;

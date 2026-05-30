@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { Fragment, useCallback, useState } from 'react';
-import { ChevronRightIcon } from '@/components/ui/icons';
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
+import { useQuery } from "@tanstack/react-query";
+import { Fragment, useCallback, useState } from "react";
+import { ChevronRightIcon } from "@/components/ui/icons";
+import { browserTimezone, serviceUrl } from "@/lib/api-base";
 
 // Shared frozen empty set returned when the expanded state belongs to a stale
 // filter combination, so the derived value keeps a stable identity.
@@ -29,9 +29,9 @@ function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
   if (!Array.isArray(raw)) return [];
   const out: CategoryIssueCount[] = [];
   for (const x of raw) {
-    if (!x || typeof x !== 'object') continue;
+    if (!x || typeof x !== "object") continue;
     const o = x as Record<string, unknown>;
-    if (typeof o.issue !== 'string') continue;
+    if (typeof o.issue !== "string") continue;
     const count = Number(o.count);
     if (!Number.isFinite(count)) continue;
     out.push({ issue: o.issue, count });
@@ -43,9 +43,9 @@ function normalizeNoteItems(raw: unknown): CategoryNoteCount[] {
   if (!Array.isArray(raw)) return [];
   const out: CategoryNoteCount[] = [];
   for (const x of raw) {
-    if (!x || typeof x !== 'object') continue;
+    if (!x || typeof x !== "object") continue;
     const o = x as Record<string, unknown>;
-    if (typeof o.text !== 'string') continue;
+    if (typeof o.text !== "string") continue;
     const count = Number(o.count);
     if (!Number.isFinite(count)) continue;
     out.push({ text: o.text, count });
@@ -58,7 +58,7 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   return raw.map((c) => {
     const row = c as Record<string, unknown>;
     return {
-      name: typeof row.name === 'string' ? row.name : String(row.name ?? ''),
+      name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
       total: Number(row.total) || 0,
       success: Number(row.success) || 0,
       failure: Number(row.failure) || 0,
@@ -66,36 +66,28 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
       failurePct: Number(row.failurePct) || 0,
       issues: normalizeIssueItems(row.issues),
       notes: normalizeNoteItems(row.notes),
-      notesTruncated: row.notesTruncated === true,
+      notesTruncated: row.notesTruncated === true
     };
   });
 }
 
 function cn(...parts: Array<string | undefined | false>) {
-  return parts.filter(Boolean).join(' ');
+  return parts.filter(Boolean).join(" ");
 }
 
 function formatCategoryName(name: string): string {
   return name
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim();
 }
 
-function ProdSortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+function ProdSortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
-    <svg
-      className={`ml-1 inline h-3 w-3 ${active ? 'text-gray-700' : 'text-gray-300'}`}
-      viewBox="0 0 10 14"
-      fill="currentColor"
-    >
-      {dir === 'asc' || !active ? (
-        <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === 'asc' ? 1 : 0.3} />
-      ) : null}
-      {dir === 'desc' || !active ? (
-        <path d="M5 14L0 8H10L5 14Z" opacity={active && dir === 'desc' ? 1 : 0.3} />
-      ) : null}
+    <svg className={`ml-1 inline h-3 w-3 ${active ? "text-gray-700" : "text-gray-300"}`} viewBox="0 0 10 14" fill="currentColor">
+      {dir === "asc" || !active ? <path d="M5 0L10 6H0L5 0Z" opacity={active && dir === "asc" ? 1 : 0.3} /> : null}
+      {dir === "desc" || !active ? <path d="M5 14L0 8H10L5 14Z" opacity={active && dir === "desc" ? 1 : 0.3} /> : null}
     </svg>
   );
 }
@@ -104,10 +96,7 @@ function FlaggedIssueInlineBar({ count, failureCount }: { count: number; failure
   const pct = failureCount > 0 ? Math.min(100, (count / failureCount) * 100) : 0;
   const pctRounded = Math.round(pct);
   return (
-    <div
-      className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-orange-100"
-      title={`${pctRounded}% of ${failureCount} failures`}
-    >
+    <div className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-orange-100" title={`${pctRounded}% of ${failureCount} failures`}>
       <div className="absolute inset-y-0 right-0 bg-orange-500" style={{ width: `${pct}%` }} />
     </div>
   );
@@ -117,48 +106,34 @@ function NoteInlineBar({ count, failureCount }: { count: number; failureCount: n
   const pct = failureCount > 0 ? Math.min(100, (count / failureCount) * 100) : 0;
   const pctRounded = Math.round(pct);
   return (
-    <div
-      className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-slate-200"
-      title={`${pctRounded}% of ${failureCount} failures`}
-    >
+    <div className="relative h-2 w-full min-w-0 overflow-hidden rounded-full bg-slate-200" title={`${pctRounded}% of ${failureCount} failures`}>
       <div className="absolute inset-y-0 right-0 bg-slate-500" style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
 const PRODUCT_CATEGORY_TABLE_COL_CLASSES = [
-  'w-10', // Expand (chevron)
-  '', // Product category
-  'w-[11rem]', // Evaluated
-  'w-[11rem]', // Success
-  'w-[11rem]', // Failure
-  'w-60', // Rate
+  "w-10", // Expand (chevron)
+  "", // Product category
+  "w-[11rem]", // Evaluated
+  "w-[11rem]", // Success
+  "w-[11rem]", // Failure
+  "w-60" // Rate
 ] as const;
 const PRODUCT_CATEGORY_TABLE_COL_COUNT = PRODUCT_CATEGORY_TABLE_COL_CLASSES.length;
 const PRODUCT_CATEGORY_BODY_COLSPAN = PRODUCT_CATEGORY_TABLE_COL_COUNT - 1;
 
-const ISSUE_BREAKDOWN_TR = '!border-0';
-const ISSUE_ROW_PY = 'py-0.5';
-const ISSUE_ROW_LAST_PY = 'pt-0.5 pb-3';
-const ISSUE_ROW_LAST_TD = 'border-b border-gray-100';
+const ISSUE_BREAKDOWN_TR = "!border-0";
+const ISSUE_ROW_PY = "py-0.5";
+const ISSUE_ROW_LAST_PY = "pt-0.5 pb-3";
+const ISSUE_ROW_LAST_TD = "border-b border-gray-100";
 
-function CategoryIssueBreakdownRows({
-  items,
-  totalEvaluated,
-  failureCount,
-}: {
-  items: CategoryIssueCount[];
-  totalEvaluated: number;
-  failureCount: number;
-}) {
+function CategoryIssueBreakdownRows({ items, totalEvaluated, failureCount }: { items: CategoryIssueCount[]; totalEvaluated: number; failureCount: number }) {
   if (totalEvaluated === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
-        <td
-          colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
-          className={cn('py-2 pr-6 text-sm text-gray-500', ISSUE_ROW_LAST_TD)}
-        >
+        <td className={cn("py-2 pr-0", ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td colSpan={PRODUCT_CATEGORY_BODY_COLSPAN} className={cn("py-2 pr-6 text-sm text-gray-500", ISSUE_ROW_LAST_TD)}>
           No evaluations in this category for the selected filters.
         </td>
       </tr>
@@ -168,11 +143,8 @@ function CategoryIssueBreakdownRows({
   if (items.length === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
-        <td
-          colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
-          className={cn('py-2 pr-6 text-xs text-gray-500', ISSUE_ROW_LAST_TD)}
-        >
+        <td className={cn("py-2 pr-0", ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td colSpan={PRODUCT_CATEGORY_BODY_COLSPAN} className={cn("py-2 pr-6 text-xs text-gray-500", ISSUE_ROW_LAST_TD)}>
           No individual checklist flags recorded for failing evaluations.
         </td>
       </tr>
@@ -185,31 +157,16 @@ function CategoryIssueBreakdownRows({
     const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
     return (
       <tr key={item.issue} className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
-        <td
-          className={cn(
-            'min-w-0',
-            rowPy,
-            'pr-4 text-xs leading-tight text-gray-700',
-            isLast && ISSUE_ROW_LAST_TD,
-          )}
-          title={item.issue}
-        >
+        <td className={cn(rowPy, "pr-0", isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td className={cn("min-w-0", rowPy, "pr-4 text-xs leading-tight text-gray-700", isLast && ISSUE_ROW_LAST_TD)} title={item.issue}>
           <span className="block truncate">{item.issue}</span>
         </td>
-        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
-        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
-        <td
-          className={cn(
-            'px-4',
-            rowPy,
-            'text-right text-xs leading-tight font-normal text-orange-600 tabular-nums',
-            isLast && ISSUE_ROW_LAST_TD,
-          )}
-        >
+        <td className={cn("px-4", rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td className={cn("px-4", rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td className={cn("px-4", rowPy, "text-right text-xs leading-tight font-normal text-orange-600 tabular-nums", isLast && ISSUE_ROW_LAST_TD)}>
           {item.count} ({pctOfFailures}%)
         </td>
-        <td className={cn('px-4', rowPy, 'align-middle', isLast && ISSUE_ROW_LAST_TD)}>
+        <td className={cn("px-4", rowPy, "align-middle", isLast && ISSUE_ROW_LAST_TD)}>
           <FlaggedIssueInlineBar count={item.count} failureCount={failureCount} />
         </td>
       </tr>
@@ -219,15 +176,7 @@ function CategoryIssueBreakdownRows({
 
 const NOTE_PREVIEW_CHARS = 72;
 
-function CategoryNoteBreakdownRows({
-  items,
-  failureCount,
-  notesTruncated,
-}: {
-  items: CategoryNoteCount[];
-  failureCount: number;
-  notesTruncated: boolean;
-}) {
+function CategoryNoteBreakdownRows({ items, failureCount, notesTruncated }: { items: CategoryNoteCount[]; failureCount: number; notesTruncated: boolean }) {
   if (failureCount <= 0 || items.length === 0) return null;
 
   const notesTotalCount = items.reduce((sum, x) => sum + x.count, 0);
@@ -235,10 +184,7 @@ function CategoryNoteBreakdownRows({
   const headerRow = (
     <tr className={ISSUE_BREAKDOWN_TR}>
       <td className="border-t border-gray-100 pt-3 pr-0 pb-1" aria-hidden tabIndex={-1} />
-      <td
-        colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
-        className="border-t border-gray-100 pt-3 pr-6 pb-1 text-xs font-medium tracking-wider text-gray-500 uppercase"
-      >
+      <td colSpan={PRODUCT_CATEGORY_BODY_COLSPAN} className="border-t border-gray-100 pt-3 pr-6 pb-1 text-xs font-medium tracking-wider text-gray-500 uppercase">
         Freeform notes ({notesTotalCount})
       </td>
     </tr>
@@ -251,49 +197,19 @@ function CategoryNoteBreakdownRows({
         const pctOfFailures = failureCount > 0 ? Math.round((item.count / failureCount) * 100) : 0;
         const isLast = index === items.length - 1 && !notesTruncated;
         const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
-        const preview =
-          item.text.length > NOTE_PREVIEW_CHARS
-            ? `${item.text.slice(0, NOTE_PREVIEW_CHARS)}…`
-            : item.text;
+        const preview = item.text.length > NOTE_PREVIEW_CHARS ? `${item.text.slice(0, NOTE_PREVIEW_CHARS)}…` : item.text;
         return (
           <tr key={`note-${index}-${item.text}`} className={ISSUE_BREAKDOWN_TR}>
-            <td
-              className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)}
-              aria-hidden
-              tabIndex={-1}
-            />
-            <td
-              className={cn(
-                'min-w-0',
-                rowPy,
-                'pr-4 text-xs leading-tight text-slate-700',
-                isLast && ISSUE_ROW_LAST_TD,
-              )}
-              title={item.text}
-            >
+            <td className={cn(rowPy, "pr-0", isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+            <td className={cn("min-w-0", rowPy, "pr-4 text-xs leading-tight text-slate-700", isLast && ISSUE_ROW_LAST_TD)} title={item.text}>
               <span className="block truncate">{preview}</span>
             </td>
-            <td
-              className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)}
-              aria-hidden
-              tabIndex={-1}
-            />
-            <td
-              className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)}
-              aria-hidden
-              tabIndex={-1}
-            />
-            <td
-              className={cn(
-                'px-4',
-                rowPy,
-                'text-right text-xs leading-tight font-normal text-slate-600 tabular-nums',
-                isLast && ISSUE_ROW_LAST_TD,
-              )}
-            >
+            <td className={cn("px-4", rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+            <td className={cn("px-4", rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+            <td className={cn("px-4", rowPy, "text-right text-xs leading-tight font-normal text-slate-600 tabular-nums", isLast && ISSUE_ROW_LAST_TD)}>
               {item.count} ({pctOfFailures}%)
             </td>
-            <td className={cn('px-4', rowPy, 'align-middle', isLast && ISSUE_ROW_LAST_TD)}>
+            <td className={cn("px-4", rowPy, "align-middle", isLast && ISSUE_ROW_LAST_TD)}>
               <NoteInlineBar count={item.count} failureCount={failureCount} />
             </td>
           </tr>
@@ -301,19 +217,8 @@ function CategoryNoteBreakdownRows({
       })}
       {notesTruncated ? (
         <tr className={ISSUE_BREAKDOWN_TR}>
-          <td
-            className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)}
-            aria-hidden
-            tabIndex={-1}
-          />
-          <td
-            colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
-            className={cn(
-              ISSUE_ROW_LAST_PY,
-              ISSUE_ROW_LAST_TD,
-              'border-t-0 pr-6 text-xs text-gray-500',
-            )}
-          >
+          <td className={cn(ISSUE_ROW_LAST_PY, "border-t-0 pr-0", ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+          <td colSpan={PRODUCT_CATEGORY_BODY_COLSPAN} className={cn(ISSUE_ROW_LAST_PY, ISSUE_ROW_LAST_TD, "border-t-0 pr-6 text-xs text-gray-500")}>
             … and several more.
           </td>
         </tr>
@@ -322,44 +227,30 @@ function CategoryNoteBreakdownRows({
   );
 }
 
-export function ProductCategoryRates({
-  from,
-  to,
-  model,
-  source,
-  strategyId,
-  compact,
-}: {
-  from?: string;
-  to?: string;
-  model?: string;
-  source?: string;
-  strategyId?: string;
-  compact?: boolean;
-}) {
-  type ProdSortKey = 'name' | 'total' | 'successPct' | 'failurePct';
-  type ProdSortDir = 'asc' | 'desc';
+export function ProductCategoryRates({ from, to, model, source, strategyId, compact }: { from?: string; to?: string; model?: string; source?: string; strategyId?: string; compact?: boolean }) {
+  type ProdSortKey = "name" | "total" | "successPct" | "failurePct";
+  type ProdSortDir = "asc" | "desc";
 
-  const [sortKey, setSortKey] = useState<ProdSortKey>('total');
-  const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
+  const [sortKey, setSortKey] = useState<ProdSortKey>("total");
+  const [sortDir, setSortDir] = useState<ProdSortDir>("desc");
 
   // Tie the expanded set to the filter inputs that produced it. When any
   // filter changes the stored key falls stale, so `expandedIds` derives
   // back to empty during render — no effect needed to collapse rows.
-  const filterKey = `${from ?? ''}|${to ?? ''}|${model ?? ''}|${source ?? ''}|${strategyId ?? ''}`;
+  const filterKey = `${from ?? ""}|${to ?? ""}|${model ?? ""}|${source ?? ""}|${strategyId ?? ""}`;
   const [expanded, setExpanded] = useState<{ key: string; ids: Set<string> }>(() => ({
     key: filterKey,
-    ids: new Set(),
+    ids: new Set()
   }));
   const expandedIds = expanded.key === filterKey ? expanded.ids : EMPTY_EXPANDED;
 
   const toggleSort = useCallback((key: ProdSortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
-        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
         return key;
       }
-      setSortDir(key === 'name' ? 'asc' : 'desc');
+      setSortDir(key === "name" ? "asc" : "desc");
       return key;
     });
   }, []);
@@ -373,28 +264,28 @@ export function ProductCategoryRates({
         return { key: filterKey, ids: next };
       });
     },
-    [filterKey],
+    [filterKey]
   );
 
   const { data: categories = [], isLoading: loading } = useQuery({
-    queryKey: ['product-category-rates', from, to, model, source, strategyId],
+    queryKey: ["product-category-rates", from, to, model, source, strategyId],
     queryFn: async ({ signal }) => {
       const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      if (model) params.set('model', model);
-      if (source && source !== 'all') params.set('source', source);
-      if (strategyId) params.set('strategy_id', strategyId);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      if (model) params.set("model", model);
+      if (source && source !== "all") params.set("source", source);
+      if (strategyId) params.set("strategy_id", strategyId);
       const tz = browserTimezone();
-      if (tz) params.set('tz', tz);
+      if (tz) params.set("tz", tz);
       const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), {
-        cache: 'no-store',
-        signal,
+        cache: "no-store",
+        signal
       });
-      if (!res.ok) throw new Error('Failed to load product category rates');
+      if (!res.ok) throw new Error("Failed to load product category rates");
       const json = await res.json();
       return normalizeCategoryRows(json.data?.categories);
-    },
+    }
   });
 
   if (loading) {
@@ -406,9 +297,8 @@ export function ProductCategoryRates({
   }
 
   const sortedCompact = categories.toSorted((a, b) => {
-    const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortKey === 'name')
-      return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "name") return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
     return dir * ((a[sortKey] as number) - (b[sortKey] as number));
   });
 
@@ -416,25 +306,19 @@ export function ProductCategoryRates({
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <p className="text-xs font-medium tracking-wider text-gray-500 uppercase">
-            Product category rates
-          </p>
+          <p className="text-xs font-medium tracking-wider text-gray-500 uppercase">Product category rates</p>
           <div className="flex gap-1">
             {[
-              { key: 'name' as ProdSortKey, label: 'Name' },
-              { key: 'total' as ProdSortKey, label: 'Count' },
-              { key: 'successPct' as ProdSortKey, label: 'Success' },
-              { key: 'failurePct' as ProdSortKey, label: 'Failure' },
+              { key: "name" as ProdSortKey, label: "Name" },
+              { key: "total" as ProdSortKey, label: "Count" },
+              { key: "successPct" as ProdSortKey, label: "Success" },
+              { key: "failurePct" as ProdSortKey, label: "Failure" }
             ].map(({ key, label }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => toggleSort(key)}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                  sortKey === key
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${sortKey === key ? "bg-gray-200 text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
               >
                 {label}
                 <ProdSortIcon active={sortKey === key} dir={sortDir} />
@@ -445,29 +329,18 @@ export function ProductCategoryRates({
         <div className="space-y-1.5">
           {sortedCompact.map((cat) => (
             <div key={cat.name} className="flex items-center gap-2">
-              <span
-                className="w-28 truncate text-xs text-gray-700"
-                title={formatCategoryName(cat.name)}
-              >
+              <span className="w-28 truncate text-xs text-gray-700" title={formatCategoryName(cat.name)}>
                 {formatCategoryName(cat.name)}
               </span>
               <div className="flex h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
                 {cat.success > 0 && (
-                  <div
-                    className="flex items-center justify-center bg-green-500 text-[9px] font-medium text-white"
-                    style={{ width: `${cat.successPct}%` }}
-                    title={`Success: ${cat.success}`}
-                  >
-                    {cat.successPct >= 15 ? `${cat.successPct}%` : ''}
+                  <div className="flex items-center justify-center bg-green-500 text-[9px] font-medium text-white" style={{ width: `${cat.successPct}%` }} title={`Success: ${cat.success}`}>
+                    {cat.successPct >= 15 ? `${cat.successPct}%` : ""}
                   </div>
                 )}
                 {cat.failure > 0 && (
-                  <div
-                    className="flex items-center justify-center bg-orange-500 text-[9px] font-medium text-white"
-                    style={{ width: `${cat.failurePct}%` }}
-                    title={`Failure: ${cat.failure}`}
-                  >
-                    {cat.failurePct >= 15 ? `${cat.failurePct}%` : ''}
+                  <div className="flex items-center justify-center bg-orange-500 text-[9px] font-medium text-white" style={{ width: `${cat.failurePct}%` }} title={`Failure: ${cat.failure}`}>
+                    {cat.failurePct >= 15 ? `${cat.failurePct}%` : ""}
                   </div>
                 )}
               </div>
@@ -480,14 +353,12 @@ export function ProductCategoryRates({
   }
 
   const sorted = categories.toSorted((a, b) => {
-    const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortKey === 'name')
-      return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "name") return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
     return dir * ((a[sortKey] as number) - (b[sortKey] as number));
   });
 
-  const thBase =
-    'px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors';
+  const thBase = "px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors";
 
   return (
     <div className="overflow-x-auto">
@@ -500,28 +371,23 @@ export function ProductCategoryRates({
         <thead>
           <tr>
             <th className="w-10 py-2 pr-0" aria-hidden tabIndex={-1} />
-            <th
-              className="cursor-pointer py-2 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase transition-colors select-none hover:text-gray-900"
-              onClick={() => toggleSort('name')}
-            >
+            <th className="cursor-pointer py-2 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase transition-colors select-none hover:text-gray-900" onClick={() => toggleSort("name")}>
               Product Category
-              <ProdSortIcon active={sortKey === 'name'} dir={sortDir} />
+              <ProdSortIcon active={sortKey === "name"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort('total')}>
+            <th className={thBase} onClick={() => toggleSort("total")}>
               Evaluated
-              <ProdSortIcon active={sortKey === 'total'} dir={sortDir} />
+              <ProdSortIcon active={sortKey === "total"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort('successPct')}>
+            <th className={thBase} onClick={() => toggleSort("successPct")}>
               Success
-              <ProdSortIcon active={sortKey === 'successPct'} dir={sortDir} />
+              <ProdSortIcon active={sortKey === "successPct"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort('failurePct')}>
+            <th className={thBase} onClick={() => toggleSort("failurePct")}>
               Failure
-              <ProdSortIcon active={sortKey === 'failurePct'} dir={sortDir} />
+              <ProdSortIcon active={sortKey === "failurePct"} dir={sortDir} />
             </th>
-            <th className="w-60 px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">
-              Rate
-            </th>
+            <th className="w-60 px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Rate</th>
           </tr>
         </thead>
         <tbody>
@@ -536,16 +402,12 @@ export function ProductCategoryRates({
                       onClick={() => toggleExpand(cat.name)}
                       className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
                       aria-expanded={isExpanded}
-                      aria-label={isExpanded ? 'Collapse breakdown' : 'Expand breakdown'}
+                      aria-label={isExpanded ? "Collapse breakdown" : "Expand breakdown"}
                     >
-                      <ChevronRightIcon
-                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      />
+                      <ChevronRightIcon className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                     </button>
                   </td>
-                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">
-                    {formatCategoryName(cat.name)}
-                  </td>
+                  <td className="py-2 pr-4 text-sm font-medium text-gray-900">{formatCategoryName(cat.name)}</td>
                   <td className="px-4 py-2 text-right text-sm text-gray-700">{cat.total}</td>
                   <td className="px-4 py-2 text-right text-sm text-green-600">
                     {cat.success} ({cat.successPct}%)
@@ -556,19 +418,13 @@ export function ProductCategoryRates({
                   <td className="px-4 py-2">
                     <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100">
                       {cat.success > 0 && (
-                        <div
-                          className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white"
-                          style={{ width: `${cat.successPct}%` }}
-                        >
-                          {cat.successPct >= 12 ? `${cat.successPct}%` : ''}
+                        <div className="flex items-center justify-center bg-green-500 text-[10px] font-medium text-white" style={{ width: `${cat.successPct}%` }}>
+                          {cat.successPct >= 12 ? `${cat.successPct}%` : ""}
                         </div>
                       )}
                       {cat.failure > 0 && (
-                        <div
-                          className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white"
-                          style={{ width: `${cat.failurePct}%` }}
-                        >
-                          {cat.failurePct >= 12 ? `${cat.failurePct}%` : ''}
+                        <div className="flex items-center justify-center bg-orange-500 text-[10px] font-medium text-white" style={{ width: `${cat.failurePct}%` }}>
+                          {cat.failurePct >= 12 ? `${cat.failurePct}%` : ""}
                         </div>
                       )}
                     </div>
@@ -576,16 +432,8 @@ export function ProductCategoryRates({
                 </tr>
                 {isExpanded && (
                   <>
-                    <CategoryIssueBreakdownRows
-                      items={cat.issues}
-                      totalEvaluated={cat.total}
-                      failureCount={cat.failure}
-                    />
-                    <CategoryNoteBreakdownRows
-                      items={cat.notes}
-                      failureCount={cat.failure}
-                      notesTruncated={cat.notesTruncated}
-                    />
+                    <CategoryIssueBreakdownRows items={cat.issues} totalEvaluated={cat.total} failureCount={cat.failure} />
+                    <CategoryNoteBreakdownRows items={cat.notes} failureCount={cat.failure} notesTruncated={cat.notesTruncated} />
                   </>
                 )}
               </Fragment>

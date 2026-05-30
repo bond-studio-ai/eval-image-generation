@@ -1,32 +1,21 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { NextFetchEvent } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextFetchEvent } from "next/server";
+import type { NextRequest } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
-  '/',
-  '/analytics(.*)',
-  '/audit(.*)',
-  '/dollhouse-renders(.*)',
-  '/executions(.*)',
-  '/generations(.*)',
-  '/strategies(.*)',
-  '/input-presets(.*)',
-  '/prompt-versions(.*)',
-  '/prompt-preview(.*)',
-]);
+const isProtectedRoute = createRouteMatcher(["/", "/analytics(.*)", "/audit(.*)", "/dollhouse-renders(.*)", "/executions(.*)", "/generations(.*)", "/strategies(.*)", "/input-presets(.*)", "/prompt-versions(.*)", "/prompt-preview(.*)"]);
 
 const clerkWithProtection = clerkMiddleware(
   async (auth, req) => {
     if (isProtectedRoute(req)) {
-      const signInUrl = new URL('/auth/sign-in', req.url).toString();
+      const signInUrl = new URL("/auth/sign-in", req.url).toString();
       await auth.protect({
-        unauthenticatedUrl: signInUrl,
+        unauthenticatedUrl: signInUrl
       });
     }
   },
   (req) => ({
-    signInUrl: new URL('/auth/sign-in', req.url).toString(),
-  }),
+    signInUrl: new URL("/auth/sign-in", req.url).toString()
+  })
 );
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
@@ -41,5 +30,5 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
 // perform their own `auth()` check because middleware only initializes
 // Clerk context for `/api/**`.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth).*)'],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|auth).*)"]
 };

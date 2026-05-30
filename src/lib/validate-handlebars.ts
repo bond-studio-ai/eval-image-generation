@@ -31,7 +31,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
 
   const lineStarts: number[] = [0];
   for (let i = 0; i < template.length; i++) {
-    if (template[i] === '\n') lineStarts.push(i + 1);
+    if (template[i] === "\n") lineStarts.push(i + 1);
   }
 
   function getLine(pos: number): number {
@@ -46,20 +46,20 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
   }
 
   type Token =
-    | { kind: 'comment'; line: number }
-    | { kind: 'partial'; line: number }
+    | { kind: "comment"; line: number }
+    | { kind: "partial"; line: number }
     | {
-        kind: 'blockOpen';
+        kind: "blockOpen";
         name: string;
         line: number;
         indent: number;
         display: string;
       }
-    | { kind: 'blockClose'; name: string; line: number; indent: number }
-    | { kind: 'rawOpen'; name: string; line: number }
-    | { kind: 'rawClose'; name: string; line: number }
-    | { kind: 'else'; line: number }
-    | { kind: 'expr'; content: string; line: number };
+    | { kind: "blockClose"; name: string; line: number; indent: number }
+    | { kind: "rawOpen"; name: string; line: number }
+    | { kind: "rawClose"; name: string; line: number }
+    | { kind: "else"; line: number }
+    | { kind: "expr"; content: string; line: number };
 
   /**
    * Number of leading whitespace characters on the line containing
@@ -69,11 +69,11 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
    */
   function columnIndent(pos: number): number {
     let lineStart = pos;
-    while (lineStart > 0 && template[lineStart - 1] !== '\n') lineStart--;
+    while (lineStart > 0 && template[lineStart - 1] !== "\n") lineStart--;
     let n = 0;
     for (let j = lineStart; j < pos; j++) {
       const c = template[j];
-      if (c === ' ' || c === '\t') n++;
+      if (c === " " || c === "\t") n++;
       else return n;
     }
     return n;
@@ -97,7 +97,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         const quote = c;
         j++;
         while (j < template.length && template[j] !== quote) {
-          if (template[j] === '\\') j += 2;
+          if (template[j] === "\\") j += 2;
           else j++;
         }
         j++;
@@ -111,84 +111,84 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
 
   while (i < template.length) {
     // Quad-stash raw block: `{{{{name}}}}...{{{{/name}}}}`
-    if (template.startsWith('{{{{', i)) {
+    if (template.startsWith("{{{{", i)) {
       const start = i;
-      const closeOpen = template.indexOf('}}}}', i + 4);
+      const closeOpen = template.indexOf("}}}}", i + 4);
       if (closeOpen === -1) {
         errors.push({
           line: getLine(start),
-          message: 'Unclosed "{{{{" — missing closing "}}}}"',
+          message: 'Unclosed "{{{{" — missing closing "}}}}"'
         });
         return errors;
       }
       const raw = template.slice(i + 4, closeOpen).trim();
       const line = getLine(start);
-      if (raw.startsWith('/')) {
-        tokens.push({ kind: 'rawClose', name: raw.slice(1).trim(), line });
+      if (raw.startsWith("/")) {
+        tokens.push({ kind: "rawClose", name: raw.slice(1).trim(), line });
       } else {
-        tokens.push({ kind: 'rawOpen', name: raw, line });
+        tokens.push({ kind: "rawOpen", name: raw, line });
       }
       i = closeOpen + 4;
       continue;
     }
 
     // Long-form comment `{{!-- ... --}}` — may contain `}}`.
-    if (template.startsWith('{{!--', i)) {
+    if (template.startsWith("{{!--", i)) {
       const start = i;
-      const close = template.indexOf('--}}', i + 5);
+      const close = template.indexOf("--}}", i + 5);
       if (close === -1) {
         errors.push({
           line: getLine(start),
-          message: 'Unclosed "{{!--" — missing closing "--}}"',
+          message: 'Unclosed "{{!--" — missing closing "--}}"'
         });
         return errors;
       }
-      tokens.push({ kind: 'comment', line: getLine(start) });
+      tokens.push({ kind: "comment", line: getLine(start) });
       i = close + 4;
       continue;
     }
 
     // Short-form comment `{{! ... }}`.
-    if (template.startsWith('{{!', i)) {
+    if (template.startsWith("{{!", i)) {
       const start = i;
-      const close = findClose(i + 3, '}}');
+      const close = findClose(i + 3, "}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
-          message: 'Unclosed "{{!" — missing closing "}}"',
+          message: 'Unclosed "{{!" — missing closing "}}"'
         });
         return errors;
       }
-      tokens.push({ kind: 'comment', line: getLine(start) });
+      tokens.push({ kind: "comment", line: getLine(start) });
       i = close + 2;
       continue;
     }
 
     // Triple-stash `{{{ expr }}}`.
-    if (template.startsWith('{{{', i)) {
+    if (template.startsWith("{{{", i)) {
       const start = i;
-      const close = findClose(i + 3, '}}}');
+      const close = findClose(i + 3, "}}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
-          message: 'Unclosed "{{{" — missing closing "}}}"',
+          message: 'Unclosed "{{{" — missing closing "}}}"'
         });
         return errors;
       }
       const content = stripTildes(template.slice(i + 3, close).trim());
-      tokens.push({ kind: 'expr', content, line: getLine(start) });
+      tokens.push({ kind: "expr", content, line: getLine(start) });
       i = close + 3;
       continue;
     }
 
     // Regular mustache `{{ expr }}`.
-    if (template.startsWith('{{', i)) {
+    if (template.startsWith("{{", i)) {
       const start = i;
-      const close = findClose(i + 2, '}}');
+      const close = findClose(i + 2, "}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
-          message: 'Unclosed "{{" — missing closing "}}"',
+          message: 'Unclosed "{{" — missing closing "}}"'
         });
         return errors;
       }
@@ -202,29 +202,29 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         continue;
       }
 
-      if (content === 'else' || /^else\s+if\b/.test(content)) {
-        tokens.push({ kind: 'else', line });
+      if (content === "else" || /^else\s+if\b/.test(content)) {
+        tokens.push({ kind: "else", line });
         i = close + 2;
         continue;
       }
 
       const first = content.charAt(0);
-      if (first === '>') {
-        tokens.push({ kind: 'partial', line });
+      if (first === ">") {
+        tokens.push({ kind: "partial", line });
         i = close + 2;
         continue;
       }
 
-      if (first === '/') {
+      if (first === "/") {
         const name = helperName(content.slice(1));
         if (!name) {
           errors.push({ line, message: 'Invalid "{{/}}" — missing block name' });
         } else {
           tokens.push({
-            kind: 'blockClose',
+            kind: "blockClose",
             name,
             line,
-            indent: columnIndent(start),
+            indent: columnIndent(start)
           });
         }
         i = close + 2;
@@ -232,30 +232,30 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
       }
 
       // Block open: `#foo`, `^foo`, `#>foo`, `#*inline "…"`.
-      if (first === '#' || first === '^') {
+      if (first === "#" || first === "^") {
         let body = content.slice(1).trimStart();
-        if (body.startsWith('>')) body = body.slice(1).trimStart(); // `#>` partial block
-        if (body.startsWith('*')) body = body.slice(1).trimStart(); // `#*inline`
+        if (body.startsWith(">")) body = body.slice(1).trimStart(); // `#>` partial block
+        if (body.startsWith("*")) body = body.slice(1).trimStart(); // `#*inline`
         const name = helperName(body);
         if (!name) {
           errors.push({
             line,
-            message: `Invalid "{{${first}}}" — missing block name`,
+            message: `Invalid "{{${first}}}" — missing block name`
           });
         } else {
           tokens.push({
-            kind: 'blockOpen',
+            kind: "blockOpen",
             name,
             line,
             indent: columnIndent(start),
-            display: `{{${content}}}`,
+            display: `{{${content}}}`
           });
         }
         i = close + 2;
         continue;
       }
 
-      tokens.push({ kind: 'expr', content, line });
+      tokens.push({ kind: "expr", content, line });
       i = close + 2;
       continue;
     }
@@ -274,34 +274,34 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
 
   for (const t of tokens) {
     if (rawStackDepth > 0) {
-      if (t.kind === 'rawClose') rawStackDepth--;
-      if (t.kind === 'rawOpen') rawStackDepth++;
+      if (t.kind === "rawClose") rawStackDepth--;
+      if (t.kind === "rawOpen") rawStackDepth++;
       continue;
     }
 
     switch (t.kind) {
-      case 'rawOpen':
+      case "rawOpen":
         rawStackDepth++;
         break;
-      case 'rawClose':
+      case "rawClose":
         errors.push({
           line: t.line,
-          message: `Unexpected {{{{/${t.name}}}}} with no matching {{{{${t.name}}}}}`,
+          message: `Unexpected {{{{/${t.name}}}}} with no matching {{{{${t.name}}}}}`
         });
         break;
-      case 'blockOpen':
+      case "blockOpen":
         blockStack.push({
           name: t.name,
           line: t.line,
           indent: t.indent,
-          display: t.display,
+          display: t.display
         });
         break;
-      case 'blockClose': {
+      case "blockClose": {
         if (blockStack.length === 0) {
           errors.push({
             line: t.line,
-            message: `Unexpected {{/${t.name}}} with no matching {{#${t.name}}}`,
+            message: `Unexpected {{/${t.name}}} with no matching {{#${t.name}}}`
           });
           break;
         }
@@ -343,7 +343,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           const last = blockStack[blockStack.length - 1];
           errors.push({
             line: t.line,
-            message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`,
+            message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`
           });
           blockStack.pop();
           break;
@@ -357,17 +357,17 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           const unclosed = blockStack[j];
           errors.push({
             line: unclosed.line,
-            message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`,
+            message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`
           });
         }
         blockStack.length = matchIdx;
         break;
       }
-      case 'else':
+      case "else":
         if (blockStack.length === 0) {
           errors.push({
             line: t.line,
-            message: '{{else}} outside of any {{#if}} / {{#each}} / {{#unless}} block',
+            message: "{{else}} outside of any {{#if}} / {{#each}} / {{#unless}} block"
           });
         }
         break;
@@ -379,7 +379,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
   for (const block of blockStack) {
     errors.push({
       line: block.line,
-      message: `Unclosed ${block.display} — missing {{/${block.name}}}`,
+      message: `Unclosed ${block.display} — missing {{/${block.name}}}`
     });
   }
 
@@ -392,8 +392,8 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
  */
 function stripTildes(content: string): string {
   let s = content;
-  if (s.startsWith('~')) s = s.slice(1).trimStart();
-  if (s.endsWith('~')) s = s.slice(0, -1).trimEnd();
+  if (s.startsWith("~")) s = s.slice(1).trimStart();
+  if (s.endsWith("~")) s = s.slice(0, -1).trimEnd();
   return s;
 }
 

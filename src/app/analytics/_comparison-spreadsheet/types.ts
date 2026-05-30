@@ -38,10 +38,8 @@ export type SliceData = {
   steps: StepPerformanceRow[];
 };
 
-export type SortField = 'successPct' | 'failurePct';
+export type SortField = "successPct" | "failurePct";
 
-export type SortCol = { sliceKey: string; field: SortField; dir: 'asc' | 'desc' };
+export type SortCol = { sliceKey: string; field: SortField; dir: "asc" | "desc" };
 
-export type CategoryRow =
-  | { type: 'category'; categoryName: string }
-  | { type: 'issue'; categoryName: string; issueName: string };
+export type CategoryRow = { type: "category"; categoryName: string } | { type: "issue"; categoryName: string; issueName: string };

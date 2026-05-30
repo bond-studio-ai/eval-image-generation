@@ -1,39 +1,37 @@
-import { toUrlArray } from './image-utils';
-import { CATEGORY_LABELS } from './validation';
+import { toUrlArray } from "./image-utils";
+import { CATEGORY_LABELS } from "./validation";
 
 /** Product category: camelCase key (API response) -> snake_case key (evaluation form). */
 const PRODUCT_COLUMN_KEYS: { camelKey: string; snakeKey: string }[] = [
-  { camelKey: 'faucets', snakeKey: 'faucets' },
-  { camelKey: 'lightings', snakeKey: 'lightings' },
-  { camelKey: 'lvps', snakeKey: 'lvps' },
-  { camelKey: 'mirrors', snakeKey: 'mirrors' },
-  { camelKey: 'paints', snakeKey: 'paints' },
-  { camelKey: 'robeHooks', snakeKey: 'robe_hooks' },
-  { camelKey: 'shelves', snakeKey: 'shelves' },
-  { camelKey: 'showerGlasses', snakeKey: 'shower_glasses' },
-  { camelKey: 'showerSystems', snakeKey: 'shower_systems' },
-  { camelKey: 'floorTiles', snakeKey: 'floor_tiles' },
-  { camelKey: 'wallTiles', snakeKey: 'wall_tiles' },
-  { camelKey: 'showerWallTiles', snakeKey: 'shower_wall_tiles' },
-  { camelKey: 'showerFloorTiles', snakeKey: 'shower_floor_tiles' },
-  { camelKey: 'showerCurbTiles', snakeKey: 'shower_curb_tiles' },
-  { camelKey: 'toiletPaperHolders', snakeKey: 'toilet_paper_holders' },
-  { camelKey: 'toilets', snakeKey: 'toilets' },
-  { camelKey: 'towelBars', snakeKey: 'towel_bars' },
-  { camelKey: 'towelRings', snakeKey: 'towel_rings' },
-  { camelKey: 'tubDoors', snakeKey: 'tub_doors' },
-  { camelKey: 'tubFillers', snakeKey: 'tub_fillers' },
-  { camelKey: 'tubs', snakeKey: 'tubs' },
-  { camelKey: 'vanities', snakeKey: 'vanities' },
-  { camelKey: 'wallpapers', snakeKey: 'wallpapers' },
+  { camelKey: "faucets", snakeKey: "faucets" },
+  { camelKey: "lightings", snakeKey: "lightings" },
+  { camelKey: "lvps", snakeKey: "lvps" },
+  { camelKey: "mirrors", snakeKey: "mirrors" },
+  { camelKey: "paints", snakeKey: "paints" },
+  { camelKey: "robeHooks", snakeKey: "robe_hooks" },
+  { camelKey: "shelves", snakeKey: "shelves" },
+  { camelKey: "showerGlasses", snakeKey: "shower_glasses" },
+  { camelKey: "showerSystems", snakeKey: "shower_systems" },
+  { camelKey: "floorTiles", snakeKey: "floor_tiles" },
+  { camelKey: "wallTiles", snakeKey: "wall_tiles" },
+  { camelKey: "showerWallTiles", snakeKey: "shower_wall_tiles" },
+  { camelKey: "showerFloorTiles", snakeKey: "shower_floor_tiles" },
+  { camelKey: "showerCurbTiles", snakeKey: "shower_curb_tiles" },
+  { camelKey: "toiletPaperHolders", snakeKey: "toilet_paper_holders" },
+  { camelKey: "toilets", snakeKey: "toilets" },
+  { camelKey: "towelBars", snakeKey: "towel_bars" },
+  { camelKey: "towelRings", snakeKey: "towel_rings" },
+  { camelKey: "tubDoors", snakeKey: "tub_doors" },
+  { camelKey: "tubFillers", snakeKey: "tub_fillers" },
+  { camelKey: "tubs", snakeKey: "tubs" },
+  { camelKey: "vanities", snakeKey: "vanities" },
+  { camelKey: "wallpapers", snakeKey: "wallpapers" }
 ];
 
 /**
  * Returns snake_case product category keys that have at least one image in the generation input.
  */
-export function getActiveProductCategories(
-  input: Record<string, unknown> | null | undefined,
-): string[] {
+export function getActiveProductCategories(input: Record<string, unknown> | null | undefined): string[] {
   if (!input) return [];
   const out: string[] = [];
   for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
@@ -52,9 +50,7 @@ export interface ProductImageItem {
 /**
  * Returns product category images from generation input for display (grid, etc.).
  */
-export function getProductImagesFromInput(
-  input: Record<string, unknown> | null | undefined,
-): ProductImageItem[] {
+export function getProductImagesFromInput(input: Record<string, unknown> | null | undefined): ProductImageItem[] {
   if (!input) return [];
   const out: ProductImageItem[] = [];
   for (const { camelKey, snakeKey } of PRODUCT_COLUMN_KEYS) {
@@ -63,7 +59,7 @@ export function getProductImagesFromInput(
       out.push({
         key: snakeKey,
         label: CATEGORY_LABELS[snakeKey] ?? snakeKey,
-        urls,
+        urls
       });
     }
   }

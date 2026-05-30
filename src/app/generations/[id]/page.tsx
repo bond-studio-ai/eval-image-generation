@@ -1,27 +1,27 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { DeleteGenerationButton } from '@/components/delete-generation-button';
-import { PageHeader } from '@/components/page-header';
-import { RatingBadge } from '@/components/rating-badge';
-import { ExternalLinkIcon } from '@/components/ui/icons';
-import { fetchGenerationById } from '@/lib/service-client';
-import { deriveProductImages } from './_components/generation-data';
-import { MetadataSection } from './_components/metadata-section';
-import { buildNavSections } from './_components/nav-sections';
-import { OutputImagesSection } from './_components/output-images-section';
-import { ProductImagesSection } from './_components/product-images-section';
-import { PromptsSection } from './_components/prompts-section';
-import { RatingSection } from './_components/rating-section';
-import { SceneImagesSection } from './_components/scene-images-section';
-import type { ResultImage } from './_components/types';
-import { SectionNav } from './section-nav';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { DeleteGenerationButton } from "@/components/delete-generation-button";
+import { PageHeader } from "@/components/page-header";
+import { RatingBadge } from "@/components/rating-badge";
+import { ExternalLinkIcon } from "@/components/ui/icons";
+import { fetchGenerationById } from "@/lib/service-client";
+import { deriveProductImages } from "./_components/generation-data";
+import { MetadataSection } from "./_components/metadata-section";
+import { buildNavSections } from "./_components/nav-sections";
+import { OutputImagesSection } from "./_components/output-images-section";
+import { ProductImagesSection } from "./_components/product-images-section";
+import { PromptsSection } from "./_components/prompts-section";
+import { RatingSection } from "./_components/rating-section";
+import { SceneImagesSection } from "./_components/scene-images-section";
+import type { ResultImage } from "./_components/types";
+import { SectionNav } from "./section-nav";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: 'Generation',
-  description: 'Generation detail, results, and evaluation.',
+  title: "Generation",
+  description: "Generation detail, results, and evaluation."
 };
 
 interface PageProps {
@@ -68,12 +68,9 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         title="Generation Detail"
         subtitle={
           <span>
-            Prompt Version:{' '}
-            <Link
-              href={`/prompt-versions/${promptVersion?.id}`}
-              className="text-primary-600 hover:text-primary-500 inline-flex items-center gap-1"
-            >
-              {promptVersion?.name || 'Untitled'}
+            Prompt Version:{" "}
+            <Link href={`/prompt-versions/${promptVersion?.id}`} className="text-primary-600 hover:text-primary-500 inline-flex items-center gap-1">
+              {promptVersion?.name || "Untitled"}
               <ExternalLinkIcon className="size-3.5" />
             </Link>
           </span>
@@ -87,33 +84,17 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         }
       />
 
-      <RatingSection
-        generationId={result.id}
-        sceneAccuracyRating={sceneAccuracyRating}
-        productAccuracyRating={productAccuracyRating}
-      />
+      <RatingSection generationId={result.id} sceneAccuracyRating={sceneAccuracyRating} productAccuracyRating={productAccuracyRating} />
 
       <OutputImagesSection results={results} activeProductCategories={activeProductCategories} />
 
-      <MetadataSection
-        createdAt={createdAt}
-        executionTime={executionTime}
-        resultCount={results.length}
-        notes={notes}
-      />
+      <MetadataSection createdAt={createdAt} executionTime={executionTime} resultCount={results.length} notes={notes} />
 
-      <SceneImagesSection
-        dollhouseView={dollhouseView}
-        realPhoto={realPhoto}
-        moodBoard={moodBoard}
-      />
+      <SceneImagesSection dollhouseView={dollhouseView} realPhoto={realPhoto} moodBoard={moodBoard} />
 
       <ProductImagesSection productImages={productImages} />
 
-      <PromptsSection
-        systemPrompt={promptVersion?.systemPrompt}
-        userPrompt={promptVersion?.userPrompt}
-      />
+      <PromptsSection systemPrompt={promptVersion?.systemPrompt} userPrompt={promptVersion?.userPrompt} />
     </div>
   );
 }

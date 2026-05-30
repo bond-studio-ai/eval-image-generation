@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 /**
  * Render a handlebars template with inline syntax highlighting.
@@ -16,14 +16,14 @@ import type { ReactNode } from 'react';
  * have the character positions line up with the textarea exactly.
  */
 
-type HandlebarsKind = 'comment' | 'block' | 'partial' | 'expr' | 'unescaped';
+type HandlebarsKind = "comment" | "block" | "partial" | "expr" | "unescaped";
 
 const CLASS_BY_KIND: Record<HandlebarsKind, string> = {
-  comment: 'italic text-gray-400',
-  block: 'font-medium text-purple-700',
-  partial: 'text-emerald-700',
-  expr: 'text-blue-700',
-  unescaped: 'text-amber-700',
+  comment: "italic text-gray-400",
+  block: "font-medium text-purple-700",
+  partial: "text-emerald-700",
+  expr: "text-blue-700",
+  unescaped: "text-amber-700"
 };
 
 // Match (in priority order):
@@ -37,14 +37,14 @@ function mustacheRegex(): RegExp {
 }
 
 function classify(match: string): HandlebarsKind {
-  if (match.startsWith('{{!')) return 'comment';
-  if (match.startsWith('{{{')) return 'unescaped';
+  if (match.startsWith("{{!")) return "comment";
+  if (match.startsWith("{{{")) return "unescaped";
   const inner = match.slice(2, -2).trimStart();
   const first = inner.charAt(0);
-  if (first === '#' || first === '/' || first === '^') return 'block';
-  if (first === '>') return 'partial';
-  if (/^else\b/.test(inner)) return 'block';
-  return 'expr';
+  if (first === "#" || first === "/" || first === "^") return "block";
+  if (first === ">") return "partial";
+  if (/^else\b/.test(inner)) return "block";
+  return "expr";
 }
 
 /**
@@ -60,7 +60,7 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
 
   const push = (text: string, className?: string) => {
     if (!text) return;
-    const parts = text.split('\n');
+    const parts = text.split("\n");
     parts.forEach((part, i) => {
       if (part.length > 0) {
         const k = `p-${keyCounter++}`;
@@ -95,7 +95,7 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
   // it with a zero-width character to preserve the row height.
   for (const line of lines) {
     if (line.length === 0) {
-      line.push(<span key={`z-${keyCounter++}`}>{'\u200B'}</span>);
+      line.push(<span key={`z-${keyCounter++}`}>{"\u200B"}</span>);
     }
   }
 

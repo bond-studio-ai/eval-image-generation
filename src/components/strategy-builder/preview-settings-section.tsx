@@ -1,19 +1,14 @@
-'use client';
+"use client";
 
-import type { Dispatch, SetStateAction } from 'react';
-import { SearchableSelect } from './searchable-select';
-import {
-  defaultPreviewSettings,
-  PREVIEW_RESOLUTIONS,
-  type ModelOption,
-  type PreviewSettings,
-} from './types';
+import type { Dispatch, SetStateAction } from "react";
+import { SearchableSelect } from "./searchable-select";
+import { defaultPreviewSettings, PREVIEW_RESOLUTIONS, type ModelOption, type PreviewSettings } from "./types";
 
 export function PreviewSettingsSection({
   previewSettings,
   setPreviewSettings,
   previewModels,
-  defaultPreviewModel,
+  defaultPreviewModel
 }: {
   previewSettings: PreviewSettings;
   setPreviewSettings: Dispatch<SetStateAction<PreviewSettings>>;
@@ -25,10 +20,7 @@ export function PreviewSettingsSection({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-h3 text-text-primary font-semibold">Preview Generation</h2>
-          <p className="text-caption text-text-muted mt-1">
-            Generate a fast, low-resolution preview in parallel with the main run. Sends an early
-            callback before the full result.
-          </p>
+          <p className="text-caption text-text-muted mt-1">Generate a fast, low-resolution preview in parallel with the main run. Sends an early callback before the full result.</p>
         </div>
         <label className="relative inline-flex cursor-pointer items-center">
           <span className="sr-only">Enable preview generation</span>
@@ -39,7 +31,7 @@ export function PreviewSettingsSection({
               if (e.target.checked) {
                 setPreviewSettings({
                   preview_model: defaultPreviewModel,
-                  preview_resolution: '512',
+                  preview_resolution: "512"
                 });
               } else {
                 setPreviewSettings(defaultPreviewSettings);
@@ -57,26 +49,16 @@ export function PreviewSettingsSection({
             <label htmlFor="preview-model" className="mb-1 block text-xs font-medium text-gray-600">
               Preview Model
             </label>
-            <SearchableSelect
-              id="preview-model"
-              value={previewSettings.preview_model}
-              options={previewModels}
-              onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))}
-            />
+            <SearchableSelect id="preview-model" value={previewSettings.preview_model} options={previewModels} onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))} />
           </div>
           <div>
-            <label
-              htmlFor="preview-resolution"
-              className="mb-1 block text-xs font-medium text-gray-600"
-            >
+            <label htmlFor="preview-resolution" className="mb-1 block text-xs font-medium text-gray-600">
               Preview Resolution
             </label>
             <select
               id="preview-resolution"
               value={previewSettings.preview_resolution}
-              onChange={(e) =>
-                setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))
-              }
+              onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
               className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
             >
               {PREVIEW_RESOLUTIONS.map((r) => (

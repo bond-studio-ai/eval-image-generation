@@ -1,5 +1,5 @@
-import type { InputImage } from '@/lib/run-image-types';
-import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
+import type { InputImage } from "@/lib/run-image-types";
+import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 export type { InputImage };
 

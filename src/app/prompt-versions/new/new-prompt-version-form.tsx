@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useReducer, useState } from 'react';
-import { PageHeader, PrimaryButton } from '@/components/page-header';
-import { PromptTemplateEditor } from '@/components/prompt-template-editor';
-import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
-import { TwoPaneSplit } from '@/components/two-pane-split';
-import { serviceUrl } from '@/lib/api-base';
+import { useRouter } from "next/navigation";
+import { useReducer, useState } from "react";
+import { PageHeader, PrimaryButton } from "@/components/page-header";
+import { PromptTemplateEditor } from "@/components/prompt-template-editor";
+import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
+import { TwoPaneSplit } from "@/components/two-pane-split";
+import { serviceUrl } from "@/lib/api-base";
 
 interface FormState {
   name: string;
@@ -17,32 +17,31 @@ interface FormState {
 
 type FormAction =
   | {
-      [K in keyof FormState]: { type: 'setField'; field: K; value: FormState[K] };
+      [K in keyof FormState]: { type: "setField"; field: K; value: FormState[K] };
     }[keyof FormState]
-  | { type: 'reset'; value: FormState };
+  | { type: "reset"; value: FormState };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
-    case 'setField':
+    case "setField":
       return { ...state, [action.field]: action.value };
-    case 'reset':
+    case "reset":
       return action.value;
   }
 }
 
 const initialFormState: FormState = {
-  name: '',
-  description: '',
-  systemPrompt: '',
-  userPrompt: '',
+  name: "",
+  description: "",
+  systemPrompt: "",
+  userPrompt: ""
 };
 
 export function NewPromptVersionForm() {
   const router = useRouter();
 
   const [form, dispatch] = useReducer(formReducer, initialFormState);
-  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
-    dispatch({ type: 'setField', field, value });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => dispatch({ type: "setField", field, value });
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,41 +54,36 @@ export function NewPromptVersionForm() {
     setError(null);
 
     try {
-      const res = await fetch(serviceUrl('prompt-versions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(serviceUrl("prompt-versions"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name || undefined,
           description: form.description || undefined,
           system_prompt: form.systemPrompt,
-          user_prompt: form.userPrompt,
-        }),
+          user_prompt: form.userPrompt
+        })
       });
 
-      const ct = res.headers.get('content-type') ?? '';
-      if (!ct.includes('application/json')) {
-        throw new Error(
-          res.redirected || res.status === 401
-            ? 'Session expired. Please refresh the page.'
-            : `Unexpected response from server (${res.status}). Please try again.`,
-        );
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) {
+        throw new Error(res.redirected || res.status === 401 ? "Session expired. Please refresh the page." : `Unexpected response from server (${res.status}). Please try again.`);
       }
 
       const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(json.error?.message || 'Failed to create');
+        throw new Error(json.error?.message || "Failed to create");
       }
 
       router.push(`/prompt-versions/${json.data.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setCreating(false);
     }
   }
 
-  const editableInput =
-    'w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1';
+  const editableInput = "w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
 
   return (
     <div className="flex flex-col">
@@ -98,12 +92,8 @@ export function NewPromptVersionForm() {
         backLabel="Back to Prompt Versions"
         title=""
         actions={
-          <PrimaryButton
-            onClick={handleCreate}
-            disabled={!canCreate || creating}
-            loading={creating}
-          >
-            {creating ? 'Creating...' : 'Create Prompt Version'}
+          <PrimaryButton onClick={handleCreate} disabled={!canCreate || creating} loading={creating}>
+            {creating ? "Creating..." : "Create Prompt Version"}
           </PrimaryButton>
         }
       />
@@ -111,11 +101,11 @@ export function NewPromptVersionForm() {
       <div className="mt-6">
         <ResourceFormHeader
           name={form.name}
-          onNameChange={(value) => setField('name', value)}
+          onNameChange={(value) => setField("name", value)}
           namePlaceholder="e.g. Bathroom generation v2"
           nameRequired={false}
           description={form.description}
-          onDescriptionChange={(value) => setField('description', value)}
+          onDescriptionChange={(value) => setField("description", value)}
         />
       </div>
 
@@ -127,7 +117,7 @@ export function NewPromptVersionForm() {
 
       {/* Stats placeholder — mirrors the detail page structure */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-        {['Generations', 'Rated', 'Avg Rating', 'Unrated'].map((label) => (
+        {["Generations", "Rated", "Avg Rating", "Unrated"].map((label) => (
           <div key={label} className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
             <p className="text-sm font-medium text-gray-600">{label}</p>
             <p className="mt-1 text-2xl font-bold text-gray-900">-</p>
@@ -146,7 +136,7 @@ export function NewPromptVersionForm() {
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
                 value={form.systemPrompt}
-                onChange={(value) => setField('systemPrompt', value)}
+                onChange={(value) => setField("systemPrompt", value)}
                 placeholder="System prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                 className={`font-mono ${editableInput}`}
                 fillHeight
@@ -162,7 +152,7 @@ export function NewPromptVersionForm() {
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
                 value={form.userPrompt}
-                onChange={(value) => setField('userPrompt', value)}
+                onChange={(value) => setField("userPrompt", value)}
                 placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                 className={`font-mono ${editableInput}`}
                 fillHeight
@@ -175,9 +165,7 @@ export function NewPromptVersionForm() {
       {/* Generations placeholder */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Generations</h2>
-        <p className="mt-4 text-sm text-gray-600">
-          No generations yet. Create this prompt version first, then generate images.
-        </p>
+        <p className="mt-4 text-sm text-gray-600">No generations yet. Create this prompt version first, then generate images.</p>
       </div>
     </div>
   );

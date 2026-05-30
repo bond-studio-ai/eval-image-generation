@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { DateRangePicker } from '@/components/date-range-picker';
-import { SegmentedControl } from '@/components/ui/segmented-control';
+import { DateRangePicker } from "@/components/date-range-picker";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 export function BatchToolbar({
   from,
@@ -9,14 +9,14 @@ export function BatchToolbar({
   onChange,
   onClear,
   viewMode,
-  onViewModeChange,
+  onViewModeChange
 }: {
   from: string;
   to: string;
   onChange: (from: string, to: string) => void;
   onClear: () => void;
-  viewMode: 'list' | 'matrix';
-  onViewModeChange: (value: 'list' | 'matrix') => void;
+  viewMode: "list" | "matrix";
+  onViewModeChange: (value: "list" | "matrix") => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -24,8 +24,8 @@ export function BatchToolbar({
 
       <SegmentedControl
         options={[
-          { value: 'list', label: 'List' },
-          { value: 'matrix', label: 'Matrix' },
+          { value: "list", label: "List" },
+          { value: "matrix", label: "Matrix" }
         ]}
         value={viewMode}
         onChange={(v) => onViewModeChange(v)}

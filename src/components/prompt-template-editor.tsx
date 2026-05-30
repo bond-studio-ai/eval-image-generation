@@ -1,31 +1,15 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { localUrl } from '@/lib/api-base';
-import {
-  CONDITIONAL_OPTIONS,
-  DOLLHOUSE_ATTRIBUTES,
-  DOLLHOUSE_PRODUCT_TYPES,
-  dollhouseReferencePath,
-  REFERENCE_OPTIONS,
-  toDollhousePathKey,
-} from '@/lib/prompt-template-constants';
-import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
-import { ConditionalPopover } from './prompt-template-editor/conditional-popover';
-import { DollhousePopover } from './prompt-template-editor/dollhouse-popover';
-import { HighlightedTextarea } from './prompt-template-editor/highlighted-textarea';
-import { ReferencePopover } from './prompt-template-editor/reference-popover';
-import {
-  attributesInitial,
-  attributesReducer,
-  conditionalInitial,
-  conditionalReducer,
-  dollhouseInitial,
-  dollhouseReducer,
-  referenceInitial,
-  referenceReducer,
-} from './prompt-template-editor/state';
-import { TemplateErrors } from './prompt-template-editor/template-errors';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { localUrl } from "@/lib/api-base";
+import { CONDITIONAL_OPTIONS, DOLLHOUSE_ATTRIBUTES, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
+import { validateHandlebarsTemplate } from "@/lib/validate-handlebars";
+import { ConditionalPopover } from "./prompt-template-editor/conditional-popover";
+import { DollhousePopover } from "./prompt-template-editor/dollhouse-popover";
+import { HighlightedTextarea } from "./prompt-template-editor/highlighted-textarea";
+import { ReferencePopover } from "./prompt-template-editor/reference-popover";
+import { attributesInitial, attributesReducer, conditionalInitial, conditionalReducer, dollhouseInitial, dollhouseReducer, referenceInitial, referenceReducer } from "./prompt-template-editor/state";
+import { TemplateErrors } from "./prompt-template-editor/template-errors";
 
 interface PromptTemplateEditorProps {
   value: string;
@@ -63,11 +47,11 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
       execCommand(command: string, showUi?: boolean, value?: string): boolean;
     }
   ).execCommand;
-  const ok = exec.call(document, 'insertText', false, text);
+  const ok = exec.call(document, "insertText", false, text);
   if (ok) return;
-  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
   setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
-  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event("input", { bubbles: true }));
   const caret = start + text.length;
   el.setSelectionRange(caret, caret);
 }
@@ -75,11 +59,11 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
 export function PromptTemplateEditor({
   value,
   onChange,
-  placeholder = 'Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}',
+  placeholder = "Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}",
   rows = 8,
-  className = '',
+  className = "",
   showPicker = true,
-  fillHeight = false,
+  fillHeight = false
 }: PromptTemplateEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -94,10 +78,10 @@ export function PromptTemplateEditor({
   const textareaClass = useMemo(() => {
     if (!hasErrors) return className;
     return className
-      .replace(/\bborder-gray-200\b/, 'border-red-300')
-      .replace(/\bhover:border-gray-300\b/, 'hover:border-red-400')
-      .replace(/\bfocus:border-primary-500\b/, 'focus:border-red-500')
-      .replace(/\bfocus:ring-primary-500\b/, 'focus:ring-red-500');
+      .replace(/\bborder-gray-200\b/, "border-red-300")
+      .replace(/\bhover:border-gray-300\b/, "hover:border-red-400")
+      .replace(/\bfocus:border-primary-500\b/, "focus:border-red-500")
+      .replace(/\bfocus:ring-primary-500\b/, "focus:ring-red-500");
   }, [className, hasErrors]);
 
   const handleInsert = useCallback((toInsert: string) => {
@@ -114,10 +98,10 @@ export function PromptTemplateEditor({
     const end = el.selectionEnd;
     const selected = el.value.slice(start, end);
     const prefix = `{{#if ${condition}}}`;
-    const inner = selected || '\n  \n';
+    const inner = selected || "\n  \n";
     const wrapper = `${prefix}${inner}{{/if}}`;
     insertWithUndo(el, start, end, wrapper);
-    dispatchConditional({ type: 'close' });
+    dispatchConditional({ type: "close" });
     // When the user had no selection, put the caret on the blank line
     // inside the wrapper (matches the previous behaviour).
     if (!selected) {
@@ -127,9 +111,9 @@ export function PromptTemplateEditor({
   }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
-    dispatchAttributes({ type: 'fetchStart' });
+    dispatchAttributes({ type: "fetchStart" });
     try {
-      const segment = category.replace(/_/g, '-');
+      const segment = category.replace(/_/g, "-");
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
       const json: {
         data?: { attributes?: unknown };
@@ -137,54 +121,54 @@ export function PromptTemplateEditor({
       } = await res.json();
       if (!res.ok) {
         dispatchAttributes({
-          type: 'fetchError',
-          error: json.error?.message ?? `Could not load attributes (${res.status})`,
+          type: "fetchError",
+          error: json.error?.message ?? `Could not load attributes (${res.status})`
         });
         return;
       }
       const raw = json.data?.attributes;
       const attrs = Array.isArray(raw) ? (raw as string[]) : [];
-      dispatchAttributes({ type: 'fetchSuccess', list: attrs });
+      dispatchAttributes({ type: "fetchSuccess", list: attrs });
     } catch {
-      dispatchAttributes({ type: 'fetchError', error: 'Failed to load attributes' });
+      dispatchAttributes({ type: "fetchError", error: "Failed to load attributes" });
     } finally {
-      dispatchAttributes({ type: 'fetchEnd' });
+      dispatchAttributes({ type: "fetchEnd" });
     }
   }, []);
 
   const handleReferenceCategorySelect = useCallback(
     (cat: (typeof REFERENCE_OPTIONS)[number]) => {
-      dispatchReference({ type: 'setCategory', value: cat.value });
+      dispatchReference({ type: "setCategory", value: cat.value });
       fetchAttributes(cat.value);
     },
-    [fetchAttributes],
+    [fetchAttributes]
   );
 
   const handleAttributeSelect = useCallback(
     (attr: string, singular: string) => {
       const ref = `{{products.${singular}.${attr}}}`;
       handleInsert(ref);
-      dispatchReference({ type: 'clearCategory' });
-      dispatchReference({ type: 'close' });
-      dispatchAttributes({ type: 'clearError' });
+      dispatchReference({ type: "clearCategory" });
+      dispatchReference({ type: "close" });
+      dispatchAttributes({ type: "clearError" });
     },
-    [handleInsert],
+    [handleInsert]
   );
 
   const handleDollhouseAttributeSelect = useCallback(
     (attr: (typeof DOLLHOUSE_ATTRIBUTES)[number]) => {
       if (!dollhouse.product) return;
       handleInsert(dollhouseReferencePath(dollhouse.product, attr));
-      dispatchDollhouse({ type: 'reset' });
+      dispatchDollhouse({ type: "reset" });
     },
-    [dollhouse.product, handleInsert],
+    [dollhouse.product, handleInsert]
   );
 
   const closeAll = useCallback(() => {
-    dispatchConditional({ type: 'reset' });
-    dispatchReference({ type: 'reset' });
-    dispatchDollhouse({ type: 'reset' });
-    dispatchAttributes({ type: 'clearError' });
+    dispatchConditional({ type: "reset" });
+    dispatchReference({ type: "reset" });
+    dispatchDollhouse({ type: "reset" });
+    dispatchAttributes({ type: "clearError" });
   }, []);
 
   const filteredConditionalOptions = useMemo(() => {
@@ -196,9 +180,7 @@ export function PromptTemplateEditor({
   const filteredReferenceOptions = useMemo(() => {
     const q = reference.search.trim().toLowerCase();
     if (!q) return REFERENCE_OPTIONS;
-    return REFERENCE_OPTIONS.filter(
-      (opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q),
-    );
+    return REFERENCE_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q));
   }, [reference.search]);
 
   const filteredDollhouseProducts = useMemo(() => {
@@ -207,10 +189,7 @@ export function PromptTemplateEditor({
     return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
   }, [dollhouse.search]);
 
-  const customDollhouseProduct = useMemo(
-    () => toDollhousePathKey(dollhouse.search),
-    [dollhouse.search],
-  );
+  const customDollhouseProduct = useMemo(() => toDollhousePathKey(dollhouse.search), [dollhouse.search]);
 
   useEffect(() => {
     if (!conditional.open && !reference.open && !dollhouse.open) return;
@@ -218,22 +197,20 @@ export function PromptTemplateEditor({
       if (containerRef.current?.contains(e.target as Node)) return;
       closeAll();
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [conditional.open, reference.open, dollhouse.open, closeAll]);
 
   if (!showPicker) {
     return (
-      <div className={fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}>
+      <div className={fillHeight ? "flex min-h-0 flex-1 flex-col" : ""}>
         <HighlightedTextarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className={
-            fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`
-          }
+          className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
           fillHeight={fillHeight}
         />
         <TemplateErrors errors={errors} />
@@ -242,16 +219,16 @@ export function PromptTemplateEditor({
   }
 
   return (
-    <div ref={containerRef} className={`flex flex-col gap-2 ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
+    <div ref={containerRef} className={`flex flex-col gap-2 ${fillHeight ? "min-h-0 flex-1" : ""}`}>
       <div className="grid shrink-0 grid-cols-3 gap-1.5">
         <ConditionalPopover
           state={conditional}
           dispatch={dispatchConditional}
           options={filteredConditionalOptions}
           onToggle={() => {
-            dispatchConditional({ type: 'toggle' });
-            dispatchReference({ type: 'close' });
-            dispatchDollhouse({ type: 'close' });
+            dispatchConditional({ type: "toggle" });
+            dispatchReference({ type: "close" });
+            dispatchDollhouse({ type: "close" });
           }}
           onSelect={handleConditionalSelect}
         />
@@ -264,11 +241,11 @@ export function PromptTemplateEditor({
           options={filteredReferenceOptions}
           onToggle={() => {
             const wasOpen = reference.open;
-            dispatchReference({ type: 'toggle' });
-            dispatchConditional({ type: 'close' });
-            dispatchDollhouse({ type: 'close' });
+            dispatchReference({ type: "toggle" });
+            dispatchConditional({ type: "close" });
+            dispatchDollhouse({ type: "close" });
             if (!wasOpen) {
-              dispatchAttributes({ type: 'clearError' });
+              dispatchAttributes({ type: "clearError" });
             }
           }}
           onCategorySelect={handleReferenceCategorySelect}
@@ -281,9 +258,9 @@ export function PromptTemplateEditor({
           filteredProducts={filteredDollhouseProducts}
           customProduct={customDollhouseProduct}
           onToggle={() => {
-            dispatchDollhouse({ type: 'toggle' });
-            dispatchConditional({ type: 'close' });
-            dispatchReference({ type: 'close' });
+            dispatchDollhouse({ type: "toggle" });
+            dispatchConditional({ type: "close" });
+            dispatchReference({ type: "close" });
           }}
           onAttributeSelect={handleDollhouseAttributeSelect}
         />
@@ -295,9 +272,7 @@ export function PromptTemplateEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className={
-          fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`
-        }
+        className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
         fillHeight={fillHeight}
       />
       <TemplateErrors errors={errors} />

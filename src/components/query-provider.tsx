@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 
 /**
  * App-wide React Query provider. The `QueryClient` is created lazily in state
@@ -18,10 +18,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             staleTime: 30_000,
             refetchOnWindowFocus: false,
             refetchOnReconnect: false,
-            retry: false,
-          },
-        },
-      }),
+            retry: false
+          }
+        }
+      })
   );
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;

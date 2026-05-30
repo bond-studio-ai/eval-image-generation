@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { AlertCircleIcon, CheckIcon, SparklesIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
-import { runReviewPost } from './run-review-post';
+import { useCallback } from "react";
+import { AlertCircleIcon, CheckIcon, SparklesIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { runReviewPost } from "./run-review-post";
 
 /**
  * One badge state per `generationId`. Mirrors the lifecycle of the
@@ -13,12 +13,7 @@ import { runReviewPost } from './run-review-post';
  * the success/total counts when we have them (only after a fresh
  * POST — GET responses don't include the counts).
  */
-export type ReviewState =
-  | { kind: 'idle' }
-  | { kind: 'checking' }
-  | { kind: 'running' }
-  | { kind: 'done'; cached?: boolean; succeeded?: number; total?: number }
-  | { kind: 'error'; message?: string };
+export type ReviewState = { kind: "idle" } | { kind: "checking" } | { kind: "running" } | { kind: "done"; cached?: boolean; succeeded?: number; total?: number } | { kind: "error"; message?: string };
 
 interface SegmentationBadgeProps {
   generationId: string | null | undefined;
@@ -33,26 +28,22 @@ interface SegmentationBadgeProps {
   onStateChange: (next: ReviewState) => void;
 }
 
-export function ReviewBadge({
-  generationId,
-  state: stateProp,
-  onStateChange,
-}: SegmentationBadgeProps) {
-  const state = stateProp ?? { kind: 'idle' };
+export function ReviewBadge({ generationId, state: stateProp, onStateChange }: SegmentationBadgeProps) {
+  const state = stateProp ?? { kind: "idle" };
 
   const runReview = useCallback(
     async (force: boolean) => {
       if (!generationId) return;
-      onStateChange({ kind: 'running' });
+      onStateChange({ kind: "running" });
       const next = await runReviewPost(generationId, force);
       onStateChange(next);
     },
-    [generationId, onStateChange],
+    [generationId, onStateChange]
   );
 
   if (!generationId) return null;
 
-  if (state.kind === 'checking') {
+  if (state.kind === "checking") {
     return (
       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
         <Spinner className="size-2.5" />
@@ -61,23 +52,17 @@ export function ReviewBadge({
     );
   }
 
-  if (state.kind === 'running') {
+  if (state.kind === "running") {
     return (
-      <span
-        className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
-        title="Review in progress"
-      >
+      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm" title="Review in progress">
         <Spinner className="size-2.5" />
         Reviewing
       </span>
     );
   }
 
-  if (state.kind === 'done') {
-    const label =
-      typeof state.succeeded === 'number' && typeof state.total === 'number'
-        ? `Reviewed ${state.succeeded}/${state.total}`
-        : 'Reviewed';
+  if (state.kind === "done") {
+    const label = typeof state.succeeded === "number" && typeof state.total === "number" ? `Reviewed ${state.succeeded}/${state.total}` : "Reviewed";
     return (
       <button
         type="button"
@@ -85,7 +70,7 @@ export function ReviewBadge({
           e.stopPropagation();
           runReview(true);
         }}
-        title={state.cached ? 'Cached. Click to re-run.' : 'Click to re-run review.'}
+        title={state.cached ? "Cached. Click to re-run." : "Click to re-run review."}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
         <CheckIcon className="size-2.5" />
@@ -94,7 +79,7 @@ export function ReviewBadge({
     );
   }
 
-  if (state.kind === 'error') {
+  if (state.kind === "error") {
     return (
       <button
         type="button"
@@ -102,7 +87,7 @@ export function ReviewBadge({
           e.stopPropagation();
           runReview(false);
         }}
-        title={state.message ?? 'Click to retry.'}
+        title={state.message ?? "Click to retry."}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
       >
         <AlertCircleIcon className="size-2.5" />

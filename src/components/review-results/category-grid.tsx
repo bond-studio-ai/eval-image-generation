@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ChevronIcon } from './icons';
-import { CompositeMaskCanvas, SkeletonImage } from './mask-preview';
-import type { CategoryRow } from './types';
+import { useState } from "react";
+import { ChevronIcon } from "./icons";
+import { CompositeMaskCanvas, SkeletonImage } from "./mask-preview";
+import type { CategoryRow } from "./types";
 
 /**
  * Per-category card: combined mask preview on top (every mask blended
@@ -32,26 +32,18 @@ function CategoryCard({ row }: { row: CategoryRow }) {
   // For singletons there's only one entry (the category itself) so
   // we hide the hint to avoid noise.
   const siblings = (row.consumerLabels ?? []).filter((label) => label !== row.label);
-  const consumerHint = siblings.length > 0 ? `Drift considers: ${siblings.join(', ')}` : null;
+  const consumerHint = siblings.length > 0 ? `Drift considers: ${siblings.join(", ")}` : null;
 
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span
-            className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300"
-            style={{ backgroundColor: swatch }}
-            aria-hidden="true"
-          />
+          <span className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300" style={{ backgroundColor: swatch }} aria-hidden="true" />
           <p className="truncate text-xs font-semibold text-gray-800" title={row.label}>
             {row.label}
           </p>
         </div>
-        {row.topScore !== null && (
-          <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] text-gray-700 tabular-nums ring-1 ring-gray-200">
-            {row.topScore.toFixed(2)}
-          </span>
-        )}
+        {row.topScore !== null && <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] text-gray-700 tabular-nums ring-1 ring-gray-200">{row.topScore.toFixed(2)}</span>}
       </div>
       {promptLine && (
         <p className="mt-0.5 truncate text-[10px] text-gray-600" title={promptLine}>
@@ -59,7 +51,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
         </p>
       )}
       <p className="mt-0.5 text-[10px] text-gray-500">
-        {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
+        {totalMasks} {totalMasks === 1 ? "mask" : "masks"}
       </p>
       {consumerHint && (
         <p className="mt-0.5 truncate text-[10px] text-gray-400" title={consumerHint}>
@@ -69,12 +61,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
 
       {row.masks.length > 0 ? (
         <div className="relative mt-2 block aspect-square w-full overflow-hidden rounded border border-gray-200 bg-white">
-          <CompositeMaskCanvas
-            masks={row.masks}
-            alt={`${row.label} combined mask preview (${totalMasks} ${totalMasks === 1 ? 'mask' : 'masks'} merged)`}
-            containerClassName="h-full w-full"
-            canvasClassName="h-full w-full object-contain"
-          />
+          <CompositeMaskCanvas masks={row.masks} alt={`${row.label} combined mask preview (${totalMasks} ${totalMasks === 1 ? "mask" : "masks"} merged)`} containerClassName="h-full w-full" canvasClassName="h-full w-full object-contain" />
         </div>
       ) : (
         <div className="mt-2 flex aspect-square w-full items-center justify-center rounded border border-dashed border-gray-200 bg-white">
@@ -84,9 +71,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
 
       {showIndividualMasks && (
         <div className="mt-2">
-          <p className="mb-1 text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
-            Individual masks
-          </p>
+          <p className="mb-1 text-[10px] font-semibold tracking-wide text-gray-500 uppercase">Individual masks</p>
           <div className="grid grid-cols-3 gap-1.5">
             {row.masks.map((mask, idx) => (
               <a
@@ -94,24 +79,11 @@ function CategoryCard({ row }: { row: CategoryRow }) {
                 href={mask.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={
-                  mask.score !== null
-                    ? `Mask ${idx + 1} · score ${mask.score.toFixed(3)}`
-                    : `Mask ${idx + 1}`
-                }
+                title={mask.score !== null ? `Mask ${idx + 1} · score ${mask.score.toFixed(3)}` : `Mask ${idx + 1}`}
                 className="group relative block aspect-square overflow-hidden rounded border border-gray-200 bg-white"
               >
-                <SkeletonImage
-                  src={mask.url}
-                  alt={`${row.label} mask ${idx + 1}`}
-                  containerClassName="h-full w-full"
-                  imgClassName="h-full w-full object-contain"
-                />
-                {mask.score !== null && (
-                  <span className="absolute right-0.5 bottom-0.5 rounded bg-black/60 px-1 py-px text-[9px] font-medium text-white tabular-nums">
-                    {mask.score.toFixed(2)}
-                  </span>
-                )}
+                <SkeletonImage src={mask.url} alt={`${row.label} mask ${idx + 1}`} containerClassName="h-full w-full" imgClassName="h-full w-full object-contain" />
+                {mask.score !== null && <span className="absolute right-0.5 bottom-0.5 rounded bg-black/60 px-1 py-px text-[9px] font-medium text-white tabular-nums">{mask.score.toFixed(2)}</span>}
               </a>
             ))}
           </div>
@@ -147,7 +119,7 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
     seen.set(row.category, {
       color: row.color,
       displayLabel,
-      totalMasks: row.masks.length,
+      totalMasks: row.masks.length
     });
   }
   const entries = Array.from(seen.entries());
@@ -157,15 +129,8 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {entries.map(([category, entry]) => (
           <div key={category} className="flex min-w-0 items-center gap-1.5">
-            <span
-              className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300"
-              style={{ backgroundColor: entry.color }}
-              aria-hidden="true"
-            />
-            <span
-              className="truncate text-[11px] leading-tight text-gray-700"
-              title={`${entry.displayLabel} · ${entry.totalMasks} ${entry.totalMasks === 1 ? 'mask' : 'masks'}`}
-            >
+            <span className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300" style={{ backgroundColor: entry.color }} aria-hidden="true" />
+            <span className="truncate text-[11px] leading-tight text-gray-700" title={`${entry.displayLabel} · ${entry.totalMasks} ${entry.totalMasks === 1 ? "mask" : "masks"}`}>
               {entry.displayLabel}
             </span>
           </div>
@@ -196,27 +161,20 @@ export function CollapsibleCategoryGrid({ rows }: { rows: CategoryRow[] }) {
         className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
       >
         <span className="flex items-center gap-2">
-          <ChevronIcon
-            className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
-          />
-          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
-            Per-category masks
-          </span>
+          <ChevronIcon className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? "rotate-90" : ""}`} />
+          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Per-category masks</span>
           <span className="text-[11px] font-normal text-gray-500">
-            {rows.length} {rows.length === 1 ? 'category' : 'categories'}
+            {rows.length} {rows.length === 1 ? "category" : "categories"}
           </span>
         </span>
         <span className="text-[11px] text-gray-500 tabular-nums">
-          {totalMasks} {totalMasks === 1 ? 'mask' : 'masks'}
+          {totalMasks} {totalMasks === 1 ? "mask" : "masks"}
         </span>
       </button>
       {open && (
         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <CategoryCard
-              key={`${row.category}/${row.group ?? row.category}/${row.promptSlug ?? row.category}`}
-              row={row}
-            />
+            <CategoryCard key={`${row.category}/${row.group ?? row.category}/${row.promptSlug ?? row.category}`} row={row} />
           ))}
         </div>
       )}

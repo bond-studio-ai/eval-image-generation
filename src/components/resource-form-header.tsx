@@ -1,4 +1,4 @@
-import { AlertCircleIcon } from '@/components/ui/icons';
+import { AlertCircleIcon } from "@/components/ui/icons";
 
 interface ResourceFormHeaderProps {
   name: string;
@@ -10,23 +10,12 @@ interface ResourceFormHeaderProps {
   descriptionPlaceholder?: string;
 }
 
-export function ResourceFormHeader({
-  name,
-  onNameChange,
-  namePlaceholder = 'Untitled',
-  nameRequired = true,
-  description,
-  onDescriptionChange,
-  descriptionPlaceholder = 'Optional description...',
-}: ResourceFormHeaderProps) {
+export function ResourceFormHeader({ name, onNameChange, namePlaceholder = "Untitled", nameRequired = true, description, onDescriptionChange, descriptionPlaceholder = "Optional description..." }: ResourceFormHeaderProps) {
   return (
     <div className="rounded-card border-border bg-surface shadow-card border p-5">
       <div className="space-y-4">
         <div>
-          <label
-            htmlFor="resource-form-name"
-            className="text-body text-text-primary mb-1 block font-medium"
-          >
+          <label htmlFor="resource-form-name" className="text-body text-text-primary mb-1 block font-medium">
             Name {nameRequired && <span className="text-danger-500">*</span>}
           </label>
           <input
@@ -39,10 +28,7 @@ export function ResourceFormHeader({
           />
         </div>
         <div>
-          <label
-            htmlFor="resource-form-description"
-            className="text-body text-text-primary mb-1 block font-medium"
-          >
+          <label htmlFor="resource-form-description" className="text-body text-text-primary mb-1 block font-medium">
             Description
           </label>
           <textarea

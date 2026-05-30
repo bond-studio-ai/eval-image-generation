@@ -1,19 +1,16 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
-import { errorResponse } from '@/lib/api-response';
-import { platformApiBase } from '@/lib/env';
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { errorResponse } from "@/lib/api-response";
+import { platformApiBase } from "@/lib/env";
 
 const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
 
-const FORWARDED_KEYS = ['format[]', 'include[]'] as const;
+const FORWARDED_KEYS = ["format[]", "include[]"] as const;
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ projectId: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
   const { userId } = await auth();
   if (!userId) {
-    return errorResponse('UNAUTHORIZED', 'Sign in is required to access the projects API.');
+    return errorResponse("UNAUTHORIZED", "Sign in is required to access the projects API.");
   }
 
   try {
@@ -26,15 +23,15 @@ export async function GET(
       }
     }
     const qs = forwarded.toString();
-    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}` + (qs ? `?${qs}` : '');
+    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}` + (qs ? `?${qs}` : "");
 
     const res = await fetch(upstreamUrl, {
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 60 },
+      headers: { Accept: "application/json" },
+      next: { revalidate: 60 }
     });
 
     if (!res.ok) {
-      return errorResponse('INTERNAL_ERROR', `Projects API returned ${res.status}`);
+      return errorResponse("INTERNAL_ERROR", `Projects API returned ${res.status}`);
     }
 
     // Pass the upstream body through unchanged; it already wraps the project in
@@ -43,7 +40,7 @@ export async function GET(
     const json: unknown = await res.json();
     return NextResponse.json(json, { status: 200 });
   } catch (err) {
-    console.error('[project detail] Error:', err);
-    return errorResponse('INTERNAL_ERROR', 'Failed to fetch project details');
+    console.error("[project detail] Error:", err);
+    return errorResponse("INTERNAL_ERROR", "Failed to fetch project details");
   }
 }

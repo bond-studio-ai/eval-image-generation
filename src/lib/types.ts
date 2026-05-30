@@ -18,7 +18,7 @@ export interface PromptVersionListItem {
  *   - `pdp` targets product-detail-page strategies that consume
  *     caller-supplied arbitrary images via the PDP runs endpoint.
  */
-export type StrategyRunSource = 'dollhouse' | 'photo' | 'pdp';
+export type StrategyRunSource = "dollhouse" | "photo" | "pdp";
 
 export interface StrategyListItem {
   id: string;

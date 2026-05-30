@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 /**
  * Visual-regression and accessibility harness.
@@ -14,18 +14,18 @@ import { defineConfig } from '@playwright/test';
  *   4. `yarn playwright test`
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: "./tests/e2e",
   timeout: 60_000,
   expect: {
-    toHaveScreenshot: { maxDiffPixelRatio: 0.01 },
+    toHaveScreenshot: { maxDiffPixelRatio: 0.01 }
   },
   fullyParallel: true,
-  reporter: [['list']],
+  reporter: [["list"]],
   use: {
-    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
     storageState: process.env.STORAGE_STATE,
     viewport: { width: 1440, height: 900 },
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-  },
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure"
+  }
 });

@@ -1,17 +1,17 @@
-import type { Metadata } from 'next';
-import { GenerationsFilters } from '@/app/generations/generations-filters';
-import { EmptyState } from '@/components/empty-state';
-import { GenerationsList, type GenerationRow } from '@/components/generations-list';
-import { Tabs, type TabItem } from '@/components/ui/tabs';
-import { fetchGenerations, fetchPromptVersions } from '@/lib/service-client';
-import { ExecutionsPageHeader } from './executions-page-header';
-import { ExecutionsTabs } from './executions-tabs';
+import type { Metadata } from "next";
+import { GenerationsFilters } from "@/app/generations/generations-filters";
+import { EmptyState } from "@/components/empty-state";
+import { GenerationsList, type GenerationRow } from "@/components/generations-list";
+import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { fetchGenerations, fetchPromptVersions } from "@/lib/service-client";
+import { ExecutionsPageHeader } from "./executions-page-header";
+import { ExecutionsTabs } from "./executions-tabs";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: 'Executions',
-  description: 'Browse generation batches and individual generations.',
+  title: "Executions",
+  description: "Browse generation batches and individual generations."
 };
 
 const PAGE_SIZE = 20;
@@ -34,9 +34,9 @@ interface PageProps {
 
 export default async function ExecutionsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const activeTab = params.tab === 'generations' ? 'generations' : 'batches';
+  const activeTab = params.tab === "generations" ? "generations" : "batches";
 
-  if (activeTab === 'generations') {
+  if (activeTab === "generations") {
     return <GenerationsTab params={params} />;
   }
 
@@ -47,20 +47,17 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
   );
 }
 
-type ExecTab = 'batches' | 'generations';
+type ExecTab = "batches" | "generations";
 
 function ExecutionsTabNav({ active, source }: { active: ExecTab; source?: string }) {
-  const sourceQs = source === 'benchmark' ? '?source=benchmark' : '';
+  const sourceQs = source === "benchmark" ? "?source=benchmark" : "";
   const items: TabItem<ExecTab>[] = [
-    { key: 'batches', label: 'Batches', href: `/executions${sourceQs}` },
+    { key: "batches", label: "Batches", href: `/executions${sourceQs}` },
     {
-      key: 'generations',
-      label: 'Generations',
-      href:
-        source === 'benchmark'
-          ? '/executions?tab=generations&source=benchmark'
-          : '/executions?tab=generations',
-    },
+      key: "generations",
+      label: "Generations",
+      href: source === "benchmark" ? "/executions?tab=generations&source=benchmark" : "/executions?tab=generations"
+    }
   ];
   return (
     <div className="mb-6">
@@ -73,20 +70,16 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
   const queryParams: Record<string, string> = {};
   if (params.prompt_version_id) queryParams.promptVersionId = params.prompt_version_id;
   if (params.scene_accuracy_rating) queryParams.sceneAccuracyRating = params.scene_accuracy_rating;
-  if (params.product_accuracy_rating)
-    queryParams.productAccuracyRating = params.product_accuracy_rating;
+  if (params.product_accuracy_rating) queryParams.productAccuracyRating = params.product_accuracy_rating;
   if (params.unrated) queryParams.unrated = params.unrated;
   if (params.from) queryParams.from = params.from;
   if (params.to) queryParams.to = params.to;
-  if (params.source === 'benchmark') queryParams.source = 'benchmark';
-  queryParams.order = params.order === 'asc' ? 'asc' : 'desc';
+  if (params.source === "benchmark") queryParams.source = "benchmark";
+  queryParams.order = params.order === "asc" ? "asc" : "desc";
   queryParams.limit = String(PAGE_SIZE);
   if (params.page) queryParams.page = params.page;
 
-  const [json, promptVersions] = await Promise.all([
-    fetchGenerations(queryParams),
-    fetchPromptVersions(200),
-  ]);
+  const [json, promptVersions] = await Promise.all([fetchGenerations(queryParams), fetchPromptVersions(200)]);
 
   const total = Number(json.pagination?.total ?? 0);
 
@@ -100,7 +93,7 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
     executionTime: (row.executionTime ?? null) as number | null,
     createdAt: row.createdAt as string,
     resultUrls: (row.resultUrls ?? []) as string[],
-    resultCount: (row.resultCount ?? 0) as number,
+    resultCount: (row.resultCount ?? 0) as number
   }));
 
   const filters = {
@@ -110,9 +103,9 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
     promptVersionId: params.prompt_version_id,
     from: params.from,
     to: params.to,
-    sort: params.sort ?? 'created_at',
-    order: params.order ?? 'desc',
-    source: params.source,
+    sort: params.sort ?? "created_at",
+    order: params.order ?? "desc",
+    source: params.source
   };
 
   return (
@@ -124,18 +117,10 @@ async function GenerationsTab({ params }: { params: Record<string, string | unde
 
       {initialData.length === 0 ? (
         <div className="mt-8">
-          <EmptyState
-            title="No generations found"
-            description="No generations match your current filters."
-          />
+          <EmptyState title="No generations found" description="No generations match your current filters." />
         </div>
       ) : (
-        <GenerationsList
-          initialData={initialData}
-          initialTotal={total}
-          pageSize={PAGE_SIZE}
-          filters={filters}
-        />
+        <GenerationsList initialData={initialData} initialTotal={total} pageSize={PAGE_SIZE} filters={filters} />
       )}
     </div>
   );

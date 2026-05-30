@@ -1,20 +1,7 @@
-import {
-  Fragment,
-  useCallback,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-  type ChangeEvent,
-  type Ref,
-  type TextareaHTMLAttributes,
-  type UIEvent,
-} from 'react';
-import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
+import { Fragment, useCallback, useMemo, useRef, useSyncExternalStore, type ChangeEvent, type Ref, type TextareaHTMLAttributes, type UIEvent } from "react";
+import { renderHighlightedHandlebarsByLine } from "@/lib/highlight-handlebars";
 
-export type HighlightedTextareaProps = Omit<
-  TextareaHTMLAttributes<HTMLTextAreaElement>,
-  'value' | 'onChange'
-> & {
+export type HighlightedTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> & {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   fillHeight?: boolean;
@@ -23,7 +10,7 @@ export type HighlightedTextareaProps = Omit<
 
 // Width of the line-number gutter, declared once so the overlay and the
 // textarea's left padding stay in lockstep.
-const GUTTER_WIDTH = '2.5rem';
+const GUTTER_WIDTH = "2.5rem";
 
 /**
  * Measure the native vertical scrollbar width once and cache it.
@@ -33,13 +20,12 @@ const GUTTER_WIDTH = '2.5rem';
 let cachedScrollbarWidth: number | null = null;
 function measureScrollbarWidth(): number {
   if (cachedScrollbarWidth !== null) return cachedScrollbarWidth;
-  if (typeof document === 'undefined') return 0;
-  const outer = document.createElement('div');
-  outer.style.cssText =
-    'position:absolute;top:-9999px;left:-9999px;visibility:hidden;overflow:scroll;width:100px;height:100px;';
+  if (typeof document === "undefined") return 0;
+  const outer = document.createElement("div");
+  outer.style.cssText = "position:absolute;top:-9999px;left:-9999px;visibility:hidden;overflow:scroll;width:100px;height:100px;";
   document.body.appendChild(outer);
-  const inner = document.createElement('div');
-  inner.style.cssText = 'width:100%;height:200px;';
+  const inner = document.createElement("div");
+  inner.style.cssText = "width:100%;height:200px;";
   outer.appendChild(inner);
   const sw = outer.offsetWidth - inner.offsetWidth;
   document.body.removeChild(outer);
@@ -85,22 +71,9 @@ function getServerScrollbarWidth(): number {
  *  - Color and background on the textarea are set via inline `style` so
  *    they always win over whatever the caller passes in `className`.
  */
-export function HighlightedTextarea({
-  value,
-  onChange,
-  className,
-  fillHeight = false,
-  onScroll,
-  style,
-  ref,
-  ...rest
-}: HighlightedTextareaProps) {
+export function HighlightedTextarea({ value, onChange, className, fillHeight = false, onScroll, style, ref, ...rest }: HighlightedTextareaProps) {
   const overlayInnerRef = useRef<HTMLDivElement>(null);
-  const scrollbarWidth = useSyncExternalStore(
-    subscribeScrollbarWidth,
-    measureScrollbarWidth,
-    getServerScrollbarWidth,
-  );
+  const scrollbarWidth = useSyncExternalStore(subscribeScrollbarWidth, measureScrollbarWidth, getServerScrollbarWidth);
 
   const handleScroll = useCallback(
     (e: UIEvent<HTMLTextAreaElement>) => {
@@ -111,38 +84,34 @@ export function HighlightedTextarea({
       }
       onScroll?.(e);
     },
-    [onScroll],
+    [onScroll]
   );
 
   const lines = useMemo(() => renderHighlightedHandlebarsByLine(value), [value]);
 
   return (
-    <div className={`relative ${fillHeight ? 'flex min-h-0 flex-1' : ''}`}>
+    <div className={`relative ${fillHeight ? "flex min-h-0 flex-1" : ""}`}>
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`}
+        className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ""}`}
         style={{
-          borderColor: 'transparent',
-          boxShadow: 'none',
+          borderColor: "transparent",
+          boxShadow: "none",
           paddingLeft: 0,
-          paddingRight: scrollbarWidth,
+          paddingRight: scrollbarWidth
         }}
       >
         <div
           ref={overlayInnerRef}
           className="grid"
           style={{
-            gridTemplateColumns: `${GUTTER_WIDTH} 1fr`,
+            gridTemplateColumns: `${GUTTER_WIDTH} 1fr`
           }}
         >
           {lines.map((line, i) => (
             <Fragment key={i}>
-              <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">
-                {i + 1}
-              </div>
-              <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">
-                {line}
-              </div>
+              <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">{i + 1}</div>
+              <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">{line}</div>
             </Fragment>
           ))}
         </div>
@@ -154,15 +123,15 @@ export function HighlightedTextarea({
         onChange={onChange}
         onScroll={handleScroll}
         spellCheck={false}
-        className={`relative z-10 w-full ${className ?? ''}`}
+        className={`relative z-10 w-full ${className ?? ""}`}
         style={{
           ...style,
-          color: 'transparent',
-          backgroundColor: 'transparent',
-          caretColor: 'rgb(17, 24, 39)',
+          color: "transparent",
+          backgroundColor: "transparent",
+          caretColor: "rgb(17, 24, 39)",
           paddingLeft: GUTTER_WIDTH,
-          scrollbarGutter: 'stable',
-          lineHeight: '1.25rem',
+          scrollbarGutter: "stable",
+          lineHeight: "1.25rem"
         }}
       />
     </div>

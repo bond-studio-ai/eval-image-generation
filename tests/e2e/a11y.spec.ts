@@ -1,5 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
 
 /**
  * Axe accessibility pass over the most-trafficked screens. Same auth caveats
@@ -9,27 +9,13 @@ import { expect, test } from '@playwright/test';
  * those nodes. Add other excludes here if you need to silence checks on
  * embedded third-party widgets.
  */
-const ROUTES = [
-  '/',
-  '/executions',
-  '/executions?tab=generations',
-  '/audit/compare',
-  '/strategies',
-  '/input-presets',
-  '/prompt-versions',
-];
+const ROUTES = ["/", "/executions", "/executions?tab=generations", "/audit/compare", "/strategies", "/input-presets", "/prompt-versions"];
 
 for (const path of ROUTES) {
   test(`a11y: ${path}`, async ({ page }) => {
     await page.goto(path);
-    await page.waitForLoadState('networkidle');
-    const results = await new AxeBuilder({ page })
-      .exclude('.cl-userButton-root')
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-      .analyze();
-    expect(
-      results.violations,
-      results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
-    ).toEqual([]);
+    await page.waitForLoadState("networkidle");
+    const results = await new AxeBuilder({ page }).exclude(".cl-userButton-root").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(results.violations, results.violations.map((v) => `${v.id}: ${v.help}`).join("\n")).toEqual([]);
   });
 }

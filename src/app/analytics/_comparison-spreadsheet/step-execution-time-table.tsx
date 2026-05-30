@@ -1,23 +1,11 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import {
-  formatComparisonRange,
-  formatComparisonSource,
-  type AnalyticsComparisonSlice,
-} from '@/app/analytics/comparison-utils';
-import { defaultStepLabel, formatExecMs, SLICE_BG_COLORS } from './helpers';
-import type { SliceData } from './types';
+import { useMemo } from "react";
+import { formatComparisonRange, formatComparisonSource, type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
+import { defaultStepLabel, formatExecMs, SLICE_BG_COLORS } from "./helpers";
+import type { SliceData } from "./types";
 
-export function StepExecutionTimeTable({
-  slices,
-  dataBySlice,
-  loading,
-}: {
-  slices: AnalyticsComparisonSlice[];
-  dataBySlice: Record<string, SliceData>;
-  loading: boolean;
-}) {
+export function StepExecutionTimeTable({ slices, dataBySlice, loading }: { slices: AnalyticsComparisonSlice[]; dataBySlice: Record<string, SliceData>; loading: boolean }) {
   const colCount = slices.length;
 
   const maxStepCount = useMemo(() => {
@@ -57,26 +45,16 @@ export function StepExecutionTimeTable({
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr>
-            <th
-              colSpan={1 + colCount}
-              className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900"
-            >
+            <th colSpan={1 + colCount} className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900">
               Avg Execution Time
             </th>
           </tr>
           <tr>
-            <th
-              aria-label="Step"
-              className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
-            />
+            <th aria-label="Step" className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               return (
-                <th
-                  key={slice.key}
-                  className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`}
-                  style={{ minWidth: 200 }}
-                >
+                <th key={slice.key} className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 200 }}>
                   <div className="text-xs font-bold text-gray-900">{slice.strategyName}</div>
                   <div className="mt-0.5 text-[10px] font-medium text-gray-600">
                     {formatComparisonSource(slice.source)} ({formatComparisonRange(slice.range)})
@@ -86,14 +64,9 @@ export function StepExecutionTimeTable({
             })}
           </tr>
           <tr className="bg-gray-100">
-            <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">
-              Step
-            </th>
+            <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">Step</th>
             {slices.map((slice) => (
-              <th
-                key={slice.key}
-                className="border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
-              >
+              <th key={slice.key} className="border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Avg time (n)
               </th>
             ))}
@@ -119,38 +92,26 @@ export function StepExecutionTimeTable({
               const stepIndex = idx;
               return (
                 <tr key={stepIndex} className="bg-white">
-                  <th className="sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-medium text-gray-700">
-                    Step {stepIndex + 1}
-                  </th>
+                  <th className="sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left text-[11px] font-medium text-gray-700">Step {stepIndex + 1}</th>
                   {slices.map((slice) => {
                     const data = dataBySlice[slice.key];
                     const step = data?.steps[stepIndex];
                     if (!step) {
                       return (
-                        <td
-                          key={slice.key}
-                          className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-400"
-                        >
+                        <td key={slice.key} className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-400">
                           -
                         </td>
                       );
                     }
                     return (
-                      <td
-                        key={slice.key}
-                        className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px]"
-                      >
+                      <td key={slice.key} className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px]">
                         <div className="font-semibold text-gray-900">
                           {formatExecMs(step.avgExecTimeMs)}
-                          {step.sampleCount > 0 && (
-                            <span className="ml-1 font-normal text-gray-500">
-                              (n={step.sampleCount})
-                            </span>
-                          )}
+                          {step.sampleCount > 0 && <span className="ml-1 font-normal text-gray-500">(n={step.sampleCount})</span>}
                         </div>
                         <div className="text-[10px] text-gray-500">
                           {defaultStepLabel(step)}
-                          {step.type === 'judge' ? ' · judge' : ''}
+                          {step.type === "judge" ? " · judge" : ""}
                         </div>
                       </td>
                     );
@@ -160,17 +121,12 @@ export function StepExecutionTimeTable({
             })}
           {!loading && maxStepCount > 0 && (
             <tr className="bg-gray-50">
-              <th className="sticky left-0 z-10 border-t border-r border-gray-300 bg-gray-50 px-3 py-2 text-left text-[11px] font-bold text-gray-800">
-                Total (sum of step averages)
-              </th>
+              <th className="sticky left-0 z-10 border-t border-r border-gray-300 bg-gray-50 px-3 py-2 text-left text-[11px] font-bold text-gray-800">Total (sum of step averages)</th>
               {slices.map((slice) => {
                 const total = totalsBySlice[slice.key];
                 return (
-                  <td
-                    key={slice.key}
-                    className="border-t border-r border-gray-300 p-2 text-center text-[11px] font-semibold text-gray-900"
-                  >
-                    {total ? formatExecMs(total.avgMs) : '-'}
+                  <td key={slice.key} className="border-t border-r border-gray-300 p-2 text-center text-[11px] font-semibold text-gray-900">
+                    {total ? formatExecMs(total.avgMs) : "-"}
                   </td>
                 );
               })}

@@ -1,4 +1,4 @@
-import type { AnalyticsComparisonColumn } from '@/app/analytics/comparison-utils';
+import type { AnalyticsComparisonColumn } from "@/app/analytics/comparison-utils";
 
 export type ApplyFilters = (overrides: Record<string, string>) => void;
 

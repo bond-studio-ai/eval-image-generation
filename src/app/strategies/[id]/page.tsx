@@ -1,18 +1,18 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import { StrategyFlowDag, type DagStep } from '@/components/strategy-flow-dag';
-import { fetchStrategyById, fetchStrategyRuns } from '@/lib/service-client';
-import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
-import { ActiveToggleButton } from './active-toggle-button';
-import { CloneButton } from './clone-button';
-import { StrategyRunsSection } from './runs-section';
-import { StrategyPerformance } from './strategy-performance';
-import { StrategySettingsPrompts } from './strategy-settings-prompts';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { StrategyFlowDag, type DagStep } from "@/components/strategy-flow-dag";
+import { fetchStrategyById, fetchStrategyRuns } from "@/lib/service-client";
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { ActiveToggleButton } from "./active-toggle-button";
+import { CloneButton } from "./clone-button";
+import { StrategyRunsSection } from "./runs-section";
+import { StrategyPerformance } from "./strategy-performance";
+import { StrategySettingsPrompts } from "./strategy-settings-prompts";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: 'Strategy' };
+export const metadata: Metadata = { title: "Strategy" };
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -49,14 +49,12 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Execution Flow</h2>
         {result.steps.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">
-            No steps defined. Edit this strategy to add steps.
-          </p>
+          <p className="mt-4 text-sm text-gray-600">No steps defined. Edit this strategy to add steps.</p>
         ) : (
           <div className="mt-4">
             <StrategyFlowDag
               steps={result.steps.flatMap((step): DagStep[] =>
-                (step.type ?? 'generation') === 'judge'
+                (step.type ?? "generation") === "judge"
                   ? []
                   : [
                       {
@@ -70,21 +68,21 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                         dollhouseViewFromStep: step.dollhouseViewFromStep,
                         realPhotoFromStep: step.realPhotoFromStep,
                         moodBoardFromStep: step.moodBoardFromStep,
-                        arbitraryImageFromStep: step.arbitraryImageFromStep,
-                      },
-                    ],
+                        arbitraryImageFromStep: step.arbitraryImageFromStep
+                      }
+                    ]
               )}
               judges={result.steps.flatMap((step) =>
-                step.type !== 'judge'
+                step.type !== "judge"
                   ? []
                   : (step.judges ?? []).map((j, ji) => ({
                       name: j.name,
-                      type: j.judgeType as 'batch' | 'individual',
+                      type: j.judgeType as "batch" | "individual",
                       model: j.judgeModel,
                       promptName: j.judgePromptVersionName,
                       toleranceThreshold: j.toleranceThreshold,
-                      position: ji + 1,
-                    })),
+                      position: ji + 1
+                    }))
               )}
             />
           </div>
@@ -105,7 +103,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         description={result.description}
         steps={result.steps.map((s) => ({
           stepOrder: s.stepOrder,
-          type: s.type ?? ('generation' as const),
+          type: s.type ?? ("generation" as const),
           numberOfImages: s.numberOfImages,
           name: s.name,
           promptVersionId: s.promptVersionId,
@@ -113,15 +111,15 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           judges: (s.judges ?? []).map((j) => ({
             name: j.name,
             judgeModel: j.judgeModel,
-            judgeType: j.judgeType as 'batch' | 'individual',
+            judgeType: j.judgeType as "batch" | "individual",
             toleranceThreshold: j.toleranceThreshold,
             judgePromptVersionId: j.judgePromptVersionId,
-            judgePromptVersionName: j.judgePromptVersionName,
-          })),
+            judgePromptVersionName: j.judgePromptVersionName
+          }))
         }))}
         preview={{
           previewModel: result.previewModel,
-          previewResolution: result.previewResolution,
+          previewResolution: result.previewResolution
         }}
       />
 
@@ -130,13 +128,9 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        hasJudge={result.steps.some((s) => s.type === 'judge')}
+        hasJudge={result.steps.some((s) => s.type === "judge")}
         initialRuns={runsRaw.map((run) => {
-          const inputPresetName =
-            (run.inputPresetName as string) ??
-            (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]
-              ?.inputPresetName ??
-            null;
+          const inputPresetName = (run.inputPresetName as string) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;
           return {
             id: run.id as string,
             status: run.status as string,
@@ -155,12 +149,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
             judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
             judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
             judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
-            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map(
-              (sr) => ({
-                id: sr.id,
-                status: sr.status,
-              }),
-            ),
+            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
+              id: sr.id,
+              status: sr.status
+            }))
           };
         })}
       />

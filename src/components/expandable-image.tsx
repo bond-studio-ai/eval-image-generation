@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { CdnImage } from '@/components/cdn-image';
-import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { XIcon } from '@/components/ui/icons';
-import { Modal } from '@/components/ui/modal';
+import { useState } from "react";
+import { CdnImage } from "@/components/cdn-image";
+import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { XIcon } from "@/components/ui/icons";
+import { Modal } from "@/components/ui/modal";
 
 interface ExpandableImageProps {
   src: string;
@@ -24,12 +24,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`cursor-pointer ${wrapperClassName ?? ''}`}
-        aria-label={`Expand ${alt}`}
-      >
+      <button type="button" onClick={() => setOpen(true)} className={`cursor-pointer ${wrapperClassName ?? ""}`} aria-label={`Expand ${alt}`}>
         <ImageWithSkeleton src={src} alt={alt} className={className} />
       </button>
 
@@ -44,12 +39,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
             <span className="truncate text-sm font-medium text-gray-700">{alt}</span>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => setOpen(false)}
-              className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-            >
+            <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
               <XIcon className="size-5" />
             </button>
           </div>
@@ -65,7 +55,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
                 height={0}
                 sizes="100vw"
                 onLoad={() => setLoaded(true)}
-                className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+                className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
               />
             </div>
           </div>

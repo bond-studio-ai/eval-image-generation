@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { cn } from './cn';
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { cn } from "./cn";
 
 export interface TabItem<T extends string = string> {
   key: T;
@@ -21,12 +21,10 @@ interface TabsProps<T extends string> {
 
 function classesFor(isActive: boolean, disabled: boolean | undefined) {
   return cn(
-    'border-b-2 px-4 py-2.5 text-body font-medium transition-colors',
-    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600',
-    isActive
-      ? 'border-primary-600 text-primary-700'
-      : 'border-transparent text-text-muted hover:border-border-strong hover:text-text-secondary',
-    disabled && 'cursor-not-allowed opacity-50',
+    "border-b-2 px-4 py-2.5 text-body font-medium transition-colors",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600",
+    isActive ? "border-primary-600 text-primary-700" : "border-transparent text-text-muted hover:border-border-strong hover:text-text-secondary",
+    disabled && "cursor-not-allowed opacity-50"
   );
 }
 
@@ -34,15 +32,8 @@ function renderContent(item: TabItem, isActive: boolean) {
   return (
     <>
       {item.label}
-      {typeof item.count === 'number' && (
-        <span
-          className={cn(
-            'rounded-pill ml-2 inline-flex min-w-[20px] items-center justify-center px-1.5 text-[11px] font-semibold',
-            isActive ? 'bg-primary-100 text-primary-700' : 'bg-surface-sunken text-text-muted',
-          )}
-        >
-          {item.count}
-        </span>
+      {typeof item.count === "number" && (
+        <span className={cn("rounded-pill ml-2 inline-flex min-w-[20px] items-center justify-center px-1.5 text-[11px] font-semibold", isActive ? "bg-primary-100 text-primary-700" : "bg-surface-sunken text-text-muted")}>{item.count}</span>
       )}
     </>
   );
@@ -66,13 +57,7 @@ function renderContent(item: TabItem, isActive: boolean) {
  * and `aria-controls`), build a separate `RealTabs` primitive — that contract
  * is materially different from page navigation.
  */
-export function Tabs<T extends string>({
-  items,
-  active,
-  onChange,
-  className,
-  label,
-}: TabsProps<T>) {
+export function Tabs<T extends string>({ items, active, onChange, className, label }: TabsProps<T>) {
   /**
    * Renders a single item with the right element for its state. A disabled
    * item never becomes a real link or button — that's the only reliable way
@@ -97,25 +82,14 @@ export function Tabs<T extends string>({
 
     if (item.href) {
       return (
-        <Link
-          key={item.key}
-          href={item.href}
-          aria-current={isActive ? 'page' : undefined}
-          className={classes}
-        >
+        <Link key={item.key} href={item.href} aria-current={isActive ? "page" : undefined} className={classes}>
           {inner}
         </Link>
       );
     }
 
     return (
-      <button
-        key={item.key}
-        type="button"
-        aria-pressed={isActive}
-        onClick={() => onChange?.(item.key)}
-        className={classes}
-      >
+      <button key={item.key} type="button" aria-pressed={isActive} onClick={() => onChange?.(item.key)} className={classes}>
         {inner}
       </button>
     );
@@ -127,18 +101,14 @@ export function Tabs<T extends string>({
 
   if (allLinks) {
     return (
-      <nav aria-label={label} className={cn('border-border flex gap-1 border-b', className)}>
+      <nav aria-label={label} className={cn("border-border flex gap-1 border-b", className)}>
         {items.map(renderItem)}
       </nav>
     );
   }
 
   return (
-    <div
-      role="group"
-      aria-label={label}
-      className={cn('border-border flex gap-1 border-b', className)}
-    >
+    <div role="group" aria-label={label} className={cn("border-border flex gap-1 border-b", className)}>
       {items.map(renderItem)}
     </div>
   );

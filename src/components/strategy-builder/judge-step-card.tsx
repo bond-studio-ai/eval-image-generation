@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { PlusIcon, TrashIcon, XIcon } from '@/components/ui/icons';
-import type { PromptVersionListItem } from '@/lib/types';
-import { CandidatePicker } from './candidate-picker';
-import { PromptVersionSelector } from './prompt-version-selector';
-import { SearchableSelect } from './searchable-select';
-import { JUDGE_TYPES, nextUid, type ModelOption, type StepData } from './types';
+import { PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons";
+import type { PromptVersionListItem } from "@/lib/types";
+import { CandidatePicker } from "./candidate-picker";
+import { PromptVersionSelector } from "./prompt-version-selector";
+import { SearchableSelect } from "./searchable-select";
+import { JUDGE_TYPES, nextUid, type ModelOption, type StepData } from "./types";
 
 export function JudgeStepCard({
   step,
@@ -14,7 +14,7 @@ export function JudgeStepCard({
   removeStep,
   promptVersions,
   judgeModels,
-  defaultJudgeModel,
+  defaultJudgeModel
 }: {
   step: StepData;
   idx: number;
@@ -28,41 +28,26 @@ export function JudgeStepCard({
     <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-5 shadow-xs">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-            Step {idx + 1} &mdash; Judge
-          </span>
-          <CandidatePicker
-            value={step.number_of_images ?? 4}
-            onChange={(n) => updateStep(idx, { number_of_images: n })}
-          />
+          <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Step {idx + 1} &mdash; Judge</span>
+          <CandidatePicker value={step.number_of_images ?? 4} onChange={(n) => updateStep(idx, { number_of_images: n })} />
         </div>
-        <button
-          type="button"
-          onClick={() => removeStep(idx)}
-          aria-label="Remove step"
-          className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-600"
-        >
+        <button type="button" onClick={() => removeStep(idx)} aria-label="Remove step" className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-600">
           <TrashIcon className="size-4" />
         </button>
       </div>
-      <p className="mt-2 text-xs text-amber-700">
-        Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and picks the
-        best one.
-      </p>
+      <p className="mt-2 text-xs text-amber-700">Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and picks the best one.</p>
 
       <div className="mt-4 space-y-3">
         {(step.judges ?? []).map((judge, jIdx) => (
           <div key={judge._uid} className="rounded-lg border border-amber-200 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
-                {jIdx + 1}
-              </span>
+              <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">{jIdx + 1}</span>
               <div className="flex items-center gap-2">
                 {JUDGE_TYPES.map((jt) => (
                   <label
                     key={jt.value}
                     title={jt.description}
-                    className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${judge.judge_type === jt.value ? 'border-amber-300 bg-amber-50 font-medium text-amber-800' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+                    className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${judge.judge_type === jt.value ? "border-amber-300 bg-amber-50 font-medium text-amber-800" : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"}`}
                   >
                     <input
                       type="radio"
@@ -95,17 +80,14 @@ export function JudgeStepCard({
               )}
             </div>
             <div className="mb-3">
-              <label
-                htmlFor={`judge-name-${idx}-${jIdx}`}
-                className="mb-1 block text-xs font-medium text-gray-600"
-              >
+              <label htmlFor={`judge-name-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
                 Name (optional)
               </label>
               <input
                 id={`judge-name-${idx}-${jIdx}`}
                 type="text"
                 aria-label="Judge name"
-                value={judge.name ?? ''}
+                value={judge.name ?? ""}
                 onChange={(e) => {
                   const newJudges = [...(step.judges ?? [])];
                   newJudges[jIdx] = { ...newJudges[jIdx], name: e.target.value };
@@ -117,10 +99,7 @@ export function JudgeStepCard({
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label
-                  htmlFor={`judge-model-${idx}-${jIdx}`}
-                  className="mb-1 block text-xs font-medium text-gray-600"
-                >
+                <label htmlFor={`judge-model-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
                   Model
                 </label>
                 <SearchableSelect
@@ -135,10 +114,7 @@ export function JudgeStepCard({
                 />
               </div>
               <div>
-                <label
-                  htmlFor={`judge-prompt-${idx}-${jIdx}`}
-                  className="mb-1 block text-xs font-medium text-gray-600"
-                >
+                <label htmlFor={`judge-prompt-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
                   Prompt
                 </label>
                 <PromptVersionSelector
@@ -154,10 +130,7 @@ export function JudgeStepCard({
               </div>
             </div>
             <div className="mt-3">
-              <label
-                htmlFor={`judge-tolerance-${idx}-${jIdx}`}
-                className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600"
-              >
+              <label htmlFor={`judge-tolerance-${idx}-${jIdx}`} className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
                 <span>Tolerance</span>
                 <span className="text-gray-900 tabular-nums">
                   {judge.tolerance_threshold}
@@ -175,7 +148,7 @@ export function JudgeStepCard({
                   const newJudges = [...(step.judges ?? [])];
                   newJudges[jIdx] = {
                     ...newJudges[jIdx],
-                    tolerance_threshold: Number(e.target.value),
+                    tolerance_threshold: Number(e.target.value)
                   };
                   updateStep(idx, { judges: newJudges });
                 }}
@@ -191,12 +164,12 @@ export function JudgeStepCard({
               ...(step.judges ?? []),
               {
                 _uid: nextUid(),
-                name: '',
+                name: "",
                 judge_model: defaultJudgeModel,
-                judge_type: 'individual' as const,
-                judge_prompt_version_id: '',
-                tolerance_threshold: 1,
-              },
+                judge_type: "individual" as const,
+                judge_prompt_version_id: "",
+                tolerance_threshold: 1
+              }
             ];
             updateStep(idx, { judges: newJudges });
           }}

@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { InboxIcon } from '@/components/ui/icons';
-import { cn } from './ui/cn';
+import type { ReactNode } from "react";
+import { InboxIcon } from "@/components/ui/icons";
+import { cn } from "./ui/cn";
 
 interface EmptyStateProps {
   title: string;
@@ -10,25 +10,12 @@ interface EmptyStateProps {
   /** Action(s) to render below the description (e.g. a `<LinkButton>`). */
   action?: ReactNode;
   className?: string;
-  tone?: 'neutral' | 'subtle';
+  tone?: "neutral" | "subtle";
 }
 
-export function EmptyState({
-  title,
-  description,
-  icon,
-  action,
-  className,
-  tone = 'neutral',
-}: EmptyStateProps) {
+export function EmptyState({ title, description, icon, action, className, tone = "neutral" }: EmptyStateProps) {
   return (
-    <div
-      className={cn(
-        'rounded-card flex flex-col items-center justify-center border-2 border-dashed px-6 py-16 text-center',
-        tone === 'neutral' ? 'border-border-strong' : 'border-border bg-surface-muted',
-        className,
-      )}
-    >
+    <div className={cn("rounded-card flex flex-col items-center justify-center border-2 border-dashed px-6 py-16 text-center", tone === "neutral" ? "border-border-strong" : "border-border bg-surface-muted", className)}>
       <div className="text-text-disabled" aria-hidden="true">
         {icon ?? <InboxIcon className="size-12" strokeWidth={1.25} />}
       </div>

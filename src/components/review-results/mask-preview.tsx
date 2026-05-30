@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { CdnImage } from '@/components/cdn-image';
-import type { CategoryMask } from './types';
+import { useEffect, useRef, useState } from "react";
+import { CdnImage } from "@/components/cdn-image";
+import type { CategoryMask } from "./types";
 
 /**
  * `next/image` (via {@link CdnImage}) with a pulsing gray skeleton that fills the container
@@ -14,17 +14,7 @@ import type { CategoryMask } from './types';
  * size — typically an `aspect-*` utility); `imgClassName` controls
  * how the loaded image fits inside.
  */
-export function SkeletonImage({
-  src,
-  alt,
-  containerClassName,
-  imgClassName,
-}: {
-  src: string;
-  alt: string;
-  containerClassName: string;
-  imgClassName: string;
-}) {
+export function SkeletonImage({ src, alt, containerClassName, imgClassName }: { src: string; alt: string; containerClassName: string; imgClassName: string }) {
   // Track which URL has loaded/errored rather than a bare boolean, so a
   // URL change (e.g. after a force re-run swaps the overlay PNG) makes
   // the flags fall stale automatically — no effect needed to reset them,
@@ -36,14 +26,8 @@ export function SkeletonImage({
 
   return (
     <div className={`relative ${containerClassName}`}>
-      {!loaded && !errored && (
-        <div className="absolute inset-0 animate-pulse rounded bg-gray-200" aria-hidden="true" />
-      )}
-      {errored && (
-        <div className="absolute inset-0 flex items-center justify-center rounded bg-gray-100 px-2 text-center text-[11px] text-gray-500">
-          Failed to load image
-        </div>
-      )}
+      {!loaded && !errored && <div className="absolute inset-0 animate-pulse rounded bg-gray-200" aria-hidden="true" />}
+      {errored && <div className="absolute inset-0 flex items-center justify-center rounded bg-gray-100 px-2 text-center text-[11px] text-gray-500">Failed to load image</div>}
       <CdnImage
         src={src}
         alt={alt}
@@ -51,7 +35,7 @@ export function SkeletonImage({
         sizes="(max-width:768px) 50vw, 33vw"
         onLoad={() => setLoadedSrc(src)}
         onError={() => setErroredSrc(src)}
-        className={`${imgClassName} object-contain transition-opacity duration-150 ${loaded && !errored ? 'opacity-100' : 'opacity-0'}`}
+        className={`${imgClassName} object-contain transition-opacity duration-150 ${loaded && !errored ? "opacity-100" : "opacity-0"}`}
       />
     </div>
   );
@@ -78,32 +62,21 @@ export function SkeletonImage({
  * itself fails we surface a placeholder rather than the misleading
  * partial draw.
  */
-export function CompositeMaskCanvas({
-  masks,
-  alt,
-  containerClassName,
-  canvasClassName,
-}: {
-  masks: CategoryMask[];
-  alt: string;
-  containerClassName?: string;
-  canvasClassName?: string;
-}) {
+export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClassName }: { masks: CategoryMask[]; alt: string; containerClassName?: string; canvasClassName?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Stable identity for `useEffect` so we don't repaint on every render
   // (each `buildRows` call returns fresh `masks` arrays even when the
   // URLs are unchanged).
-  const maskKey = masks.map((m) => m.url).join('|');
+  const maskKey = masks.map((m) => m.url).join("|");
   // Remember which `maskKey` the async paint resolved for. When `maskKey`
   // changes the stored result falls stale, so `status` derives back to
   // 'loading' during render — no effect reset needed.
-  const [painted, setPainted] = useState<{ key: string; status: 'ready' | 'error' } | null>(null);
-  const status: 'loading' | 'ready' | 'error' =
-    painted?.key === maskKey ? painted.status : 'loading';
+  const [painted, setPainted] = useState<{ key: string; status: "ready" | "error" } | null>(null);
+  const status: "loading" | "ready" | "error" = painted?.key === maskKey ? painted.status : "loading";
 
   useEffect(() => {
     if (masks.length === 0) {
-      setPainted({ key: maskKey, status: 'error' });
+      setPainted({ key: maskKey, status: "error" });
       return;
     }
     const canvas = canvasRef.current;
@@ -132,22 +105,22 @@ export function CompositeMaskCanvas({
         canvas.width = width;
         canvas.height = height;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) {
-          setPainted({ key: maskKey, status: 'error' });
+          setPainted({ key: maskKey, status: "error" });
           return;
         }
         // Black background so any pixel not painted by a mask stays
         // black — matches SAM's individual-mask appearance.
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'lighten';
+        ctx.globalCompositeOperation = "lighten";
         for (const img of images) {
           ctx.drawImage(img, 0, 0, width, height);
         }
-        setPainted({ key: maskKey, status: 'ready' });
+        setPainted({ key: maskKey, status: "ready" });
       } catch {
-        if (!cancelled) setPainted({ key: maskKey, status: 'error' });
+        if (!cancelled) setPainted({ key: maskKey, status: "error" });
       }
     })();
 
@@ -158,22 +131,14 @@ export function CompositeMaskCanvas({
   }, [maskKey]);
 
   return (
-    <div className={`relative ${containerClassName ?? ''}`}>
-      {status === 'loading' && (
-        <div className="absolute inset-0 animate-pulse bg-gray-100" aria-hidden="true" />
-      )}
-      {status === 'error' && (
+    <div className={`relative ${containerClassName ?? ""}`}>
+      {status === "loading" && <div className="absolute inset-0 animate-pulse bg-gray-100" aria-hidden="true" />}
+      {status === "error" && (
         <div className="absolute inset-0 flex items-center justify-center bg-white">
           <p className="px-2 text-center text-[10px] text-gray-400 italic">No combined preview</p>
         </div>
       )}
-      <canvas
-        ref={canvasRef}
-        aria-label={alt}
-        className={`${canvasClassName ?? ''} transition-opacity duration-150 ${
-          status === 'ready' ? 'opacity-100' : 'opacity-0'
-        }`}
-      />
+      <canvas ref={canvasRef} aria-label={alt} className={`${canvasClassName ?? ""} transition-opacity duration-150 ${status === "ready" ? "opacity-100" : "opacity-0"}`} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 /** Reusable skeleton primitives for loading states. */
 
 /** Pulsing block with rounded corners. Use w-*, h-* to size. */
-function Skeleton({ className = '' }: { className?: string }) {
+function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`bg-surface-sunken animate-pulse rounded-md ${className}`} />;
 }
 

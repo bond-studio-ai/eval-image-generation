@@ -8,25 +8,25 @@ export interface SelectionState {
 }
 
 export type SelectionAction =
-  | { type: 'toggleStrategy'; id: string }
-  | { type: 'togglePreset'; id: string }
-  | { type: 'toggleBenchmarkProject'; id: string }
-  | { type: 'setStrategySearch'; value: string }
-  | { type: 'setPresetSearch'; value: string }
-  | { type: 'clearStrategies' }
-  | { type: 'clearPresets' }
-  | { type: 'clearBenchmarkProjects' }
-  | { type: 'setBenchmarkMode'; benchmarkMode: boolean; benchmarkProjectIds: string[] }
-  | { type: 'openModal'; benchmarkMode: boolean; benchmarkProjectIds: string[] }
-  | { type: 'resetAfterRun'; benchmarkMode: boolean };
+  | { type: "toggleStrategy"; id: string }
+  | { type: "togglePreset"; id: string }
+  | { type: "toggleBenchmarkProject"; id: string }
+  | { type: "setStrategySearch"; value: string }
+  | { type: "setPresetSearch"; value: string }
+  | { type: "clearStrategies" }
+  | { type: "clearPresets" }
+  | { type: "clearBenchmarkProjects" }
+  | { type: "setBenchmarkMode"; benchmarkMode: boolean; benchmarkProjectIds: string[] }
+  | { type: "openModal"; benchmarkMode: boolean; benchmarkProjectIds: string[] }
+  | { type: "resetAfterRun"; benchmarkMode: boolean };
 
 export const INITIAL_SELECTION: SelectionState = {
   selectedStrategyIds: [],
   selectedPresetIds: [],
   selectedBenchmarkProjectIds: [],
-  strategySearch: '',
-  presetSearch: '',
-  benchmarkMode: false,
+  strategySearch: "",
+  presetSearch: "",
+  benchmarkMode: false
 };
 
 function toggleId(ids: string[], id: string): string[] {
@@ -35,49 +35,49 @@ function toggleId(ids: string[], id: string): string[] {
 
 export function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
-    case 'toggleStrategy':
+    case "toggleStrategy":
       return { ...state, selectedStrategyIds: toggleId(state.selectedStrategyIds, action.id) };
-    case 'togglePreset':
+    case "togglePreset":
       return { ...state, selectedPresetIds: toggleId(state.selectedPresetIds, action.id) };
-    case 'toggleBenchmarkProject':
+    case "toggleBenchmarkProject":
       return {
         ...state,
-        selectedBenchmarkProjectIds: toggleId(state.selectedBenchmarkProjectIds, action.id),
+        selectedBenchmarkProjectIds: toggleId(state.selectedBenchmarkProjectIds, action.id)
       };
-    case 'setStrategySearch':
+    case "setStrategySearch":
       return { ...state, strategySearch: action.value };
-    case 'setPresetSearch':
+    case "setPresetSearch":
       return { ...state, presetSearch: action.value };
-    case 'clearStrategies':
+    case "clearStrategies":
       return { ...state, selectedStrategyIds: [] };
-    case 'clearPresets':
+    case "clearPresets":
       return { ...state, selectedPresetIds: [] };
-    case 'clearBenchmarkProjects':
+    case "clearBenchmarkProjects":
       return { ...state, selectedBenchmarkProjectIds: [] };
-    case 'setBenchmarkMode':
+    case "setBenchmarkMode":
       return {
         ...state,
         benchmarkMode: action.benchmarkMode,
         selectedPresetIds: [],
-        selectedBenchmarkProjectIds: action.benchmarkProjectIds,
+        selectedBenchmarkProjectIds: action.benchmarkProjectIds
       };
-    case 'openModal':
+    case "openModal":
       return {
         ...state,
         selectedStrategyIds: [],
         selectedPresetIds: [],
         selectedBenchmarkProjectIds: action.benchmarkProjectIds,
-        benchmarkMode: action.benchmarkMode,
+        benchmarkMode: action.benchmarkMode
       };
-    case 'resetAfterRun':
+    case "resetAfterRun":
       return {
         ...state,
         selectedStrategyIds: [],
         selectedPresetIds: [],
         selectedBenchmarkProjectIds: [],
-        strategySearch: '',
-        presetSearch: '',
-        benchmarkMode: action.benchmarkMode,
+        strategySearch: "",
+        presetSearch: "",
+        benchmarkMode: action.benchmarkMode
       };
   }
 }

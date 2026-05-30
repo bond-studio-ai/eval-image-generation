@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import type { ReviewState } from '@/components/review-badge';
-import { serviceUrl } from '@/lib/api-base';
-import { MaskIcon } from './icons';
-import { ReviewModal } from './modal';
-import type { ReviewRecord } from './types';
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import type { ReviewState } from "@/components/review-badge";
+import { serviceUrl } from "@/lib/api-base";
+import { MaskIcon } from "./icons";
+import { ReviewModal } from "./modal";
+import type { ReviewRecord } from "./types";
 
 interface ReviewResultsBadgeProps {
   generationId: string | null | undefined;
@@ -26,7 +26,7 @@ interface ReviewResultsBadgeProps {
 export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgeProps) {
   const [showModal, setShowModal] = useState(false);
 
-  const ready = !!generationId && state?.kind === 'done';
+  const ready = !!generationId && state?.kind === "done";
 
   // Keying on the `state` object subsumes the old per-reference `isFresh`
   // cache: a force re-run hands us a brand-new `state`, producing a fresh
@@ -36,13 +36,13 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
   const {
     data: currentRecord = null,
     isLoading: loading,
-    error,
+    error
   } = useQuery({
-    queryKey: ['review-record', generationId, state],
+    queryKey: ["review-record", generationId, state],
     queryFn: async ({ signal }): Promise<ReviewRecord | null> => {
       const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
-        cache: 'no-store',
-        signal,
+        cache: "no-store",
+        signal
       });
       if (!res.ok) throw new Error(`Failed to load review (${res.status})`);
       const json = (await res.json()) as { data?: { record?: ReviewRecord } } | null;
@@ -52,7 +52,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
     // Match the prior per-`state` cache: a record is immutable for a given
     // review state, so don't refetch on reopen; a force re-run yields a new
     // `state` object (new queryKey) and fetches fresh.
-    staleTime: Infinity,
+    staleTime: Infinity
   });
 
   if (!ready) return null;
@@ -72,15 +72,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
         <MaskIcon className="size-2.5" />
         Review
       </button>
-      {showModal && (
-        <ReviewModal
-          generationId={generationId!}
-          record={currentRecord}
-          loading={loading}
-          error={error ? error.message : null}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+      {showModal && <ReviewModal generationId={generationId!} record={currentRecord} loading={loading} error={error ? error.message : null} onClose={() => setShowModal(false)} />}
     </>
   );
 }

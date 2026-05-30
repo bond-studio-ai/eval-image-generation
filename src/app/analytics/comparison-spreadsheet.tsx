@@ -1,46 +1,30 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
-import { type AnalyticsComparisonSlice } from '@/app/analytics/comparison-utils';
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
-import { CategoryRatesTable } from './_comparison-spreadsheet/category-rates-table';
-import {
-  formatCategoryName,
-  normalizeCategoryRows,
-  normalizeIssueItems,
-  normalizeStepPerformanceRows,
-  normalizeSummary,
-} from './_comparison-spreadsheet/helpers';
-import { SceneIssuesTable } from './_comparison-spreadsheet/scene-issues-table';
-import { StepExecutionTimeTable } from './_comparison-spreadsheet/step-execution-time-table';
-import type { CategoryRow, SliceData, SortCol, SortField } from './_comparison-spreadsheet/types';
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
+import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { CategoryRatesTable } from "./_comparison-spreadsheet/category-rates-table";
+import { formatCategoryName, normalizeCategoryRows, normalizeIssueItems, normalizeStepPerformanceRows, normalizeSummary } from "./_comparison-spreadsheet/helpers";
+import { SceneIssuesTable } from "./_comparison-spreadsheet/scene-issues-table";
+import { StepExecutionTimeTable } from "./_comparison-spreadsheet/step-execution-time-table";
+import type { CategoryRow, SliceData, SortCol, SortField } from "./_comparison-spreadsheet/types";
 
-export function ComparisonSpreadsheet({
-  slices,
-  model,
-}: {
-  slices: AnalyticsComparisonSlice[];
-  model?: string;
-}) {
+export function ComparisonSpreadsheet({ slices, model }: { slices: AnalyticsComparisonSlice[]; model?: string }) {
   const [categorySort, setCategorySort] = useState<SortCol | null>(null);
 
   const toggleCategorySort = useCallback((sliceKey: string, field: SortField) => {
     setCategorySort((prev) => {
       if (prev?.sliceKey === sliceKey && prev.field === field) {
-        if (prev.dir === 'desc') return { sliceKey, field, dir: 'asc' };
+        if (prev.dir === "desc") return { sliceKey, field, dir: "asc" };
         return null;
       }
-      return { sliceKey, field, dir: 'desc' };
+      return { sliceKey, field, dir: "desc" };
     });
   }, []);
 
   const { data: dataBySlice = {}, isLoading: loading } = useQuery({
-    queryKey: [
-      'comparison',
-      slices.map((s) => [s.key, s.range.from, s.range.to, s.source, s.strategyId]),
-      model,
-    ],
+    queryKey: ["comparison", slices.map((s) => [s.key, s.range.from, s.range.to, s.source, s.strategyId]), model],
     enabled: slices.length > 0,
     queryFn: async ({ signal }) => {
       const tz = browserTimezone();
@@ -50,20 +34,20 @@ export function ComparisonSpreadsheet({
             from: slice.range.from,
             to: slice.range.to,
             source: slice.source,
-            strategy_id: slice.strategyId,
+            strategy_id: slice.strategyId
           });
-          if (model) baseParams.set('model', model);
-          if (tz) baseParams.set('tz', tz);
+          if (model) baseParams.set("model", model);
+          if (tz) baseParams.set("tz", tz);
 
           const [catRes, stepRes] = await Promise.all([
             fetch(serviceUrl(`analytics/product-category-rates?${baseParams}`), {
-              cache: 'no-store',
-              signal,
+              cache: "no-store",
+              signal
             }),
             fetch(serviceUrl(`analytics/strategy-step-performance?${baseParams}`), {
-              cache: 'no-store',
-              signal,
-            }),
+              cache: "no-store",
+              signal
+            })
           ]);
 
           const catJson = catRes.ok ? await catRes.json() : {};
@@ -75,14 +59,14 @@ export function ComparisonSpreadsheet({
               summary: normalizeSummary(catJson.data?.summary),
               sceneIssues: normalizeIssueItems(catJson.data?.sceneIssues),
               categories: normalizeCategoryRows(catJson.data?.categories),
-              steps: normalizeStepPerformanceRows(stepJson.data?.steps),
-            },
+              steps: normalizeStepPerformanceRows(stepJson.data?.steps)
+            }
           };
-        }),
+        })
       );
 
       return Object.fromEntries(results.map((r) => [r.key, r.data])) as Record<string, SliceData>;
-    },
+    }
   });
 
   const sceneIssueRows = useMemo(() => {
@@ -99,9 +83,7 @@ export function ComparisonSpreadsheet({
       for (const cat of data.categories) names.add(cat.name);
     }
 
-    const sortedNames = [...names].toSorted((a, b) =>
-      formatCategoryName(a).localeCompare(formatCategoryName(b)),
-    );
+    const sortedNames = [...names].toSorted((a, b) => formatCategoryName(a).localeCompare(formatCategoryName(b)));
 
     if (categorySort) {
       const { sliceKey, field, dir } = categorySort;
@@ -112,14 +94,12 @@ export function ComparisonSpreadsheet({
           const catB = sliceData.categories.find((c) => c.name === b);
           const valA = catA?.[field] ?? -1;
           const valB = catB?.[field] ?? -1;
-          return dir === 'desc' ? valB - valA : valA - valB;
+          return dir === "desc" ? valB - valA : valA - valB;
         });
       }
     }
 
-    const sliceCategoryMaps = Object.values(dataBySlice).map(
-      (data) => new Map(data.categories.map((c) => [c.name, c])),
-    );
+    const sliceCategoryMaps = Object.values(dataBySlice).map((data) => new Map(data.categories.map((c) => [c.name, c])));
 
     return sortedNames.flatMap((catName) => {
       const issueNames = new Set<string>();
@@ -128,14 +108,14 @@ export function ComparisonSpreadsheet({
         for (const issue of cat?.issues ?? []) issueNames.add(issue.issue);
       }
       return [
-        { type: 'category' as const, categoryName: catName },
+        { type: "category" as const, categoryName: catName },
         ...[...issueNames]
           .toSorted((a, b) => a.localeCompare(b))
           .map((issueName) => ({
-            type: 'issue' as const,
+            type: "issue" as const,
             categoryName: catName,
-            issueName,
-          })),
+            issueName
+          }))
       ];
     });
   }, [dataBySlice, categorySort]);
@@ -143,9 +123,7 @@ export function ComparisonSpreadsheet({
   if (slices.length === 0) {
     return (
       <div className="mt-8 rounded-lg border border-gray-200 bg-white p-8 text-center shadow-xs">
-        <p className="text-sm text-gray-500">
-          Add comparison columns above to generate the spreadsheet.
-        </p>
+        <p className="text-sm text-gray-500">Add comparison columns above to generate the spreadsheet.</p>
       </div>
     );
   }
@@ -153,20 +131,8 @@ export function ComparisonSpreadsheet({
   return (
     <div className="mt-8 space-y-6">
       <StepExecutionTimeTable slices={slices} dataBySlice={dataBySlice} loading={loading} />
-      <SceneIssuesTable
-        slices={slices}
-        dataBySlice={dataBySlice}
-        loading={loading}
-        sceneIssueRows={sceneIssueRows}
-      />
-      <CategoryRatesTable
-        slices={slices}
-        dataBySlice={dataBySlice}
-        loading={loading}
-        categoryRows={categoryRows}
-        categorySort={categorySort}
-        toggleCategorySort={toggleCategorySort}
-      />
+      <SceneIssuesTable slices={slices} dataBySlice={dataBySlice} loading={loading} sceneIssueRows={sceneIssueRows} />
+      <CategoryRatesTable slices={slices} dataBySlice={dataBySlice} loading={loading} categoryRows={categoryRows} categorySort={categorySort} toggleCategorySort={toggleCategorySort} />
     </div>
   );
 }

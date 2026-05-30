@@ -8,11 +8,11 @@
  * browser; `useInfiniteList` stays oblivious to the upstream version.
  */
 
-import type { ProxyJsonTransformer, ProxyQueryRewriter } from './proxy-handler';
+import type { ProxyJsonTransformer, ProxyQueryRewriter } from "./proxy-handler";
 
 const V1_TO_V2_KEY: Record<string, string> = {
-  page: 'currentPage',
-  limit: 'perPage',
+  page: "currentPage",
+  limit: "perPage"
 };
 
 /**
@@ -35,7 +35,7 @@ export const rewriteV1PaginationToV2: ProxyQueryRewriter = (params) => {
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
@@ -48,10 +48,10 @@ export const normalizeV2PaginationResponse: ProxyJsonTransformer = (json) => {
   if (!isPlainObject(json)) return json;
   const pag = isPlainObject(json.pagination) ? (json.pagination as Record<string, unknown>) : null;
   if (!pag) return json;
-  const currentPage = typeof pag.currentPage === 'number' ? pag.currentPage : undefined;
-  const perPage = typeof pag.perPage === 'number' ? pag.perPage : undefined;
-  const lastPage = typeof pag.lastPage === 'number' ? pag.lastPage : undefined;
-  const total = typeof pag.total === 'number' ? pag.total : undefined;
+  const currentPage = typeof pag.currentPage === "number" ? pag.currentPage : undefined;
+  const perPage = typeof pag.perPage === "number" ? pag.perPage : undefined;
+  const lastPage = typeof pag.lastPage === "number" ? pag.lastPage : undefined;
+  const total = typeof pag.total === "number" ? pag.total : undefined;
   if (currentPage === undefined && perPage === undefined && lastPage === undefined) {
     return json;
   }
@@ -62,7 +62,7 @@ export const normalizeV2PaginationResponse: ProxyJsonTransformer = (json) => {
       ...(currentPage !== undefined ? { page: currentPage } : {}),
       ...(perPage !== undefined ? { limit: perPage } : {}),
       ...(lastPage !== undefined ? { totalPages: lastPage } : {}),
-      ...(total !== undefined ? { total } : {}),
-    },
+      ...(total !== undefined ? { total } : {})
+    }
   };
 };

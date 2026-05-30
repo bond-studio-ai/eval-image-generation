@@ -1,4 +1,4 @@
-import { serviceUrl } from './api-base';
+import { serviceUrl } from "./api-base";
 
 /**
  * Canonical metadata for one SAM 3.1 segmentation category as returned by
@@ -50,7 +50,7 @@ export interface SegmentationCategoryMetadata {
    */
   resolvedPromptSlugs: readonly string[];
   /** `'union'` or `'firstNonEmpty'` — drives the tooltip phrasing. */
-  resolutionKind: 'union' | 'firstNonEmpty';
+  resolutionKind: "union" | "firstNonEmpty";
 }
 
 let cache: Promise<SegmentationCategoryMetadata[]> | null = null;
@@ -68,8 +68,8 @@ function snakeToCamel(value: string): string {
 }
 
 async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
-  const res = await fetch(serviceUrl('segmentation-categories'), {
-    cache: 'no-store',
+  const res = await fetch(serviceUrl("segmentation-categories"), {
+    cache: "no-store"
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch segmentation categories: ${res.status} ${res.statusText}`);
@@ -77,7 +77,7 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
   const json = (await res.json()) as { data?: SegmentationCategoryMetadata[] | null } | null;
   const data = json?.data;
   if (!Array.isArray(data)) {
-    throw new Error('Malformed segmentation categories response');
+    throw new Error("Malformed segmentation categories response");
   }
   return data;
 }
@@ -106,9 +106,7 @@ export function getSegmentationCategories(): Promise<SegmentationCategoryMetadat
  * the backend's prompt table — and most internal code — is keyed
  * snake_case. Registering both keeps callers from having to care.
  */
-export function indexByKey(
-  entries: SegmentationCategoryMetadata[],
-): Map<string, SegmentationCategoryMetadata> {
+export function indexByKey(entries: SegmentationCategoryMetadata[]): Map<string, SegmentationCategoryMetadata> {
   const map = new Map<string, SegmentationCategoryMetadata>();
   for (const entry of entries) {
     map.set(entry.key, entry);

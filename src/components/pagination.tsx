@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback, useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
+import { useCallback, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
 
 interface PaginationProps {
   page: number;
@@ -12,41 +12,33 @@ interface PaginationProps {
   loading?: boolean;
 }
 
-function pageRange(current: number, total: number): (number | 'ellipsis-start' | 'ellipsis-end')[] {
+function pageRange(current: number, total: number): (number | "ellipsis-start" | "ellipsis-end")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
 
-  const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [1];
+  const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [1];
 
-  if (current > 3) pages.push('ellipsis-start');
+  if (current > 3) pages.push("ellipsis-start");
 
   const start = Math.max(2, current - 1);
   const end = Math.min(total - 1, current + 1);
   for (let i = start; i <= end; i++) pages.push(i);
 
-  if (current < total - 2) pages.push('ellipsis-end');
+  if (current < total - 2) pages.push("ellipsis-end");
 
   pages.push(total);
   return pages;
 }
 
-function EllipsisJump({
-  totalPages,
-  onPageChange,
-  className,
-}: {
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  className: string;
-}) {
+function EllipsisJump({ totalPages, onPageChange, className }: { totalPages: number; onPageChange: (page: number) => void; className: string }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const submit = () => {
     const target = parseInt(value, 10);
     if (target >= 1 && target <= totalPages) onPageChange(target);
     setEditing(false);
-    setValue('');
+    setValue("");
   };
 
   if (editing) {
@@ -55,17 +47,17 @@ function EllipsisJump({
         ref={focusOnMount}
         aria-label="Jump to page"
         value={value}
-        onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
+        onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') submit();
-          if (e.key === 'Escape') {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") {
             setEditing(false);
-            setValue('');
+            setValue("");
           }
         }}
         onBlur={() => {
           setEditing(false);
-          setValue('');
+          setValue("");
         }}
         className={`${className} w-12 text-center text-xs text-gray-900 outline-none`}
         placeholder="#"
@@ -74,19 +66,13 @@ function EllipsisJump({
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      title="Jump to page"
-      className={`${className} text-gray-400 hover:text-gray-600`}
-    >
+    <button type="button" onClick={() => setEditing(true)} title="Jump to page" className={`${className} text-gray-400 hover:text-gray-600`}>
       &hellip;
     </button>
   );
 }
 
-const BASE_BTN =
-  'relative inline-flex items-center px-2 py-2 text-sm font-medium ring-1 ring-gray-300 ring-inset focus:z-10';
+const BASE_BTN = "relative inline-flex items-center px-2 py-2 text-sm font-medium ring-1 ring-gray-300 ring-inset focus:z-10";
 
 export function Pagination({ page, totalPages, total, onPageChange, loading }: PaginationProps) {
   if (totalPages <= 1) return null;
@@ -97,54 +83,32 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
     <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
       <p className="flex items-center gap-2 text-sm text-gray-700">
         {loading && <Spinner className="size-3.5 text-gray-400" />}
-        Page <span className="font-medium">{page}</span> of{' '}
-        <span className="font-medium">{totalPages}</span>
+        Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
         <span className="text-gray-400"> ({total} results)</span>
       </p>
 
       <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs">
-        <button
-          type="button"
-          aria-label="Previous page"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
-        >
+        <button type="button" aria-label="Previous page" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}>
           <ChevronLeftIcon className="size-5" />
         </button>
 
         {pages.map((p) =>
-          typeof p === 'string' ? (
-            <EllipsisJump
-              key={p}
-              totalPages={totalPages}
-              onPageChange={onPageChange}
-              className={`${BASE_BTN} min-w-[2.25rem] justify-center`}
-            />
+          typeof p === "string" ? (
+            <EllipsisJump key={p} totalPages={totalPages} onPageChange={onPageChange} className={`${BASE_BTN} min-w-[2.25rem] justify-center`} />
           ) : (
             <button
               key={p}
               type="button"
               onClick={() => onPageChange(p)}
               disabled={p === page}
-              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${
-                p === page
-                  ? 'bg-primary-50 text-primary-600 ring-primary-500 z-10'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${p === page ? "bg-primary-50 text-primary-600 ring-primary-500 z-10" : "text-gray-600 hover:bg-gray-50"}`}
             >
               {p}
             </button>
-          ),
+          )
         )}
 
-        <button
-          type="button"
-          aria-label="Next page"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages}
-          className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
-        >
+        <button type="button" aria-label="Next page" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}>
           <ChevronRightIcon className="size-5" />
         </button>
       </nav>

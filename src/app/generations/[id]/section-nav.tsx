@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface Section {
   id: string;
@@ -9,7 +9,7 @@ interface Section {
 }
 
 export function SectionNav({ sections }: { sections: Section[] }) {
-  const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
+  const [activeId, setActiveId] = useState(sections[0]?.id ?? "");
   const clickScrolling = useRef(false);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -30,7 +30,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
           }
         }
       },
-      { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
+      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
     );
 
     for (const el of els) observer.observe(el);
@@ -43,7 +43,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
     setActiveId(id);
     clickScrolling.current = true;
     clearTimeout(clickTimer.current);
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
     clickTimer.current = setTimeout(() => {
       clickScrolling.current = false;
     }, 800);
@@ -59,11 +59,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
               key={s.id}
               type="button"
               onClick={() => scrollTo(s.id)}
-              className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                isActive
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
-              }`}
+              className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? "bg-primary-100 text-primary-700" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`}
               aria-label={s.label}
             >
               {s.icon}

@@ -32,13 +32,5 @@ export type BreakdownData = {
   } | null;
 };
 
-export type SortKey =
-  | 'name'
-  | 'generationCount'
-  | 'sceneGoodPct'
-  | 'sceneFailedPct'
-  | 'productGoodPct'
-  | 'productFailedPct'
-  | 'notRatedCount'
-  | 'avgExecTimeMs';
-export type SortDir = 'asc' | 'desc';
+export type SortKey = "name" | "generationCount" | "sceneGoodPct" | "sceneFailedPct" | "productGoodPct" | "productFailedPct" | "notRatedCount" | "avgExecTimeMs";
+export type SortDir = "asc" | "desc";

@@ -1,15 +1,15 @@
-import { serviceV2Url } from './api-base';
+import { serviceV2Url } from "./api-base";
 
-export type DollhouseRenderStatus = 'pending' | 'posted' | 'completed' | 'failed';
+export type DollhouseRenderStatus = "pending" | "posted" | "completed" | "failed";
 
 export interface DollhouseImageConfig {
-  format: 'Png' | 'Jpeg' | 'Exr';
+  format: "Png" | "Jpeg" | "Exr";
   height: number;
   width: number;
   superSamplingMultiplier?: number;
 }
 
-export type DollhouseRenderMode = 'LINEWORK' | 'COLORIZED_LINEWORK' | 'STANDARD_LIT';
+export type DollhouseRenderMode = "LINEWORK" | "COLORIZED_LINEWORK" | "STANDARD_LIT";
 
 export interface DollhouseRenderConfig {
   advancedSegmentation?: boolean;
@@ -65,26 +65,24 @@ export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: s
  * failed). Keep new validation in one place — having two copies caused drift
  * the last time the v2 schema tightened.
  */
-export function validateUnitySlimDesign(
-  value: unknown,
-): ValidationResult<UnitySlimDesignMaterials> {
-  if (!isRecord(value)) return { ok: false, error: 'Expected a JSON object.' };
-  if (typeof value.id !== 'string' || value.id.length === 0) {
-    return { ok: false, error: 'designMaterials.id is required.' };
+export function validateUnitySlimDesign(value: unknown): ValidationResult<UnitySlimDesignMaterials> {
+  if (!isRecord(value)) return { ok: false, error: "Expected a JSON object." };
+  if (typeof value.id !== "string" || value.id.length === 0) {
+    return { ok: false, error: "designMaterials.id is required." };
   }
   if (!isRecord(value.objects)) {
-    return { ok: false, error: 'designMaterials.objects must be an object.' };
+    return { ok: false, error: "designMaterials.objects must be an object." };
   }
   if (!isRecord(value.surfaces)) {
-    return { ok: false, error: 'designMaterials.surfaces must be an object.' };
+    return { ok: false, error: "designMaterials.surfaces must be an object." };
   }
   return {
     ok: true,
     value: {
       id: value.id,
       objects: value.objects,
-      surfaces: value.surfaces,
-    },
+      surfaces: value.surfaces
+    }
   };
 }
 
@@ -158,7 +156,7 @@ export class DollhouseRenderApiError extends Error {
   details?: unknown;
   constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message);
-    this.name = 'DollhouseRenderApiError';
+    this.name = "DollhouseRenderApiError";
     this.status = status;
     this.code = code;
     this.details = details;
@@ -166,7 +164,7 @@ export class DollhouseRenderApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
@@ -183,16 +181,16 @@ function summarizeZodIssues(details: unknown): string | null {
   for (const [field, messages] of Object.entries(issues)) {
     const list = Array.isArray(messages) ? messages.map(String) : [String(messages)];
     if (list.length === 0) continue;
-    lines.push(`${field}: ${list.join('; ')}`);
+    lines.push(`${field}: ${list.join("; ")}`);
   }
-  return lines.length > 0 ? lines.join(' | ') : null;
+  return lines.length > 0 ? lines.join(" | ") : null;
 }
 
 /** Server returned 2xx but the body wasn't the expected `{ data: [...] }` shape. */
 export class DollhouseRenderUnexpectedResponseError extends Error {
-  constructor(message = 'Server returned an unexpected response shape') {
+  constructor(message = "Server returned an unexpected response shape") {
     super(message);
-    this.name = 'DollhouseRenderUnexpectedResponseError';
+    this.name = "DollhouseRenderUnexpectedResponseError";
   }
 }
 
@@ -217,11 +215,11 @@ export function cameraFrameKey(frame: DollhouseCameraFrame, index: number): stri
 // ─── cameraFrames normalization ──────────────────────────────────────────────
 
 function numberOr(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function trimmedString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function asPoint3(value: unknown): DollhousePoint3 | null {
@@ -229,7 +227,7 @@ function asPoint3(value: unknown): DollhousePoint3 | null {
   return {
     x: numberOr(value.x, 0),
     y: numberOr(value.y, 0),
-    z: numberOr(value.z, 0),
+    z: numberOr(value.z, 0)
   };
 }
 
@@ -258,11 +256,7 @@ export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | nul
   const rotation = asPoint3(value.rotation);
   if (!position || !rotation) return null;
 
-  const products = Array.isArray(value.products)
-    ? value.products
-        .map(normalizeCameraFrameProduct)
-        .filter((p): p is DollhouseCameraFrameProduct => p !== null)
-    : [];
+  const products = Array.isArray(value.products) ? value.products.map(normalizeCameraFrameProduct).filter((p): p is DollhouseCameraFrameProduct => p !== null) : [];
 
   return {
     aspect: numberOr(value.aspect, 0),
@@ -270,8 +264,8 @@ export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | nul
     position,
     rotation,
     priority: numberOr(value.priority, 0),
-    summary: typeof value.summary === 'string' ? value.summary : '',
-    products,
+    summary: typeof value.summary === "string" ? value.summary : "",
+    products
   };
 }
 
@@ -296,22 +290,16 @@ async function parseError(res: Response): Promise<DollhouseRenderApiError> {
  * - From a server component, pass `imageGenerationV2Base()` so the call doesn't
  *   need to round-trip through Next's request layer.
  */
-export async function getDollhouseRender(
-  id: string,
-  options: { includeFrames?: boolean; baseUrl?: string } = {},
-  init?: RequestInit,
-): Promise<DollhouseRender | null> {
+export async function getDollhouseRender(id: string, options: { includeFrames?: boolean; baseUrl?: string } = {}, init?: RequestInit): Promise<DollhouseRender | null> {
   const qs = new URLSearchParams();
-  if (options.includeFrames) qs.append('include[]', 'frames');
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  if (options.includeFrames) qs.append("include[]", "frames");
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
   const path = `dollhouse-renders/${encodeURIComponent(id)}`;
-  const url = options.baseUrl
-    ? `${options.baseUrl}/${path}${suffix}`
-    : `${serviceV2Url(path)}${suffix}`;
+  const url = options.baseUrl ? `${options.baseUrl}/${path}${suffix}` : `${serviceV2Url(path)}${suffix}`;
   const res = await fetch(url, {
-    headers: { Accept: 'application/json' },
-    ...(options.baseUrl ? { cache: 'no-store' as RequestCache } : {}),
-    ...init,
+    headers: { Accept: "application/json" },
+    ...(options.baseUrl ? { cache: "no-store" as RequestCache } : {}),
+    ...init
   });
   if (res.status === 404) return null;
   if (!res.ok) throw await parseError(res);
@@ -319,23 +307,18 @@ export async function getDollhouseRender(
   return json.data[0] ?? null;
 }
 
-export async function createDollhouseRender(
-  body: CreateDollhouseRenderBody,
-  init?: RequestInit,
-): Promise<DollhouseRender> {
-  const res = await fetch(serviceV2Url('dollhouse-renders'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function createDollhouseRender(body: CreateDollhouseRenderBody, init?: RequestInit): Promise<DollhouseRender> {
+  const res = await fetch(serviceV2Url("dollhouse-renders"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    ...init,
+    ...init
   });
   if (!res.ok) throw await parseError(res);
   const json = (await res.json()) as V2ListResponse<DollhouseRender>;
   const created = json.data[0];
   if (!created) {
-    throw new DollhouseRenderUnexpectedResponseError(
-      'Create render succeeded but the server returned no render object.',
-    );
+    throw new DollhouseRenderUnexpectedResponseError("Create render succeeded but the server returned no render object.");
   }
   return created;
 }

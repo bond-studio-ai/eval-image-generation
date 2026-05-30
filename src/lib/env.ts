@@ -5,8 +5,8 @@
 
 function raw(): string {
   const v = process.env.BASE_API_HOSTNAME;
-  if (!v) throw new Error('BASE_API_HOSTNAME is not set');
-  return v.replace(/\/$/, '');
+  if (!v) throw new Error("BASE_API_HOSTNAME is not set");
+  return v.replace(/\/$/, "");
 }
 
 /** Base URL for the image-generation service (e.g. "https://api.example.com/image-generation/v1"). */
@@ -21,7 +21,7 @@ export function imageGenerationV2Base(): string {
 
 /** Base URL for the platform API, protocol-normalized to https. */
 export function platformApiBase(): string {
-  return `https://${raw().replace(/^https?:\/\//, '')}`;
+  return `https://${raw().replace(/^https?:\/\//, "")}`;
 }
 
 export interface S3UploadConfig {
@@ -35,24 +35,24 @@ export function s3UploadConfig(): S3UploadConfig {
   const bucket = process.env.AWS_S3_BUCKET;
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const region = process.env.AWS_S3_REGION || 'us-west-2';
+  const region = process.env.AWS_S3_REGION || "us-west-2";
 
   const missing = [
-    ['AWS_S3_BUCKET', bucket],
-    ['AWS_ACCESS_KEY_ID', accessKeyId],
-    ['AWS_SECRET_ACCESS_KEY', secretAccessKey],
+    ["AWS_S3_BUCKET", bucket],
+    ["AWS_ACCESS_KEY_ID", accessKeyId],
+    ["AWS_SECRET_ACCESS_KEY", secretAccessKey]
   ]
     .filter(([, value]) => !value)
     .map(([key]) => key);
 
   if (missing.length > 0) {
-    throw new Error(`Missing S3 upload configuration: ${missing.join(', ')}`);
+    throw new Error(`Missing S3 upload configuration: ${missing.join(", ")}`);
   }
 
   return {
     bucket: bucket as string,
     region,
     accessKeyId: accessKeyId as string,
-    secretAccessKey: secretAccessKey as string,
+    secretAccessKey: secretAccessKey as string
   };
 }
