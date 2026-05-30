@@ -14,12 +14,11 @@ live in state and cannot be computed during render.
 - `react-doctor/no-derived-state` — `src/app/analytics/accuracy-trend-chart.tsx:62` (`loading`) — async fetch status set in `finally`.
 - `react-doctor/no-derived-state` — `src/app/analytics/reliability-tab.tsx:172` (`loading`) — async fetch status set in `finally`.
 - `react-doctor/no-derived-state` — `src/app/strategies/[id]/strategy-performance.tsx:43` (`data`) — async fetch result.
-- `react-doctor/no-derived-state` — `src/components/grid-lightbox.tsx:66` (`fetched`) — async fetch result.
-- `react-doctor/no-derived-state` — `src/components/view-prompt-modal.tsx:48` (`loading`) — async fetch status.
+- `react-doctor/no-derived-state` — `src/components/grid-lightbox.tsx:67` (`fetched`) — async fetch result.
+- `react-doctor/no-derived-state` — `src/components/view-prompt-modal.tsx:49` (`loading`) — async fetch status.
 - `react-doctor/no-derived-state` — `src/hooks/use-infinite-list.ts:219` (`paginating`) — async fetch status.
-- `react-doctor/no-derived-state` — `src/app/executions/batch-tab.tsx:129` (`expandedState`) — user expand/collapse state reset on refresh; not derivable during render.
 - `react-doctor/no-derived-state` — `src/components/strategy-hover-card.tsx:104` (`pos`) — post-layout `getBoundingClientRect` viewport clamp; needs the rendered node.
-- `react-doctor/no-derived-state` — `src/components/image-evaluation-form.tsx:179` (`data`) — seeds user-editable form state from the async evaluation fetch (gated by `loadedRef`); not a render-time derivation.
+- `react-doctor/no-derived-state` — `src/components/image-evaluation-form.tsx:158` (`data`) — seeds user-editable form state from the async evaluation fetch (gated by `loadedRef`); not a render-time derivation.
 
 ## react-doctor/no-giant-component
 
@@ -27,11 +26,11 @@ Long but cohesive components where splitting further would obscure data flow
 (the rule explicitly warns against premature splits). Left intact after the
 10 genuinely-separable giants were extracted.
 
-- `react-doctor/no-giant-component` — `src/components/input-preset-detail.tsx` (386) — cohesive detail view.
-- `react-doctor/no-giant-component` — `src/components/prompt-version-detail.tsx` (373) — cohesive detail/edit view.
-- `react-doctor/no-giant-component` — `src/app/audit/compare/audit-compare-page.tsx` (369) — cohesive run-picker + compare orchestration.
+- `react-doctor/no-giant-component` — `src/components/input-preset-detail.tsx` (344) — cohesive detail view.
+- `react-doctor/no-giant-component` — `src/components/prompt-version-detail.tsx` (333) — cohesive detail/edit view.
+- `react-doctor/no-giant-component` — `src/app/audit/compare/audit-compare-page.tsx` (359) — cohesive run-picker + compare orchestration.
 - `react-doctor/no-giant-component` — `src/components/preview-prompt-page.tsx` (352) — cohesive preview orchestrator (already split into dropdown/query units).
-- `react-doctor/no-giant-component` — `src/components/grid-lightbox.tsx` (325) — single cohesive lightbox interaction.
+- `react-doctor/no-giant-component` — `src/components/grid-lightbox.tsx` (309) — single cohesive lightbox interaction.
 - `react-doctor/no-giant-component` — `src/components/design-settings-editor.tsx` (305) — cohesive settings editor just over the threshold.
 
 ## react-doctor/no-multi-comp
@@ -46,7 +45,7 @@ over-fragment without improving clarity.
 
 ## react-doctor/query-no-usequery-for-mutation
 
-- `react-doctor/query-no-usequery-for-mutation` — `src/components/preview-prompt-page.tsx:255` (`previewQuery`) — the preview endpoint is a POST only because it takes a request body, but it is a **read** that auto-fetches declaratively whenever the selected prompt/preset/area change (true query semantics, keyed by those inputs). `useMutation` would force an imperative trigger and reintroduce effect-driven fetching, so `useQuery` is the correct model here.
+- `react-doctor/query-no-usequery-for-mutation` — `src/components/preview-prompt-page.tsx:251` (`previewQuery`) — the preview endpoint is a POST only because it takes a request body, but it is a **read** that auto-fetches declaratively whenever the selected prompt/preset/area change (true query semantics, keyed by those inputs). `useMutation` would force an imperative trigger and reintroduce effect-driven fetching, so `useQuery` is the correct model here.
 
 ## react-doctor/async-await-in-loop
 
@@ -77,9 +76,9 @@ refetch/re-subscribe every render or defeat a stable-identity optimization.
 ## react-doctor/no-array-index-key + react-doctor/no-array-index-as-key
 
 Index keys are safe here: each list is a positionally-stable, stateless
-render of a derived array (text segments, fixed column config, numeric
-scores) that is never reordered and whose values can repeat, so no stable
-per-item id exists.
+render of a derived array (text segments, fixed column config) that is
+never reordered and whose values can repeat, so no stable per-item id
+exists.
 
 - `react-doctor/no-array-index-key` / `no-array-index-as-key` — `src/app/audit/compare/_components/diff-text.tsx:19` & `:28` — `<span>`s over `diffWords` segments; stateless text leaves.
 - `react-doctor/no-array-index-key` / `no-array-index-as-key` — `src/components/data-table.tsx:91` & `:112` — `<th>`/`<td>` over the static `columns` config prop; fixed definitions, never reordered.
@@ -90,11 +89,11 @@ per-item id exists.
 
 ## react-doctor/no-derived-useState
 
-- `react-doctor/no-derived-useState` — `src/components/design-settings-editor.tsx:1156`, `:1157`, `:1158` — intentional uncontrolled "draft" modal: captures the initial prop values once into editable draft state before Accept, and deliberately does **not** stay in sync with the props.
+- `react-doctor/no-derived-useState` — `src/components/design-settings-editor.tsx:1095`, `:1096`, `:1097` — intentional uncontrolled "draft" modal: captures the initial prop values once into editable draft state before Accept, and deliberately does **not** stay in sync with the props.
 
 ## react-doctor/no-event-handler
 
-- `react-doctor/no-event-handler` — `src/components/grid-lightbox.tsx:66` — effect fetches generation data from the server when the `generationId` prop changes; genuine async/external-data sync, not an event-handler side effect.
+- `react-doctor/no-event-handler` — `src/components/grid-lightbox.tsx:67` — effect fetches generation data from the server when the `generationId` prop changes; genuine async/external-data sync, not an event-handler side effect.
 - `react-doctor/no-event-handler` — `src/components/strategy-hover-card.tsx:97` — post-render layout-sync effect measuring the portal card via `getBoundingClientRect`; the card only exists once open, so it can't move into the hover handler.
 
 ## react-doctor/no-pass-live-state-to-parent
@@ -112,11 +111,11 @@ sits on an element nested inside a real `<button>` (button-in-button is invalid
 HTML), maps to a void element that can't host the existing children/interactivity,
 or maps to a semantically-wrong tag.
 
-- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:318`, `:363`, `:534`, `:579` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
-- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:760` — `role="button"` div wraps interactive descendants (a `JudgeScoreBadge` button + rating overlay), illegal inside a native `<button>`.
-- `react-doctor/prefer-tag-over-role` — `src/components/judge-score-badge.tsx:411`, `:438` — this shared badge also renders inside a real `<button>` in `batch-matrix-view.tsx`; a native `<button>` would nest button-in-button there.
+- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:319`, `:334`, `:479`, `:494` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
+- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:643` — `role="button"` div wraps interactive descendants (a `JudgeScoreBadge` button + rating overlay), illegal inside a native `<button>`.
+- `react-doctor/prefer-tag-over-role` — `src/components/judge-score-badge.tsx:391`, `:418` — this shared badge also renders inside a real `<button>` in `batch-matrix-view.tsx`; a native `<button>` would nest button-in-button there.
 - `react-doctor/prefer-tag-over-role` — `src/components/comparison-slider.tsx:76` — `role="slider"` maps to void `<input>`, which can't host the slider's image/label/bar children or its drag + keyboard handlers.
-- `react-doctor/prefer-tag-over-role` — `src/components/two-pane-split.tsx:132` — `role="separator"` maps to void `<hr>`, which can't carry the focusable/draggable resizer (`tabIndex`, pointer + key handlers, `aria-valuenow`).
+- `react-doctor/prefer-tag-over-role` — `src/components/two-pane-split.tsx:133` — `role="separator"` maps to void `<hr>`, which can't carry the focusable/draggable resizer (`tabIndex`, pointer + key handlers, `aria-valuenow`).
 - `react-doctor/prefer-tag-over-role` — `src/components/ui/tabs.tsx:138` — `role="group"`'s only native mapping the rule offers is `<address>`, which is semantically wrong for a view-switch tab strip.
 
 ## react-doctor/prefer-useReducer
@@ -130,5 +129,5 @@ those as their own `useState`.
 - `react-doctor/prefer-useReducer` — `src/app/audit/compare/audit-compare-page.tsx:180` — already uses `filtersReducer`; the rest are independent fetch/pagination, comparison selection, and expansion slices.
 - `react-doctor/prefer-useReducer` — `src/app/strategies/[id]/runs/[runId]/run-detail.tsx:54` — already uses `viewingPromptReducer`; the rest are independent display toggles, polled data, and per-action flags.
 - `react-doctor/prefer-useReducer` — `src/app/strategies/strategies-table.tsx:26` — independent per-action loading flags (`deletingId`/`togglingId`/`cloningId`) + selection + filter; matches the DataTable convention.
-- `react-doctor/prefer-useReducer` — `src/components/image-evaluation-form.tsx:112` — independent save-status, section open/close toggles, and form-data slices.
+- `react-doctor/prefer-useReducer` — `src/components/image-evaluation-form.tsx:91` — independent save-status, section open/close toggles, and form-data slices.
 - `react-doctor/prefer-useReducer` — `src/components/strategy-builder.tsx:37` — independent form-section fields (name/description/settings/steps) + save flags.
