@@ -14,10 +14,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    const els = sections.flatMap((s) => {
-      const el = document.getElementById(s.id);
-      return el ? [el] : [];
-    });
+    const els = sections.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
     if (els.length === 0) return;
 
     const observer = new IntersectionObserver(

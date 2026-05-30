@@ -60,7 +60,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
   const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
   const arbitraryImagesBySlot = Object.fromEntries(
-    storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])),
+    storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url]),
   );
   const savedImageUrlsBySlot = Object.fromEntries(
     storedImages.map((image) => [image.slot, image.url]),

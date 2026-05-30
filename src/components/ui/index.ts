@@ -13,6 +13,8 @@ export { Checkbox, Field, TextInput, Textarea } from './field';
 export { FilterBar, FilterSearch } from './filter-bar';
 export { FormSection } from './form-section';
 export { IconButton } from './icon-button';
+export { Modal } from './modal';
+export type { ModalProps } from './modal';
 export { MoreActionsMenu } from './more-actions-menu';
 export type { MoreAction } from './more-actions-menu';
 export { SegmentedControl } from './segmented-control';

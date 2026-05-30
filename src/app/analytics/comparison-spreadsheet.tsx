@@ -68,13 +68,12 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
       successPct: Number(row.successPct) || 0,
       failurePct: Number(row.failurePct) || 0,
       issues: Array.isArray(row.issues)
-        ? row.issues.flatMap((issue) => {
-            const item = {
+        ? row.issues
+            .map((issue) => ({
               issue: String((issue as Record<string, unknown>).issue ?? ''),
               count: Number((issue as Record<string, unknown>).count ?? 0),
-            };
-            return item.issue ? [item] : [];
-          })
+            }))
+            .filter((i) => i.issue)
         : [],
     };
   });
@@ -82,24 +81,25 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
 
 function normalizeIssueItems(raw: unknown): IssueItem[] {
   if (!Array.isArray(raw)) return [];
-  return raw.flatMap((entry) => {
-    const row = entry as Record<string, unknown>;
-    const item = {
-      issue: String(row.issue ?? ''),
-      count: Number(row.count ?? 0),
-    };
-    return item.issue ? [item] : [];
-  });
+  return raw
+    .map((entry) => {
+      const row = entry as Record<string, unknown>;
+      return {
+        issue: String(row.issue ?? ''),
+        count: Number(row.count ?? 0),
+      };
+    })
+    .filter((i) => i.issue);
 }
 
 function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .flatMap((entry) => {
+    .map((entry) => {
       const row = entry as Record<string, unknown>;
       const numberOrNull = (v: unknown): number | null =>
         v === null || v === undefined ? null : Number(v);
-      const mapped = {
+      return {
         stepId: String(row.stepId ?? ''),
         stepOrder: Number(row.stepOrder ?? 0),
         name: typeof row.name === 'string' ? row.name : null,
@@ -110,8 +110,8 @@ function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[] {
         minExecTimeMs: numberOrNull(row.minExecTimeMs),
         maxExecTimeMs: numberOrNull(row.maxExecTimeMs),
       };
-      return mapped.stepId ? [mapped] : [];
     })
+    .filter((row) => row.stepId)
     .sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
@@ -239,7 +239,7 @@ export function ComparisonSpreadsheet({
     for (const data of Object.values(dataBySlice)) {
       for (const item of data.sceneIssues) issueNames.add(item.issue);
     }
-    return Array.from(issueNames).sort((a, b) => a.localeCompare(b));
+    return [...issueNames].sort((a, b) => a.localeCompare(b));
   }, [dataBySlice]);
 
   const categoryRows = useMemo(() => {
@@ -248,7 +248,7 @@ export function ComparisonSpreadsheet({
       for (const cat of data.categories) names.add(cat.name);
     }
 
-    let sortedNames = Array.from(names).sort((a, b) =>
+    let sortedNames = [...names].sort((a, b) =>
       formatCategoryName(a).localeCompare(formatCategoryName(b)),
     );
 
@@ -278,7 +278,7 @@ export function ComparisonSpreadsheet({
       }
       return [
         { type: 'category' as const, categoryName: catName },
-        ...Array.from(issueNames)
+        ...[...issueNames]
           .sort((a, b) => a.localeCompare(b))
           .map((issueName) => ({
             type: 'issue' as const,

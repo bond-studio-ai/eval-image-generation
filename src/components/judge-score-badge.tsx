@@ -1,5 +1,6 @@
 'use client';
 
+import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
@@ -139,241 +140,229 @@ export function ReasoningModal({
   ];
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label="Close judge details"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') onClose();
-      }}
+    <Modal
+      onClose={onClose}
+      labelledById="judge-details-title"
+      backdropClassName="bg-black/40 backdrop-blur-sm"
+      className="flex max-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col rounded-xl bg-white shadow-2xl"
     >
-      <div
-        className="mx-4 flex w-full max-w-2xl flex-col rounded-xl bg-white shadow-2xl"
-        style={{ maxHeight: 'calc(100vh - 4rem)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative border-b border-gray-200 px-6 pt-5 pb-4">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex flex-wrap items-center justify-center gap-2.5">
-              {isFailed ? (
-                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                  <svg
-                    className="size-4 text-red-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"
-                    />
-                  </svg>
-                </span>
-              ) : (
-                <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}
+      <div className="relative border-b border-gray-200 px-6 pt-5 pb-4">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            {isFailed ? (
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-red-100">
+                <svg
+                  className="size-4 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
                 >
-                  {aggregateScore}
-                </span>
-              )}
-              <h3 className="text-base font-semibold text-gray-900">
-                {isFailed ? 'Judge Error' : 'Judge Details'}
-              </h3>
-              {!isFailed && isSelected && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                  <svg className="size-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  Selected
-                </span>
-              )}
-            </div>
-            {multiJudge && !isFailed && (
-              <p className="text-[11px] text-gray-500">
-                Average score shown; per-judge raw scores below.
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            aria-label="Close judge details"
-            onClick={onClose}
-            className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-          >
-            <svg
-              className="size-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {multiJudge && (
-          <div className="border-b border-gray-200 bg-gray-50/80 px-4 py-3">
-            <p className="mb-2 text-[11px] font-medium tracking-wider text-gray-500 uppercase">
-              Judges
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {panels.map((p, i) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => {
-                    const nextPanel = panels[i] ?? panels[0];
-                    setJudgeIdx(i);
-                    setActiveTab((currentTab) =>
-                      getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : 'reasoning',
-                    );
-                  }}
-                  className={`rounded-xl border px-3 py-2 text-left transition-all ${
-                    judgeIdx === i
-                      ? 'border-primary-200 text-primary-700 ring-primary-100 bg-white shadow-sm ring-1'
-                      : 'border-transparent bg-white/70 text-gray-700 hover:border-gray-200 hover:bg-white'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p
-                        className={`truncate text-xs font-semibold ${judgeIdx === i ? 'text-primary-700' : 'text-gray-800'}`}
-                      >
-                        {p.shortLabel}
-                      </p>
-                      <p className="truncate font-mono text-[10px] text-gray-500">{p.judgeModel}</p>
-                    </div>
-                    {p.rawScore != null && (
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          judgeIdx === i
-                            ? 'bg-primary-50 text-primary-700'
-                            : 'bg-indigo-50 text-indigo-600'
-                        }`}
-                      >
-                        {p.rawScore}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!multiJudge && (panel.judgeModel || panel.judgeTypeUsed || panel.judgePromptVersionId) && (
-          <div className="border-b border-gray-100 px-6 py-2">
-            {panel.judgeModel && (
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">{panel.judgeModel}</span>
-                {panel.rawScore != null && (
-                  <span className="ml-2 text-indigo-600">Score: {panel.rawScore}</span>
-                )}
-              </p>
-            )}
-            {panel.judgeTypeUsed && (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"
+                  />
+                </svg>
+              </span>
+            ) : (
               <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                  panel.judgeTypeUsed === 'batch'
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
+                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelected ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}
               >
-                {panel.judgeTypeUsed}
+                {aggregateScore}
               </span>
             )}
-            {panel.judgePromptVersionId && (
-              <Link
-                href={`/prompt-versions/${panel.judgePromptVersionId}`}
-                className="text-primary-600 hover:text-primary-500 mt-1 block text-[11px]"
-              >
-                {panel.judgePromptVersionName || 'View prompt version'}
-              </Link>
+            <h3 id="judge-details-title" className="text-base font-semibold text-gray-900">
+              {isFailed ? 'Judge Error' : 'Judge Details'}
+            </h3>
+            {!isFailed && isSelected && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                <svg className="size-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Selected
+              </span>
             )}
           </div>
-        )}
+          {multiJudge && !isFailed && (
+            <p className="text-[11px] text-gray-500">
+              Average score shown; per-judge raw scores below.
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label="Close judge details"
+          onClick={onClose}
+          className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        >
+          <svg
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-        {multiJudge && (
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-6 py-2">
+      {multiJudge && (
+        <div className="border-b border-gray-200 bg-gray-50/80 px-4 py-3">
+          <p className="mb-2 text-[11px] font-medium tracking-wider text-gray-500 uppercase">
+            Judges
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {panels.map((p, i) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => {
+                  const nextPanel = panels[i] ?? panels[0];
+                  setJudgeIdx(i);
+                  setActiveTab((currentTab) =>
+                    getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : 'reasoning',
+                  );
+                }}
+                className={`rounded-xl border px-3 py-2 text-left transition-all ${
+                  judgeIdx === i
+                    ? 'border-primary-200 text-primary-700 ring-primary-100 bg-white shadow-sm ring-1'
+                    : 'border-transparent bg-white/70 text-gray-700 hover:border-gray-200 hover:bg-white'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate text-xs font-semibold ${judgeIdx === i ? 'text-primary-700' : 'text-gray-800'}`}
+                    >
+                      {p.shortLabel}
+                    </p>
+                    <p className="truncate font-mono text-[10px] text-gray-500">{p.judgeModel}</p>
+                  </div>
+                  {p.rawScore != null && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        judgeIdx === i
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'bg-indigo-50 text-indigo-600'
+                      }`}
+                    >
+                      {p.rawScore}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!multiJudge && (panel.judgeModel || panel.judgeTypeUsed || panel.judgePromptVersionId) && (
+        <div className="border-b border-gray-100 px-6 py-2">
+          {panel.judgeModel && (
+            <p className="text-xs text-gray-600">
+              <span className="font-medium">{panel.judgeModel}</span>
+              {panel.rawScore != null && (
+                <span className="ml-2 text-indigo-600">Score: {panel.rawScore}</span>
+              )}
+            </p>
+          )}
+          {panel.judgeTypeUsed && (
             <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                panel.judgeType === 'batch'
+              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                panel.judgeTypeUsed === 'batch'
                   ? 'bg-indigo-100 text-indigo-700'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
-              Config: {panel.judgeType}
+              {panel.judgeTypeUsed}
             </span>
-            {panel.judgeTypeUsed && (
-              <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                  panel.judgeTypeUsed === 'batch'
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'bg-gray-50 text-gray-500'
-                }`}
-              >
-                Used: {panel.judgeTypeUsed}
-              </span>
-            )}
-            {panel.judgePromptVersionId && (
-              <Link
-                href={`/prompt-versions/${panel.judgePromptVersionId}`}
-                className="text-primary-600 hover:text-primary-500 text-[11px]"
-              >
-                {panel.judgePromptVersionName || 'Prompt version'}
-              </Link>
-            )}
-          </div>
-        )}
-
-        {hasExtra && (
-          <div className="flex gap-1 border-b border-gray-200 px-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          {activeTab === 'reasoning' && (
-            <p className={`text-sm leading-relaxed ${isFailed ? 'text-red-700' : 'text-gray-700'}`}>
-              {reasoning}
-            </p>
           )}
-          {activeTab === 'output' && output && (
-            <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-              {output}
-            </pre>
-          )}
-          {activeTab === 'system' && systemPrompt && (
-            <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-              {systemPrompt}
-            </pre>
-          )}
-          {activeTab === 'user' && userPrompt && (
-            <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-              {userPrompt}
-            </pre>
+          {panel.judgePromptVersionId && (
+            <Link
+              href={`/prompt-versions/${panel.judgePromptVersionId}`}
+              className="text-primary-600 hover:text-primary-500 mt-1 block text-[11px]"
+            >
+              {panel.judgePromptVersionName || 'View prompt version'}
+            </Link>
           )}
         </div>
+      )}
+
+      {multiJudge && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-6 py-2">
+          <span
+            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              panel.judgeType === 'batch'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            Config: {panel.judgeType}
+          </span>
+          {panel.judgeTypeUsed && (
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                panel.judgeTypeUsed === 'batch'
+                  ? 'bg-indigo-50 text-indigo-600'
+                  : 'bg-gray-50 text-gray-500'
+              }`}
+            >
+              Used: {panel.judgeTypeUsed}
+            </span>
+          )}
+          {panel.judgePromptVersionId && (
+            <Link
+              href={`/prompt-versions/${panel.judgePromptVersionId}`}
+              className="text-primary-600 hover:text-primary-500 text-[11px]"
+            >
+              {panel.judgePromptVersionName || 'Prompt version'}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {hasExtra && (
+        <div className="flex gap-1 border-b border-gray-200 px-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        {activeTab === 'reasoning' && (
+          <p className={`text-sm leading-relaxed ${isFailed ? 'text-red-700' : 'text-gray-700'}`}>
+            {reasoning}
+          </p>
+        )}
+        {activeTab === 'output' && output && (
+          <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{output}</pre>
+        )}
+        {activeTab === 'system' && systemPrompt && (
+          <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
+            {systemPrompt}
+          </pre>
+        )}
+        {activeTab === 'user' && userPrompt && (
+          <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
+            {userPrompt}
+          </pre>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
 

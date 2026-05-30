@@ -1,5 +1,6 @@
 'use client';
 
+import { Modal } from '@/components/ui';
 import { withImageParams } from '@/lib/image-utils';
 import { useState } from 'react';
 
@@ -90,52 +91,47 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
       {/* Lightbox — full-width modal with skeleton loading */}
       {expanded && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <button
-            type="button"
-            aria-label="Close lightbox"
-            className="absolute inset-0 cursor-pointer bg-black/70"
-            onClick={() => setExpanded(false)}
-          />
-          <div
-            className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
-              <span className="text-sm font-medium text-gray-700">
-                {urls.length} result{urls.length !== 1 ? 's' : ''}
-              </span>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setExpanded(false)}
-                className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+        <Modal
+          onClose={() => setExpanded(false)}
+          ariaLabel="Expanded results"
+          backdropClassName="bg-black/70"
+          containerClassName="sm:p-6"
+          className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        >
+          {/* Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
+            <span className="text-sm font-medium text-gray-700">
+              {urls.length} result{urls.length !== 1 ? 's' : ''}
+            </span>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setExpanded(false)}
+              className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+            >
+              <svg
+                className="size-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
               >
-                <svg
-                  className="size-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-            {/* Image grid */}
-            <div className="flex-1 overflow-auto p-4">
-              <div
-                className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
-              >
-                {urls.map((url, i) => (
-                  <LightboxImage key={i} url={url} alt={`Result ${i + 1}`} />
-                ))}
-              </div>
+          {/* Image grid */}
+          <div className="flex-1 overflow-auto p-4">
+            <div
+              className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
+            >
+              {urls.map((url, i) => (
+                <LightboxImage key={i} url={url} alt={`Result ${i + 1}`} />
+              ))}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

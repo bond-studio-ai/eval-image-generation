@@ -2,6 +2,7 @@
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
+import { Modal } from '@/components/ui';
 import { localUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -410,79 +411,74 @@ function ProductImagePreviewModal({
   const safeName = (productName ?? 'product').replace(/[^a-zA-Z0-9_-]/g, '_');
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label="Close image preview"
-      className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') onClose();
-      }}
+    <Modal
+      onClose={onClose}
+      labelledById="product-image-preview-title"
+      backdropClassName="bg-black/70"
+      containerClassName="z-[60] sm:p-6"
+      className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
     >
-      <div
-        className="relative flex max-h-[90vh] w-full max-w-5xl cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-gray-700">
-              {productName ?? 'Product'} &mdash; {IMAGE_TAG_LABELS[tag]}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
-            >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                />
-              </svg>
-              Download
-            </button>
-            <button
-              type="button"
-              aria-label="Close image preview"
-              onClick={onClose}
-              className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-            >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span
+            id="product-image-preview-title"
+            className="truncate text-sm font-medium text-gray-700"
+          >
+            {productName ?? 'Product'} &mdash; {IMAGE_TAG_LABELS[tag]}
+          </span>
         </div>
-        <div className="flex-1 overflow-auto p-4">
-          <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
-            {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={webpUrl}
-              alt={`${productName ?? 'Product'} - ${IMAGE_TAG_LABELS[tag]}`}
-              onLoad={() => setLoaded(true)}
-              className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            <svg
+              className="size-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+              />
+            </svg>
+            Download
+          </button>
+          <button
+            type="button"
+            aria-label="Close image preview"
+            onClick={onClose}
+            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+          >
+            <svg
+              className="size-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
-    </div>
+      <div className="flex-1 overflow-auto p-4">
+        <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+          {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={webpUrl}
+            alt={`${productName ?? 'Product'} - ${IMAGE_TAG_LABELS[tag]}`}
+            onLoad={() => setLoaded(true)}
+            className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+          />
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -1201,18 +1197,6 @@ function ProductSelectionModal({
   const [draftArbitraryUrl, setDraftArbitraryUrl] = useState<string | null>(arbitraryUrl);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  useEffect(() => {
-    searchInputRef.current?.focus();
-  }, []);
-
   const draftSelectedProduct = useMemo(
     () => products.find((product) => product.id === draftSelectedId) ?? null,
     [products, draftSelectedId],
@@ -1247,211 +1231,207 @@ function ProductSelectionModal({
   }, [field.apiCategories, products, search]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/35 px-4 py-6">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Close product picker"
-        className="absolute inset-0"
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') onClose();
-        }}
-      />
-      <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase">{field.label}</h3>
-            <p className="mt-1 text-xs text-gray-500">
-              {isArbitraryMode
-                ? draftSelectedId
-                  ? 'Upload a custom image to override the product image sent for generation.'
-                  : 'Upload a custom image for this slot.'
-                : 'Search by product name, category, family, or ID.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {selectedId ? (
-              <button
-                type="button"
-                onClick={onClear}
-                className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-              >
-                Clear selection
-              </button>
-            ) : null}
+    <Modal
+      onClose={onClose}
+      labelledById="product-selection-title"
+      backdropClassName="bg-gray-900/35"
+      containerClassName="px-4 py-6"
+      className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"
+      initialFocusRef={searchInputRef}
+    >
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div>
+          <h3
+            id="product-selection-title"
+            className="text-sm font-semibold text-gray-900 uppercase"
+          >
+            {field.label}
+          </h3>
+          <p className="mt-1 text-xs text-gray-500">
+            {isArbitraryMode
+              ? draftSelectedId
+                ? 'Upload a custom image to override the product image sent for generation.'
+                : 'Upload a custom image for this slot.'
+              : 'Search by product name, category, family, or ID.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedId ? (
             <button
               type="button"
-              aria-label="Close product picker"
-              onClick={onClose}
-              className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              onClick={onClear}
+              className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
             >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              Clear selection
             </button>
-          </div>
-        </div>
-        <div className="space-y-4 border-b border-gray-100 p-4">
-          <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                  Current selection
-                </p>
-                <p className="mt-1 truncate text-sm font-medium text-gray-800">
-                  {draftSelectedProduct
-                    ? draftSelectedProduct.name
-                    : draftArbitraryUrl || savedImageUrl
-                      ? 'URL-only attachment'
-                      : 'Not set'}
-                </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  {draftSelectedProduct
-                    ? `${draftSelectedProduct.category?.name ?? 'No category'} • ${draftSelectedId}`
-                    : savedImageUrl
-                      ? 'Saved URL still available even without a product.'
-                      : 'Choose a catalog product or use an arbitrary image URL.'}
-                </p>
-              </div>
-            </div>
-            <div className="mt-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-label="Use custom image override"
-                  aria-checked={isArbitraryMode}
-                  onClick={() =>
-                    setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')
-                  }
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none ${
-                    isArbitraryMode ? 'bg-violet-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
-                      isArbitraryMode ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                    }`}
-                  />
-                </button>
-                <span className="text-[11px] font-medium text-gray-600">
-                  Use custom image override
-                </span>
-              </div>
-            </div>
-            {draftImageType === 'arbitrary' ? (
-              <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
-                <SceneImageInput
-                  label={draftSelectedId ? 'Override image' : 'Attached arbitrary image'}
-                  value={draftArbitraryUrl}
-                  onChange={setDraftArbitraryUrl}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          {!isArbitraryMode ? (
-            <input
-              ref={searchInputRef}
-              aria-label={`Search ${field.label.toLowerCase()}`}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'
-              }
-              disabled={!loaded}
-              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
-            />
           ) : null}
-        </div>
-        {!isArbitraryMode ? (
-          <div className="overflow-y-auto">
-            {!loaded ? (
-              <p className="px-4 py-6 text-sm text-gray-500">Loading products…</p>
-            ) : filteredProducts.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
-            ) : (
-              filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 transition-colors last:border-b-0 ${
-                    product.id === draftSelectedId
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setDraftSelectedId(product.id)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                  >
-                    <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
-                      {product.featuredImage?.url ? (
-                        <ImageWithSkeleton
-                          src={withImageParams(product.featuredImage.url)}
-                          alt={product.name}
-                          loading="lazy"
-                          wrapperClassName="size-12 bg-gray-50 p-1"
-                        />
-                      ) : (
-                        <span className="flex size-12 items-center justify-center text-[10px] text-gray-400">
-                          No image
-                        </span>
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{product.name}</span>
-                      <span className="block truncate text-[11px] text-gray-500">
-                        {product.category?.name ?? 'No category'} • {product.id}
-                      </span>
-                    </span>
-                  </button>
-                  <span className="flex shrink-0 items-center gap-1">
-                    {catalogCategory && (
-                      <ProductListItemDownloads
-                        catalogCategory={catalogCategory}
-                        productId={product.id}
-                        productName={product.name}
-                      />
-                    )}
-                    {product.id === draftSelectedId && (
-                      <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">
-                        Selected
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        ) : null}
-        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
           <button
             type="button"
+            aria-label="Close product picker"
             onClick={onClose}
-            className="rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleAccept}
-            disabled={!canAccept}
-            className="bg-primary-600 hover:bg-primary-700 rounded-md px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Accept
+            <svg
+              className="size-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>
-    </div>
+      <div className="space-y-4 border-b border-gray-100 p-4">
+        <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                Current selection
+              </p>
+              <p className="mt-1 truncate text-sm font-medium text-gray-800">
+                {draftSelectedProduct
+                  ? draftSelectedProduct.name
+                  : draftArbitraryUrl || savedImageUrl
+                    ? 'URL-only attachment'
+                    : 'Not set'}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                {draftSelectedProduct
+                  ? `${draftSelectedProduct.category?.name ?? 'No category'} • ${draftSelectedId}`
+                  : savedImageUrl
+                    ? 'Saved URL still available even without a product.'
+                    : 'Choose a catalog product or use an arbitrary image URL.'}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-label="Use custom image override"
+                aria-checked={isArbitraryMode}
+                onClick={() => setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  isArbitraryMode ? 'bg-violet-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                    isArbitraryMode ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                  }`}
+                />
+              </button>
+              <span className="text-[11px] font-medium text-gray-600">
+                Use custom image override
+              </span>
+            </div>
+          </div>
+          {draftImageType === 'arbitrary' ? (
+            <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
+              <SceneImageInput
+                label={draftSelectedId ? 'Override image' : 'Attached arbitrary image'}
+                value={draftArbitraryUrl}
+                onChange={setDraftArbitraryUrl}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {!isArbitraryMode ? (
+          <input
+            ref={searchInputRef}
+            aria-label={`Search ${field.label.toLowerCase()}`}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : 'Loading products...'}
+            disabled={!loaded}
+            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+          />
+        ) : null}
+      </div>
+      {!isArbitraryMode ? (
+        <div className="overflow-y-auto">
+          {!loaded ? (
+            <p className="px-4 py-6 text-sm text-gray-500">Loading products…</p>
+          ) : filteredProducts.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
+          ) : (
+            filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 transition-colors last:border-b-0 ${
+                  product.id === draftSelectedId
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setDraftSelectedId(product.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
+                    {product.featuredImage?.url ? (
+                      <ImageWithSkeleton
+                        src={withImageParams(product.featuredImage.url)}
+                        alt={product.name}
+                        loading="lazy"
+                        wrapperClassName="size-12 bg-gray-50 p-1"
+                      />
+                    ) : (
+                      <span className="flex size-12 items-center justify-center text-[10px] text-gray-400">
+                        No image
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{product.name}</span>
+                    <span className="block truncate text-[11px] text-gray-500">
+                      {product.category?.name ?? 'No category'} • {product.id}
+                    </span>
+                  </span>
+                </button>
+                <span className="flex shrink-0 items-center gap-1">
+                  {catalogCategory && (
+                    <ProductListItemDownloads
+                      catalogCategory={catalogCategory}
+                      productId={product.id}
+                      productName={product.name}
+                    />
+                  )}
+                  {product.id === draftSelectedId && (
+                    <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">
+                      Selected
+                    </span>
+                  )}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      ) : null}
+      <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleAccept}
+          disabled={!canAccept}
+          className="bg-primary-600 hover:bg-primary-700 rounded-md px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Accept
+        </button>
+      </div>
+    </Modal>
   );
 }
 

@@ -827,9 +827,9 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   const withOutput = runs.filter((r) => r.lastOutputUrl);
   if (withOutput.length < 2 || !runs.every((r) => r.judgeScore == null)) return false;
 
-  const completedTimes = runs.flatMap((r) =>
-    r.completedAt ? [new Date(r.completedAt).getTime()] : [],
-  );
+  const completedTimes = runs
+    .filter((r) => r.completedAt)
+    .map((r) => new Date(r.completedAt!).getTime());
   if (completedTimes.length === 0) return false;
   return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }

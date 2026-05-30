@@ -121,7 +121,7 @@ function orderedJudgeIds(
     if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!)
       byId.set(j.strategyJudgeId, p);
   }
-  return [...byId.entries()].toSorted((a, b) => a[1] - b[1]).map(([id]) => id);
+  return [...byId.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id);
 }
 
 function ConfigDiff({

@@ -1,5 +1,6 @@
 'use client';
 
+import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -66,92 +67,84 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="Cancel deletion"
-          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50"
-          onClick={() => !deleting && setShowConfirm(false)}
-          onKeyDown={(e) => {
-            if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') && !deleting)
-              setShowConfirm(false);
-          }}
+        <Modal
+          onClose={() => !deleting && setShowConfirm(false)}
+          labelledById="delete-prompt-version-title"
+          backdropClassName="bg-black/50"
+          className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
         >
-          <div
-            className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                <svg
-                  className="size-5 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Prompt Version</h3>
-                <p className="mt-1 text-sm text-gray-600">
-                  Are you sure you want to delete <strong>{name || 'this prompt version'}</strong>?
-                  This action cannot be undone.
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+              <svg
+                className="size-5 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                />
+              </svg>
             </div>
-
-            {error && (
-              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirm(false)}
-                disabled={deleting}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting && (
-                  <svg
-                    className="size-4 animate-spin"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                )}
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
+            <div>
+              <h3 id="delete-prompt-version-title" className="text-lg font-semibold text-gray-900">
+                Delete Prompt Version
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Are you sure you want to delete <strong>{name || 'this prompt version'}</strong>?
+                This action cannot be undone.
+              </p>
             </div>
           </div>
-        </div>
+
+          {error && (
+            <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          )}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={deleting}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting && (
+                <svg
+                  className="size-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              )}
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </Modal>
       )}
     </>
   );
