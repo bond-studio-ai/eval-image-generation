@@ -28,6 +28,13 @@ export function getFocusable(root: HTMLElement): HTMLElement[] {
   });
 }
 
+/**
+ * Mount order of open modals. Only the topmost (last) entry reacts to Escape
+ * and traps Tab, so nested modals dismiss one layer at a time instead of every
+ * mounted instance closing on a single keypress.
+ */
+const modalStack: symbol[] = [];
+
 export interface ModalProps {
   /** Called when the user dismisses via backdrop click or Escape. */
   onClose: () => void;
@@ -79,7 +86,13 @@ export function Modal({
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
+    const token = Symbol('modal');
+    modalStack.push(token);
+    const isTopmost = () => modalStack[modalStack.length - 1] === token;
+
     const onKey = (e: KeyboardEvent) => {
+      // Nested modals all listen on window; only the top layer handles keys.
+      if (!isTopmost()) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onCloseRef.current();
@@ -120,6 +133,8 @@ export function Modal({
 
     return () => {
       window.removeEventListener('keydown', onKey);
+      const idx = modalStack.indexOf(token);
+      if (idx !== -1) modalStack.splice(idx, 1);
       const active = document.activeElement;
       const focusEscaped = active && active !== document.body && (!root || !root.contains(active));
       if (!focusEscaped && previouslyFocused && document.contains(previouslyFocused)) {
