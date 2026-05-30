@@ -196,7 +196,7 @@ export const defaultStrategySettings: StrategySettings = {
 };
 
 export const DEFAULT_IMAGE_TYPE: ProductImageType = 'featured-image';
-export const IMAGE_TYPE_VALUES = new Set<ProductImageType>(
+const IMAGE_TYPE_VALUES = new Set<ProductImageType>(
   IMAGE_TYPE_OPTIONS.map((option) => option.value),
 );
 

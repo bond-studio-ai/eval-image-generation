@@ -8,24 +8,6 @@ import { SegmentationPanel } from './segmentation-panel';
 import { ChevronIcon, StatusBadge, STEP_STATUS_DOT } from './shared';
 import type { StepGroup, StepResult } from './types';
 
-export function groupStepResults(sorted: StepResult[]): StepGroup[] {
-  const map = new Map<number, StepGroup>();
-  for (const sr of sorted) {
-    const order = sr.step?.stepOrder ?? 0;
-    if (!map.has(order)) {
-      map.set(order, {
-        stepOrder: order,
-        name: sr.step?.name || `Step ${order}`,
-        model: sr.step?.model ?? '',
-        step: sr.step,
-        results: [],
-      });
-    }
-    map.get(order)!.results.push(sr);
-  }
-  return [...map.values()].toSorted((a, b) => a.stepOrder - b.stepOrder);
-}
-
 function GenerationTile({
   sr,
   index,

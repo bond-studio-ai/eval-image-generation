@@ -9,8 +9,8 @@ import { JudgeEvaluationSection } from './_components/judge-evaluation-section';
 import { RunDetailModals } from './_components/run-detail-modals';
 import { RunFailureReasons } from './_components/run-failure-reasons';
 import { RunSummaryCard } from './_components/run-summary-card';
-import { groupStepResults } from './_components/step-group-card';
 import { StepResultsSection } from './_components/step-results-section';
+import { groupStepResults } from './_components/types';
 import type { RunData, ViewingPromptAction, ViewingPromptState } from './_components/types';
 
 const POLL_INTERVAL = 3000;

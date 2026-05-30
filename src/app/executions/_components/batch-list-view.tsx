@@ -9,8 +9,8 @@ import { ReviewRunGroupBadge } from '@/components/review-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
 import Link from 'next/link';
-import { deriveRunReviewStatus, ReviewStatusBadge } from './batch-review-status-badge';
-import { isAwaitingJudgeBatch, type RunRow } from './batch-types';
+import { ReviewStatusBadge } from './batch-review-status-badge';
+import { deriveRunReviewStatus, isAwaitingJudgeBatch, type RunRow } from './batch-types';
 
 /* ─── List view: strategy sections → preset rows × #N columns ─── */
 

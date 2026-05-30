@@ -23,6 +23,23 @@ live in state and cannot be computed during render.
 - `react-doctor/no-derived-state` — `src/app/executions/batch-tab.tsx:334` (`expandedIds`) — user expand/collapse state reset on refresh; not derivable during render.
 - `react-doctor/no-derived-state` — `src/components/strategy-hover-card.tsx:104` (`pos`) — post-layout `getBoundingClientRect` viewport clamp; needs the rendered node.
 
+## react-doctor/no-giant-component
+
+Long but cohesive components where splitting further would obscure data flow
+(the rule explicitly warns against premature splits). Left intact after the
+10 genuinely-separable giants were extracted.
+
+- `react-doctor/no-giant-component` — `src/components/input-preset-detail.tsx` (386) — cohesive detail view.
+- `react-doctor/no-giant-component` — `src/components/prompt-version-detail.tsx` (373) — cohesive detail/edit view.
+- `react-doctor/no-giant-component` — `src/app/audit/compare/audit-compare-page.tsx` (369) — cohesive run-picker + compare orchestration.
+- `react-doctor/no-giant-component` — `src/components/preview-prompt-page.tsx` (352) — cohesive preview orchestrator (already split into dropdown/query units).
+- `react-doctor/no-giant-component` — `src/components/grid-lightbox.tsx` (325) — single cohesive lightbox interaction.
+- `react-doctor/no-giant-component` — `src/components/design-settings-editor.tsx` (305) — cohesive settings editor just over the threshold.
+
+## react-doctor/no-multi-comp
+
+- `react-doctor/no-multi-comp` — `src/app/strategies/[id]/runs/[runId]/_components/audit.tsx` (`AuditCollapsible`, `StepAudit`) — three tightly-coupled audit sub-components co-located in one file, consistent with the codebase's existing accepted pattern (`review-results/icons.tsx`, `page-header.tsx`). Splitting them into separate files would over-fragment.
+
 ## react-doctor/query-no-usequery-for-mutation
 
 - `react-doctor/query-no-usequery-for-mutation` — `src/components/preview-prompt-page.tsx:259` (`previewQuery`) — the preview endpoint is a POST only because it takes a request body, but it is a **read** that auto-fetches declaratively whenever the selected prompt/preset/area change (true query semantics, keyed by those inputs). `useMutation` would force an imperative trigger and reintroduce effect-driven fetching, so `useQuery` is the correct model here.

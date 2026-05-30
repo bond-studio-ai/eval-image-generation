@@ -1,15 +1,6 @@
 'use client';
 
 import { Badge } from '@/components/ui';
-import type { RunRow } from './batch-types';
-
-export function deriveRunReviewStatus(run: RunRow): string {
-  if (run.status === 'running' || run.status === 'pending') return 'running';
-  if (run.totalGenerations === 0) return 'pending';
-  if (run.ratedGenerations === 0) return 'pending';
-  if (run.ratedGenerations >= run.totalGenerations) return 'reviewed';
-  return 'in_progress';
-}
 
 const REVIEW_STATUS_CONFIG: Record<
   string,

@@ -1,4 +1,4 @@
-export const SOURCE_LABELS: Record<string, string> = {
+const SOURCE_LABELS: Record<string, string> = {
   preset: 'Preset Run',
   raw_input: 'Real Input',
   batch: 'Batch Run',

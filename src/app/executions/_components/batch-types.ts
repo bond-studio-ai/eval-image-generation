@@ -53,6 +53,14 @@ export interface FetchState {
   refreshing: boolean;
 }
 
+export function deriveRunReviewStatus(run: RunRow): string {
+  if (run.status === 'running' || run.status === 'pending') return 'running';
+  if (run.totalGenerations === 0) return 'pending';
+  if (run.ratedGenerations === 0) return 'pending';
+  if (run.ratedGenerations >= run.totalGenerations) return 'reviewed';
+  return 'in_progress';
+}
+
 const JUDGE_TIMEOUT_MS = 5 * 60 * 1000;
 
 export function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
