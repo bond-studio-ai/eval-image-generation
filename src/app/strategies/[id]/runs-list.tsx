@@ -739,7 +739,7 @@ function BatchMatrix({
                   {canonicalGenerationId && (
                     <ReviewBadge
                       generationId={canonicalGenerationId}
-                      initialState={segmentationStatuses.get(canonicalGenerationId)}
+                      state={segmentationStatuses.get(canonicalGenerationId)}
                       onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)}
                     />
                   )}

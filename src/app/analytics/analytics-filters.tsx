@@ -30,7 +30,10 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const to = searchParams.get('to') ?? '';
   const model = searchParams.get('model') ?? '';
   const source = searchParams.get('source') ?? 'all';
-  const comparison = parseComparisonState(searchParams);
+  // Memoize on the serialized params: `parseComparisonState` mints a fresh
+  // `crypto.randomUUID()` for legacy (pre-id) columns, so re-parsing on every
+  // render would hand the editor unstable React keys. Same params → same ids.
+  const comparison = useMemo(() => parseComparisonState(searchParams), [searchParams]);
 
   const defaultSource: AnalyticsComparisonSource =
     source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';

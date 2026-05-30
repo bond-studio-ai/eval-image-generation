@@ -225,19 +225,18 @@ function DateRangeForm({
   to?: string;
   onApply: (from: string, to: string) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const fromRef = useRef<HTMLInputElement>(null);
+  const toRef = useRef<HTMLInputElement>(null);
   const apply = () => {
-    const root = containerRef.current;
-    const fromInput = root?.querySelector<HTMLInputElement>('[name="from"]');
-    const toInput = root?.querySelector<HTMLInputElement>('[name="to"]');
-    onApply(fromInput?.value ?? '', toInput?.value ?? '');
+    onApply(fromRef.current?.value ?? '', toRef.current?.value ?? '');
   };
   const applyOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') apply();
   };
   return (
-    <div ref={containerRef} className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5">
       <input
+        ref={fromRef}
         type="date"
         name="from"
         aria-label="From date"
@@ -247,6 +246,7 @@ function DateRangeForm({
       />
       <span className="text-xs text-gray-400">–</span>
       <input
+        ref={toRef}
         type="date"
         name="to"
         aria-label="To date"
