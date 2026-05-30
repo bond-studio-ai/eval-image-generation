@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertCircleIcon, CheckIcon, SparklesIcon, Spinner } from '@/components/ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { runReviewPost } from './run-review-post';
 
 /**
@@ -34,18 +34,20 @@ interface SegmentationBadgeProps {
 }
 
 export function ReviewBadge({ generationId, initialState, onStateChange }: SegmentationBadgeProps) {
-  const [state, setState] = useState<ReviewState>(initialState ?? { kind: 'idle' });
-
-  useEffect(() => {
-    if (initialState) setState(initialState);
-  }, [initialState]);
+  // When the parent owns the state (it passes `onStateChange`, e.g. the shared
+  // `useBatchReviewStatus` cache), `initialState` is the single source of truth
+  // and we render it directly — no effect mirroring the prop into local state.
+  // Standalone callers (no `onStateChange`) fall back to local state.
+  const isControlled = onStateChange !== undefined;
+  const [localState, setLocalState] = useState<ReviewState>(initialState ?? { kind: 'idle' });
+  const state = isControlled ? (initialState ?? { kind: 'idle' }) : localState;
 
   const transition = useCallback(
     (next: ReviewState) => {
-      setState(next);
+      if (!isControlled) setLocalState(next);
       onStateChange?.(next);
     },
-    [onStateChange],
+    [isControlled, onStateChange],
   );
 
   const runReview = useCallback(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ModelOption } from './types';
 
 export function SearchableSelect({
@@ -19,6 +19,7 @@ export function SearchableSelect({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const selectedLabel = useMemo(
     () => options.find((o) => o.value === value)?.label ?? null,
@@ -73,7 +74,7 @@ export function SearchableSelect({
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
-                autoFocus
+                ref={focusOnMount}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

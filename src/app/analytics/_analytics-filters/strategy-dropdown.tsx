@@ -1,7 +1,7 @@
 'use client';
 
 import type { StrategyListItem } from '@/lib/service-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export function StrategyDropdown({
   value,
@@ -13,14 +13,13 @@ export function StrategyDropdown({
   onChange: (strategyId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const selected = strategies.find((s) => s.id === value);
 
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
+  // Focus the search field when it mounts (i.e. when the dropdown opens) via a
+  // stable callback ref — no effect, and no autoFocus prop.
+  const focusOnOpen = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -85,7 +84,7 @@ export function StrategyDropdown({
                 />
               </svg>
               <input
-                ref={searchInputRef}
+                ref={focusOnOpen}
                 type="text"
                 aria-label="Search strategies"
                 value={search}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 interface PaginationProps {
   page: number;
@@ -38,6 +38,7 @@ function EllipsisJump({
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const submit = () => {
     const target = parseInt(value, 10);
@@ -49,7 +50,7 @@ function EllipsisJump({
   if (editing) {
     return (
       <input
-        autoFocus
+        ref={focusOnMount}
         aria-label="Jump to page"
         value={value}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function NumberOfImagesInput({
   value,
@@ -12,6 +12,7 @@ export function NumberOfImagesInput({
   const isDefault = value === null;
   const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
   const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
   const inactiveCls =
@@ -74,7 +75,7 @@ export function NumberOfImagesInput({
               </svg>
             </button>
             <input
-              autoFocus
+              ref={focusOnMount}
               type="number"
               min={1}
               max={100}

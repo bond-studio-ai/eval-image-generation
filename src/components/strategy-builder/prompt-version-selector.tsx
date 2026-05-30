@@ -1,7 +1,7 @@
 'use client';
 
 import type { PromptVersionListItem } from '@/lib/types';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 export function PromptVersionSelector({
   value,
@@ -17,6 +17,7 @@ export function PromptVersionSelector({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const selectedName = useMemo(
     () => promptVersions.find((pv) => pv.id === value)?.name || null,
@@ -74,7 +75,7 @@ export function PromptVersionSelector({
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
-                autoFocus
+                ref={focusOnMount}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

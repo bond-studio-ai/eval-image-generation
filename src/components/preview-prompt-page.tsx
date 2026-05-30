@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 interface PromptVersionItem {
   id: string;
@@ -77,6 +77,7 @@ function DropdownWithSearch({
   onSelectId,
   emptyMessage,
 }: DropdownWithSearchProps) {
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
   return (
     <div ref={containerRef} className="relative w-full">
       <button
@@ -101,7 +102,7 @@ function DropdownWithSearch({
         <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
           <div className="border-b border-gray-200 p-2">
             <input
-              autoFocus
+              ref={focusOnMount}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

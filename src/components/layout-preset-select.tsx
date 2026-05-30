@@ -2,7 +2,7 @@
 
 import { serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export interface LayoutPresetOption {
   id: string;
@@ -50,6 +50,7 @@ export function LayoutPresetSelect({
 }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const { options, loading, error } = useLayoutPresets();
 
@@ -156,7 +157,7 @@ export function LayoutPresetSelect({
             </div>
             <div className="border-b border-gray-100 p-4">
               <input
-                autoFocus
+                ref={focusOnMount}
                 type="text"
                 aria-label="Search layouts"
                 value={search}

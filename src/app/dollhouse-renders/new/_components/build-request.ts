@@ -172,9 +172,9 @@ export function buildCreateRenderBody(input: BuildCreateBodyInput): CreateDollho
   if (renderConfig) body.renderConfig = renderConfig;
   const ssmParams = buildSsmParams(input.ssmParams);
   if (ssmParams) body.ssmParams = ssmParams;
-  const cleanOverrides = input.styleOverrides
-    .filter((o) => o.product.trim() && o.style.trim())
-    .map(({ product, style }) => ({ product, style }));
+  const cleanOverrides = input.styleOverrides.flatMap(({ product, style }) =>
+    product.trim() && style.trim() ? [{ product, style }] : [],
+  );
   if (cleanOverrides.length > 0) body.styleOverrides = cleanOverrides;
   return body;
 }

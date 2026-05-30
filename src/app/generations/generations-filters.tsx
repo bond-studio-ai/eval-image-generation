@@ -3,7 +3,7 @@
 import type { PromptVersionListItem } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback, useRef, type KeyboardEvent } from 'react';
 import { buildGenerationsQuery, type FilterParams } from './query-utils';
 
 interface GenerationsFiltersProps {
@@ -225,27 +225,24 @@ function DateRangeForm({
   to?: string;
   onApply: (from: string, to: string) => void;
 }) {
-  const containerRef = useRef<HTMLFormElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const apply = () => {
     const root = containerRef.current;
     const fromInput = root?.querySelector<HTMLInputElement>('[name="from"]');
     const toInput = root?.querySelector<HTMLInputElement>('[name="to"]');
     onApply(fromInput?.value ?? '', toInput?.value ?? '');
   };
+  const applyOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') apply();
+  };
   return (
-    <form
-      ref={containerRef}
-      className="flex items-center gap-1.5"
-      onSubmit={(e) => {
-        e.preventDefault();
-        apply();
-      }}
-    >
+    <div ref={containerRef} className="flex items-center gap-1.5">
       <input
         type="date"
         name="from"
         aria-label="From date"
         defaultValue={from}
+        onKeyDown={applyOnEnter}
         className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
       <span className="text-xs text-gray-400">–</span>
@@ -254,14 +251,16 @@ function DateRangeForm({
         name="to"
         aria-label="To date"
         defaultValue={to}
+        onKeyDown={applyOnEnter}
         className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
       <button
-        type="submit"
+        type="button"
+        onClick={apply}
         className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
       >
         Apply
       </button>
-    </form>
+    </div>
   );
 }
