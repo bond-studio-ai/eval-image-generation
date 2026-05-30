@@ -250,7 +250,7 @@ function CategoryNoteBreakdownRows({
             ? `${item.text.slice(0, NOTE_PREVIEW_CHARS)}…`
             : item.text;
         return (
-          <tr key={`note-${index}`} className={ISSUE_BREAKDOWN_TR}>
+          <tr key={`note-${index}-${item.text}`} className={ISSUE_BREAKDOWN_TR}>
             <td
               className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)}
               aria-hidden

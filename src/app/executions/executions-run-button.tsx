@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StrategyItem {
   id: string;
@@ -77,7 +77,15 @@ const BENCHMARK_PROJECT_IDS = [
 
 const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
 
-export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => void }) {
+export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
+  return (
+    <Suspense fallback={null}>
+      <ExecutionsRunButtonInner {...props} />
+    </Suspense>
+  );
+}
+
+function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void }) {
   const searchParams = useSearchParams();
   const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
   const [strategies, setStrategies] = useState<StrategyItem[]>([]);

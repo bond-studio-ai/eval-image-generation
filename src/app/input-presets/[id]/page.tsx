@@ -1,9 +1,15 @@
 import { InputPresetDetail } from '@/components/input-preset-detail';
 import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { fetchGenerations, fetchInputPresetById } from '@/lib/service-client';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Input Preset',
+  description: 'Input preset details, attached images, and related generations.',
+};
 
 const IMAGE_COLUMNS = ['dollhouseView', 'realPhoto', 'moodBoard'] as const;
 

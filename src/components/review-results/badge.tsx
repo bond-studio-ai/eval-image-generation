@@ -24,16 +24,25 @@ interface ReviewResultsBadgeProps {
  */
 export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgeProps) {
   const [showModal, setShowModal] = useState(false);
-  const [record, setRecord] = useState<ReviewRecord | null>(null);
+  // Cache the fetched record alongside the `state` reference it was fetched
+  // under. A force re-run hands us a brand-new `state` object, so `isFresh`
+  // flips to false automatically and the next modal open re-fetches — no
+  // effect needed to reset the record when the prop changes.
+  const [record, setRecord] = useState<{
+    forState: ReviewState | undefined;
+    data: ReviewRecord | null;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const ready = !!generationId && state?.kind === 'done';
+  const isFresh = record !== null && record.forState === state;
+  const currentRecord = isFresh ? record.data : null;
 
   useEffect(() => {
     if (!showModal) return;
     if (!generationId) return;
-    if (record) return;
+    if (isFresh) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -48,7 +57,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
         }
         const json = (await res.json()) as { data?: { record?: ReviewRecord } } | null;
         const next = json?.data?.record ?? null;
-        if (!cancelled) setRecord(next);
+        if (!cancelled) setRecord({ forState: state, data: next });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Network error');
       } finally {
@@ -58,17 +67,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
     return () => {
       cancelled = true;
     };
-  }, [showModal, generationId, record]);
-
-  // When the user re-runs the review, drop the previously-cached record so
-  // the next modal open re-fetches the fresh payload. We key off the state
-  // reference: each transition out of `done` (running → done after a force
-  // re-run) gets a brand-new state object from the hook.
-  useEffect(() => {
-    if (state?.kind !== 'done') {
-      setRecord(null);
-    }
-  }, [state]);
+  }, [showModal, generationId, isFresh, state]);
 
   if (!ready) return null;
 
@@ -90,7 +89,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
       {showModal && (
         <ReviewModal
           generationId={generationId!}
-          record={record}
+          record={currentRecord}
           loading={loading}
           error={error}
           onClose={() => setShowModal(false)}

@@ -6,8 +6,14 @@ import { Card, Spinner } from '@/components/ui';
 import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-renders';
 import { imageGenerationV2Base } from '@/lib/env';
 import { withImageParams } from '@/lib/image-utils';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { RenderAutoRefresh } from './render-auto-refresh';
+
+export const metadata: Metadata = {
+  title: 'Dollhouse Render',
+  description: 'Dollhouse render details and frames.',
+};
 
 export const dynamic = 'force-dynamic';
 

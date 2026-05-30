@@ -1,8 +1,14 @@
 import { PromptVersionDetail } from '@/components/prompt-version-detail';
 import { fetchGenerations, fetchPromptVersionById } from '@/lib/service-client';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Prompt Version',
+  description: 'Prompt version details and related generations.',
+};
 
 interface PageProps {
   params: Promise<{ id: string }>;

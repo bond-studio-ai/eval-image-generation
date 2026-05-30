@@ -17,7 +17,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export function getFocusable(root: HTMLElement): HTMLElement[] {
+function getFocusable(root: HTMLElement): HTMLElement[] {
   const all = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
   return all.filter((el) => {
     if (el.hasAttribute('disabled')) return false;

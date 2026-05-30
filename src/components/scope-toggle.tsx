@@ -1,15 +1,25 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 
-export function ScopeToggle({
-  benchmarkLabel = 'Benchmark',
-  defaultLabel = 'Standard',
-}: {
+interface ScopeToggleProps {
   benchmarkLabel?: string;
   defaultLabel?: string;
-}) {
+}
+
+export function ScopeToggle(props: ScopeToggleProps) {
+  return (
+    <Suspense fallback={null}>
+      <ScopeToggleInner {...props} />
+    </Suspense>
+  );
+}
+
+function ScopeToggleInner({
+  benchmarkLabel = 'Benchmark',
+  defaultLabel = 'Standard',
+}: ScopeToggleProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

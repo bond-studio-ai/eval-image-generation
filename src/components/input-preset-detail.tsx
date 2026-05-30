@@ -368,9 +368,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
           <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
             <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {productCards.map((item, i: number) => (
+              {productCards.map((item) => (
                 <div
-                  key={i}
+                  key={item.slot}
                   className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs"
                 >
                   {item.previewUrl ? (

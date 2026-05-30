@@ -4,13 +4,21 @@ import { PageHeader } from '@/components/page-header';
 import { ScopeToggle } from '@/components/scope-toggle';
 import { Tabs, type TabItem } from '@/components/ui';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { BatchRunsTab } from './batch-tab';
 import { ExecutionsRunButton } from './executions-run-button';
 
 type ExecTab = 'batches' | 'generations';
 
 export function ExecutionsTabs() {
+  return (
+    <Suspense fallback={null}>
+      <ExecutionsTabsInner />
+    </Suspense>
+  );
+}
+
+function ExecutionsTabsInner() {
   const [refreshKey, setRefreshKey] = useState(0);
   const searchParams = useSearchParams();
   const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';

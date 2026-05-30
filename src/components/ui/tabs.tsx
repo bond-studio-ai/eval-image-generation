@@ -19,6 +19,35 @@ interface TabsProps<T extends string> {
   label?: string;
 }
 
+function classesFor(isActive: boolean, disabled: boolean | undefined) {
+  return cn(
+    'border-b-2 px-4 py-2.5 text-body font-medium transition-colors',
+    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600',
+    isActive
+      ? 'border-primary-600 text-primary-700'
+      : 'border-transparent text-text-muted hover:border-border-strong hover:text-text-secondary',
+    disabled && 'cursor-not-allowed opacity-50',
+  );
+}
+
+function renderContent(item: TabItem, isActive: boolean) {
+  return (
+    <>
+      {item.label}
+      {typeof item.count === 'number' && (
+        <span
+          className={cn(
+            'rounded-pill ml-2 inline-flex min-w-[20px] items-center justify-center px-1.5 text-[11px] font-semibold',
+            isActive ? 'bg-primary-100 text-primary-700' : 'bg-surface-sunken text-text-muted',
+          )}
+        >
+          {item.count}
+        </span>
+      )}
+    </>
+  );
+}
+
 /**
  * Underline page navigation. Visually a tab strip, but semantically these are
  * route or view switches that do not manage `tabpanel` elements or roving
@@ -44,32 +73,6 @@ export function Tabs<T extends string>({
   className,
   label,
 }: TabsProps<T>) {
-  const classesFor = (isActive: boolean, disabled: boolean | undefined) =>
-    cn(
-      'border-b-2 px-4 py-2.5 text-body font-medium transition-colors',
-      'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600',
-      isActive
-        ? 'border-primary-600 text-primary-700'
-        : 'border-transparent text-text-muted hover:border-border-strong hover:text-text-secondary',
-      disabled && 'cursor-not-allowed opacity-50',
-    );
-
-  const renderContent = (item: TabItem<T>, isActive: boolean) => (
-    <>
-      {item.label}
-      {typeof item.count === 'number' && (
-        <span
-          className={cn(
-            'rounded-pill ml-2 inline-flex min-w-[20px] items-center justify-center px-1.5 text-[11px] font-semibold',
-            isActive ? 'bg-primary-100 text-primary-700' : 'bg-surface-sunken text-text-muted',
-          )}
-        >
-          {item.count}
-        </span>
-      )}
-    </>
-  );
-
   /**
    * Renders a single item with the right element for its state. A disabled
    * item never becomes a real link or button — that's the only reliable way

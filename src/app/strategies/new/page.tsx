@@ -4,8 +4,14 @@ import {
   fetchPromptVersions,
   fetchStrategyModelCatalog,
 } from '@/lib/service-client';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'New Strategy',
+  description: 'Create a multi-step generation strategy.',
+};
 
 export default async function NewStrategyPage() {
   const [promptVersions, inputPresets, modelCatalog] = await Promise.all([

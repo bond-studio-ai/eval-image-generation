@@ -1,7 +1,10 @@
 import { InputPresetsList } from '@/components/input-presets-list';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = { title: 'Input Presets' };
 
 export default function InputPresetsPage() {
   return (

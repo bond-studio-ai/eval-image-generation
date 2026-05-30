@@ -3,10 +3,16 @@ import { EmptyState } from '@/components/empty-state';
 import { GenerationsList, type GenerationRow } from '@/components/generations-list';
 import { Tabs, type TabItem } from '@/components/ui';
 import { fetchGenerations, fetchPromptVersions } from '@/lib/service-client';
+import type { Metadata } from 'next';
 import { ExecutionsPageHeader } from './executions-page-header';
 import { ExecutionsTabs } from './executions-tabs';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Executions',
+  description: 'Browse generation batches and individual generations.',
+};
 
 const PAGE_SIZE = 20;
 

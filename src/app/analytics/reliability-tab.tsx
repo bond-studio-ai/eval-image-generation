@@ -52,8 +52,8 @@ function ErrorTable({
     <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
       <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       <div className="mt-4 space-y-3">
-        {errors.map((err, i) => (
-          <div key={i}>
+        {errors.map((err, index) => (
+          <div key={`${index}-${err.reason}`}>
             <div className="flex items-center justify-between text-sm">
               <span className="max-w-md truncate text-gray-700" title={err.reason}>
                 {err.reason}
@@ -112,7 +112,7 @@ function TrendChart({ trends }: { trends: ReliabilityData['trends'] }) {
           const label = `${date.getMonth() + 1}/${date.getDate()}`;
           return (
             <div
-              key={i}
+              key={t.period}
               className="group relative flex flex-1 flex-col items-center"
               title={`${label}: ${t.totalRuns} runs, ${t.failedRuns} failed, ${t.timedOutSteps} timeouts, ${t.judgeFailures} judge failures`}
             >

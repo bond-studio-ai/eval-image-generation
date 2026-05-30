@@ -7,12 +7,18 @@ import { RatingBadge } from '@/components/rating-badge';
 import { toUrlArray, withImageParams } from '@/lib/image-utils';
 import { fetchGenerationById } from '@/lib/service-client';
 import { CATEGORY_LABELS } from '@/lib/validation';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RatingForm } from './rating-form';
 import { SectionNav } from './section-nav';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Generation',
+  description: 'Generation detail, results, and evaluation.',
+};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -439,7 +445,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                   <div className="grid grid-cols-2 gap-0.5 p-1">
                     {img.urls.map((url, i) => (
                       <ImageWithSkeleton
-                        key={i}
+                        key={url}
                         src={withImageParams(url)}
                         alt={`${img.label} ${i + 1}`}
                         loading="lazy"

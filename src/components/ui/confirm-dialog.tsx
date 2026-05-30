@@ -5,7 +5,6 @@ import {
   use,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -140,14 +139,4 @@ export function useConfirm(): ConfirmFn {
     throw new Error('useConfirm must be used inside <ConfirmProvider>');
   }
   return ctx;
-}
-
-/** Stable empty fallback for places that haven't been wrapped yet. */
-export function useConfirmFallback() {
-  return useMemo(
-    () => async (opts: ConfirmOptions) =>
-      typeof window !== 'undefined' &&
-      window.confirm(`${opts.title}${opts.description ? `\n\n${String(opts.description)}` : ''}`),
-    [],
-  );
 }

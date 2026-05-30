@@ -80,7 +80,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         className="flex cursor-pointer items-center gap-1.5"
       >
         {urls.slice(0, 2).map((url, i) => (
-          <ThumbnailImage key={i} url={url} alt={`Result ${i + 1}`} />
+          <ThumbnailImage key={url} url={url} alt={`Result ${i + 1}`} />
         ))}
         {urls.length > 2 && (
           <span className="flex size-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
@@ -127,7 +127,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
               className={`grid gap-4 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
             >
               {urls.map((url, i) => (
-                <LightboxImage key={i} url={url} alt={`Result ${i + 1}`} />
+                <LightboxImage key={url} url={url} alt={`Result ${i + 1}`} />
               ))}
             </div>
           </div>
