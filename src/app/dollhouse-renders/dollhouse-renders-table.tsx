@@ -15,7 +15,6 @@ import { RenderStatusBadge } from '@/components/render-status-badge';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceV2Url } from '@/lib/api-base';
 import type { DollhouseRender } from '@/lib/dollhouse-renders';
-import { withImageParams } from '@/lib/image-utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
@@ -51,10 +50,10 @@ function FramesPreview({ frames }: { frames: DollhouseRender['frames'] }) {
           title={frame.summary}
         >
           <ImageWithSkeleton
-            src={withImageParams(frame.prettyUrl || frame.imageUrl, 160)}
+            src={frame.prettyUrl || frame.imageUrl}
             alt={frame.summary || 'Frame'}
+            sizes="56px"
             wrapperClassName="h-10 w-14"
-            loading="lazy"
           />
         </div>
       ))}

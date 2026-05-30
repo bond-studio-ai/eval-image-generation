@@ -4,7 +4,7 @@ import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { PageHeader } from '@/components/page-header';
 import { RatingBadge } from '@/components/rating-badge';
-import { toUrlArray, withImageParams } from '@/lib/image-utils';
+import { toUrlArray } from '@/lib/image-utils';
 import { fetchGenerationById } from '@/lib/service-client';
 import { CATEGORY_LABELS } from '@/lib/validation';
 import type { Metadata } from 'next';
@@ -384,9 +384,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {dollhouseView && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(dollhouseView as string, 1024)}
+                  src={dollhouseView as string}
                   alt="Dollhouse View"
-                  loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
                 />
                 <div className="p-2">
@@ -397,9 +396,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {realPhoto && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(realPhoto as string, 1024)}
+                  src={realPhoto as string}
                   alt="Real Photo"
-                  loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
                 />
                 <div className="p-2">
@@ -410,9 +408,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             {moodBoard && (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
                 <ImageWithSkeleton
-                  src={withImageParams(moodBoard as string, 1024)}
+                  src={moodBoard as string}
                   alt="Mood Board"
-                  loading="lazy"
                   wrapperClassName="h-56 w-full bg-gray-50"
                 />
                 <div className="p-2">
@@ -436,9 +433,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
               >
                 {img.urls.length === 1 ? (
                   <ImageWithSkeleton
-                    src={withImageParams(img.urls[0], 1024)}
+                    src={img.urls[0]}
                     alt={img.label}
-                    loading="lazy"
                     wrapperClassName="h-44 w-full bg-gray-50"
                   />
                 ) : (
@@ -446,9 +442,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
                     {img.urls.map((url, i) => (
                       <ImageWithSkeleton
                         key={url}
-                        src={withImageParams(url)}
+                        src={url}
                         alt={`${img.label} ${i + 1}`}
-                        loading="lazy"
                         wrapperClassName="h-20 w-full rounded bg-gray-50"
                       />
                     ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { useCallback, useEffect, useRef } from 'react';
 
 /** Before/after slider: left image is revealed by position %; drag the bar to compare. */
@@ -108,11 +109,12 @@ export function ComparisonSlider({
     >
       {/* Bottom: right image (always visible as base) */}
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <CdnImage
           src={rightImageUrl}
           alt={rightImageAlt}
-          className="h-full w-full object-contain"
+          fill
+          sizes="100vw"
+          className="object-contain"
           draggable={false}
         />
       </div>
@@ -121,11 +123,12 @@ export function ComparisonSlider({
         className="absolute inset-0 overflow-hidden"
         style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <CdnImage
           src={leftImageUrl}
           alt={leftImageAlt}
-          className="h-full w-full object-contain"
+          fill
+          sizes="100vw"
+          className="object-contain"
           draggable={false}
         />
       </div>

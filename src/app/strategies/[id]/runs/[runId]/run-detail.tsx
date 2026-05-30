@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { ExpandableImage } from '@/components/expandable-image';
 import { buildPanels, ReasoningModal } from '@/components/judge-score-badge';
 import { PageHeader } from '@/components/page-header';
@@ -232,19 +233,19 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
     <div className="space-y-2">
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {images.map((img, i) => (
-          <div key={i} className="group relative">
+          <div key={img.url} className="group relative">
             {img.isComposite ? (
               <button
                 type="button"
-                className="block aspect-square w-full cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
+                className="relative block aspect-square w-full cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
                 onClick={() => setExpandedGroup(expandedGroup === i ? null : i)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <CdnImage
                   src={img.url}
                   alt={img.label}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
+                  fill
+                  sizes="(max-width:768px) 25vw, 200px"
+                  className="object-cover"
                 />
               </button>
             ) : (
@@ -287,8 +288,8 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
               </button>
             </div>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-              {images[expandedGroup].sourceImages!.map((src, j) => (
-                <div key={j}>
+              {images[expandedGroup].sourceImages!.map((src) => (
+                <div key={src.url}>
                   <ExpandableImage
                     src={src.url}
                     alt={src.label}

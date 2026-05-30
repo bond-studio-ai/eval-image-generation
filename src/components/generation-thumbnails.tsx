@@ -1,7 +1,7 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { Modal } from '@/components/ui';
-import { withImageParams } from '@/lib/image-utils';
 import { useState } from 'react';
 
 interface GenerationThumbnailsProps {
@@ -14,13 +14,13 @@ function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
   return (
     <div className="relative size-12 shrink-0 overflow-hidden rounded border border-gray-200">
       {!loaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={withImageParams(url, 96)}
+      <CdnImage
+        src={url}
         alt={alt}
-        loading="lazy"
+        width={48}
+        height={48}
         onLoad={() => setLoaded(true)}
-        className={`h-full w-full object-cover transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`object-cover transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   );
@@ -33,12 +33,14 @@ function LightboxImage({ url, alt }: { url: string; alt: string }) {
     <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
       {/* Skeleton placeholder — maintains a 4:3 aspect ratio until image loads */}
       {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <CdnImage
         src={url}
         alt={alt}
+        width={0}
+        height={0}
+        sizes="100vw"
         onLoad={() => setLoaded(true)}
-        className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+        className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
       />
     </div>
   );

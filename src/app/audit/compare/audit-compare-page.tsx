@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { PageHeader } from '@/components/page-header';
 import {
   Badge,
@@ -12,7 +13,6 @@ import {
   Spinner,
 } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
@@ -82,15 +82,13 @@ function RunPickerCard({
     >
       <div className="shrink-0">
         {run.lastOutputUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={withImageParams(run.lastOutputUrl, 96)}
+          <CdnImage
+            src={run.lastOutputUrl}
             alt=""
             width={THUMB}
             height={THUMB}
             className="border-border rounded border object-cover"
             style={{ width: THUMB, height: THUMB }}
-            loading="lazy"
           />
         ) : (
           <span
