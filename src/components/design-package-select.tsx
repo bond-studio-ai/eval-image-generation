@@ -2,6 +2,7 @@
 
 import { localUrl } from '@/lib/api-base';
 import type { DesignPackageOption } from '@/lib/design-package';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 function optionLabel(option: DesignPackageOption): string {
@@ -17,9 +18,6 @@ export function DesignPackageSelect({
   onChange: (value: string, option?: DesignPackageOption | null) => void;
   retailerId?: string;
 }) {
-  const [options, setOptions] = useState<DesignPackageOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -28,34 +26,30 @@ export function DesignPackageSelect({
     if (open) searchInputRef.current?.focus();
   }, [open]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const url = new URL(localUrl('design-packages'), window.location.origin);
-    if (retailerId) {
-      url.searchParams.set('retailerId', retailerId);
-    }
+  const {
+    data: options = [],
+    isLoading: loading,
+    isError,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['design-packages', retailerId],
+    queryFn: async ({ signal }) => {
+      const url = new URL(localUrl('design-packages'), window.location.origin);
+      if (retailerId) {
+        url.searchParams.set('retailerId', retailerId);
+      }
+      const res = await fetch(url.toString(), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
+      const json = (await res.json()) as { data?: DesignPackageOption[] };
+      return Array.isArray(json.data) ? json.data : [];
+    },
+  });
 
-    fetch(url.toString())
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
-        const json = (await res.json()) as { data?: DesignPackageOption[] };
-        if (cancelled) return;
-        setOptions(Array.isArray(json.data) ? json.data : []);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setOptions([]);
-        setError(err instanceof Error ? err.message : 'Failed to fetch design packages');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [retailerId]);
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch design packages'
+    : null;
 
   const hasCurrentValue = useMemo(
     () => !value || options.some((option) => option.id === value),

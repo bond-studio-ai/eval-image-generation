@@ -1,6 +1,7 @@
 'use client';
 
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
+import { useQuery } from '@tanstack/react-query';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
 type CategoryIssueCount = { issue: string; count: number };
@@ -334,8 +335,6 @@ export function ProductCategoryRates({
   type ProdSortKey = 'name' | 'total' | 'successPct' | 'failurePct';
   type ProdSortDir = 'asc' | 'desc';
 
-  const [categories, setCategories] = useState<CategoryRate[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<ProdSortKey>('total');
   const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -360,37 +359,30 @@ export function ProductCategoryRates({
     });
   }, []);
 
+  const { data: categories = [], isLoading: loading } = useQuery({
+    queryKey: ['product-category-rates', from, to, model, source, strategyId],
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      if (model) params.set('model', model);
+      if (source && source !== 'all') params.set('source', source);
+      if (strategyId) params.set('strategy_id', strategyId);
+      const tz = browserTimezone();
+      if (tz) params.set('tz', tz);
+      const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) throw new Error('Failed to load product category rates');
+      const json = await res.json();
+      return normalizeCategoryRows(json.data?.categories);
+    },
+  });
+
+  // Collapse any expanded breakdown rows whenever the filter inputs change.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (from) params.set('from', from);
-        if (to) params.set('to', to);
-        if (model) params.set('model', model);
-        if (source && source !== 'all') params.set('source', source);
-        if (strategyId) params.set('strategy_id', strategyId);
-        const tz = browserTimezone();
-        if (tz) params.set('tz', tz);
-        const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), {
-          cache: 'no-store',
-        });
-        if (!res.ok || cancelled) return;
-        const json = await res.json();
-        if (!cancelled) {
-          setCategories(normalizeCategoryRows(json.data?.categories));
-          setExpandedIds(new Set());
-        }
-      } catch {
-        /* ignore */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setExpandedIds(new Set());
   }, [from, to, model, source, strategyId]);
 
   if (loading) {

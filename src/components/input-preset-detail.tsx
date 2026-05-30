@@ -13,9 +13,10 @@ import {
 } from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import type { InputPresetDetailItem } from '@/lib/service-client';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RatingBadge } from './rating-badge';
 
 interface SerializedGeneration {
@@ -62,8 +63,6 @@ function getDesignPackageLabel(
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
-  const [layoutPresetOptions, setLayoutPresetOptions] = useState<LayoutPresetOption[]>([]);
-  const [designPackageOptions, setDesignPackageOptions] = useState<DesignPackageOption[]>([]);
   const rawData = data as unknown as Record<string, unknown>;
   const { byId, loaded } = useCatalogProducts(INPUT_PRESET_RETAILER_ID);
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
@@ -116,59 +115,40 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
   const layoutTypeId =
     data.layoutTypeId ??
     (typeof rawData.layout_type_id === 'string' ? rawData.layout_type_id : null);
+  const pkgId = data.pkgId ?? (typeof rawData.pkg_id === 'string' ? rawData.pkg_id : null);
+
+  const { data: layoutPresetOptions = [] } = useQuery({
+    queryKey: ['layout-presets'],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(serviceUrl('layout-presets'), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
+      const json = (await res.json()) as { data?: LayoutPresetOption[] };
+      return Array.isArray(json.data) ? json.data : [];
+    },
+    enabled: !!layoutTypeId,
+  });
+
+  const { data: designPackageOptions = [] } = useQuery({
+    queryKey: ['design-packages', INPUT_PRESET_RETAILER_ID],
+    queryFn: async ({ signal }) => {
+      const url = new URL(localUrl('design-packages'), window.location.origin);
+      url.searchParams.set('retailerId', INPUT_PRESET_RETAILER_ID);
+      const res = await fetch(url.toString(), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
+      const json = (await res.json()) as { data?: DesignPackageOption[] };
+      return Array.isArray(json.data) ? json.data : [];
+    },
+    enabled: !!pkgId,
+  });
+
   const selectedLayoutPreset = useMemo(
     () => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null,
     [layoutPresetOptions, layoutTypeId],
   );
-  const pkgId = data.pkgId ?? (typeof rawData.pkg_id === 'string' ? rawData.pkg_id : null);
   const selectedDesignPackage = useMemo(
     () => designPackageOptions.find((option) => option.id === pkgId) ?? null,
     [designPackageOptions, pkgId],
   );
-
-  useEffect(() => {
-    if (!layoutTypeId) return;
-
-    let cancelled = false;
-
-    fetch(serviceUrl('layout-presets'))
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
-        const json = (await res.json()) as { data?: LayoutPresetOption[] };
-        if (cancelled) return;
-        setLayoutPresetOptions(Array.isArray(json.data) ? json.data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setLayoutPresetOptions([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [layoutTypeId]);
-
-  useEffect(() => {
-    if (!pkgId) return;
-
-    let cancelled = false;
-    const url = new URL(localUrl('design-packages'), window.location.origin);
-    url.searchParams.set('retailerId', INPUT_PRESET_RETAILER_ID);
-
-    fetch(url.toString())
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed to fetch design packages (${res.status})`);
-        const json = (await res.json()) as { data?: DesignPackageOption[] };
-        if (cancelled) return;
-        setDesignPackageOptions(Array.isArray(json.data) ? json.data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setDesignPackageOptions([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pkgId]);
 
   return (
     <div>

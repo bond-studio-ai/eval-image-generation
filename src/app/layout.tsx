@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/app-shell';
+import { QueryProvider } from '@/components/query-provider';
 import { ConfirmProvider, ToasterProvider } from '@/components/ui';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
@@ -47,11 +48,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider localization={clerkLocalization} appearance={clerkAppearance}>
       <html lang="en" className={inter.variable} suppressHydrationWarning>
         <body className={`${inter.className} bg-bg-app text-text-primary antialiased`}>
-          <ToasterProvider>
-            <ConfirmProvider>
-              <AppShell>{children}</AppShell>
-            </ConfirmProvider>
-          </ToasterProvider>
+          <QueryProvider>
+            <ToasterProvider>
+              <ConfirmProvider>
+                <AppShell>{children}</AppShell>
+              </ConfirmProvider>
+            </ToasterProvider>
+          </QueryProvider>
         </body>
       </html>
     </ClerkProvider>

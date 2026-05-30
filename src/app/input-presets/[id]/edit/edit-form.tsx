@@ -3,9 +3,9 @@
 import { DesignPackageSelect } from '@/components/design-package-select';
 import {
   DesignSettingsEditor,
-  designSettingsHasValues,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
+import { designSettingsHasValues } from '@/components/design-settings-values';
 import { LayoutPresetSelect } from '@/components/layout-preset-select';
 import { PageHeader, PrimaryButton } from '@/components/page-header';
 import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
@@ -22,7 +22,35 @@ import {
 } from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useReducer, useState } from 'react';
+
+type FormState = {
+  name: string;
+  description: string;
+  layoutTypeId: string;
+  layoutTypeName: string | null;
+  pkgId: string;
+  dollhouseView: string | null;
+  realPhoto: string | null;
+  moodBoard: string | null;
+  arbitraryImagesBySlot: Record<string, string | null>;
+  designSettings: DesignSettingsValue;
+};
+
+type FormAction =
+  | {
+      [K in keyof FormState]: { type: 'setField'; field: K; value: FormState[K] };
+    }[keyof FormState]
+  | { type: 'reset'; value: FormState };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'setField':
+      return { ...state, [action.field]: action.value };
+    case 'reset':
+      return action.value;
+  }
+}
 
 interface InitialData {
   id: string;
@@ -47,49 +75,52 @@ export function InputPresetEditForm({
 }) {
   const router = useRouter();
 
-  const [name, setName] = useState(initialData.name);
-  const [description, setDescription] = useState(initialData.description);
-  const [layoutTypeId, setLayoutTypeId] = useState(initialData.layoutTypeId ?? '');
-  const [layoutTypeName, setLayoutTypeName] = useState<string | null>(null);
-  const [pkgId, setPkgId] = useState(initialData.pkgId ?? '');
-  const [dollhouseView, setDollhouseView] = useState(initialData.dollhouseView);
-  const [realPhoto, setRealPhoto] = useState(initialData.realPhoto);
-  const [moodBoard, setMoodBoard] = useState(initialData.moodBoard);
-  const [arbitraryImagesBySlot, setArbitraryImagesBySlot] = useState<Record<string, string | null>>(
-    initialData.arbitraryImagesBySlot,
-  );
-  const [designSettings, setDesignSettings] = useState<DesignSettingsValue>(
-    initialData.designSettings,
-  );
+  const [form, dispatch] = useReducer(formReducer, {
+    name: initialData.name,
+    description: initialData.description,
+    layoutTypeId: initialData.layoutTypeId ?? '',
+    layoutTypeName: null,
+    pkgId: initialData.pkgId ?? '',
+    dollhouseView: initialData.dollhouseView,
+    realPhoto: initialData.realPhoto,
+    moodBoard: initialData.moodBoard,
+    arbitraryImagesBySlot: initialData.arbitraryImagesBySlot,
+    designSettings: initialData.designSettings,
+  });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
+    dispatch({ type: 'setField', field, value } as FormAction);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasAnyImage =
-    Object.values(arbitraryImagesBySlot).some((url) => !!url) ||
-    !!dollhouseView ||
-    !!realPhoto ||
-    !!moodBoard;
-  const layoutRequiresPackage = layoutTypeId.trim().length > 0;
-  const hasValidLayoutConfig = !layoutRequiresPackage || pkgId.trim().length > 0;
+    Object.values(form.arbitraryImagesBySlot).some((url) => !!url) ||
+    !!form.dollhouseView ||
+    !!form.realPhoto ||
+    !!form.moodBoard;
+  const layoutRequiresPackage = form.layoutTypeId.trim().length > 0;
+  const hasValidLayoutConfig = !layoutRequiresPackage || form.pkgId.trim().length > 0;
 
   const canSave =
-    name.trim() &&
+    form.name.trim() &&
     hasValidLayoutConfig &&
-    (layoutTypeId.trim().length > 0 || hasAnyImage || designSettingsHasValues(designSettings));
+    (form.layoutTypeId.trim().length > 0 ||
+      hasAnyImage ||
+      designSettingsHasValues(form.designSettings));
 
   function handlePackageChange(nextPkgId: string, pkg?: DesignPackageOption | null) {
-    setPkgId(nextPkgId);
+    setField('pkgId', nextPkgId);
     if (!pkg) return;
-    setArbitraryImagesBySlot({});
-    setDesignSettings(
-      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(layoutTypeName) }),
+    setField('arbitraryImagesBySlot', {});
+    setField(
+      'designSettings',
+      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(form.layoutTypeName) }),
     );
   }
 
   function handleLayoutChange(value: string, option?: { name?: string | null } | null) {
-    setLayoutTypeId(value);
-    setLayoutTypeName(option?.name ?? null);
+    setField('layoutTypeId', value);
+    setField('layoutTypeName', option?.name ?? null);
   }
 
   async function handleSave() {
@@ -99,20 +130,20 @@ export function InputPresetEditForm({
 
     try {
       const payload: Record<string, unknown> = {
-        name: name.trim(),
-        description: description.trim() || null,
-        layout_type_id: layoutTypeId.trim() || null,
-        pkg_id: pkgId.trim() || null,
-        dollhouse_view: dollhouseView,
-        real_photo: realPhoto,
-        mood_board: moodBoard,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        layout_type_id: form.layoutTypeId.trim() || null,
+        pkg_id: form.pkgId.trim() || null,
+        dollhouse_view: form.dollhouseView,
+        real_photo: form.realPhoto,
+        mood_board: form.moodBoard,
       };
       for (const key of INPUT_PRESET_DESIGN_FIELD_KEYS) {
-        payload[key] = designSettings?.[key] ?? null;
+        payload[key] = form.designSettings?.[key] ?? null;
       }
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
-        if (designSettings?.[`${slot}ImageType`] === 'arbitrary') {
-          payload[urlColumn] = arbitraryImagesBySlot[slot] ?? null;
+        if (form.designSettings?.[`${slot}ImageType`] === 'arbitrary') {
+          payload[urlColumn] = form.arbitraryImagesBySlot[slot] ?? null;
         } else {
           payload[urlColumn] = null;
         }
@@ -162,11 +193,11 @@ export function InputPresetEditForm({
 
       <div className="mt-6">
         <ResourceFormHeader
-          name={name}
-          onNameChange={setName}
+          name={form.name}
+          onNameChange={(value) => setField('name', value)}
           namePlaceholder="e.g. Master bathroom with marble tiles"
-          description={description}
-          onDescriptionChange={setDescription}
+          description={form.description}
+          onDescriptionChange={(value) => setField('description', value)}
         />
       </div>
 
@@ -179,13 +210,13 @@ export function InputPresetEditForm({
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset</h2>
         <LayoutPresetSelect
-          value={layoutTypeId}
+          value={form.layoutTypeId}
           onChange={handleLayoutChange}
-          onResolvedOptionChange={(option) => setLayoutTypeName(option?.name ?? null)}
+          onResolvedOptionChange={(option) => setField('layoutTypeName', option?.name ?? null)}
         />
         <div className="mt-4">
           <DesignPackageSelect
-            value={pkgId}
+            value={form.pkgId}
             onChange={handlePackageChange}
             retailerId={INPUT_PRESET_RETAILER_ID}
           />
@@ -210,7 +241,7 @@ export function InputPresetEditForm({
               </p>
             </div>
             <span className="text-xs font-medium text-gray-500">
-              {[dollhouseView, realPhoto, moodBoard].filter(Boolean).length} saved
+              {[form.dollhouseView, form.realPhoto, form.moodBoard].filter(Boolean).length} saved
             </span>
           </div>
         </summary>
@@ -218,21 +249,29 @@ export function InputPresetEditForm({
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <SceneImageInput
               label="Dollhouse View"
-              value={dollhouseView}
-              onChange={setDollhouseView}
+              value={form.dollhouseView}
+              onChange={(value) => setField('dollhouseView', value)}
             />
-            <SceneImageInput label="Real Photo" value={realPhoto} onChange={setRealPhoto} />
-            <SceneImageInput label="Mood Board" value={moodBoard} onChange={setMoodBoard} />
+            <SceneImageInput
+              label="Real Photo"
+              value={form.realPhoto}
+              onChange={(value) => setField('realPhoto', value)}
+            />
+            <SceneImageInput
+              label="Mood Board"
+              value={form.moodBoard}
+              onChange={(value) => setField('moodBoard', value)}
+            />
           </div>
         </div>
       </details>
 
       <div className="mt-6">
         <DesignSettingsEditor
-          value={designSettings}
-          onChange={setDesignSettings}
-          arbitraryImagesBySlot={arbitraryImagesBySlot}
-          onArbitraryImagesBySlotChange={setArbitraryImagesBySlot}
+          value={form.designSettings}
+          onChange={(value) => setField('designSettings', value)}
+          arbitraryImagesBySlot={form.arbitraryImagesBySlot}
+          onArbitraryImagesBySlotChange={(value) => setField('arbitraryImagesBySlot', value)}
           savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
           retailerId={INPUT_PRESET_RETAILER_ID}
         />

@@ -1,0 +1,132 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  categoryLabel,
+  DEFAULT_IMAGE_TYPE,
+  IMAGE_TYPE_OPTIONS,
+  normalizeProductImageType,
+  PRODUCT_CATEGORIES,
+  type ProductImageType,
+} from './types';
+
+function ImageTypePill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+        active
+          ? 'border-primary-300 bg-primary-50 text-primary-700'
+          : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+export function ProductImageTypeOverrides({
+  value,
+  onChange,
+}: {
+  value: Record<string, ProductImageType>;
+  onChange: (v: Record<string, ProductImageType>) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const nonDefaultCount = PRODUCT_CATEGORIES.filter(
+    (cat) => (value[cat] ?? DEFAULT_IMAGE_TYPE) !== DEFAULT_IMAGE_TYPE,
+  ).length;
+
+  const setCategory = (cat: string, type: ProductImageType) => {
+    const next = { ...value, [cat]: normalizeProductImageType(type) };
+    onChange(next);
+  };
+
+  const setAll = (type: ProductImageType) => {
+    const next: Record<string, ProductImageType> = {};
+    for (const cat of PRODUCT_CATEGORIES) next[cat] = type;
+    onChange(next);
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <span className="text-xs font-medium text-gray-700">
+          Product Image Types
+          {nonDefaultCount > 0 && (
+            <span className="bg-primary-50 text-primary-700 ring-primary-200 ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset">
+              {nonDefaultCount} non-default
+            </span>
+          )}
+        </span>
+        <svg
+          className={`size-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="mt-3">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-[11px] font-medium text-gray-500">Set all:</span>
+            {IMAGE_TYPE_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => setAll(o.value)}
+                className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="mb-3 text-[11px] text-gray-500">
+            If the selected image type is unavailable for a product, generation falls back to the
+            featured image.
+          </p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+            {PRODUCT_CATEGORIES.map((cat) => {
+              const current = normalizeProductImageType(value[cat]);
+              return (
+                <div key={cat} className="flex items-center justify-between gap-2 py-0.5">
+                  <span
+                    className="min-w-0 truncate text-xs text-gray-700"
+                    title={categoryLabel(cat)}
+                  >
+                    {categoryLabel(cat)}
+                  </span>
+                  <div className="flex shrink-0 gap-1">
+                    {IMAGE_TYPE_OPTIONS.map((o) => (
+                      <ImageTypePill
+                        key={o.value}
+                        active={current === o.value}
+                        label={o.label}
+                        onClick={() => setCategory(cat, o.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

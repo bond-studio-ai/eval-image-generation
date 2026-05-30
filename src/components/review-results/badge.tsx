@@ -2,7 +2,8 @@
 
 import type { ReviewState } from '@/components/review-badge';
 import { serviceUrl } from '@/lib/api-base';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { MaskIcon } from './icons';
 import { ReviewModal } from './modal';
 import type { ReviewRecord } from './types';
@@ -24,50 +25,35 @@ interface ReviewResultsBadgeProps {
  */
 export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgeProps) {
   const [showModal, setShowModal] = useState(false);
-  // Cache the fetched record alongside the `state` reference it was fetched
-  // under. A force re-run hands us a brand-new `state` object, so `isFresh`
-  // flips to false automatically and the next modal open re-fetches — no
-  // effect needed to reset the record when the prop changes.
-  const [record, setRecord] = useState<{
-    forState: ReviewState | undefined;
-    data: ReviewRecord | null;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const ready = !!generationId && state?.kind === 'done';
-  const isFresh = record !== null && record.forState === state;
-  const currentRecord = isFresh ? record.data : null;
 
-  useEffect(() => {
-    if (!showModal) return;
-    if (!generationId) return;
-    if (isFresh) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
-          cache: 'no-store',
-        });
-        if (!res.ok) {
-          if (!cancelled) setError(`Failed to load review (${res.status})`);
-          return;
-        }
-        const json = (await res.json()) as { data?: { record?: ReviewRecord } } | null;
-        const next = json?.data?.record ?? null;
-        if (!cancelled) setRecord({ forState: state, data: next });
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Network error');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [showModal, generationId, isFresh, state]);
+  // Keying on the `state` object subsumes the old per-reference `isFresh`
+  // cache: a force re-run hands us a brand-new `state`, producing a fresh
+  // queryKey that re-fetches the next time the modal opens. Deferred until
+  // the modal is actually open so generations the reviewer never inspects
+  // do no work.
+  const {
+    data: currentRecord = null,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ['review-record', generationId, state],
+    queryFn: async ({ signal }): Promise<ReviewRecord | null> => {
+      const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) throw new Error(`Failed to load review (${res.status})`);
+      const json = (await res.json()) as { data?: { record?: ReviewRecord } } | null;
+      return json?.data?.record ?? null;
+    },
+    enabled: showModal && !!generationId,
+    // Match the prior per-`state` cache: a record is immutable for a given
+    // review state, so don't refetch on reopen; a force re-run yields a new
+    // `state` object (new queryKey) and fetches fresh.
+    staleTime: Infinity,
+  });
 
   if (!ready) return null;
 
@@ -91,7 +77,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
           generationId={generationId!}
           record={currentRecord}
           loading={loading}
-          error={error}
+          error={error ? error.message : null}
           onClose={() => setShowModal(false)}
         />
       )}

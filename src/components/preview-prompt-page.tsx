@@ -3,7 +3,8 @@
 import { PageHeader } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 
 interface PromptVersionItem {
   id: string;
@@ -31,6 +32,11 @@ interface DollhouseSource {
 interface PreviewItem {
   systemPrompt: string;
   userPrompt: string;
+}
+
+interface PreviewOptions {
+  promptVersions: PromptVersionItem[];
+  presets: InputPresetItem[];
 }
 
 interface PreviewPromptPageProps {
@@ -136,6 +142,31 @@ function DropdownWithSearch({
   );
 }
 
+interface DropdownState {
+  selectedId: string | null;
+  open: boolean;
+  search: string;
+}
+
+type DropdownAction =
+  | { type: 'select'; id: string | null }
+  | { type: 'setOpen'; open: boolean }
+  | { type: 'setSearch'; search: string };
+
+function dropdownReducer(state: DropdownState, action: DropdownAction): DropdownState {
+  switch (action.type) {
+    case 'select':
+      return { ...state, selectedId: action.id };
+    case 'setOpen':
+      return { ...state, open: action.open };
+    case 'setSearch':
+      return { ...state, search: action.search };
+  }
+}
+
+const DOLLHOUSE_UNAVAILABLE_MESSAGE =
+  'Dollhouse preview is temporarily unavailable. Preset preview still works.';
+
 export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
@@ -144,119 +175,148 @@ export function PreviewPromptPage({
   initialPresets,
   initialDollhouseSource,
 }: PreviewPromptPageProps) {
-  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(
-    initialPromptVersions ?? [],
-  );
-  const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
-  const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(
-    initialDollhouseSource ?? null,
-  );
-  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(initialPromptVersionId);
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId);
-  const [selectedAreaSummary, setSelectedAreaSummary] = useState<string | null>(initialAreaSummary);
-  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
-  const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
-  const [areaDropdownOpen, setAreaDropdownOpen] = useState(false);
-  const [promptSearch, setPromptSearch] = useState('');
-  const [presetSearch, setPresetSearch] = useState('');
-  const [areaSearch, setAreaSearch] = useState('');
+  const [promptDropdown, promptDispatch] = useReducer(dropdownReducer, {
+    selectedId: initialPromptVersionId,
+    open: false,
+    search: '',
+  });
+  const [presetDropdown, presetDispatch] = useReducer(dropdownReducer, {
+    selectedId: initialPresetId,
+    open: false,
+    search: '',
+  });
+  const [areaDropdown, areaDispatch] = useReducer(dropdownReducer, {
+    selectedId: initialAreaSummary,
+    open: false,
+    search: '',
+  });
+  const selectedPromptId = promptDropdown.selectedId;
+  const selectedPresetId = presetDropdown.selectedId;
+  const selectedAreaSummary = areaDropdown.selectedId;
   const promptRef = useRef<HTMLDivElement>(null);
   const presetRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
-  const [previews, setPreviews] = useState<PreviewItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const hasInitialOptions = initialPromptVersions != null && initialPresets != null;
-  const [loadingOptions, setLoadingOptions] = useState(!hasInitialOptions);
 
-  useEffect(() => {
-    if (hasInitialOptions) return;
-    let cancelled = false;
-    setLoadError(null);
-    setLoadingOptions(true);
-    async function load() {
-      try {
-        const [pvRes, presetRes] = await Promise.all([
-          fetch(serviceUrl('prompt-versions?limit=100&minimal=true')),
-          fetch(serviceUrl('input-presets?limit=100&minimal=true')),
-        ]);
-        if (cancelled) return;
-        const pvJson = await pvRes.json();
-        const presetJson = await presetRes.json();
-
-        if (!pvRes.ok) {
-          setLoadError(pvJson?.error?.message ?? 'Failed to load prompt versions');
-          return;
-        }
-        if (!presetRes.ok) {
-          setLoadError(presetJson?.error?.message ?? 'Failed to load input presets');
-          return;
-        }
-
-        const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
-        const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
-        setPromptVersions(
-          pvData.map((p: { id: string; name?: string | null }) => ({
-            id: p.id,
-            name: p.name ?? null,
-          })),
-        );
-        setPresets(
-          presetData.map((p: { id: string; name?: string | null }) => ({
-            id: p.id,
-            name: p.name ?? null,
-          })),
-        );
-        try {
-          const dollhouseRes = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
-          const dollhouseJson = await dollhouseRes.json();
-          if (!cancelled && dollhouseRes.ok) {
-            setDollhouseSource(dollhouseJson.data ?? null);
-          } else if (!cancelled && !dollhouseRes.ok) {
-            setLoadError(
-              'Dollhouse preview is temporarily unavailable. Preset preview still works.',
-            );
-          }
-        } catch {
-          if (!cancelled) {
-            setLoadError(
-              'Dollhouse preview is temporarily unavailable. Preset preview still works.',
-            );
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Failed to load options');
-        }
-      } finally {
-        if (!cancelled) setLoadingOptions(false);
+  const optionsQuery = useQuery({
+    queryKey: ['preview-options'],
+    queryFn: async ({ signal }): Promise<PreviewOptions> => {
+      const [pvRes, presetRes] = await Promise.all([
+        fetch(serviceUrl('prompt-versions?limit=100&minimal=true'), { signal }),
+        fetch(serviceUrl('input-presets?limit=100&minimal=true'), { signal }),
+      ]);
+      const [pvJson, presetJson] = await Promise.all([pvRes.json(), presetRes.json()]);
+      if (!pvRes.ok) {
+        throw new Error(pvJson?.error?.message ?? 'Failed to load prompt versions');
       }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasInitialOptions]);
+      if (!presetRes.ok) {
+        throw new Error(presetJson?.error?.message ?? 'Failed to load input presets');
+      }
+      const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
+      const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
+      return {
+        promptVersions: pvData.map((p: { id: string; name?: string | null }) => ({
+          id: p.id,
+          name: p.name ?? null,
+        })),
+        presets: presetData.map((p: { id: string; name?: string | null }) => ({
+          id: p.id,
+          name: p.name ?? null,
+        })),
+      };
+    },
+    enabled: !hasInitialOptions,
+    initialData:
+      initialPromptVersions != null && initialPresets != null
+        ? { promptVersions: initialPromptVersions, presets: initialPresets }
+        : undefined,
+  });
+
+  const dollhouseQuery = useQuery({
+    queryKey: ['dollhouse-source'],
+    queryFn: async ({ signal }): Promise<DollhouseSource | null> => {
+      const res = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'), { signal });
+      if (!res.ok) throw new Error('Failed to load dollhouse source');
+      const json = await res.json();
+      return (json.data ?? null) as DollhouseSource | null;
+    },
+    enabled: initialDollhouseSource == null,
+    initialData: initialDollhouseSource ?? undefined,
+  });
+
+  const promptVersions = useMemo(
+    () => optionsQuery.data?.promptVersions ?? initialPromptVersions ?? [],
+    [optionsQuery.data, initialPromptVersions],
+  );
+  const presets = useMemo(
+    () => optionsQuery.data?.presets ?? initialPresets ?? [],
+    [optionsQuery.data, initialPresets],
+  );
+  const dollhouseSource = dollhouseQuery.data ?? null;
+
+  const previewEnabled = !!selectedPromptId && !!selectedPresetId;
+  const previewQuery = useQuery({
+    queryKey: ['preview', selectedPromptId, selectedPresetId, selectedAreaSummary],
+    queryFn: async ({ signal }): Promise<PreviewItem[]> => {
+      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inputPresetId: selectedPresetId,
+          ...(selectedAreaSummary ? { dollhouseAreaSummary: selectedAreaSummary } : {}),
+        }),
+        signal,
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error?.message || 'Failed to load preview');
+      }
+      const json = await res.json();
+      const preview = json.data;
+      return preview ? [preview] : [];
+    },
+    enabled: previewEnabled,
+  });
+
+  const loadingOptions = !hasInitialOptions && optionsQuery.isLoading;
+  const optionsErrorMessage = optionsQuery.isError
+    ? optionsQuery.error instanceof Error
+      ? optionsQuery.error.message
+      : 'Failed to load options'
+    : null;
+  const loadError = optionsErrorMessage
+    ? optionsErrorMessage
+    : !hasInitialOptions && optionsQuery.isSuccess && dollhouseQuery.isError
+      ? DOLLHOUSE_UNAVAILABLE_MESSAGE
+      : null;
+
+  const previews = previewEnabled ? (previewQuery.data ?? []) : [];
+  const loading = previewEnabled && previewQuery.isLoading;
+  const error =
+    previewEnabled && previewQuery.isError
+      ? previewQuery.error instanceof Error
+        ? previewQuery.error.message
+        : 'Preview failed'
+      : null;
 
   const filteredPrompts = useMemo(() => {
-    const q = promptSearch.trim().toLowerCase();
+    const q = promptDropdown.search.trim().toLowerCase();
     if (!q) return promptVersions;
     return promptVersions.filter((p) => (p.name ?? '').toLowerCase().includes(q));
-  }, [promptVersions, promptSearch]);
+  }, [promptVersions, promptDropdown.search]);
 
   const filteredPresets = useMemo(() => {
-    const q = presetSearch.trim().toLowerCase();
+    const q = presetDropdown.search.trim().toLowerCase();
     if (!q) return presets;
     return presets.filter((preset) => (preset.name ?? '').toLowerCase().includes(q));
-  }, [presets, presetSearch]);
+  }, [presets, presetDropdown.search]);
 
   const filteredAreas = useMemo(() => {
-    const q = areaSearch.trim().toLowerCase();
+    const q = areaDropdown.search.trim().toLowerCase();
     const areas = dollhouseSource?.areas ?? [];
     if (!q) return areas;
     return areas.filter((area) => area.summary.toLowerCase().includes(q));
-  }, [areaSearch, dollhouseSource]);
+  }, [areaDropdown.search, dollhouseSource]);
 
   const selectedPrompt = useMemo(
     () => promptVersions.find((p) => p.id === selectedPromptId),
@@ -271,85 +331,21 @@ export function PreviewPromptPage({
     [dollhouseSource, selectedAreaSummary],
   );
 
-  const fetchPreview = useCallback(async () => {
-    if (!selectedPromptId || !selectedPresetId) {
-      setPreviews([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputPresetId: selectedPresetId,
-          ...(selectedAreaSummary ? { dollhouseAreaSummary: selectedAreaSummary } : {}),
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || 'Failed to load preview');
-      }
-      const json = await res.json();
-      const preview = json.data;
-      setPreviews(preview ? [preview] : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Preview failed');
-      setPreviews([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedAreaSummary, selectedPresetId, selectedPromptId]);
-
-  useEffect(() => {
-    if (selectedPromptId && selectedPresetId) fetchPreview();
-    else setPreviews([]);
-  }, [fetchPreview, selectedAreaSummary, selectedPresetId, selectedPromptId]);
-
   useEffect(() => {
     if (selectedAreaSummary || !dollhouseSource?.defaultAreaSummary) return;
-    setSelectedAreaSummary(dollhouseSource.defaultAreaSummary);
+    areaDispatch({ type: 'select', id: dollhouseSource.defaultAreaSummary });
   }, [dollhouseSource, selectedAreaSummary]);
-
-  useEffect(() => {
-    if (dollhouseSource) return;
-    let cancelled = false;
-
-    async function loadDollhouseSource() {
-      try {
-        const res = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
-        const json = await res.json();
-        if (cancelled) return;
-        if (res.ok) {
-          setDollhouseSource(json.data ?? null);
-          setLoadError((current) =>
-            current === 'Dollhouse preview is temporarily unavailable. Preset preview still works.'
-              ? null
-              : current,
-          );
-        }
-      } catch {
-        // Keep preset preview available even if dollhouse metadata can't load.
-      }
-    }
-
-    loadDollhouseSource();
-    return () => {
-      cancelled = true;
-    };
-  }, [dollhouseSource]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (promptRef.current && !promptRef.current.contains(e.target as Node)) {
-        setPromptDropdownOpen(false);
+        promptDispatch({ type: 'setOpen', open: false });
       }
       if (presetRef.current && !presetRef.current.contains(e.target as Node)) {
-        setPresetDropdownOpen(false);
+        presetDispatch({ type: 'setOpen', open: false });
       }
       if (areaRef.current && !areaRef.current.contains(e.target as Node)) {
-        setAreaDropdownOpen(false);
+        areaDispatch({ type: 'setOpen', open: false });
       }
     };
     document.addEventListener('mousedown', handler);
@@ -396,10 +392,10 @@ export function PreviewPromptPage({
             <DropdownWithSearch
               containerRef={promptRef}
               triggerId="preview-prompt-version"
-              open={promptDropdownOpen}
-              setOpen={setPromptDropdownOpen}
-              search={promptSearch}
-              setSearch={setPromptSearch}
+              open={promptDropdown.open}
+              setOpen={(v) => promptDispatch({ type: 'setOpen', open: v })}
+              search={promptDropdown.search}
+              setSearch={(v) => promptDispatch({ type: 'setSearch', search: v })}
               placeholder="Select prompt version…"
               options={filteredPrompts.map((prompt) => ({
                 id: prompt.id,
@@ -407,7 +403,7 @@ export function PreviewPromptPage({
               }))}
               selectedId={selectedPrompt?.id ?? null}
               selectedLabel={selectedPrompt?.name || null}
-              onSelectId={setSelectedPromptId}
+              onSelectId={(id) => promptDispatch({ type: 'select', id })}
               emptyMessage="No prompt versions"
             />
           )}
@@ -427,10 +423,10 @@ export function PreviewPromptPage({
             <DropdownWithSearch
               containerRef={presetRef}
               triggerId="preview-input-preset"
-              open={presetDropdownOpen}
-              setOpen={setPresetDropdownOpen}
-              search={presetSearch}
-              setSearch={setPresetSearch}
+              open={presetDropdown.open}
+              setOpen={(v) => presetDispatch({ type: 'setOpen', open: v })}
+              search={presetDropdown.search}
+              setSearch={(v) => presetDispatch({ type: 'setSearch', search: v })}
               placeholder="Select input preset…"
               options={filteredPresets.map((preset) => ({
                 id: preset.id,
@@ -438,7 +434,7 @@ export function PreviewPromptPage({
               }))}
               selectedId={selectedPreset?.id ?? null}
               selectedLabel={selectedPreset?.name || null}
-              onSelectId={setSelectedPresetId}
+              onSelectId={(id) => presetDispatch({ type: 'select', id })}
               emptyMessage="No presets"
             />
           )}
@@ -458,15 +454,15 @@ export function PreviewPromptPage({
             <DropdownWithSearch
               containerRef={areaRef}
               triggerId="preview-dollhouse-area"
-              open={areaDropdownOpen}
-              setOpen={setAreaDropdownOpen}
-              search={areaSearch}
-              setSearch={setAreaSearch}
+              open={areaDropdown.open}
+              setOpen={(v) => areaDispatch({ type: 'setOpen', open: v })}
+              search={areaDropdown.search}
+              setSearch={(v) => areaDispatch({ type: 'setSearch', search: v })}
               placeholder="Select dollhouse area…"
               options={filteredAreas.map((area) => ({ id: area.summary, label: area.summary }))}
               selectedId={selectedArea?.summary ?? null}
               selectedLabel={selectedArea?.summary || null}
-              onSelectId={setSelectedAreaSummary}
+              onSelectId={(id) => areaDispatch({ type: 'select', id })}
               emptyMessage={
                 dollhouseSource ? 'No dollhouse areas' : 'Dollhouse preview unavailable'
               }

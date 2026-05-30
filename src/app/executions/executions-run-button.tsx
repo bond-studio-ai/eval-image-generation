@@ -1,81 +1,18 @@
 'use client';
 
 import { Modal } from '@/components/ui';
-import { serviceUrl } from '@/lib/api-base';
-import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-interface StrategyItem {
-  id: string;
-  name: string;
-}
-
-interface PresetItem {
-  id: string;
-  name: string | null;
-}
-
-interface ListResponse<T> {
-  data?: T[];
-  items?: T[];
-  pagination?: {
-    page: number;
-    totalPages: number;
-  };
-}
-
-const INPUT_PRESET_PAGE_SIZE = 100;
-
-async function fetchAllInputPresets(): Promise<PresetItem[]> {
-  const presets: PresetItem[] = [];
-  let page = 1;
-  let totalPages = 1;
-
-  do {
-    const qs = new URLSearchParams({
-      page: String(page),
-      limit: String(INPUT_PRESET_PAGE_SIZE),
-      minimal: 'true',
-    });
-    const res = await fetch(`${serviceUrl('input-presets')}?${qs}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Failed to load input presets (${res.status})`);
-
-    const json = (await res.json()) as ListResponse<{ id: string; name: string | null }>;
-    const pageItems = json.data ?? json.items ?? [];
-    presets.push(...pageItems.map((p) => ({ id: p.id, name: p.name ?? null })));
-
-    totalPages = json.pagination?.totalPages ?? page;
-    page += 1;
-  } while (page <= totalPages);
-
-  return presets;
-}
-
-const BENCHMARK_PROJECT_IDS = [
-  'PRJ-P4YAGU7XW',
-  'PRJ-QU6S58FHG',
-  'PRJ-FARVFVS4A',
-  'PRJ-T3HTSH5ME',
-  'PRJ-E78TJ8WXM',
-  'PRJ-K8X7ABKR2',
-  'PRJ-QJUEYENEP',
-  'PRJ-P8CD6Q2HH',
-  'PRJ-QSNP6AZTC',
-  'PRJ-BD38GQP2K',
-  'PRJ-4XN53LRMM',
-  'PRJ-VPG3BGK29',
-  'PRJ-954NJBRZQ',
-  'PRJ-887MW333R',
-  'PRJ-3ASSMMB7A',
-  'PRJ-9LGYQDNSY',
-  'PRJ-TFJDZP3VK',
-  'PRJ-KBLQ9SAU4',
-  'PRJ-N43MK39ZR',
-  'PRJ-XB6SETAU7',
-] as const;
-
-const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
+import { Suspense, useCallback, useMemo, useReducer, useState } from 'react';
+import { MultiSelectColumn } from './_components/multi-select-column';
+import { NumberOfImagesInput } from './_components/number-of-images-input';
+import {
+  BENCHMARK_PROJECT_IDS,
+  DEFAULT_BENCHMARK_PROJECT_IDS,
+  executeRuns,
+  fetchRunOptions,
+} from './_components/run-options';
+import { INITIAL_SELECTION, selectionReducer } from './_components/selection-state';
 
 export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
   return (
@@ -88,16 +25,23 @@ export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
 function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void }) {
   const searchParams = useSearchParams();
   const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
-  const [strategies, setStrategies] = useState<StrategyItem[]>([]);
-  const [presets, setPresets] = useState<PresetItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
-  const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
-  const [selectedBenchmarkProjectIds, setSelectedBenchmarkProjectIds] = useState<string[]>([]);
-  const [strategySearch, setStrategySearch] = useState('');
-  const [presetSearch, setPresetSearch] = useState('');
-  const [benchmarkMode, setBenchmarkMode] = useState(false);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['executions-run-options'],
+    queryFn: ({ signal }) => fetchRunOptions(signal),
+    enabled: showModal,
+  });
+  const strategies = useMemo(() => data?.strategies ?? [], [data]);
+  const presets = useMemo(() => data?.presets ?? [], [data]);
+  const [selection, dispatchSelection] = useReducer(selectionReducer, INITIAL_SELECTION);
+  const {
+    selectedStrategyIds,
+    selectedPresetIds,
+    selectedBenchmarkProjectIds,
+    strategySearch,
+    presetSearch,
+    benchmarkMode,
+  } = selection;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
@@ -120,54 +64,16 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
     return BENCHMARK_PROJECT_IDS.filter((projectId) => projectId.toLowerCase().includes(q));
   }, [presetSearch]);
 
-  useEffect(() => {
-    if (!showModal) return;
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([
-      fetch(serviceUrl('strategies?limit=100'), { cache: 'no-store' }).then((r) => r.json()),
-      fetchAllInputPresets(),
-    ])
-      .then(([stratRes, presetRes]) => {
-        if (cancelled) return;
-        const stratData = stratRes.data ?? stratRes.items ?? [];
-        setStrategies(
-          Array.isArray(stratData)
-            ? stratData.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }))
-            : [],
-        );
-        setPresets(presetRes);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStrategies([]);
-          setPresets([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showModal]);
-
   const toggleStrategy = useCallback((id: string) => {
-    setSelectedStrategyIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'toggleStrategy', id });
   }, []);
 
   const togglePreset = useCallback((id: string) => {
-    setSelectedPresetIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'togglePreset', id });
   }, []);
 
   const toggleBenchmarkProject = useCallback((id: string) => {
-    setSelectedBenchmarkProjectIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    dispatchSelection({ type: 'toggleBenchmarkProject', id });
   }, []);
 
   const handleRun = useCallback(async () => {
@@ -177,56 +83,14 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
     const groupId = crypto.randomUUID();
 
     try {
-      const results = benchmarkMode
-        ? await Promise.allSettled(
-            selectedStrategyIds.flatMap((strategyId) =>
-              selectedBenchmarkProjectIds.map(async (projectId) => {
-                const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    project_id: projectId,
-                    group_id: groupId,
-                    ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
-                  }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                  throw new Error(
-                    (data as { error?: { message?: string } }).error?.message ||
-                      'Failed to start benchmark run',
-                  );
-                }
-                return data;
-              }),
-            ),
-          )
-        : await (async () => {
-            const requests = await fetchPresetRunRequests(selectedPresetIds, {
-              batch: true,
-              group_id: groupId,
-              ...(numberOfImages ? { number_of_images: numberOfImages } : {}),
-            });
-            return Promise.allSettled(
-              selectedStrategyIds.flatMap((strategyId) =>
-                requests.map(async (requestBody) => {
-                  const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                  });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok) {
-                    throw new Error(
-                      (data as { error?: { message?: string } }).error?.message ||
-                        'Failed to start run',
-                    );
-                  }
-                  return data;
-                }),
-              ),
-            );
-          })();
+      const results = await executeRuns({
+        benchmarkMode,
+        selectedStrategyIds,
+        selectedPresetIds,
+        selectedBenchmarkProjectIds,
+        numberOfImages,
+        groupId,
+      });
       const failures = results.filter(
         (result): result is PromiseRejectedResult => result.status === 'rejected',
       );
@@ -242,12 +106,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         return;
       }
       setShowModal(false);
-      setSelectedStrategyIds([]);
-      setSelectedPresetIds([]);
-      setSelectedBenchmarkProjectIds([]);
-      setStrategySearch('');
-      setPresetSearch('');
-      setBenchmarkMode(source === 'benchmark');
+      dispatchSelection({ type: 'resetAfterRun', benchmarkMode: source === 'benchmark' });
       onRunCreated?.();
     } catch {
       setError('Network error');
@@ -264,6 +123,10 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
     source,
   ]);
 
+  const secondaryCount = benchmarkMode
+    ? selectedBenchmarkProjectIds.length
+    : selectedPresetIds.length;
+
   return (
     <>
       <button
@@ -271,12 +134,11 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         onClick={() => {
           setShowModal(true);
           setError(null);
-          setSelectedStrategyIds([]);
-          setSelectedPresetIds([]);
-          setSelectedBenchmarkProjectIds(
-            source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
-          );
-          setBenchmarkMode(source === 'benchmark');
+          dispatchSelection({
+            type: 'openModal',
+            benchmarkMode: source === 'benchmark',
+            benchmarkProjectIds: source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+          });
         }}
         className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
       >
@@ -321,11 +183,11 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                 type="checkbox"
                 checked={benchmarkMode}
                 onChange={(e) => {
-                  setBenchmarkMode(e.target.checked);
-                  setSelectedPresetIds([]);
-                  setSelectedBenchmarkProjectIds(
-                    e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
-                  );
+                  dispatchSelection({
+                    type: 'setBenchmarkMode',
+                    benchmarkMode: e.target.checked,
+                    benchmarkProjectIds: e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+                  });
                 }}
                 className="size-4 rounded border-gray-300"
               />
@@ -339,227 +201,49 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
             </div>
           ) : (
             <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
-              {/* Strategies */}
-              <div className="flex min-h-0 flex-col">
-                <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
-                      Strategies
-                      {selectedStrategyIds.length > 0 && (
-                        <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                          {selectedStrategyIds.length}
-                        </span>
-                      )}
-                    </p>
-                    {selectedStrategyIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStrategyIds([])}
-                        className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative mt-2">
-                    <svg
-                      className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                      />
-                    </svg>
-                    <input
-                      type="text"
-                      value={strategySearch}
-                      onChange={(e) => setStrategySearch(e.target.value)}
-                      placeholder="Search strategies…"
-                      aria-label="Search strategies"
-                      className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                  {filteredStrategies.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-gray-400">
-                      {strategies.length === 0 ? 'No strategies available' : 'No matches'}
-                    </p>
-                  ) : (
-                    <div className="space-y-1">
-                      {filteredStrategies.map((s) => {
-                        const selected = selectedStrategyIds.includes(s.id);
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => toggleStrategy(s.id)}
-                            className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                              selected
-                                ? 'border-primary-400 bg-primary-50 shadow-sm'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                selected
-                                  ? 'border-primary-500 bg-primary-500 text-white'
-                                  : 'border-gray-300 bg-white'
-                              }`}
-                            >
-                              {selected && (
-                                <svg
-                                  className="size-3"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  strokeWidth={3}
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M4.5 12.75l6 6 9-13.5"
-                                  />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="truncate font-medium text-gray-900">
-                              {s.name || 'Unnamed'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <MultiSelectColumn
+                title="Strategies"
+                selectedCount={selectedStrategyIds.length}
+                onClear={() => dispatchSelection({ type: 'clearStrategies' })}
+                searchValue={strategySearch}
+                onSearchChange={(value) => dispatchSelection({ type: 'setStrategySearch', value })}
+                searchPlaceholder="Search strategies…"
+                searchAriaLabel="Search strategies"
+                items={filteredStrategies.map((s) => ({ id: s.id, label: s.name || 'Unnamed' }))}
+                selectedIds={selectedStrategyIds}
+                onToggle={toggleStrategy}
+                emptyMessage={strategies.length === 0 ? 'No strategies available' : 'No matches'}
+              />
 
-              {/* Input presets / benchmark projects */}
-              <div className="flex min-h-0 flex-col">
-                <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 px-4 pt-3 pb-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
-                      {benchmarkMode ? 'Benchmark projects' : 'Input presets'}
-                      {(benchmarkMode
-                        ? selectedBenchmarkProjectIds.length
-                        : selectedPresetIds.length) > 0 && (
-                        <span className="bg-primary-100 text-primary-700 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                          {benchmarkMode
-                            ? selectedBenchmarkProjectIds.length
-                            : selectedPresetIds.length}
-                        </span>
-                      )}
-                    </p>
-                    {(benchmarkMode
-                      ? selectedBenchmarkProjectIds.length
-                      : selectedPresetIds.length) > 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          benchmarkMode
-                            ? setSelectedBenchmarkProjectIds([])
-                            : setSelectedPresetIds([])
-                        }
-                        className="text-[10px] font-medium text-gray-400 hover:text-gray-600"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative mt-2">
-                    <svg
-                      className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                      />
-                    </svg>
-                    <input
-                      type="text"
-                      value={presetSearch}
-                      onChange={(e) => setPresetSearch(e.target.value)}
-                      placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
-                      aria-label={benchmarkMode ? 'Search project IDs' : 'Search presets'}
-                      className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                  {(benchmarkMode ? filteredBenchmarkProjects.length : filteredPresets.length) ===
-                  0 ? (
-                    <p className="py-4 text-center text-xs text-gray-400">
-                      {benchmarkMode
-                        ? 'No matches'
-                        : presets.length === 0
-                          ? 'No presets available'
-                          : 'No matches'}
-                    </p>
-                  ) : (
-                    <div className="space-y-1">
-                      {(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map(
-                        (entry) => {
-                          const id = typeof entry === 'string' ? entry : entry.id;
-                          const label =
-                            typeof entry === 'string' ? entry : entry.name || 'Untitled';
-                          const selected = benchmarkMode
-                            ? selectedBenchmarkProjectIds.includes(id)
-                            : selectedPresetIds.includes(id);
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              onClick={() =>
-                                benchmarkMode ? toggleBenchmarkProject(id) : togglePreset(id)
-                              }
-                              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                                selected
-                                  ? 'border-primary-400 bg-primary-50 shadow-sm'
-                                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                                  selected
-                                    ? 'border-primary-500 bg-primary-500 text-white'
-                                    : 'border-gray-300 bg-white'
-                                }`}
-                              >
-                                {selected && (
-                                  <svg
-                                    className="size-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={3}
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M4.5 12.75l6 6 9-13.5"
-                                    />
-                                  </svg>
-                                )}
-                              </span>
-                              <span className="truncate font-medium text-gray-900">{label}</span>
-                            </button>
-                          );
-                        },
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <MultiSelectColumn
+                title={benchmarkMode ? 'Benchmark projects' : 'Input presets'}
+                selectedCount={secondaryCount}
+                onClear={() =>
+                  dispatchSelection({
+                    type: benchmarkMode ? 'clearBenchmarkProjects' : 'clearPresets',
+                  })
+                }
+                searchValue={presetSearch}
+                onSearchChange={(value) => dispatchSelection({ type: 'setPresetSearch', value })}
+                searchPlaceholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
+                searchAriaLabel={benchmarkMode ? 'Search project IDs' : 'Search presets'}
+                items={(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map(
+                  (entry) => {
+                    const id = typeof entry === 'string' ? entry : entry.id;
+                    const label = typeof entry === 'string' ? entry : entry.name || 'Untitled';
+                    return { id, label };
+                  },
+                )}
+                selectedIds={benchmarkMode ? selectedBenchmarkProjectIds : selectedPresetIds}
+                onToggle={benchmarkMode ? toggleBenchmarkProject : togglePreset}
+                emptyMessage={
+                  benchmarkMode
+                    ? 'No matches'
+                    : presets.length === 0
+                      ? 'No presets available'
+                      : 'No matches'
+                }
+              />
             </div>
           )}
 
@@ -618,116 +302,5 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         </Modal>
       )}
     </>
-  );
-}
-
-function NumberOfImagesInput({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number | null) => void;
-}) {
-  const isDefault = value === null;
-  const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
-  const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
-  const customInputRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    if (customImages) customInputRef.current?.focus();
-  }, [customImages]);
-
-  const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
-  const inactiveCls =
-    'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50';
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm font-medium text-gray-700">Number of images</span>
-      <div className="inline-flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => {
-            onChange(null);
-            setCustomImages(false);
-          }}
-          className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${isDefault ? activeCls : inactiveCls}`}
-        >
-          Default
-        </button>
-        {[1, 2, 4, 8].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => {
-              onChange(n);
-              setCustomImages(false);
-            }}
-            className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${!isDefault && !customImages && value === n ? activeCls : inactiveCls}`}
-          >
-            {n}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => {
-            setCustomImages(true);
-            if (isDefault || [1, 2, 4, 8].includes(value!)) onChange(3);
-          }}
-          className={`flex h-8 items-center justify-center rounded-lg border px-2.5 text-sm font-medium transition-all ${customImages ? activeCls : inactiveCls}`}
-        >
-          Custom
-        </button>
-        {customImages && (
-          <div className="inline-flex h-8 items-center rounded-lg border border-gray-300 bg-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
-              disabled={(value ?? 1) <= 1}
-              aria-label="Decrease image count"
-              className="flex size-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-            >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-              </svg>
-            </button>
-            <input
-              ref={customInputRef}
-              type="number"
-              min={1}
-              max={100}
-              aria-label="Image count"
-              value={value ?? 1}
-              onChange={(e) =>
-                onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-              }
-              className="h-8 w-12 [appearance:textfield] border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <button
-              type="button"
-              onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
-              disabled={(value ?? 1) >= 100}
-              aria-label="Increase image count"
-              className="flex size-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
-            >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
   );
 }

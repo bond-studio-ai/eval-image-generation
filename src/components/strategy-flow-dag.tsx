@@ -442,7 +442,10 @@ export function StrategyFlowDag({
                 </div>
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
                   {effectiveJudges.map((j, ji) => (
-                    <div key={ji} className="rounded bg-amber-100/70 px-2 py-1.5">
+                    <div
+                      key={`${j.model}-${j.name ?? ''}-${j.position ?? ''}`}
+                      className="rounded bg-amber-100/70 px-2 py-1.5"
+                    >
                       <div className="flex items-center gap-1.5 text-[10px]">
                         <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700">
                           {j.position ?? ji + 1}

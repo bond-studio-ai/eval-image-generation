@@ -1,12 +1,7 @@
 'use client';
 
-import {
-  actionsColumn,
-  DataTable,
-  DateCell,
-  FilterPills,
-  type DataTableColumn,
-} from '@/components/data-table';
+import { DataTable, DateCell, FilterPills, type DataTableColumn } from '@/components/data-table';
+import { actionsColumn } from '@/components/data-table-utils';
 import { Pagination } from '@/components/pagination';
 import {
   Badge,

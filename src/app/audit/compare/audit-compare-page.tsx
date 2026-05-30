@@ -13,7 +13,7 @@ import {
   Spinner,
 } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
 
@@ -144,6 +144,42 @@ function toIsoEnd(date: string): string {
   return new Date(date + 'T23:59:59.999Z').toISOString();
 }
 
+type FiltersState = {
+  filterText: string;
+  dateFrom: string;
+  dateTo: string;
+  sourceFilter: SourceFilter;
+};
+
+type FiltersAction =
+  | { type: 'setFilterText'; value: string }
+  | { type: 'setDateFrom'; value: string }
+  | { type: 'setDateTo'; value: string }
+  | { type: 'setSourceFilter'; value: SourceFilter }
+  | { type: 'clearDates' };
+
+const INITIAL_FILTERS: FiltersState = {
+  filterText: '',
+  dateFrom: '',
+  dateTo: '',
+  sourceFilter: 'all',
+};
+
+function filtersReducer(state: FiltersState, action: FiltersAction): FiltersState {
+  switch (action.type) {
+    case 'setFilterText':
+      return { ...state, filterText: action.value };
+    case 'setDateFrom':
+      return { ...state, dateFrom: action.value };
+    case 'setDateTo':
+      return { ...state, dateTo: action.value };
+    case 'setSourceFilter':
+      return { ...state, sourceFilter: action.value };
+    case 'clearDates':
+      return { ...state, dateFrom: '', dateTo: '' };
+  }
+}
+
 export function AuditComparePage() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -153,10 +189,7 @@ export function AuditComparePage() {
   const [error, setError] = useState<string | null>(null);
   const [leftId, setLeftId] = useState<string | null>(null);
   const [rightId, setRightId] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [filters, dispatchFilters] = useReducer(filtersReducer, INITIAL_FILTERS);
   const [expandedRuns, setExpandedRuns] = useState<Record<string, boolean>>({});
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -176,8 +209,8 @@ export function AuditComparePage() {
           limit: String(PAGE_SIZE),
           individual_only: 'false',
         });
-        if (dateFrom) params.set('from', toIsoStart(dateFrom));
-        if (dateTo) params.set('to', toIsoEnd(dateTo));
+        if (filters.dateFrom) params.set('from', toIsoStart(filters.dateFrom));
+        if (filters.dateTo) params.set('to', toIsoEnd(filters.dateTo));
 
         const res = await fetch(serviceUrl(`strategy-runs?${params}`), {
           cache: 'no-store',
@@ -206,7 +239,7 @@ export function AuditComparePage() {
         setLoadingMore(false);
       }
     },
-    [dateFrom, dateTo],
+    [filters.dateFrom, filters.dateTo],
   );
 
   const loadMore = useCallback(() => {
@@ -247,9 +280,9 @@ export function AuditComparePage() {
     }
   };
 
-  const filteredByText = filterText
+  const filteredByText = filters.filterText
     ? runs.filter((r) => {
-        const t = filterText.toLowerCase();
+        const t = filters.filterText.toLowerCase();
         return (
           r.id.toLowerCase().includes(t) ||
           (r.strategyName ?? '').toLowerCase().includes(t) ||
@@ -259,9 +292,9 @@ export function AuditComparePage() {
       })
     : runs;
   const filtered = filteredByText.filter((run) =>
-    sourceFilter === 'all'
+    filters.sourceFilter === 'all'
       ? true
-      : sourceFilter === 'preset'
+      : filters.sourceFilter === 'preset'
         ? run.source === 'preset' || !!run.inputPresetName
         : run.source === 'raw_input',
   );
@@ -356,16 +389,16 @@ export function AuditComparePage() {
           <FilterBar className="items-end">
             <div className="min-w-0 flex-1">
               <FilterSearch
-                value={filterText}
-                onChange={setFilterText}
+                value={filters.filterText}
+                onChange={(value) => dispatchFilters({ type: 'setFilterText', value })}
                 placeholder="Filter by strategy name, preset, source, or run ID..."
                 width="w-full"
               />
             </div>
             <SegmentedControl
               options={SOURCE_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-              value={sourceFilter}
-              onChange={(v) => setSourceFilter(v)}
+              value={filters.sourceFilter}
+              onChange={(v) => dispatchFilters({ type: 'setSourceFilter', value: v })}
               size="sm"
               label="Source filter"
             />
@@ -374,8 +407,8 @@ export function AuditComparePage() {
                 <span className="text-text-muted text-[10px] font-medium">From</span>
                 <input
                   type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  value={filters.dateFrom}
+                  onChange={(e) => dispatchFilters({ type: 'setDateFrom', value: e.target.value })}
                   className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
@@ -383,19 +416,16 @@ export function AuditComparePage() {
                 <span className="text-text-muted text-[10px] font-medium">To</span>
                 <input
                   type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  value={filters.dateTo}
+                  onChange={(e) => dispatchFilters({ type: 'setDateTo', value: e.target.value })}
                   className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
                 />
               </label>
-              {(dateFrom || dateTo) && (
+              {(filters.dateFrom || filters.dateTo) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setDateFrom('');
-                    setDateTo('');
-                  }}
+                  onClick={() => dispatchFilters({ type: 'clearDates' })}
                   className="mb-0.5"
                 >
                   Clear dates
@@ -418,7 +448,7 @@ export function AuditComparePage() {
               <div ref={scrollRef} className="mt-2 max-h-[28rem] space-y-1.5 overflow-y-auto">
                 {filtered.length === 0 ? (
                   <p className="text-body text-text-disabled py-4 text-center">
-                    {filterText ? 'No runs match your filter.' : 'No runs found.'}
+                    {filters.filterText ? 'No runs match your filter.' : 'No runs found.'}
                   </p>
                 ) : (
                   runGroups.map((group) => {

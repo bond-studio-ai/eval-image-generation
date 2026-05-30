@@ -1,17 +1,21 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 type Rating = 'GOOD' | 'FAILED' | null;
+
+interface GenerationRating {
+  scene: Rating;
+  product: Rating;
+}
 
 interface MatrixCellRatingOverlayProps {
   generationId: string;
   onRated?: () => void;
   className?: string;
 }
-
-const ratingCache = new Map<string, { scene: Rating; product: Rating }>();
 
 const thumbUp = (
   <svg className="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -29,45 +33,45 @@ export function MatrixCellRatingOverlay({
   onRated,
   className = '',
 }: MatrixCellRatingOverlayProps) {
-  const cached = ratingCache.get(generationId);
-  const [sceneRating, setSceneRating] = useState<Rating>(cached?.scene ?? null);
-  const [productRating, setProductRating] = useState<Rating>(cached?.product ?? null);
-  const [fetched, setFetched] = useState(!!cached);
+  const queryClient = useQueryClient();
+  const ratingKey = ['generation-rating', generationId];
 
-  useEffect(() => {
-    if (fetched) return;
-    let cancelled = false;
-    fetch(serviceUrl(`generations/${generationId}`), { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        const d = json.data ?? json;
-        const scene: Rating = d.sceneAccuracyRating ?? null;
-        const product: Rating = d.productAccuracyRating ?? null;
-        setSceneRating(scene);
-        setProductRating(product);
-        ratingCache.set(generationId, { scene, product });
-        setFetched(true);
-      })
-      .catch(() => {
-        if (!cancelled) setFetched(true);
+  const { data } = useQuery({
+    queryKey: ratingKey,
+    queryFn: async ({ signal }): Promise<GenerationRating> => {
+      const res = await fetch(serviceUrl(`generations/${generationId}`), {
+        cache: 'no-store',
+        signal,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [generationId, fetched]);
+      if (!res.ok) throw new Error(`Failed to load generation (${res.status})`);
+      const json = await res.json();
+      const d = json.data ?? json;
+      return {
+        scene: (d.sceneAccuracyRating ?? null) as Rating,
+        product: (d.productAccuracyRating ?? null) as Rating,
+      };
+    },
+    enabled: !!generationId,
+    // Match the prior module-level cache: fetch a generation's rating once and
+    // keep it; the optimistic `setQueryData` in `rate` handles in-session updates.
+    staleTime: Infinity,
+  });
+
+  const sceneRating = data?.scene ?? null;
+  const productRating = data?.product ?? null;
 
   const rate = useCallback(
     async (scene?: 'GOOD' | 'FAILED', product?: 'GOOD' | 'FAILED') => {
-      const prevScene = sceneRating;
-      const prevProduct = productRating;
+      const key = ['generation-rating', generationId];
+      const prev = queryClient.getQueryData<GenerationRating>(key) ?? {
+        scene: null,
+        product: null,
+      };
 
-      // Optimistic update: UI and cache immediately
-      const nextScene = scene !== undefined ? scene : prevScene;
-      const nextProduct = product !== undefined ? product : prevProduct;
-      setSceneRating(nextScene);
-      setProductRating(nextProduct);
-      ratingCache.set(generationId, { scene: nextScene, product: nextProduct });
+      // Optimistic update: write straight to the query cache.
+      const nextScene = scene !== undefined ? scene : prev.scene;
+      const nextProduct = product !== undefined ? product : prev.product;
+      queryClient.setQueryData<GenerationRating>(key, { scene: nextScene, product: nextProduct });
       onRated?.();
 
       try {
@@ -82,23 +86,18 @@ export function MatrixCellRatingOverlay({
         if (res.ok) {
           const json = await res.json();
           const d = json.data ?? json;
-          const newScene: Rating = d.sceneAccuracyRating ?? nextScene;
-          const newProduct: Rating = d.productAccuracyRating ?? nextProduct;
-          setSceneRating(newScene);
-          setProductRating(newProduct);
-          ratingCache.set(generationId, { scene: newScene, product: newProduct });
+          queryClient.setQueryData<GenerationRating>(key, {
+            scene: (d.sceneAccuracyRating ?? nextScene) as Rating,
+            product: (d.productAccuracyRating ?? nextProduct) as Rating,
+          });
         } else {
-          setSceneRating(prevScene);
-          setProductRating(prevProduct);
-          ratingCache.set(generationId, { scene: prevScene, product: prevProduct });
+          queryClient.setQueryData<GenerationRating>(key, prev);
         }
       } catch {
-        setSceneRating(prevScene);
-        setProductRating(prevProduct);
-        ratingCache.set(generationId, { scene: prevScene, product: prevProduct });
+        queryClient.setQueryData<GenerationRating>(key, prev);
       }
     },
-    [generationId, onRated, sceneRating, productRating],
+    [generationId, onRated, queryClient],
   );
 
   const btnBase = 'rounded-md p-1.5 transition-all';

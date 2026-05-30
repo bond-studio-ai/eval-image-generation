@@ -1,11 +1,13 @@
 'use client';
 
 import { CdnImage } from '@/components/cdn-image';
+import { isNonEmpty } from '@/components/design-settings-values';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { Modal } from '@/components/ui';
 import { localUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
 type CatalogImageTag = 'photo-image' | 'tear-sheet' | 'line-drawing';
@@ -260,19 +262,7 @@ function readProductImageType(value: unknown): ProductImageType | null {
     : null;
 }
 
-function isNonEmpty(value: unknown): boolean {
-  if (value == null) return false;
-  if (typeof value === 'string') return value.length > 0;
-  if (typeof value === 'boolean') return true;
-  return false;
-}
-
 export type DesignSettingsValue = Record<string, unknown> | null;
-
-export function designSettingsHasValues(value: DesignSettingsValue): boolean {
-  if (!value) return false;
-  return Object.values(value).some(isNonEmpty);
-}
 
 interface CatalogImageVariant {
   tag: CatalogImageTag;
@@ -282,50 +272,32 @@ interface CatalogImageVariant {
 const DOWNLOADABLE_IMAGE_TAGS = new Set<string>(['photo-image', 'tear-sheet', 'line-drawing']);
 
 function useCatalogProductImages(catalogCategory: string | null, productId: string | null) {
-  const [images, setImages] = useState<CatalogImageVariant[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!productId || !catalogCategory) return;
-
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) setLoading(true);
-    });
-    fetch(localUrl(`catalog/products/${catalogCategory}/${productId}`))
-      .then((r) => r.json())
-      .then((r) => {
-        if (cancelled) return;
-        const product = r.data ?? r;
-        const rawImages = Array.isArray(product?.images) ? product.images : [];
-        const variants: CatalogImageVariant[] = [];
-        const featured = product?.featured_image?.url ?? product?.featuredImage?.url;
-        if (featured) variants.push({ tag: 'photo-image', url: featured });
-        for (const img of rawImages) {
-          if (!img?.url || !img.tag) continue;
-          if (img.tag === 'photo-image' && variants.some((v) => v.tag === 'photo-image')) continue;
-          if (DOWNLOADABLE_IMAGE_TAGS.has(img.tag)) {
-            variants.push({ tag: img.tag, url: img.url });
-          }
-        }
-        setImages(variants);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setImages([]);
-          setLoading(false);
-        }
+  const { data: images = [], isLoading } = useQuery({
+    queryKey: ['catalog-product-images', catalogCategory, productId],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(localUrl(`catalog/products/${catalogCategory}/${productId}`), {
+        signal,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [catalogCategory, productId]);
+      if (!res.ok) throw new Error(`Failed to fetch catalog product images (${res.status})`);
+      const r = await res.json();
+      const product = r.data ?? r;
+      const rawImages = Array.isArray(product?.images) ? product.images : [];
+      const variants: CatalogImageVariant[] = [];
+      const featured = product?.featured_image?.url ?? product?.featuredImage?.url;
+      if (featured) variants.push({ tag: 'photo-image', url: featured });
+      for (const img of rawImages) {
+        if (!img?.url || !img.tag) continue;
+        if (img.tag === 'photo-image' && variants.some((v) => v.tag === 'photo-image')) continue;
+        if (DOWNLOADABLE_IMAGE_TAGS.has(img.tag)) {
+          variants.push({ tag: img.tag, url: img.url });
+        }
+      }
+      return variants;
+    },
+    enabled: !!productId && !!catalogCategory,
+  });
 
-  return {
-    images: productId && catalogCategory ? images : [],
-    loading: productId && catalogCategory ? loading : false,
-  };
+  return { images, loading: isLoading };
 }
 
 const IMAGE_TAG_LABELS: Record<CatalogImageTag, string> = {
@@ -589,26 +561,16 @@ function ProductListItemDownloads({
 }
 
 export function useCatalogProducts(retailerId?: string) {
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const query = retailerId ? `?retailerId=${encodeURIComponent(retailerId)}` : '';
-    fetch(localUrl(`products${query}`))
-      .then((r) => r.json())
-      .then((r) => {
-        if (cancelled) return;
-        setProducts(Array.isArray(r.data) ? (r.data as CatalogProduct[]) : []);
-        setLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [retailerId]);
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['catalog-products', retailerId],
+    queryFn: async ({ signal }) => {
+      const query = retailerId ? `?retailerId=${encodeURIComponent(retailerId)}` : '';
+      const res = await fetch(localUrl(`products${query}`), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch catalog products (${res.status})`);
+      const r = await res.json();
+      return Array.isArray(r.data) ? (r.data as CatalogProduct[]) : [];
+    },
+  });
 
   const byId = useMemo(() => {
     const map = new Map<string, CatalogProduct>();
@@ -616,7 +578,7 @@ export function useCatalogProducts(retailerId?: string) {
     return map;
   }, [products]);
 
-  return { products, byId, loaded };
+  return { products, byId, loaded: !isLoading };
 }
 
 interface DesignSettingsEditorProps {
