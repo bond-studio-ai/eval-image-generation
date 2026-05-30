@@ -2,7 +2,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { ScopeToggle } from '@/components/scope-toggle';
-import { Spinner } from '@/components/ui';
+import { Spinner } from '@/components/ui/spinner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback } from 'react';
 import { ExecutionsRunButton } from './executions-run-button';

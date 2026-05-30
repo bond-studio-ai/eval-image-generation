@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/app-shell';
 import { QueryProvider } from '@/components/query-provider';
-import { ConfirmProvider, ToasterProvider } from '@/components/ui';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
+import { ToasterProvider } from '@/components/ui/toaster';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';

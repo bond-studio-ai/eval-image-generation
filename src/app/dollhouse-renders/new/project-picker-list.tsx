@@ -3,16 +3,13 @@
 import { DataTable, DateCell, FilterPills, type DataTableColumn } from '@/components/data-table';
 import { actionsColumn } from '@/components/data-table-utils';
 import { Pagination } from '@/components/pagination';
-import {
-  Badge,
-  Button,
-  CheckIcon,
-  cn,
-  FilterSearch,
-  SegmentedControl,
-  Spinner,
-  type BadgeTone,
-} from '@/components/ui';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/components/ui/cn';
+import { FilterSearch } from '@/components/ui/filter-bar';
+import { CheckIcon } from '@/components/ui/icons';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { localUrl } from '@/lib/api-base';
 import type { ProjectSummary } from '@/lib/projects';

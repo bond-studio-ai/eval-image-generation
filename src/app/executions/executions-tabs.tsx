@@ -2,7 +2,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { ScopeToggle } from '@/components/scope-toggle';
-import { Tabs, type TabItem } from '@/components/ui';
+import { Tabs, type TabItem } from '@/components/ui/tabs';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useState } from 'react';
 import { BatchRunsTab } from './batch-tab';

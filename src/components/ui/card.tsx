@@ -48,59 +48,6 @@ export function Card({
   );
 }
 
-interface CardHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
-  title?: ReactNode;
-  description?: ReactNode;
-  actions?: ReactNode;
-}
-
-/**
- * Optional card header. Renders title + description on the left and an actions
- * slot on the right. Place above `<CardBody>` when needed; many cards just
- * inline a heading instead.
- */
-export function CardHeader({
-  title,
-  description,
-  actions,
-  className,
-  children,
-  ...rest
-}: CardHeaderProps) {
-  return (
-    <div
-      className={cn(
-        'border-border-subtle flex items-start justify-between gap-4 border-b px-5 py-4',
-        className,
-      )}
-      {...rest}
-    >
-      <div className="min-w-0">
-        {title && <h3 className="text-h3 text-text-primary font-semibold">{title}</h3>}
-        {description && <p className="text-caption text-text-secondary mt-0.5">{description}</p>}
-        {children}
-      </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-    </div>
-  );
-}
-
-export function CardBody({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5', className)} {...rest} />;
-}
-
-export function CardFooter({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn(
-        'border-border-subtle flex items-center justify-end gap-2 border-t px-5 py-4',
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
-
 interface StatCardProps {
   label: string;
   value: ReactNode;

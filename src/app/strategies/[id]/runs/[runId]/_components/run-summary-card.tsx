@@ -1,4 +1,4 @@
-import { Spinner } from '@/components/ui';
+import { Spinner } from '@/components/ui/spinner';
 import { ConfigTag, SourceBadge, StatusBadge } from './shared';
 import type { RunData } from './types';
 

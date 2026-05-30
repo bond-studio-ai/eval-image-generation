@@ -2,7 +2,11 @@
 
 import { PageHeader } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
-import { Button, Card, Spinner, Stepper, toast } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { Stepper } from '@/components/ui/stepper';
+import { toast } from '@/components/ui/toaster';
 import {
   cameraFrameKey,
   createDollhouseRender,

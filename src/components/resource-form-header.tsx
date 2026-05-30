@@ -1,4 +1,4 @@
-import { AlertCircleIcon } from '@/components/ui';
+import { AlertCircleIcon } from '@/components/ui/icons';
 
 interface ResourceFormHeaderProps {
   name: string;

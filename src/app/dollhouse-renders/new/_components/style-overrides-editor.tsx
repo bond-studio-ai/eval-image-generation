@@ -1,6 +1,9 @@
 'use client';
 
-import { Button, IconButton, PlusIcon, TextInput, TrashIcon } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { TextInput } from '@/components/ui/field';
+import { IconButton } from '@/components/ui/icon-button';
+import { PlusIcon, TrashIcon } from '@/components/ui/icons';
 
 // Editor-only row: carries a stable client id for React keys. Stripped back to
 // the bare `{ product, style }` API shape at the request boundary.

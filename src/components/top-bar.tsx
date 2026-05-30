@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronRightIcon, cn } from '@/components/ui';
+import { cn } from '@/components/ui/cn';
+import { ChevronRightIcon } from '@/components/ui/icons';
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

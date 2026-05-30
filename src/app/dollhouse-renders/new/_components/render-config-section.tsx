@@ -1,6 +1,8 @@
 'use client';
 
-import { Checkbox, FormSection, SegmentedControl } from '@/components/ui';
+import { Checkbox } from '@/components/ui/field';
+import { FormSection } from '@/components/ui/form-section';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { RENDER_MODE_OPTIONS, type RenderConfigState } from './build-request';
 import { NumberInput } from './number-input';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { CdnImage } from '@/components/cdn-image';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { useState } from 'react';
 
 interface GenerationThumbnailsProps {

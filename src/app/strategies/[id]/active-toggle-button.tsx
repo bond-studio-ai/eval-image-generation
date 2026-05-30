@@ -1,6 +1,8 @@
 'use client';
 
-import { Badge, Button, toast } from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toaster';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyRunSource } from '@/lib/types';
 import { useRouter } from 'next/navigation';

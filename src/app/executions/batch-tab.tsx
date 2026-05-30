@@ -1,7 +1,9 @@
 'use client';
 
 import { GridLightbox } from '@/components/grid-lightbox';
-import { Spinner, toast, useConfirm } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { toast } from '@/components/ui/toaster';
 import { serviceUrl } from '@/lib/api-base';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useReducer, useState } from 'react';

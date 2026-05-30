@@ -1,10 +1,10 @@
 'use client';
 
+import { cn } from '@/components/ui/cn';
 import {
   BarChartIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  cn,
   EyeIcon,
   GitCompareIcon,
   ImageIcon,
@@ -13,7 +13,7 @@ import {
   ScrollTextIcon,
   SparklesIcon,
   WorkflowIcon,
-} from '@/components/ui';
+} from '@/components/ui/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSyncExternalStore, type ComponentType, type SVGProps } from 'react';

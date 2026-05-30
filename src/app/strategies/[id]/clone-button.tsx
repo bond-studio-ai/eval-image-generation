@@ -1,6 +1,8 @@
 'use client';
 
-import { Button, CopyIcon, toast } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { CopyIcon } from '@/components/ui/icons';
+import { toast } from '@/components/ui/toaster';
 import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';

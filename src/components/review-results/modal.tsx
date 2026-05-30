@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { useMemo } from 'react';
 import { CollapsibleCategoryGrid, SegmentationLegend } from './category-grid';
 import { buildCategoryLookup, useSegmentationCategories } from './category-lookup';

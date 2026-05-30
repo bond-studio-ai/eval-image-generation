@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useReducer, useState } from 'react';

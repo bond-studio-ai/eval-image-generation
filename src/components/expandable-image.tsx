@@ -2,7 +2,7 @@
 
 import { CdnImage } from '@/components/cdn-image';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { useState } from 'react';
 
 interface ExpandableImageProps {

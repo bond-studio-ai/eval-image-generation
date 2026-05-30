@@ -4,7 +4,7 @@ import { CdnImage } from '@/components/cdn-image';
 import { isNonEmpty } from '@/components/design-settings-values';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { localUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef, useState } from 'react';

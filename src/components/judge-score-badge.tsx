@@ -1,7 +1,7 @@
 'use client';
 
 import { buildPanels, type DetailPanel } from '@/components/judge-score-badge-utils';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,

@@ -1,6 +1,8 @@
 'use client';
 
-import { Banner, RefreshIcon, Spinner } from '@/components/ui';
+import { Banner } from '@/components/ui/banner';
+import { RefreshIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 

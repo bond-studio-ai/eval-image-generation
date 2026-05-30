@@ -2,16 +2,13 @@
 
 import { CdnImage } from '@/components/cdn-image';
 import { PageHeader } from '@/components/page-header';
-import {
-  Badge,
-  Button,
-  CheckCircleIcon,
-  cn,
-  FilterBar,
-  FilterSearch,
-  SegmentedControl,
-  Spinner,
-} from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/components/ui/cn';
+import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
+import { CheckCircleIcon } from '@/components/ui/icons';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CompareView } from './compare-view';

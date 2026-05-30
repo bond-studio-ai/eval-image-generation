@@ -1,6 +1,7 @@
 'use client';
 
-import { FormSection, SegmentedControl } from '@/components/ui';
+import { FormSection } from '@/components/ui/form-section';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { FORMAT_OPTIONS, type ImageConfigState } from './build-request';
 import { NumberInput } from './number-input';
 

@@ -1,4 +1,5 @@
-import { ArrowLeftIcon, Button, LinkButton, PlusIcon } from '@/components/ui';
+import { Button, LinkButton } from '@/components/ui/button';
+import { ArrowLeftIcon, PlusIcon } from '@/components/ui/icons';
 import Link from 'next/link';
 
 interface PageHeaderProps {

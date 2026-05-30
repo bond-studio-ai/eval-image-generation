@@ -1,4 +1,5 @@
-import { Badge, SearchIcon, type BadgeTone } from '@/components/ui';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { SearchIcon } from '@/components/ui/icons';
 import Link from 'next/link';
 import { useRef, type ReactNode } from 'react';
 
