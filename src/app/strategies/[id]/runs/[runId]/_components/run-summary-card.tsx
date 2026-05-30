@@ -1,4 +1,5 @@
-import { ConfigTag, SourceBadge, Spinner, StatusBadge } from './shared';
+import { Spinner } from '@/components/ui';
+import { ConfigTag, SourceBadge, StatusBadge } from './shared';
 import type { RunData } from './types';
 
 export function RunSummaryCard({
@@ -113,7 +114,7 @@ export function RunSummaryCard({
               disabled={markingStatus !== 'idle'}
               className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
             >
-              {markingStatus === 'failed' && <Spinner />}
+              {markingStatus === 'failed' && <Spinner className="size-3.5" />}
               Mark failed
             </button>
           )}
@@ -125,7 +126,7 @@ export function RunSummaryCard({
                 disabled={markingStatus !== 'idle'}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
               >
-                {markingStatus === 'completed' && <Spinner />}
+                {markingStatus === 'completed' && <Spinner className="size-3.5" />}
                 Mark completed
               </button>
               <button
@@ -135,7 +136,7 @@ export function RunSummaryCard({
                 className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
               >
                 {retrying ? (
-                  <Spinner />
+                  <Spinner className="size-3.5" />
                 ) : (
                   <svg
                     className="size-3.5"
