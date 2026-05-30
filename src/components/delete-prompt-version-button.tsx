@@ -49,7 +49,7 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
         className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-xs transition-colors hover:bg-red-50"
       >
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -75,9 +75,9 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
                 <svg
-                  className="h-5 w-5 text-red-600"
+                  className="size-5 text-red-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -120,7 +120,7 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
               >
                 {deleting && (
                   <svg
-                    className="h-4 w-4 animate-spin"
+                    className="size-4 animate-spin"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"

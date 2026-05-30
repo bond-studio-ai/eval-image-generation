@@ -119,9 +119,9 @@ export function Sidebar() {
             type="button"
             onClick={toggleCollapsed}
             aria-label="Collapse sidebar"
-            className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary inline-flex h-7 w-7 items-center justify-center rounded-md"
+            className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary inline-flex size-7 items-center justify-center rounded-md"
           >
-            <ChevronLeftIcon className="h-4 w-4" />
+            <ChevronLeftIcon className="size-4" />
           </button>
         )}
       </div>
@@ -155,7 +155,7 @@ export function Sidebar() {
                     >
                       <Icon
                         className={cn(
-                          'h-5 w-5 shrink-0',
+                          'size-5 shrink-0',
                           active ? 'text-primary-600' : 'text-text-muted',
                         )}
                         aria-hidden="true"
@@ -171,7 +171,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer (collapse toggle when collapsed; user button hosted in TopBar) */}
-      <div className="border-border border-t px-3 py-3">
+      <div className="border-border border-t p-3">
         {collapsed ? (
           <button
             type="button"
@@ -179,7 +179,7 @@ export function Sidebar() {
             aria-label="Expand sidebar"
             className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary flex w-full items-center justify-center rounded-md py-2"
           >
-            <ChevronRightIcon className="h-4 w-4" />
+            <ChevronRightIcon className="size-4" />
           </button>
         ) : (
           <p className="text-text-disabled px-2 text-[10px]">v0.1.0</p>
@@ -192,10 +192,10 @@ export function Sidebar() {
 function Logomark() {
   return (
     <span
-      className="bg-primary-600 text-text-inverse flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-xs"
+      className="bg-primary-600 text-text-inverse flex size-8 shrink-0 items-center justify-center rounded-md shadow-xs"
       aria-hidden="true"
     >
-      <SparklesIcon className="h-4 w-4" strokeWidth={2.25} />
+      <SparklesIcon className="size-4" strokeWidth={2.25} />
     </span>
   );
 }

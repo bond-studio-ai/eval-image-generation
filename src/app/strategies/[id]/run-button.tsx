@@ -63,6 +63,7 @@ export function StrategyRunButton({
   return (
     <>
       <button
+        type="button"
         onClick={() => {
           setShowModal(true);
           setError(null);
@@ -70,7 +71,7 @@ export function StrategyRunButton({
         className="bg-primary-600 hover:bg-primary-700 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
       >
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -110,7 +111,7 @@ export function StrategyRunButton({
               <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-3">
                 <div className="relative mb-3 shrink-0">
                   <svg
-                    className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-gray-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -181,7 +182,7 @@ export function StrategyRunButton({
                 >
                   {submitting ? (
                     <>
-                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -196,7 +197,7 @@ export function StrategyRunButton({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                         />
                       </svg>
-                      Starting...
+                      Starting…
                     </>
                   ) : (
                     'Start run'
@@ -302,6 +303,7 @@ export function StrategyBatchRunButton({
   return (
     <>
       <button
+        type="button"
         onClick={() => {
           setShowModal(true);
           setError(null);
@@ -309,7 +311,7 @@ export function StrategyBatchRunButton({
         className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
       >
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -356,7 +358,7 @@ export function StrategyBatchRunButton({
                     </p>
                     <div className="relative">
                       <svg
-                        className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
+                        className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -397,7 +399,7 @@ export function StrategyBatchRunButton({
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-gray-50"
                           >
                             <svg
-                              className="text-primary-500 h-4 w-4 shrink-0"
+                              className="text-primary-500 size-4 shrink-0"
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={1.5}
@@ -449,7 +451,7 @@ export function StrategyBatchRunButton({
                                 className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
                               >
                                 <svg
-                                  className="h-4 w-4"
+                                  className="size-4"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   strokeWidth={1.5}
@@ -497,7 +499,7 @@ export function StrategyBatchRunButton({
                 >
                   {submitting ? (
                     <>
-                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -512,7 +514,7 @@ export function StrategyBatchRunButton({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                         />
                       </svg>
-                      Starting...
+                      Starting…
                     </>
                   ) : selectedIds.length === 0 ? (
                     'Select presets'
@@ -589,10 +591,10 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
               disabled={(value ?? 1) <= 1}
-              className="flex h-8 w-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+              className="flex size-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -616,10 +618,10 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
               disabled={(value ?? 1) >= 100}
-              className="flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
+              className="flex size-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}

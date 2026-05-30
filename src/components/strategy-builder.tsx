@@ -290,7 +290,7 @@ function ProductImageTypeOverrides({
           )}
         </span>
         <svg
-          className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`size-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -713,13 +713,14 @@ export function StrategyBuilder({
 
   const saveButton = (
     <button
+      type="button"
       onClick={handleSave}
       disabled={!name.trim() || steps.length === 0 || saving}
       className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
     >
       {saving ? (
         <>
-          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"
@@ -734,7 +735,7 @@ export function StrategyBuilder({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          Saving...
+          Saving…
         </>
       ) : isEditing ? (
         'Update Strategy'
@@ -964,7 +965,7 @@ export function StrategyBuilder({
                     className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
                   >
                     <svg
-                      className="h-4 w-4"
+                      className="size-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
@@ -987,7 +988,7 @@ export function StrategyBuilder({
                   {(step.judges ?? []).map((judge, jIdx) => (
                     <div key={jIdx} className="rounded-lg border border-amber-200 bg-white p-4">
                       <div className="mb-3 flex items-center justify-between">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                        <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
                           {jIdx + 1}
                         </span>
                         <div className="flex items-center gap-2">
@@ -1023,7 +1024,7 @@ export function StrategyBuilder({
                             className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
                           >
                             <svg
-                              className="h-4 w-4"
+                              className="size-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={1.5}
@@ -1128,7 +1129,7 @@ export function StrategyBuilder({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50"
                   >
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="size-3.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
@@ -1160,7 +1161,7 @@ export function StrategyBuilder({
                         className="focus:border-primary-500 focus:ring-primary-500 w-56 rounded-lg border border-gray-300 bg-gray-50 py-1.5 pr-8 pl-3 text-sm font-medium text-gray-800 transition-colors placeholder:text-gray-400 hover:border-gray-400 hover:bg-white focus:bg-white focus:ring-1 focus:outline-none"
                       />
                       <svg
-                        className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                        className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -1181,7 +1182,7 @@ export function StrategyBuilder({
                       className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="size-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -1371,7 +1372,7 @@ export function StrategyBuilder({
             className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-800"
           >
             <svg
-              className="h-4 w-4"
+              className="size-4"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -1388,7 +1389,7 @@ export function StrategyBuilder({
             className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 px-4 py-3 text-sm font-medium text-amber-700 transition-colors hover:border-amber-400 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg
-              className="h-4 w-4"
+              className="size-4"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -1454,7 +1455,7 @@ function SearchableSelect({
           {selectedLabel || placeholder}
         </span>
         <svg
-          className="h-4 w-4 shrink-0 text-gray-400"
+          className="size-4 shrink-0 text-gray-400"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -1490,7 +1491,7 @@ function SearchableSelect({
             </div>
             <div className="max-h-56 overflow-y-auto border-t border-gray-100">
               {filtered.length === 0 && (
-                <div className="px-3 py-3 text-center text-sm text-gray-400">No matches</div>
+                <div className="p-3 text-center text-sm text-gray-400">No matches</div>
               )}
               {filtered.map((o) => (
                 <button
@@ -1557,7 +1558,7 @@ function PromptVersionSelector({
           {selectedName || '-- Select --'}
         </span>
         <svg
-          className="h-4 w-4 shrink-0 text-gray-400"
+          className="size-4 shrink-0 text-gray-400"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -1604,7 +1605,7 @@ function PromptVersionSelector({
                 -- None --
               </button>
               {filtered.length === 0 && (
-                <div className="px-3 py-3 text-center text-sm text-gray-400">No matches</div>
+                <div className="p-3 text-center text-sm text-gray-400">No matches</div>
               )}
               {filtered.map((pv) => (
                 <button

@@ -39,7 +39,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <span
-            className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
+            className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300"
             style={{ backgroundColor: swatch }}
             aria-hidden="true"
           />
@@ -158,7 +158,7 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
         {entries.map(([category, entry]) => (
           <div key={category} className="flex min-w-0 items-center gap-1.5">
             <span
-              className="inline-block h-3 w-3 shrink-0 rounded-sm ring-1 ring-gray-300"
+              className="inline-block size-3 shrink-0 rounded-sm ring-1 ring-gray-300"
               style={{ backgroundColor: entry.color }}
               aria-hidden="true"
             />

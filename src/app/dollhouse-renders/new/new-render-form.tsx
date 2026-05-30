@@ -247,7 +247,7 @@ export function NewRenderForm() {
         {loadingProject && !bootstrap && (
           <Card className="flex items-center gap-3">
             <Spinner size="sm" />
-            <span className="text-body text-text-secondary">Loading project data...</span>
+            <span className="text-body text-text-secondary">Loading project data…</span>
           </Card>
         )}
 

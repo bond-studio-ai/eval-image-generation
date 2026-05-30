@@ -30,7 +30,7 @@ export function EmptyState({
       )}
     >
       <div className="text-text-disabled" aria-hidden="true">
-        {icon ?? <Inbox className="h-12 w-12" strokeWidth={1.25} />}
+        {icon ?? <Inbox className="size-12" strokeWidth={1.25} />}
       </div>
       <h3 className="text-body text-text-primary mt-4 font-semibold">{title}</h3>
       {description && <div className="text-body text-text-secondary mt-1">{description}</div>}

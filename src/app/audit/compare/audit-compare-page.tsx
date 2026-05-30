@@ -126,10 +126,10 @@ function RunPickerCard({
       </div>
       <div className="shrink-0">
         {isSelected ? (
-          <CheckCircleIcon className="text-primary-600 h-5 w-5" aria-hidden="true" />
+          <CheckCircleIcon className="text-primary-600 size-5" aria-hidden="true" />
         ) : (
           <span
-            className="border-border-strong inline-flex h-5 w-5 items-center justify-center rounded-full border-2"
+            className="border-border-strong inline-flex size-5 items-center justify-center rounded-full border-2"
             aria-hidden="true"
           />
         )}
@@ -290,7 +290,7 @@ export function AuditComparePage() {
     return Array.from(groups.values())
       .map((group) => ({
         ...group,
-        runs: [...group.runs].sort(
+        runs: group.runs.toSorted(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         ),
       }))

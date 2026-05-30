@@ -37,7 +37,11 @@ export function BulkDeleteBar({
           <span className="bg-primary-100 text-primary-700 inline-flex items-center rounded-full px-3 py-1 text-sm font-medium">
             {selectedCount} selected
           </span>
-          <button onClick={onClearSelection} className="text-sm text-gray-500 hover:text-gray-700">
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
             Clear selection
           </button>
         </div>
@@ -48,6 +52,7 @@ export function BulkDeleteBar({
                 Delete {selectedCount} {entityName}?
               </span>
               <button
+                type="button"
                 onClick={() => setConfirming(false)}
                 disabled={deleting}
                 className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -55,13 +60,14 @@ export function BulkDeleteBar({
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
                 disabled={deleting}
                 className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:bg-red-400"
               >
                 {deleting ? (
                   <>
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -76,7 +82,7 @@ export function BulkDeleteBar({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                       />
                     </svg>
-                    Deleting...
+                    Deleting…
                   </>
                 ) : (
                   'Confirm Delete'
@@ -85,11 +91,12 @@ export function BulkDeleteBar({
             </>
           ) : (
             <button
+              type="button"
               onClick={() => setConfirming(true)}
               className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
             >
               <svg
-                className="h-4 w-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}

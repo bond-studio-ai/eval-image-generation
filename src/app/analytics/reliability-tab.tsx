@@ -92,16 +92,16 @@ function TrendChart({ trends }: { trends: ReliabilityData['trends'] }) {
       <h3 className="text-sm font-semibold text-gray-900">Daily Failure Trends</h3>
       <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" /> Total runs
+          <span className="inline-block size-2.5 rounded-full bg-gray-300" /> Total runs
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400" /> Failed runs
+          <span className="inline-block size-2.5 rounded-full bg-red-400" /> Failed runs
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" /> Timeouts
+          <span className="inline-block size-2.5 rounded-full bg-amber-400" /> Timeouts
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-purple-400" /> Judge failures
+          <span className="inline-block size-2.5 rounded-full bg-purple-400" /> Judge failures
         </span>
       </div>
       <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
@@ -175,7 +175,7 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-12">
-        <div className="border-t-primary-600 h-8 w-8 animate-spin rounded-full border-4 border-gray-300" />
+        <div className="border-t-primary-600 size-8 animate-spin rounded-full border-4 border-gray-300" />
       </div>
     );
   }

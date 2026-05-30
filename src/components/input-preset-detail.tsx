@@ -190,7 +190,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="size-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -227,7 +227,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
               >
                 {cloning ? (
-                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -244,7 +244,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                   </svg>
                 ) : (
                   <svg
-                    className="h-4 w-4"
+                    className="size-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}

@@ -132,7 +132,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
           >
             <svg
-              className="h-3.5 w-3.5"
+              className="size-3.5"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -168,7 +168,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                     title="Remove all images"
                   >
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="size-3.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={2}
@@ -202,7 +202,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                           className="absolute -top-1 -right-1 rounded-full bg-red-500 p-0.5 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
                         >
                           <svg
-                            className="h-2.5 w-2.5"
+                            className="size-2.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             strokeWidth={2.5}
@@ -223,7 +223,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                       className="flex h-16 items-center justify-center rounded border border-dashed border-gray-300 bg-gray-50 text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-600"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="size-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -245,7 +245,7 @@ export function ProductImageInput({ value, onChange }: ProductImageInputProps) {
                   className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <svg
-                    className="h-6 w-6"
+                    className="size-6"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -408,7 +408,7 @@ function CategoryPickerModal({
       <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">{categoryLabel}</h3>
-          <span className="text-xs text-gray-400">Modal stays open — add multiple</span>
+          <span className="text-xs text-gray-400">Modal stays open, add multiple</span>
         </div>
 
         {/* Mode toggle */}
@@ -511,9 +511,7 @@ function CategoryPickerModal({
                     {isExpanded && (
                       <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
                         {loadingImages ? (
-                          <p className="py-2 text-center text-xs text-gray-500">
-                            Loading images...
-                          </p>
+                          <p className="py-2 text-center text-xs text-gray-500">Loading images…</p>
                         ) : expandedImages.length === 0 ? (
                           <p className="py-2 text-center text-xs text-gray-500">
                             No additional images available
@@ -543,7 +541,7 @@ function CategoryPickerModal({
                                   )}
                                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                                     <svg
-                                      className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                      className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100"
                                       fill="none"
                                       viewBox="0 0 24 24"
                                       strokeWidth={2}
@@ -592,7 +590,7 @@ function CategoryPickerModal({
               {uploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <svg
-                    className="h-5 w-5 animate-spin text-gray-600"
+                    className="size-5 animate-spin text-gray-600"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -610,12 +608,12 @@ function CategoryPickerModal({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span className="text-sm text-gray-600">Uploading...</span>
+                  <span className="text-sm text-gray-600">Uploading…</span>
                 </div>
               ) : (
                 <div>
                   <svg
-                    className="mx-auto h-8 w-8 text-gray-400"
+                    className="mx-auto size-8 text-gray-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}

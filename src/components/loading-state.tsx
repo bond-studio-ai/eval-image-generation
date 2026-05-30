@@ -61,7 +61,7 @@ export function AppShellSkeleton() {
       {/* Sidebar skeleton */}
       <div className="border-border bg-surface flex w-64 flex-col border-r">
         <div className="border-border flex h-16 items-center gap-2 border-b px-4">
-          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="size-8 rounded-md" />
           <Skeleton className="h-4 w-28" />
         </div>
         <nav className="flex-1 space-y-4 px-2 py-4">
@@ -70,7 +70,7 @@ export function AppShellSkeleton() {
               <Skeleton className="ml-3 h-3 w-20" />
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-md px-3 py-2">
-                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="size-5 rounded" />
                   <Skeleton className="h-4 w-24" />
                 </div>
               ))}
@@ -82,7 +82,7 @@ export function AppShellSkeleton() {
       <div className="flex flex-1 flex-col">
         <div className="border-border bg-surface/80 flex h-12 items-center justify-between border-b px-6">
           <Skeleton className="h-3 w-40" />
-          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="size-8 rounded-full" />
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

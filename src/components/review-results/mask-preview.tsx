@@ -24,16 +24,14 @@ export function SkeletonImage({
   containerClassName: string;
   imgClassName: string;
 }) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
-
-  // Reset when the URL changes (e.g. after a force re-run swaps the
-  // overlay PNG) so we don't briefly show the old image while the new
-  // one decodes.
-  useEffect(() => {
-    setLoaded(false);
-    setErrored(false);
-  }, [src]);
+  // Track which URL has loaded/errored rather than a bare boolean, so a
+  // URL change (e.g. after a force re-run swaps the overlay PNG) makes
+  // the flags fall stale automatically — no effect needed to reset them,
+  // and the old image never lingers while the new one decodes.
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [erroredSrc, setErroredSrc] = useState<string | null>(null);
+  const loaded = loadedSrc === src;
+  const errored = erroredSrc === src;
 
   return (
     <div className={`relative ${containerClassName}`}>
@@ -50,8 +48,8 @@ export function SkeletonImage({
         src={src}
         alt={alt}
         loading="lazy"
-        onLoad={() => setLoaded(true)}
-        onError={() => setErrored(true)}
+        onLoad={() => setLoadedSrc(src)}
+        onError={() => setErroredSrc(src)}
         className={`${imgClassName} transition-opacity duration-150 ${loaded && !errored ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>

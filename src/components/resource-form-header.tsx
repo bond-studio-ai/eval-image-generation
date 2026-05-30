@@ -52,7 +52,7 @@ export function ResourceFormHeader({
 export function ErrorCard({ message }: { message: string }) {
   return (
     <div className="rounded-card border-danger-200 bg-danger-50 flex items-start gap-3 border p-4">
-      <AlertCircleIcon className="text-danger-600 mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <AlertCircleIcon className="text-danger-600 mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <p className="text-body text-danger-700">{message}</p>
     </div>
   );

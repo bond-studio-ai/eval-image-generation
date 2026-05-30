@@ -51,7 +51,7 @@ export function FilterSearch({
   return (
     <div className={cn('relative', width)}>
       <Search
-        className="text-text-disabled pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        className="text-text-disabled pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
         aria-hidden="true"
       />
       <input

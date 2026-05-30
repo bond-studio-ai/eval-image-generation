@@ -141,7 +141,7 @@ export function ReviewRunGroupBadge({
   if (summary.kind === 'checking') {
     return (
       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-        <Spinner className="h-2.5 w-2.5" />
+        <Spinner className="size-2.5" />
         Checking
       </span>
     );
@@ -156,7 +156,7 @@ export function ReviewRunGroupBadge({
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
         title={`Reviewing ${completed}/${summary.total} generations`}
       >
-        <Spinner className="h-2.5 w-2.5" />
+        <Spinner className="size-2.5" />
         Reviewing {completed}/{summary.total}
       </span>
     );
@@ -173,7 +173,7 @@ export function ReviewRunGroupBadge({
         title="All reviews complete. Click to re-run all with force=true."
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
-        <CheckIcon className="h-2.5 w-2.5" />
+        <CheckIcon className="size-2.5" />
         Reviewed {summary.done}/{summary.total}
       </button>
     );
@@ -192,7 +192,7 @@ export function ReviewRunGroupBadge({
         title={`${summary.done}/${summary.total} reviewed. Click to finish the rest.`}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
-        <CheckIcon className="h-2.5 w-2.5" />
+        <CheckIcon className="size-2.5" />
         Reviewed {summary.done}/{summary.total}
       </button>
     );
@@ -209,7 +209,7 @@ export function ReviewRunGroupBadge({
         title="All reviews failed. Click to retry."
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
       >
-        <ErrorIcon className="h-2.5 w-2.5" />
+        <ErrorIcon className="size-2.5" />
         Review failed
       </button>
     );
@@ -225,7 +225,7 @@ export function ReviewRunGroupBadge({
       title={`Automate QA (review) for all ${summary.total} generations in this row.`}
       className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
     >
-      <SparkleIcon className="h-2.5 w-2.5" />
+      <SparkleIcon className="size-2.5" />
       Automate QA ({summary.total})
     </button>
   );

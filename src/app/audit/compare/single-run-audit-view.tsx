@@ -123,6 +123,7 @@ function ImageGrid({ images }: { images: InputImage[] }) {
                 source images
               </p>
               <button
+                type="button"
                 onClick={() => setExpandedGroup(null)}
                 className="text-xs text-violet-600 hover:text-violet-800"
               >
@@ -184,7 +185,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <svg className="h-6 w-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+        <svg className="size-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"
@@ -212,7 +213,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
     );
   }
 
-  const steps = [...run.stepResults].sort(
+  const steps = run.stepResults.toSorted(
     (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
   );
 

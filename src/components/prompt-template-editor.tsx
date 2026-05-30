@@ -474,7 +474,7 @@ export function PromptTemplateEditor({
                   <p className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
                     Pick a <strong>product</strong>. Inserts a{' '}
                     <code className="rounded bg-gray-100 px-0.5">{`{{#each dollhouse.{product}.visibility}}…{{/each}}`}</code>{' '}
-                    block — the <code className="rounded bg-gray-100 px-0.5">dollhouse</code>{' '}
+                    block; the <code className="rounded bg-gray-100 px-0.5">dollhouse</code>{' '}
                     namespace is bound per image at render time.
                   </p>
                   <div className="border-b border-gray-200 p-2">
@@ -589,7 +589,7 @@ function TemplateErrors({ errors }: { errors: { line: number; message: string }[
         {visible.map((err, i) => (
           <p key={i} className="flex items-start gap-1.5 text-xs text-red-700">
             <svg
-              className="mt-0.5 h-3 w-3 shrink-0 text-red-500"
+              className="mt-0.5 size-3 shrink-0 text-red-500"
               viewBox="0 0 20 20"
               fill="currentColor"
             >

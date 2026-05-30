@@ -27,7 +27,10 @@ interface GenerationData {
 }
 
 export function GridLightbox({ src, runHref, generationId, onRated, onClose }: GridLightboxProps) {
-  const [generation, setGeneration] = useState<GenerationData | null>(null);
+  // Tag fetched data with the id it belongs to so a `generationId` change
+  // makes stale data disappear by derivation — no effect needed to clear it.
+  const [fetched, setFetched] = useState<{ id: string; data: GenerationData } | null>(null);
+  const generation = generationId && fetched?.id === generationId ? fetched.data : null;
   /** Which scene to compare (0/1/2 = Dollhouse/Real Photo/Mood Board). null = output only. */
   const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
   /** 0–100: position of the comparison bar (left % shows scene, right % shows output). */
@@ -42,20 +45,25 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
       const json = await res.json();
       const data = json.data ?? json;
       const results = Array.isArray(data.results) ? data.results : [];
-      setGeneration({
-        sceneAccuracyRating: data.sceneAccuracyRating ?? null,
-        productAccuracyRating: data.productAccuracyRating ?? null,
-        results: results.map((r: { id: string; url?: string }) => ({ id: r.id, url: r.url ?? '' })),
-        input: data.input ?? null,
+      setFetched({
+        id,
+        data: {
+          sceneAccuracyRating: data.sceneAccuracyRating ?? null,
+          productAccuracyRating: data.productAccuracyRating ?? null,
+          results: results.map((r: { id: string; url?: string }) => ({
+            id: r.id,
+            url: r.url ?? '',
+          })),
+          input: data.input ?? null,
+        },
       });
     } catch {
-      setGeneration(null);
+      setFetched(null);
     }
   }, []);
 
   useEffect(() => {
     if (generationId) fetchGeneration(generationId);
-    else setGeneration(null);
   }, [generationId, fetchGeneration]);
 
   const handleRated = useCallback(() => {
@@ -143,7 +151,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
               <svg
-                className="h-5 w-5"
+                className="size-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -207,7 +215,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                         }
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.url} alt={img.label} className="h-14 w-14 object-cover" />
+                        <img src={img.url} alt={img.label} className="size-14 object-cover" />
                         <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">
                           {img.label}
                         </span>
@@ -234,7 +242,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                                 e.stopPropagation();
                                 setExpandedImage({ src: img.urls[0], alt: img.label });
                               }}
-                              className="h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                              className="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -253,7 +261,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                                     e.stopPropagation();
                                     setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` });
                                   }}
-                                  className="h-10 w-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                                  className="size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
@@ -334,7 +342,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
               aria-label="Close"
             >
               <svg
-                className="h-5 w-5"
+                className="size-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}

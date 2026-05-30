@@ -214,7 +214,7 @@ export function InputPresetEditForm({
             </span>
           </div>
         </summary>
-        <div className="border-t border-gray-100 px-6 py-6">
+        <div className="border-t border-gray-100 p-6">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <SceneImageInput
               label="Dollhouse View"

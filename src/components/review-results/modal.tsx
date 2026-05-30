@@ -79,7 +79,7 @@ export function ReviewModal({
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
             <svg
-              className="h-5 w-5"
+              className="size-5"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -93,7 +93,7 @@ export function ReviewModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {loading && (
             <div className="flex items-center justify-center py-16 text-sm text-gray-500">
-              <svg className="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="mr-2 size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"

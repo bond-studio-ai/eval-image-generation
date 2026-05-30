@@ -98,7 +98,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
     <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
       <p className="flex items-center gap-2 text-sm text-gray-700">
         {loading && (
-          <svg className="h-3.5 w-3.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+          <svg className="size-3.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"
@@ -121,11 +121,12 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
 
       <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs">
         <button
+          type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
             <path
               fillRule="evenodd"
               d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
@@ -145,6 +146,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
           ) : (
             <button
               key={p}
+              type="button"
               onClick={() => onPageChange(p)}
               disabled={p === page}
               className={`${BASE_BTN} min-w-[2.25rem] justify-center ${
@@ -159,11 +161,12 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
         )}
 
         <button
+          type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
             <path
               fillRule="evenodd"
               d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"

@@ -73,7 +73,7 @@ export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
     <div className="mt-4">
       <Banner
         tone="info"
-        icon={refreshing ? <Spinner size="xs" /> : <RefreshIcon className="h-4 w-4" aria-hidden />}
+        icon={refreshing ? <Spinner size="xs" /> : <RefreshIcon className="size-4" aria-hidden />}
         description={
           refreshing
             ? 'Refreshing now...'

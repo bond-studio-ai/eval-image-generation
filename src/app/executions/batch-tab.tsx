@@ -359,7 +359,7 @@ export function BatchRunsTab({
           <div key={i} className="rounded-card border-border bg-surface shadow-card border">
             <div className="flex w-full items-center justify-between px-5 py-3">
               <div className="flex flex-1 items-center gap-3">
-                <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                <div className="bg-surface-sunken size-4 animate-pulse rounded" />
                 <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
                 <div
                   className="bg-surface-sunken h-4 animate-pulse rounded"
@@ -369,7 +369,7 @@ export function BatchRunsTab({
                 <div className="bg-surface-muted h-3 w-24 animate-pulse rounded" />
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                <div className="bg-surface-sunken size-4 animate-pulse rounded" />
                 <div className="bg-surface-muted h-3 w-28 animate-pulse rounded" />
               </div>
             </div>
@@ -382,10 +382,7 @@ export function BatchRunsTab({
   if (fetchError) {
     return (
       <div className="rounded-card border-warning-200 bg-warning-50 flex items-start gap-3 border p-4">
-        <AlertTriangleIcon
-          className="text-warning-600 mt-0.5 h-4 w-4 shrink-0"
-          aria-hidden="true"
-        />
+        <AlertTriangleIcon className="text-warning-600 mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-body text-warning-800">{fetchError}</p>
           <p className="text-caption text-warning-700 mt-1">
@@ -490,7 +487,7 @@ export function BatchRunsTab({
                   >
                     <ChevronRightIcon
                       className={cn(
-                        'text-text-disabled h-4 w-4 transition-transform',
+                        'text-text-disabled size-4 transition-transform',
                         isExpanded && 'rotate-90',
                       )}
                       aria-hidden="true"
@@ -524,7 +521,7 @@ export function BatchRunsTab({
                         variant="secondary"
                         size="sm"
                         loading={retryingBatchId === batch.id}
-                        iconLeft={<RotateCcwIcon className="h-3.5 w-3.5" />}
+                        iconLeft={<RotateCcwIcon className="size-3.5" />}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRetryFailed(batch.id);
@@ -536,7 +533,7 @@ export function BatchRunsTab({
                     )}
                     <IconButton
                       label="Delete batch"
-                      icon={<TrashIcon className="h-4 w-4" />}
+                      icon={<TrashIcon className="size-4" />}
                       variant="danger"
                       loading={deletingBatchId === batch.id}
                       onClick={() => handleDeleteBatch(batch.id, batch.name ?? 'Untitled batch')}
@@ -599,7 +596,7 @@ export function BatchRunsTab({
                     >
                       <div className="flex w-full items-center justify-between px-5 py-3">
                         <div className="flex flex-1 items-center gap-3">
-                          <div className="bg-surface-sunken h-4 w-4 animate-pulse rounded" />
+                          <div className="bg-surface-sunken size-4 animate-pulse rounded" />
                           <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
                           <div
                             className="bg-surface-sunken h-4 animate-pulse rounded"
@@ -1016,7 +1013,7 @@ function MatrixView({
                               />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
                                 <svg
-                                  className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                  className="size-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   strokeWidth={1.5}
@@ -1077,7 +1074,7 @@ function MatrixView({
                           />
                           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                             <svg
-                              className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                              className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={1.5}
@@ -1219,7 +1216,7 @@ function RunCell({
             />
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
               <svg
-                className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}

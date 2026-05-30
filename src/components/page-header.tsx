@@ -17,7 +17,7 @@ export function PageHeader({ title, subtitle, backHref, backLabel, actions }: Pa
           href={backHref}
           className="text-caption text-text-secondary hover:text-text-primary mb-4 inline-flex items-center gap-1"
         >
-          <ArrowLeftIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
           {backLabel ?? 'Back'}
         </Link>
       )}
@@ -55,7 +55,7 @@ export function PrimaryLinkButton({
     <LinkButton
       href={href}
       variant="primary"
-      iconLeft={icon ? <PlusIcon className="h-4 w-4" /> : undefined}
+      iconLeft={icon ? <PlusIcon className="size-4" /> : undefined}
     >
       {children}
     </LinkButton>

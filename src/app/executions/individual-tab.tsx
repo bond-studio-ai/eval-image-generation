@@ -1,9 +1,10 @@
 'use client';
 
 import { GridLightbox } from '@/components/grid-lightbox';
+import { useKeepScrollOnRefetch } from '@/hooks/use-keep-scroll-on-refetch';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
@@ -128,6 +129,9 @@ export function IndividualExecutionsTab() {
     };
   }, [hasActive, refreshRuns]);
 
+  const { containerRef, fetchWithScrollPreserved: fetchRunsKeepScroll } =
+    useKeepScrollOnRefetch(fetchRuns);
+
   if (loading) {
     return <p className="text-sm text-gray-500">Loading executions…</p>;
   }
@@ -152,26 +156,6 @@ export function IndividualExecutionsTab() {
       </div>
     );
   }
-
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const pendingScrollRef = useRef<number[] | null>(null);
-
-  useLayoutEffect(() => {
-    const saved = pendingScrollRef.current;
-    if (!saved) return;
-    pendingScrollRef.current = null;
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    if (!scrollers) return;
-    scrollers.forEach((el, i) => {
-      if (i < saved.length) el.scrollLeft = saved[i];
-    });
-  });
-
-  const fetchRunsKeepScroll = useCallback(async () => {
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
-    await fetchRuns();
-  }, [fetchRuns]);
 
   if (runs.length === 0) {
     return (
@@ -236,8 +220,8 @@ export function IndividualExecutionsTab() {
                       />
                     </button>
                   ) : (
-                    <span className="inline-flex h-[72px] w-[72px] items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs text-gray-400">
-                      —
+                    <span className="inline-flex size-[72px] items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs text-gray-400">
+                      –
                     </span>
                   )}
                 </td>

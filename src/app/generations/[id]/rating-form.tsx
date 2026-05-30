@@ -35,6 +35,7 @@ function RatingRow({
         {options.map((r) => (
           <button
             key={r.value}
+            type="button"
             onClick={() => onRate(r.value)}
             disabled={disabled}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${

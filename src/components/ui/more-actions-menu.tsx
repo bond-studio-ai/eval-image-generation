@@ -197,12 +197,12 @@ export function MoreActionsMenu({
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
         className={cn(
-          'rounded-button border-border-strong bg-surface text-text-secondary inline-flex h-9 w-9 items-center justify-center border shadow-xs transition-colors',
+          'rounded-button border-border-strong bg-surface text-text-secondary inline-flex size-9 items-center justify-center border shadow-xs transition-colors',
           'hover:bg-surface-muted focus-visible:outline-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
           open && 'bg-surface-muted',
         )}
       >
-        <MoreHorizontalIcon className="h-4 w-4" />
+        <MoreHorizontalIcon className="size-4" />
       </button>
       {open && (
         <div
@@ -247,7 +247,7 @@ export function MoreActionsMenu({
                     )}
                   >
                     {action.icon && (
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                      <span className="flex size-4 shrink-0 items-center justify-center">
                         {action.icon}
                       </span>
                     )}

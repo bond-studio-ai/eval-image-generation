@@ -273,7 +273,7 @@ export function SearchableSelect({
             setOpen((o) => !o);
             inputRef.current?.focus();
           }}
-          className="absolute top-1/2 right-1 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
+          className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
         >
           <svg
             className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -339,7 +339,7 @@ export function SearchableSelect({
                   </span>
                   {isSelected && (
                     <svg
-                      className="text-primary-600 ml-2 h-3.5 w-3.5 shrink-0"
+                      className="text-primary-600 ml-2 size-3.5 shrink-0"
                       viewBox="0 0 20 20"
                       fill="none"
                       stroke="currentColor"

@@ -84,7 +84,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
         title="View review results"
         className="absolute top-1 right-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-purple-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-purple-500"
       >
-        <MaskIcon className="h-2.5 w-2.5" />
+        <MaskIcon className="size-2.5" />
         Review
       </button>
       {showModal && (

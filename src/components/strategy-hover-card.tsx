@@ -162,7 +162,7 @@ export function StrategyHoverCard({
                           {step.name ?? 'Untitled'}
                           {step.promptVersion && (
                             <>
-                              <span className="text-gray-400"> — </span>
+                              <span className="text-gray-400">: </span>
                               <button
                                 type="button"
                                 onClick={() =>

@@ -192,7 +192,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                   className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
                 >
                   {saving && (
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -215,7 +215,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
             {generations.length > 0 && !data.deletedAt && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 ring-inset">
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -237,7 +237,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
               <svg
-                className="h-4 w-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}

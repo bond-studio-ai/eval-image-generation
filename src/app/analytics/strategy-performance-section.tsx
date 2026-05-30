@@ -85,10 +85,10 @@ function RatingSummaryBar({
       )}
       <div className="flex gap-3 text-[10px] text-gray-500">
         <span>
-          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Good {good}
+          <span className="inline-block size-2 rounded-full bg-green-500" /> Good {good}
         </span>
         <span>
-          <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> Failed {failed}
+          <span className="inline-block size-2 rounded-full bg-orange-500" /> Failed {failed}
         </span>
         {unset > 0 && <span className="text-gray-400">({unset} unrated)</span>}
       </div>
@@ -287,7 +287,7 @@ export function StrategyPerformanceSection({
     });
   }, []);
 
-  const sortedRows = [...rows].sort((a, b) => {
+  const sortedRows = rows.toSorted((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortKey === 'name') return dir * a.name.localeCompare(b.name);
     const av = a[sortKey] ?? -1;
