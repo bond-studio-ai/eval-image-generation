@@ -1,9 +1,10 @@
 'use client';
 
 import { GridLightbox } from '@/components/grid-lightbox';
+import { useKeepScrollOnRefetch } from '@/hooks/use-keep-scroll-on-refetch';
 import { serviceUrl } from '@/lib/api-base';
 import Link from 'next/link';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface RunRow {
   id: string;
@@ -128,25 +129,8 @@ export function IndividualExecutionsTab() {
     };
   }, [hasActive, refreshRuns]);
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const pendingScrollRef = useRef<number[] | null>(null);
-
-  useLayoutEffect(() => {
-    const saved = pendingScrollRef.current;
-    if (!saved) return;
-    pendingScrollRef.current = null;
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    if (!scrollers) return;
-    scrollers.forEach((el, i) => {
-      if (i < saved.length) el.scrollLeft = saved[i];
-    });
-  });
-
-  const fetchRunsKeepScroll = useCallback(async () => {
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
-    await fetchRuns();
-  }, [fetchRuns]);
+  const { containerRef, fetchWithScrollPreserved: fetchRunsKeepScroll } =
+    useKeepScrollOnRefetch(fetchRuns);
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading executions…</p>;
