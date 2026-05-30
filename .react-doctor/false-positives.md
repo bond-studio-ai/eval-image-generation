@@ -13,14 +13,11 @@ live in state and cannot be computed during render.
 
 - `react-doctor/no-derived-state` — `src/app/analytics/accuracy-trend-chart.tsx:62` (`loading`) — async fetch status set in `finally`.
 - `react-doctor/no-derived-state` — `src/app/analytics/reliability-tab.tsx:172` (`loading`) — async fetch status set in `finally`.
-- `react-doctor/no-derived-state` — `src/app/audit/compare/compare-view.tsx:350` (`error`) — set in fetch `catch`.
-- `react-doctor/no-derived-state` — `src/app/audit/compare/single-run-audit-view.tsx:182` (`error`) — set in fetch `catch`.
 - `react-doctor/no-derived-state` — `src/app/strategies/[id]/strategy-performance.tsx:43` (`data`) — async fetch result.
 - `react-doctor/no-derived-state` — `src/components/grid-lightbox.tsx:66` (`fetched`) — async fetch result.
-- `react-doctor/no-derived-state` — `src/components/preview-prompt-page.tsx:381` (`previews`) — async POST result.
 - `react-doctor/no-derived-state` — `src/components/view-prompt-modal.tsx:48` (`loading`) — async fetch status.
 - `react-doctor/no-derived-state` — `src/hooks/use-infinite-list.ts:219` (`paginating`) — async fetch status.
-- `react-doctor/no-derived-state` — `src/app/executions/batch-tab.tsx:334` (`expandedIds`) — user expand/collapse state reset on refresh; not derivable during render.
+- `react-doctor/no-derived-state` — `src/app/executions/batch-tab.tsx:129` (`expandedState`) — user expand/collapse state reset on refresh; not derivable during render.
 - `react-doctor/no-derived-state` — `src/components/strategy-hover-card.tsx:104` (`pos`) — post-layout `getBoundingClientRect` viewport clamp; needs the rendered node.
 - `react-doctor/no-derived-state` — `src/components/image-evaluation-form.tsx:179` (`data`) — seeds user-editable form state from the async evaluation fetch (gated by `loadedRef`); not a render-time derivation.
 
@@ -86,7 +83,6 @@ per-item id exists.
 
 - `react-doctor/no-array-index-key` / `no-array-index-as-key` — `src/app/audit/compare/_components/diff-text.tsx:19` & `:28` — `<span>`s over `diffWords` segments; stateless text leaves.
 - `react-doctor/no-array-index-key` / `no-array-index-as-key` — `src/components/data-table.tsx:91` & `:112` — `<th>`/`<td>` over the static `columns` config prop; fixed definitions, never reordered.
-- `react-doctor/no-array-index-key` / `no-array-index-as-key` — `src/components/run-judge-evaluations-section.tsx:124` — `<span>`s over a derived numeric `scores[]`; stable order, repeating values.
 
 ## react-doctor/no-cascading-set-state
 
