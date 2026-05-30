@@ -20,14 +20,6 @@ live in state and cannot be computed during render.
 - `react-doctor/no-derived-state` — `src/components/strategy-hover-card.tsx:96` (`pos`) — post-layout `getBoundingClientRect` viewport clamp; needs the rendered node.
 - `react-doctor/no-derived-state` — `src/components/image-evaluation-form.tsx:127` (`data`) — seeds user-editable form state from the async evaluation fetch (gated by `loadedRef`); not a render-time derivation.
 
-## react-doctor/no-giant-component
-
-Long but cohesive components where splitting further would obscure data flow
-(the rule explicitly warns against premature splits). Left intact after the
-10 genuinely-separable giants were extracted.
-
-- `react-doctor/no-giant-component` — `src/app/audit/compare/audit-compare-page.tsx` (142) — cohesive run-picker + compare orchestration.
-
 ## react-doctor/no-multi-comp
 
 Tightly-coupled sub-components co-located with their primary, an accepted
@@ -121,7 +113,7 @@ or holds independent unrelated slices — the rule explicitly says to leave
 those as their own `useState`.
 
 - `react-doctor/prefer-useReducer` — `src/app/dollhouse-renders/new/new-render-form.tsx:70` — already uses `projectReducer`; the remaining useStates are independent config sections (image/render/ssm/style) + submit flags.
-- `react-doctor/prefer-useReducer` — `src/app/audit/compare/audit-compare-page.tsx:142` — already uses `filtersReducer`; the rest are independent fetch/pagination, comparison selection, and expansion slices.
+- `react-doctor/prefer-useReducer` — `src/app/audit/compare/_components/run-picker.tsx:61` — already uses `filtersReducer`; the rest are independent fetch/pagination and expansion slices.
 - `react-doctor/prefer-useReducer` — `src/app/strategies/[id]/runs/[runId]/run-detail.tsx:43` — already uses `viewingPromptReducer`; the rest are independent display toggles, polled data, and per-action flags.
 - `react-doctor/prefer-useReducer` — `src/app/strategies/strategies-table.tsx:16` — independent per-action loading flags (`deletingId`/`togglingId`/`cloningId`) + selection + filter; matches the DataTable convention.
 - `react-doctor/prefer-useReducer` — `src/components/image-evaluation-form.tsx:60` — independent save-status, section open/close toggles, and form-data slices.
