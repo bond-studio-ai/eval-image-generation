@@ -3,6 +3,7 @@
 import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
@@ -27,7 +28,7 @@ interface ListResponse<T> {
 
 const INPUT_PRESET_PAGE_SIZE = 100;
 
-async function fetchAllInputPresets(): Promise<PresetItem[]> {
+async function fetchAllInputPresets(signal?: AbortSignal): Promise<PresetItem[]> {
   const presets: PresetItem[] = [];
   let page = 1;
   let totalPages = 1;
@@ -38,7 +39,7 @@ async function fetchAllInputPresets(): Promise<PresetItem[]> {
       limit: String(INPUT_PRESET_PAGE_SIZE),
       minimal: 'true',
     });
-    const res = await fetch(`${serviceUrl('input-presets')}?${qs}`, { cache: 'no-store' });
+    const res = await fetch(`${serviceUrl('input-presets')}?${qs}`, { cache: 'no-store', signal });
     if (!res.ok) throw new Error(`Failed to load input presets (${res.status})`);
 
     const json = (await res.json()) as ListResponse<{ id: string; name: string | null }>;
@@ -174,10 +175,29 @@ export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
 function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void }) {
   const searchParams = useSearchParams();
   const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
-  const [strategies, setStrategies] = useState<StrategyItem[]>([]);
-  const [presets, setPresets] = useState<PresetItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['executions-run-options'],
+    queryFn: async ({ signal }) => {
+      const [strategies, presets] = await Promise.all([
+        (async (): Promise<StrategyItem[]> => {
+          const res = await fetch(serviceUrl('strategies?limit=100'), {
+            cache: 'no-store',
+            signal,
+          });
+          if (!res.ok) throw new Error(`Failed to load strategies (${res.status})`);
+          const stratRes = (await res.json()) as ListResponse<{ id: string; name: string }>;
+          const stratData = stratRes.data ?? stratRes.items ?? [];
+          return Array.isArray(stratData) ? stratData.map((s) => ({ id: s.id, name: s.name })) : [];
+        })(),
+        fetchAllInputPresets(signal),
+      ]);
+      return { strategies, presets };
+    },
+    enabled: showModal,
+  });
+  const strategies = useMemo(() => data?.strategies ?? [], [data]);
+  const presets = useMemo(() => data?.presets ?? [], [data]);
   const [selection, dispatchSelection] = useReducer(selectionReducer, INITIAL_SELECTION);
   const {
     selectedStrategyIds,
@@ -208,38 +228,6 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
     if (!q) return [...BENCHMARK_PROJECT_IDS];
     return BENCHMARK_PROJECT_IDS.filter((projectId) => projectId.toLowerCase().includes(q));
   }, [presetSearch]);
-
-  useEffect(() => {
-    if (!showModal) return;
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([
-      fetch(serviceUrl('strategies?limit=100'), { cache: 'no-store' }).then((r) => r.json()),
-      fetchAllInputPresets(),
-    ])
-      .then(([stratRes, presetRes]) => {
-        if (cancelled) return;
-        const stratData = stratRes.data ?? stratRes.items ?? [];
-        setStrategies(
-          Array.isArray(stratData)
-            ? stratData.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }))
-            : [],
-        );
-        setPresets(presetRes);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStrategies([]);
-          setPresets([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showModal]);
 
   const toggleStrategy = useCallback((id: string) => {
     dispatchSelection({ type: 'toggleStrategy', id });

@@ -3,7 +3,8 @@
 import { PageHeader } from '@/components/page-header';
 import { ErrorCard } from '@/components/resource-form-header';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 
 interface PromptVersionItem {
   id: string;
@@ -31,6 +32,11 @@ interface DollhouseSource {
 interface PreviewItem {
   systemPrompt: string;
   userPrompt: string;
+}
+
+interface PreviewOptions {
+  promptVersions: PromptVersionItem[];
+  presets: InputPresetItem[];
 }
 
 interface PreviewPromptPageProps {
@@ -161,37 +167,6 @@ function dropdownReducer(state: DropdownState, action: DropdownAction): Dropdown
 const DOLLHOUSE_UNAVAILABLE_MESSAGE =
   'Dollhouse preview is temporarily unavailable. Preset preview still works.';
 
-interface FetchStatusState {
-  loading: boolean;
-  error: string | null;
-  loadError: string | null;
-  loadingOptions: boolean;
-}
-
-type FetchStatusAction =
-  | { type: 'setLoading'; loading: boolean }
-  | { type: 'setError'; error: string | null }
-  | { type: 'setLoadError'; loadError: string | null }
-  | { type: 'setLoadingOptions'; loadingOptions: boolean }
-  | { type: 'clearDollhouseLoadError' };
-
-function fetchStatusReducer(state: FetchStatusState, action: FetchStatusAction): FetchStatusState {
-  switch (action.type) {
-    case 'setLoading':
-      return { ...state, loading: action.loading };
-    case 'setError':
-      return { ...state, error: action.error };
-    case 'setLoadError':
-      return { ...state, loadError: action.loadError };
-    case 'setLoadingOptions':
-      return { ...state, loadingOptions: action.loadingOptions };
-    case 'clearDollhouseLoadError':
-      return state.loadError === DOLLHOUSE_UNAVAILABLE_MESSAGE
-        ? { ...state, loadError: null }
-        : state;
-  }
-}
-
 export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
@@ -200,13 +175,6 @@ export function PreviewPromptPage({
   initialPresets,
   initialDollhouseSource,
 }: PreviewPromptPageProps) {
-  const [promptVersions, setPromptVersions] = useState<PromptVersionItem[]>(
-    initialPromptVersions ?? [],
-  );
-  const [presets, setPresets] = useState<InputPresetItem[]>(initialPresets ?? []);
-  const [dollhouseSource, setDollhouseSource] = useState<DollhouseSource | null>(
-    initialDollhouseSource ?? null,
-  );
   const [promptDropdown, promptDispatch] = useReducer(dropdownReducer, {
     selectedId: initialPromptVersionId,
     open: false,
@@ -228,88 +196,108 @@ export function PreviewPromptPage({
   const promptRef = useRef<HTMLDivElement>(null);
   const presetRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
-  const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const hasInitialOptions = initialPromptVersions != null && initialPresets != null;
-  const [status, statusDispatch] = useReducer(fetchStatusReducer, {
-    loading: false,
-    error: null,
-    loadError: null,
-    loadingOptions: !hasInitialOptions,
+
+  const optionsQuery = useQuery({
+    queryKey: ['preview-options'],
+    queryFn: async ({ signal }): Promise<PreviewOptions> => {
+      const [pvRes, presetRes] = await Promise.all([
+        fetch(serviceUrl('prompt-versions?limit=100&minimal=true'), { signal }),
+        fetch(serviceUrl('input-presets?limit=100&minimal=true'), { signal }),
+      ]);
+      const [pvJson, presetJson] = await Promise.all([pvRes.json(), presetRes.json()]);
+      if (!pvRes.ok) {
+        throw new Error(pvJson?.error?.message ?? 'Failed to load prompt versions');
+      }
+      if (!presetRes.ok) {
+        throw new Error(presetJson?.error?.message ?? 'Failed to load input presets');
+      }
+      const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
+      const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
+      return {
+        promptVersions: pvData.map((p: { id: string; name?: string | null }) => ({
+          id: p.id,
+          name: p.name ?? null,
+        })),
+        presets: presetData.map((p: { id: string; name?: string | null }) => ({
+          id: p.id,
+          name: p.name ?? null,
+        })),
+      };
+    },
+    enabled: !hasInitialOptions,
+    initialData:
+      initialPromptVersions != null && initialPresets != null
+        ? { promptVersions: initialPromptVersions, presets: initialPresets }
+        : undefined,
   });
 
-  useEffect(() => {
-    if (hasInitialOptions) return;
-    let cancelled = false;
-    statusDispatch({ type: 'setLoadError', loadError: null });
-    statusDispatch({ type: 'setLoadingOptions', loadingOptions: true });
-    async function load() {
-      try {
-        const [pvRes, presetRes] = await Promise.all([
-          fetch(serviceUrl('prompt-versions?limit=100&minimal=true')),
-          fetch(serviceUrl('input-presets?limit=100&minimal=true')),
-        ]);
-        if (cancelled) return;
-        const pvJson = await pvRes.json();
-        const presetJson = await presetRes.json();
+  const dollhouseQuery = useQuery({
+    queryKey: ['dollhouse-source'],
+    queryFn: async ({ signal }): Promise<DollhouseSource | null> => {
+      const res = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'), { signal });
+      if (!res.ok) throw new Error('Failed to load dollhouse source');
+      const json = await res.json();
+      return (json.data ?? null) as DollhouseSource | null;
+    },
+    enabled: initialDollhouseSource == null,
+    initialData: initialDollhouseSource ?? undefined,
+  });
 
-        if (!pvRes.ok) {
-          statusDispatch({
-            type: 'setLoadError',
-            loadError: pvJson?.error?.message ?? 'Failed to load prompt versions',
-          });
-          return;
-        }
-        if (!presetRes.ok) {
-          statusDispatch({
-            type: 'setLoadError',
-            loadError: presetJson?.error?.message ?? 'Failed to load input presets',
-          });
-          return;
-        }
+  const promptVersions = useMemo(
+    () => optionsQuery.data?.promptVersions ?? initialPromptVersions ?? [],
+    [optionsQuery.data, initialPromptVersions],
+  );
+  const presets = useMemo(
+    () => optionsQuery.data?.presets ?? initialPresets ?? [],
+    [optionsQuery.data, initialPresets],
+  );
+  const dollhouseSource = dollhouseQuery.data ?? null;
 
-        const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
-        const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
-        setPromptVersions(
-          pvData.map((p: { id: string; name?: string | null }) => ({
-            id: p.id,
-            name: p.name ?? null,
-          })),
-        );
-        setPresets(
-          presetData.map((p: { id: string; name?: string | null }) => ({
-            id: p.id,
-            name: p.name ?? null,
-          })),
-        );
-        try {
-          const dollhouseRes = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
-          const dollhouseJson = await dollhouseRes.json();
-          if (!cancelled && dollhouseRes.ok) {
-            setDollhouseSource(dollhouseJson.data ?? null);
-          } else if (!cancelled && !dollhouseRes.ok) {
-            statusDispatch({ type: 'setLoadError', loadError: DOLLHOUSE_UNAVAILABLE_MESSAGE });
-          }
-        } catch {
-          if (!cancelled) {
-            statusDispatch({ type: 'setLoadError', loadError: DOLLHOUSE_UNAVAILABLE_MESSAGE });
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          statusDispatch({
-            type: 'setLoadError',
-            loadError: err instanceof Error ? err.message : 'Failed to load options',
-          });
-        }
-      } finally {
-        if (!cancelled) statusDispatch({ type: 'setLoadingOptions', loadingOptions: false });
+  const previewEnabled = !!selectedPromptId && !!selectedPresetId;
+  const previewQuery = useQuery({
+    queryKey: ['preview', selectedPromptId, selectedPresetId, selectedAreaSummary],
+    queryFn: async ({ signal }): Promise<PreviewItem[]> => {
+      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inputPresetId: selectedPresetId,
+          ...(selectedAreaSummary ? { dollhouseAreaSummary: selectedAreaSummary } : {}),
+        }),
+        signal,
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error?.message || 'Failed to load preview');
       }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasInitialOptions]);
+      const json = await res.json();
+      const preview = json.data;
+      return preview ? [preview] : [];
+    },
+    enabled: previewEnabled,
+  });
+
+  const loadingOptions = !hasInitialOptions && optionsQuery.isLoading;
+  const optionsErrorMessage = optionsQuery.isError
+    ? optionsQuery.error instanceof Error
+      ? optionsQuery.error.message
+      : 'Failed to load options'
+    : null;
+  const loadError = optionsErrorMessage
+    ? optionsErrorMessage
+    : !hasInitialOptions && optionsQuery.isSuccess && dollhouseQuery.isError
+      ? DOLLHOUSE_UNAVAILABLE_MESSAGE
+      : null;
+
+  const previews = previewEnabled ? (previewQuery.data ?? []) : [];
+  const loading = previewEnabled && previewQuery.isLoading;
+  const error =
+    previewEnabled && previewQuery.isError
+      ? previewQuery.error instanceof Error
+        ? previewQuery.error.message
+        : 'Preview failed'
+      : null;
 
   const filteredPrompts = useMemo(() => {
     const q = promptDropdown.search.trim().toLowerCase();
@@ -343,73 +331,10 @@ export function PreviewPromptPage({
     [dollhouseSource, selectedAreaSummary],
   );
 
-  const fetchPreview = useCallback(async () => {
-    if (!selectedPromptId || !selectedPresetId) {
-      setPreviews([]);
-      return;
-    }
-    statusDispatch({ type: 'setLoading', loading: true });
-    statusDispatch({ type: 'setError', error: null });
-    try {
-      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputPresetId: selectedPresetId,
-          ...(selectedAreaSummary ? { dollhouseAreaSummary: selectedAreaSummary } : {}),
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || 'Failed to load preview');
-      }
-      const json = await res.json();
-      const preview = json.data;
-      setPreviews(preview ? [preview] : []);
-    } catch (err) {
-      statusDispatch({
-        type: 'setError',
-        error: err instanceof Error ? err.message : 'Preview failed',
-      });
-      setPreviews([]);
-    } finally {
-      statusDispatch({ type: 'setLoading', loading: false });
-    }
-  }, [selectedAreaSummary, selectedPresetId, selectedPromptId]);
-
-  useEffect(() => {
-    if (selectedPromptId && selectedPresetId) fetchPreview();
-    else setPreviews([]);
-  }, [fetchPreview, selectedAreaSummary, selectedPresetId, selectedPromptId]);
-
   useEffect(() => {
     if (selectedAreaSummary || !dollhouseSource?.defaultAreaSummary) return;
     areaDispatch({ type: 'select', id: dollhouseSource.defaultAreaSummary });
   }, [dollhouseSource, selectedAreaSummary]);
-
-  useEffect(() => {
-    if (dollhouseSource) return;
-    let cancelled = false;
-
-    async function loadDollhouseSource() {
-      try {
-        const res = await fetch(serviceUrl('prompt-versions/preview/dollhouse-source'));
-        const json = await res.json();
-        if (cancelled) return;
-        if (res.ok) {
-          setDollhouseSource(json.data ?? null);
-          statusDispatch({ type: 'clearDollhouseLoadError' });
-        }
-      } catch {
-        // Keep preset preview available even if dollhouse metadata can't load.
-      }
-    }
-
-    loadDollhouseSource();
-    return () => {
-      cancelled = true;
-    };
-  }, [dollhouseSource]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -434,9 +359,9 @@ export function PreviewPromptPage({
         subtitle="See how a prompt template renders with an input preset plus optional dollhouse area attributes."
       />
 
-      {status.loadError && (
+      {loadError && (
         <div className="mt-4">
-          <ErrorCard message={status.loadError} />
+          <ErrorCard message={loadError} />
         </div>
       )}
 
@@ -459,7 +384,7 @@ export function PreviewPromptPage({
           >
             Prompt version
           </label>
-          {status.loadingOptions ? (
+          {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
             </p>
@@ -490,7 +415,7 @@ export function PreviewPromptPage({
           >
             Input preset
           </label>
-          {status.loadingOptions ? (
+          {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
             </p>
@@ -521,7 +446,7 @@ export function PreviewPromptPage({
           >
             Dollhouse area
           </label>
-          {status.loadingOptions ? (
+          {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
             </p>
@@ -564,14 +489,14 @@ export function PreviewPromptPage({
         </div>
       </div>
 
-      {status.error && (
+      {error && (
         <div className="mt-4">
-          <ErrorCard message={status.error} />
+          <ErrorCard message={error} />
         </div>
       )}
-      {status.loading && <p className="mt-4 text-sm text-gray-500">Loading preview…</p>}
+      {loading && <p className="mt-4 text-sm text-gray-500">Loading preview…</p>}
 
-      {previews.length > 0 && !status.loading && (
+      {previews.length > 0 && !loading && (
         <div className="mt-8 grid h-[65vh] min-h-[300px] grid-cols-1 grid-rows-1 gap-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:grid-cols-2">
           <div className="flex min-h-0 min-w-0 flex-col">
             <h2 className="mb-2 shrink-0 text-sm font-semibold text-gray-500 uppercase">

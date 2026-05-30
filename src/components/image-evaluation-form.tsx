@@ -2,6 +2,7 @@
 
 import { serviceUrl } from '@/lib/api-base';
 import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Issue options
@@ -107,7 +108,6 @@ export function ImageEvaluationForm({
   resultId,
   productCategories = [],
 }: ImageEvaluationFormProps) {
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,54 +128,57 @@ export function ImageEvaluationForm({
   const loadedRef = useRef(false);
 
   // Load existing evaluation
-  useEffect(() => {
-    fetch(serviceUrl(`evaluations/${resultId}`))
-      .then((r) => r.json())
-      .then((r) => {
-        if (r.data) {
-          const d = r.data;
-          const rawPa = d.productAccuracy ?? {};
-          const pa: Record<string, CategoryEval> = {};
-          for (const [key, val] of Object.entries(rawPa)) {
-            const normalized = toSnakeCase(key);
-            const existing = pa[normalized];
-            const v = val as CategoryEval;
-            if (existing && existing.issues.length > 0) continue;
-            pa[normalized] = v;
-          }
-          const productAccuracy: Record<string, CategoryEval> = {};
-          for (const cat of productCategories) {
-            productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
-          }
-          for (const [key, val] of Object.entries(pa)) {
-            if (!productAccuracy[key]) {
-              productAccuracy[key] = val;
-            }
-          }
-
-          setData({
-            productAccuracy,
-            sceneAccuracyIssues: d.sceneAccuracyIssues ?? [],
-            sceneAccuracyNotes: d.sceneAccuracyNotes ?? '',
-          });
-
-          // Keep sections collapsed by default (user opens when needed)
-        } else {
-          // Initialize empty product accuracy for all active categories
-          const productAccuracy: Record<string, CategoryEval> = {};
-          for (const cat of productCategories) {
-            productAccuracy[cat] = { issues: [], notes: '' };
-          }
-          setData((prev) => ({ ...prev, productAccuracy }));
+  const { data: loadedData, isLoading: loading } = useQuery({
+    queryKey: ['evaluation', resultId, productCategories],
+    queryFn: async ({ signal }): Promise<EvaluationData> => {
+      const res = await fetch(serviceUrl(`evaluations/${resultId}`), { signal });
+      if (!res.ok) throw new Error(`Failed to load evaluation (${res.status})`);
+      const r = await res.json();
+      if (r.data) {
+        const d = r.data;
+        const rawPa = d.productAccuracy ?? {};
+        const pa: Record<string, CategoryEval> = {};
+        for (const [key, val] of Object.entries(rawPa)) {
+          const normalized = toSnakeCase(key);
+          const existing = pa[normalized];
+          const v = val as CategoryEval;
+          if (existing && existing.issues.length > 0) continue;
+          pa[normalized] = v;
         }
-        setLoading(false);
-        // Mark loaded after a tick so the auto-save effect skips the initial state.
-        requestAnimationFrame(() => {
-          loadedRef.current = true;
-        });
-      })
-      .catch(() => setLoading(false));
-  }, [resultId, productCategories]);
+        const productAccuracy: Record<string, CategoryEval> = {};
+        for (const cat of productCategories) {
+          productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
+        }
+        for (const [key, val] of Object.entries(pa)) {
+          if (!productAccuracy[key]) {
+            productAccuracy[key] = val;
+          }
+        }
+
+        return {
+          productAccuracy,
+          sceneAccuracyIssues: d.sceneAccuracyIssues ?? [],
+          sceneAccuracyNotes: d.sceneAccuracyNotes ?? '',
+        };
+      }
+      // Initialize empty product accuracy for all active categories
+      const productAccuracy: Record<string, CategoryEval> = {};
+      for (const cat of productCategories) {
+        productAccuracy[cat] = { issues: [], notes: '' };
+      }
+      return { productAccuracy, sceneAccuracyIssues: [], sceneAccuracyNotes: '' };
+    },
+  });
+
+  // Seed the editable form state from the loaded evaluation. Marking loaded
+  // after a tick keeps the auto-save effect from firing on the initial state.
+  useEffect(() => {
+    if (!loadedData) return;
+    setData(loadedData);
+    requestAnimationFrame(() => {
+      loadedRef.current = true;
+    });
+  }, [loadedData]);
 
   const updateCategoryEval = useCallback(
     (category: string, field: 'issues' | 'notes', value: string[] | string) => {

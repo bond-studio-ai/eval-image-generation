@@ -7,9 +7,10 @@ import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
 } from '@/lib/strategy-run-judge-results';
+import { useQuery } from '@tanstack/react-query';
 import { diffWords, type Change } from 'diff';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface InputImage {
   url: string;
@@ -314,41 +315,45 @@ function RunHeader({ run, label }: { run: RunData; label: string }) {
 }
 
 export function CompareView({ leftId, rightId }: { leftId: string; rightId: string }) {
-  const [left, setLeft] = useState<RunData | null>(null);
-  const [right, setRight] = useState<RunData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(
-          serviceUrl(`strategy-runs/compare?left=${leftId}&right=${rightId}`),
-          { cache: 'no-store' },
-        );
-        if (!res.ok) {
-          setError(`Failed to load: ${res.status}`);
-          return;
-        }
-        const json = await res.json();
-        const rawL = json.data.left as Record<string, unknown>;
-        const rawR = json.data.right as Record<string, unknown>;
-        setLeft({
+  const {
+    data,
+    isLoading: loading,
+    isError,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['audit-compare', leftId, rightId],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(serviceUrl(`strategy-runs/compare?left=${leftId}&right=${rightId}`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load: ${res.status}`);
+      }
+      const json = await res.json();
+      const rawL = json.data.left as Record<string, unknown>;
+      const rawR = json.data.right as Record<string, unknown>;
+      return {
+        left: {
           ...(json.data.left as RunData),
           judgeResults: parseStrategyRunJudgeResults(rawL.judgeResults),
-        });
-        setRight({
+        },
+        right: {
           ...(json.data.right as RunData),
           judgeResults: parseStrategyRunJudgeResults(rawR.judgeResults),
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [leftId, rightId]);
+        },
+      };
+    },
+    enabled: Boolean(leftId) && Boolean(rightId),
+  });
+
+  const left = data?.left ?? null;
+  const right = data?.right ?? null;
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Unknown error'
+    : null;
 
   if (loading) {
     return (

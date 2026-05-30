@@ -3,8 +3,9 @@
 import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 
 type StrategyRow = {
   id: string;
@@ -171,42 +172,31 @@ export function StrategyPerformanceSection({
   model?: string;
   source?: string;
 }) {
-  const [rows, setRows] = useState<StrategyRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [breakdowns, setBreakdowns] = useState<Record<string, BreakdownData | null>>({});
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('generationCount');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (from) params.set('from', from);
-        if (to) params.set('to', to);
-        if (model) params.set('model', model);
-        if (source && source !== 'all') params.set('source', source);
-        const tz = browserTimezone();
-        if (tz) params.set('tz', tz);
-        const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), {
-          cache: 'no-store',
-        });
-        if (!res.ok || cancelled) return;
-        const json = await res.json();
-        if (json.data && !cancelled) setRows(json.data.rows ?? json.data);
-      } catch {
-        /* ignore */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [from, to, model, source]);
+  const { data: rows = [], isLoading: loading } = useQuery({
+    queryKey: ['strategy-performance', from, to, model, source],
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      if (model) params.set('model', model);
+      if (source && source !== 'all') params.set('source', source);
+      const tz = browserTimezone();
+      if (tz) params.set('tz', tz);
+      const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) throw new Error('Failed to load strategy performance');
+      const json = await res.json();
+      return (json.data ? (json.data.rows ?? json.data) : []) as StrategyRow[];
+    },
+  });
 
   const fetchBreakdown = useCallback(
     async (strategyId: string) => {

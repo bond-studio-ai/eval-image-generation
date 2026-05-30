@@ -6,7 +6,8 @@ import {
   type AnalyticsComparisonSlice,
 } from '@/app/analytics/comparison-utils';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 
 type SummaryData = {
   sceneRatedCount: number;
@@ -160,9 +161,6 @@ export function ComparisonSpreadsheet({
   slices: AnalyticsComparisonSlice[];
   model?: string;
 }) {
-  const [dataBySlice, setDataBySlice] = useState<Record<string, SliceData>>({});
-  const [loading, setLoading] = useState(false);
-
   type SortCol = { sliceKey: string; field: 'successPct' | 'failurePct'; dir: 'asc' | 'desc' };
   const [categorySort, setCategorySort] = useState<SortCol | null>(null);
 
@@ -176,63 +174,55 @@ export function ComparisonSpreadsheet({
     });
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (slices.length === 0) {
-      setDataBySlice({});
-      return;
-    }
+  const { data: dataBySlice = {}, isLoading: loading } = useQuery({
+    queryKey: [
+      'comparison',
+      slices.map((s) => [s.key, s.range.from, s.range.to, s.source, s.strategyId]),
+      model,
+    ],
+    enabled: slices.length > 0,
+    queryFn: async ({ signal }) => {
+      const tz = browserTimezone();
+      const results = await Promise.all(
+        slices.map(async (slice) => {
+          const baseParams = new URLSearchParams({
+            from: slice.range.from,
+            to: slice.range.to,
+            source: slice.source,
+            strategy_id: slice.strategyId,
+          });
+          if (model) baseParams.set('model', model);
+          if (tz) baseParams.set('tz', tz);
 
-    (async () => {
-      setLoading(true);
-      try {
-        const tz = browserTimezone();
-        const results = await Promise.all(
-          slices.map(async (slice) => {
-            const baseParams = new URLSearchParams({
-              from: slice.range.from,
-              to: slice.range.to,
-              source: slice.source,
-              strategy_id: slice.strategyId,
-            });
-            if (model) baseParams.set('model', model);
-            if (tz) baseParams.set('tz', tz);
+          const [catRes, stepRes] = await Promise.all([
+            fetch(serviceUrl(`analytics/product-category-rates?${baseParams}`), {
+              cache: 'no-store',
+              signal,
+            }),
+            fetch(serviceUrl(`analytics/strategy-step-performance?${baseParams}`), {
+              cache: 'no-store',
+              signal,
+            }),
+          ]);
 
-            const [catRes, stepRes] = await Promise.all([
-              fetch(serviceUrl(`analytics/product-category-rates?${baseParams}`), {
-                cache: 'no-store',
-              }),
-              fetch(serviceUrl(`analytics/strategy-step-performance?${baseParams}`), {
-                cache: 'no-store',
-              }),
-            ]);
+          const catJson = catRes.ok ? await catRes.json() : {};
+          const stepJson = stepRes.ok ? await stepRes.json() : {};
 
-            const catJson = catRes.ok ? await catRes.json() : {};
-            const stepJson = stepRes.ok ? await stepRes.json() : {};
+          return {
+            key: slice.key,
+            data: {
+              summary: normalizeSummary(catJson.data?.summary),
+              sceneIssues: normalizeIssueItems(catJson.data?.sceneIssues),
+              categories: normalizeCategoryRows(catJson.data?.categories),
+              steps: normalizeStepPerformanceRows(stepJson.data?.steps),
+            },
+          };
+        }),
+      );
 
-            return {
-              key: slice.key,
-              data: {
-                summary: normalizeSummary(catJson.data?.summary),
-                sceneIssues: normalizeIssueItems(catJson.data?.sceneIssues),
-                categories: normalizeCategoryRows(catJson.data?.categories),
-                steps: normalizeStepPerformanceRows(stepJson.data?.steps),
-              },
-            };
-          }),
-        );
-
-        if (cancelled) return;
-        setDataBySlice(Object.fromEntries(results.map((r) => [r.key, r.data])));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [model, slices]);
+      return Object.fromEntries(results.map((r) => [r.key, r.data])) as Record<string, SliceData>;
+    },
+  });
 
   const sceneIssueRows = useMemo(() => {
     const issueNames = new Set<string>();

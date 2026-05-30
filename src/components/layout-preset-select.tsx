@@ -1,6 +1,7 @@
 'use client';
 
 import { serviceUrl } from '@/lib/api-base';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 export interface LayoutPresetOption {
@@ -18,9 +19,6 @@ export function LayoutPresetSelect({
   onChange: (value: string, option?: LayoutPresetOption | null) => void;
   onResolvedOptionChange?: (option: LayoutPresetOption | null) => void;
 }) {
-  const [options, setOptions] = useState<LayoutPresetOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -29,30 +27,26 @@ export function LayoutPresetSelect({
     if (open) searchInputRef.current?.focus();
   }, [open]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const {
+    data: options = [],
+    isLoading: loading,
+    isError,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['layout-presets'],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(serviceUrl('layout-presets'), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
+      const json = (await res.json()) as { data?: LayoutPresetOption[] };
+      return Array.isArray(json.data) ? json.data : [];
+    },
+  });
 
-    fetch(serviceUrl('layout-presets'))
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
-        const json = (await res.json()) as { data?: LayoutPresetOption[] };
-        if (cancelled) return;
-        setOptions(Array.isArray(json.data) ? json.data : []);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setOptions([]);
-        setError(err instanceof Error ? err.message : 'Failed to fetch layout presets');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch layout presets'
+    : null;
 
   const hasCurrentValue = useMemo(
     () => !value || options.some((option) => option.id === value),

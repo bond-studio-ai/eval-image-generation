@@ -8,8 +8,9 @@ import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
 } from '@/lib/strategy-run-judge-results';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface InputImage {
   url: string;
@@ -155,32 +156,36 @@ function ImageGrid({ images }: { images: InputImage[] }) {
 }
 
 export function SingleRunAuditView({ runId }: { runId: string }) {
-  const [run, setRun] = useState<RunData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
-        if (!res.ok) {
-          setError(`Failed to load: ${res.status}`);
-          return;
-        }
-        const json = await res.json();
-        const raw = json.data as Record<string, unknown>;
-        setRun({
-          ...(json.data as RunData),
-          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
-      } finally {
-        setLoading(false);
+  const {
+    data: run = null,
+    isLoading: loading,
+    isError,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['audit-run', runId],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load: ${res.status}`);
       }
-    }
-    load();
-  }, [runId]);
+      const json = await res.json();
+      const raw = json.data as Record<string, unknown>;
+      return {
+        ...(json.data as RunData),
+        judgeResults: parseStrategyRunJudgeResults(raw.judgeResults),
+      };
+    },
+    enabled: Boolean(runId),
+  });
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Unknown error'
+    : null;
 
   if (loading) {
     return (
