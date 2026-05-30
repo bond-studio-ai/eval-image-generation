@@ -1,8 +1,8 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import type { ReviewState } from '@/components/review-badge';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Module-level cache of *resolved* review states only (`idle` /

@@ -1,11 +1,11 @@
 'use client';
 
-import { cn } from '@/components/ui/cn';
-import { ChevronRightIcon } from '@/components/ui/icons';
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
+import { cn } from '@/components/ui/cn';
+import { ChevronRightIcon } from '@/components/ui/icons';
 
 /**
  * Maps a route segment to the display label shown in breadcrumbs. Anything not

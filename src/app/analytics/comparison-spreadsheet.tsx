@@ -1,9 +1,9 @@
 'use client';
 
-import { type AnalyticsComparisonSlice } from '@/app/analytics/comparison-utils';
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
+import { type AnalyticsComparisonSlice } from '@/app/analytics/comparison-utils';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { CategoryRatesTable } from './_comparison-spreadsheet/category-rates-table';
 import {
   formatCategoryName,

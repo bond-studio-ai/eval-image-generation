@@ -1,7 +1,7 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
 import { useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 import { formatInt, formatNumber, formatPercent } from '../format';
 import { ChevronIcon } from '../icons';
 import type { DepthAssessment } from '../types';

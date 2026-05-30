@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { DateTimeCell } from '@/components/date-cells';
 import { ExpandableImage } from '@/components/expandable-image';
 import { PageHeader } from '@/components/page-header';
@@ -6,8 +8,6 @@ import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-renders';
 import { imageGenerationV2Base } from '@/lib/env';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { RenderAutoRefresh } from './render-auto-refresh';
 
 export const metadata: Metadata = {

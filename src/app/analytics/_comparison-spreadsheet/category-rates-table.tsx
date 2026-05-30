@@ -1,11 +1,11 @@
 'use client';
 
+import { Fragment } from 'react';
 import {
   formatComparisonRange,
   formatComparisonSource,
   type AnalyticsComparisonSlice,
 } from '@/app/analytics/comparison-utils';
-import { Fragment } from 'react';
 import { formatCategoryName, SLICE_BG_COLORS } from './helpers';
 import type { CategoryRow, SliceData, SortCol, SortField } from './types';
 

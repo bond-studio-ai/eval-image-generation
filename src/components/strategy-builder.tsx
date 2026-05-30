@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
 import { buildStrategyPayload } from '@/components/strategy-builder/build-payload';
 import { PreviewSettingsSection } from '@/components/strategy-builder/preview-settings-section';
@@ -20,8 +22,6 @@ import {
 } from '@/components/strategy-builder/types';
 import { useModelCatalog } from '@/components/strategy-builder/use-model-catalog';
 import { serviceUrl } from '@/lib/api-base';
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
 
 export function StrategyBuilder({
   strategyId,

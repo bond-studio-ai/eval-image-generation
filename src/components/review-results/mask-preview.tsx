@@ -1,7 +1,7 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
 import { useEffect, useRef, useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 import type { CategoryMask } from './types';
 
 /**

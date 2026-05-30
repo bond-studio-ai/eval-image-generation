@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useMemo, useRef } from 'react';
 import {
   COMPARE_COLUMN_QUERY_KEY,
   createEmptyComparisonColumn,
@@ -10,8 +12,6 @@ import {
 } from '@/app/analytics/comparison-utils';
 import { browserTimezone } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/service-client';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useRef } from 'react';
 import { ComparisonColumnsEditor } from './_analytics-filters/comparison-columns-editor';
 import { PrimaryFilters } from './_analytics-filters/primary-filters';
 

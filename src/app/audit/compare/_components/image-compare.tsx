@@ -1,5 +1,5 @@
-import { CdnImage } from '@/components/cdn-image';
 import { useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 import type { InputImage } from './types';
 
 export function ImageCompare({

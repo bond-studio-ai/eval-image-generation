@@ -1,10 +1,10 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { PageHeader } from '@/components/page-header';
 import { RatingBadge } from '@/components/rating-badge';
 import { fetchGenerationById } from '@/lib/service-client';
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { deriveProductImages } from './_components/generation-data';
 import { MetadataSection } from './_components/metadata-section';
 import { buildNavSections } from './_components/nav-sections';
@@ -33,7 +33,6 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const data = await fetchGenerationById(id).catch(() => null);
   if (!data) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = data as any;
 
   const promptVersion = result.promptVersion;

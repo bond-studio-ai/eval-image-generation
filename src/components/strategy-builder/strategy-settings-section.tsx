@@ -1,7 +1,7 @@
 'use client';
 
-import { FormSection } from '@/components/ui/form-section';
 import type { Dispatch, SetStateAction } from 'react';
+import { FormSection } from '@/components/ui/form-section';
 import { SearchableSelect } from './searchable-select';
 import { ASPECT_RATIOS, RESOLUTIONS, type ModelOption, type StrategySettings } from './types';
 

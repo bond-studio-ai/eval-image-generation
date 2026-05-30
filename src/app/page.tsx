@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
 import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import {
@@ -16,7 +17,6 @@ import {
   fetchAnalyticsStrategyPerformance,
   fetchStrategies,
 } from '@/lib/service-client';
-import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Analytics',

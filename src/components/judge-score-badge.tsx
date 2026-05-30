@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useMemo, useRef, useState } from 'react';
 import { buildPanels, type DetailPanel } from '@/components/judge-score-badge-utils';
 import { Modal } from '@/components/ui/modal';
 import { serviceUrl } from '@/lib/api-base';
@@ -7,8 +9,6 @@ import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
 } from '@/lib/strategy-run-judge-results';
-import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
 
 interface JudgeScoreBadgeProps {
   runId?: string | null;

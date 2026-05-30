@@ -1,9 +1,9 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
-import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
+import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
 
 function SectionHeader({ title }: { title: string }) {
   return (

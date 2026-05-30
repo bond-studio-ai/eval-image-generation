@@ -1,6 +1,6 @@
+import { Fragment, type ReactNode } from 'react';
 import { IconButton } from '@/components/ui/icon-button';
 import { CopyIcon, EditIcon, TrashIcon } from '@/components/ui/icons';
-import { Fragment, type ReactNode } from 'react';
 import type { DataTableColumn, RowAction } from './data-table';
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 'use client';
 
-import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
 import type { JSX } from 'react';
+import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
 import type { CategoryLookup, ReviewAssessment } from '../types';
 import { DepthDriftRenderer } from './depth-drift';
 import { SegmentationDriftRenderer } from './segmentation-drift';

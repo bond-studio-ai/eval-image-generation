@@ -1,9 +1,9 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
-import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { serviceUrl } from '@/lib/api-base';
+import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
 
 const EMPTY_CATEGORIES: string[] = [];
 

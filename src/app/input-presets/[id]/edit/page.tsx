@@ -1,11 +1,11 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
 } from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
 
 export const metadata: Metadata = {
@@ -27,9 +27,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const preset = presetData as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = preset.stats as Record<string, any> | undefined;
   const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 

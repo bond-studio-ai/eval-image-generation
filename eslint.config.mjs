@@ -13,6 +13,17 @@ const eslintConfig = [
       'react-hooks/refs': 'off',
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/set-state-in-effect': 'off',
+      // Import ordering (replaces @ianvs/prettier-plugin-sort-imports). The
+      // `import` plugin ships with eslint-config-next; `eslint --fix` sorts.
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          pathGroups: [{ pattern: '@/**', group: 'internal' }],
+          'newlines-between': 'never',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
     },
   },
 ];

@@ -1,6 +1,6 @@
+import type { Metadata } from 'next';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { PromptVersionsList } from '@/components/prompt-versions-list';
-import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Prompt Versions',

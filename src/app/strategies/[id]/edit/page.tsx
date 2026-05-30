@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { StrategyBuilder } from '@/components/strategy-builder';
 import {
@@ -6,8 +8,6 @@ import {
   fetchStrategyById,
   fetchStrategyModelCatalog,
 } from '@/lib/service-client';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,5 +1,14 @@
 'use client';
 
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { DataTable, DateCell, FilterPills, type DataTableColumn } from '@/components/data-table';
 import { actionsColumn } from '@/components/data-table-utils';
 import { Pagination } from '@/components/pagination';
@@ -13,15 +22,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { localUrl } from '@/lib/api-base';
 import type { ProjectSummary } from '@/lib/projects';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react';
 
 const STATUS_FILTERS = ['all', 'Scanned', 'DesignsReady', 'NeedsUserReview', 'Errored'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];

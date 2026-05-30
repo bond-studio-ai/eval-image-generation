@@ -1,9 +1,9 @@
 'use client';
 
-import type { PromptVersionListItem } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useRef, type KeyboardEvent } from 'react';
+import type { PromptVersionListItem } from '@/lib/types';
 import { buildGenerationsQuery, type FilterParams } from './query-utils';
 
 interface GenerationsFiltersProps {

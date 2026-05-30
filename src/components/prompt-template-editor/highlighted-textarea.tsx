@@ -1,4 +1,3 @@
-import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 import {
   Fragment,
   useCallback,
@@ -10,6 +9,7 @@ import {
   type TextareaHTMLAttributes,
   type UIEvent,
 } from 'react';
+import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 
 export type HighlightedTextareaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,

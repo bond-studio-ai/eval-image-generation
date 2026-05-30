@@ -1,7 +1,7 @@
 'use client';
 
-import type { PromptVersionListItem } from '@/lib/types';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { PromptVersionListItem } from '@/lib/types';
 
 export function PromptVersionSelector({
   value,

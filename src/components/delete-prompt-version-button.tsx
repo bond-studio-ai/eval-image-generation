@@ -1,9 +1,9 @@
 'use client';
 
-import { Modal } from '@/components/ui/modal';
-import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Modal } from '@/components/ui/modal';
+import { serviceUrl } from '@/lib/api-base';
 
 interface DeletePromptVersionButtonProps {
   id: string;

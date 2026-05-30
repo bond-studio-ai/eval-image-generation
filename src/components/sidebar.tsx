@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useSyncExternalStore, type ComponentType, type SVGProps } from 'react';
 import { cn } from '@/components/ui/cn';
 import {
   BarChartIcon,
@@ -14,9 +17,6 @@ import {
   SparklesIcon,
   WorkflowIcon,
 } from '@/components/ui/icons';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useSyncExternalStore, type ComponentType, type SVGProps } from 'react';
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 

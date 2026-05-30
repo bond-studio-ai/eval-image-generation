@@ -1,7 +1,7 @@
 'use client';
 
-import type { StrategyListItem } from '@/lib/service-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { StrategyListItem } from '@/lib/service-client';
 
 export function StrategyDropdown({
   value,

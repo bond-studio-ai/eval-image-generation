@@ -1,7 +1,7 @@
 'use client';
 
-import type { UnitySlimDesignMaterials } from '@/lib/dollhouse-renders';
 import { useCallback, useMemo, useState } from 'react';
+import type { UnitySlimDesignMaterials } from '@/lib/dollhouse-renders';
 import {
   parseDesignMaterialsOverride,
   parseRoomDataOverride,

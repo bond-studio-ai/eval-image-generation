@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import { DataTable, SelectAllCheckbox, type DataTableColumn } from '@/components/data-table';
 import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
@@ -7,8 +9,6 @@ import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { GenerationThumbnails } from '@/components/generation-thumbnails';
 import { RatingBadge } from '@/components/rating-badge';
 import { serviceUrl } from '@/lib/api-base';
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface GenerationRow {
   id: string;

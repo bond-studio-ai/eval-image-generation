@@ -1,9 +1,9 @@
+import { type Dispatch } from 'react';
 import {
   DOLLHOUSE_ATTRIBUTES,
   DOLLHOUSE_PRODUCT_TYPES,
   type DollhouseProductType,
 } from '@/lib/prompt-template-constants';
-import { type Dispatch } from 'react';
 import { type DollhouseAction, type DollhouseState } from './state';
 
 interface DollhousePopoverProps {

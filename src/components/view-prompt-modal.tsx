@@ -1,7 +1,7 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useState } from 'react';
+import { serviceUrl } from '@/lib/api-base';
 
 interface ViewPromptModalProps {
   promptVersionId: string;

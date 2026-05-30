@@ -1,7 +1,7 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { serviceUrl } from '@/lib/api-base';
 
 interface PaginationResponse {
   page: number;

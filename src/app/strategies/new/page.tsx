@@ -1,10 +1,10 @@
+import type { Metadata } from 'next';
 import { StrategyBuilder } from '@/components/strategy-builder';
 import {
   fetchInputPresets,
   fetchPromptVersions,
   fetchStrategyModelCatalog,
 } from '@/lib/service-client';
-import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,6 @@
-import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import Link from 'next/link';
 import { Fragment } from 'react';
+import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { StrategyBreakdownPanel } from './strategy-breakdown-panel';
 import type { BreakdownData, StrategyRow } from './types';
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { localUrl } from '@/lib/api-base';
 import {
   CONDITIONAL_OPTIONS,
@@ -10,7 +11,6 @@ import {
   toDollhousePathKey,
 } from '@/lib/prompt-template-constants';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { ConditionalPopover } from './prompt-template-editor/conditional-popover';
 import { DollhousePopover } from './prompt-template-editor/dollhouse-popover';
 import { HighlightedTextarea } from './prompt-template-editor/highlighted-textarea';

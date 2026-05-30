@@ -1,7 +1,7 @@
 'use client';
 
-import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
 import { useMemo, useState } from 'react';
+import type { SegmentationCategoryMetadata } from '@/lib/segmentation-categories';
 import { formatInt, formatNumber, formatPercent, formatPixels } from './format';
 import { ChevronIcon, WarningIcon } from './icons';
 import { Tooltip, useTooltip } from './tooltip';

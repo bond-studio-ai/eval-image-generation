@@ -1,8 +1,8 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import { AlertCircleIcon, CheckIcon, SparklesIcon } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
-import { useCallback, useState } from 'react';
 import { runReviewPost } from './run-review-post';
 
 /**

@@ -1,10 +1,10 @@
+import { describe, expect, it } from 'vitest';
 import {
   cameraFrameKey,
   type DollhouseCameraFrame,
   type UnitySlimDesignMaterials,
 } from '@/lib/dollhouse-renders';
 import type { ProjectRenderBootstrap } from '@/lib/projects';
-import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_IMAGE_CONFIG,
   type ImageConfigState,

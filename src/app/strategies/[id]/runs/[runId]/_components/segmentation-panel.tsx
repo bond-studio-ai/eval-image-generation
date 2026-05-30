@@ -1,7 +1,7 @@
 'use client';
 
-import { ExpandableImage } from '@/components/expandable-image';
 import { useState } from 'react';
+import { ExpandableImage } from '@/components/expandable-image';
 import { AuditCollapsible } from './audit';
 import type { Segmentation, SegmentationCategoryResponse, SegmentationCategoryRow } from './types';
 
