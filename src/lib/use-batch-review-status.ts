@@ -51,20 +51,18 @@ export function useBatchReviewStatus(
   useEffect(() => {
     if (!enabled) return;
     const ids = idsKey ? idsKey.split('|') : [];
-
-    // Prime local state with whatever the cache already has so collapses
-    // and re-expansions show their resolved badges immediately.
-    setStatuses((prev) => mergeWithCache(prev, ids));
-
     const targets = ids.filter((id) => !cache.has(id));
-    if (targets.length === 0) return;
 
-    // Show the spinner pill for every probe-in-flight target.
+    // Prime local state with whatever the cache already has (so collapses and
+    // re-expansions show their resolved badges immediately) and show the
+    // spinner pill for every probe-in-flight target in a single update.
     setStatuses((prev) => {
-      const next = new Map(prev);
+      const next = mergeWithCache(prev, ids);
       for (const id of targets) next.set(id, { kind: 'checking' });
       return next;
     });
+
+    if (targets.length === 0) return;
 
     let cancelled = false;
     Promise.allSettled(targets.map((id) => probeDeduped(id))).then((results) => {

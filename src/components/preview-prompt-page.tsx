@@ -77,10 +77,6 @@ function DropdownWithSearch({
   onSelectId,
   emptyMessage,
 }: DropdownWithSearchProps) {
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
   return (
     <div ref={containerRef} className="relative w-full">
       <button
@@ -105,7 +101,7 @@ function DropdownWithSearch({
         <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
           <div className="border-b border-gray-200 p-2">
             <input
-              ref={searchInputRef}
+              autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

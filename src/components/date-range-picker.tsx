@@ -239,22 +239,19 @@ export function DateRangePicker({
     dispatchCal({ type: 'syncRange', from, to });
   }, [from, to]);
 
-  useEffect(() => {
-    if (showCustom) {
-      let viewYear: number;
-      let viewMonth: number;
-      if (from) {
-        const d = new Date(from + 'T00:00:00');
-        viewYear = d.getFullYear();
-        viewMonth = d.getMonth();
-      } else {
-        viewYear = now.getFullYear();
-        viewMonth = now.getMonth();
-      }
-      dispatchCal({ type: 'open', from, to, viewYear, viewMonth });
+  const toggleCustom = () => {
+    if (!showCustom) {
+      const d = from ? new Date(from + 'T00:00:00') : now;
+      dispatchCal({
+        type: 'open',
+        from,
+        to,
+        viewYear: d.getFullYear(),
+        viewMonth: d.getMonth(),
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCustom]);
+    setShowCustom((prev) => !prev);
+  };
 
   useEffect(() => {
     if (!showCustom) return;
@@ -322,7 +319,7 @@ export function DateRangePicker({
         <div className="relative" ref={popoverRef}>
           <button
             type="button"
-            onClick={() => setShowCustom((prev) => !prev)}
+            onClick={toggleCustom}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
               hasCustomRange
                 ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'

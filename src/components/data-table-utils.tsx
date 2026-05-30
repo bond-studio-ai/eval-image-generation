@@ -71,7 +71,7 @@ export function actionsColumn<T>(actions: RowAction<T>[]): DataTableColumn<T> {
           const isLoading = action.loading?.(row) ?? false;
           return (
             <IconButton
-              key={i}
+              key={action.label}
               label={action.label}
               icon={ACTION_ICONS[action.icon]}
               variant={action.variant === 'danger' ? 'danger' : 'default'}

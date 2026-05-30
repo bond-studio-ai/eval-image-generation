@@ -183,7 +183,7 @@ function filtersReducer(state: FiltersState, action: FiltersAction): FiltersStat
 export function AuditComparePage() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,11 +226,11 @@ export function AuditComparePage() {
         if (replace) {
           setRuns(data);
           setTotal(paginationTotal);
-          setPage(1);
+          pageRef.current = 1;
         } else {
           setRuns((prev) => [...prev, ...data]);
           setTotal(paginationTotal);
-          setPage(pageToFetch);
+          pageRef.current = pageToFetch;
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Unknown error');
@@ -244,8 +244,8 @@ export function AuditComparePage() {
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
-    fetchRuns({ replace: false, pageToFetch: page + 1 });
-  }, [hasMore, loadingMore, page, fetchRuns]);
+    fetchRuns({ replace: false, pageToFetch: pageRef.current + 1 });
+  }, [hasMore, loadingMore, fetchRuns]);
 
   useEffect(() => {
     setLoading(true);

@@ -1,6 +1,6 @@
 import { Badge, SearchIcon, type BadgeTone } from '@/components/ui';
 import Link from 'next/link';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 
 // ---------------------------------------------------------------------------
 // Core types
@@ -70,9 +70,7 @@ export function DataTable<T>({
   const colCount = columns.length;
 
   const lastRowCount = useRef(skeletonRows);
-  useEffect(() => {
-    if (data.length > 0) lastRowCount.current = data.length;
-  }, [data.length]);
+  if (data.length > 0) lastRowCount.current = data.length;
   const displaySkeletonRows = loading ? lastRowCount.current : 0;
 
   return (
