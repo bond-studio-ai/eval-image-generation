@@ -365,7 +365,7 @@ function CandidatePicker({ value, onChange }: { value: number; onChange: (n: num
 
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs font-medium text-amber-800">Candidates:</label>
+      <span className="text-xs font-medium text-amber-800">Candidates:</span>
       <div className="flex items-center gap-1">
         {CANDIDATE_PRESETS.map((n) => (
           <button
@@ -392,6 +392,7 @@ function CandidatePicker({ value, onChange }: { value: number; onChange: (n: num
             ref={inputRef}
             type="text"
             inputMode="numeric"
+            aria-label="Candidates"
             value={value}
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
@@ -765,16 +766,28 @@ export function StrategyBuilder({
       >
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Model</label>
+            <label
+              htmlFor="strategy-model"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Model
+            </label>
             <SearchableSelect
+              id="strategy-model"
               value={strategySettings.model}
               options={generationModels}
               onChange={(v) => setStrategySettings((s) => ({ ...s, model: v }))}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Aspect Ratio</label>
+            <label
+              htmlFor="strategy-aspect-ratio"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Aspect Ratio
+            </label>
             <select
+              id="strategy-aspect-ratio"
               value={strategySettings.aspect_ratio}
               onChange={(e) => setStrategySettings((s) => ({ ...s, aspect_ratio: e.target.value }))}
               className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
@@ -787,8 +800,14 @@ export function StrategyBuilder({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Resolution</label>
+            <label
+              htmlFor="strategy-resolution"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Resolution
+            </label>
             <select
+              id="strategy-resolution"
               value={strategySettings.output_resolution}
               onChange={(e) =>
                 setStrategySettings((s) => ({ ...s, output_resolution: e.target.value }))
@@ -803,8 +822,14 @@ export function StrategyBuilder({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Temperature</label>
+            <label
+              htmlFor="strategy-temperature"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Temperature
+            </label>
             <input
+              id="strategy-temperature"
               type="number"
               min={0}
               max={2}
@@ -888,6 +913,7 @@ export function StrategyBuilder({
             </p>
           </div>
           <label className="relative inline-flex cursor-pointer items-center">
+            <span className="sr-only">Enable preview generation</span>
             <input
               type="checkbox"
               checked={previewSettings.preview_model !== null}
@@ -910,18 +936,28 @@ export function StrategyBuilder({
         {previewSettings.preview_model !== null && (
           <div className="mt-4 grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Preview Model</label>
+              <label
+                htmlFor="preview-model"
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
+                Preview Model
+              </label>
               <SearchableSelect
+                id="preview-model"
                 value={previewSettings.preview_model}
                 options={previewModels}
                 onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label
+                htmlFor="preview-resolution"
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
                 Preview Resolution
               </label>
               <select
+                id="preview-resolution"
                 value={previewSettings.preview_resolution}
                 onChange={(e) =>
                   setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))
@@ -962,7 +998,8 @@ export function StrategyBuilder({
                   <button
                     type="button"
                     onClick={() => removeStep(idx)}
-                    className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label="Remove step"
+                    className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-600"
                   >
                     <svg
                       className="size-4"
@@ -1021,7 +1058,8 @@ export function StrategyBuilder({
                               const newJudges = (step.judges ?? []).filter((_, i) => i !== jIdx);
                               updateStep(idx, { judges: newJudges });
                             }}
-                            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                            aria-label="Remove judge"
+                            className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-500"
                           >
                             <svg
                               className="size-4"
@@ -1040,10 +1078,14 @@ export function StrategyBuilder({
                         )}
                       </div>
                       <div className="mb-3">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label
+                          htmlFor={`judge-name-${idx}-${jIdx}`}
+                          className="mb-1 block text-xs font-medium text-gray-600"
+                        >
                           Name (optional)
                         </label>
                         <input
+                          id={`judge-name-${idx}-${jIdx}`}
                           type="text"
                           value={judge.name ?? ''}
                           onChange={(e) => {
@@ -1057,10 +1099,14 @@ export function StrategyBuilder({
                       </div>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                          <label
+                            htmlFor={`judge-model-${idx}-${jIdx}`}
+                            className="mb-1 block text-xs font-medium text-gray-600"
+                          >
                             Model
                           </label>
                           <SearchableSelect
+                            id={`judge-model-${idx}-${jIdx}`}
                             value={judge.judge_model}
                             options={judgeModels}
                             onChange={(v) => {
@@ -1071,10 +1117,14 @@ export function StrategyBuilder({
                           />
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                          <label
+                            htmlFor={`judge-prompt-${idx}-${jIdx}`}
+                            className="mb-1 block text-xs font-medium text-gray-600"
+                          >
                             Prompt
                           </label>
                           <PromptVersionSelector
+                            id={`judge-prompt-${idx}-${jIdx}`}
                             value={judge.judge_prompt_version_id}
                             promptVersions={promptVersions}
                             onChange={(id) => {
@@ -1086,7 +1136,10 @@ export function StrategyBuilder({
                         </div>
                       </div>
                       <div className="mt-3">
-                        <label className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+                        <label
+                          htmlFor={`judge-tolerance-${idx}-${jIdx}`}
+                          className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600"
+                        >
                           <span>Tolerance</span>
                           <span className="text-gray-900 tabular-nums">
                             {judge.tolerance_threshold}
@@ -1094,6 +1147,7 @@ export function StrategyBuilder({
                           </span>
                         </label>
                         <input
+                          id={`judge-tolerance-${idx}-${jIdx}`}
                           type="range"
                           min={1}
                           max={100}
@@ -1158,6 +1212,7 @@ export function StrategyBuilder({
                         value={step.name}
                         onChange={(e) => updateStep(idx, { name: e.target.value })}
                         placeholder="Name this step..."
+                        aria-label="Step name"
                         className="focus:border-primary-500 focus:ring-primary-500 w-56 rounded-lg border border-gray-300 bg-gray-50 py-1.5 pr-8 pl-3 text-sm font-medium text-gray-800 transition-colors placeholder:text-gray-400 hover:border-gray-400 hover:bg-white focus:bg-white focus:ring-1 focus:outline-none"
                       />
                       <svg
@@ -1179,7 +1234,8 @@ export function StrategyBuilder({
                     <button
                       type="button"
                       onClick={() => removeStep(idx)}
-                      className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="Remove step"
+                      className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-600"
                     >
                       <svg
                         className="size-4"
@@ -1201,10 +1257,14 @@ export function StrategyBuilder({
                 <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                   {/* Prompt */}
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label
+                      htmlFor={`step-prompt-version-${idx}`}
+                      className="mb-1 block text-xs font-medium text-gray-600"
+                    >
                       Prompt Version
                     </label>
                     <PromptVersionSelector
+                      id={`step-prompt-version-${idx}`}
                       value={step.prompt_version_id}
                       promptVersions={promptVersions}
                       onChange={(id) => updateStep(idx, { prompt_version_id: id })}
@@ -1417,11 +1477,13 @@ export function StrategyBuilder({
 }
 
 function SearchableSelect({
+  id,
   value,
   options,
   onChange,
   placeholder = '-- Select --',
 }: {
+  id?: string;
   value: string;
   options: ModelOption[];
   onChange: (value: string) => void;
@@ -1430,6 +1492,11 @@ function SearchableSelect({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) searchRef.current?.focus();
+  }, [open]);
 
   const selectedLabel = useMemo(
     () => options.find((o) => o.value === value)?.label ?? null,
@@ -1448,6 +1515,7 @@ function SearchableSelect({
     <div ref={wrapperRef} className="relative">
       <button
         type="button"
+        id={id}
         onClick={() => setOpen(!open)}
         className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
       >
@@ -1471,7 +1539,9 @@ function SearchableSelect({
 
       {open && (
         <>
-          <div
+          <button
+            type="button"
+            aria-label="Close dropdown"
             className="fixed inset-0 z-40 cursor-pointer"
             onClick={() => {
               setOpen(false);
@@ -1481,11 +1551,12 @@ function SearchableSelect({
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
-                autoFocus
+                ref={searchRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search models..."
+                aria-label="Search models"
                 className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
               />
             </div>
@@ -1520,9 +1591,11 @@ function SearchableSelect({
 
 function PromptVersionSelector({
   value,
+  id,
   promptVersions,
   onChange,
 }: {
+  id?: string;
   value: string;
   promptVersions: PromptVersionListItem[];
   onChange: (id: string) => void;
@@ -1530,6 +1603,11 @@ function PromptVersionSelector({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) searchRef.current?.focus();
+  }, [open]);
 
   const selectedName = useMemo(
     () => promptVersions.find((pv) => pv.id === value)?.name || null,
@@ -1551,6 +1629,7 @@ function PromptVersionSelector({
     <div ref={wrapperRef} className="relative">
       <button
         type="button"
+        id={id}
         onClick={() => setOpen(!open)}
         className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
       >
@@ -1574,7 +1653,9 @@ function PromptVersionSelector({
 
       {open && (
         <>
-          <div
+          <button
+            type="button"
+            aria-label="Close dropdown"
             className="fixed inset-0 z-40 cursor-pointer"
             onClick={() => {
               setOpen(false);
@@ -1584,11 +1665,12 @@ function PromptVersionSelector({
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-2">
               <input
-                autoFocus
+                ref={searchRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter prompts..."
+                aria-label="Filter prompts"
                 className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
               />
             </div>

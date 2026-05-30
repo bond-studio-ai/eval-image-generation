@@ -86,7 +86,7 @@ function forwardedResponseHeaders(response: Response): Headers {
   return headers;
 }
 
-export async function proxyUpstream({
+async function proxyUpstream({
   request,
   pathSegments,
   baseUrl,

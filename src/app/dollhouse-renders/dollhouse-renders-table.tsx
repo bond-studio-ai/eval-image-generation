@@ -38,7 +38,7 @@ function readStatusFilter(value: string | undefined): StatusFilter {
 
 function FramesPreview({ frames }: { frames: DollhouseRender['frames'] }) {
   if (!frames || frames.length === 0) {
-    return <span className="text-text-muted">—</span>;
+    return <span className="text-text-muted">{'—'}</span>;
   }
   const visible = frames.slice(0, 3);
   const remaining = frames.length - visible.length;
@@ -151,7 +151,7 @@ export function DollhouseRendersTable() {
           row.completedAt ? (
             <DateCell date={row.completedAt} />
           ) : (
-            <span className="text-text-muted">—</span>
+            <span className="text-text-muted">{'—'}</span>
           ),
       },
       actionsColumn<DollhouseRender>([

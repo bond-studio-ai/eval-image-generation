@@ -461,9 +461,8 @@ export function BatchRunsTab({
                 className="rounded-card border-border bg-surface shadow-card border"
               >
                 <div className="flex w-full items-center justify-between px-5 py-3">
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     onClick={() =>
                       setExpandedIds((prev) => {
                         const next = new Set(prev);
@@ -472,17 +471,6 @@ export function BatchRunsTab({
                         return next;
                       })
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setExpandedIds((prev) => {
-                          const next = new Set(prev);
-                          if (isExpanded) next.delete(batch.id);
-                          else next.add(batch.id);
-                          return next;
-                        });
-                      }
-                    }}
                     className="hover:bg-surface-muted focus-visible:outline-primary-600 -my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     <ChevronRightIcon
@@ -514,7 +502,7 @@ export function BatchRunsTab({
                       {batch.completedRuns} completed
                       {batch.failedRuns > 0 ? `, ${batch.failedRuns} failed` : ''}
                     </span>
-                  </div>
+                  </button>
                   <div className="flex shrink-0 items-center gap-2">
                     {batch.failedRuns > 0 && (
                       <Button
@@ -839,9 +827,9 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   const withOutput = runs.filter((r) => r.lastOutputUrl);
   if (withOutput.length < 2 || !runs.every((r) => r.judgeScore == null)) return false;
 
-  const completedTimes = runs
-    .filter((r) => r.completedAt)
-    .map((r) => new Date(r.completedAt!).getTime());
+  const completedTimes = runs.flatMap((r) =>
+    r.completedAt ? [new Date(r.completedAt).getTime()] : [],
+  );
   if (completedTimes.length === 0) return false;
   return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }
@@ -1055,38 +1043,36 @@ function MatrixView({
                           ))}
                         </div>
                       ) : firstRun.lastOutputUrl ? (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => onImageClick(firstRun)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') onImageClick(firstRun);
-                          }}
-                          className="group relative block cursor-pointer"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={firstRun.lastOutputUrl}
-                            alt=""
-                            loading="lazy"
-                            className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
-                            style={{ width: CELL - 20, height: CELL - 20 }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                            <svg
-                              className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={1.5}
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                              />
-                            </svg>
-                          </div>
+                        <div className="group relative block">
+                          <button
+                            type="button"
+                            onClick={() => onImageClick(firstRun)}
+                            className="relative block cursor-pointer"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={firstRun.lastOutputUrl}
+                              alt=""
+                              loading="lazy"
+                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
+                              style={{ width: CELL - 20, height: CELL - 20 }}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+                              <svg
+                                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                                />
+                              </svg>
+                            </div>
+                          </button>
                           <JudgeScoreBadge
                             runId={firstRun.id}
                             judgeScore={firstRun.judgeScore}
@@ -1197,38 +1183,36 @@ function RunCell({
         {!run ? (
           <span className="text-text-disabled">&mdash;</span>
         ) : run.lastOutputUrl ? (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onImageClick(run)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') onImageClick(run);
-            }}
-            className="group relative block cursor-pointer"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={run.lastOutputUrl}
-              alt=""
-              loading="lazy"
-              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
-              style={{ width: cellSize - 20, height: cellSize - 20 }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-              <svg
-                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                />
-              </svg>
-            </div>
+          <div className="group relative block">
+            <button
+              type="button"
+              onClick={() => onImageClick(run)}
+              className="relative block cursor-pointer"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={run.lastOutputUrl}
+                alt=""
+                loading="lazy"
+                className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
+                style={{ width: cellSize - 20, height: cellSize - 20 }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
+                <svg
+                  className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                  />
+                </svg>
+              </div>
+            </button>
             <JudgeScoreBadge
               runId={run.id}
               judgeScore={run.judgeScore}

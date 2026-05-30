@@ -2,7 +2,7 @@
 
 import { localUrl } from '@/lib/api-base';
 import type { DesignPackageOption } from '@/lib/design-package';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 function optionLabel(option: DesignPackageOption): string {
   return option.title?.trim() || option.name?.trim() || option.id;
@@ -22,6 +22,11 @@ export function DesignPackageSelect({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) searchInputRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +82,14 @@ export function DesignPackageSelect({
 
   return (
     <div>
-      <label className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">
+      <label
+        htmlFor="design-package-trigger"
+        className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase"
+      >
         Design Package
       </label>
       <button
+        id="design-package-trigger"
         type="button"
         onClick={() => setOpen(true)}
         disabled={loading}
@@ -121,8 +130,10 @@ export function DesignPackageSelect({
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4 py-6">
-          <div
-            className="absolute inset-0"
+          <button
+            type="button"
+            aria-label="Close design package picker"
+            className="absolute inset-0 cursor-default"
             onClick={() => {
               setOpen(false);
               setSearch('');
@@ -138,6 +149,7 @@ export function DesignPackageSelect({
               </div>
               <button
                 type="button"
+                aria-label="Close"
                 onClick={() => {
                   setOpen(false);
                   setSearch('');
@@ -157,8 +169,9 @@ export function DesignPackageSelect({
             </div>
             <div className="border-b border-gray-100 p-4">
               <input
-                autoFocus
+                ref={searchInputRef}
                 type="text"
+                aria-label="Search packages"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search packages..."

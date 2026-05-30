@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react';
 import { cn } from './cn';
 import { Spinner } from './spinner';
 
@@ -38,24 +38,23 @@ interface ButtonOwnProps {
 export interface ButtonProps
   extends ButtonOwnProps, Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   children?: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  {
-    variant = 'primary',
-    size = 'md',
-    loading = false,
-    iconLeft,
-    iconRight,
-    fullWidth = false,
-    disabled,
-    className,
-    children,
-    type = 'button',
-    ...rest
-  },
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  iconLeft,
+  iconRight,
+  fullWidth = false,
+  disabled,
+  className,
+  children,
+  type = 'button',
   ref,
-) {
+  ...rest
+}: ButtonProps) {
   const isDisabled = disabled || loading;
   const linkSizing = variant === 'link' ? '' : SIZE[size];
   return (
@@ -77,7 +76,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
     </button>
   );
-});
+}
 
 interface LinkButtonProps extends ButtonOwnProps {
   href: string;

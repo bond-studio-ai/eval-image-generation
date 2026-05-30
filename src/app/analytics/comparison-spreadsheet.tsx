@@ -68,12 +68,13 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
       successPct: Number(row.successPct) || 0,
       failurePct: Number(row.failurePct) || 0,
       issues: Array.isArray(row.issues)
-        ? row.issues
-            .map((issue) => ({
+        ? row.issues.flatMap((issue) => {
+            const item = {
               issue: String((issue as Record<string, unknown>).issue ?? ''),
               count: Number((issue as Record<string, unknown>).count ?? 0),
-            }))
-            .filter((i) => i.issue)
+            };
+            return item.issue ? [item] : [];
+          })
         : [],
     };
   });
@@ -81,25 +82,24 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
 
 function normalizeIssueItems(raw: unknown): IssueItem[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((entry) => {
-      const row = entry as Record<string, unknown>;
-      return {
-        issue: String(row.issue ?? ''),
-        count: Number(row.count ?? 0),
-      };
-    })
-    .filter((i) => i.issue);
+  return raw.flatMap((entry) => {
+    const row = entry as Record<string, unknown>;
+    const item = {
+      issue: String(row.issue ?? ''),
+      count: Number(row.count ?? 0),
+    };
+    return item.issue ? [item] : [];
+  });
 }
 
 function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((entry) => {
+    .flatMap((entry) => {
       const row = entry as Record<string, unknown>;
       const numberOrNull = (v: unknown): number | null =>
         v === null || v === undefined ? null : Number(v);
-      return {
+      const mapped = {
         stepId: String(row.stepId ?? ''),
         stepOrder: Number(row.stepOrder ?? 0),
         name: typeof row.name === 'string' ? row.name : null,
@@ -110,8 +110,8 @@ function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[] {
         minExecTimeMs: numberOrNull(row.minExecTimeMs),
         maxExecTimeMs: numberOrNull(row.maxExecTimeMs),
       };
+      return mapped.stepId ? [mapped] : [];
     })
-    .filter((row) => row.stepId)
     .sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
@@ -239,7 +239,7 @@ export function ComparisonSpreadsheet({
     for (const data of Object.values(dataBySlice)) {
       for (const item of data.sceneIssues) issueNames.add(item.issue);
     }
-    return [...issueNames].sort((a, b) => a.localeCompare(b));
+    return Array.from(issueNames).sort((a, b) => a.localeCompare(b));
   }, [dataBySlice]);
 
   const categoryRows = useMemo(() => {
@@ -248,7 +248,7 @@ export function ComparisonSpreadsheet({
       for (const cat of data.categories) names.add(cat.name);
     }
 
-    let sortedNames = [...names].sort((a, b) =>
+    let sortedNames = Array.from(names).sort((a, b) =>
       formatCategoryName(a).localeCompare(formatCategoryName(b)),
     );
 
@@ -266,15 +266,19 @@ export function ComparisonSpreadsheet({
       }
     }
 
+    const sliceCategoryMaps = Object.values(dataBySlice).map(
+      (data) => new Map(data.categories.map((c) => [c.name, c])),
+    );
+
     return sortedNames.flatMap((catName) => {
       const issueNames = new Set<string>();
-      for (const data of Object.values(dataBySlice)) {
-        const cat = data.categories.find((c) => c.name === catName);
+      for (const catMap of sliceCategoryMaps) {
+        const cat = catMap.get(catName);
         for (const issue of cat?.issues ?? []) issueNames.add(issue.issue);
       }
       return [
         { type: 'category' as const, categoryName: catName },
-        ...[...issueNames]
+        ...Array.from(issueNames)
           .sort((a, b) => a.localeCompare(b))
           .map((issueName) => ({
             type: 'issue' as const,
@@ -316,7 +320,10 @@ export function ComparisonSpreadsheet({
               </th>
             </tr>
             <tr>
-              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+              <th
+                aria-label="Issue"
+                className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+              />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 return (
@@ -434,7 +441,10 @@ export function ComparisonSpreadsheet({
 
             {/* Slice group headers */}
             <tr>
-              <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+              <th
+                aria-label="Category"
+                className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+              />
               {slices.map((slice, i) => {
                 const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
                 const s = dataBySlice[slice.key]?.summary;
@@ -591,8 +601,16 @@ export function ComparisonSpreadsheet({
 
                       return (
                         <Fragment key={slice.key}>
-                          <td className="border-b border-gray-100 px-2 py-1 text-center" />
-                          <td className="border-b border-gray-100 px-2 py-1 text-center" />
+                          <td
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            className="border-b border-gray-100 px-2 py-1 text-center"
+                          />
+                          <td
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            className="border-b border-gray-100 px-2 py-1 text-center"
+                          />
                           <td className="border-r border-b border-gray-100 px-2 py-1 text-center text-[11px] text-red-500">
                             {issue ? `${issue.count} (${issuePct}%)` : ''}
                           </td>
@@ -670,7 +688,10 @@ function StepExecutionTimeTable({
             </th>
           </tr>
           <tr>
-            <th className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+            <th
+              aria-label="Step"
+              className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2"
+            />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               return (

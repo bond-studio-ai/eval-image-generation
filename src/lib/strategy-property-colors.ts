@@ -13,10 +13,3 @@ export const STRATEGY_PROPERTY_COLORS = {
   googleSearch: { bg: 'bg-rose-100', text: 'text-rose-700' },
   sceneAccuracy: { bg: 'bg-teal-100', text: 'text-teal-800' },
 } as const;
-
-export type PropertyKey = keyof typeof STRATEGY_PROPERTY_COLORS;
-
-export function propertyBadgeClasses(key: PropertyKey): string {
-  const c = STRATEGY_PROPERTY_COLORS[key];
-  return `${c.bg} ${c.text}`;
-}

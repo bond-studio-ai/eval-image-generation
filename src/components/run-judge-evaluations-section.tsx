@@ -48,7 +48,7 @@ function groupByJudge(results: StrategyRunJudgeResultEntry[]): JudgeGroup[] {
       group.executionTimeMs = Math.max(group.executionTimeMs ?? 0, r.executionTimeMs);
     }
   }
-  return [...map.values()].sort((a, b) => a.position - b.position);
+  return [...map.values()].toSorted((a, b) => a.position - b.position);
 }
 
 function formatSeconds(ms: number | null | undefined): string | null {

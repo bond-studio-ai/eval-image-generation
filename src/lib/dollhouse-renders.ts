@@ -288,31 +288,6 @@ async function parseError(res: Response): Promise<DollhouseRenderApiError> {
   return new DollhouseRenderApiError(res.status, message, body?.error?.code, body?.error?.details);
 }
 
-export interface ListDollhouseRendersParams {
-  status?: DollhouseRenderStatus;
-  projectId?: string;
-  includeFrames?: boolean;
-  currentPage?: number;
-  perPage?: number;
-}
-
-export async function listDollhouseRenders(
-  params: ListDollhouseRendersParams = {},
-  init?: RequestInit,
-): Promise<V2ListResponse<DollhouseRender>> {
-  const qs = new URLSearchParams();
-  if (params.status) qs.set('status', params.status);
-  if (params.projectId) qs.set('projectId', params.projectId);
-  if (params.includeFrames) qs.append('include[]', 'frames');
-  if (params.currentPage) qs.set('currentPage', String(params.currentPage));
-  if (params.perPage) qs.set('perPage', String(params.perPage));
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-
-  const res = await fetch(`${serviceV2Url('dollhouse-renders')}${suffix}`, init);
-  if (!res.ok) throw await parseError(res);
-  return (await res.json()) as V2ListResponse<DollhouseRender>;
-}
-
 /**
  * Fetch a single render. Works in both client and server contexts:
  *

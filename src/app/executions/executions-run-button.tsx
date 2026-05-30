@@ -3,7 +3,7 @@
 import { serviceUrl } from '@/lib/api-base';
 import { fetchPresetRunRequests } from '@/lib/strategy-run-input';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface StrategyItem {
@@ -290,11 +290,20 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
 
       {showModal &&
         createPortal(
-          <div
+          <dialog
+            open
+            aria-modal="true"
+            aria-label="New Run"
             className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/50 p-4"
             onClick={() => {
               setShowModal(false);
               setError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowModal(false);
+                setError(null);
+              }
             }}
           >
             <div
@@ -373,6 +382,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                           value={strategySearch}
                           onChange={(e) => setStrategySearch(e.target.value)}
                           placeholder="Search strategies…"
+                          aria-label="Search strategies"
                           className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
                         />
                       </div>
@@ -482,6 +492,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                           value={presetSearch}
                           onChange={(e) => setPresetSearch(e.target.value)}
                           placeholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
+                          aria-label={benchmarkMode ? 'Search project IDs' : 'Search presets'}
                           className="focus:border-primary-400 focus:ring-primary-400 w-full rounded-md border border-gray-200 bg-white py-1.5 pr-3 pl-8 text-xs placeholder:text-gray-400 focus:ring-1 focus:outline-none"
                         />
                       </div>
@@ -610,7 +621,7 @@ export function ExecutionsRunButton({ onRunCreated }: { onRunCreated?: () => voi
                 </button>
               </div>
             </div>
-          </div>,
+          </dialog>,
           document.body,
         )}
     </>
@@ -627,6 +638,10 @@ function NumberOfImagesInput({
   const isDefault = value === null;
   const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
   const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
+  const customInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (customImages) customInputRef.current?.focus();
+  }, [customImages]);
 
   const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
   const inactiveCls =
@@ -675,6 +690,7 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
               disabled={(value ?? 1) <= 1}
+              aria-label="Decrease image count"
               className="flex size-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg
@@ -688,10 +704,11 @@ function NumberOfImagesInput({
               </svg>
             </button>
             <input
+              ref={customInputRef}
               type="number"
               min={1}
               max={100}
-              autoFocus
+              aria-label="Image count"
               value={value ?? 1}
               onChange={(e) =>
                 onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
@@ -702,6 +719,7 @@ function NumberOfImagesInput({
               type="button"
               onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
               disabled={(value ?? 1) >= 100}
+              aria-label="Increase image count"
               className="flex size-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
               <svg

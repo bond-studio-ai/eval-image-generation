@@ -31,19 +31,20 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 cursor-pointer bg-black/70"
+            onClick={() => setOpen(false)}
+          />
+          <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
               <span className="truncate text-sm font-medium text-gray-700">{alt}</span>
               <button
                 type="button"
+                aria-label="Close"
                 onClick={() => setOpen(false)}
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >

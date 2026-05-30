@@ -4,195 +4,29 @@ import { z } from 'zod';
 // Shared
 // ------------------------------------
 
-export const uuidSchema = z.string().uuid();
-
-export const paginationSchema = z.object({
+const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-export const sortOrderSchema = z.enum(['asc', 'desc']).default('desc');
-
-// ------------------------------------
-// Prompt Versions
-// ------------------------------------
-
-export const createPromptVersionSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  system_prompt: z.string().min(1, 'System prompt is required'),
-  user_prompt: z.string().min(1, 'User prompt is required'),
-  description: z.string().optional(),
-});
-
-export const updatePromptVersionSchema = z.object({
-  name: z.string().max(255).optional(),
-  description: z.string().optional(),
-  system_prompt: z.string().min(1).optional(),
-  user_prompt: z.string().min(1).optional(),
-});
-
-export const listPromptVersionsSchema = paginationSchema.extend({
-  include_deleted: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((v) => v === 'true'),
-  sort: z.enum(['created_at', 'name']).default('created_at'),
-  order: sortOrderSchema,
-  /** When true, skip per-row generation stats (faster for dropdowns). */
-  minimal: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((v) => v === 'true'),
-});
-
-// ------------------------------------
-// Strategies
-// ------------------------------------
-
-export const createStrategySchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  description: z.string().optional(),
-  model: z.string().max(255).optional(),
-  aspect_ratio: z.string().max(20).optional(),
-  output_resolution: z.string().max(20).optional(),
-  temperature: z.coerce.number().min(0).max(2).optional(),
-  use_google_search: z.boolean().optional(),
-  tag_images: z.boolean().optional(),
-});
-
-export const updateStrategySchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  description: z.string().optional().nullable(),
-  model: z.string().max(255).optional(),
-  aspect_ratio: z.string().max(20).optional(),
-  output_resolution: z.string().max(20).optional(),
-  temperature: z.coerce.number().min(0).max(2).optional(),
-  use_google_search: z.boolean().optional(),
-  tag_images: z.boolean().optional(),
-});
-
-export const patchStrategyRunSchema = z.object({
-  status: z.enum(['failed', 'completed']),
-});
-
-export const strategyStepSchema = z.object({
-  id: z.string().uuid().optional(),
-  step_order: z.number().int().min(1),
-  name: z.string().max(255).optional().nullable(),
-  prompt_version_id: z.string().uuid(),
-  model: z.string().max(255).default('gemini-3-pro-image-preview'),
-  aspect_ratio: z.string().max(20).default('1:1'),
-  output_resolution: z.string().max(20).default('1K'),
-  temperature: z.coerce.number().min(0).max(2).default(1.0),
-  use_google_search: z.boolean().default(false),
-  tag_images: z.boolean().default(true),
-  dollhouse_view_from_step: z.number().int().min(1).optional().nullable(),
-  real_photo_from_step: z.number().int().min(1).optional().nullable(),
-  mood_board_from_step: z.number().int().min(1).optional().nullable(),
-  include_dollhouse: z.boolean().default(true),
-  include_real_photo: z.boolean().default(true),
-  include_mood_board: z.boolean().default(true),
-  include_product_images: z.boolean().default(true),
-  include_product_categories: z.array(z.string()).default([]),
-  arbitrary_image_from_step: z.number().int().min(1).optional().nullable(),
-});
-
-export const listStrategiesSchema = paginationSchema.extend({
-  include_deleted: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((v) => v === 'true'),
-  sort: z.enum(['created_at', 'name']).default('created_at'),
-  order: sortOrderSchema,
-});
+const sortOrderSchema = z.enum(['asc', 'desc']).default('desc');
 
 // ------------------------------------
 // Input Presets
 // ------------------------------------
 
 const productUrlArray = z.array(z.string().min(1)).optional().default([]);
-const inputPresetProductUrlFields = {
-  faucets_url: z.string().min(1).nullable().optional(),
-  lightings_url: z.string().min(1).nullable().optional(),
-  lvps_url: z.string().min(1).nullable().optional(),
-  mirrors_url: z.string().min(1).nullable().optional(),
-  paints_url: z.string().min(1).nullable().optional(),
-  robe_hooks_url: z.string().min(1).nullable().optional(),
-  shelves_url: z.string().min(1).nullable().optional(),
-  shower_glasses_url: z.string().min(1).nullable().optional(),
-  shower_systems_url: z.string().min(1).nullable().optional(),
-  floor_tiles_url: z.string().min(1).nullable().optional(),
-  wall_tiles_url: z.string().min(1).nullable().optional(),
-  shower_wall_tiles_url: z.string().min(1).nullable().optional(),
-  shower_floor_tiles_url: z.string().min(1).nullable().optional(),
-  shower_curb_tiles_url: z.string().min(1).nullable().optional(),
-  toilet_paper_holders_url: z.string().min(1).nullable().optional(),
-  toilets_url: z.string().min(1).nullable().optional(),
-  towel_bars_url: z.string().min(1).nullable().optional(),
-  towel_rings_url: z.string().min(1).nullable().optional(),
-  tub_doors_url: z.string().min(1).nullable().optional(),
-  tub_fillers_url: z.string().min(1).nullable().optional(),
-  tubs_url: z.string().min(1).nullable().optional(),
-  vanities_url: z.string().min(1).nullable().optional(),
-  wallpapers_url: z.string().min(1).nullable().optional(),
-};
-
-export const createInputPresetSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  description: z.string().optional(),
-  dollhouse_view: z.string().min(1).optional().nullable(),
-  real_photo: z.string().min(1).optional().nullable(),
-  mood_board: z.string().min(1).optional().nullable(),
-  faucets: productUrlArray,
-  lightings: productUrlArray,
-  lvps: productUrlArray,
-  mirrors: productUrlArray,
-  paints: productUrlArray,
-  robe_hooks: productUrlArray,
-  shelves: productUrlArray,
-  shower_glasses: productUrlArray,
-  shower_systems: productUrlArray,
-  floor_tiles: productUrlArray,
-  wall_tiles: productUrlArray,
-  shower_wall_tiles: productUrlArray,
-  shower_floor_tiles: productUrlArray,
-  shower_curb_tiles: productUrlArray,
-  toilet_paper_holders: productUrlArray,
-  toilets: productUrlArray,
-  towel_bars: productUrlArray,
-  towel_rings: productUrlArray,
-  tub_doors: productUrlArray,
-  tub_fillers: productUrlArray,
-  tubs: productUrlArray,
-  vanities: productUrlArray,
-  wallpapers: productUrlArray,
-  ...inputPresetProductUrlFields,
-});
-
-export const listInputPresetsSchema = paginationSchema.extend({
-  include_deleted: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((v) => v === 'true'),
-  sort: z.enum(['created_at', 'name']).default('created_at'),
-  order: sortOrderSchema,
-  /** When true, skip per-row generation stats (faster for dropdowns). */
-  minimal: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((v) => v === 'true'),
-});
 
 // ------------------------------------
 // Generations
 // ------------------------------------
 
-export const ratingValues = ['FAILED', 'GOOD'] as const;
+const ratingValues = ['FAILED', 'GOOD'] as const;
 
-export const ratingSchema = z.enum(ratingValues);
+const ratingSchema = z.enum(ratingValues);
 
 /** Schema for the structured input_images object (category-keyed S3 URLs) */
-export const generationInputSchema = z.object({
+const generationInputSchema = z.object({
   dollhouse_view: z.string().min(1).optional().nullable(),
   real_photo: z.string().min(1).optional().nullable(),
   mood_board: z.string().min(1).optional().nullable(),
@@ -219,47 +53,6 @@ export const generationInputSchema = z.object({
   tubs: productUrlArray,
   vanities: productUrlArray,
   wallpapers: productUrlArray,
-});
-
-export const createGenerationSchema = z.object({
-  prompt_version_id: z.string().uuid(),
-  input_images: generationInputSchema.optional(),
-  output_images: z.array(z.object({ url: z.string().min(1) })).optional(),
-  notes: z.string().optional(),
-  execution_time: z.number().int().optional(),
-});
-
-export const rateGenerationSchema = z
-  .object({
-    scene_accuracy_rating: ratingSchema.optional(),
-    product_accuracy_rating: ratingSchema.optional(),
-  })
-  .refine(
-    (data) =>
-      data.scene_accuracy_rating !== undefined || data.product_accuracy_rating !== undefined,
-    { message: 'At least one rating field must be provided' },
-  );
-
-export const listGenerationsSchema = paginationSchema.extend({
-  prompt_version_id: z.string().uuid().optional(),
-  scene_accuracy_rating: ratingSchema.optional(),
-  product_accuracy_rating: ratingSchema.optional(),
-  unrated: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((v) => v === 'true'),
-  from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
-  sort: z.enum(['created_at']).default('created_at'),
-  order: sortOrderSchema,
-});
-
-// ------------------------------------
-// Images
-// ------------------------------------
-
-export const addImageSchema = z.object({
-  url: z.string().min(1),
 });
 
 // ------------------------------------
@@ -357,16 +150,3 @@ export const SCENE_ACCURACY_ISSUES = [
   'Changed aspect ratio',
   'Hallucinated details in the room',
 ] as const;
-
-/** Per-category product accuracy evaluation */
-const categoryEvalSchema = z.object({
-  issues: z.array(z.string()),
-  notes: z.string().optional(),
-});
-
-export const upsertEvaluationSchema = z.object({
-  result_id: z.string().uuid(),
-  product_accuracy: z.record(z.string(), categoryEvalSchema).optional(),
-  scene_accuracy_issues: z.array(z.string()).optional(),
-  scene_accuracy_notes: z.string().optional(),
-});

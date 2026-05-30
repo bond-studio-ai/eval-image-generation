@@ -58,8 +58,10 @@ export function designSettingsFromPackage(
         : null;
   const vanitySizes = vanityDict
     ? Object.keys(vanityDict)
-        .map((key) => Number(key))
-        .filter((value) => Number.isFinite(value))
+        .flatMap((key) => {
+          const value = Number(key);
+          return Number.isFinite(value) ? [value] : [];
+        })
         .sort((a, b) => a - b)
     : [];
 

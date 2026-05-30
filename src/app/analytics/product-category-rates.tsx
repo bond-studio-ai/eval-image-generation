@@ -148,7 +148,7 @@ function CategoryIssueBreakdownRows({
   if (totalEvaluated === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
+        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
         <td
           colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
           className={cn('py-2 pr-6 text-sm text-gray-500', ISSUE_ROW_LAST_TD)}
@@ -162,7 +162,7 @@ function CategoryIssueBreakdownRows({
   if (items.length === 0) {
     return (
       <tr className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
+        <td className={cn('py-2 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
         <td
           colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
           className={cn('py-2 pr-6 text-xs text-gray-500', ISSUE_ROW_LAST_TD)}
@@ -179,7 +179,7 @@ function CategoryIssueBreakdownRows({
     const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
     return (
       <tr key={item.issue} className={ISSUE_BREAKDOWN_TR}>
-        <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} />
+        <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
         <td
           className={cn(
             'min-w-0',
@@ -191,8 +191,8 @@ function CategoryIssueBreakdownRows({
         >
           <span className="block truncate">{item.issue}</span>
         </td>
-        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
-        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
+        <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
         <td
           className={cn(
             'px-4',
@@ -228,7 +228,7 @@ function CategoryNoteBreakdownRows({
 
   const headerRow = (
     <tr className={ISSUE_BREAKDOWN_TR}>
-      <td className="border-t border-gray-100 pt-3 pr-0 pb-1" aria-hidden />
+      <td className="border-t border-gray-100 pt-3 pr-0 pb-1" aria-hidden tabIndex={-1} />
       <td
         colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
         className="border-t border-gray-100 pt-3 pr-6 pb-1 text-xs font-medium tracking-wider text-gray-500 uppercase"
@@ -251,7 +251,11 @@ function CategoryNoteBreakdownRows({
             : item.text;
         return (
           <tr key={`note-${index}`} className={ISSUE_BREAKDOWN_TR}>
-            <td className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)} />
+            <td
+              className={cn(rowPy, 'pr-0', isLast && ISSUE_ROW_LAST_TD)}
+              aria-hidden
+              tabIndex={-1}
+            />
             <td
               className={cn(
                 'min-w-0',
@@ -263,8 +267,16 @@ function CategoryNoteBreakdownRows({
             >
               <span className="block truncate">{preview}</span>
             </td>
-            <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
-            <td className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)} />
+            <td
+              className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)}
+              aria-hidden
+              tabIndex={-1}
+            />
+            <td
+              className={cn('px-4', rowPy, isLast && ISSUE_ROW_LAST_TD)}
+              aria-hidden
+              tabIndex={-1}
+            />
             <td
               className={cn(
                 'px-4',
@@ -283,7 +295,11 @@ function CategoryNoteBreakdownRows({
       })}
       {notesTruncated ? (
         <tr className={ISSUE_BREAKDOWN_TR}>
-          <td className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)} aria-hidden />
+          <td
+            className={cn(ISSUE_ROW_LAST_PY, 'border-t-0 pr-0', ISSUE_ROW_LAST_TD)}
+            aria-hidden
+            tabIndex={-1}
+          />
           <td
             colSpan={PRODUCT_CATEGORY_BODY_COLSPAN}
             className={cn(
@@ -479,7 +495,7 @@ export function ProductCategoryRates({
         </colgroup>
         <thead>
           <tr>
-            <th className="w-10 py-2 pr-0" aria-hidden />
+            <th className="w-10 py-2 pr-0" aria-hidden tabIndex={-1} />
             <th
               className="cursor-pointer py-2 pr-4 text-left text-xs font-medium tracking-wider text-gray-600 uppercase transition-colors select-none hover:text-gray-900"
               onClick={() => toggleSort('name')}

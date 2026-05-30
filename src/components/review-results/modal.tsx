@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { CollapsibleCategoryGrid, SegmentationLegend } from './category-grid';
 import { buildCategoryLookup, useSegmentationCategories } from './category-lookup';
 import { buildRows } from './category-rows';
@@ -38,14 +38,22 @@ export function ReviewModal({
   const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ??
     null) as DriftAssessment | null;
 
+  // Move focus into the dialog on open so its key handler receives Escape and
+  // focus doesn't linger on the trigger behind the overlay.
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
+
   return (
-    <div
+    <dialog
+      ref={dialogRef}
+      open
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
       onKeyDown={(e) => {
         if (e.key === 'Escape') onClose();
       }}
-      role="dialog"
       aria-modal="true"
       tabIndex={-1}
     >
@@ -76,6 +84,7 @@ export function ReviewModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
             <svg
@@ -171,6 +180,6 @@ export function ReviewModal({
             )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

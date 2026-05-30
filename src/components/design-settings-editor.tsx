@@ -4,7 +4,7 @@ import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { localUrl } from '@/lib/api-base';
 import { withImageParams } from '@/lib/image-utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
 type CatalogImageTag = 'photo-image' | 'tear-sheet' | 'line-drawing';
@@ -278,6 +278,8 @@ interface CatalogImageVariant {
   url: string;
 }
 
+const DOWNLOADABLE_IMAGE_TAGS = new Set<string>(['photo-image', 'tear-sheet', 'line-drawing']);
+
 function useCatalogProductImages(catalogCategory: string | null, productId: string | null) {
   const [images, setImages] = useState<CatalogImageVariant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -301,7 +303,7 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
         for (const img of rawImages) {
           if (!img?.url || !img.tag) continue;
           if (img.tag === 'photo-image' && variants.some((v) => v.tag === 'photo-image')) continue;
-          if (['photo-image', 'tear-sheet', 'line-drawing'].includes(img.tag)) {
+          if (DOWNLOADABLE_IMAGE_TAGS.has(img.tag)) {
             variants.push({ tag: img.tag, url: img.url });
           }
         }
@@ -409,8 +411,14 @@ function ProductImagePreviewModal({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="Close image preview"
       className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') onClose();
+      }}
     >
       <div
         className="relative flex max-h-[90vh] w-full max-w-5xl cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
@@ -445,6 +453,7 @@ function ProductImagePreviewModal({
             </button>
             <button
               type="button"
+              aria-label="Close image preview"
               onClick={onClose}
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
@@ -497,7 +506,7 @@ function ImageTypeIconButton({
           e.preventDefault();
           setPreviewOpen(true);
         }}
-        className="rounded p-1 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
       >
         {TAG_ICONS[tag]}
       </button>
@@ -741,7 +750,7 @@ export function DesignSettingsEditor({
             <button
               type="button"
               onClick={clearAll}
-              className="rounded px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
+              className="rounded px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600"
             >
               Clear all
             </button>
@@ -900,6 +909,7 @@ export function DesignSettingsEditor({
             Raw JSON with camelCase keys. Switch back to Form to use the structured editor.
           </p>
           <textarea
+            aria-label="Design settings JSON"
             value={jsonText}
             onChange={(e) => {
               setJsonText(e.target.value);
@@ -1006,7 +1016,7 @@ function BooleanField({
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
           }`}
         >
-          Yes
+          On
         </button>
         <button
           type="button"
@@ -1017,7 +1027,7 @@ function BooleanField({
               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
           }`}
         >
-          No
+          Off
         </button>
       </div>
     </div>
@@ -1189,6 +1199,7 @@ function ProductSelectionModal({
   const [draftSelectedId, setDraftSelectedId] = useState(selectedId);
   const [draftImageType, setDraftImageType] = useState<ProductImageType>(imageTypeValue);
   const [draftArbitraryUrl, setDraftArbitraryUrl] = useState<string | null>(arbitraryUrl);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1197,6 +1208,10 @@ function ProductSelectionModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   const draftSelectedProduct = useMemo(
     () => products.find((product) => product.id === draftSelectedId) ?? null,
@@ -1233,7 +1248,16 @@ function ProductSelectionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/35 px-4 py-6">
-      <div className="absolute inset-0" onClick={onClose} />
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Close product picker"
+        className="absolute inset-0"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onClose();
+        }}
+      />
       <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
@@ -1258,6 +1282,7 @@ function ProductSelectionModal({
             ) : null}
             <button
               type="button"
+              aria-label="Close product picker"
               onClick={onClose}
               className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             >
@@ -1297,10 +1322,11 @@ function ProductSelectionModal({
               </div>
             </div>
             <div className="mt-3">
-              <label className="flex cursor-pointer items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   role="switch"
+                  aria-label="Use custom image override"
                   aria-checked={isArbitraryMode}
                   onClick={() =>
                     setDraftImageType(isArbitraryMode ? 'featured-image' : 'arbitrary')
@@ -1318,7 +1344,7 @@ function ProductSelectionModal({
                 <span className="text-[11px] font-medium text-gray-600">
                   Use custom image override
                 </span>
-              </label>
+              </div>
             </div>
             {draftImageType === 'arbitrary' ? (
               <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
@@ -1333,7 +1359,8 @@ function ProductSelectionModal({
 
           {!isArbitraryMode ? (
             <input
-              autoFocus
+              ref={searchInputRef}
+              aria-label={`Search ${field.label.toLowerCase()}`}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

@@ -232,6 +232,7 @@ function DateRangeForm({
       <input
         type="date"
         name="from"
+        aria-label="From date"
         defaultValue={from}
         className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
@@ -239,6 +240,7 @@ function DateRangeForm({
       <input
         type="date"
         name="to"
+        aria-label="To date"
         defaultValue={to}
         className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />

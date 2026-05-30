@@ -2,8 +2,8 @@
 
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -68,7 +68,7 @@ function getFocusable(root: HTMLElement): HTMLElement[] {
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>({ open: false, title: '' });
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -199,13 +199,13 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             aria-hidden="true"
             onClick={() => close(false)}
           />
-          <div
+          <dialog
             ref={dialogRef}
-            role="dialog"
+            open
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
             tabIndex={-1}
-            className={cn('rounded-card bg-surface shadow-modal relative w-full max-w-md p-6')}
+            className={cn('rounded-card bg-surface shadow-modal relative m-0 w-full max-w-md p-6')}
           >
             <h2 id="confirm-dialog-title" className="text-h3 text-text-primary font-semibold">
               {state.title}
@@ -225,7 +225,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 {state.confirmLabel ?? 'Confirm'}
               </Button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </ConfirmContext.Provider>
@@ -238,7 +238,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
  * Throws if used outside `<ConfirmProvider>`.
  */
 export function useConfirm(): ConfirmFn {
-  const ctx = useContext(ConfirmContext);
+  const ctx = use(ConfirmContext);
   if (!ctx) {
     throw new Error('useConfirm must be used inside <ConfirmProvider>');
   }

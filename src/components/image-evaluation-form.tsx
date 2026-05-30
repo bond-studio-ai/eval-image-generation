@@ -320,6 +320,7 @@ export function ImageEvaluationForm({
               <textarea
                 value={data.sceneAccuracyNotes}
                 onChange={(e) => setData({ ...data, sceneAccuracyNotes: e.target.value })}
+                aria-label="Scene accuracy notes"
                 placeholder="Provide more detail about what was incorrect..."
                 rows={2}
                 className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
@@ -368,6 +369,7 @@ export function ImageEvaluationForm({
                       <textarea
                         value={catData.notes}
                         onChange={(e) => updateCategoryEval(category, 'notes', e.target.value)}
+                        aria-label={`${label} notes`}
                         placeholder="Notes about this category..."
                         rows={2}
                         className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"

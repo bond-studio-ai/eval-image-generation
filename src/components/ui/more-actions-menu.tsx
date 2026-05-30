@@ -208,6 +208,7 @@ export function MoreActionsMenu({
         <div
           role="menu"
           aria-label={label}
+          tabIndex={-1}
           onKeyDown={handleMenuKeyDown}
           className={cn(
             'rounded-card border-border bg-surface shadow-popover absolute z-40 mt-1 min-w-[200px] overflow-hidden border',

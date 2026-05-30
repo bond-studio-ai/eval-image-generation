@@ -90,10 +90,13 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
       {/* Lightbox — full-width modal with skeleton loading */}
       {expanded && (
-        <div
-          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-6"
-          onClick={() => setExpanded(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            aria-label="Close lightbox"
+            className="absolute inset-0 cursor-pointer bg-black/70"
+            onClick={() => setExpanded(false)}
+          />
           <div
             className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -105,6 +108,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
               </span>
               <button
                 type="button"
+                aria-label="Close"
                 onClick={() => setExpanded(false)}
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >

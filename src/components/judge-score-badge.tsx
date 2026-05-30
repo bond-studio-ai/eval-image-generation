@@ -140,8 +140,14 @@ export function ReasoningModal({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="Close judge details"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') onClose();
+      }}
     >
       <div
         className="mx-4 flex w-full max-w-2xl flex-col rounded-xl bg-white shadow-2xl"
@@ -194,6 +200,7 @@ export function ReasoningModal({
           </div>
           <button
             type="button"
+            aria-label="Close judge details"
             onClick={onClose}
             className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
@@ -419,7 +426,7 @@ export function JudgeScoreBadge({
 
   const hasDetail = panels.some(panelHasContent);
 
-  const handleClick = async (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent | React.KeyboardEvent) => {
     if (!hasDetail) return;
     e.stopPropagation();
     e.preventDefault();
@@ -474,8 +481,13 @@ export function JudgeScoreBadge({
     return (
       <>
         <span
+          role="button"
+          tabIndex={0}
           className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? 'cursor-help' : ''} ${isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handleClick(e);
+          }}
         >
           {judgeScore}
         </span>
@@ -496,8 +508,13 @@ export function JudgeScoreBadge({
     return (
       <>
         <span
+          role="button"
+          tabIndex={0}
           className={`absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm ${hasDetail ? 'cursor-help' : ''}`}
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handleClick(e);
+          }}
         >
           <svg
             className="size-2.5"

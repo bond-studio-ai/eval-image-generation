@@ -84,7 +84,7 @@ function DiffText({ left, right }: { left: string; right: string }) {
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <pre className="max-h-64 overflow-auto rounded-md border border-red-200 bg-red-50/30 p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
+      <pre className="text-text-primary max-h-64 overflow-auto rounded-md border border-red-200 bg-red-50/30 p-2 text-xs leading-relaxed whitespace-pre-wrap">
         {changes.map((c, i) =>
           c.added ? null : (
             <span key={i} className={c.removed ? 'bg-red-200 text-red-900' : ''}>
@@ -93,7 +93,7 @@ function DiffText({ left, right }: { left: string; right: string }) {
           ),
         )}
       </pre>
-      <pre className="max-h-64 overflow-auto rounded-md border border-green-200 bg-green-50/30 p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
+      <pre className="text-text-primary max-h-64 overflow-auto rounded-md border border-green-200 bg-green-50/30 p-2 text-xs leading-relaxed whitespace-pre-wrap">
         {changes.map((c, i) =>
           c.removed ? null : (
             <span key={i} className={c.added ? 'bg-green-200 text-green-900' : ''}>
@@ -121,7 +121,7 @@ function orderedJudgeIds(
     if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!)
       byId.set(j.strategyJudgeId, p);
   }
-  return [...byId.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id);
+  return [...byId.entries()].toSorted((a, b) => a[1] - b[1]).map(([id]) => id);
 }
 
 function ConfigDiff({

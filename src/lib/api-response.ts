@@ -4,21 +4,6 @@ export function successResponse<T>(data: T, status = 200) {
   return NextResponse.json({ data }, { status });
 }
 
-export function paginatedResponse<T>(
-  data: T[],
-  pagination: { page: number; limit: number; total: number },
-) {
-  return NextResponse.json({
-    data,
-    pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total: pagination.total,
-      total_pages: Math.ceil(pagination.total / pagination.limit),
-    },
-  });
-}
-
 type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'NOT_FOUND'

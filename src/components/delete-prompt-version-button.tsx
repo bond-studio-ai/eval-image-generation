@@ -67,8 +67,15 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
       {/* Confirmation modal */}
       {showConfirm && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Cancel deletion"
           className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/50"
           onClick={() => !deleting && setShowConfirm(false)}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') && !deleting)
+              setShowConfirm(false);
+          }}
         >
           <div
             className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl"

@@ -123,14 +123,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
 
   return createPortal(
     <>
-      <div
-        className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/80 p-6"
-        onClick={onClose}
-      >
-        <div
-          className="relative flex max-h-[90vh] w-[1200px] max-w-[95vw] cursor-default flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-6">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute inset-0 cursor-pointer"
+        />
+        <div className="relative flex max-h-[90vh] w-[1200px] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
           <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
             <div className="flex items-center gap-3">
               <Link
@@ -147,6 +147,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
             </div>
             <button
               type="button"
+              aria-label="Close"
               onClick={onClose}
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
@@ -315,17 +316,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
       </div>
 
       {expandedImage && (
-        <div
-          className="fixed inset-0 z-[10000] flex cursor-pointer items-center justify-center bg-black/80 p-6"
-          onClick={() => setExpandedImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Expanded image"
-        >
-          <div
-            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-6">
+          <button
+            type="button"
+            aria-label="Close expanded image"
+            onClick={() => setExpandedImage(null)}
+            className="absolute inset-0 cursor-pointer"
+          />
+          <div className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={withImageParams(expandedImage.src, 512)}

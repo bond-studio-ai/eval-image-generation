@@ -27,7 +27,7 @@ export const WIZARD_SECTION_IDS = {
  * wizard's actual steps" (the stepper, the cascade, the test contract)
  * iterates this tuple — changing it is the one place to add a new step.
  */
-export const STEP_KEYS = ['project', 'data', 'config'] as const;
+const STEP_KEYS = ['project', 'data', 'config'] as const;
 export type WizardStepKey = (typeof STEP_KEYS)[number];
 
 export interface WizardInput {

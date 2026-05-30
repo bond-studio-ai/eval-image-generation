@@ -23,10 +23,14 @@ export function ResourceFormHeader({
     <div className="rounded-card border-border bg-surface shadow-card border p-5">
       <div className="space-y-4">
         <div>
-          <label className="text-body text-text-primary mb-1 block font-medium">
+          <label
+            htmlFor="resource-form-name"
+            className="text-body text-text-primary mb-1 block font-medium"
+          >
             Name {nameRequired && <span className="text-danger-500">*</span>}
           </label>
           <input
+            id="resource-form-name"
             type="text"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
@@ -35,8 +39,14 @@ export function ResourceFormHeader({
           />
         </div>
         <div>
-          <label className="text-body text-text-primary mb-1 block font-medium">Description</label>
+          <label
+            htmlFor="resource-form-description"
+            className="text-body text-text-primary mb-1 block font-medium"
+          >
+            Description
+          </label>
           <textarea
+            id="resource-form-description"
             rows={2}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}

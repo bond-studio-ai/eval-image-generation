@@ -47,45 +47,6 @@ function classify(match: string): HandlebarsKind {
   return 'expr';
 }
 
-export function renderHighlightedHandlebars(source: string): ReactNode[] {
-  if (!source) return [];
-
-  const nodes: ReactNode[] = [];
-  const re = mustacheRegex();
-  let cursor = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = re.exec(source)) !== null) {
-    const [token] = match;
-    if (match.index > cursor) {
-      nodes.push(<span key={`t-${cursor}`}>{source.slice(cursor, match.index)}</span>);
-    }
-    nodes.push(
-      <span key={`m-${match.index}`} className={CLASS_BY_KIND[classify(token)]}>
-        {token}
-      </span>,
-    );
-    cursor = match.index + token.length;
-
-    // Zero-length matches would spin forever (shouldn't happen with the
-    // patterns above, but belt and braces).
-    if (match.index === re.lastIndex) re.lastIndex++;
-  }
-
-  if (cursor < source.length) {
-    nodes.push(<span key={`t-${cursor}`}>{source.slice(cursor)}</span>);
-  }
-
-  // A trailing newline isn't rendered by the browser in a `pre-wrap` block,
-  // which would make the overlay shorter than the textarea by one line and
-  // hide any highlight on that line. A zero-width space preserves the row.
-  if (source.endsWith('\n')) {
-    nodes.push(<span key="trailing-nl">{'\u200B'}</span>);
-  }
-
-  return nodes;
-}
-
 /**
  * Highlight `source` and return one array of `ReactNode`s per logical line
  * (i.e. split on `\n`). Tokens that straddle newlines (e.g. multiline

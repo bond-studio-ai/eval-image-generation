@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode, type Ref } from 'react';
 import { cn } from './cn';
 
 export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'accent';
@@ -52,12 +52,19 @@ interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
   size?: BadgeSize;
   iconLeft?: ReactNode;
   children: ReactNode;
+  ref?: Ref<HTMLSpanElement>;
 }
 
-export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
-  { tone = 'neutral', variant = 'soft', size = 'md', iconLeft, className, children, ...rest },
+export function Badge({
+  tone = 'neutral',
+  variant = 'soft',
+  size = 'md',
+  iconLeft,
+  className,
+  children,
   ref,
-) {
+  ...rest
+}: BadgeProps) {
   const palette = variant === 'solid' ? SOLID : variant === 'outline' ? OUTLINE : SOFT;
   return (
     <span
@@ -74,4 +81,4 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
       {children}
     </span>
   );
-});
+}

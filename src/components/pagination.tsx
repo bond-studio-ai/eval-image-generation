@@ -55,6 +55,7 @@ function EllipsisJump({
     return (
       <input
         ref={inputRef}
+        aria-label="Jump to page"
         value={value}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
         onKeyDown={(e) => {
@@ -122,6 +123,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
       <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs">
         <button
           type="button"
+          aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
@@ -162,6 +164,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
 
         <button
           type="button"
+          aria-label="Next page"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}

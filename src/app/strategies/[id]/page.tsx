@@ -52,35 +52,37 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         ) : (
           <div className="mt-4">
             <StrategyFlowDag
-              steps={result.steps
-                .filter((step) => (step.type ?? 'generation') !== 'judge')
-                .map(
-                  (step): DagStep => ({
-                    stepOrder: step.stepOrder,
-                    label: step.name || `Step ${step.stepOrder}`,
-                    model: step.model ?? result.model,
-                    aspectRatio: step.aspectRatio ?? result.aspectRatio,
-                    outputResolution: step.outputResolution ?? result.outputResolution,
-                    temperature: step.temperature ?? result.temperature,
-                    promptName: step.promptVersionName,
-                    dollhouseViewFromStep: step.dollhouseViewFromStep,
-                    realPhotoFromStep: step.realPhotoFromStep,
-                    moodBoardFromStep: step.moodBoardFromStep,
-                    arbitraryImageFromStep: step.arbitraryImageFromStep,
-                  }),
-                )}
-              judges={result.steps
-                .filter((step) => step.type === 'judge')
-                .flatMap((step) =>
-                  (step.judges ?? []).map((j, ji) => ({
-                    name: j.name,
-                    type: j.judgeType as 'batch' | 'individual',
-                    model: j.judgeModel,
-                    promptName: j.judgePromptVersionName,
-                    toleranceThreshold: j.toleranceThreshold,
-                    position: ji + 1,
-                  })),
-                )}
+              steps={result.steps.flatMap((step): DagStep[] =>
+                (step.type ?? 'generation') === 'judge'
+                  ? []
+                  : [
+                      {
+                        stepOrder: step.stepOrder,
+                        label: step.name || `Step ${step.stepOrder}`,
+                        model: step.model ?? result.model,
+                        aspectRatio: step.aspectRatio ?? result.aspectRatio,
+                        outputResolution: step.outputResolution ?? result.outputResolution,
+                        temperature: step.temperature ?? result.temperature,
+                        promptName: step.promptVersionName,
+                        dollhouseViewFromStep: step.dollhouseViewFromStep,
+                        realPhotoFromStep: step.realPhotoFromStep,
+                        moodBoardFromStep: step.moodBoardFromStep,
+                        arbitraryImageFromStep: step.arbitraryImageFromStep,
+                      },
+                    ],
+              )}
+              judges={result.steps.flatMap((step) =>
+                step.type === 'judge'
+                  ? (step.judges ?? []).map((j, ji) => ({
+                      name: j.name,
+                      type: j.judgeType as 'batch' | 'individual',
+                      model: j.judgeModel,
+                      promptName: j.judgePromptVersionName,
+                      toleranceThreshold: j.toleranceThreshold,
+                      position: ji + 1,
+                    }))
+                  : [],
+              )}
             />
           </div>
         )}

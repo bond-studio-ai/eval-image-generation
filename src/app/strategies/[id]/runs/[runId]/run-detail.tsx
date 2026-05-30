@@ -224,9 +224,9 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
         {images.map((img, i) => (
           <div key={i} className="group relative">
             {img.isComposite ? (
-              <div
-                className="aspect-square cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
-                role="button"
+              <button
+                type="button"
+                className="block aspect-square w-full cursor-pointer overflow-hidden rounded-md border border-violet-400 bg-gray-50 ring-1 ring-violet-200"
                 onClick={() => setExpandedGroup(expandedGroup === i ? null : i)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -236,7 +236,7 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
-              </div>
+              </button>
             ) : (
               <ExpandableImage
                 src={img.url}
@@ -534,7 +534,7 @@ function groupStepResults(sorted: StepResult[]): StepGroup[] {
     }
     map.get(order)!.results.push(sr);
   }
-  return [...map.values()].sort((a, b) => a.stepOrder - b.stepOrder);
+  return [...map.values()].toSorted((a, b) => a.stepOrder - b.stepOrder);
 }
 
 /* ---------- Generation image tile ---------- */
@@ -1087,37 +1087,38 @@ export function RunDetail({
 
   const stepGroups = groupStepResults(sorted);
 
-  const dagSteps: DagStep[] = stepGroups
-    .filter((g) => g.step)
-    .map((g) => {
-      const anyCompleted = g.results.some((r) => r.status === 'completed');
-      const anyRunning = g.results.some((r) => r.status === 'running');
-      const anyFailed = g.results.some((r) => r.status === 'failed');
-      const status = anyRunning
-        ? 'running'
-        : anyCompleted
-          ? 'completed'
-          : anyFailed
-            ? 'failed'
-            : ((g.results[0]?.status as DagStep['status']) ?? 'pending');
-      return {
+  const dagSteps: DagStep[] = stepGroups.flatMap((g) => {
+    if (!g.step) return [];
+    const anyCompleted = g.results.some((r) => r.status === 'completed');
+    const anyRunning = g.results.some((r) => r.status === 'running');
+    const anyFailed = g.results.some((r) => r.status === 'failed');
+    const status = anyRunning
+      ? 'running'
+      : anyCompleted
+        ? 'completed'
+        : anyFailed
+          ? 'failed'
+          : ((g.results[0]?.status as DagStep['status']) ?? 'pending');
+    return [
+      {
         stepOrder: g.stepOrder,
         label: g.name,
-        model: g.step!.model,
-        aspectRatio: g.step!.aspectRatio,
-        outputResolution: g.step!.outputResolution,
-        temperature: g.step!.temperature,
-        promptName: g.step!.promptVersion?.name,
-        dollhouseViewFromStep: g.step!.dollhouseViewFromStep,
-        realPhotoFromStep: g.step!.realPhotoFromStep,
-        moodBoardFromStep: g.step!.moodBoardFromStep,
+        model: g.step.model,
+        aspectRatio: g.step.aspectRatio,
+        outputResolution: g.step.outputResolution,
+        temperature: g.step.temperature,
+        promptName: g.step.promptVersion?.name,
+        dollhouseViewFromStep: g.step.dollhouseViewFromStep,
+        realPhotoFromStep: g.step.realPhotoFromStep,
+        moodBoardFromStep: g.step.moodBoardFromStep,
         status,
         error: g.results.find((r) => r.error)?.error ?? null,
-      };
-    });
+      },
+    ];
+  });
 
   const dagJudges = [...new Map(data.judgeResults.map((j) => [j.strategyJudgeId, j])).values()]
-    .sort((a, b) => a.position - b.position)
+    .toSorted((a, b) => a.position - b.position)
     .map((j) => ({
       name: j.judgeName,
       type: j.judgeType,
@@ -1324,12 +1325,11 @@ export function RunDetail({
       {/* ──── Skipped reasons ──── */}
       {data.status === 'skipped' &&
         (() => {
-          const reasons = sorted
-            .filter((sr) => sr.status === 'skipped' && sr.error)
-            .map((sr) => ({
-              step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`,
-              reason: sr.error!,
-            }));
+          const reasons = sorted.flatMap((sr) =>
+            sr.status === 'skipped' && sr.error
+              ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
+              : [],
+          );
           if (reasons.length === 0) return null;
           return (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -1348,12 +1348,11 @@ export function RunDetail({
       {/* ──── Failed reasons ──── */}
       {data.status === 'failed' &&
         (() => {
-          const reasons = sorted
-            .filter((sr) => (sr.status === 'failed' || sr.status === 'skipped') && sr.error)
-            .map((sr) => ({
-              step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`,
-              reason: sr.error!,
-            }));
+          const reasons = sorted.flatMap((sr) =>
+            (sr.status === 'failed' || sr.status === 'skipped') && sr.error
+              ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
+              : [],
+          );
           if (reasons.length === 0) return null;
           return (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">

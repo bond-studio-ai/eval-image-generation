@@ -44,6 +44,7 @@ interface PreviewPromptPageProps {
 
 interface DropdownWithSearchProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
+  triggerId?: string;
   open: boolean;
   setOpen: (v: boolean) => void;
   search: string;
@@ -58,6 +59,7 @@ interface DropdownWithSearchProps {
 
 function DropdownWithSearch({
   containerRef,
+  triggerId,
   open,
   setOpen,
   search,
@@ -69,10 +71,15 @@ function DropdownWithSearch({
   onSelectId,
   emptyMessage,
 }: DropdownWithSearchProps) {
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (open) searchInputRef.current?.focus();
+  }, [open]);
   return (
     <div ref={containerRef} className="relative w-full">
       <button
         type="button"
+        id={triggerId}
         onClick={() => setOpen(!open)}
         className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:ring-1"
       >
@@ -92,12 +99,13 @@ function DropdownWithSearch({
         <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
           <div className="border-b border-gray-200 p-2">
             <input
+              ref={searchInputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
+              aria-label="Search"
               className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
-              autoFocus
             />
           </div>
           <ul className="max-h-48 overflow-auto py-1">
@@ -374,7 +382,12 @@ export function PreviewPromptPage({
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="min-w-0">
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Prompt version</label>
+          <label
+            htmlFor="preview-prompt-version"
+            className="mb-1.5 block text-xs font-medium text-gray-600"
+          >
+            Prompt version
+          </label>
           {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
@@ -382,6 +395,7 @@ export function PreviewPromptPage({
           ) : (
             <DropdownWithSearch
               containerRef={promptRef}
+              triggerId="preview-prompt-version"
               open={promptDropdownOpen}
               setOpen={setPromptDropdownOpen}
               search={promptSearch}
@@ -399,7 +413,12 @@ export function PreviewPromptPage({
           )}
         </div>
         <div className="min-w-0">
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Input preset</label>
+          <label
+            htmlFor="preview-input-preset"
+            className="mb-1.5 block text-xs font-medium text-gray-600"
+          >
+            Input preset
+          </label>
           {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
@@ -407,6 +426,7 @@ export function PreviewPromptPage({
           ) : (
             <DropdownWithSearch
               containerRef={presetRef}
+              triggerId="preview-input-preset"
               open={presetDropdownOpen}
               setOpen={setPresetDropdownOpen}
               search={presetSearch}
@@ -424,7 +444,12 @@ export function PreviewPromptPage({
           )}
         </div>
         <div className="min-w-0">
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Dollhouse area</label>
+          <label
+            htmlFor="preview-dollhouse-area"
+            className="mb-1.5 block text-xs font-medium text-gray-600"
+          >
+            Dollhouse area
+          </label>
           {loadingOptions ? (
             <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Loading…
@@ -432,6 +457,7 @@ export function PreviewPromptPage({
           ) : (
             <DropdownWithSearch
               containerRef={areaRef}
+              triggerId="preview-dollhouse-area"
               open={areaDropdownOpen}
               setOpen={setAreaDropdownOpen}
               search={areaSearch}

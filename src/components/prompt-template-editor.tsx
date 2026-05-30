@@ -13,7 +13,6 @@ import {
 } from '@/lib/prompt-template-constants';
 import { validateHandlebarsTemplate } from '@/lib/validate-handlebars';
 import {
-  forwardRef,
   Fragment,
   useCallback,
   useEffect,
@@ -21,6 +20,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type Ref,
   type TextareaHTMLAttributes,
   type UIEvent,
 } from 'react';
@@ -291,6 +291,7 @@ export function PromptTemplateEditor({
               <div className="border-b border-gray-200 p-2">
                 <input
                   type="text"
+                  aria-label="Search conditionals"
                   value={conditionalSearch}
                   onChange={(e) => setConditionalSearch(e.target.value)}
                   placeholder="Search…"
@@ -356,6 +357,7 @@ export function PromptTemplateEditor({
                   <div className="border-b border-gray-200 p-2">
                     <input
                       type="text"
+                      aria-label="Search products"
                       value={referenceSearch}
                       onChange={(e) => setReferenceSearch(e.target.value)}
                       placeholder="Search products…"
@@ -480,6 +482,7 @@ export function PromptTemplateEditor({
                   <div className="border-b border-gray-200 p-2">
                     <input
                       type="text"
+                      aria-label="Search dollhouse products"
                       value={dollhouseSearch}
                       onChange={(e) => setDollhouseSearch(e.target.value)}
                       placeholder="Search or type a custom product key…"
@@ -621,6 +624,7 @@ type HighlightedTextareaProps = Omit<
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   fillHeight?: boolean;
+  ref?: Ref<HTMLTextAreaElement>;
 };
 
 // Width of the line-number gutter, declared once so the overlay and the
@@ -675,83 +679,86 @@ function measureScrollbarWidth(): number {
  *  - Color and background on the textarea are set via inline `style` so
  *    they always win over whatever the caller passes in `className`.
  */
-const HighlightedTextarea = forwardRef<HTMLTextAreaElement, HighlightedTextareaProps>(
-  function HighlightedTextarea(
-    { value, onChange, className, fillHeight = false, onScroll, style, ...rest },
-    ref,
-  ) {
-    const overlayInnerRef = useRef<HTMLDivElement>(null);
-    const [scrollbarWidth, setScrollbarWidth] = useState(0);
+function HighlightedTextarea({
+  value,
+  onChange,
+  className,
+  fillHeight = false,
+  onScroll,
+  style,
+  ref,
+  ...rest
+}: HighlightedTextareaProps) {
+  const overlayInnerRef = useRef<HTMLDivElement>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
 
-    useEffect(() => {
-      setScrollbarWidth(measureScrollbarWidth());
-    }, []);
+  useEffect(() => {
+    setScrollbarWidth(measureScrollbarWidth());
+  }, []);
 
-    const handleScroll = useCallback(
-      (e: UIEvent<HTMLTextAreaElement>) => {
-        const inner = overlayInnerRef.current;
-        if (inner) {
-          const t = e.currentTarget;
-          inner.style.transform = `translate(${-t.scrollLeft}px, ${-t.scrollTop}px)`;
-        }
-        onScroll?.(e);
-      },
-      [onScroll],
-    );
+  const handleScroll = useCallback(
+    (e: UIEvent<HTMLTextAreaElement>) => {
+      const inner = overlayInnerRef.current;
+      if (inner) {
+        const t = e.currentTarget;
+        inner.style.transform = `translate(${-t.scrollLeft}px, ${-t.scrollTop}px)`;
+      }
+      onScroll?.(e);
+    },
+    [onScroll],
+  );
 
-    const lines = useMemo(() => renderHighlightedHandlebarsByLine(value), [value]);
+  const lines = useMemo(() => renderHighlightedHandlebarsByLine(value), [value]);
 
-    return (
-      <div className={`relative ${fillHeight ? 'flex min-h-0 flex-1' : ''}`}>
+  return (
+    <div className={`relative ${fillHeight ? 'flex min-h-0 flex-1' : ''}`}>
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`}
+        style={{
+          borderColor: 'transparent',
+          boxShadow: 'none',
+          paddingLeft: 0,
+          paddingRight: scrollbarWidth,
+        }}
+      >
         <div
-          aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`}
+          ref={overlayInnerRef}
+          className="grid"
           style={{
-            borderColor: 'transparent',
-            boxShadow: 'none',
-            paddingLeft: 0,
-            paddingRight: scrollbarWidth,
+            gridTemplateColumns: `${GUTTER_WIDTH} 1fr`,
           }}
         >
-          <div
-            ref={overlayInnerRef}
-            className="grid"
-            style={{
-              gridTemplateColumns: `${GUTTER_WIDTH} 1fr`,
-              willChange: 'transform',
-            }}
-          >
-            {lines.map((line, i) => (
-              <Fragment key={i}>
-                <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">
-                  {i + 1}
-                </div>
-                <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">
-                  {line}
-                </div>
-              </Fragment>
-            ))}
-          </div>
+          {lines.map((line, i) => (
+            <Fragment key={i}>
+              <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">
+                {i + 1}
+              </div>
+              <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">
+                {line}
+              </div>
+            </Fragment>
+          ))}
         </div>
-        <textarea
-          {...rest}
-          ref={ref}
-          value={value}
-          onChange={onChange}
-          onScroll={handleScroll}
-          spellCheck={false}
-          className={`relative z-10 w-full ${className ?? ''}`}
-          style={{
-            ...style,
-            color: 'transparent',
-            backgroundColor: 'transparent',
-            caretColor: 'rgb(17, 24, 39)',
-            paddingLeft: GUTTER_WIDTH,
-            scrollbarGutter: 'stable',
-            lineHeight: '1.25rem',
-          }}
-        />
       </div>
-    );
-  },
-);
+      <textarea
+        {...rest}
+        ref={ref}
+        value={value}
+        onChange={onChange}
+        onScroll={handleScroll}
+        spellCheck={false}
+        className={`relative z-10 w-full ${className ?? ''}`}
+        style={{
+          ...style,
+          color: 'transparent',
+          backgroundColor: 'transparent',
+          caretColor: 'rgb(17, 24, 39)',
+          paddingLeft: GUTTER_WIDTH,
+          scrollbarGutter: 'stable',
+          lineHeight: '1.25rem',
+        }}
+      />
+    </div>
+  );
+}
