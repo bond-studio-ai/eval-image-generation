@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useReducer, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
+import { CopyIcon, LockIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
 import { DeletePromptVersionButton } from './delete-prompt-version-button';
 import { PromptTemplateEditor } from './prompt-template-editor';
@@ -222,42 +224,14 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                   disabled={saving}
                   className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
                 >
-                  {saving && (
-                    <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                  )}
+                  {saving && <Spinner className="size-4" />}
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               </>
             )}
             {generations.length > 0 && !data.deletedAt && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 ring-inset">
-                <svg
-                  className="size-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                  />
-                </svg>
+                <LockIcon className="size-3.5" />
                 Locked
               </span>
             )}
@@ -267,19 +241,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               disabled={cloning}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
-              <svg
-                className="size-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"
-                />
-              </svg>
+              <CopyIcon className="size-4" />
               {cloning ? 'Cloning…' : 'Clone'}
             </button>
             {isEditable && (

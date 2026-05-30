@@ -8,6 +8,13 @@ import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
 import { ReviewBadge } from '@/components/review-badge';
 import { ReviewResultsBadge } from '@/components/review-results';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  MaximizeIcon,
+  RefreshIcon,
+} from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
@@ -289,15 +296,9 @@ function BatchRunCard({
         className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-3 text-left hover:bg-gray-50/50"
       >
         <div className="flex items-center gap-3">
-          <svg
+          <ChevronRightIcon
             className={`size-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
+          />
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${batch.isStandalone ? 'bg-gray-100 text-gray-700' : 'bg-indigo-50 text-indigo-700'}`}
           >
@@ -324,37 +325,7 @@ function BatchRunCard({
               }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
-              {retrying ? (
-                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="size-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-                  />
-                </svg>
-              )}
+              {retrying ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Failed ({failedRuns})
             </span>
           )}
@@ -370,35 +341,9 @@ function BatchRunCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
-                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
+                <Spinner className="size-3.5" />
               ) : (
-                <svg
-                  className="size-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-                  />
-                </svg>
+                <RefreshIcon className="size-3.5" />
               )}
               Retry Judge
             </span>
@@ -540,37 +485,7 @@ function CollapsibleBatchCard({
               }}
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
-              {retrying ? (
-                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="size-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-                  />
-                </svg>
-              )}
+              {retrying ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Failed ({failedRuns})
             </span>
           )}
@@ -586,49 +501,17 @@ function CollapsibleBatchCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
-                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
+                <Spinner className="size-3.5" />
               ) : (
-                <svg
-                  className="size-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-                  />
-                </svg>
+                <RefreshIcon className="size-3.5" />
               )}
               Retry Judge
             </span>
           )}
           <StatusBadge status={batch.status} />
-          <svg
+          <ChevronDownIcon
             className={`size-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          />
         </div>
       </button>
       {judgeRetryError && (
@@ -773,19 +656,7 @@ function BatchMatrix({
                               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-2 border-amber-400 ring-2 ring-amber-200' : 'border border-gray-200'}`}
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <svg
-                                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                                />
-                              </svg>
+                              <MaximizeIcon className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
                             </div>
                             <JudgeScoreBadge
                               runId={run.id}

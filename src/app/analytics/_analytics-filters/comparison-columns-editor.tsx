@@ -6,6 +6,7 @@ import {
   type AnalyticsComparisonSource,
 } from '@/app/analytics/comparison-utils';
 import { DateRangePicker } from '@/components/date-range-picker';
+import { PlusIcon, XIcon } from '@/components/ui/icons';
 import type { StrategyListItem } from '@/lib/service-client';
 import { StrategyDropdown } from './strategy-dropdown';
 import type { UpdateComparisonColumns } from './types';
@@ -112,15 +113,7 @@ export function ComparisonColumnsEditor({
                     disabled={columns.length <= 1}
                     className="text-text-disabled disabled:hover:text-text-disabled rounded-lg p-1 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <svg
-                      className="size-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <XIcon className="size-3.5" />
                   </button>
                 </td>
               </tr>
@@ -135,15 +128,7 @@ export function ComparisonColumnsEditor({
           onClick={addComparisonColumn}
           className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
         >
-          <svg
-            className="size-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
+          <PlusIcon className="size-3.5" />
           Add column
         </button>
       </div>

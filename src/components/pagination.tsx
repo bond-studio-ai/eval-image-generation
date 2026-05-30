@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 interface PaginationProps {
   page: number;
@@ -94,23 +96,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
   return (
     <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
       <p className="flex items-center gap-2 text-sm text-gray-700">
-        {loading && (
-          <svg className="size-3.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        )}
+        {loading && <Spinner className="size-3.5 text-gray-400" />}
         Page <span className="font-medium">{page}</span> of{' '}
         <span className="font-medium">{totalPages}</span>
         <span className="text-gray-400"> ({total} results)</span>
@@ -124,13 +110,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
           disabled={page <= 1}
           className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <ChevronLeftIcon className="size-5" />
         </button>
 
         {pages.map((p) =>
@@ -165,13 +145,7 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
           disabled={page >= totalPages}
           className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <ChevronRightIcon className="size-5" />
         </button>
       </nav>
     </div>

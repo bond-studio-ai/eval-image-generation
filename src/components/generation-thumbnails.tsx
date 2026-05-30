@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
+import { ImageIcon, XIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
 
 interface GenerationThumbnailsProps {
@@ -52,19 +53,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
   if (urls.length === 0) {
     return (
       <div className="flex size-12 items-center justify-center rounded border border-gray-200 bg-gray-50">
-        <svg
-          className="size-4 text-gray-300"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z"
-          />
-        </svg>
+        <ImageIcon className="size-4 text-gray-300" />
       </div>
     );
   }
@@ -111,15 +100,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
               onClick={() => setExpanded(false)}
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
-              <svg
-                className="size-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <XIcon className="size-5" />
             </button>
           </div>
 

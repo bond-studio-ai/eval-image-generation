@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { MinusIcon, PlusIcon } from '@/components/ui/icons';
 
 export function NumberOfImagesInput({
   value,
@@ -64,15 +65,7 @@ export function NumberOfImagesInput({
               aria-label="Decrease image count"
               className="flex size-8 items-center justify-center rounded-l-lg border-r border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-              </svg>
+              <MinusIcon className="size-3.5" />
             </button>
             <input
               ref={focusOnMount}
@@ -93,15 +86,7 @@ export function NumberOfImagesInput({
               aria-label="Increase image count"
               className="flex size-8 items-center justify-center rounded-r-lg border-l border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-white"
             >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
+              <PlusIcon className="size-3.5" />
             </button>
           </div>
         )}

@@ -6,6 +6,7 @@ import { RatingForm } from '@/app/generations/[id]/rating-form';
 import { CdnImage } from '@/components/cdn-image';
 import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
+import { XIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
 import { serviceUrl } from '@/lib/api-base';
 import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
@@ -141,15 +142,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
             onClick={onClose}
             className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
           >
-            <svg
-              className="size-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="size-5" />
           </button>
         </div>
 
@@ -336,15 +329,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
             className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
             aria-label="Close"
           >
-            <svg
-              className="size-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="size-5" />
           </button>
         </Modal>
       )}

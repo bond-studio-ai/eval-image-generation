@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { XIcon } from '@/components/ui/icons';
 import { serviceUrl } from '@/lib/api-base';
 
 interface ViewPromptModalProps {
@@ -68,15 +69,7 @@ export function ViewPromptModal({
             onClick={onClose}
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
-            <svg
-              className="size-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="size-5" />
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-5">

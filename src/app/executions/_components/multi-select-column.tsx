@@ -1,3 +1,5 @@
+import { CheckIcon, SearchIcon } from '@/components/ui/icons';
+
 export interface SelectableItem {
   id: string;
   label: string;
@@ -53,19 +55,7 @@ export function MultiSelectColumn({
           )}
         </div>
         <div className="relative mt-2">
-          <svg
-            className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-            />
-          </svg>
+          <SearchIcon className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchValue}
@@ -101,21 +91,7 @@ export function MultiSelectColumn({
                         : 'border-gray-300 bg-white'
                     }`}
                   >
-                    {selected && (
-                      <svg
-                        className="size-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={3}
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4.5 12.75l6 6 9-13.5"
-                        />
-                      </svg>
-                    )}
+                    {selected && <CheckIcon className="size-3" />}
                   </span>
                   <span className="truncate font-medium text-gray-900">{item.label}</span>
                 </button>

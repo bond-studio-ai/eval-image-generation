@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
 import { buildPanels, type DetailPanel } from '@/components/judge-score-badge-utils';
+import { AlertTriangleIcon, InfoIcon, StarIcon, XIcon } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
+import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
@@ -89,19 +91,7 @@ export function ReasoningModal({
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             {isFailed ? (
               <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                <svg
-                  className="size-4 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"
-                  />
-                </svg>
+                <AlertTriangleIcon className="size-4 text-red-600" />
               </span>
             ) : (
               <span
@@ -115,9 +105,7 @@ export function ReasoningModal({
             </h3>
             {!isFailed && isSelected && (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                <svg className="size-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+                <StarIcon className="size-3" fill="currentColor" />
                 Selected
               </span>
             )}
@@ -134,15 +122,7 @@ export function ReasoningModal({
           onClick={onClose}
           className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
-          <svg
-            className="size-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XIcon className="size-5" />
         </button>
       </div>
 
@@ -443,19 +423,7 @@ export function JudgeScoreBadge({
             if (e.key === 'Enter' || e.key === ' ') openDetailModal(e);
           }}
         >
-          <svg
-            className="size-2.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
-            />
-          </svg>
+          <InfoIcon className="size-2.5" />
           Judge failed
         </span>
         {showModal && (
@@ -473,21 +441,7 @@ export function JudgeScoreBadge({
   if (awaitingJudge) {
     return (
       <span className="absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-        <svg className="size-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
+        <Spinner className="size-2.5" />
         Judging
       </span>
     );

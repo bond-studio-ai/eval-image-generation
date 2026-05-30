@@ -1,6 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XIcon,
+} from '@/components/ui/icons';
 
 type Preset = { label: string; days: number };
 
@@ -328,19 +335,7 @@ export function DateRangePicker({
                   : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <svg
-              className="size-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-              />
-            </svg>
+            <CalendarIcon className="size-3.5" />
             {hasCustomRange ? `${formatDisplay(from)} – ${formatDisplay(to)}` : 'Custom'}
           </button>
 
@@ -354,19 +349,7 @@ export function DateRangePicker({
                   aria-label="Previous month"
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
-                  <svg
-                    className="size-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 19.5L8.25 12l7.5-7.5"
-                    />
-                  </svg>
+                  <ChevronLeftIcon className="size-4" />
                 </button>
                 <p className="text-xs font-medium text-gray-500">
                   {cal.picking === 'end' && cal.rangeStart
@@ -379,19 +362,7 @@ export function DateRangePicker({
                   aria-label="Next month"
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
-                  <svg
-                    className="size-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
+                  <ChevronRightIcon className="size-4" />
                 </button>
               </div>
 
@@ -426,21 +397,7 @@ export function DateRangePicker({
                       {formatDisplay(cal.rangeStart)}
                     </span>
                   )}
-                  {cal.rangeStart && (
-                    <svg
-                      className="size-3 text-gray-300"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                      />
-                    </svg>
-                  )}
+                  {cal.rangeStart && <ArrowRightIcon className="size-3 text-gray-300" />}
                   {cal.rangeEnd && (
                     <span className="rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
                       {formatDisplay(cal.rangeEnd)}
@@ -481,15 +438,7 @@ export function DateRangePicker({
           className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           title="Clear date filter"
         >
-          <svg
-            className="size-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XIcon className="size-3.5" />
         </button>
       )}
     </div>
