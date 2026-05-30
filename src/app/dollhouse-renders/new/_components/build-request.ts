@@ -6,10 +6,10 @@ import {
   type DollhouseRenderConfig,
   type DollhouseRenderMode,
   type DollhouseSsmParams,
-  type DollhouseStyleOverride,
   type UnitySlimDesignMaterials,
 } from '@/lib/dollhouse-renders';
 import type { SsmParamsState } from './ssm-params-editor';
+import type { StyleOverrideRow } from './style-overrides-editor';
 
 export type ImageFormat = DollhouseImageConfig['format'];
 export type RenderModeOption = DollhouseRenderMode | 'default';
@@ -107,7 +107,7 @@ interface BuildCreateBodyInput {
   imageConfig: ImageConfigState;
   renderConfig: RenderConfigState;
   ssmParams: SsmParamsState;
-  styleOverrides: DollhouseStyleOverride[];
+  styleOverrides: StyleOverrideRow[];
 }
 
 export interface OverrideParseResult<T> {
@@ -172,7 +172,9 @@ export function buildCreateRenderBody(input: BuildCreateBodyInput): CreateDollho
   if (renderConfig) body.renderConfig = renderConfig;
   const ssmParams = buildSsmParams(input.ssmParams);
   if (ssmParams) body.ssmParams = ssmParams;
-  const cleanOverrides = input.styleOverrides.filter((o) => o.product.trim() && o.style.trim());
+  const cleanOverrides = input.styleOverrides
+    .filter((o) => o.product.trim() && o.style.trim())
+    .map(({ product, style }) => ({ product, style }));
   if (cleanOverrides.length > 0) body.styleOverrides = cleanOverrides;
   return body;
 }

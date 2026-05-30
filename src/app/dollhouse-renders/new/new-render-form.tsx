@@ -8,7 +8,6 @@ import {
   createDollhouseRender,
   DollhouseRenderApiError,
   DollhouseRenderUnexpectedResponseError,
-  type DollhouseStyleOverride,
 } from '@/lib/dollhouse-renders';
 import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from '@/lib/projects';
 import { useRouter } from 'next/navigation';
@@ -27,6 +26,7 @@ import { ProjectDataSection } from './_components/project-data-section';
 import { ProjectPickerSection } from './_components/project-picker-section';
 import { RenderConfigSection } from './_components/render-config-section';
 import type { SsmParamsState } from './_components/ssm-params-editor';
+import type { StyleOverrideRow } from './_components/style-overrides-editor';
 import { useDollhouseOverrides } from './_components/use-dollhouse-overrides';
 import { buildWizardModel, WIZARD_SECTION_IDS } from './_components/wizard-model';
 
@@ -94,7 +94,7 @@ export function NewRenderForm() {
   const [imageConfig, setImageConfig] = useState<ImageConfigState>(DEFAULT_IMAGE_CONFIG);
   const [renderConfig, setRenderConfig] = useState<RenderConfigState>(DEFAULT_RENDER_CONFIG);
   const [ssmParams, setSsmParams] = useState<SsmParamsState>(DEFAULT_SSM_PARAMS);
-  const [styleOverrides, setStyleOverrides] = useState<DollhouseStyleOverride[]>([]);
+  const [styleOverrides, setStyleOverrides] = useState<StyleOverrideRow[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

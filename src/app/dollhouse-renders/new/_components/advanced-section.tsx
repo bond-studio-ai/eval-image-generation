@@ -1,10 +1,9 @@
 'use client';
 
 import { Button, FormSection } from '@/components/ui';
-import type { DollhouseStyleOverride } from '@/lib/dollhouse-renders';
 import { useState } from 'react';
 import { SsmParamsEditor, type SsmParamsState } from './ssm-params-editor';
-import { StyleOverridesEditor } from './style-overrides-editor';
+import { StyleOverridesEditor, type StyleOverrideRow } from './style-overrides-editor';
 
 export function AdvancedSection({
   styleOverrides,
@@ -12,8 +11,8 @@ export function AdvancedSection({
   ssmParams,
   onSsmParamsChange,
 }: {
-  styleOverrides: DollhouseStyleOverride[];
-  onStyleOverridesChange: (next: DollhouseStyleOverride[]) => void;
+  styleOverrides: StyleOverrideRow[];
+  onStyleOverridesChange: (next: StyleOverrideRow[]) => void;
   ssmParams: SsmParamsState;
   onSsmParamsChange: (next: SsmParamsState) => void;
 }) {

@@ -51,7 +51,7 @@ export function ComparisonColumnsEditor({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {columns.map((column, index) => (
-              <tr key={index} className="group">
+              <tr key={column.id} className="group">
                 <td className="px-3 py-2.5 text-center text-xs font-medium text-gray-400">
                   {index + 1}
                 </td>
