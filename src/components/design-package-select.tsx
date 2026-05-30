@@ -1,9 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 import { localUrl } from '@/lib/api-base';
 import type { DesignPackageOption } from '@/lib/design-package';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 function optionLabel(option: DesignPackageOption): string {
   return option.title?.trim() || option.name?.trim() || option.id;
@@ -20,11 +20,7 @@ export function DesignPackageSelect({
 }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const {
     data: options = [],
@@ -163,7 +159,7 @@ export function DesignPackageSelect({
             </div>
             <div className="border-b border-gray-100 p-4">
               <input
-                ref={searchInputRef}
+                ref={focusOnMount}
                 type="text"
                 aria-label="Search packages"
                 value={search}

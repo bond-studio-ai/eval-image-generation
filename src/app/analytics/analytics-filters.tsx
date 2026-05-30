@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useMemo, useRef } from 'react';
 import {
   COMPARE_COLUMN_QUERY_KEY,
   createEmptyComparisonColumn,
@@ -10,8 +12,6 @@ import {
 } from '@/app/analytics/comparison-utils';
 import { browserTimezone } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/service-client';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { ComparisonColumnsEditor } from './_analytics-filters/comparison-columns-editor';
 import { PrimaryFilters } from './_analytics-filters/primary-filters';
 
@@ -30,24 +30,27 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const to = searchParams.get('to') ?? '';
   const model = searchParams.get('model') ?? '';
   const source = searchParams.get('source') ?? 'all';
-  const comparison = parseComparisonState(searchParams);
+  // Memoize on the serialized params: `parseComparisonState` mints a fresh
+  // `crypto.randomUUID()` for legacy (pre-id) columns, so re-parsing on every
+  // render would hand the editor unstable React keys. Same params → same ids.
+  const comparison = useMemo(() => parseComparisonState(searchParams), [searchParams]);
 
-  const columnsRef = useRef(comparison.columns);
-  columnsRef.current = comparison.columns;
+  const defaultSource: AnalyticsComparisonSource =
+    source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
 
-  const hasInitializedRef = useRef(false);
-  useEffect(() => {
-    if (isCompare && comparison.columns.length === 0 && !hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      const defaultSource: AnalyticsComparisonSource =
-        source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
-      const defaultCol = createEmptyComparisonColumn({ from, to, source: defaultSource });
-      const next = new URLSearchParams(searchParams.toString());
-      next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(defaultCol));
-      router.replace(`/?${next}`);
-    }
-    if (!isCompare) hasInitializedRef.current = false;
-  }, [isCompare, comparison.columns.length, from, to, source, searchParams, router]);
+  // Show a starter column when entering compare mode with none yet. It lives in
+  // memory (not the URL) until the user edits it, which avoids a redirect-in-
+  // effect; the memoized id keeps the row's inputs from remounting each render
+  // and round-trips into the URL on the first edit.
+  const defaultColumn = useMemo(
+    () => createEmptyComparisonColumn({ from, to, source: defaultSource }),
+    [from, to, defaultSource],
+  );
+  const columns =
+    isCompare && comparison.columns.length === 0 ? [defaultColumn] : comparison.columns;
+
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
 
   const buildUrl = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
@@ -127,7 +130,7 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
 
       {isCompare && (
         <ComparisonColumnsEditor
-          columns={comparison.columns}
+          columns={columns}
           strategies={strategies}
           updateComparisonColumns={updateComparisonColumns}
           addComparisonColumn={addComparisonColumn}

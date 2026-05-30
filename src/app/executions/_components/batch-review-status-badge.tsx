@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
 
 const REVIEW_STATUS_CONFIG: Record<
   string,

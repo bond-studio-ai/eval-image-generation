@@ -1,14 +1,14 @@
 'use client';
 
+import Link from 'next/link';
+import { useMemo, useRef, useState } from 'react';
 import { buildPanels, type DetailPanel } from '@/components/judge-score-badge-utils';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { serviceUrl } from '@/lib/api-base';
 import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
 } from '@/lib/strategy-run-judge-results';
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
 
 interface JudgeScoreBadgeProps {
   runId?: string | null;
@@ -327,7 +327,7 @@ export function JudgeScoreBadge({
     judgeTypeUsed?: string | null;
     judgeResults: StrategyRunJudgeResultEntry[];
   } | null>(null);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const isLoadingDetail = useRef(false);
 
   const panels = useMemo(
     () =>
@@ -359,10 +359,10 @@ export function JudgeScoreBadge({
     e.preventDefault();
     setShowModal(true);
     if (!runId) return;
-    if (isLoadingDetail) return;
+    if (isLoadingDetail.current) return;
     if ((judgeResults?.length ?? 0) > 1 && fetchedDetail) return;
     try {
-      setIsLoadingDetail(true);
+      isLoadingDetail.current = true;
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
@@ -400,7 +400,7 @@ export function JudgeScoreBadge({
     } catch {
       // Keep the fallback data already shown in the modal.
     } finally {
-      setIsLoadingDetail(false);
+      isLoadingDetail.current = false;
     }
   };
 

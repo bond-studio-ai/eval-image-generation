@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
@@ -13,8 +15,6 @@ import {
 } from '@/lib/strategy-run-judge-results';
 import { groupStrategyRuns, type StrategyRunBatchGroup } from '@/lib/strategy-runs-view';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
-import Link from 'next/link';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface StepResult {
   id: string;
@@ -739,7 +739,7 @@ function BatchMatrix({
                   {canonicalGenerationId && (
                     <ReviewBadge
                       generationId={canonicalGenerationId}
-                      initialState={segmentationStatuses.get(canonicalGenerationId)}
+                      state={segmentationStatuses.get(canonicalGenerationId)}
                       onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)}
                     />
                   )}

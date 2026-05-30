@@ -1,7 +1,7 @@
-import { fetchStrategyRunById } from '@/lib/service-client';
-import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { fetchStrategyRunById } from '@/lib/service-client';
+import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
 import { RunDetail } from './run-detail';
 
 export const metadata: Metadata = {

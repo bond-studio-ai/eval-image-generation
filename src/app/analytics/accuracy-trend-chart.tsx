@@ -1,9 +1,9 @@
 'use client';
 
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
-import type { AccuracyTrendPoint } from '@/lib/service-client';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
+import type { AccuracyTrendPoint } from '@/lib/service-client';
 
 const AccuracyTrendChartGraph = dynamic(
   () => import('./accuracy-trend-chart-graph').then((m) => m.AccuracyTrendChartGraph),

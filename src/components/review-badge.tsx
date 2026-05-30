@@ -1,7 +1,8 @@
 'use client';
 
-import { AlertCircleIcon, CheckIcon, SparklesIcon, Spinner } from '@/components/ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { AlertCircleIcon, CheckIcon, SparklesIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 import { runReviewPost } from './run-review-post';
 
 /**
@@ -22,40 +23,31 @@ export type ReviewState =
 interface SegmentationBadgeProps {
   generationId: string | null | undefined;
   /**
-   * Initial state seeded by the parent (typically from
-   * `useBatchReviewStatus`'s parallel hydration on accordion
-   * expand). Defaults to `idle`. The component takes over once the
-   * user clicks the badge.
+   * Current review state, owned by the parent (the shared `useBatchReviewStatus`
+   * cache). Defaults to `idle` when unset. This is a controlled component — the
+   * parent is the single source of truth.
    */
-  initialState?: ReviewState;
-  /** Notified whenever the badge transitions. Used by the parent to keep its
-   * shared cache in sync so collapsing + re-expanding doesn't lose progress. */
-  onStateChange?: (next: ReviewState) => void;
+  state?: ReviewState;
+  /** Notified whenever the badge transitions, so the parent's shared cache stays
+   * in sync (collapsing + re-expanding doesn't lose progress). */
+  onStateChange: (next: ReviewState) => void;
 }
 
-export function ReviewBadge({ generationId, initialState, onStateChange }: SegmentationBadgeProps) {
-  const [state, setState] = useState<ReviewState>(initialState ?? { kind: 'idle' });
-
-  useEffect(() => {
-    if (initialState) setState(initialState);
-  }, [initialState]);
-
-  const transition = useCallback(
-    (next: ReviewState) => {
-      setState(next);
-      onStateChange?.(next);
-    },
-    [onStateChange],
-  );
+export function ReviewBadge({
+  generationId,
+  state: stateProp,
+  onStateChange,
+}: SegmentationBadgeProps) {
+  const state = stateProp ?? { kind: 'idle' };
 
   const runReview = useCallback(
     async (force: boolean) => {
       if (!generationId) return;
-      transition({ kind: 'running' });
+      onStateChange({ kind: 'running' });
       const next = await runReviewPost(generationId, force);
-      transition(next);
+      onStateChange(next);
     },
-    [generationId, transition],
+    [generationId, onStateChange],
   );
 
   if (!generationId) return null;

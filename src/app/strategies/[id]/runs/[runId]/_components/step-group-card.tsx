@@ -1,8 +1,8 @@
 'use client';
 
-import { ExpandableImage } from '@/components/expandable-image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { ExpandableImage } from '@/components/expandable-image';
 import { StepAudit } from './audit';
 import { SegmentationPanel } from './segmentation-panel';
 import { ChevronIcon, StatusBadge, STEP_STATUS_DOT } from './shared';

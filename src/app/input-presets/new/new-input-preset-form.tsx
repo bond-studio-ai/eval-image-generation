@@ -1,12 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useReducer, useState } from 'react';
 import { DesignPackageSelect } from '@/components/design-package-select';
 import {
   DesignSettingsEditor,
   type DesignSettingsValue,
 } from '@/components/design-settings-editor';
 import { designSettingsHasValues } from '@/components/design-settings-values';
-import { LayoutPresetSelect } from '@/components/layout-preset-select';
+import { LayoutPresetSelect, useLayoutPresets } from '@/components/layout-preset-select';
 import { PageHeader, PrimaryButton } from '@/components/page-header';
 import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
 import { SceneImageInput } from '@/components/scene-image-input';
@@ -21,14 +23,11 @@ import {
   INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY,
 } from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
-import { useRouter } from 'next/navigation';
-import { useReducer, useState } from 'react';
 
 type FormState = {
   name: string;
   description: string;
   layoutTypeId: string;
-  layoutTypeName: string | null;
   pkgId: string;
   dollhouseView: string | null;
   realPhoto: string | null;
@@ -56,7 +55,6 @@ const INITIAL_FORM: FormState = {
   name: '',
   description: '',
   layoutTypeId: '',
-  layoutTypeName: null,
   pkgId: '',
   dollhouseView: null,
   realPhoto: null,
@@ -74,6 +72,10 @@ export function NewInputPresetForm() {
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { options: layoutPresets } = useLayoutPresets();
+  const layoutTypeName =
+    layoutPresets.find((option) => option.id === form.layoutTypeId)?.name ?? null;
 
   const hasAnyImage =
     Object.values(form.arbitraryImagesBySlot).some((url) => !!url) ||
@@ -96,13 +98,8 @@ export function NewInputPresetForm() {
     setField('arbitraryImagesBySlot', {});
     setField(
       'designSettings',
-      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(form.layoutTypeName) }),
+      designSettingsFromPackage(pkg, { isPowderRoom: isPowderRoomLayoutName(layoutTypeName) }),
     );
-  }
-
-  function handleLayoutChange(value: string, option?: { name?: string | null } | null) {
-    setField('layoutTypeId', value);
-    setField('layoutTypeName', option?.name ?? null);
   }
 
   async function handleCreate() {
@@ -199,8 +196,7 @@ export function NewInputPresetForm() {
         <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Room Preset</h2>
         <LayoutPresetSelect
           value={form.layoutTypeId}
-          onChange={handleLayoutChange}
-          onResolvedOptionChange={(option) => setField('layoutTypeName', option?.name ?? null)}
+          onChange={(value) => setField('layoutTypeId', value)}
         />
         <div className="mt-4">
           <DesignPackageSelect

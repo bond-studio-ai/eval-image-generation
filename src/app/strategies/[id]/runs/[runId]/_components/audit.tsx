@@ -1,8 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
 import { ExpandableImage } from '@/components/expandable-image';
-import { useState } from 'react';
 import { ChevronIcon } from './shared';
 import type { InputImage, StepResult } from './types';
 

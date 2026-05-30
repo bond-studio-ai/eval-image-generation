@@ -1,10 +1,10 @@
+import type { Metadata } from 'next';
 import { PreviewPromptPage } from '@/components/preview-prompt-page';
 import {
   fetchInputPresetsMinimal,
   fetchPromptPreviewDollhouseSource,
   fetchPromptVersionsMinimal,
 } from '@/lib/service-client';
-import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

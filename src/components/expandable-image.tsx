@@ -1,9 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { Modal } from '@/components/ui';
-import { useState } from 'react';
+import { Modal } from '@/components/ui/modal';
 
 interface ExpandableImageProps {
   src: string;

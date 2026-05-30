@@ -1,7 +1,7 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { StrategyListItem } from '@/lib/service-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 export function StrategyDropdown({
   value,
@@ -13,20 +13,19 @@ export function StrategyDropdown({
   onChange: (strategyId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const selected = strategies.find((s) => s.id === value);
 
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-    else setSearch('');
-  }, [open]);
+  // Focus the search field when it mounts (i.e. when the dropdown opens) via a
+  // stable callback ref — no effect, and no autoFocus prop.
+  const focusOnOpen = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setSearch('');
       }
     };
     document.addEventListener('mousedown', handler);
@@ -43,7 +42,10 @@ export function StrategyDropdown({
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (open) setSearch('');
+          setOpen(!open);
+        }}
         className={`flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 py-1.5 text-left text-xs transition-colors ${
           open
             ? 'border-primary-400 ring-primary-400 ring-1'
@@ -82,7 +84,7 @@ export function StrategyDropdown({
                 />
               </svg>
               <input
-                ref={searchInputRef}
+                ref={focusOnOpen}
                 type="text"
                 aria-label="Search strategies"
                 value={search}
@@ -103,6 +105,7 @@ export function StrategyDropdown({
                   onClick={() => {
                     onChange(strategy.id);
                     setOpen(false);
+                    setSearch('');
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
                     value === strategy.id

@@ -1,6 +1,6 @@
 'use client';
 
-import { Field, TextInput } from '@/components/ui';
+import { Field, TextInput } from '@/components/ui/field';
 
 export interface SsmParamsState {
   addressablesCatalog: string;

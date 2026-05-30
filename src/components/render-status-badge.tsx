@@ -1,4 +1,4 @@
-import { Badge, type BadgeSize, type BadgeTone } from '@/components/ui';
+import { Badge, type BadgeSize, type BadgeTone } from '@/components/ui/badge';
 import type { DollhouseRenderStatus } from '@/lib/dollhouse-renders';
 
 const STATUS_TONE: Record<DollhouseRenderStatus, BadgeTone> = {

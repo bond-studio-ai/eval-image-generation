@@ -1,7 +1,7 @@
 'use client';
 
 import { DateRangePicker } from '@/components/date-range-picker';
-import { SegmentedControl } from '@/components/ui';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 
 export function BatchToolbar({
   from,

@@ -1,9 +1,10 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import { type ReviewState } from '@/components/review-badge';
 import { runReviewPost } from '@/components/run-review-post';
-import { AlertCircleIcon, CheckIcon, SparklesIcon, Spinner } from '@/components/ui';
-import { useCallback, useMemo } from 'react';
+import { AlertCircleIcon, CheckIcon, SparklesIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * Badge that fans out `POST /generations/:id/review` for every

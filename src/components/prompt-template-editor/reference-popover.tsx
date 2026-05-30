@@ -1,5 +1,5 @@
-import { REFERENCE_OPTIONS } from '@/lib/prompt-template-constants';
 import { type Dispatch } from 'react';
+import { REFERENCE_OPTIONS } from '@/lib/prompt-template-constants';
 import {
   type AttributesAction,
   type AttributesState,

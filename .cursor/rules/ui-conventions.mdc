@@ -55,8 +55,10 @@ Use the typography tokens defined in `globals.css`. Do not invent text sizes inl
 
 Use the `Card` primitive over the raw `rounded-lg border bg-white shadow-xs` snippet:
 
+Each primitive is imported directly from its own module (e.g. `@/components/ui/card`). There is no `@/components/ui` barrel — import the thing from where it lives.
+
 ```tsx
-import { Card } from '@/components/ui';
+import { Card } from '@/components/ui/card';
 
 <Card>
   <h2 className="text-h3 font-semibold">Distribution</h2>
@@ -64,7 +66,7 @@ import { Card } from '@/components/ui';
 </Card>
 ```
 
-Compose `<CardHeader>`, `<CardBody>`, `<CardFooter>` for cards with delimited regions. Use `<StatCard>` for KPIs.
+Use `<StatCard>` for KPIs.
 
 ## Buttons
 
@@ -75,7 +77,6 @@ There is exactly **one** button system. Reach for these in priority order:
 | Action button | `<Button variant="primary | secondary | ghost | danger | link" />` |
 | Navigation CTA | `<LinkButton href="/..." iconLeft={<PlusIcon />} />` |
 | Square icon button (table actions, toolbar) | `<IconButton label="..." icon={<TrashIcon />} />` |
-| Header overflow menu | `<MoreActionsMenu actions={[...]} />` |
 
 Never write inline `<button className="bg-primary-600 ...">`. The legacy `PrimaryButton`/`PrimaryLinkButton` from `@/components/page-header` are deprecated wrappers that delegate to `Button`/`LinkButton` — prefer the new names.
 
@@ -90,7 +91,7 @@ Never re-implement `border-b-2` or `bg-white shadow-sm` toggle markup inline.
 
 ## Badges
 
-The single `Badge` primitive from `@/components/ui` replaces every pill:
+The single `Badge` primitive from `@/components/ui/badge` replaces every pill:
 
 ```tsx
 <Badge tone="success" variant="soft">Reviewed</Badge>
@@ -104,7 +105,7 @@ Tones: `neutral | info | success | warning | danger | accent`. Variants: `soft |
 
 ## Spinners and icons
 
-- Always import icons from `@/components/ui` (which re-exports lucide). Do not import directly from `lucide-react`, and do not paste inline SVG path data.
+- Always import icons from `@/components/ui/icons` (a curated, aliased re-export of lucide). Do not import directly from `lucide-react`, and do not paste inline SVG path data.
 - Use `<Spinner size="xs | sm | md | lg" />` for loading indicators. Never paste the spinner SVG inline.
 
 ## Forms
@@ -125,25 +126,24 @@ Tones: `neutral | info | success | warning | danger | accent`. Variants: `soft |
 
 ## Filters above lists
 
-Use `<FilterBar>` and `<FilterSearch>` from `@/components/ui` to build filter rows that aren't inside a `DataTable` toolbar. Inside `DataTable`, the existing `SearchBar`/`FilterPills`/`SelectAllCheckbox` continue to be the source of truth.
+Use `<FilterBar>` and `<FilterSearch>` from `@/components/ui/filter-bar` to build filter rows that aren't inside a `DataTable` toolbar. Inside `DataTable`, the existing `SearchBar`/`FilterPills`/`SelectAllCheckbox` continue to be the source of truth.
 
 ## Shared Components
 
 | Component | Import | Purpose |
 |---|---|---|
-| `Button`, `LinkButton` | `@/components/ui` | All action buttons |
-| `IconButton` | `@/components/ui` | Square icon-only button with tooltip |
-| `MoreActionsMenu` | `@/components/ui` | Overflow dropdown for secondary actions |
-| `Tabs` | `@/components/ui` | Underline tab navigation |
-| `SegmentedControl` | `@/components/ui` | Pill-toggle for view modes |
-| `Badge` | `@/components/ui` | Unified pill primitive |
-| `Spinner` | `@/components/ui` | Loader |
-| `Card`, `CardHeader`, `CardBody`, `CardFooter`, `StatCard` | `@/components/ui` | Card surfaces |
-| `FormSection` | `@/components/ui` | Titled section wrapper for resource forms |
-| `FilterBar`, `FilterSearch` | `@/components/ui` | Filter toolbars above lists |
-| `useConfirm`, `ConfirmProvider` | `@/components/ui` | Styled confirm dialogs |
-| `toast`, `useToast`, `ToasterProvider` | `@/components/ui` | App-wide toast notifications |
-| Lucide icons (`TrashIcon`, etc.) | `@/components/ui` | Icon set re-exported from lucide |
+| `Button`, `LinkButton` | `@/components/ui/button` | All action buttons |
+| `IconButton` | `@/components/ui/icon-button` | Square icon-only button with tooltip |
+| `Tabs` | `@/components/ui/tabs` | Underline tab navigation |
+| `SegmentedControl` | `@/components/ui/segmented-control` | Pill-toggle for view modes |
+| `Badge` | `@/components/ui/badge` | Unified pill primitive |
+| `Spinner` | `@/components/ui/spinner` | Loader |
+| `Card`, `StatCard` | `@/components/ui/card` | Card surfaces |
+| `FormSection` | `@/components/ui/form-section` | Titled section wrapper for resource forms |
+| `FilterBar`, `FilterSearch` | `@/components/ui/filter-bar` | Filter toolbars above lists |
+| `useConfirm`, `ConfirmProvider` | `@/components/ui/confirm-dialog` | Styled confirm dialogs |
+| `toast`, `ToasterProvider` | `@/components/ui/toaster` | App-wide toast notifications |
+| Lucide icons (`TrashIcon`, etc.) | `@/components/ui/icons` | Curated, aliased lucide icon set |
 | `PageHeader` | `@/components/page-header` | All page titles, back links, actions |
 | `ResourceFormHeader` | `@/components/resource-form-header` | Name + Description card |
 | `ErrorCard` | `@/components/resource-form-header` | Error messages |

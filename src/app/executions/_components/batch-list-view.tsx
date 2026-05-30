@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { CdnImage } from '@/components/cdn-image';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
 import { MatrixCellRatingOverlay } from '@/components/matrix-cell-rating-overlay';
@@ -8,7 +9,6 @@ import { ReviewResultsBadge } from '@/components/review-results';
 import { ReviewRunGroupBadge } from '@/components/review-run-group-badge';
 import { StrategyHoverCard } from '@/components/strategy-hover-card';
 import { useBatchReviewStatus } from '@/lib/use-batch-review-status';
-import Link from 'next/link';
 import { ReviewStatusBadge } from './batch-review-status-badge';
 import { deriveRunReviewStatus, isAwaitingJudgeBatch, type RunRow } from './batch-types';
 

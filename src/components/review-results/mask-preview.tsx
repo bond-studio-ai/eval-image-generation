@@ -1,7 +1,7 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
 import { useEffect, useRef, useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 import type { CategoryMask } from './types';
 
 /**
@@ -90,21 +90,25 @@ export function CompositeMaskCanvas({
   canvasClassName?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   // Stable identity for `useEffect` so we don't repaint on every render
   // (each `buildRows` call returns fresh `masks` arrays even when the
   // URLs are unchanged).
   const maskKey = masks.map((m) => m.url).join('|');
+  // Remember which `maskKey` the async paint resolved for. When `maskKey`
+  // changes the stored result falls stale, so `status` derives back to
+  // 'loading' during render — no effect reset needed.
+  const [painted, setPainted] = useState<{ key: string; status: 'ready' | 'error' } | null>(null);
+  const status: 'loading' | 'ready' | 'error' =
+    painted?.key === maskKey ? painted.status : 'loading';
 
   useEffect(() => {
     if (masks.length === 0) {
-      setStatus('error');
+      setPainted({ key: maskKey, status: 'error' });
       return;
     }
     const canvas = canvasRef.current;
     if (!canvas) return;
     let cancelled = false;
-    setStatus('loading');
 
     const loadImage = (url: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
@@ -130,7 +134,7 @@ export function CompositeMaskCanvas({
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          setStatus('error');
+          setPainted({ key: maskKey, status: 'error' });
           return;
         }
         // Black background so any pixel not painted by a mask stays
@@ -141,9 +145,9 @@ export function CompositeMaskCanvas({
         for (const img of images) {
           ctx.drawImage(img, 0, 0, width, height);
         }
-        setStatus('ready');
+        setPainted({ key: maskKey, status: 'ready' });
       } catch {
-        if (!cancelled) setStatus('error');
+        if (!cancelled) setPainted({ key: maskKey, status: 'error' });
       }
     })();
 

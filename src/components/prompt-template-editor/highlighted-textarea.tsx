@@ -1,16 +1,15 @@
-import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 import {
   Fragment,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
-  useState,
+  useSyncExternalStore,
   type ChangeEvent,
   type Ref,
   type TextareaHTMLAttributes,
   type UIEvent,
 } from 'react';
+import { renderHighlightedHandlebarsByLine } from '@/lib/highlight-handlebars';
 
 export type HighlightedTextareaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
@@ -46,6 +45,18 @@ function measureScrollbarWidth(): number {
   document.body.removeChild(outer);
   cachedScrollbarWidth = sw;
   return sw;
+}
+
+// The scrollbar width is a per-environment constant, so there is nothing to
+// subscribe to and the store never changes after the first measurement.
+function subscribeScrollbarWidth(): () => void {
+  return () => {};
+}
+
+// The server has no scrollbar to measure; it renders 0 and the client measures
+// the real width on hydration, so there is no post-mount state flip.
+function getServerScrollbarWidth(): number {
+  return 0;
 }
 
 /**
@@ -85,11 +96,11 @@ export function HighlightedTextarea({
   ...rest
 }: HighlightedTextareaProps) {
   const overlayInnerRef = useRef<HTMLDivElement>(null);
-  const [scrollbarWidth, setScrollbarWidth] = useState(0);
-
-  useEffect(() => {
-    setScrollbarWidth(measureScrollbarWidth());
-  }, []);
+  const scrollbarWidth = useSyncExternalStore(
+    subscribeScrollbarWidth,
+    measureScrollbarWidth,
+    getServerScrollbarWidth,
+  );
 
   const handleScroll = useCallback(
     (e: UIEvent<HTMLTextAreaElement>) => {

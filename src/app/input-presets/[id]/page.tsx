@@ -1,8 +1,8 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { InputPresetDetail } from '@/components/input-preset-detail';
 import { getInputPresetStoredImages } from '@/lib/input-preset-design';
 import { fetchGenerations, fetchInputPresetById } from '@/lib/service-client';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,13 +23,10 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ipData = presetData as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = ipData.stats as Record<string, any> | undefined;
 
   const genResult = await fetchGenerations({ inputPresetId: id, limit: '100' });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generations = (genResult.data ?? []) as any[];
 
   // Count populated image columns
@@ -47,7 +44,6 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     deletedAt: ipData.deletedAt ?? ipData.deleted_at ?? null,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const serializedGenerations = generations.map((g: any) => ({
     id: g.id,
     sceneAccuracyRating: g.sceneAccuracyRating ?? null,

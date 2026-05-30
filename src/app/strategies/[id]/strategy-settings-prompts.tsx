@@ -1,9 +1,9 @@
 'use client';
 
-import { ViewPromptModal } from '@/components/view-prompt-modal';
-import { STRATEGY_PROPERTY_COLORS } from '@/lib/strategy-property-colors';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
+import { ViewPromptModal } from '@/components/view-prompt-modal';
+import { STRATEGY_PROPERTY_COLORS } from '@/lib/strategy-property-colors';
 
 interface StepWithPrompt {
   stepOrder: number;

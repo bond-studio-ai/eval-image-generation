@@ -1,9 +1,9 @@
 'use client';
 
-import type { ReviewState } from '@/components/review-badge';
-import { serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import type { ReviewState } from '@/components/review-badge';
+import { serviceUrl } from '@/lib/api-base';
 import { MaskIcon } from './icons';
 import { ReviewModal } from './modal';
 import type { ReviewRecord } from './types';

@@ -1,8 +1,8 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { serviceUrl } from '@/lib/api-base';
 
 type Rating = 'GOOD' | 'FAILED' | null;
 

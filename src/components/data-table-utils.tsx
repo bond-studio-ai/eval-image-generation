@@ -1,5 +1,6 @@
-import { CopyIcon, EditIcon, IconButton, TrashIcon } from '@/components/ui';
 import { Fragment, type ReactNode } from 'react';
+import { IconButton } from '@/components/ui/icon-button';
+import { CopyIcon, EditIcon, TrashIcon } from '@/components/ui/icons';
 import type { DataTableColumn, RowAction } from './data-table';
 
 // ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ export function actionsColumn<T>(actions: RowAction<T>[]): DataTableColumn<T> {
           const isLoading = action.loading?.(row) ?? false;
           return (
             <IconButton
-              key={i}
+              key={action.label}
               label={action.label}
               icon={ACTION_ICONS[action.icon]}
               variant={action.variant === 'danger' ? 'danger' : 'default'}

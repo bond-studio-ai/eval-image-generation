@@ -1,7 +1,7 @@
 'use client';
 
-import { Field, TextInput } from '@/components/ui';
 import type { ChangeEvent, ReactNode } from 'react';
+import { Field, TextInput } from '@/components/ui/field';
 
 interface NumberInputProps {
   label: ReactNode;

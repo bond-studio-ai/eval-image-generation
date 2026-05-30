@@ -1,20 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { ErrorCard } from '@/components/resource-form-header';
-import {
-  Badge,
-  Banner,
-  Button,
-  Checkbox,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  Field,
-  FormSection,
-  Textarea,
-} from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
+import { Banner } from '@/components/ui/banner';
+import { Button } from '@/components/ui/button';
+import { Checkbox, Field, Textarea } from '@/components/ui/field';
+import { FormSection } from '@/components/ui/form-section';
+import { ChevronDownIcon, ChevronUpIcon } from '@/components/ui/icons';
 import { cameraFrameKey, type DollhouseCameraFrame } from '@/lib/dollhouse-renders';
 import type { ProjectRenderBootstrap } from '@/lib/projects';
-import { useState } from 'react';
 import type { DollhouseOverridesController } from './use-dollhouse-overrides';
 
 const LABEL_CLASS =

@@ -1,8 +1,8 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { serviceUrl } from '@/lib/api-base';
 
 interface DeleteGenerationButtonProps {
   generationId: string;

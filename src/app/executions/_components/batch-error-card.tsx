@@ -1,6 +1,7 @@
 'use client';
 
-import { AlertTriangleIcon, Button } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { AlertTriangleIcon } from '@/components/ui/icons';
 
 export function BatchErrorCard({
   error,

@@ -1,11 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   formatComparisonRange,
   formatComparisonSource,
   type AnalyticsComparisonSlice,
 } from '@/app/analytics/comparison-utils';
-import { useMemo } from 'react';
 import { defaultStepLabel, formatExecMs, SLICE_BG_COLORS } from './helpers';
 import type { SliceData } from './types';
 

@@ -1,12 +1,12 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useReducer, useState } from 'react';
 import { PageHeader, PrimaryButton } from '@/components/page-header';
 import { PromptTemplateEditor } from '@/components/prompt-template-editor';
 import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
 import { TwoPaneSplit } from '@/components/two-pane-split';
 import { serviceUrl } from '@/lib/api-base';
-import { useRouter } from 'next/navigation';
-import { useReducer, useState } from 'react';
 
 interface FormState {
   name: string;

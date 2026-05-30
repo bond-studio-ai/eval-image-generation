@@ -1,7 +1,7 @@
 'use client';
 
-import { ComparisonSlider } from '@/components/comparison-slider';
 import { useState } from 'react';
+import { ComparisonSlider } from '@/components/comparison-slider';
 import { SkeletonImage } from './mask-preview';
 
 /**

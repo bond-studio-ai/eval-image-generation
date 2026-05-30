@@ -1,8 +1,8 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { localUrl } from '@/lib/api-base';
-import { useCallback, useRef, useState } from 'react';
 
 interface SceneImageInputProps {
   label: string;

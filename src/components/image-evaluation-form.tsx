@@ -1,9 +1,11 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { serviceUrl } from '@/lib/api-base';
 import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+
+const EMPTY_CATEGORIES: string[] = [];
 
 // Issue options
 const PRODUCT_ACCURACY_ISSUES = [
@@ -106,7 +108,7 @@ function IssueCheckboxGroup({
 
 export function ImageEvaluationForm({
   resultId,
-  productCategories = [],
+  productCategories = EMPTY_CATEGORIES,
 }: ImageEvaluationFormProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -227,15 +229,17 @@ export function ImageEvaluationForm({
     [resultId],
   );
 
+  const onSave = useEffectEvent(save);
+
   // Auto-save whenever evaluation data changes (debounced 800ms for notes,
   // but the effect fires on every change).
   useEffect(() => {
     if (!loadedRef.current) return;
     const timer = setTimeout(() => {
-      save(data);
+      onSave(data);
     }, 800);
     return () => clearTimeout(timer);
-  }, [data, save]);
+  }, [data]);
 
   // Count total issues
   const totalProductIssues = Object.values(data.productAccuracy).reduce(

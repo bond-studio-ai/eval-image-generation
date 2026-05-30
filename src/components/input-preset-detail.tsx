@@ -1,5 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-settings-editor';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
@@ -13,10 +17,6 @@ import {
 } from '@/lib/input-preset-design';
 import { INPUT_PRESET_RETAILER_ID } from '@/lib/input-preset-retailer';
 import type { InputPresetDetailItem } from '@/lib/service-client';
-import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
 import { RatingBadge } from './rating-badge';
 
 interface SerializedGeneration {

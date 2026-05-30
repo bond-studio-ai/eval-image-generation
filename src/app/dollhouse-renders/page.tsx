@@ -1,6 +1,7 @@
-import { PageHeader } from '@/components/page-header';
-import { LinkButton, PlusIcon } from '@/components/ui';
 import type { Metadata } from 'next';
+import { PageHeader } from '@/components/page-header';
+import { LinkButton } from '@/components/ui/button';
+import { PlusIcon } from '@/components/ui/icons';
 import { DollhouseRendersTable } from './dollhouse-renders-table';
 
 export const metadata: Metadata = {

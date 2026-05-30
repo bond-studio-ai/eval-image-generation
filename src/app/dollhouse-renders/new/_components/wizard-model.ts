@@ -1,4 +1,4 @@
-import type { StepperStep, StepperStepState } from '@/components/ui';
+import type { StepperStep, StepperStepState } from '@/components/ui/stepper';
 import {
   cameraFrameKey,
   type DollhouseCameraFrame,

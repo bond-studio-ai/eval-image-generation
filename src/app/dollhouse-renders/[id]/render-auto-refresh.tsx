@@ -1,8 +1,10 @@
 'use client';
 
-import { Banner, RefreshIcon, Spinner } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { Banner } from '@/components/ui/banner';
+import { RefreshIcon } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 interface RenderAutoRefreshProps {
   status: string;

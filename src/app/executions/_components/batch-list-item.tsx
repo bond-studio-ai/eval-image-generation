@@ -1,16 +1,12 @@
 'use client';
 
-import { StrategyHoverCard } from '@/components/strategy-hover-card';
-import {
-  Badge,
-  Button,
-  ChevronRightIcon,
-  cn,
-  IconButton,
-  RotateCcwIcon,
-  TrashIcon,
-} from '@/components/ui';
 import { useRef, useState } from 'react';
+import { StrategyHoverCard } from '@/components/strategy-hover-card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/components/ui/cn';
+import { IconButton } from '@/components/ui/icon-button';
+import { ChevronRightIcon, RotateCcwIcon, TrashIcon } from '@/components/ui/icons';
 import { ListView } from './batch-list-view';
 import { MatrixView } from './batch-matrix-view';
 import { ReviewStatusBadge } from './batch-review-status-badge';

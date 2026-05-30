@@ -1,8 +1,12 @@
 'use client';
 
-import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
+import { browserTimezone, serviceUrl } from '@/lib/api-base';
+
+// Shared frozen empty set returned when the expanded state belongs to a stale
+// filter combination, so the derived value keeps a stable identity.
+const EMPTY_EXPANDED: ReadonlySet<string> = new Set<string>();
 
 type CategoryIssueCount = { issue: string; count: number };
 
@@ -337,7 +341,16 @@ export function ProductCategoryRates({
 
   const [sortKey, setSortKey] = useState<ProdSortKey>('total');
   const [sortDir, setSortDir] = useState<ProdSortDir>('desc');
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Tie the expanded set to the filter inputs that produced it. When any
+  // filter changes the stored key falls stale, so `expandedIds` derives
+  // back to empty during render — no effect needed to collapse rows.
+  const filterKey = `${from ?? ''}|${to ?? ''}|${model ?? ''}|${source ?? ''}|${strategyId ?? ''}`;
+  const [expanded, setExpanded] = useState<{ key: string; ids: Set<string> }>(() => ({
+    key: filterKey,
+    ids: new Set(),
+  }));
+  const expandedIds = expanded.key === filterKey ? expanded.ids : EMPTY_EXPANDED;
 
   const toggleSort = useCallback((key: ProdSortKey) => {
     setSortKey((prev) => {
@@ -350,14 +363,17 @@ export function ProductCategoryRates({
     });
   }, []);
 
-  const toggleExpand = useCallback((categoryKey: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(categoryKey)) next.delete(categoryKey);
-      else next.add(categoryKey);
-      return next;
-    });
-  }, []);
+  const toggleExpand = useCallback(
+    (categoryKey: string) => {
+      setExpanded((prev) => {
+        const next = new Set(prev.key === filterKey ? prev.ids : []);
+        if (next.has(categoryKey)) next.delete(categoryKey);
+        else next.add(categoryKey);
+        return { key: filterKey, ids: next };
+      });
+    },
+    [filterKey],
+  );
 
   const { data: categories = [], isLoading: loading } = useQuery({
     queryKey: ['product-category-rates', from, to, model, source, strategyId],
@@ -379,11 +395,6 @@ export function ProductCategoryRates({
       return normalizeCategoryRows(json.data?.categories);
     },
   });
-
-  // Collapse any expanded breakdown rows whenever the filter inputs change.
-  useEffect(() => {
-    setExpandedIds(new Set());
-  }, [from, to, model, source, strategyId]);
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading product rates…</p>;

@@ -1,14 +1,14 @@
 'use client';
 
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RatingForm } from '@/app/generations/[id]/rating-form';
 import { CdnImage } from '@/components/cdn-image';
 import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
-import { Modal } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { serviceUrl } from '@/lib/api-base';
 import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface GridLightboxProps {
   src: string;

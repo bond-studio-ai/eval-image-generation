@@ -1,8 +1,8 @@
 'use client';
 
-import { serviceUrl } from '@/lib/api-base';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { serviceUrl } from '@/lib/api-base';
 
 export interface LayoutPresetOption {
   id: string;
@@ -10,23 +10,13 @@ export interface LayoutPresetOption {
   rawName?: string;
 }
 
-export function LayoutPresetSelect({
-  value,
-  onChange,
-  onResolvedOptionChange,
-}: {
-  value: string;
-  onChange: (value: string, option?: LayoutPresetOption | null) => void;
-  onResolvedOptionChange?: (option: LayoutPresetOption | null) => void;
-}) {
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
-
+/**
+ * Shared layout-presets fetch. Both this select and its parent forms read from
+ * it (react-query dedupes by `queryKey`), so the parent can resolve a preset
+ * id to its name top-down instead of the child shipping the resolved option
+ * back up through an effect.
+ */
+export function useLayoutPresets() {
   const {
     data: options = [],
     isLoading: loading,
@@ -48,6 +38,22 @@ export function LayoutPresetSelect({
       : 'Failed to fetch layout presets'
     : null;
 
+  return { options, loading, error };
+}
+
+export function LayoutPresetSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string, option?: LayoutPresetOption | null) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
+
+  const { options, loading, error } = useLayoutPresets();
+
   const hasCurrentValue = useMemo(
     () => !value || options.some((option) => option.id === value),
     [options, value],
@@ -57,9 +63,6 @@ export function LayoutPresetSelect({
     [options, value],
   );
 
-  useEffect(() => {
-    onResolvedOptionChange?.(selectedOption);
-  }, [onResolvedOptionChange, selectedOption]);
   const filteredOptions = useMemo(() => {
     const query = search.toLowerCase().trim();
     const base =
@@ -154,7 +157,7 @@ export function LayoutPresetSelect({
             </div>
             <div className="border-b border-gray-100 p-4">
               <input
-                ref={searchInputRef}
+                ref={focusOnMount}
                 type="text"
                 aria-label="Search layouts"
                 value={search}

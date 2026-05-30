@@ -1,9 +1,9 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import { AccuracyTrendChart } from '@/app/analytics/accuracy-trend-chart';
 import { browserTimezone, serviceUrl } from '@/lib/api-base';
 import type { ReliabilityData } from '@/lib/service-client';
-import { useCallback, useEffect, useState } from 'react';
 
 interface ReliabilityTabProps {
   from?: string;

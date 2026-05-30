@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useSyncExternalStore, type ComponentType, type SVGProps } from 'react';
+import { cn } from '@/components/ui/cn';
 import {
   BarChartIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  cn,
   EyeIcon,
   GitCompareIcon,
   ImageIcon,
@@ -13,10 +16,7 @@ import {
   ScrollTextIcon,
   SparklesIcon,
   WorkflowIcon,
-} from '@/components/ui';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
+} from '@/components/ui/icons';
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -59,32 +59,42 @@ const NAV_GROUPS: NavGroup[] = [
 
 const COLLAPSED_KEY = 'aieval.sidebar.collapsed';
 
+const collapsedListeners = new Set<() => void>();
+
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function subscribeCollapsed(onChange: () => void): () => void {
+  collapsedListeners.add(onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    collapsedListeners.delete(onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
+
+function writeCollapsed(next: boolean): void {
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+  } catch {
+    // localStorage unavailable; ignore.
+  }
+  for (const listener of collapsedListeners) listener();
+}
+
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  // Read the persisted collapse state from localStorage via an external store
+  // so SSR gets a clean `false` snapshot and the client hydrates to the real
+  // value without a mount effect or a separate hydration flag.
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
 
-  useEffect(() => {
-    setHydrated(true);
-    try {
-      const v = window.localStorage.getItem(COLLAPSED_KEY);
-      if (v === '1') setCollapsed(true);
-    } catch {
-      // localStorage unavailable; ignore.
-    }
-  }, []);
-
-  const toggleCollapsed = () => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  };
+  const toggleCollapsed = () => writeCollapsed(!collapsed);
 
   const isActive = (item: NavItem) => {
     const match = item.match ?? item.href;
@@ -114,7 +124,7 @@ export function Sidebar() {
             </span>
           )}
         </Link>
-        {!collapsed && hydrated && (
+        {!collapsed && (
           <button
             type="button"
             onClick={toggleCollapsed}

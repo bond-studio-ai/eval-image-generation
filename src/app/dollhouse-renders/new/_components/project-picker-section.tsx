@@ -1,7 +1,11 @@
 'use client';
 
 import { ErrorCard } from '@/components/resource-form-header';
-import { Banner, Button, CheckCircleIcon, Field, FormSection, TextInput } from '@/components/ui';
+import { Banner } from '@/components/ui/banner';
+import { Button } from '@/components/ui/button';
+import { Field, TextInput } from '@/components/ui/field';
+import { FormSection } from '@/components/ui/form-section';
+import { CheckCircleIcon } from '@/components/ui/icons';
 import type { ProjectRenderBootstrap } from '@/lib/projects';
 import { ProjectPickerList } from '../project-picker-list';
 

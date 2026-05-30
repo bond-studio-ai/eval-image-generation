@@ -1,9 +1,9 @@
 'use client';
 
-import { Modal } from '@/components/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useReducer, useState } from 'react';
+import { Modal } from '@/components/ui/modal';
 import { MultiSelectColumn } from './_components/multi-select-column';
 import { NumberOfImagesInput } from './_components/number-of-images-input';
 import {

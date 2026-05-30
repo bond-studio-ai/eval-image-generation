@@ -3,8 +3,8 @@
 import { toast as sonnerToast, Toaster as SonnerToaster } from 'sonner';
 
 /**
- * App-wide toast container. Mounts once in the root layout. Use `toast()` from
- * this module (or `useToast()`) anywhere in the tree to fire notifications.
+ * App-wide toast container. Mounts once in the root layout. Use `toast` from
+ * this module anywhere in the tree to fire notifications.
  */
 export function ToasterProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -49,8 +49,3 @@ export const toast = {
   message: (message: string, opts?: { description?: string }) => sonnerToast.message(message, opts),
   promise: sonnerToast.promise.bind(sonnerToast),
 };
-
-/** Hook variant for ergonomic usage inside components. */
-export function useToast() {
-  return toast;
-}

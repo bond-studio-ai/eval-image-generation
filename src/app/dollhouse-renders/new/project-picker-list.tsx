@@ -1,21 +1,5 @@
 'use client';
 
-import { DataTable, DateCell, FilterPills, type DataTableColumn } from '@/components/data-table';
-import { actionsColumn } from '@/components/data-table-utils';
-import { Pagination } from '@/components/pagination';
-import {
-  Badge,
-  Button,
-  CheckIcon,
-  cn,
-  FilterSearch,
-  SegmentedControl,
-  Spinner,
-  type BadgeTone,
-} from '@/components/ui';
-import { useInfiniteList } from '@/hooks/use-infinite-list';
-import { localUrl } from '@/lib/api-base';
-import type { ProjectSummary } from '@/lib/projects';
 import {
   useCallback,
   useEffect,
@@ -25,6 +9,19 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { DataTable, DateCell, FilterPills, type DataTableColumn } from '@/components/data-table';
+import { actionsColumn } from '@/components/data-table-utils';
+import { Pagination } from '@/components/pagination';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/components/ui/cn';
+import { FilterSearch } from '@/components/ui/filter-bar';
+import { CheckIcon } from '@/components/ui/icons';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
+import { useInfiniteList } from '@/hooks/use-infinite-list';
+import { localUrl } from '@/lib/api-base';
+import type { ProjectSummary } from '@/lib/projects';
 
 const STATUS_FILTERS = ['all', 'Scanned', 'DesignsReady', 'NeedsUserReview', 'Errored'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];

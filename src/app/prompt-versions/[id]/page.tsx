@@ -1,7 +1,7 @@
-import { PromptVersionDetail } from '@/components/prompt-version-detail';
-import { fetchGenerations, fetchPromptVersionById } from '@/lib/service-client';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { PromptVersionDetail } from '@/components/prompt-version-detail';
+import { fetchGenerations, fetchPromptVersionById } from '@/lib/service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +20,10 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   const pvData = await fetchPromptVersionById(id).catch(() => null);
   if (!pvData) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pv = pvData as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stats = pv.stats as Record<string, any> | undefined;
 
   const genResult = await fetchGenerations({ promptVersionId: id, limit: '100' });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generations = (genResult.data ?? []) as any[];
 
   const serializedData = {
@@ -38,7 +35,6 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     deletedAt: pv.deletedAt ?? null,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const serializedGenerations = generations.map((g: any) => ({
     id: g.id,
     sceneAccuracyRating: g.sceneAccuracyRating ?? null,

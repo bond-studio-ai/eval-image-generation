@@ -1,8 +1,8 @@
+import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 import { errorResponse } from '@/lib/api-response';
 import { platformApiBase } from '@/lib/env';
 import { normalizeV2PaginationResponse, rewriteV1PaginationToV2 } from '@/lib/v2-pagination';
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
 
 const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
 

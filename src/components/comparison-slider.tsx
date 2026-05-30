@@ -1,7 +1,7 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
 import { useCallback, useEffect, useRef } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 
 /** Before/after slider: left image is revealed by position %; drag the bar to compare. */
 export function ComparisonSlider({

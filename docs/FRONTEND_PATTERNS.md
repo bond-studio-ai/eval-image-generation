@@ -8,7 +8,8 @@ Pages render inside `AppShell` (sidebar + sticky top bar with breadcrumbs). Do n
 
 ```tsx
 import { PageHeader } from '@/components/page-header';
-import { LinkButton, PlusIcon } from '@/components/ui';
+import { LinkButton } from '@/components/ui/button';
+import { PlusIcon } from '@/components/ui/icons';
 
 <PageHeader
   title="Strategies"
@@ -23,29 +24,22 @@ import { LinkButton, PlusIcon } from '@/components/ui';
 
 ## UI Primitives
 
-All shared UI primitives live in `src/components/ui/` and are re-exported from `@/components/ui`. Always import from there.
+All shared UI primitives live in `src/components/ui/`. Import each one directly from its own module — there is no barrel; import the thing from where it lives.
 
 ```ts
-import {
-  Badge,
-  Button,
-  Card,
-  FilterBar,
-  FilterSearch,
-  FormSection,
-  IconButton,
-  LinkButton,
-  MoreActionsMenu,
-  // icons (lucide re-exports)
-  PlusIcon,
-  SegmentedControl,
-  Spinner,
-  StatCard,
-  Tabs,
-  toast,
-  TrashIcon,
-  useConfirm,
-} from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
+import { Button, LinkButton } from '@/components/ui/button';
+import { Card, StatCard } from '@/components/ui/card';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
+import { FormSection } from '@/components/ui/form-section';
+import { IconButton } from '@/components/ui/icon-button';
+// icons: curated, aliased lucide re-exports
+import { PlusIcon, TrashIcon } from '@/components/ui/icons';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/toaster';
 ```
 
 See [.cursor/rules/ui-conventions.mdc](../.cursor/rules/ui-conventions.mdc) for the full mapping of intent → primitive.
@@ -90,7 +84,7 @@ For non-tabular lists (custom card layouts like the Executions batch tab), keep 
 Surface action results with toasts:
 
 ```tsx
-import { toast } from '@/components/ui';
+import { toast } from '@/components/ui/toaster';
 
 try {
   const res = await fetch(...);
@@ -110,7 +104,7 @@ try {
 Replace `window.confirm()` with the styled dialog:
 
 ```tsx
-import { useConfirm } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const confirm = useConfirm();
 const ok = await confirm({

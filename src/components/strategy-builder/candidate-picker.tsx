@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { CANDIDATE_PRESETS } from './types';
 
 export function CandidatePicker({
@@ -12,11 +12,7 @@ export function CandidatePicker({
 }) {
   const isPreset = CANDIDATE_PRESETS.includes(value as 1 | 2 | 4 | 8);
   const [custom, setCustom] = useState(!isPreset);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (custom) inputRef.current?.focus();
-  }, [custom]);
+  const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const activeCls = 'bg-amber-600 text-white shadow-sm';
   const inactiveCls = 'bg-white text-amber-800 ring-1 ring-amber-300 hover:bg-amber-50';
@@ -48,7 +44,7 @@ export function CandidatePicker({
         </button>
         {custom && (
           <input
-            ref={inputRef}
+            ref={focusOnMount}
             type="text"
             inputMode="numeric"
             aria-label="Candidates"

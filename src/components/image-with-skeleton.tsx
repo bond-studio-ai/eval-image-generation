@@ -1,7 +1,7 @@
 'use client';
 
-import { CdnImage } from '@/components/cdn-image';
 import { useState } from 'react';
+import { CdnImage } from '@/components/cdn-image';
 
 type ImageWithSkeletonProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> & {
   src: string;

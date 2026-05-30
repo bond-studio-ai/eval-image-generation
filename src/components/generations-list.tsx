@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import { DataTable, SelectAllCheckbox, type DataTableColumn } from '@/components/data-table';
 import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
@@ -7,8 +9,6 @@ import { DeleteGenerationButton } from '@/components/delete-generation-button';
 import { GenerationThumbnails } from '@/components/generation-thumbnails';
 import { RatingBadge } from '@/components/rating-badge';
 import { serviceUrl } from '@/lib/api-base';
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface GenerationRow {
   id: string;
@@ -62,7 +62,7 @@ export function GenerationsList({
   const [generations, setGenerations] = useState<GenerationRow[]>(initialData);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +102,7 @@ export function GenerationsList({
     if (loading || !hasMore) return;
     setLoading(true);
 
-    const nextPage = page + 1;
+    const nextPage = pageRef.current + 1;
     const params = new URLSearchParams({ page: String(nextPage), limit: String(pageSize) });
     if (filters.sceneAccuracyRating) params.set('sceneAccuracyRating', filters.sceneAccuracyRating);
     if (filters.productAccuracyRating)
@@ -133,7 +133,7 @@ export function GenerationsList({
           resultCount: (row.resultCount ?? 0) as number,
         }));
         setGenerations((prev) => [...prev, ...newRows]);
-        setPage(nextPage);
+        pageRef.current = nextPage;
         if (json.pagination?.total !== undefined) {
           setTotal(json.pagination.total);
         }
@@ -143,7 +143,7 @@ export function GenerationsList({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page, pageSize, filters]);
+  }, [loading, hasMore, pageSize, filters]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

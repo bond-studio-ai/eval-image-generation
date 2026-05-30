@@ -1,7 +1,7 @@
-import { errorResponse } from '@/lib/api-response';
-import { platformApiBase } from '@/lib/env';
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { errorResponse } from '@/lib/api-response';
+import { platformApiBase } from '@/lib/env';
 
 const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
 

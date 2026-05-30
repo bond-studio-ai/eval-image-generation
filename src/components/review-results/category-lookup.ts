@@ -1,9 +1,9 @@
+import { useEffect, useState } from 'react';
 import {
   getSegmentationCategories,
   indexByKey,
   type SegmentationCategoryMetadata,
 } from '@/lib/segmentation-categories';
-import { useEffect, useState } from 'react';
 import type { CategoryLookup } from './types';
 
 /**

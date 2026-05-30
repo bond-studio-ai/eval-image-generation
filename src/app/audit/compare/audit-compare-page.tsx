@@ -1,19 +1,16 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CdnImage } from '@/components/cdn-image';
 import { PageHeader } from '@/components/page-header';
-import {
-  Badge,
-  Button,
-  CheckCircleIcon,
-  cn,
-  FilterBar,
-  FilterSearch,
-  SegmentedControl,
-  Spinner,
-} from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/components/ui/cn';
+import { FilterBar, FilterSearch } from '@/components/ui/filter-bar';
+import { CheckCircleIcon } from '@/components/ui/icons';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Spinner } from '@/components/ui/spinner';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CompareView } from './compare-view';
 import { SingleRunAuditView } from './single-run-audit-view';
 
@@ -183,7 +180,7 @@ function filtersReducer(state: FiltersState, action: FiltersAction): FiltersStat
 export function AuditComparePage() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,11 +223,11 @@ export function AuditComparePage() {
         if (replace) {
           setRuns(data);
           setTotal(paginationTotal);
-          setPage(1);
+          pageRef.current = 1;
         } else {
           setRuns((prev) => [...prev, ...data]);
           setTotal(paginationTotal);
-          setPage(pageToFetch);
+          pageRef.current = pageToFetch;
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Unknown error');
@@ -244,8 +241,8 @@ export function AuditComparePage() {
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
-    fetchRuns({ replace: false, pageToFetch: page + 1 });
-  }, [hasMore, loadingMore, page, fetchRuns]);
+    fetchRuns({ replace: false, pageToFetch: pageRef.current + 1 });
+  }, [hasMore, loadingMore, fetchRuns]);
 
   useEffect(() => {
     setLoading(true);

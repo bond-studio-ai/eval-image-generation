@@ -1,5 +1,5 @@
-import type { ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
 import { useCallback, useMemo } from 'react';
+import type { ProviderModelV2, StrategyModelCatalog } from '@/lib/service-client';
 import {
   FALLBACK_GENERATION_MODEL,
   FALLBACK_JUDGE_MODEL,

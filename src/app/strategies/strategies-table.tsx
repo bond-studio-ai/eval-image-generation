@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import { BulkDeleteBar } from '@/components/bulk-delete-bar';
 import {
   DataTable,
@@ -14,13 +17,11 @@ import {
 } from '@/components/data-table';
 import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
 import { Pagination } from '@/components/pagination';
-import { toast, useConfirm } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { toast } from '@/components/ui/toaster';
 import { useInfiniteList } from '@/hooks/use-infinite-list';
 import { serviceUrl } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/types';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
 
 export function StrategiesTable() {
   const router = useRouter();

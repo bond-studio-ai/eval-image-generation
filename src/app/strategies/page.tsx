@@ -1,5 +1,5 @@
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import type { Metadata } from 'next';
+import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { StrategiesTable } from './strategies-table';
 
 export const metadata: Metadata = {

@@ -12,6 +12,7 @@ export type AnalyticsComparisonRange = {
 };
 
 export type AnalyticsComparisonColumn = {
+  id: string;
   from: string;
   to: string;
   strategyId: string;
@@ -56,9 +57,12 @@ function parseRange(value: string): AnalyticsComparisonRange {
 }
 
 function parseColumn(value: string): AnalyticsComparisonColumn | null {
-  const [from = '', to = '', strategyId = '', source = 'preset'] = value.split('|', 4);
+  const [from = '', to = '', strategyId = '', source = 'preset', id = ''] = value.split('|', 5);
   if (!isComparisonSource(source)) return null;
   return {
+    // Legacy URLs (encoded before columns carried an id) fall back to a fresh
+    // one; it round-trips through the URL on the next edit and stabilizes.
+    id: id || crypto.randomUUID(),
     from,
     to,
     strategyId,
@@ -94,6 +98,7 @@ export function parseComparisonState(
     for (const strategyId of strategyIds) {
       for (const source of sources) {
         columns.push({
+          id: crypto.randomUUID(),
           from: range.from,
           to: range.to,
           strategyId,
@@ -110,7 +115,7 @@ export function parseComparisonState(
 }
 
 export function encodeComparisonColumn(column: AnalyticsComparisonColumn): string {
-  return `${column.from}|${column.to}|${column.strategyId}|${column.source}`;
+  return `${column.from}|${column.to}|${column.strategyId}|${column.source}|${column.id}`;
 }
 
 export function formatComparisonSource(source: AnalyticsComparisonSource): string {
@@ -134,9 +139,10 @@ export function formatComparisonRange(range: AnalyticsComparisonRange): string {
 }
 
 export function createEmptyComparisonColumn(
-  defaults?: Partial<AnalyticsComparisonColumn>,
+  defaults?: Partial<Omit<AnalyticsComparisonColumn, 'id'>>,
 ): AnalyticsComparisonColumn {
   return {
+    id: crypto.randomUUID(),
     from: defaults?.from ?? '',
     to: defaults?.to ?? '',
     strategyId: defaults?.strategyId ?? '',

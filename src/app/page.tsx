@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AnalyticsFilters } from '@/app/analytics/analytics-filters';
 import { ComparisonSpreadsheet } from '@/app/analytics/comparison-spreadsheet';
 import {
@@ -9,13 +10,13 @@ import { ProductCategoryRates } from '@/app/analytics/product-category-rates';
 import { ReliabilityTab } from '@/app/analytics/reliability-tab';
 import { StrategyPerformanceSection } from '@/app/analytics/strategy-performance-section';
 import { PageHeader } from '@/components/page-header';
-import { Card, StatCard, Tabs, type TabItem } from '@/components/ui';
+import { Card, StatCard } from '@/components/ui/card';
+import { Tabs, type TabItem } from '@/components/ui/tabs';
 import {
   fetchAnalyticsRatings,
   fetchAnalyticsStrategyPerformance,
   fetchStrategies,
 } from '@/lib/service-client';
-import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Analytics',

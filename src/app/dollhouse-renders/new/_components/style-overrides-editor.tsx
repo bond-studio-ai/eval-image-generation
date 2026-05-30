@@ -1,19 +1,29 @@
 'use client';
 
-import { Button, IconButton, PlusIcon, TextInput, TrashIcon } from '@/components/ui';
-import type { DollhouseStyleOverride } from '@/lib/dollhouse-renders';
+import { Button } from '@/components/ui/button';
+import { TextInput } from '@/components/ui/field';
+import { IconButton } from '@/components/ui/icon-button';
+import { PlusIcon, TrashIcon } from '@/components/ui/icons';
+
+// Editor-only row: carries a stable client id for React keys. Stripped back to
+// the bare `{ product, style }` API shape at the request boundary.
+export interface StyleOverrideRow {
+  id: string;
+  product: string;
+  style: string;
+}
 
 interface StyleOverridesEditorProps {
-  value: DollhouseStyleOverride[];
-  onChange: (next: DollhouseStyleOverride[]) => void;
+  value: StyleOverrideRow[];
+  onChange: (next: StyleOverrideRow[]) => void;
 }
 
 const LABEL_CLASS =
   'text-caption text-text-secondary mb-1 block font-medium uppercase tracking-wide';
 
 export function StyleOverridesEditor({ value, onChange }: StyleOverridesEditorProps) {
-  const addRow = () => onChange([...value, { product: '', style: '' }]);
-  const updateRow = (index: number, patch: Partial<DollhouseStyleOverride>) =>
+  const addRow = () => onChange([...value, { id: crypto.randomUUID(), product: '', style: '' }]);
+  const updateRow = (index: number, patch: Partial<StyleOverrideRow>) =>
     onChange(value.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   const removeRow = (index: number) => onChange(value.filter((_, i) => i !== index));
 
@@ -36,7 +46,7 @@ export function StyleOverridesEditor({ value, onChange }: StyleOverridesEditorPr
       ) : (
         <div className="space-y-2">
           {value.map((row, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={row.id} className="flex items-center gap-2">
               <TextInput
                 value={row.product}
                 onChange={(e) => updateRow(index, { product: e.target.value })}
