@@ -1,5 +1,11 @@
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
+import type { Metadata } from 'next';
 import { StrategiesTable } from './strategies-table';
+
+export const metadata: Metadata = {
+  title: 'Strategies',
+  description: 'Multi-step workflows that chain generations together.',
+};
 
 export const dynamic = 'force-dynamic';
 

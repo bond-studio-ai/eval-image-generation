@@ -13,7 +13,7 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { browserTimezone } from '@/lib/api-base';
 import type { StrategyListItem } from '@/lib/service-client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const SOURCE_FILTER_OPTIONS = [
   { value: 'all', label: 'All runs' },
@@ -162,15 +162,13 @@ function StrategyDropdown({
   );
 }
 
-export function AnalyticsFilters({
-  models,
-  strategies,
-  activeTab,
-}: {
+interface AnalyticsFiltersProps {
   models: string[];
   strategies: StrategyListItem[];
   activeTab: string;
-}) {
+}
+
+function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCompare = activeTab === 'compare';
@@ -599,5 +597,13 @@ export function AnalyticsFilters({
         </div>
       )}
     </div>
+  );
+}
+
+export function AnalyticsFilters(props: AnalyticsFiltersProps) {
+  return (
+    <Suspense fallback={null}>
+      <AnalyticsFiltersInner {...props} />
+    </Suspense>
   );
 }

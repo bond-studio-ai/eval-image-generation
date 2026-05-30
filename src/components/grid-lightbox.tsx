@@ -246,7 +246,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                           <div className="flex gap-0.5">
                             {img.urls.map((url, i) => (
                               <button
-                                key={i}
+                                key={url}
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();

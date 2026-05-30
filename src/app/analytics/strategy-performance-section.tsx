@@ -532,9 +532,9 @@ export function StrategyPerformanceSection({
                                   Execution errors
                                 </p>
                                 <ul className="max-h-40 space-y-1 overflow-y-auto">
-                                  {rowBreakdown.execution_errors.map((item, i) => (
+                                  {rowBreakdown.execution_errors.map((item, index) => (
                                     <li
-                                      key={i}
+                                      key={`${index}-${item.reason}`}
                                       className="flex items-center justify-between gap-3 text-sm"
                                     >
                                       <span

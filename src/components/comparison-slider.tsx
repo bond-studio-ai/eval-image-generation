@@ -62,7 +62,7 @@ export function ComparisonSlider({
       isDragging.current = false;
     };
     window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);

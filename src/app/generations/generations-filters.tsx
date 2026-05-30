@@ -3,16 +3,15 @@
 import type { PromptVersionListItem } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { buildGenerationsQuery, type FilterParams } from './query-utils';
 
-export function GenerationsFilters({
-  params,
-  promptVersions,
-}: {
+interface GenerationsFiltersProps {
   params: FilterParams;
   promptVersions: PromptVersionListItem[];
-}) {
+}
+
+function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -159,6 +158,14 @@ export function GenerationsFilters({
   );
 }
 
+export function GenerationsFilters(props: GenerationsFiltersProps) {
+  return (
+    <Suspense fallback={null}>
+      <GenerationsFiltersInner {...props} />
+    </Suspense>
+  );
+}
+
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -218,15 +225,20 @@ function DateRangeForm({
   to?: string;
   onApply: (from: string, to: string) => void;
 }) {
+  const containerRef = useRef<HTMLFormElement>(null);
+  const apply = () => {
+    const root = containerRef.current;
+    const fromInput = root?.querySelector<HTMLInputElement>('[name="from"]');
+    const toInput = root?.querySelector<HTMLInputElement>('[name="to"]');
+    onApply(fromInput?.value ?? '', toInput?.value ?? '');
+  };
   return (
     <form
+      ref={containerRef}
       className="flex items-center gap-1.5"
       onSubmit={(e) => {
         e.preventDefault();
-        const form = e.currentTarget;
-        const fromInput = form.querySelector<HTMLInputElement>('[name="from"]');
-        const toInput = form.querySelector<HTMLInputElement>('[name="to"]');
-        onApply(fromInput?.value ?? '', toInput?.value ?? '');
+        apply();
       }}
     >
       <input

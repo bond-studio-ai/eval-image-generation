@@ -15,6 +15,12 @@ import {
   fetchAnalyticsStrategyPerformance,
   fetchStrategies,
 } from '@/lib/service-client';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Analytics',
+  description: 'Insights into generation quality and strategy performance.',
+};
 
 export const dynamic = 'force-dynamic';
 

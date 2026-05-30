@@ -129,17 +129,33 @@ const CONFIG_LABELS: Record<string, string> = {
 
 /* ---------- small reusable pieces ---------- */
 
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-700',
+  running: 'bg-blue-100 text-blue-700',
+  completed: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
+  skipped: 'bg-amber-100 text-amber-700',
+};
+
+const SOURCE_BADGE_COLORS: Record<string, string> = {
+  preset: 'bg-blue-100 text-blue-700',
+  raw_input: 'bg-purple-100 text-purple-700',
+  batch: 'bg-teal-100 text-teal-700',
+  retry: 'bg-orange-100 text-orange-700',
+};
+
+const STEP_STATUS_DOT: Record<string, string> = {
+  pending: 'bg-gray-300',
+  running: 'bg-blue-400 animate-pulse',
+  completed: 'bg-green-500',
+  failed: 'bg-red-500',
+  skipped: 'bg-amber-400',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-700',
-    running: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    failed: 'bg-red-100 text-red-700',
-    skipped: 'bg-amber-100 text-amber-700',
-  };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.pending}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending}`}
     >
       {status}
     </span>
@@ -148,15 +164,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function SourceBadge({ source }: { source: string | null }) {
   if (!source) return null;
-  const colors: Record<string, string> = {
-    preset: 'bg-blue-100 text-blue-700',
-    raw_input: 'bg-purple-100 text-purple-700',
-    batch: 'bg-teal-100 text-teal-700',
-    retry: 'bg-orange-100 text-orange-700',
-  };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[source] ?? 'bg-gray-100 text-gray-700'}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_BADGE_COLORS[source] ?? 'bg-gray-100 text-gray-700'}`}
     >
       {SOURCE_LABELS[source] ?? source}
     </span>
@@ -534,7 +544,7 @@ function groupStepResults(sorted: StepResult[]): StepGroup[] {
     }
     map.get(order)!.results.push(sr);
   }
-  return [...map.values()].sort((a, b) => a.stepOrder - b.stepOrder);
+  return [...map.values()].toSorted((a, b) => a.stepOrder - b.stepOrder);
 }
 
 /* ---------- Generation image tile ---------- */
@@ -739,14 +749,6 @@ function StepGroupCard({
           ? 'completed'
           : (group.results[0]?.status ?? 'pending');
 
-  const statusDot: Record<string, string> = {
-    pending: 'bg-gray-300',
-    running: 'bg-blue-400 animate-pulse',
-    completed: 'bg-green-500',
-    failed: 'bg-red-500',
-    skipped: 'bg-amber-400',
-  };
-
   // Candidates run in parallel within a generation step, so the step's
   // wall-clock is the slowest candidate, not the sum of all candidates.
   const stepWallClockMs = group.results.reduce(
@@ -763,7 +765,7 @@ function StepGroupCard({
       >
         <ChevronIcon open={open} />
         <span
-          className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusDot[groupStatus] ?? statusDot.pending}`}
+          className={`h-2.5 w-2.5 shrink-0 rounded-full ${STEP_STATUS_DOT[groupStatus] ?? STEP_STATUS_DOT.pending}`}
         />
         <span className="text-sm font-semibold text-gray-900">{group.name}</span>
         {isMulti && (
@@ -1087,37 +1089,38 @@ export function RunDetail({
 
   const stepGroups = groupStepResults(sorted);
 
-  const dagSteps: DagStep[] = stepGroups
-    .filter((g) => g.step)
-    .map((g) => {
-      const anyCompleted = g.results.some((r) => r.status === 'completed');
-      const anyRunning = g.results.some((r) => r.status === 'running');
-      const anyFailed = g.results.some((r) => r.status === 'failed');
-      const status = anyRunning
-        ? 'running'
-        : anyCompleted
-          ? 'completed'
-          : anyFailed
-            ? 'failed'
-            : ((g.results[0]?.status as DagStep['status']) ?? 'pending');
-      return {
+  const dagSteps: DagStep[] = stepGroups.flatMap((g) => {
+    if (!g.step) return [];
+    const anyCompleted = g.results.some((r) => r.status === 'completed');
+    const anyRunning = g.results.some((r) => r.status === 'running');
+    const anyFailed = g.results.some((r) => r.status === 'failed');
+    const status = anyRunning
+      ? 'running'
+      : anyCompleted
+        ? 'completed'
+        : anyFailed
+          ? 'failed'
+          : ((g.results[0]?.status as DagStep['status']) ?? 'pending');
+    return [
+      {
         stepOrder: g.stepOrder,
         label: g.name,
-        model: g.step!.model,
-        aspectRatio: g.step!.aspectRatio,
-        outputResolution: g.step!.outputResolution,
-        temperature: g.step!.temperature,
-        promptName: g.step!.promptVersion?.name,
-        dollhouseViewFromStep: g.step!.dollhouseViewFromStep,
-        realPhotoFromStep: g.step!.realPhotoFromStep,
-        moodBoardFromStep: g.step!.moodBoardFromStep,
+        model: g.step.model,
+        aspectRatio: g.step.aspectRatio,
+        outputResolution: g.step.outputResolution,
+        temperature: g.step.temperature,
+        promptName: g.step.promptVersion?.name,
+        dollhouseViewFromStep: g.step.dollhouseViewFromStep,
+        realPhotoFromStep: g.step.realPhotoFromStep,
+        moodBoardFromStep: g.step.moodBoardFromStep,
         status,
         error: g.results.find((r) => r.error)?.error ?? null,
-      };
-    });
+      },
+    ];
+  });
 
   const dagJudges = [...new Map(data.judgeResults.map((j) => [j.strategyJudgeId, j])).values()]
-    .sort((a, b) => a.position - b.position)
+    .toSorted((a, b) => a.position - b.position)
     .map((j) => ({
       name: j.judgeName,
       type: j.judgeType,
@@ -1324,12 +1327,11 @@ export function RunDetail({
       {/* ──── Skipped reasons ──── */}
       {data.status === 'skipped' &&
         (() => {
-          const reasons = sorted
-            .filter((sr) => sr.status === 'skipped' && sr.error)
-            .map((sr) => ({
-              step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`,
-              reason: sr.error!,
-            }));
+          const reasons = sorted.flatMap((sr) =>
+            sr.status === 'skipped' && sr.error
+              ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
+              : [],
+          );
           if (reasons.length === 0) return null;
           return (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -1348,12 +1350,11 @@ export function RunDetail({
       {/* ──── Failed reasons ──── */}
       {data.status === 'failed' &&
         (() => {
-          const reasons = sorted
-            .filter((sr) => (sr.status === 'failed' || sr.status === 'skipped') && sr.error)
-            .map((sr) => ({
-              step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`,
-              reason: sr.error!,
-            }));
+          const reasons = sorted.flatMap((sr) =>
+            (sr.status === 'failed' || sr.status === 'skipped') && sr.error
+              ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
+              : [],
+          );
           if (reasons.length === 0) return null;
           return (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">

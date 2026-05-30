@@ -827,9 +827,9 @@ function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
   const withOutput = runs.filter((r) => r.lastOutputUrl);
   if (withOutput.length < 2 || !runs.every((r) => r.judgeScore == null)) return false;
 
-  const completedTimes = runs
-    .filter((r) => r.completedAt)
-    .map((r) => new Date(r.completedAt!).getTime());
+  const completedTimes = runs.flatMap((r) =>
+    r.completedAt ? [new Date(r.completedAt).getTime()] : [],
+  );
   if (completedTimes.length === 0) return false;
   return Date.now() - Math.max(...completedTimes) < JUDGE_TIMEOUT_MS;
 }
@@ -1257,17 +1257,18 @@ function RunCell({
   );
 }
 
+const REVIEW_STATUS_CONFIG: Record<
+  string,
+  { tone: 'info' | 'neutral' | 'warning' | 'success'; label: string }
+> = {
+  running: { tone: 'info', label: 'Running' },
+  pending: { tone: 'neutral', label: 'Pending' },
+  in_progress: { tone: 'warning', label: 'In Progress' },
+  reviewed: { tone: 'success', label: 'Reviewed' },
+};
+
 function ReviewStatusBadge({ status }: { status: string }) {
-  const config: Record<
-    string,
-    { tone: 'info' | 'neutral' | 'warning' | 'success'; label: string }
-  > = {
-    running: { tone: 'info', label: 'Running' },
-    pending: { tone: 'neutral', label: 'Pending' },
-    in_progress: { tone: 'warning', label: 'In Progress' },
-    reviewed: { tone: 'success', label: 'Reviewed' },
-  };
-  const c = config[status] ?? config.pending;
+  const c = REVIEW_STATUS_CONFIG[status] ?? REVIEW_STATUS_CONFIG.pending;
   return (
     <Badge tone={c.tone} variant="soft">
       {c.label}

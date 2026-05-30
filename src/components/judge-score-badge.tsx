@@ -415,7 +415,7 @@ export function JudgeScoreBadge({
 
   const hasDetail = panels.some(panelHasContent);
 
-  const handleClick = async (e: React.MouseEvent | React.KeyboardEvent) => {
+  const openDetailModal = async (e: React.MouseEvent | React.KeyboardEvent) => {
     if (!hasDetail) return;
     e.stopPropagation();
     e.preventDefault();
@@ -473,9 +473,9 @@ export function JudgeScoreBadge({
           role="button"
           tabIndex={0}
           className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? 'cursor-help' : ''} ${isJudgeSelected ? 'bg-amber-400 text-amber-900' : 'bg-gray-700/70 text-white'}`}
-          onClick={handleClick}
+          onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') handleClick(e);
+            if (e.key === 'Enter' || e.key === ' ') openDetailModal(e);
           }}
         >
           {judgeScore}
@@ -500,9 +500,9 @@ export function JudgeScoreBadge({
           role="button"
           tabIndex={0}
           className={`absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm ${hasDetail ? 'cursor-help' : ''}`}
-          onClick={handleClick}
+          onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') handleClick(e);
+            if (e.key === 'Enter' || e.key === ' ') openDetailModal(e);
           }}
         >
           <svg

@@ -184,9 +184,10 @@ export function useInfiniteList<T>(
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json: ListResponse<T> = await res.json();
 
         if (!mountedRef.current) return;
+
+        const json: ListResponse<T> = await res.json();
 
         setItems(json.data);
         setTotal(json.pagination.total);

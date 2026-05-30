@@ -59,32 +59,6 @@ const generationInputSchema = z.object({
 // Input category constants
 // ------------------------------------
 
-export const PRODUCT_CATEGORIES = [
-  'faucets',
-  'lightings',
-  'lvps',
-  'mirrors',
-  'paints',
-  'robe_hooks',
-  'shelves',
-  'shower_glasses',
-  'shower_systems',
-  'floor_tiles',
-  'wall_tiles',
-  'shower_wall_tiles',
-  'shower_floor_tiles',
-  'shower_curb_tiles',
-  'toilet_paper_holders',
-  'toilets',
-  'towel_bars',
-  'towel_rings',
-  'tub_doors',
-  'tub_fillers',
-  'tubs',
-  'vanities',
-  'wallpapers',
-] as const;
-
 export const CATEGORY_LABELS: Record<string, string> = {
   faucets: 'Faucets',
   lightings: 'Lightings',
@@ -115,13 +89,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
 // Evaluations
 // ------------------------------------
 
-export const PRODUCT_ACCURACY_ISSUES = [
-  'Incorrect scale',
-  'Incorrect finish',
-  "Didn't follow the reference image",
-  'Incorrect tile pattern',
-] as const;
-
 export const CATEGORY_SPECIFIC_ISSUES: Record<string, readonly string[]> = {
   faucets: [
     'Converted to widespread',
@@ -142,11 +109,3 @@ export const CATEGORY_SPECIFIC_ISSUES: Record<string, readonly string[]> = {
   toilets: ['Flush hardware missing', 'Incorrect flush hardware location'],
   tub_fillers: ['Incorrect shape', 'Incorrect detailing'],
 };
-
-export const SCENE_ACCURACY_ISSUES = [
-  'Unrealistic lighting & shadows',
-  'Perspective drift',
-  'Incorrect existing conditions',
-  'Changed aspect ratio',
-  'Hallucinated details in the room',
-] as const;

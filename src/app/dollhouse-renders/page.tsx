@@ -1,6 +1,12 @@
 import { PageHeader } from '@/components/page-header';
 import { LinkButton, PlusIcon } from '@/components/ui';
+import type { Metadata } from 'next';
 import { DollhouseRendersTable } from './dollhouse-renders-table';
+
+export const metadata: Metadata = {
+  title: 'Dollhouse Renders',
+  description: 'Browse standalone dollhouse renders and submit new ones for a project.',
+};
 
 export const dynamic = 'force-dynamic';
 

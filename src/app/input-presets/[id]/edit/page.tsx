@@ -4,8 +4,14 @@ import {
   INPUT_PRESET_DESIGN_FIELD_KEYS,
 } from '@/lib/input-preset-design';
 import { fetchInputPresetById } from '@/lib/service-client';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { InputPresetEditForm } from './edit-form';
+
+export const metadata: Metadata = {
+  title: 'Edit Input Preset',
+  description: 'Edit an input preset used to seed strategy runs.',
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +21,7 @@ interface PageProps {
 }
 
 export default async function InputPresetEditPage({ params, searchParams }: PageProps) {
-  const { id } = await params;
-  const query = await searchParams;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const force = query.force === 'true';
 
   const presetData = await fetchInputPresetById(id).catch(() => null);
@@ -60,7 +65,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
   const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
   const arbitraryImagesBySlot = Object.fromEntries(
-    storedImages.filter((image) => image.isArbitrary).map((image) => [image.slot, image.url]),
+    storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])),
   );
   const savedImageUrlsBySlot = Object.fromEntries(
     storedImages.map((image) => [image.slot, image.url]),

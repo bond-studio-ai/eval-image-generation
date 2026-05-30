@@ -4,8 +4,14 @@ import {
   fetchPromptPreviewDollhouseSource,
   fetchPromptVersionsMinimal,
 } from '@/lib/service-client';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Prompt Preview',
+  description: 'Preview rendered prompts against input presets and prompt versions.',
+};
 
 interface PageProps {
   searchParams: Promise<{
@@ -16,8 +22,8 @@ interface PageProps {
 }
 
 export default async function PreviewPromptRoute({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const [promptVersions, presets, dollhouseSource] = await Promise.all([
+  const [params, promptVersions, presets, dollhouseSource] = await Promise.all([
+    searchParams,
     fetchPromptVersionsMinimal(100),
     fetchInputPresetsMinimal(100),
     fetchPromptPreviewDollhouseSource().catch(() => null),
