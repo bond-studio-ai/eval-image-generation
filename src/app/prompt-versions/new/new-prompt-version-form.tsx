@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useReducer, useState } from "react";
-import { PageHeader, PrimaryButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { PromptTemplateEditor } from "@/components/prompt-template-editor";
 import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
 import { TwoPaneSplit } from "@/components/two-pane-split";
+import { Button } from "@/components/ui/button";
 import { serviceUrl } from "@/lib/api-base";
 
 interface FormState {
@@ -83,7 +84,7 @@ export function NewPromptVersionForm() {
     }
   }
 
-  const editableInput = "w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
+  const editableInput = "w-full rounded-lg border border-border bg-transparent px-3 py-2 text-body transition-colors hover:border-border-strong focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
 
   return (
     <div className="flex flex-col">
@@ -92,9 +93,9 @@ export function NewPromptVersionForm() {
         backLabel="Back to Prompt Versions"
         title=""
         actions={
-          <PrimaryButton onClick={handleCreate} disabled={!canCreate || creating} loading={creating}>
+          <Button onClick={handleCreate} disabled={!canCreate || creating} loading={creating}>
             {creating ? "Creating..." : "Create Prompt Version"}
-          </PrimaryButton>
+          </Button>
         }
       />
 
@@ -118,9 +119,9 @@ export function NewPromptVersionForm() {
       {/* Stats placeholder — mirrors the detail page structure */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
         {["Generations", "Rated", "Avg Rating", "Unrated"].map((label) => (
-          <div key={label} className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-sm font-medium text-gray-600">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">-</p>
+          <div key={label} className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+            <p className="text-text-secondary text-body font-medium">{label}</p>
+            <p className="text-text-primary text-display mt-1">-</p>
           </div>
         ))}
       </div>
@@ -129,9 +130,9 @@ export function NewPromptVersionForm() {
       <TwoPaneSplit
         className="mt-8"
         left={
-          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
-              System Prompt <span className="text-red-500">*</span>
+          <div className="border-border bg-surface flex h-full min-w-0 flex-col rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body shrink-0 font-semibold uppercase">
+              System Prompt <span className="text-danger-500">*</span>
             </h2>
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
@@ -145,9 +146,9 @@ export function NewPromptVersionForm() {
           </div>
         }
         right={
-          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">
-              User Prompt <span className="text-red-500">*</span>
+          <div className="border-border bg-surface flex h-full min-w-0 flex-col rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body shrink-0 font-semibold uppercase">
+              User Prompt <span className="text-danger-500">*</span>
             </h2>
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
@@ -164,8 +165,8 @@ export function NewPromptVersionForm() {
 
       {/* Generations placeholder */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Generations</h2>
-        <p className="mt-4 text-sm text-gray-600">No generations yet. Create this prompt version first, then generate images.</p>
+        <h2 className="text-text-primary text-h3">Generations</h2>
+        <p className="text-text-secondary text-body mt-4">No generations yet. Create this prompt version first, then generate images.</p>
       </div>
     </div>
   );

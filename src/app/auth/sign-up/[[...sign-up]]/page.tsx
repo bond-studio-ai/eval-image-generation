@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Sign Up" };
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="bg-surface-muted flex min-h-screen items-center justify-center">
       <SignUp
         appearance={{
           elements: {

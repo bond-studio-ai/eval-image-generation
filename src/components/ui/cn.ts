@@ -6,6 +6,11 @@ import { extendTailwindMerge } from "tailwind-merge";
  * that e.g. `rounded-card` and `rounded-xl` target the same property and would
  * keep both. Teaching it our token names makes consumer overrides of these
  * tokens collapse cleanly, just like the standard utilities.
+ *
+ * NOTE: the token set lives in three places that must stay in sync — the
+ * `@theme` block in `src/app/globals.css` (source of truth), the registration
+ * below, and the raw-palette ban in `eslint.config.mjs`. Update all three when
+ * adding a scale or ramp step.
  */
 const SCALE = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
 
@@ -23,6 +28,7 @@ const customColors = [
   "text-muted",
   "text-disabled",
   "text-inverse",
+  "overlay",
   // Brand + signal palettes.
   ...["primary", "success", "warning", "danger", "info", "accent"].flatMap((name) => SCALE.map((step) => `${name}-${step}`)),
   // primary additionally defines a 950 step.

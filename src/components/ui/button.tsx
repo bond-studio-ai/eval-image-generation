@@ -7,10 +7,10 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "link
 export type ButtonSize = "sm" | "md";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-primary-600 text-white shadow-xs hover:bg-primary-700 focus-visible:outline-primary-600 disabled:bg-primary-300 disabled:shadow-none",
-  secondary: "bg-white text-text-primary ring-1 ring-inset ring-border-strong shadow-xs hover:bg-surface-muted focus-visible:outline-primary-600 disabled:text-text-disabled disabled:bg-surface-muted",
+  primary: "bg-primary-600 text-text-inverse shadow-xs hover:bg-primary-700 focus-visible:outline-primary-600 disabled:bg-primary-300 disabled:shadow-none",
+  secondary: "bg-surface text-text-primary ring-1 ring-inset ring-border-strong shadow-xs hover:bg-surface-muted focus-visible:outline-primary-600 disabled:text-text-disabled disabled:bg-surface-muted",
   ghost: "bg-transparent text-text-secondary hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-primary-600 disabled:text-text-disabled disabled:bg-transparent",
-  danger: "bg-danger-600 text-white shadow-xs hover:bg-danger-700 focus-visible:outline-danger-600 disabled:bg-danger-300 disabled:shadow-none",
+  danger: "bg-danger-600 text-text-inverse shadow-xs hover:bg-danger-700 focus-visible:outline-danger-600 disabled:bg-danger-300 disabled:shadow-none",
   link: "bg-transparent text-primary-600 hover:text-primary-700 focus-visible:outline-primary-600 disabled:text-text-disabled p-0 shadow-none"
 };
 
@@ -47,7 +47,7 @@ export function Button({ variant = "primary", size = "md", loading = false, icon
   );
 }
 
-interface LinkButtonProps extends ButtonOwnProps {
+interface LinkButtonProps extends Omit<ButtonOwnProps, "loading"> {
   href: string;
   children?: ReactNode;
   className?: string;

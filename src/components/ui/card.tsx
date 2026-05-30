@@ -22,7 +22,7 @@ const PADDING: Record<CardPadding, string> = {
 
 /**
  * Standard card surface. Replaces the
- * `rounded-lg border border-gray-200 bg-white p-6 shadow-xs` snippet that's
+ * `rounded-lg border border-border bg-surface p-6 shadow-xs` snippet that's
  * copy-pasted across pages.
  */
 export function Card({ padding = "lg", borderless = false, interactive = false, className, ref, ...rest }: CardProps) {
@@ -38,7 +38,7 @@ interface StatCardProps {
 
 /**
  * Compact statistic card for dashboards (Total Generations, Rated, etc.).
- * Standardizes the `text-3xl font-bold` pattern that was duplicated on the
+ * Standardizes the large-number display pattern that was duplicated on the
  * Analytics home.
  */
 export function StatCard({ label, value, hint, className }: StatCardProps) {

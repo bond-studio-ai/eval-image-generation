@@ -27,7 +27,7 @@ export function StepsSection({
 }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-900 uppercase">Steps</h2>
+      <h2 className="text-text-primary text-body font-semibold uppercase">Steps</h2>
       <div className="mt-3 space-y-4">
         {steps.map((step, idx) =>
           step.type === "judge" ? (
@@ -42,7 +42,7 @@ export function StepsSection({
         <button
           type="button"
           onClick={addStep}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-800"
+          className="border-border-strong text-text-secondary hover:text-text-secondary hover:border-border-strong text-body flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors"
         >
           <PlusIcon className="size-4" />
           Add Generation Step
@@ -51,7 +51,7 @@ export function StepsSection({
           type="button"
           onClick={addJudgeStep}
           disabled={steps.length === 0 || steps[steps.length - 1]?.type === "judge"}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 px-4 py-3 text-sm font-medium text-amber-700 transition-colors hover:border-amber-400 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="border-warning-300 text-warning-700 hover:border-warning-400 hover:text-warning-800 text-body flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ScaleIcon className="size-4" />
           Add Judge Step

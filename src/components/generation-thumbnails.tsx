@@ -13,8 +13,8 @@ function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="relative size-12 shrink-0 overflow-hidden rounded border border-gray-200">
-      {!loaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
+    <div className="border-border relative size-12 shrink-0 overflow-hidden rounded border">
+      {!loaded && <div className="bg-border absolute inset-0 animate-pulse" />}
       <CdnImage src={url} alt={alt} width={48} height={48} onLoad={() => setLoaded(true)} className={`object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
     </div>
   );
@@ -24,9 +24,9 @@ function LightboxImage({ url, alt }: { url: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+    <div className="bg-surface-sunken relative w-full overflow-hidden rounded-lg">
       {/* Skeleton placeholder — maintains a 4:3 aspect ratio until image loads */}
-      {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
+      {!loaded && <div className="bg-border aspect-[4/3] w-full animate-pulse" />}
       <CdnImage src={url} alt={alt} width={0} height={0} sizes="100vw" onLoad={() => setLoaded(true)} className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`} />
     </div>
   );
@@ -37,8 +37,8 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
   if (urls.length === 0) {
     return (
-      <div className="flex size-12 items-center justify-center rounded border border-gray-200 bg-gray-50">
-        <ImageIcon className="size-4 text-gray-300" />
+      <div className="border-border bg-surface-muted flex size-12 items-center justify-center rounded border">
+        <ImageIcon className="text-text-disabled size-4" />
       </div>
     );
   }
@@ -58,7 +58,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         {urls.slice(0, 2).map((url, i) => (
           <ThumbnailImage key={url} url={url} alt={`Result ${i + 1}`} />
         ))}
-        {urls.length > 2 && <span className="flex size-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">+{urls.length - 2}</span>}
+        {urls.length > 2 && <span className="border-border bg-surface-muted text-text-muted text-caption flex size-12 shrink-0 items-center justify-center rounded border font-medium">+{urls.length - 2}</span>}
       </button>
 
       {/* Lightbox — full-width modal with skeleton loading */}
@@ -66,16 +66,16 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
         <Modal
           onClose={() => setExpanded(false)}
           ariaLabel="Expanded results"
-          backdropClassName="bg-black/70"
+          backdropClassName="bg-overlay/70"
           containerClassName="sm:p-6"
-          className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          className="bg-surface relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl shadow-2xl"
         >
           {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
+            <span className="text-text-secondary text-body font-medium">
               {urls.length} result{urls.length !== 1 ? "s" : ""}
             </span>
-            <button type="button" aria-label="Close" onClick={() => setExpanded(false)} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
+            <button type="button" aria-label="Close" onClick={() => setExpanded(false)} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
               <XIcon className="size-5" />
             </button>
           </div>

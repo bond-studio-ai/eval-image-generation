@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
+import { LinkButton } from "@/components/ui/button";
 import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from "@/lib/input-preset-design";
 import { fetchInputPresetById } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
@@ -32,13 +33,13 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     return (
       <div>
         <PageHeader backHref={`/input-presets/${id}`} backLabel="Back to preset" title="Cannot edit this preset" />
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
-          <p className="text-sm text-amber-800">
+        <div className="border-warning-200 bg-warning-50 mt-6 rounded-lg border p-5">
+          <p className="text-warning-800 text-body">
             This preset has been used in {generationCount} generation
             {generationCount !== 1 ? "s" : ""}. To change it, clone the preset first, then edit the copy.
           </p>
           <div className="mt-4">
-            <PrimaryLinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</PrimaryLinkButton>
+            <LinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</LinkButton>
           </div>
         </div>
       </div>

@@ -3,9 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo, useReducer, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { PlayIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
-import { Spinner } from "@/components/ui/spinner";
 import { MultiSelectColumn } from "./_components/multi-select-column";
 import { NumberOfImagesInput } from "./_components/number-of-images-input";
 import { BENCHMARK_PROJECT_IDS, DEFAULT_BENCHMARK_PROJECT_IDS, executeRuns, fetchRunOptions } from "./_components/run-options";
@@ -103,8 +103,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         onClick={() => {
           setShowModal(true);
           setError(null);
@@ -114,11 +113,10 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
             benchmarkProjectIds: source === "benchmark" ? DEFAULT_BENCHMARK_PROJECT_IDS : []
           });
         }}
-        className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+        iconLeft={<PlayIcon className="size-4" />}
       >
-        <PlayIcon className="size-4" />
         Run
-      </button>
+      </Button>
 
       {showModal && (
         <Modal
@@ -128,19 +126,19 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
           }}
           labelledById="new-run-title"
           containerClassName="z-[9999]"
-          backdropClassName="cursor-pointer bg-black/50"
-          className="flex h-[min(80vh,640px)] w-full max-w-3xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+          backdropClassName="cursor-pointer bg-overlay/50"
+          className="border-border bg-surface flex h-[min(80vh,640px)] w-full max-w-3xl flex-col rounded-lg border shadow-xl"
         >
-          <div className="shrink-0 border-b border-gray-200 px-5 py-4">
-            <h3 id="new-run-title" className="text-lg font-semibold text-gray-900">
+          <div className="border-border shrink-0 border-b px-5 py-4">
+            <h3 id="new-run-title" className="text-text-primary text-h3">
               New Run
             </h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="text-text-secondary text-body mt-1">
               {benchmarkMode
                 ? "Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies."
                 : "Select strategies and input presets. This creates one batch: strategies × presets × images to generate."}
             </p>
-            <label className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+            <label className="text-text-secondary text-body mt-3 inline-flex items-center gap-2 font-medium">
               <input
                 type="checkbox"
                 checked={benchmarkMode}
@@ -151,16 +149,16 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                     benchmarkProjectIds: e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : []
                   });
                 }}
-                className="size-4 rounded border-gray-300"
+                className="border-border-strong size-4 rounded"
               />
               Use benchmark projects
             </label>
           </div>
 
           {loading ? (
-            <div className="flex flex-1 items-center justify-center py-12 text-sm text-gray-500">Loading…</div>
+            <div className="text-text-muted text-body flex flex-1 items-center justify-center py-12">Loading…</div>
           ) : (
-            <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
+            <div className="divide-border grid min-h-0 flex-1 grid-cols-2 divide-x overflow-hidden">
               <MultiSelectColumn
                 title="Strategies"
                 selectedCount={selectedStrategyIds.length}
@@ -199,33 +197,19 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
             </div>
           )}
 
-          {error && <p className="shrink-0 px-5 pb-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="text-danger-600 text-body shrink-0 px-5 pb-2">{error}</p>}
 
-          <div className="shrink-0 border-t border-gray-200 bg-gray-50/50 px-5 py-3">
+          <div className="border-border bg-surface-muted/50 shrink-0 border-t px-5 py-3">
             <NumberOfImagesInput value={numberOfImages} onChange={setNumberOfImages} />
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <div className="border-border flex shrink-0 items-center justify-end gap-2 border-t px-5 py-3">
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)}
-              className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed"
-            >
-              {submitting ? (
-                <>
-                  <Spinner size="sm" />
-                  Starting…
-                </>
-              ) : benchmarkMode ? (
-                "Run benchmarks"
-              ) : (
-                "Run (1 batch)"
-              )}
-            </button>
+            </Button>
+            <Button onClick={handleRun} disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)} loading={submitting}>
+              {submitting ? "Starting…" : benchmarkMode ? "Run benchmarks" : "Run (1 batch)"}
+            </Button>
           </div>
         </Modal>
       )}

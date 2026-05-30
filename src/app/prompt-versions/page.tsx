@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { PromptVersionsList } from "@/components/prompt-versions-list";
+import { LinkButton } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Prompt Versions",
@@ -16,9 +18,9 @@ export default function PromptVersionsPage() {
         title="Prompt Versions"
         subtitle="Manage versioned prompts for image generation."
         actions={
-          <PrimaryLinkButton href="/prompt-versions/new" icon>
+          <LinkButton href="/prompt-versions/new" iconLeft={<PlusIcon className="size-4" />}>
             New Prompt Version
-          </PrimaryLinkButton>
+          </LinkButton>
         }
       />
       <PromptVersionsList />

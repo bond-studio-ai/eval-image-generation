@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <div className="auth-sign-in-page flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="auth-sign-in-page bg-surface-muted flex min-h-screen items-center justify-center">
       <SignIn
         appearance={{
           elements: {

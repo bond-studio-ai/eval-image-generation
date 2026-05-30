@@ -29,13 +29,13 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
   const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ?? null) as DriftAssessment | null;
 
   return (
-    <Modal onClose={onClose} labelledById="review-modal-title" backdropClassName="bg-black/60" className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-      <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
+    <Modal onClose={onClose} labelledById="review-modal-title" backdropClassName="bg-overlay/60" className="bg-surface flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl">
+      <div className="border-border flex items-start justify-between gap-4 border-b px-6 py-4">
         <div className="min-w-0">
-          <h3 id="review-modal-title" className="text-base font-semibold text-gray-900">
+          <h3 id="review-modal-title" className="text-text-primary text-body-lg font-semibold">
             Review
           </h3>
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="text-text-muted text-caption mt-0.5">
             {rows.length > 0 ? `${rows.length} ${rows.length === 1 ? "category" : "categories"} · ${totalMasks} ${totalMasks === 1 ? "mask" : "masks"}` : loading ? "Loading…" : "No categories"}
             {record?.createdAt && (
               <>
@@ -44,21 +44,21 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
               </>
             )}
           </p>
-          <p className="mt-0.5 font-mono text-[10px] text-gray-400">gen {generationId.slice(0, 8)}…</p>
+          <p className="text-text-disabled mt-0.5 font-mono text-[10px]">gen {generationId.slice(0, 8)}…</p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+        <button type="button" onClick={onClose} aria-label="Close" className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-lg p-1.5 transition-colors">
           <XIcon className="size-5" />
         </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {loading && (
-          <div className="flex items-center justify-center py-16 text-sm text-gray-500">
+          <div className="text-text-muted text-body flex items-center justify-center py-16">
             <Spinner className="mr-2 size-4" />
             Loading review…
           </div>
         )}
-        {error && !loading && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        {error && !loading && <div className="border-danger-200 bg-danger-50 text-danger-700 text-body rounded-lg border p-3">{error}</div>}
         {/* All collapsible sections stack at the top so the
               reviewer's first scroll reveals the drift, timeline,
               and per-category accordions before the overlay
@@ -87,7 +87,7 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
               category rows, no overlay PNG) would show "No review
               results to display." right next to the Depth drift card,
               which obviously contradicts itself. */}
-        {!loading && !error && rows.length === 0 && !record?.combinedOverlayUrl && pluginEntries.length === 0 && <p className="py-12 text-center text-sm text-gray-500">No review results to display.</p>}
+        {!loading && !error && rows.length === 0 && !record?.combinedOverlayUrl && pluginEntries.length === 0 && <p className="text-text-muted text-body py-12 text-center">No review results to display.</p>}
       </div>
     </Modal>
   );

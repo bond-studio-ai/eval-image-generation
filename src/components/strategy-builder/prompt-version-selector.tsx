@@ -24,10 +24,10 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
         type="button"
         id={id}
         onClick={() => setOpen(!open)}
-        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedName ? "text-gray-900" : "text-gray-400"}>{selectedName || "-- Select --"}</span>
-        <ChevronsUpDownIcon className="size-4 shrink-0 text-gray-400" />
+        <span className={selectedName ? "text-text-primary" : "text-text-disabled"}>{selectedName || "-- Select --"}</span>
+        <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
 
       {open && (
@@ -41,7 +41,7 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
               setSearch("");
             }}
           />
-          <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="border-border bg-surface absolute z-50 mt-1 w-full rounded-lg border shadow-lg">
             <div className="p-2">
               <input
                 ref={focusOnMount}
@@ -50,10 +50,10 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter prompts..."
                 aria-label="Filter prompts"
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded border px-2.5 py-1.5 focus:ring-1 focus:outline-none"
               />
             </div>
-            <div className="max-h-56 overflow-y-auto border-t border-gray-100">
+            <div className="border-border-subtle max-h-56 overflow-y-auto border-t">
               <button
                 type="button"
                 onClick={() => {
@@ -61,11 +61,11 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
                   setOpen(false);
                   setSearch("");
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-400 hover:bg-gray-50"
+                className="text-text-disabled hover:bg-surface-muted text-body w-full px-3 py-2 text-left"
               >
                 -- None --
               </button>
-              {filtered.length === 0 && <div className="p-3 text-center text-sm text-gray-400">No matches</div>}
+              {filtered.length === 0 && <div className="text-text-disabled text-body p-3 text-center">No matches</div>}
               {filtered.map((pv) => (
                 <button
                   key={pv.id}
@@ -75,10 +75,10 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${pv.id === value ? "bg-primary-50 text-primary-700 font-medium" : "text-gray-700"}`}
+                  className={`hover:bg-surface-muted text-body flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${pv.id === value ? "bg-primary-50 text-primary-700 font-medium" : "text-text-secondary"}`}
                 >
                   <span className="truncate">{pv.name || "Untitled"}</span>
-                  {pv.stats?.generationCount ? <span className="ml-auto shrink-0 text-xs text-gray-400">{pv.stats.generationCount} gen</span> : null}
+                  {pv.stats?.generationCount ? <span className="text-text-disabled text-caption ml-auto shrink-0">{pv.stats.generationCount} gen</span> : null}
                 </button>
               ))}
             </div>

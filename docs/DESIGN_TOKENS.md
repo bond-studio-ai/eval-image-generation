@@ -42,6 +42,7 @@ Prefer these for chrome over raw `gray-*`. They isolate the dark-mode surface so
 | `--color-text-muted`     | `text-text-muted`      | Less important metadata              |
 | `--color-text-disabled`  | `text-text-disabled`   | Disabled states, placeholders        |
 | `--color-text-inverse`   | `text-text-inverse`    | On dark / saturated fills            |
+| `--color-overlay`        | `bg-overlay/40`        | Scrim behind modals / lightboxes     |
 
 ## Typography
 
@@ -95,7 +96,50 @@ The 8px rhythm is supplied by Tailwind's default scale (`gap-2` = 8px, `gap-4` =
 - **Surface, text, border tokens** — for everything that isn't a deliberate signal. This is the default.
 - **Signal scales** — when conveying state (success, warning, danger, info).
 - **Brand `primary`** — only for primary actions, the active nav item, focus rings, and `info` accents that double as brand.
-- **Tailwind raw `gray-*`** — avoid in new code; prefer the semantic tokens above.
+- **Tailwind raw `gray-*` / `blue-*` / etc.** — banned by `eslint-plugin-better-tailwindcss` (`no-restricted-classes`); use the semantic tokens above.
+
+## Migration map (raw palette to token)
+
+When converting legacy raw-palette classes, use this canonical mapping. The prefix (`bg`/`text`/`border`/`ring`/`divide`/`outline`) is preserved; only the color + step changes.
+
+### Neutral / gray family (`gray`, `slate`, `zinc`, `neutral`, `stone`)
+
+| Raw                                        | Token                                                         |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `bg-white`                                 | `bg-surface`                                                  |
+| `text-white`                               | `text-text-inverse`                                           |
+| `bg-{gray}-50`                             | `bg-surface-muted`                                            |
+| `bg-{gray}-100`                            | `bg-surface-sunken`                                           |
+| `border\|ring\|divide\|outline-{gray}-100` | `…-border-subtle`                                             |
+| `border\|ring\|divide\|outline-{gray}-200` | `…-border`                                                    |
+| `border\|ring\|divide\|outline-{gray}-300` | `…-border-strong`                                             |
+| `text-{gray}-900` (and `-950`)             | `text-text-primary`                                           |
+| `text-{gray}-600\|700\|800`                | `text-text-secondary`                                         |
+| `text-{gray}-500`                          | `text-text-muted`                                             |
+| `text-{gray}-400`                          | `text-text-disabled` (body text → `text-text-muted` for WCAG) |
+| `placeholder-{gray}-400`                   | `placeholder-text-disabled`                                   |
+
+Darker gray backgrounds (`bg-{gray}-200`..`900`) have no surface token — pick the closest of `bg-surface-sunken` / `bg-text-primary` (dark chips) by intent.
+
+### Signal families (status colors)
+
+| Raw color                             | Token scale        | Notes                      |
+| ------------------------------------- | ------------------ | -------------------------- |
+| `blue`, `indigo`, `sky`               | `primary` / `info` | identical hex to `primary` |
+| `red`, `rose`                         | `danger`           |                            |
+| `green`, `emerald`                    | `success`          | `success` is emerald-based |
+| `amber`, `yellow`, `orange`           | `warning`          | `warning` is amber-based   |
+| `purple`, `violet`, `fuchsia`, `pink` | `accent`           | `accent` is violet-based   |
+
+Signal scales stop at step `900`; map any `-950` source to `-900` (except `primary`, which defines `-950`).
+
+## Categorical (data-viz) colors
+
+A small set of modules assign **distinct hues to categories** for visual separation, not to convey state. These are the one allowed exception to the raw-palette ban and are allow-listed in [eslint.config.mjs](../eslint.config.mjs):
+
+- [src/lib/strategy-property-colors.ts](../src/lib/strategy-property-colors.ts) — fixed per-property badge colors (model, aspect ratio, resolution, …).
+
+Recharts series colors are passed as hex props, not Tailwind classes, so they are unaffected. Do not add new categorical palettes without documenting them here and in the lint allow-list.
 
 ## Adding a token
 

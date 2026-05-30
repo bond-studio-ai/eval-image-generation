@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/components/ui/icons";
 
 type Preset = { label: string; days: number };
@@ -91,10 +92,10 @@ function CalendarMonth({
 
   return (
     <div className="w-[252px]">
-      <p className="mb-2 text-center text-xs font-semibold text-gray-800">{monthLabel}</p>
+      <p className="text-text-secondary text-caption mb-2 text-center font-semibold">{monthLabel}</p>
       <div className="grid grid-cols-7 gap-0">
         {WEEKDAYS.map((wd) => (
-          <div key={wd} className="flex h-8 items-center justify-center text-[10px] font-medium text-gray-400">
+          <div key={wd} className="text-text-disabled flex h-8 items-center justify-center text-[10px] font-medium">
             {wd}
           </div>
         ))}
@@ -115,13 +116,13 @@ function CalendarMonth({
           if (isEnd && lo && lo !== hi) cellBg = "bg-gradient-to-l from-transparent via-primary-50 to-primary-50";
           if (isStart && isEnd) cellBg = "";
 
-          let dayClass = "relative z-10 flex size-8 items-center justify-center rounded-full text-xs transition-all cursor-pointer ";
+          let dayClass = "relative z-10 flex size-8 items-center justify-center rounded-full text-caption transition-all cursor-pointer ";
           if (isSelected) {
-            dayClass += "bg-primary-600 font-semibold text-white shadow-sm";
+            dayClass += "bg-primary-600 font-semibold text-text-inverse shadow-sm";
           } else if (isToday) {
             dayClass += "font-semibold text-primary-600 ring-1 ring-primary-300 hover:bg-primary-100";
           } else {
-            dayClass += "text-gray-700 hover:bg-gray-100";
+            dayClass += "text-text-secondary hover:bg-surface-sunken";
           }
 
           return (
@@ -262,7 +263,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+      <div className="border-border bg-surface-muted flex items-center rounded-lg border p-0.5">
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.days}
@@ -271,7 +272,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
               const range = getPresetRange(preset.days);
               onChange(range.from, range.to);
             }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${activePreset?.days === preset.days ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200" : "text-gray-500 hover:text-gray-700"}`}
+            className={`text-caption rounded-md px-3 py-1.5 font-medium transition-all ${activePreset?.days === preset.days ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"}`}
           >
             {preset.label}
           </button>
@@ -281,8 +282,8 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
           <button
             type="button"
             onClick={toggleCustom}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-              hasCustomRange ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200" : showCustom ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200" : "text-gray-500 hover:text-gray-700"
+            className={`text-caption flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
+              hasCustomRange ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : showCustom ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"
             }`}
           >
             <CalendarIcon className="size-3.5" />
@@ -290,14 +291,14 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
           </button>
 
           {showCustom && (
-            <div className="absolute top-full right-0 z-50 mt-2 rounded-xl border border-gray-200 bg-white shadow-xl">
+            <div className="border-border bg-surface absolute top-full right-0 z-50 mt-2 rounded-xl border shadow-xl">
               {/* Header with nav */}
-              <div className="flex items-center justify-between border-b border-gray-100 px-4 pt-4 pb-2">
-                <button type="button" onClick={goPrev} aria-label="Previous month" className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+              <div className="border-border-subtle flex items-center justify-between border-b px-4 pt-4 pb-2">
+                <button type="button" onClick={goPrev} aria-label="Previous month" className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-lg p-1.5 transition-colors">
                   <ChevronLeftIcon className="size-4" />
                 </button>
-                <p className="text-xs font-medium text-gray-500">{cal.picking === "end" && cal.rangeStart ? `Select end date` : "Select start date"}</p>
-                <button type="button" onClick={goNext} aria-label="Next month" className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+                <p className="text-text-muted text-caption font-medium">{cal.picking === "end" && cal.rangeStart ? `Select end date` : "Select start date"}</p>
+                <button type="button" onClick={goNext} aria-label="Next month" className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-lg p-1.5 transition-colors">
                   <ChevronRightIcon className="size-4" />
                 </button>
               </div>
@@ -313,7 +314,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
                   onDateClick={handleDateClick}
                   onDateHover={(value) => dispatchCal({ type: "setHover", value })}
                 />
-                <div className="w-px bg-gray-100" />
+                <div className="bg-surface-sunken w-px" />
                 <CalendarMonth
                   year={nextYear}
                   month={nextMonth}
@@ -326,25 +327,20 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  {cal.rangeStart && <span className="rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">{formatDisplay(cal.rangeStart)}</span>}
-                  {cal.rangeStart && <ArrowRightIcon className="size-3 text-gray-300" />}
-                  {cal.rangeEnd && <span className="rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">{formatDisplay(cal.rangeEnd)}</span>}
-                  {!cal.rangeStart && !cal.rangeEnd && <span className="text-gray-400">Pick a start date</span>}
+              <div className="border-border-subtle flex items-center justify-between border-t px-4 py-3">
+                <div className="text-text-muted text-caption flex items-center gap-2">
+                  {cal.rangeStart && <span className="bg-surface-sunken text-text-secondary rounded-md px-2 py-1 font-medium">{formatDisplay(cal.rangeStart)}</span>}
+                  {cal.rangeStart && <ArrowRightIcon className="text-text-disabled size-3" />}
+                  {cal.rangeEnd && <span className="bg-surface-sunken text-text-secondary rounded-md px-2 py-1 font-medium">{formatDisplay(cal.rangeEnd)}</span>}
+                  {!cal.rangeStart && !cal.rangeEnd && <span className="text-text-disabled">Pick a start date</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setShowCustom(false)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700">
+                  <Button variant="ghost" size="sm" onClick={() => setShowCustom(false)}>
                     Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApply}
-                    disabled={!cal.rangeStart || !cal.rangeEnd}
-                    className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
-                  >
+                  </Button>
+                  <Button size="sm" onClick={handleApply} disabled={!cal.rangeStart || !cal.rangeEnd}>
                     Apply
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -353,7 +349,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
       </div>
 
       {hasDateFilter && (
-        <button type="button" onClick={onClear} aria-label="Clear date filter" className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" title="Clear date filter">
+        <button type="button" onClick={onClear} aria-label="Clear date filter" className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-md p-1 transition-colors" title="Clear date filter">
           <XIcon className="size-3.5" />
         </button>
       )}

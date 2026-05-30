@@ -122,8 +122,8 @@ export function ComparisonSpreadsheet({ slices, model }: { slices: AnalyticsComp
 
   if (slices.length === 0) {
     return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-8 text-center shadow-xs">
-        <p className="text-sm text-gray-500">Add comparison columns above to generate the spreadsheet.</p>
+      <div className="border-border bg-surface mt-8 rounded-lg border p-8 text-center shadow-xs">
+        <p className="text-text-muted text-body">Add comparison columns above to generate the spreadsheet.</p>
       </div>
     );
   }

@@ -133,39 +133,39 @@ function computeLayout(steps: DagStep[]): {
 }
 
 const STATUS_BORDER: Record<string, string> = {
-  pending: "border-gray-200",
-  running: "border-blue-400",
-  completed: "border-green-400",
-  failed: "border-red-400",
-  skipped: "border-amber-400",
-  default: "border-gray-200"
+  pending: "border-border",
+  running: "border-primary-400",
+  completed: "border-success-400",
+  failed: "border-danger-400",
+  skipped: "border-warning-400",
+  default: "border-border"
 };
 
 const STATUS_BG: Record<string, string> = {
-  pending: "bg-gray-50",
-  running: "bg-blue-50",
-  completed: "bg-green-50",
-  failed: "bg-red-50",
-  skipped: "bg-amber-50",
-  default: "bg-white"
+  pending: "bg-surface-muted",
+  running: "bg-primary-50",
+  completed: "bg-success-50",
+  failed: "bg-danger-50",
+  skipped: "bg-warning-50",
+  default: "bg-surface"
 };
 
 const STATUS_HEADER_BG: Record<string, string> = {
-  pending: "bg-gray-100",
-  running: "bg-blue-100",
-  completed: "bg-green-100",
-  failed: "bg-red-100",
-  skipped: "bg-amber-100",
-  default: "bg-gray-100"
+  pending: "bg-surface-sunken",
+  running: "bg-primary-100",
+  completed: "bg-success-100",
+  failed: "bg-danger-100",
+  skipped: "bg-warning-100",
+  default: "bg-surface-sunken"
 };
 
 const STATUS_HEADER_TEXT: Record<string, string> = {
-  pending: "text-gray-700",
-  running: "text-blue-700",
-  completed: "text-green-700",
-  failed: "text-red-700",
-  skipped: "text-amber-700",
-  default: "text-gray-900"
+  pending: "text-text-secondary",
+  running: "text-primary-700",
+  completed: "text-success-700",
+  failed: "text-danger-700",
+  skipped: "text-warning-700",
+  default: "text-text-primary"
 };
 
 function truncate(s: string, max: number) {
@@ -228,11 +228,11 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
   const totalWidth = hasJudge ? baseWidth + NODE_WIDTH + LEVEL_GAP_X : baseWidth;
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50/50">
+    <div className="border-border bg-surface-muted/50 overflow-x-auto rounded-lg border">
       <svg width={totalWidth} height={height} className="block">
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
-            <polygon points="0 0, 10 3.5, 0 7" className="fill-gray-400" />
+            <polygon points="0 0, 10 3.5, 0 7" className="fill-text-disabled" />
           </marker>
         </defs>
 
@@ -252,9 +252,9 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
 
           return (
             <g key={i}>
-              <path d={path} fill="none" className="stroke-gray-300" strokeWidth="2" markerEnd="url(#arrowhead)" />
-              <rect x={labelX - 34} y={labelY - 9} width={68} height={18} rx={4} className="fill-white stroke-gray-200" strokeWidth="0.5" />
-              <text x={labelX} y={labelY + 4} textAnchor="middle" className="fill-gray-500 text-[10px] font-medium">
+              <path d={path} fill="none" className="stroke-border-strong" strokeWidth="2" markerEnd="url(#arrowhead)" />
+              <rect x={labelX - 34} y={labelY - 9} width={68} height={18} rx={4} className="fill-surface stroke-border" strokeWidth="0.5" />
+              <text x={labelX} y={labelY + 4} textAnchor="middle" className="fill-text-muted text-[10px] font-medium">
                 {edge.label}
               </text>
             </g>
@@ -277,30 +277,30 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
               <div className={`flex h-full flex-col overflow-hidden rounded-lg border-2 ${border} ${bg} shadow-sm`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between px-3 py-2 ${headerBg}`}>
-                  <span className={`text-xs font-semibold ${headerText}`}>{truncate(step.label, 26)}</span>
-                  {step.status === "running" && <span className="size-2.5 animate-pulse rounded-full bg-blue-500" />}
-                  {step.status === "completed" && <CheckIcon className="size-4 text-green-600" />}
-                  {step.status === "failed" && <XIcon className="size-4 text-red-600" />}
-                  {step.status === "skipped" && <PlayIcon className="size-4 text-amber-600" />}
+                  <span className={`text-caption font-semibold ${headerText}`}>{truncate(step.label, 26)}</span>
+                  {step.status === "running" && <span className="bg-primary-500 size-2.5 animate-pulse rounded-full" />}
+                  {step.status === "completed" && <CheckIcon className="text-success-600 size-4" />}
+                  {step.status === "failed" && <XIcon className="text-danger-600 size-4" />}
+                  {step.status === "skipped" && <PlayIcon className="text-warning-600 size-4" />}
                 </div>
                 {/* Body */}
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
                   {step.status === "skipped" && step.error && (
-                    <div className="text-[10px] text-amber-700" title={step.error}>
+                    <div className="text-warning-700 text-[10px]" title={step.error}>
                       {truncate(step.error, 36)}
                     </div>
                   )}
                   {step.promptName && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                      <MessageSquareIcon className="size-3 shrink-0 text-gray-400" />
+                    <div className="text-text-secondary flex items-center gap-1.5 text-[11px]">
+                      <MessageSquareIcon className="text-text-disabled size-3 shrink-0" />
                       <span className="truncate">{truncate(step.promptName, 28)}</span>
                     </div>
                   )}
                   <div className="mt-auto flex flex-wrap items-center gap-1.5">
-                    {modelLabel && <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{modelLabel}</span>}
-                    {step.aspectRatio && <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] text-gray-500">{step.aspectRatio}</span>}
-                    {step.outputResolution && <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] text-gray-500">{step.outputResolution}</span>}
-                    {step.temperature != null && <span className="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] text-gray-500">t={String(step.temperature)}</span>}
+                    {modelLabel && <span className="text-text-secondary bg-border/80 rounded px-1.5 py-0.5 text-[10px] font-medium">{modelLabel}</span>}
+                    {step.aspectRatio && <span className="text-text-muted bg-border/80 rounded px-1.5 py-0.5 text-[10px]">{step.aspectRatio}</span>}
+                    {step.outputResolution && <span className="text-text-muted bg-border/80 rounded px-1.5 py-0.5 text-[10px]">{step.outputResolution}</span>}
+                    {step.temperature != null && <span className="text-text-muted bg-border/80 rounded px-1.5 py-0.5 text-[10px]">t={String(step.temperature)}</span>}
                   </div>
                 </div>
               </div>
@@ -317,34 +317,34 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
               const y2 = judgePos!.y + judgeNodeHeight / 2;
               const midX = (x1 + x2) / 2;
               const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-              return <path key={`judge-edge-${i}`} d={path} fill="none" className="stroke-amber-300" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />;
+              return <path key={`judge-edge-${i}`} d={path} fill="none" className="stroke-warning-300" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />;
             })}
             <foreignObject x={judgePos.x} y={judgePos.y} width={NODE_WIDTH} height={judgeNodeHeight}>
-              <div className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-amber-400 bg-amber-50 shadow-sm">
-                <div className="flex items-center justify-between bg-amber-100 px-3 py-2">
-                  <span className="text-xs font-semibold text-amber-800">{effectiveJudges.length === 1 ? "Judge" : `Judges (${effectiveJudges.length})`}</span>
-                  <StarIcon className="size-4 text-amber-600" fill="currentColor" />
+              <div className="border-warning-400 bg-warning-50 flex h-full flex-col overflow-hidden rounded-lg border-2 shadow-sm">
+                <div className="bg-warning-100 flex items-center justify-between px-3 py-2">
+                  <span className="text-warning-800 text-caption font-semibold">{effectiveJudges.length === 1 ? "Judge" : `Judges (${effectiveJudges.length})`}</span>
+                  <StarIcon className="text-warning-600 size-4" fill="currentColor" />
                 </div>
                 <div className="flex flex-1 flex-col gap-1 px-3 py-2">
                   {effectiveJudges.map((j, ji) => (
-                    <div key={`${j.model}-${j.name ?? ""}-${j.position ?? ""}`} className="rounded bg-amber-100/70 px-2 py-1.5">
+                    <div key={`${j.model}-${j.name ?? ""}-${j.position ?? ""}`} className="bg-warning-100/70 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1.5 text-[10px]">
-                        <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700">{j.position ?? ji + 1}</span>
+                        <span className="bg-warning-200/80 text-warning-700 rounded px-1 py-0.5 font-medium">{j.position ?? ji + 1}</span>
                         {j.name && (
-                          <span className="truncate font-semibold text-amber-900" title={j.name}>
+                          <span className="text-warning-900 truncate font-semibold" title={j.name}>
                             {truncate(j.name, 16)}
                           </span>
                         )}
-                        <span className="rounded bg-white/70 px-1 py-0.5 text-amber-700">{j.type === "batch" ? "Batch" : "Individual"}</span>
+                        <span className="bg-surface/70 text-warning-700 rounded px-1 py-0.5">{j.type === "batch" ? "Batch" : "Individual"}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                        <span className="rounded bg-amber-200/80 px-1 py-0.5 font-medium text-amber-700" title={j.model}>
+                        <span className="bg-warning-200/80 text-warning-700 rounded px-1 py-0.5 font-medium" title={j.model}>
                           {MODEL_LABELS[j.model] ?? truncate(j.model, 16)}
                         </span>
-                        {j.toleranceThreshold != null && <span className="text-amber-700">tol {j.toleranceThreshold}</span>}
+                        {j.toleranceThreshold != null && <span className="text-warning-700">tol {j.toleranceThreshold}</span>}
                       </div>
                       {j.promptName && (
-                        <div className="mt-1 text-[10px] text-amber-800" title={j.promptName}>
+                        <div className="text-warning-800 mt-1 text-[10px]" title={j.promptName}>
                           {truncate(j.promptName, 28)}
                         </div>
                       )}

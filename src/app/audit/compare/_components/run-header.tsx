@@ -9,20 +9,20 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export function RunHeader({ run, label }: { run: RunData; label: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">{label}</p>
-      <p className="mt-1 text-sm font-medium text-gray-900">{run.strategy.name}</p>
+    <div className="border-border bg-surface-muted rounded-lg border p-3">
+      <p className="text-text-disabled text-caption font-semibold tracking-wider uppercase">{label}</p>
+      <p className="text-text-primary text-body mt-1 font-medium">{run.strategy.name}</p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${run.status === "completed" ? "bg-green-100 text-green-700" : run.status === "failed" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${run.status === "completed" ? "bg-success-100 text-success-700" : run.status === "failed" ? "bg-danger-100 text-danger-700" : "bg-surface-sunken text-text-secondary"}`}
         >
           {run.status}
         </span>
-        {run.source && <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">{SOURCE_LABELS[run.source] ?? run.source}</span>}
-        {run.judgeScore != null && <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">Judge: {run.judgeScore}</span>}
+        {run.source && <span className="bg-primary-100 text-primary-700 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">{SOURCE_LABELS[run.source] ?? run.source}</span>}
+        {run.judgeScore != null && <span className="bg-primary-100 text-primary-700 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">Judge: {run.judgeScore}</span>}
       </div>
-      <p className="mt-1 text-[10px] text-gray-500">{new Date(run.createdAt).toLocaleString()}</p>
-      <p className="mt-0.5 font-mono text-[10px] text-gray-400">{run.id}</p>
+      <p className="text-text-muted mt-1 text-[10px]">{new Date(run.createdAt).toLocaleString()}</p>
+      <p className="text-text-disabled mt-0.5 font-mono text-[10px]">{run.id}</p>
     </div>
   );
 }

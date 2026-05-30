@@ -45,7 +45,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
 
   if (state.kind === "checking") {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+      <span className="bg-surface-sunken text-text-secondary mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
         <Spinner className="size-2.5" />
         Checking
       </span>
@@ -54,7 +54,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
 
   if (state.kind === "running") {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm" title="Review in progress">
+      <span className="bg-warning-500/90 text-text-inverse mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm" title="Review in progress">
         <Spinner className="size-2.5" />
         Reviewing
       </span>
@@ -71,7 +71,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
           runReview(true);
         }}
         title={state.cached ? "Cached. Click to re-run." : "Click to re-run review."}
-        className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
+        className="text-text-inverse bg-text-secondary/80 hover:bg-text-secondary mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
       >
         <CheckIcon className="size-2.5" />
         {label}
@@ -88,7 +88,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
           runReview(false);
         }}
         title={state.message ?? "Click to retry."}
-        className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
+        className="bg-danger-500/90 text-text-inverse hover:bg-danger-500 mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
       >
         <AlertCircleIcon className="size-2.5" />
         Review failed
@@ -103,7 +103,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
         e.stopPropagation();
         runReview(false);
       }}
-      className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
+      className="border-border-strong bg-surface text-text-secondary hover:bg-surface-muted hover:border-border-strong mt-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium transition-colors"
     >
       <SparklesIcon className="size-2.5" />
       Automate QA

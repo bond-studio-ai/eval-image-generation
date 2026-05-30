@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { DesignSettingsDisplay, useCatalogProducts } from "@/components/design-settings-editor";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
-import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
+import { LinkButton } from "@/components/ui/button";
 import { CopyIcon, PencilIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { localUrl, serviceUrl } from "@/lib/api-base";
@@ -132,10 +133,13 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         subtitle={data.description}
         actions={
           data.deletedAt ? (
-            <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">Deleted</span>
+            <span className="bg-danger-50 text-danger-700 ring-danger-600/20 text-body inline-flex items-center rounded-full px-3 py-1 font-medium ring-1 ring-inset">Deleted</span>
           ) : (
             <>
-              <Link href={`/input-presets/${data.id}/edit`} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+              <Link
+                href={`/input-presets/${data.id}/edit`}
+                className="border-border-strong bg-surface text-text-secondary hover:bg-surface-muted text-body inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors"
+              >
                 <PencilIcon className="size-4" />
                 Edit
               </Link>
@@ -159,12 +163,12 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                   }
                 }}
                 disabled={cloning}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                className="border-border-strong bg-surface text-text-secondary hover:bg-surface-muted text-body inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors disabled:opacity-50"
               >
                 {cloning ? <Spinner className="size-4" /> : <CopyIcon className="size-4" />}
                 {cloning ? "Cloning..." : "Clone"}
               </button>
-              <PrimaryLinkButton href="/executions">New Run</PrimaryLinkButton>
+              <LinkButton href="/executions">New Run</LinkButton>
             </>
           )
         }
@@ -172,28 +176,28 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Images</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.imageCount}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Images</p>
+          <p className="text-text-primary text-display mt-1">{stats.imageCount}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Generations</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.generationCount}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Generations</p>
+          <p className="text-text-primary text-display mt-1">{stats.generationCount}</p>
         </div>
       </div>
 
       {layoutTypeId ? (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Room preset layout type</p>
-          <p className="mt-1 text-sm text-gray-900">{selectedLayoutPreset?.name ?? layoutTypeId}</p>
+        <div className="border-border bg-surface mt-6 rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Room preset layout type</p>
+          <p className="text-text-primary text-body mt-1">{selectedLayoutPreset?.name ?? layoutTypeId}</p>
         </div>
       ) : null}
 
       {pkgId ? (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Design package</p>
-          <p className="mt-1 text-sm text-gray-900">{getDesignPackageLabel(selectedDesignPackage, pkgId)}</p>
-          {selectedDesignPackage?.style ? <p className="mt-1 text-xs text-gray-500">{selectedDesignPackage.style}</p> : null}
+        <div className="border-border bg-surface mt-6 rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Design package</p>
+          <p className="text-text-primary text-body mt-1">{getDesignPackageLabel(selectedDesignPackage, pkgId)}</p>
+          {selectedDesignPackage?.style ? <p className="text-text-muted text-caption mt-1">{selectedDesignPackage.style}</p> : null}
         </div>
       ) : null}
 
@@ -231,15 +235,15 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
         ].filter((s): s is { label: string; url: string } => !!s.url);
         if (scenes.length === 0) return null;
         return (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Scene Images</h2>
+          <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body mb-4 font-semibold uppercase">Scene Images</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {scenes.map((s) => (
-                <div key={s.label} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-                  <div className="border-b border-gray-100 px-2.5 py-1.5">
-                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
+                <div key={s.label} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
+                  <div className="border-border-subtle border-b px-2.5 py-1.5">
+                    <span className="text-text-secondary text-caption font-semibold">{s.label}</span>
                   </div>
-                  <ImageWithSkeleton src={s.url} alt={s.label} wrapperClassName="h-48 w-full bg-gray-50 p-1" />
+                  <ImageWithSkeleton src={s.url} alt={s.label} wrapperClassName="h-48 w-full bg-surface-muted p-1" />
                 </div>
               ))}
             </div>
@@ -250,34 +254,34 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       {/* Product Images */}
       {(() => {
         return productCards.length > 0 ? (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900 uppercase">Product Images</h2>
+          <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body mb-4 font-semibold uppercase">Product Images</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {productCards.map((item) => (
-                <div key={item.slot} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
+                <div key={item.slot} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
                   {item.previewUrl ? (
-                    <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-gray-50 p-1" />
+                    <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-surface-muted p-1" />
                   ) : item.isLoadingPreview ? (
-                    <div className="h-32 w-full animate-pulse bg-gray-200" aria-hidden />
+                    <div className="bg-border h-32 w-full animate-pulse" aria-hidden />
                   ) : (
-                    <div className="flex h-32 items-center justify-center bg-gray-50 text-xs text-gray-400">No preview</div>
+                    <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div>
                   )}
-                  <div className="border-t border-gray-100 px-2 py-1.5">
-                    <p className="truncate text-xs font-medium text-gray-700" title={item.label}>
+                  <div className="border-border-subtle border-t px-2 py-1.5">
+                    <p className="text-text-secondary text-caption truncate font-medium" title={item.label}>
                       {item.label}
                     </p>
-                    <p className="truncate text-[11px] text-gray-600" title={item.title}>
+                    <p className="text-text-secondary truncate text-[11px]" title={item.title}>
                       {item.title}
                     </p>
-                    <p className="truncate text-[11px] text-gray-500" title={item.subtitle}>
+                    <p className="text-text-muted truncate text-[11px]" title={item.subtitle}>
                       {item.subtitle}
                     </p>
                     {item.url ? (
-                      <p className="truncate text-[11px] text-gray-500" title={item.url}>
+                      <p className="text-text-muted truncate text-[11px]" title={item.url}>
                         {item.url}
                       </p>
                     ) : null}
-                    {item.isArbitrary ? <span className="mt-1 inline-flex rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Arbitrary</span> : null}
+                    {item.isArbitrary ? <span className="bg-accent-100 text-accent-700 mt-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold">Arbitrary</span> : null}
                   </div>
                 </div>
               ))}
@@ -288,24 +292,24 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
 
       {/* Generations List */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Generations</h2>
+        <h2 className="text-text-primary text-h3">Generations</h2>
         {generations.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No generations yet using this input preset.</p>
+          <p className="text-text-secondary text-body mt-4">No generations yet using this input preset.</p>
         ) : (
-          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="border-border bg-surface mt-4 overflow-hidden rounded-lg border shadow-xs">
+            <table className="divide-border min-w-full divide-y">
+              <thead className="bg-surface-muted">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Prompt Version</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Outputs</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Created</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Rating</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Prompt Version</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Outputs</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
+              <tbody className="divide-border bg-surface divide-y">
                 {generations.map((gen) => (
-                  <tr key={gen.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm whitespace-nowrap">
+                  <tr key={gen.id} className="hover:bg-surface-muted">
+                    <td className="text-body px-6 py-4 whitespace-nowrap">
                       <Link href={`/generations/${gen.id}`}>
                         <div className="flex gap-1">
                           <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
@@ -313,9 +317,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.promptVersionName || "-"}</td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.outputImageCount}</td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{new Date(gen.createdAt).toLocaleDateString()}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{gen.promptVersionName || "-"}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{gen.outputImageCount}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{new Date(gen.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

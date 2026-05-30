@@ -66,12 +66,12 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
   return (
     <div>
-      <p className="mb-2 text-xs font-medium text-gray-600">{label}</p>
+      <p className="text-text-secondary text-caption mb-2 font-medium">{label}</p>
 
       {value ? (
         <div className="group relative">
-          <ImageWithSkeleton src={value} alt={label} wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50" />
-          <button type="button" aria-label="Remove image" onClick={() => onChange(null)} className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          <ImageWithSkeleton src={value} alt={label} wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-border bg-surface-muted" />
+          <button type="button" aria-label="Remove image" onClick={() => onChange(null)} className="bg-danger-500 text-text-inverse absolute -top-2 -right-2 rounded-full p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
             <XIcon className="size-3" />
           </button>
         </div>
@@ -92,7 +92,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
             type="button"
             aria-label={`Upload ${label}`}
             className={`flex min-h-72 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-              dragOver ? "border-primary-500 bg-primary-50" : "border-gray-300 hover:border-gray-400"
+              dragOver ? "border-primary-500 bg-primary-50" : "border-border-strong hover:border-border-strong"
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -104,20 +104,20 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           >
             {uploading ? (
               <div className="flex items-center justify-center gap-2">
-                <Spinner className="size-5 text-gray-600" />
-                <span className="text-sm text-gray-600">Uploading…</span>
+                <Spinner className="text-text-secondary size-5" />
+                <span className="text-text-secondary text-body">Uploading…</span>
               </div>
             ) : (
               <div>
-                <UploadIcon className="mx-auto size-8 text-gray-400" strokeWidth={1.5} />
-                <p className="mt-2 text-xs text-gray-500">Drop image or click to browse</p>
+                <UploadIcon className="text-text-disabled mx-auto size-8" strokeWidth={1.5} />
+                <p className="text-text-muted text-caption mt-2">Drop image or click to browse</p>
               </div>
             )}
           </button>
         </>
       )}
 
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="text-danger-600 text-caption mt-1">{error}</p>}
     </div>
   );
 }

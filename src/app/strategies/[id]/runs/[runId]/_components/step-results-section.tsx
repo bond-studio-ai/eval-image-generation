@@ -16,7 +16,7 @@ export function StepResultsSection({
   return (
     <SectionToggle title="Step Results" count={stepGroups.length} open={open} onToggle={onToggle}>
       <div className="space-y-3 p-4">
-        {stepGroups.length === 0 && <p className="text-sm text-gray-500">No step results yet.</p>}
+        {stepGroups.length === 0 && <p className="text-text-muted text-body">No step results yet.</p>}
         {stepGroups.map((group, i) => (
           <StepGroupCard key={group.stepOrder} group={group} defaultOpen={stepGroups.length <= 3 || i === stepGroups.length - 1} onViewPrompt={onViewPrompt} />
         ))}

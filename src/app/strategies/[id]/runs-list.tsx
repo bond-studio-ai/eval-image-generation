@@ -111,20 +111,20 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
   return (
     <div ref={containerRef}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Runs</h2>
+        <h2 className="text-text-primary text-h3">Runs</h2>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+          <div className="border-border bg-surface-muted flex rounded-lg border p-0.5">
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
+              className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${viewMode === "list" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
             >
               List
             </button>
             <button
               type="button"
               onClick={() => setViewMode("matrix")}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === "matrix" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
+              className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${viewMode === "matrix" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
             >
               Matrix
             </button>
@@ -133,7 +133,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-600">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
+        <p className="text-text-secondary text-body mt-4">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
       ) : viewMode === "list" ? (
         <div className="mt-4 space-y-4">
           {items.map((item) => (
@@ -257,16 +257,18 @@ function BatchRunCard({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <button type="button" onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-3 text-left hover:bg-gray-50/50">
+    <div className="border-border bg-surface rounded-lg border shadow-xs">
+      <button type="button" onClick={() => setExpanded(!expanded)} className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-5 py-3 text-left">
         <div className="flex items-center gap-3">
-          <ChevronRightIcon className={`size-4 text-gray-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${batch.isStandalone ? "bg-gray-100 text-gray-700" : "bg-indigo-50 text-indigo-700"}`}>{batch.isStandalone ? "run" : "batch"}</span>
+          <ChevronRightIcon className={`text-text-disabled size-4 transition-transform ${expanded ? "rotate-90" : ""}`} />
+          <span className={`text-caption inline-flex items-center rounded-full px-2 py-0.5 font-medium ${batch.isStandalone ? "bg-surface-sunken text-text-secondary" : "bg-primary-50 text-primary-700"}`}>
+            {batch.isStandalone ? "run" : "batch"}
+          </span>
           <StatusBadge status={batch.status} />
-          <span className="text-sm text-gray-600">
+          <span className="text-text-secondary text-body">
             {batch.runs.length} run{batch.runs.length === 1 ? "" : "s"} &middot; {presetNames.size} preset{presetNames.size === 1 ? "" : "s"}
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-text-disabled text-caption">
             {completedRuns} completed{failedRuns > 0 ? `, ${failedRuns} failed` : ""}
           </span>
         </div>
@@ -279,7 +281,7 @@ function BatchRunCard({
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleRetryFailed(e as unknown as React.MouseEvent);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? "pointer-events-none opacity-50" : ""}`}
+              className={`border-warning-300 bg-warning-50 text-warning-700 hover:bg-warning-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retrying ? "pointer-events-none opacity-50" : ""}`}
             >
               {retrying ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Failed ({failedRuns})
@@ -293,19 +295,19 @@ function BatchRunCard({
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleRetryJudge(e as unknown as React.MouseEvent);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
+              className={`border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
             >
               {retryingJudge ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Judge
             </span>
           )}
-          <span className="text-xs text-gray-400">{new Date(batch.createdAt).toLocaleString()}</span>
+          <span className="text-text-disabled text-caption">{new Date(batch.createdAt).toLocaleString()}</span>
         </div>
       </button>
       {judgeRetryError && (
-        <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-5 py-2">
-          <span className="text-xs text-red-700">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">
+        <div className="border-danger-100 bg-danger-50 flex items-center justify-between border-b px-5 py-2">
+          <span className="text-danger-700 text-caption">{judgeRetryError}</span>
+          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-danger-400 hover:text-danger-600 text-caption">
             dismiss
           </button>
         </div>
@@ -397,9 +399,9 @@ function CollapsibleBatchCard({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <button type="button" onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between border-b border-gray-100 px-4 py-2 text-left hover:bg-gray-50/50">
-        <span className="text-sm font-medium text-gray-700">Batch · {new Date(batch.createdAt).toLocaleString()}</span>
+    <div className="border-border bg-surface rounded-lg border shadow-xs">
+      <button type="button" onClick={() => setExpanded(!expanded)} className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-4 py-2 text-left">
+        <span className="text-text-secondary text-body font-medium">Batch · {new Date(batch.createdAt).toLocaleString()}</span>
         <div className="flex items-center gap-2">
           {failedRuns > 0 && !batch.isStandalone && (
             <span
@@ -409,7 +411,7 @@ function CollapsibleBatchCard({
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleRetryFailed(e as unknown as React.MouseEvent);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? "pointer-events-none opacity-50" : ""}`}
+              className={`border-warning-300 bg-warning-50 text-warning-700 hover:bg-warning-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retrying ? "pointer-events-none opacity-50" : ""}`}
             >
               {retrying ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Failed ({failedRuns})
@@ -423,20 +425,20 @@ function CollapsibleBatchCard({
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleRetryJudge(e as unknown as React.MouseEvent);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
+              className={`border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
             >
               {retryingJudge ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
               Retry Judge
             </span>
           )}
           <StatusBadge status={batch.status} />
-          <ChevronDownIcon className={`size-5 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          <ChevronDownIcon className={`text-text-disabled size-5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </div>
       </button>
       {judgeRetryError && (
-        <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-2">
-          <span className="text-xs text-red-700">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-xs text-red-400 hover:text-red-600">
+        <div className="border-danger-100 bg-danger-50 flex items-center justify-between border-b px-4 py-2">
+          <span className="text-danger-700 text-caption">{judgeRetryError}</span>
+          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-danger-400 hover:text-danger-600 text-caption">
             dismiss
           </button>
         </div>
@@ -474,38 +476,38 @@ function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, e
   const CELL = 240;
 
   return (
-    <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200">
-      <table className="divide-y divide-gray-200" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
-        <thead className="bg-gray-50">
+    <div className="border-border overflow-x-auto overflow-y-hidden rounded-lg border">
+      <table className="divide-border divide-y" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+        <thead className="bg-surface-muted">
           <tr>
-            <th className="sticky left-0 z-20 border-r border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-600 uppercase" style={{ minWidth: 200, maxWidth: 200 }}>
+            <th className="border-border bg-surface-muted text-text-secondary text-caption sticky left-0 z-20 border-r px-4 py-2.5 text-left font-medium tracking-wider uppercase" style={{ minWidth: 200, maxWidth: 200 }}>
               Input preset
             </th>
             {Array.from({ length: maxExecutions }, (_, i) => (
-              <th key={i} className="px-2 py-2.5 text-center text-xs font-medium tracking-wider text-gray-600 uppercase" style={{ width: CELL, minWidth: CELL }}>
+              <th key={i} className="text-text-secondary text-caption px-2 py-2.5 text-center font-medium tracking-wider uppercase" style={{ width: CELL, minWidth: CELL }}>
                 #{i + 1}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-border bg-surface divide-y">
           {presetNames.map((presetName) => {
             const presetRuns = byPreset.get(presetName)!;
             const canonicalRun = presetRuns[0];
             const canonicalGenerationId = canonicalRun?.lastOutputGenerationId ?? null;
             return (
-              <tr key={presetName} className="hover:bg-gray-50/50">
-                <td className="sticky left-0 z-20 border-r border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900" style={{ minWidth: 200, maxWidth: 200 }}>
+              <tr key={presetName} className="hover:bg-surface-muted/50">
+                <td className="border-border bg-surface text-text-primary text-body sticky left-0 z-20 border-r px-4 py-2 font-medium" style={{ minWidth: 200, maxWidth: 200 }}>
                   <span className="block break-words">{presetName}</span>
                   {canonicalGenerationId && <ReviewBadge generationId={canonicalGenerationId} state={segmentationStatuses.get(canonicalGenerationId)} onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)} />}
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
                   const run = presetRuns[i];
                   return (
-                    <td key={i} className="border-l border-gray-100 p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>
+                    <td key={i} className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>
                       <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                         {!run ? (
-                          <span className="text-gray-200">&mdash;</span>
+                          <span className="text-text-disabled">&mdash;</span>
                         ) : run.lastOutputUrl ? (
                           <div
                             role="button"
@@ -521,10 +523,10 @@ function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, e
                               alt=""
                               width={CELL - 20}
                               height={CELL - 20}
-                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-2 border-amber-400 ring-2 ring-amber-200" : "border border-gray-200"}`}
+                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
-                              <MaximizeIcon className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
+                            <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
+                              <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
                             </div>
                             <JudgeScoreBadge
                               runId={run.id}
@@ -560,12 +562,12 @@ function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, e
 }
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-700",
-  running: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700"
+  pending: "bg-surface-sunken text-text-secondary",
+  running: "bg-primary-100 text-primary-700",
+  completed: "bg-success-100 text-success-700",
+  failed: "bg-danger-100 text-danger-700"
 };
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending}`}>{status}</span>;
+  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending}`}>{status}</span>;
 }

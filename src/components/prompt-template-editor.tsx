@@ -78,10 +78,10 @@ export function PromptTemplateEditor({
   const textareaClass = useMemo(() => {
     if (!hasErrors) return className;
     return className
-      .replace(/\bborder-gray-200\b/, "border-red-300")
-      .replace(/\bhover:border-gray-300\b/, "hover:border-red-400")
-      .replace(/\bfocus:border-primary-500\b/, "focus:border-red-500")
-      .replace(/\bfocus:ring-primary-500\b/, "focus:ring-red-500");
+      .replace(/\bborder-gray-200\b/, "border-danger-300")
+      .replace(/\bhover:border-border-strong\b/, "hover:border-danger-400")
+      .replace(/\bfocus:border-primary-500\b/, "focus:border-danger-500")
+      .replace(/\bfocus:ring-primary-500\b/, "focus:ring-danger-500");
   }, [className, hasErrors]);
 
   const handleInsert = useCallback((toInsert: string) => {

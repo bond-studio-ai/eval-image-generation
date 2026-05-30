@@ -34,7 +34,7 @@ const clerkAppearance = {
     fontFamily: "var(--font-inter), ui-sans-serif, system-ui, sans-serif"
   },
   elements: {
-    formButtonPrimary: "bg-primary-600 hover:bg-primary-700 text-white shadow-xs rounded-button",
+    formButtonPrimary: "bg-primary-600 hover:bg-primary-700 text-text-inverse shadow-xs rounded-button",
     card: "shadow-card border border-border rounded-card"
   }
 };

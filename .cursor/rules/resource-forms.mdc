@@ -22,13 +22,13 @@ import { ResourceFormHeader, ErrorCard } from '@/components/resource-form-header
 />
 ```
 
-- Renders a white card (`p-5 shadow-xs`) with labeled Name + Description fields
-- `nameRequired` defaults to `true` (shows red asterisk)
+- Renders a `bg-surface` card (`rounded-card border-border shadow-card p-5`) with labeled Name + Description fields
+- `nameRequired` defaults to `true` (shows a `text-danger-500` asterisk)
 - Never use raw inline-editable inputs for name/description — always use this card
 
 ## Error Display
 
-Use `<ErrorCard>` for all form error messages. Never use bare `<p className="text-red-600">`.
+Use `<ErrorCard>` for all form error messages. Never use a bare `<p className="text-danger-700">` (and never raw `text-red-*`).
 
 ```tsx
 {error && <div className="mt-4"><ErrorCard message={error} /></div>}
@@ -45,8 +45,8 @@ Use `<ErrorCard>` for all form error messages. Never use bare `<p className="tex
 
 Every resource (strategies, input presets, prompt versions) follows the same pattern:
 
-1. **List page** — server component that fetches data, renders `<PageHeader>` with `<PrimaryLinkButton href="/resource/new">`, then `<DataTable>` (or `<EmptyState>` when empty)
-2. **Create page** (`/resource/new`) — `<PageHeader>` with back link + `<PrimaryButton>` save action, form fields below
+1. **List page** — server component that fetches data, renders `<PageHeader>` with `<LinkButton href="/resource/new">`, then `<DataTable>` (or `<EmptyState>` when empty)
+2. **Create page** (`/resource/new`) — `<PageHeader>` with back link + `<Button>` save action, form fields below
 3. **Edit page** (`/resource/[id]/edit`) — server component loads data, passes to a client form component
 
 Never embed create/edit forms inline on the list page. Always use separate routes.

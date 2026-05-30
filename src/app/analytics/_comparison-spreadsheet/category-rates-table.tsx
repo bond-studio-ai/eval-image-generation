@@ -6,7 +6,7 @@ import { formatCategoryName, SLICE_BG_COLORS } from "./helpers";
 import type { CategoryRow, SliceData, SortCol, SortField } from "./types";
 
 function SortArrow({ active, dir }: { active?: boolean; dir?: "asc" | "desc" }) {
-  if (!active) return <span className="text-gray-300">{"\u2195"}</span>;
+  if (!active) return <span className="text-text-disabled">{"\u2195"}</span>;
   return <span>{dir === "asc" ? "\u2191" : "\u2193"}</span>;
 }
 
@@ -29,61 +29,64 @@ export function CategoryRatesTable({
   const fullColSpan = 1 + colCount * 3;
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white shadow-xs">
-      <table className="w-full border-collapse text-xs">
+    <div className="border-border-strong bg-surface overflow-x-auto rounded-lg border shadow-xs">
+      <table className="text-caption w-full border-collapse">
         <thead>
           <tr>
-            <th colSpan={fullColSpan} className="border-b border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-900">
+            <th colSpan={fullColSpan} className="border-border-strong bg-surface-muted text-text-primary text-body border-b px-4 py-3 text-left font-bold">
               Product Category Success / Failure Rates
             </th>
           </tr>
 
           {/* Slice group headers */}
           <tr>
-            <th aria-label="Category" className="w-48 min-w-[180px] border-r border-b border-gray-300 bg-white px-3 py-2" />
+            <th aria-label="Category" className="border-border-strong bg-surface w-48 min-w-[180px] border-r border-b px-3 py-2" />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               const s = dataBySlice[slice.key]?.summary;
               const ratedCount = s?.productRatedCount ?? 0;
               return (
-                <th key={slice.key} colSpan={3} className={`border-r border-b border-gray-300 px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 320 }}>
-                  <div className="text-xs font-bold text-gray-900">{slice.strategyName}</div>
-                  <div className="mt-0.5 text-[10px] font-medium text-gray-600">
+                <th key={slice.key} colSpan={3} className={`border-border-strong border-r border-b px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 320 }}>
+                  <div className="text-text-primary text-caption font-bold">{slice.strategyName}</div>
+                  <div className="text-text-secondary mt-0.5 text-[10px] font-medium">
                     {formatComparisonSource(slice.source)} ({formatComparisonRange(slice.range)})
                   </div>
-                  <div className="mt-0.5 text-[10px] font-semibold text-gray-700">{ratedCount} Rated Images</div>
+                  <div className="text-text-secondary mt-0.5 text-[10px] font-semibold">{ratedCount} Rated Images</div>
                 </th>
               );
             })}
           </tr>
 
           {/* Overall accuracy row */}
-          <tr className="bg-gray-50/60">
-            <th className="border-r border-b border-gray-300 px-3 py-1.5 text-left text-[11px] font-semibold text-gray-700">Product Accuracy (Overall)</th>
+          <tr className="bg-surface-muted/60">
+            <th className="border-border-strong text-text-secondary border-r border-b px-3 py-1.5 text-left text-[11px] font-semibold">Product Accuracy (Overall)</th>
             {slices.map((slice, i) => {
               const s = dataBySlice[slice.key]?.summary;
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
               return (
                 <Fragment key={slice.key}>
-                  <td className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] text-gray-500 ${color.header}`}>{s?.productRatedCount ?? ""}</td>
-                  <td className={`border-b border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-green-700 ${color.header}`}>{s ? `${s.productGoodPct}%` : "-"}</td>
-                  <td className={`border-r border-b border-gray-300 px-2 py-1.5 text-center text-[11px] font-semibold text-red-600 ${color.header}`}>{s ? `${s.productFailedPct}%` : "-"}</td>
+                  <td className={`border-border-strong text-text-muted border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>{s?.productRatedCount ?? ""}</td>
+                  <td className={`border-border-strong text-success-700 border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{s ? `${s.productGoodPct}%` : "-"}</td>
+                  <td className={`border-border-strong text-danger-600 border-r border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{s ? `${s.productFailedPct}%` : "-"}</td>
                 </Fragment>
               );
             })}
           </tr>
 
           {/* Sub-column headers */}
-          <tr className="bg-gray-100">
-            <th className="sticky left-0 z-10 border-r border-b border-gray-300 bg-gray-100 px-3 py-2 text-left text-[10px] font-bold tracking-wider text-gray-600 uppercase">Category</th>
+          <tr className="bg-surface-sunken">
+            <th className="border-border-strong bg-surface-sunken text-text-secondary sticky left-0 z-10 border-r border-b px-3 py-2 text-left text-[10px] font-bold tracking-wider uppercase">Category</th>
             {slices.map((slice) => (
               <Fragment key={slice.key}>
-                <th className="border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase">Rated Images</th>
-                <th className="cursor-pointer border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-green-700 uppercase select-none hover:bg-gray-200" onClick={() => toggleCategorySort(slice.key, "successPct")}>
+                <th className="border-border-strong text-text-muted border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase">Rated Images</th>
+                <th
+                  className="border-border-strong text-success-700 hover:bg-border cursor-pointer border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase select-none"
+                  onClick={() => toggleCategorySort(slice.key, "successPct")}
+                >
                   Success <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === "successPct"} dir={categorySort?.dir} />
                 </th>
                 <th
-                  className="cursor-pointer border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-red-600 uppercase select-none hover:bg-gray-200"
+                  className="border-border-strong text-danger-600 hover:bg-border cursor-pointer border-r border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase select-none"
                   onClick={() => toggleCategorySort(slice.key, "failurePct")}
                 >
                   Fail <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === "failurePct"} dir={categorySort?.dir} />
@@ -96,7 +99,7 @@ export function CategoryRatesTable({
         <tbody>
           {loading && (
             <tr>
-              <td colSpan={fullColSpan} className="px-4 py-6 text-center text-sm text-gray-400">
+              <td colSpan={fullColSpan} className="text-text-disabled text-body px-4 py-6 text-center">
                 Loading comparison data…
               </td>
             </tr>
@@ -104,7 +107,7 @@ export function CategoryRatesTable({
 
           {!loading && categoryRows.length === 0 && (
             <tr>
-              <td colSpan={fullColSpan} className="px-4 py-6 text-center text-sm text-gray-400">
+              <td colSpan={fullColSpan} className="text-text-disabled text-body px-4 py-6 text-center">
                 No product category data available.
               </td>
             </tr>
@@ -116,8 +119,8 @@ export function CategoryRatesTable({
               const rowKey = row.type === "category" ? row.categoryName : `${row.categoryName}:${row.issueName}`;
 
               return (
-                <tr key={rowKey} className={isCategory ? "bg-white font-semibold" : "bg-white"}>
-                  <th className={`sticky left-0 z-10 border-r border-b border-gray-200 bg-white px-3 py-1.5 text-left ${isCategory ? "text-[11px] font-bold text-gray-900" : "pl-6 text-[11px] font-normal text-gray-500"}`}>
+                <tr key={rowKey} className={isCategory ? "bg-surface font-semibold" : "bg-surface"}>
+                  <th className={`border-border bg-surface sticky left-0 z-10 border-r border-b px-3 py-1.5 text-left ${isCategory ? "text-text-primary text-[11px] font-bold" : "text-text-muted pl-6 text-[11px] font-normal"}`}>
                     {isCategory ? formatCategoryName(row.categoryName) : row.issueName}
                   </th>
                   {slices.map((slice) => {
@@ -127,9 +130,9 @@ export function CategoryRatesTable({
                     if (isCategory) {
                       return (
                         <Fragment key={slice.key}>
-                          <td className="border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-700">{cat ? cat.total : "-"}</td>
-                          <td className="border-b border-gray-200 px-2 py-1.5 text-center text-[11px] font-medium text-green-700">{cat ? `${cat.success} (${cat.successPct}%)` : "-"}</td>
-                          <td className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] font-medium text-red-600">{cat ? `${cat.failure} (${cat.failurePct}%)` : "-"}</td>
+                          <td className="border-border text-text-secondary border-b px-2 py-1.5 text-center text-[11px]">{cat ? cat.total : "-"}</td>
+                          <td className="border-border text-success-700 border-b px-2 py-1.5 text-center text-[11px] font-medium">{cat ? `${cat.success} (${cat.successPct}%)` : "-"}</td>
+                          <td className="border-border text-danger-600 border-r border-b px-2 py-1.5 text-center text-[11px] font-medium">{cat ? `${cat.failure} (${cat.failurePct}%)` : "-"}</td>
                         </Fragment>
                       );
                     }
@@ -139,9 +142,9 @@ export function CategoryRatesTable({
 
                     return (
                       <Fragment key={slice.key}>
-                        <td aria-hidden="true" tabIndex={-1} className="border-b border-gray-100 px-2 py-1 text-center" />
-                        <td aria-hidden="true" tabIndex={-1} className="border-b border-gray-100 px-2 py-1 text-center" />
-                        <td className="border-r border-b border-gray-100 px-2 py-1 text-center text-[11px] text-red-500">{issue ? `${issue.count} (${issuePct}%)` : ""}</td>
+                        <td aria-hidden="true" tabIndex={-1} className="border-border-subtle border-b px-2 py-1 text-center" />
+                        <td aria-hidden="true" tabIndex={-1} className="border-border-subtle border-b px-2 py-1 text-center" />
+                        <td className="border-border-subtle text-danger-500 border-r border-b px-2 py-1 text-center text-[11px]">{issue ? `${issue.count} (${issuePct}%)` : ""}</td>
                       </Fragment>
                     );
                   })}

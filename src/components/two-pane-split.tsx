@@ -124,8 +124,8 @@ export function TwoPaneSplit({ left, right, defaultRatio = 0.5, minPaneWidth = 2
           onDoubleClick={resetRatio}
           className="absolute inset-0 h-full w-full cursor-col-resize touch-none select-none"
         />
-        <div className="group-hover:border-primary-400 group-active:border-primary-500 pointer-events-none absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
-          <GripVerticalIcon className="group-hover:text-primary-500 size-2.5 text-gray-500" aria-hidden="true" />
+        <div className="group-hover:border-primary-400 group-active:border-primary-500 border-border-strong bg-surface pointer-events-none absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border shadow-xs transition-colors">
+          <GripVerticalIcon className="group-hover:text-primary-500 text-text-muted size-2.5" aria-hidden="true" />
         </div>
       </div>
       <div className="flex min-w-0 flex-col sm:flex-[var(--tpane-right-grow)_1_0%]" style={paneStyle}>

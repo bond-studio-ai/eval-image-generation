@@ -104,16 +104,16 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       {open &&
         pos &&
         createPortal(
-          <div ref={cardRef} onMouseEnter={keepOpen} onMouseLeave={hide} className="fixed z-[9990] w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
+          <div ref={cardRef} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
             {!data ? (
-              <p className="text-xs text-gray-500">Loading…</p>
+              <p className="text-text-muted text-caption">Loading…</p>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <Link href={`/strategies/${data.id}`} className="text-primary-600 hover:text-primary-500 text-sm font-semibold">
+                  <Link href={`/strategies/${data.id}`} className="text-primary-600 hover:text-primary-500 text-body font-semibold">
                     {data.name}
                   </Link>
-                  {data.description && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{data.description}</p>}
+                  {data.description && <p className="text-text-muted text-caption mt-0.5 line-clamp-2">{data.description}</p>}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Badge color="model">{data.model}</Badge>
@@ -126,14 +126,14 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
                 </div>
                 {data.steps.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium tracking-wider text-gray-400 uppercase">Steps</p>
+                    <p className="text-text-disabled text-[10px] font-medium tracking-wider uppercase">Steps</p>
                     <ul className="mt-1 space-y-0.5">
                       {data.steps.map((step) => (
-                        <li key={step.stepOrder} className="text-xs text-gray-600">
-                          <span className="font-medium text-gray-800">{step.stepOrder}.</span> {step.name ?? "Untitled"}
+                        <li key={step.stepOrder} className="text-text-secondary text-caption">
+                          <span className="text-text-secondary font-medium">{step.stepOrder}.</span> {step.name ?? "Untitled"}
                           {step.promptVersion && (
                             <>
-                              <span className="text-gray-400">: </span>
+                              <span className="text-text-disabled">: </span>
                               <button
                                 type="button"
                                 onClick={() =>

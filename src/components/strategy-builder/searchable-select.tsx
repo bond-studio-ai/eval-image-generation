@@ -24,10 +24,10 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
         type="button"
         id={id}
         onClick={() => setOpen(!open)}
-        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedLabel ? "truncate text-gray-900" : "text-gray-400"}>{selectedLabel || placeholder}</span>
-        <ChevronsUpDownIcon className="size-4 shrink-0 text-gray-400" />
+        <span className={selectedLabel ? "text-text-primary truncate" : "text-text-disabled"}>{selectedLabel || placeholder}</span>
+        <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
 
       {open && (
@@ -41,7 +41,7 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
               setSearch("");
             }}
           />
-          <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="border-border bg-surface absolute z-50 mt-1 w-full rounded-lg border shadow-lg">
             <div className="p-2">
               <input
                 ref={focusOnMount}
@@ -50,11 +50,11 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search models..."
                 aria-label="Search models"
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded border px-2.5 py-1.5 focus:ring-1 focus:outline-none"
               />
             </div>
-            <div className="max-h-56 overflow-y-auto border-t border-gray-100">
-              {filtered.length === 0 && <div className="p-3 text-center text-sm text-gray-400">No matches</div>}
+            <div className="border-border-subtle max-h-56 overflow-y-auto border-t">
+              {filtered.length === 0 && <div className="text-text-disabled text-body p-3 text-center">No matches</div>}
               {filtered.map((o) => (
                 <button
                   key={o.value}
@@ -64,10 +64,10 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-gray-50 ${o.value === value ? "bg-primary-50 text-primary-700" : "text-gray-700"}`}
+                  className={`hover:bg-surface-muted flex w-full flex-col px-3 py-2 text-left transition-colors ${o.value === value ? "bg-primary-50 text-primary-700" : "text-text-secondary"}`}
                 >
-                  <span className={`text-sm ${o.value === value ? "font-medium" : ""}`}>{o.label}</span>
-                  <span className="font-mono text-xs text-gray-400">{o.meta ?? o.value}</span>
+                  <span className={`text-body ${o.value === value ? "font-medium" : ""}`}>{o.label}</span>
+                  <span className="text-text-disabled text-caption font-mono">{o.meta ?? o.value}</span>
                 </button>
               ))}
             </div>

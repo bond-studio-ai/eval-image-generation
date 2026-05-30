@@ -55,37 +55,37 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
   ];
 
   return (
-    <Modal onClose={onClose} labelledById="judge-details-title" backdropClassName="bg-black/40 backdrop-blur-sm" className="flex max-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col rounded-xl bg-white shadow-2xl">
-      <div className="relative border-b border-gray-200 px-6 pt-5 pb-4">
+    <Modal onClose={onClose} labelledById="judge-details-title" backdropClassName="bg-overlay/40 backdrop-blur-sm" className="bg-surface flex max-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col rounded-xl shadow-2xl">
+      <div className="border-border relative border-b px-6 pt-5 pb-4">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             {isFailed ? (
-              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangleIcon className="size-4 text-red-600" />
+              <span className="bg-danger-100 inline-flex size-8 shrink-0 items-center justify-center rounded-full">
+                <AlertTriangleIcon className="text-danger-600 size-4" />
               </span>
             ) : (
-              <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isSelected ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"}`}>{aggregateScore}</span>
+              <span className={`text-body inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold ${isSelected ? "bg-warning-100 text-warning-800" : "bg-surface-sunken text-text-secondary"}`}>{aggregateScore}</span>
             )}
-            <h3 id="judge-details-title" className="text-base font-semibold text-gray-900">
+            <h3 id="judge-details-title" className="text-text-primary text-body-lg font-semibold">
               {isFailed ? "Judge Error" : "Judge Details"}
             </h3>
             {!isFailed && isSelected && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              <span className="bg-warning-100 text-warning-800 text-caption inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-medium">
                 <StarIcon className="size-3" fill="currentColor" />
                 Selected
               </span>
             )}
           </div>
-          {multiJudge && !isFailed && <p className="text-[11px] text-gray-500">Average score shown; per-judge raw scores below.</p>}
+          {multiJudge && !isFailed && <p className="text-text-muted text-[11px]">Average score shown; per-judge raw scores below.</p>}
         </div>
-        <button type="button" aria-label="Close judge details" onClick={onClose} className="absolute top-4 right-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+        <button type="button" aria-label="Close judge details" onClick={onClose} className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary absolute top-4 right-4 rounded-lg p-1.5 transition-colors">
           <XIcon className="size-5" />
         </button>
       </div>
 
       {multiJudge && (
-        <div className="border-b border-gray-200 bg-gray-50/80 px-4 py-3">
-          <p className="mb-2 text-[11px] font-medium tracking-wider text-gray-500 uppercase">Judges</p>
+        <div className="border-border bg-surface-muted/80 border-b px-4 py-3">
+          <p className="text-text-muted mb-2 text-[11px] font-medium tracking-wider uppercase">Judges</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {panels.map((p, i) => (
               <button
@@ -97,15 +97,15 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
                   setActiveTab((currentTab) => (getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : "reasoning"));
                 }}
                 className={`rounded-xl border px-3 py-2 text-left transition-all ${
-                  judgeIdx === i ? "border-primary-200 text-primary-700 ring-primary-100 bg-white shadow-sm ring-1" : "border-transparent bg-white/70 text-gray-700 hover:border-gray-200 hover:bg-white"
+                  judgeIdx === i ? "border-primary-200 text-primary-700 ring-primary-100 bg-surface shadow-sm ring-1" : "bg-surface/70 text-text-secondary hover:border-border hover:bg-surface border-transparent"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={`truncate text-xs font-semibold ${judgeIdx === i ? "text-primary-700" : "text-gray-800"}`}>{p.shortLabel}</p>
-                    <p className="truncate font-mono text-[10px] text-gray-500">{p.judgeModel}</p>
+                    <p className={`text-caption truncate font-semibold ${judgeIdx === i ? "text-primary-700" : "text-text-secondary"}`}>{p.shortLabel}</p>
+                    <p className="text-text-muted truncate font-mono text-[10px]">{p.judgeModel}</p>
                   </div>
-                  {p.rawScore != null && <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${judgeIdx === i ? "bg-primary-50 text-primary-700" : "bg-indigo-50 text-indigo-600"}`}>{p.rawScore}</span>}
+                  {p.rawScore != null && <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${judgeIdx === i ? "bg-primary-50 text-primary-700" : "bg-primary-50 text-primary-600"}`}>{p.rawScore}</span>}
                 </div>
               </button>
             ))}
@@ -114,15 +114,15 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
       )}
 
       {!multiJudge && (panel.judgeModel || panel.judgeTypeUsed || panel.judgePromptVersionId) && (
-        <div className="border-b border-gray-100 px-6 py-2">
+        <div className="border-border-subtle border-b px-6 py-2">
           {panel.judgeModel && (
-            <p className="text-xs text-gray-600">
+            <p className="text-text-secondary text-caption">
               <span className="font-medium">{panel.judgeModel}</span>
-              {panel.rawScore != null && <span className="ml-2 text-indigo-600">Score: {panel.rawScore}</span>}
+              {panel.rawScore != null && <span className="text-primary-600 ml-2">Score: {panel.rawScore}</span>}
             </p>
           )}
           {panel.judgeTypeUsed && (
-            <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeTypeUsed === "batch" ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-600"}`}>{panel.judgeTypeUsed}</span>
+            <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeTypeUsed === "batch" ? "bg-primary-100 text-primary-700" : "bg-surface-sunken text-text-secondary"}`}>{panel.judgeTypeUsed}</span>
           )}
           {panel.judgePromptVersionId && (
             <Link href={`/prompt-versions/${panel.judgePromptVersionId}`} className="text-primary-600 hover:text-primary-500 mt-1 block text-[11px]">
@@ -133,10 +133,10 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
       )}
 
       {multiJudge && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-6 py-2">
-          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeType === "batch" ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-600"}`}>Config: {panel.judgeType}</span>
+        <div className="border-border-subtle flex flex-wrap items-center gap-2 border-b px-6 py-2">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeType === "batch" ? "bg-primary-100 text-primary-700" : "bg-surface-sunken text-text-secondary"}`}>Config: {panel.judgeType}</span>
           {panel.judgeTypeUsed && (
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeTypeUsed === "batch" ? "bg-indigo-50 text-indigo-600" : "bg-gray-50 text-gray-500"}`}>Used: {panel.judgeTypeUsed}</span>
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${panel.judgeTypeUsed === "batch" ? "bg-primary-50 text-primary-600" : "bg-surface-muted text-text-muted"}`}>Used: {panel.judgeTypeUsed}</span>
           )}
           {panel.judgePromptVersionId && (
             <Link href={`/prompt-versions/${panel.judgePromptVersionId}`} className="text-primary-600 hover:text-primary-500 text-[11px]">
@@ -147,13 +147,13 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
       )}
 
       {hasExtra && (
-        <div className="flex gap-1 border-b border-gray-200 px-6">
+        <div className="border-border flex gap-1 border-b px-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === tab.id ? "border-primary-500 text-primary-600" : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"}`}
+              className={`text-caption -mb-px border-b-2 px-3 py-2.5 font-medium transition-colors ${activeTab === tab.id ? "border-primary-500 text-primary-600" : "text-text-muted hover:border-border-strong hover:text-text-secondary border-transparent"}`}
             >
               {tab.label}
             </button>
@@ -162,10 +162,10 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-        {activeTab === "reasoning" && <p className={`text-sm leading-relaxed ${isFailed ? "text-red-700" : "text-gray-700"}`}>{reasoning}</p>}
-        {activeTab === "output" && output && <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{output}</pre>}
-        {activeTab === "system" && systemPrompt && <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{systemPrompt}</pre>}
-        {activeTab === "user" && userPrompt && <pre className="text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{userPrompt}</pre>}
+        {activeTab === "reasoning" && <p className={`text-body leading-relaxed ${isFailed ? "text-danger-700" : "text-text-secondary"}`}>{reasoning}</p>}
+        {activeTab === "output" && output && <pre className="text-text-secondary text-caption leading-relaxed whitespace-pre-wrap">{output}</pre>}
+        {activeTab === "system" && systemPrompt && <pre className="text-text-secondary text-caption leading-relaxed whitespace-pre-wrap">{systemPrompt}</pre>}
+        {activeTab === "user" && userPrompt && <pre className="text-text-secondary text-caption leading-relaxed whitespace-pre-wrap">{userPrompt}</pre>}
       </div>
     </Modal>
   );
@@ -254,7 +254,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
         <span
           role="button"
           tabIndex={0}
-          className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""} ${isJudgeSelected ? "bg-amber-400 text-amber-900" : "bg-gray-700/70 text-white"}`}
+          className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""} ${isJudgeSelected ? "bg-warning-400 text-warning-900" : "text-text-inverse bg-text-secondary/70"}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") openDetailModal(e);
@@ -275,7 +275,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
         <span
           role="button"
           tabIndex={0}
-          className={`absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm ${hasDetail ? "cursor-help" : ""}`}
+          className={`bg-danger-500/90 text-text-inverse absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") openDetailModal(e);
@@ -291,7 +291,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
 
   if (awaitingJudge) {
     return (
-      <span className="absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+      <span className="bg-warning-500/90 text-text-inverse absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm">
         <Spinner className="size-2.5" />
         Judging
       </span>

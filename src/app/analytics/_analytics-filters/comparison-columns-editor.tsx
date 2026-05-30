@@ -18,24 +18,24 @@ interface ComparisonColumnsEditorProps {
 
 export function ComparisonColumnsEditor({ columns, strategies, updateComparisonColumns, addComparisonColumn }: ComparisonColumnsEditorProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-xs">
+    <div className="border-border bg-surface rounded-xl border shadow-xs">
       <div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50/80">
-              <th className="w-10 px-3 py-2.5 text-center text-[10px] font-semibold tracking-wider text-gray-500 uppercase">#</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase" style={{ minWidth: 200 }}>
+            <tr className="border-border bg-surface-muted/80 border-b">
+              <th className="text-text-muted w-10 px-3 py-2.5 text-center text-[10px] font-semibold tracking-wider uppercase">#</th>
+              <th className="text-text-muted px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider uppercase" style={{ minWidth: 200 }}>
                 Strategy
               </th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase">Date range</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider text-gray-500 uppercase">Source</th>
+              <th className="text-text-muted px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider uppercase">Date range</th>
+              <th className="text-text-muted px-3 py-2.5 text-left text-[10px] font-semibold tracking-wider uppercase">Source</th>
               <th className="w-10 px-3 py-2.5" aria-label="Actions" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-border-subtle divide-y">
             {columns.map((column, index) => (
               <tr key={column.id} className="group">
-                <td className="px-3 py-2.5 text-center text-xs font-medium text-gray-400">{index + 1}</td>
+                <td className="text-text-disabled text-caption px-3 py-2.5 text-center font-medium">{index + 1}</td>
                 <td className="px-3 py-2.5" style={{ minWidth: 200 }}>
                   <StrategyDropdown
                     value={column.strategyId}
@@ -64,7 +64,7 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                   />
                 </td>
                 <td className="px-3 py-2.5">
-                  <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+                  <div className="border-border bg-surface-muted flex items-center gap-0.5 rounded-lg border p-0.5">
                     {COMPARISON_SOURCE_OPTIONS.map((s) => (
                       <button
                         key={s}
@@ -74,7 +74,7 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                           nextColumns[index] = { ...column, source: s };
                           updateComparisonColumns(nextColumns);
                         }}
-                        className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${column.source === s ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                        className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${column.source === s ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
                       >
                         {formatComparisonSource(s)}
                       </button>
@@ -87,7 +87,7 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                     aria-label="Remove column"
                     onClick={() => updateComparisonColumns(columns.filter((_, i) => i !== index))}
                     disabled={columns.length <= 1}
-                    className="text-text-disabled disabled:hover:text-text-disabled rounded-lg p-1 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="text-text-disabled disabled:hover:text-text-disabled hover:bg-danger-50 hover:text-danger-500 rounded-lg p-1 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <XIcon className="size-3.5" />
                   </button>
@@ -98,11 +98,11 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
         </table>
       </div>
 
-      <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-border-subtle border-t px-4 py-3">
         <button
           type="button"
           onClick={addComparisonColumn}
-          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          className="border-border-strong text-text-secondary hover:bg-surface-muted hover:text-text-secondary hover:border-border-strong text-caption inline-flex items-center gap-2 rounded-lg border border-dashed px-4 py-2 font-medium transition-colors"
         >
           <PlusIcon className="size-3.5" />
           Add column

@@ -8,13 +8,13 @@ export function CandidatePicker({ value, onChange }: { value: number; onChange: 
   const [custom, setCustom] = useState(!isPreset);
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
-  const activeCls = "bg-amber-600 text-white shadow-sm";
-  const inactiveCls = "bg-white text-amber-800 ring-1 ring-amber-300 hover:bg-amber-50";
-  const btnBase = "min-w-[1.75rem] rounded-md px-1.5 py-1 text-xs font-semibold transition-colors";
+  const activeCls = "bg-warning-600 text-text-inverse shadow-sm";
+  const inactiveCls = "bg-surface text-warning-800 ring-1 ring-warning-300 hover:bg-warning-50";
+  const btnBase = "min-w-[1.75rem] rounded-md px-1.5 py-1 text-caption font-semibold transition-colors";
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-amber-800">Candidates:</span>
+      <span className="text-warning-800 text-caption font-medium">Candidates:</span>
       <div className="flex items-center gap-1">
         {CANDIDATE_PRESETS.map((n) => (
           <button
@@ -44,7 +44,7 @@ export function CandidatePicker({ value, onChange }: { value: number; onChange: 
               if (!Number.isNaN(v) && v >= 1 && v <= 100) onChange(v);
               else if (e.target.value === "") onChange(1);
             }}
-            className="w-12 [appearance:textfield] rounded-md border border-amber-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-amber-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="border-warning-300 bg-surface text-warning-900 focus:border-warning-500 focus:ring-warning-500 text-caption w-12 [appearance:textfield] rounded-md border px-1.5 py-1 text-center font-semibold focus:ring-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
         )}
       </div>

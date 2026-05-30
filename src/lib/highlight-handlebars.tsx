@@ -19,11 +19,11 @@ import type { ReactNode } from "react";
 type HandlebarsKind = "comment" | "block" | "partial" | "expr" | "unescaped";
 
 const CLASS_BY_KIND: Record<HandlebarsKind, string> = {
-  comment: "italic text-gray-400",
-  block: "font-medium text-purple-700",
-  partial: "text-emerald-700",
-  expr: "text-blue-700",
-  unescaped: "text-amber-700"
+  comment: "italic text-text-disabled",
+  block: "font-medium text-accent-700",
+  partial: "text-success-700",
+  expr: "text-primary-700",
+  unescaped: "text-warning-700"
 };
 
 // Match (in priority order):

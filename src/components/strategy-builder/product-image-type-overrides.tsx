@@ -9,7 +9,7 @@ function ImageTypePill({ active, label, onClick }: { active: boolean; label: str
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${active ? "border-primary-300 bg-primary-50 text-primary-700" : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"}`}
+      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${active ? "border-primary-300 bg-primary-50 text-primary-700" : "border-border bg-surface text-text-muted hover:border-border-strong"}`}
     >
       {label}
     </button>
@@ -32,36 +32,36 @@ export function ProductImageTypeOverrides({ value, onChange }: { value: Record<s
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+    <div className="border-border bg-surface-muted mt-3 rounded-lg border p-4">
       <button type="button" onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between text-left">
-        <span className="text-xs font-medium text-gray-700">
+        <span className="text-text-secondary text-caption font-medium">
           Product Image Types
           {nonDefaultCount > 0 && <span className="bg-primary-50 text-primary-700 ring-primary-200 ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset">{nonDefaultCount} non-default</span>}
         </span>
-        <ChevronDownIcon className={`size-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDownIcon className={`text-text-disabled size-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && (
         <div className="mt-3">
           <div className="mb-3 flex items-center gap-2">
-            <span className="text-[11px] font-medium text-gray-500">Set all:</span>
+            <span className="text-text-muted text-[11px] font-medium">Set all:</span>
             {IMAGE_TYPE_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 type="button"
                 onClick={() => setAll(o.value)}
-                className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                className="border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
               >
                 {o.label}
               </button>
             ))}
           </div>
-          <p className="mb-3 text-[11px] text-gray-500">If the selected image type is unavailable for a product, generation falls back to the featured image.</p>
+          <p className="text-text-muted mb-3 text-[11px]">If the selected image type is unavailable for a product, generation falls back to the featured image.</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {PRODUCT_CATEGORIES.map((cat) => {
               const current = normalizeProductImageType(value[cat]);
               return (
                 <div key={cat} className="flex items-center justify-between gap-2 py-0.5">
-                  <span className="min-w-0 truncate text-xs text-gray-700" title={categoryLabel(cat)}>
+                  <span className="text-text-secondary text-caption min-w-0 truncate" title={categoryLabel(cat)}>
                     {categoryLabel(cat)}
                   </span>
                   <div className="flex shrink-0 gap-1">

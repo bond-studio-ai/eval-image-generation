@@ -6,6 +6,7 @@ import { CdnImage } from "@/components/cdn-image";
 import { isNonEmpty } from "@/components/design-settings-values";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { SceneImageInput } from "@/components/scene-image-input";
+import { Button } from "@/components/ui/button";
 import { DownloadIcon, FileTextIcon, ImageIcon, PencilIcon, XIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { localUrl } from "@/lib/api-base";
@@ -328,13 +329,13 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
     <Modal
       onClose={onClose}
       labelledById="product-image-preview-title"
-      backdropClassName="bg-black/70"
+      backdropClassName="bg-overlay/70"
       containerClassName="z-[60] sm:p-6"
-      className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+      className="bg-surface relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl shadow-2xl"
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <span id="product-image-preview-title" className="truncate text-sm font-medium text-gray-700">
+          <span id="product-image-preview-title" className="text-text-secondary text-body truncate font-medium">
             {productName ?? "Product"} &mdash; {IMAGE_TAG_LABELS[tag]}
           </span>
         </div>
@@ -342,19 +343,19 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
           <button
             type="button"
             onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+            className="border-border text-text-secondary hover:bg-surface-muted text-caption inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-medium transition-colors"
           >
             <DownloadIcon className="size-3.5" />
             Download
           </button>
-          <button type="button" aria-label="Close image preview" onClick={onClose} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
+          <button type="button" aria-label="Close image preview" onClick={onClose} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
             <XIcon className="size-5" />
           </button>
         </div>
       </div>
       <div className="flex-1 overflow-auto p-4">
-        <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
-          {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
+        <div className="bg-surface-sunken relative w-full overflow-hidden rounded-lg">
+          {!loaded && <div className="bg-border aspect-[4/3] w-full animate-pulse" />}
           <CdnImage
             src={url}
             alt={`${productName ?? "Product"} - ${IMAGE_TAG_LABELS[tag]}`}
@@ -382,11 +383,11 @@ function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; 
           e.preventDefault();
           setPreviewOpen(true);
         }}
-        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
+        className="text-text-disabled hover:bg-surface-sunken hover:text-primary-600 rounded p-1 transition-colors"
       >
         {TAG_ICONS[tag]}
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded bg-gray-800 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
+      <span className="text-text-inverse bg-text-primary pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded px-2 py-1 text-[10px] font-medium whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
         {IMAGE_TAG_LABELS[tag]}
       </span>
       {previewOpen && <ProductImagePreviewModal tag={tag} url={url} productName={productName} onClose={() => setPreviewOpen(false)} />}
@@ -414,7 +415,7 @@ function ProductImageDownloads({ slotKey, productId, productName }: { slotKey: s
   if (loading)
     return (
       <div className="mt-1.5 flex gap-1">
-        <span className="animate-pulse text-[10px] text-gray-400">...</span>
+        <span className="text-text-disabled animate-pulse text-[10px]">...</span>
       </div>
     );
   if (images.length === 0) return null;
@@ -547,30 +548,30 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
   }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
+    <div className="border-border bg-surface rounded-lg border shadow-xs">
+      <div className="border-border-subtle flex items-center justify-between border-b px-5 py-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase">Design Settings</h2>
-          {filledCount > 0 && <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">{filledCount} set</span>}
+          <h2 className="text-text-primary text-body font-semibold uppercase">Design Settings</h2>
+          {filledCount > 0 && <span className="bg-primary-50 text-primary-700 ring-primary-200 text-caption inline-flex items-center rounded-full px-2 py-0.5 font-medium ring-1 ring-inset">{filledCount} set</span>}
         </div>
         <div className="flex items-center gap-2">
           {filledCount > 0 && mode === "form" && (
-            <button type="button" onClick={clearAll} className="rounded px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600">
+            <button type="button" onClick={clearAll} className="text-text-muted hover:bg-surface-sunken hover:text-danger-600 text-caption rounded px-2 py-1 font-medium transition-colors">
               Clear all
             </button>
           )}
-          <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
+          <div className="border-border bg-surface-muted flex rounded-md border p-0.5">
             <button
               type="button"
               onClick={mode === "json" ? switchToForm : undefined}
-              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${mode === "form" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`text-caption rounded px-2.5 py-1 font-medium transition-colors ${mode === "form" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
             >
               Form
             </button>
             <button
               type="button"
               onClick={mode === "form" ? switchToJson : undefined}
-              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${mode === "json" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`text-caption rounded px-2.5 py-1 font-medium transition-colors ${mode === "json" ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
             >
               JSON
             </button>
@@ -581,10 +582,10 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
       {mode === "form" ? (
         <div className="px-5 py-4">
           <div className="space-y-6">
-            <section className="rounded-lg border border-gray-200 bg-white p-4">
+            <section className="border-border bg-surface rounded-lg border p-4">
               <div className="mb-4">
-                <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Placement & Visibility</h3>
-                <p className="mt-1 text-xs text-gray-500">Configure placement, patterns, and visibility settings separately from product selection.</p>
+                <h3 className="text-text-muted text-caption font-semibold tracking-wide uppercase">Placement & Visibility</h3>
+                <p className="text-text-muted text-caption mt-1">Configure placement, patterns, and visibility settings separately from product selection.</p>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {SETTING_FIELDS.map((field) =>
@@ -597,13 +598,13 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
               </div>
             </section>
 
-            <section className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
+            <section className="border-border bg-surface-muted/40 rounded-lg border p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Product Selection</h3>
-                  <p className="mt-1 text-xs text-gray-500">Configure each slot from its modal picker.</p>
+                  <h3 className="text-text-muted text-caption font-semibold tracking-wide uppercase">Product Selection</h3>
+                  <p className="text-text-muted text-caption mt-1">Configure each slot from its modal picker.</p>
                 </div>
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">{PRODUCT_FIELDS.length} slots</span>
+                <span className="bg-surface-sunken text-text-secondary rounded-full px-2 py-0.5 text-[11px] font-medium">{PRODUCT_FIELDS.length} slots</span>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                 {PRODUCT_FIELDS.map((field) => (
@@ -657,13 +658,13 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
           </div>
 
           {extraKeys.length > 0 && (
-            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="mb-2 text-xs font-medium text-amber-700">Additional fields (switch to JSON to edit):</p>
+            <div className="border-warning-200 bg-warning-50 mt-4 rounded-md border px-4 py-3">
+              <p className="text-warning-700 text-caption mb-2 font-medium">Additional fields (switch to JSON to edit):</p>
               <div className="space-y-1">
                 {extraKeys.map((key) => (
                   <div key={key} className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-amber-800">{key}</span>
-                    <span className="font-mono text-xs text-amber-600">{JSON.stringify(data[key])}</span>
+                    <span className="text-warning-800 text-caption font-mono">{key}</span>
+                    <span className="text-warning-600 text-caption font-mono">{JSON.stringify(data[key])}</span>
                   </div>
                 ))}
               </div>
@@ -672,7 +673,7 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
         </div>
       ) : (
         <div className="p-5">
-          <p className="mb-2 text-xs text-gray-500">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
+          <p className="text-text-muted text-caption mb-2">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
           <textarea
             aria-label="Design settings JSON"
             value={jsonText}
@@ -682,14 +683,14 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
             }}
             spellCheck={false}
             rows={14}
-            className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            className="border-border-strong bg-surface-muted text-text-primary focus:border-primary-500 focus:ring-primary-500 text-caption block w-full rounded-md border px-3 py-2 font-mono shadow-xs focus:ring-1 focus:outline-none"
             placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
           />
-          {jsonError && <p className="mt-2 text-xs text-red-600">{jsonError}</p>}
+          {jsonError && <p className="text-danger-600 text-caption mt-2">{jsonError}</p>}
           <div className="mt-3 flex justify-end">
-            <button type="button" onClick={applyJson} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-blue-700">
+            <Button size="sm" onClick={applyJson}>
               Apply JSON
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -701,13 +702,13 @@ function SelectField({ field, value, onChange }: { field: SelectFieldDef; value:
   const currentValue = typeof value === "string" ? value : "";
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
+      <label className="text-text-secondary text-caption mb-1.5 block font-medium">{field.label}</label>
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => onChange(null)}
-          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            !currentValue ? "border-gray-300 bg-gray-100 text-gray-700 shadow-sm" : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
+          className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
+            !currentValue ? "border-border-strong bg-surface-sunken text-text-secondary shadow-sm" : "border-border bg-surface text-text-disabled hover:border-border-strong hover:text-text-secondary"
           }`}
         >
           Not set
@@ -717,8 +718,8 @@ function SelectField({ field, value, onChange }: { field: SelectFieldDef; value:
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-              currentValue === option.value ? "border-blue-300 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+            className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
+              currentValue === option.value ? "border-primary-300 bg-primary-50 text-primary-700 ring-primary-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
             }`}
           >
             {option.label}
@@ -733,13 +734,13 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
   const currentValue = typeof value === "boolean" ? value : null;
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
+      <label className="text-text-secondary text-caption mb-1.5 block font-medium">{field.label}</label>
       <div className="flex gap-1.5">
         <button
           type="button"
           onClick={() => onChange(null)}
-          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            currentValue === null ? "border-gray-300 bg-gray-100 text-gray-700 shadow-sm" : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
+          className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
+            currentValue === null ? "border-border-strong bg-surface-sunken text-text-secondary shadow-sm" : "border-border bg-surface text-text-disabled hover:border-border-strong hover:text-text-secondary"
           }`}
         >
           Not set
@@ -747,8 +748,8 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
         <button
           type="button"
           onClick={() => onChange(true)}
-          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            currentValue === true ? "border-green-300 bg-green-50 text-green-700 shadow-sm ring-1 ring-green-200" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+          className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
+            currentValue === true ? "border-success-300 bg-success-50 text-success-700 ring-success-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
           }`}
         >
           On
@@ -756,8 +757,8 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
         <button
           type="button"
           onClick={() => onChange(false)}
-          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
-            currentValue === false ? "border-red-300 bg-red-50 text-red-700 shadow-sm ring-1 ring-red-200" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+          className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
+            currentValue === false ? "border-danger-300 bg-danger-50 text-danger-700 ring-danger-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
           }`}
         >
           Off
@@ -800,26 +801,26 @@ function ProductField({
   const summaryText = selectedProduct ? selectedProduct.name : attachedArbitraryUrl || savedImageUrl ? "URL-only attachment" : "Not set";
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-2.5">
+    <div className="border-border bg-surface rounded-md border p-2.5">
       <button type="button" onClick={() => setPickerOpen(true)} className="block w-full text-left">
-        <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+        <div className="border-border bg-surface-muted overflow-hidden rounded-md border">
           {previewUrl ? (
-            <ImageWithSkeleton src={previewUrl} alt={field.label} wrapperClassName="h-24 w-full bg-gray-50 p-1" />
+            <ImageWithSkeleton src={previewUrl} alt={field.label} wrapperClassName="h-24 w-full bg-surface-muted p-1" />
           ) : selectedId && !loaded ? (
-            <div className="h-24 w-full animate-pulse bg-gray-200" aria-hidden />
+            <div className="bg-border h-24 w-full animate-pulse" aria-hidden />
           ) : (
-            <div className="flex h-24 items-center justify-center text-[11px] text-gray-400">No preview</div>
+            <div className="text-text-disabled flex h-24 items-center justify-center text-[11px]">No preview</div>
           )}
         </div>
         <div className="mt-2 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <label className="truncate text-xs font-semibold text-gray-800">{field.label}</label>
-            {effectiveImageType === "arbitrary" && <span className="shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-violet-200 ring-inset">Custom</span>}
+            <label className="text-text-secondary text-caption truncate font-semibold">{field.label}</label>
+            {effectiveImageType === "arbitrary" && <span className="bg-accent-50 text-accent-700 ring-accent-200 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset">Custom</span>}
           </div>
-          <p className="mt-1 truncate text-[11px] text-gray-600" title={summaryText}>
+          <p className="text-text-secondary mt-1 truncate text-[11px]" title={summaryText}>
             {summaryText}
           </p>
-          <p className="mt-1 truncate text-[10px] text-gray-400">
+          <p className="text-text-disabled mt-1 truncate text-[10px]">
             {selectedProduct ? (selectedProduct.category?.name ?? selectedId) : savedImageUrl ? "Uses saved URL" : attachedArbitraryUrl ? "Uses arbitrary URL" : "Open modal to configure"}
           </p>
         </div>
@@ -828,7 +829,7 @@ function ProductField({
         <div className="mt-2 flex items-center justify-between">
           {selectedId ? <ProductImageDownloads slotKey={field.key} productId={selectedId} productName={selectedProduct?.name ?? null} /> : <span />}
           {hasSelection && (
-            <button type="button" onClick={onClearSelection} className="rounded border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50">
+            <button type="button" onClick={onClearSelection} className="border-border text-text-muted hover:bg-surface-muted rounded border px-2 py-1 text-[11px] font-medium">
               Clear
             </button>
           )}
@@ -920,38 +921,38 @@ function ProductSelectionModal({
     <Modal
       onClose={onClose}
       labelledById="product-selection-title"
-      backdropClassName="bg-gray-900/35"
+      backdropClassName="bg-overlay/35"
       containerClassName="px-4 py-6"
-      className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"
+      className="border-border bg-surface relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border shadow-2xl"
       initialFocusRef={searchInputRef}
     >
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+      <div className="border-border-subtle flex items-center justify-between border-b px-5 py-4">
         <div>
-          <h3 id="product-selection-title" className="text-sm font-semibold text-gray-900 uppercase">
+          <h3 id="product-selection-title" className="text-text-primary text-body font-semibold uppercase">
             {field.label}
           </h3>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="text-text-muted text-caption mt-1">
             {isArbitraryMode ? (draftSelectedId ? "Upload a custom image to override the product image sent for generation." : "Upload a custom image for this slot.") : "Search by product name, category, family, or ID."}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {selectedId ? (
-            <button type="button" onClick={onClear} className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+            <button type="button" onClick={onClear} className="border-border text-text-secondary hover:bg-surface-muted text-caption rounded-md border px-2.5 py-1.5 font-medium">
               Clear selection
             </button>
           ) : null}
-          <button type="button" aria-label="Close product picker" onClick={onClose} className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+          <button type="button" aria-label="Close product picker" onClick={onClose} className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-md p-1 transition-colors">
             <XIcon className="size-5" />
           </button>
         </div>
       </div>
-      <div className="space-y-4 border-b border-gray-100 p-4">
-        <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+      <div className="border-border-subtle space-y-4 border-b p-4">
+        <div className="border-border bg-surface-muted/70 rounded-lg border p-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Current selection</p>
-              <p className="mt-1 truncate text-sm font-medium text-gray-800">{draftSelectedProduct ? draftSelectedProduct.name : draftArbitraryUrl || savedImageUrl ? "URL-only attachment" : "Not set"}</p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="text-text-muted text-caption font-semibold tracking-wide uppercase">Current selection</p>
+              <p className="text-text-secondary text-body mt-1 truncate font-medium">{draftSelectedProduct ? draftSelectedProduct.name : draftArbitraryUrl || savedImageUrl ? "URL-only attachment" : "Not set"}</p>
+              <p className="text-text-muted text-caption mt-1">
                 {draftSelectedProduct
                   ? `${draftSelectedProduct.category?.name ?? "No category"} • ${draftSelectedId}`
                   : savedImageUrl
@@ -968,17 +969,17 @@ function ProductSelectionModal({
                 aria-label="Use custom image override"
                 aria-checked={isArbitraryMode}
                 onClick={() => setDraftImageType(isArbitraryMode ? "featured-image" : "arbitrary")}
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none ${
-                  isArbitraryMode ? "bg-violet-600" : "bg-gray-300"
+                className={`focus-visible:ring-accent-500 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  isArbitraryMode ? "bg-accent-600" : "bg-border-strong"
                 }`}
               >
-                <span className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${isArbitraryMode ? "translate-x-[18px]" : "translate-x-[3px]"}`} />
+                <span className={`bg-surface pointer-events-none inline-block size-3.5 rounded-full shadow-sm ring-0 transition-transform ${isArbitraryMode ? "translate-x-[18px]" : "translate-x-[3px]"}`} />
               </button>
-              <span className="text-[11px] font-medium text-gray-600">Use custom image override</span>
+              <span className="text-text-secondary text-[11px] font-medium">Use custom image override</span>
             </div>
           </div>
           {draftImageType === "arbitrary" ? (
-            <div className="mt-3 rounded-md border border-violet-200 bg-violet-50/40 p-3">
+            <div className="border-accent-200 bg-accent-50/40 mt-3 rounded-md border p-3">
               <SceneImageInput label={draftSelectedId ? "Override image" : "Attached arbitrary image"} value={draftArbitraryUrl} onChange={setDraftArbitraryUrl} />
             </div>
           ) : null}
@@ -993,33 +994,33 @@ function ProductSelectionModal({
             onChange={(e) => setSearch(e.target.value)}
             placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : "Loading products..."}
             disabled={!loaded}
-            className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+            className="focus:border-primary-500 focus:ring-primary-500 border-border-strong disabled:bg-surface-muted disabled:text-text-disabled text-body w-full rounded-md border px-3 py-2 focus:ring-1 focus:outline-none"
           />
         ) : null}
       </div>
       {!isArbitraryMode ? (
         <div className="overflow-y-auto">
           {!loaded ? (
-            <p className="px-4 py-6 text-sm text-gray-500">Loading products…</p>
+            <p className="text-text-muted text-body px-4 py-6">Loading products…</p>
           ) : filteredProducts.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
+            <p className="text-text-muted text-body px-4 py-6">No matching products.</p>
           ) : (
             filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 transition-colors last:border-b-0 ${product.id === draftSelectedId ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50"}`}
+                className={`border-border-subtle flex w-full items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 ${product.id === draftSelectedId ? "bg-primary-50 text-primary-700" : "text-text-secondary hover:bg-surface-muted"}`}
               >
                 <button type="button" onClick={() => setDraftSelectedId(product.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
+                  <span className="border-border bg-surface shrink-0 overflow-hidden rounded border">
                     {product.featuredImage?.url ? (
-                      <ImageWithSkeleton src={product.featuredImage.url} alt={product.name} sizes="48px" wrapperClassName="size-12 bg-gray-50 p-1" />
+                      <ImageWithSkeleton src={product.featuredImage.url} alt={product.name} sizes="48px" wrapperClassName="size-12 bg-surface-muted p-1" />
                     ) : (
-                      <span className="flex size-12 items-center justify-center text-[10px] text-gray-400">No image</span>
+                      <span className="text-text-disabled flex size-12 items-center justify-center text-[10px]">No image</span>
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{product.name}</span>
-                    <span className="block truncate text-[11px] text-gray-500">
+                    <span className="text-text-muted block truncate text-[11px]">
                       {product.category?.name ?? "No category"} • {product.id}
                     </span>
                   </span>
@@ -1033,13 +1034,13 @@ function ProductSelectionModal({
           )}
         </div>
       ) : null}
-      <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
-        <button type="button" onClick={onClose} className="rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+      <div className="border-border-subtle flex items-center justify-end gap-2 border-t px-5 py-4">
+        <Button variant="secondary" onClick={onClose}>
           Cancel
-        </button>
-        <button type="button" onClick={handleAccept} disabled={!canAccept} className="bg-primary-600 hover:bg-primary-700 rounded-md px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
+        </Button>
+        <Button onClick={handleAccept} disabled={!canAccept}>
           Accept
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -1067,9 +1068,9 @@ export function DesignSettingsDisplay({ value, hideProductFields = false }: Desi
   if (populated.length === 0 && extraKeys.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-xs">
-      <div className="border-b border-gray-100 px-5 py-3">
-        <h2 className="text-sm font-semibold text-gray-900 uppercase">Design Settings</h2>
+    <div className="border-border bg-surface rounded-lg border shadow-xs">
+      <div className="border-border-subtle border-b px-5 py-3">
+        <h2 className="text-text-primary text-body font-semibold uppercase">Design Settings</h2>
       </div>
       <div className="px-5 py-4">
         <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
@@ -1078,12 +1079,12 @@ export function DesignSettingsDisplay({ value, hideProductFields = false }: Desi
           ))}
         </div>
         {extraKeys.length > 0 && (
-          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="mb-1 text-xs font-medium text-amber-700">Other</p>
+          <div className="border-warning-200 bg-warning-50 mt-4 rounded-md border px-4 py-3">
+            <p className="text-warning-700 text-caption mb-1 font-medium">Other</p>
             {extraKeys.map((key) => (
               <div key={key} className="flex items-center justify-between py-0.5">
-                <span className="font-mono text-xs text-amber-800">{key}</span>
-                <span className="font-mono text-xs text-amber-600">{JSON.stringify(value[key])}</span>
+                <span className="text-warning-800 text-caption font-mono">{key}</span>
+                <span className="text-warning-600 text-caption font-mono">{JSON.stringify(value[key])}</span>
               </div>
             ))}
           </div>
@@ -1098,8 +1099,10 @@ function DisplayField({ field, value, allValues, productById }: { field: FieldDe
     const boolValue = value as boolean;
     return (
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600">{field.label}</span>
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${boolValue ? "bg-green-50 text-green-700 ring-1 ring-green-200 ring-inset" : "bg-red-50 text-red-700 ring-1 ring-red-200 ring-inset"}`}>
+        <span className="text-text-secondary text-body">{field.label}</span>
+        <span
+          className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${boolValue ? "bg-success-50 text-success-700 ring-success-200 ring-1 ring-inset" : "bg-danger-50 text-danger-700 ring-danger-200 ring-1 ring-inset"}`}
+        >
           {boolValue ? "Yes" : "No"}
         </span>
       </div>
@@ -1113,8 +1116,8 @@ function DisplayField({ field, value, allValues, productById }: { field: FieldDe
     const isCustom = imageType === "arbitrary";
     return (
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-gray-600">{field.label}</span>
-        <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-violet-200 ring-inset">
+        <span className="text-text-secondary text-body">{field.label}</span>
+        <span className="bg-accent-50 text-accent-700 ring-accent-200 text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ring-1 ring-inset">
           {product?.name ?? productId}
           {isCustom ? " · Custom" : ""}
         </span>
@@ -1126,8 +1129,8 @@ function DisplayField({ field, value, allValues, productById }: { field: FieldDe
   const label = SELECT_OPTION_LABELS.get(field.key)?.get(rawValue) ?? rawValue;
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-600">{field.label}</span>
-      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">{label}</span>
+      <span className="text-text-secondary text-body">{field.label}</span>
+      <span className="bg-primary-50 text-primary-700 ring-primary-200 text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ring-1 ring-inset">{label}</span>
     </div>
   );
 }

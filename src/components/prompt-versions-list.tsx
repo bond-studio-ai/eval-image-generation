@@ -139,7 +139,7 @@ export function PromptVersionsList() {
         columns={columns}
         data={items}
         rowKey={(pv) => pv.id}
-        rowClassName={(pv) => `hover:bg-gray-50 ${selected.has(pv.id) ? "bg-primary-50/50" : ""}`}
+        rowClassName={(pv) => `hover:bg-surface-muted ${selected.has(pv.id) ? "bg-primary-50/50" : ""}`}
         emptyMessage={search ? "No prompt versions match your search." : "No prompt versions found."}
         loading={loading}
         toolbar={toolbar}

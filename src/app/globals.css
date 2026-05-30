@@ -104,6 +104,10 @@ body {
   --color-text-disabled: #9ca3af;
   --color-text-inverse: #ffffff;
 
+  /* Scrim behind modals / lightboxes. Use `bg-overlay/40` etc. so the opacity
+     stays a per-use decision while the base color is centralized. */
+  --color-overlay: #000000;
+
   /* ---------------------------------------------------------------- */
   /* Typography                                                        */
   /* ---------------------------------------------------------------- */

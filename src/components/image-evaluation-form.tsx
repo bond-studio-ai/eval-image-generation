@@ -48,8 +48,8 @@ function IssueCheckboxGroup({ options, selected, onChange }: { options: string[]
   return (
     <div className="space-y-1.5">
       {options.map((issue) => (
-        <label key={issue} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={selected.includes(issue)} onChange={() => toggle(issue)} className="text-primary-600 focus:ring-primary-500 size-3.5 rounded border-gray-300" />
+        <label key={issue} className="text-text-secondary text-body flex cursor-pointer items-center gap-2">
+          <input type="checkbox" checked={selected.includes(issue)} onChange={() => toggle(issue)} className="text-primary-600 focus:ring-primary-500 border-border-strong size-3.5 rounded" />
           {issue}
         </label>
       ))}
@@ -204,7 +204,7 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
+      <div className="text-text-muted text-body flex items-center gap-2 py-2">
         <Spinner className="size-3" />
         Loading evaluation…
       </div>
@@ -216,11 +216,11 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold text-gray-700 uppercase">Evaluation</h4>
+        <h4 className="text-text-secondary text-caption font-semibold uppercase">Evaluation</h4>
         <div className="flex items-center gap-2">
-          {saving && <Spinner className="size-3 text-gray-400" />}
-          {saved && <span className="text-xs font-medium text-green-600">Saved</span>}
-          {error && <span className="text-xs text-red-600">{error}</span>}
+          {saving && <Spinner className="text-text-disabled size-3" />}
+          {saved && <span className="text-success-600 text-caption font-medium">Saved</span>}
+          {error && <span className="text-danger-600 text-caption">{error}</span>}
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
       {allIssueTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {allIssueTags.map((tag) => (
-            <span key={tag.label} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tag.color === "red" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+            <span key={tag.label} className={`text-caption inline-flex items-center rounded-full px-2 py-0.5 font-medium ${tag.color === "red" ? "bg-danger-100 text-danger-700" : "bg-warning-100 text-warning-700"}`}>
               {tag.label}
             </span>
           ))}
@@ -236,26 +236,26 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
       )}
 
       {/* Scene Accuracy (first) */}
-      <div className="rounded-md border border-gray-200">
-        <button type="button" onClick={() => setSceneOpen(!sceneOpen)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50">
+      <div className="border-border rounded-md border">
+        <button type="button" onClick={() => setSceneOpen(!sceneOpen)} className="text-text-secondary hover:bg-surface-muted text-body flex w-full items-center justify-between px-3 py-2 text-left font-medium">
           <span className="flex items-center gap-2">
             Scene Accuracy
-            {totalSceneIssues > 0 && <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">{totalSceneIssues}</span>}
+            {totalSceneIssues > 0 && <span className="bg-danger-100 text-danger-600 text-caption rounded-full px-1.5 py-0.5">{totalSceneIssues}</span>}
           </span>
           <ChevronDownIcon className={`h-4 w-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`} />
         </button>
         {sceneOpen && (
-          <div className="space-y-3 border-t border-gray-200 p-3">
+          <div className="border-border space-y-3 border-t p-3">
             <IssueCheckboxGroup options={SCENE_ACCURACY_ISSUES} selected={data.sceneAccuracyIssues} onChange={(v) => setData({ ...data, sceneAccuracyIssues: v })} />
             <div>
-              <p className="mb-1 text-xs font-medium text-gray-600">Notes</p>
+              <p className="text-text-secondary text-caption mb-1 font-medium">Notes</p>
               <textarea
                 value={data.sceneAccuracyNotes}
                 onChange={(e) => setData({ ...data, sceneAccuracyNotes: e.target.value })}
                 aria-label="Scene accuracy notes"
                 placeholder="Provide more detail about what was incorrect..."
                 rows={2}
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-md border px-2 py-1.5 focus:ring-1 focus:outline-none"
               />
             </div>
           </div>
@@ -263,16 +263,16 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
       </div>
 
       {/* Product Accuracy (always shown; empty state when no product refs) */}
-      <div className="rounded-md border border-gray-200">
-        <button type="button" onClick={() => setProductOpen(!productOpen)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50">
+      <div className="border-border rounded-md border">
+        <button type="button" onClick={() => setProductOpen(!productOpen)} className="text-text-secondary hover:bg-surface-muted text-body flex w-full items-center justify-between px-3 py-2 text-left font-medium">
           <span className="flex items-center gap-2">
             Product Accuracy
-            {totalProductIssues > 0 && <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">{totalProductIssues}</span>}
+            {totalProductIssues > 0 && <span className="bg-danger-100 text-danger-600 text-caption rounded-full px-1.5 py-0.5">{totalProductIssues}</span>}
           </span>
           <ChevronDownIcon className={`h-4 w-4 transition-transform ${productOpen ? "rotate-180" : ""}`} />
         </button>
         {productOpen && (
-          <div className="space-y-4 border-t border-gray-200 p-3">
+          <div className="border-border space-y-4 border-t p-3">
             {activeCategories.length > 0 ? (
               activeCategories.map((category) => {
                 const catData = data.productAccuracy[category] ?? { issues: [], notes: "" };
@@ -280,8 +280,8 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
                 const categoryIssues = CATEGORY_SPECIFIC_ISSUES[category];
                 const issueOptions = categoryIssues ? [...PRODUCT_ACCURACY_ISSUES, ...categoryIssues] : [...PRODUCT_ACCURACY_ISSUES];
                 return (
-                  <div key={category} className="rounded border border-gray-100 bg-gray-50/50 p-3">
-                    <p className="mb-2 text-xs font-semibold text-gray-700">{label}</p>
+                  <div key={category} className="border-border-subtle bg-surface-muted/50 rounded border p-3">
+                    <p className="text-text-secondary text-caption mb-2 font-semibold">{label}</p>
                     <IssueCheckboxGroup options={issueOptions} selected={catData.issues} onChange={(v) => updateCategoryEval(category, "issues", v)} />
                     <div className="mt-2">
                       <textarea
@@ -290,14 +290,14 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
                         aria-label={`${label} notes`}
                         placeholder="Notes about this category..."
                         rows={2}
-                        className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-md border px-2 py-1.5 focus:ring-1 focus:outline-none"
                       />
                     </div>
                   </div>
                 );
               })
             ) : (
-              <p className="text-sm text-gray-500">No product references were used for this generation.</p>
+              <p className="text-text-muted text-body">No product references were used for this generation.</p>
             )}
           </div>
         )}

@@ -9,6 +9,13 @@ The visual language is defined by tokens in [src/app/globals.css](../../src/app/
 
 Full token reference: [docs/DESIGN_TOKENS.md](../../docs/DESIGN_TOKENS.md).
 
+## Enforcement
+
+`eslint-plugin-better-tailwindcss` enforces these conventions (see [eslint.config.mjs](../../eslint.config.mjs)):
+
+- Raw Tailwind palette colors (`bg-gray-*`, `text-blue-600`, raw `white`/`black`, …) and bare font-size utilities (`text-sm`, `text-2xl`, …) are **errors** — use semantic tokens and the typography ramp.
+- Raw `<button>` is a **warning** that nudges toward the `Button`/`IconButton` primitives. Reach for a primitive whenever the control is a standard action or a square icon button. A raw `<button>` remains the correct, accessible choice for custom interactive controls that the primitives don't model (dropdown/popover triggers, toggles/switches, segmented or pagination pills, clickable cards/thumbnails, table-row expanders). Keep those token-styled — never reintroduce raw palette colors.
+
 ## Layout
 
 - The app shell (`AppShell`) provides a sidebar, top bar with breadcrumbs, `max-w-7xl` centering, `py-8 pb-24` padding, and scrolling via `overflow-y-auto` on `<main>`.
