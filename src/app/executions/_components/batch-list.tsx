@@ -7,7 +7,6 @@ import type { BatchRow, RunRow } from './batch-types';
 
 export function BatchList({
   batches,
-  loading,
   refreshing,
   hasMore,
   loadingMore,
@@ -28,7 +27,6 @@ export function BatchList({
   onImageClick,
 }: {
   batches: BatchRow[];
-  loading: boolean;
   refreshing: boolean;
   hasMore: boolean;
   loadingMore: boolean;
@@ -48,7 +46,7 @@ export function BatchList({
   onRated: () => void;
   onImageClick: (run: RunRow) => void;
 }) {
-  if (batches.length === 0 && !loading && !refreshing) {
+  if (batches.length === 0 && !refreshing) {
     return (
       <p className="text-body text-text-secondary">
         {appliedFrom || appliedTo

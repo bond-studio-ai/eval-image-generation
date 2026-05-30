@@ -14,8 +14,32 @@ import { useBatchListMachinery } from './_components/use-batch-list-machinery';
 
 const BATCH_PAGE_SIZE = 20;
 const POLL_INTERVAL = 5000;
-/** Stable empty set so `expandedIds` keeps a constant identity when collapsed. */
+/**
+ * Shared empty set returned as `expandedIds` whenever the stored expansion belongs
+ * to a stale list key — a constant identity so a collapsed list doesn't churn
+ * referential-equality memo checks downstream. MUST be treated as read-only: every
+ * mutation path allocates a fresh set via `updateExpanded`, never this instance.
+ */
 const EMPTY_EXPANDED: Set<string> = new Set<string>();
+
+interface ExpandedState {
+  key: string;
+  ids: Set<string>;
+}
+
+/**
+ * Rebase the expanded set onto the current list key (so a filter/source/refresh
+ * change collapses everything) and apply `mutate` to a fresh copy.
+ */
+function updateExpanded(
+  prev: ExpandedState,
+  listKey: string,
+  mutate: (ids: Set<string>) => void,
+): ExpandedState {
+  const ids = prev.key === listKey ? new Set(prev.ids) : new Set<string>();
+  mutate(ids);
+  return { key: listKey, ids };
+}
 
 function normalizeBatch(b: Record<string, unknown>): BatchRow {
   const runs = (Array.isArray(b.runs) ? b.runs : []).map((r: Record<string, unknown>) => ({
@@ -33,7 +57,6 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
 interface BatchPage {
   batches: BatchRow[];
   hasMore: boolean;
-  page: number;
 }
 
 /** Row-action-in-flight ids (retry run / retry batch / delete batch). */
@@ -101,7 +124,7 @@ export function BatchRunsTab({
   // that key alongside the ids lets a filter change collapse everything by derivation
   // (no reset effect): when `listKey` changes, `expandedIds` falls back to empty.
   const listKey = `${appliedRange.from}|${appliedRange.to}|${source}|${refreshKey ?? ''}`;
-  const [expandedState, setExpandedState] = useState<{ key: string; ids: Set<string> }>({
+  const [expandedState, setExpandedState] = useState<ExpandedState>({
     key: listKey,
     ids: new Set(),
   });
@@ -118,6 +141,7 @@ export function BatchRunsTab({
     isPending,
     isPlaceholderData,
     isError,
+    isFetching,
     error: queryError,
     hasNextPage,
     isFetchingNextPage,
@@ -146,16 +170,18 @@ export function BatchRunsTab({
       }
       const json = await res.json();
       const raw = (json.data ?? []) as Record<string, unknown>[];
-      return { batches: raw.map(normalizeBatch), hasMore: json.hasMore === true, page: pageParam };
+      return { batches: raw.map(normalizeBatch), hasMore: json.hasMore === true };
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length + 1 : undefined),
     // Keep the current list visible (with a "refreshing" hint) while a filter/source
     // change refetches, instead of flashing the skeleton.
     placeholderData: keepPreviousData,
     // Poll only while a batch is running or awaiting judging. A poll refetches every
     // loaded page, which naturally prunes deleted batches and surfaces new ones —
-    // the merge/dedup the hand-rolled version did by hand.
+    // the merge/dedup the hand-rolled version did by hand. Cost is O(loaded pages)
+    // per tick, so scrolling deep while a batch runs fans out more requests than the
+    // old page-1-only poll; acceptable at this tool's scale.
     refetchInterval: (query) => {
       const pages = query.state.data?.pages ?? [];
       const polling = pages.some((p) =>
@@ -263,11 +289,7 @@ export function BatchRunsTab({
           });
           return;
         }
-        setExpandedState((prev) => {
-          const ids = prev.key === listKey ? new Set(prev.ids) : new Set<string>();
-          ids.delete(batchId);
-          return { key: listKey, ids };
-        });
+        setExpandedState((prev) => updateExpanded(prev, listKey, (ids) => ids.delete(batchId)));
         toast.success(`Deleted batch "${displayName}"`);
         await refetch();
       } catch (e) {
@@ -283,12 +305,12 @@ export function BatchRunsTab({
 
   const handleToggle = useCallback(
     (batchId: string, isExpanded: boolean) => {
-      setExpandedState((prev) => {
-        const ids = prev.key === listKey ? new Set(prev.ids) : new Set<string>();
-        if (isExpanded) ids.delete(batchId);
-        else ids.add(batchId);
-        return { key: listKey, ids };
-      });
+      setExpandedState((prev) =>
+        updateExpanded(prev, listKey, (ids) => {
+          if (isExpanded) ids.delete(batchId);
+          else ids.add(batchId);
+        }),
+      );
     },
     [listKey],
   );
@@ -310,7 +332,7 @@ export function BatchRunsTab({
   }
 
   if (fetchError) {
-    return <BatchErrorCard error={fetchError} onRetry={handleRetryFetch} />;
+    return <BatchErrorCard error={fetchError} onRetry={handleRetryFetch} retrying={isFetching} />;
   }
 
   return (
@@ -333,7 +355,6 @@ export function BatchRunsTab({
 
       <BatchList
         batches={batches}
-        loading={loading}
         refreshing={refreshing}
         hasMore={hasNextPage}
         loadingMore={isFetchingNextPage}
