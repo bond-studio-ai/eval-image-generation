@@ -125,7 +125,7 @@ function CalendarMonth({
           if (isStart && isEnd) cellBg = '';
 
           let dayClass =
-            'relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs transition-all cursor-pointer ';
+            'relative z-10 flex size-8 items-center justify-center rounded-full text-xs transition-all cursor-pointer ';
           if (isSelected) {
             dayClass += 'bg-primary-600 font-semibold text-white shadow-sm';
           } else if (isToday) {
@@ -296,7 +296,7 @@ export function DateRangePicker({
             }`}
           >
             <svg
-              className="h-3.5 w-3.5"
+              className="size-3.5"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -321,7 +321,7 @@ export function DateRangePicker({
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <svg
-                    className="h-4 w-4"
+                    className="size-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={2}
@@ -343,7 +343,7 @@ export function DateRangePicker({
                   className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <svg
-                    className="h-4 w-4"
+                    className="size-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={2}
@@ -391,7 +391,7 @@ export function DateRangePicker({
                   )}
                   {rangeStart && (
                     <svg
-                      className="h-3 w-3 text-gray-300"
+                      className="size-3 text-gray-300"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={2}
@@ -444,7 +444,7 @@ export function DateRangePicker({
           title="Clear date filter"
         >
           <svg
-            className="h-3.5 w-3.5"
+            className="size-3.5"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}

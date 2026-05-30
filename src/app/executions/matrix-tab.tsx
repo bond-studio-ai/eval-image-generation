@@ -139,6 +139,26 @@ export function MatrixTab() {
     return { presets: visiblePresets, strategies: visibleStrategies, grouped };
   }, [runs, activePresets, activeStrategies, allPresets, allStrategies]);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollRef = useRef<number[] | null>(null);
+
+  useLayoutEffect(() => {
+    const saved = pendingScrollRef.current;
+    if (!saved) return;
+    pendingScrollRef.current = null;
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    if (!scrollers) return;
+    scrollers.forEach((el, i) => {
+      if (i < saved.length) el.scrollLeft = saved[i];
+    });
+  });
+
+  const fetchRunsKeepScroll = useCallback(async () => {
+    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
+    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
+    await fetchRuns();
+  }, [fetchRuns]);
+
   if (loading) {
     return <p className="text-sm text-gray-500">Loading…</p>;
   }
@@ -163,26 +183,6 @@ export function MatrixTab() {
       </div>
     );
   }
-
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const pendingScrollRef = useRef<number[] | null>(null);
-
-  useLayoutEffect(() => {
-    const saved = pendingScrollRef.current;
-    if (!saved) return;
-    pendingScrollRef.current = null;
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    if (!scrollers) return;
-    scrollers.forEach((el, i) => {
-      if (i < saved.length) el.scrollLeft = saved[i];
-    });
-  });
-
-  const fetchRunsKeepScroll = useCallback(async () => {
-    const scrollers = containerRef.current?.querySelectorAll<HTMLElement>('.overflow-x-auto');
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
-    await fetchRuns();
-  }, [fetchRuns]);
 
   if (runs.length === 0) {
     return (
@@ -295,7 +295,7 @@ export function MatrixTab() {
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
                               <svg
-                                className="h-5 w-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                className="size-5 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 strokeWidth={1.5}
@@ -338,7 +338,7 @@ export function MatrixTab() {
                         />
                         <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                           <svg
-                            className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                            className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                             fill="none"
                             viewBox="0 0 24 24"
                             strokeWidth={1.5}
@@ -435,7 +435,7 @@ function FilterPanel({
       <div className="px-3 pt-2 pb-1">
         <div className="relative">
           <svg
-            className="absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+            className="absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-gray-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}

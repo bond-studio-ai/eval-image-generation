@@ -79,7 +79,7 @@ export function TopBar({ className }: TopBarProps) {
             return (
               <li key={`${crumb.label}-${i}`} className="flex shrink-0 items-center gap-1">
                 {i > 0 && (
-                  <ChevronRightIcon className="text-text-disabled h-3 w-3" aria-hidden="true" />
+                  <ChevronRightIcon className="text-text-disabled size-3" aria-hidden="true" />
                 )}
                 {crumb.href && !isLast ? (
                   <Link

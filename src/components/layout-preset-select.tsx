@@ -99,7 +99,7 @@ export function LayoutPresetSelect({
                 : 'Select a layout')}
         </span>
         <svg
-          className="h-4 w-4 shrink-0 text-gray-400"
+          className="size-4 shrink-0 text-gray-400"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -140,7 +140,7 @@ export function LayoutPresetSelect({
                 className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
                 <svg
-                  className="h-5 w-5"
+                  className="size-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}

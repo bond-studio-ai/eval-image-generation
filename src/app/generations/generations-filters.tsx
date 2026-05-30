@@ -143,7 +143,7 @@ export function GenerationsFilters({
             className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
           >
             <svg
-              className="h-3.5 w-3.5"
+              className="size-3.5"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}

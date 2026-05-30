@@ -42,6 +42,92 @@ interface PreviewPromptPageProps {
   initialDollhouseSource?: DollhouseSource;
 }
 
+interface DropdownWithSearchProps {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  search: string;
+  setSearch: (v: string) => void;
+  placeholder: string;
+  options: { id: string; label: string }[];
+  selectedId?: string | null;
+  selectedLabel?: string | null;
+  onSelectId: (id: string) => void;
+  emptyMessage: string;
+}
+
+function DropdownWithSearch({
+  containerRef,
+  open,
+  setOpen,
+  search,
+  setSearch,
+  placeholder,
+  options,
+  selectedId,
+  selectedLabel,
+  onSelectId,
+  emptyMessage,
+}: DropdownWithSearchProps) {
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:ring-1"
+      >
+        <span className={selectedLabel ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedLabel || placeholder}
+        </span>
+        <svg
+          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="border-b border-gray-200 p-2">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
+              autoFocus
+            />
+          </div>
+          <ul className="max-h-48 overflow-auto py-1">
+            {options.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-gray-500">{emptyMessage}</li>
+            ) : (
+              options.map((option) => (
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectId(option.id);
+                      setOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                      selectedId === option.id ? 'bg-primary-50 text-primary-800' : 'text-gray-900'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PreviewPromptPage({
   initialPromptVersionId = null,
   initialPresetId = null,
@@ -261,88 +347,6 @@ export function PreviewPromptPage({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const DropdownWithSearch = ({
-    containerRef,
-    open,
-    setOpen,
-    search,
-    setSearch,
-    placeholder,
-    options,
-    selectedId,
-    selectedLabel,
-    onSelectId,
-    emptyMessage,
-  }: {
-    containerRef: React.RefObject<HTMLDivElement | null>;
-    open: boolean;
-    setOpen: (v: boolean) => void;
-    search: string;
-    setSearch: (v: string) => void;
-    placeholder: string;
-    options: { id: string; label: string }[];
-    selectedId?: string | null;
-    selectedLabel?: string | null;
-    onSelectId: (id: string) => void;
-    emptyMessage: string;
-  }) => (
-    <div ref={containerRef} className="relative w-full">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:ring-1"
-      >
-        <span className={selectedLabel ? 'text-gray-900' : 'text-gray-500'}>
-          {selectedLabel || placeholder}
-        </span>
-        <svg
-          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-          <div className="border-b border-gray-200 p-2">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
-              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
-              autoFocus
-            />
-          </div>
-          <ul className="max-h-48 overflow-auto py-1">
-            {options.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-gray-500">{emptyMessage}</li>
-            ) : (
-              options.map((option) => (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectId(option.id);
-                      setOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                      selectedId === option.id ? 'bg-primary-50 text-primary-800' : 'text-gray-900'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div>

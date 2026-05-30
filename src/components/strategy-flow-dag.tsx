@@ -325,10 +325,10 @@ export function StrategyFlowDag({
                     {truncate(step.label, 26)}
                   </span>
                   {step.status === 'running' && (
-                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500" />
+                    <span className="size-2.5 animate-pulse rounded-full bg-blue-500" />
                   )}
                   {step.status === 'completed' && (
-                    <svg className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="size-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -337,7 +337,7 @@ export function StrategyFlowDag({
                     </svg>
                   )}
                   {step.status === 'failed' && (
-                    <svg className="h-4 w-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="size-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
                         d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -346,7 +346,7 @@ export function StrategyFlowDag({
                     </svg>
                   )}
                   {step.status === 'skipped' && (
-                    <svg className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="size-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" />
                     </svg>
                   )}
@@ -361,7 +361,7 @@ export function StrategyFlowDag({
                   {step.promptName && (
                     <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
                       <svg
-                        className="h-3 w-3 shrink-0 text-gray-400"
+                        className="size-3 shrink-0 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={2}
@@ -436,7 +436,7 @@ export function StrategyFlowDag({
                   <span className="text-xs font-semibold text-amber-800">
                     {effectiveJudges.length === 1 ? 'Judge' : `Judges (${effectiveJudges.length})`}
                   </span>
-                  <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="size-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>

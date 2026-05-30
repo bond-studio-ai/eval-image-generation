@@ -346,7 +346,7 @@ function downloadUrl(url: string, filename: string) {
 const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
   'photo-image': (
     <svg
-      className="h-3.5 w-3.5"
+      className="size-3.5"
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth={1.5}
@@ -361,7 +361,7 @@ const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
   ),
   'tear-sheet': (
     <svg
-      className="h-3.5 w-3.5"
+      className="size-3.5"
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth={1.5}
@@ -376,7 +376,7 @@ const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
   ),
   'line-drawing': (
     <svg
-      className="h-3.5 w-3.5"
+      className="size-3.5"
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth={1.5}
@@ -429,7 +429,7 @@ function ProductImagePreviewModal({
               className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -449,7 +449,7 @@ function ProductImagePreviewModal({
               className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
             >
               <svg
-                className="h-5 w-5"
+                className="size-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -1262,7 +1262,7 @@ function ProductSelectionModal({
               className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             >
               <svg
-                className="h-5 w-5"
+                className="size-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -1310,7 +1310,7 @@ function ProductSelectionModal({
                   }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                    className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
                       isArbitraryMode ? 'translate-x-[18px]' : 'translate-x-[3px]'
                     }`}
                   />
@@ -1348,7 +1348,7 @@ function ProductSelectionModal({
         {!isArbitraryMode ? (
           <div className="overflow-y-auto">
             {!loaded ? (
-              <p className="px-4 py-6 text-sm text-gray-500">Loading products...</p>
+              <p className="px-4 py-6 text-sm text-gray-500">Loading products…</p>
             ) : filteredProducts.length === 0 ? (
               <p className="px-4 py-6 text-sm text-gray-500">No matching products.</p>
             ) : (
@@ -1372,10 +1372,10 @@ function ProductSelectionModal({
                           src={withImageParams(product.featuredImage.url)}
                           alt={product.name}
                           loading="lazy"
-                          wrapperClassName="h-12 w-12 bg-gray-50 p-1"
+                          wrapperClassName="size-12 bg-gray-50 p-1"
                         />
                       ) : (
-                        <span className="flex h-12 w-12 items-center justify-center text-[10px] text-gray-400">
+                        <span className="flex size-12 items-center justify-center text-[10px] text-gray-400">
                           No image
                         </span>
                       )}

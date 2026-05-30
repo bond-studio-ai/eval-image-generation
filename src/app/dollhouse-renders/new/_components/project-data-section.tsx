@@ -223,9 +223,9 @@ function OverridePanel({
           <p className="text-caption text-text-muted mt-0.5">{summary}</p>
         </div>
         {isOpen ? (
-          <ChevronUpIcon className="text-text-muted h-4 w-4" aria-hidden />
+          <ChevronUpIcon className="text-text-muted size-4" aria-hidden />
         ) : (
-          <ChevronDownIcon className="text-text-muted h-4 w-4" aria-hidden />
+          <ChevronDownIcon className="text-text-muted size-4" aria-hidden />
         )}
       </button>
 

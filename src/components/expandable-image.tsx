@@ -48,7 +48,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >
                 <svg
-                  className="h-5 w-5"
+                  className="size-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}

@@ -78,7 +78,7 @@ function StrategyDropdown({
           {selected?.name ?? 'Select strategy…'}
         </span>
         <svg
-          className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`size-3.5 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={2}
@@ -93,7 +93,7 @@ function StrategyDropdown({
           <div className="border-b border-gray-100 p-2">
             <div className="relative">
               <svg
-                className="absolute top-1/2 left-2.5 h-3 w-3 -translate-y-1/2 text-gray-400"
+                className="absolute top-1/2 left-2.5 size-3 -translate-y-1/2 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -136,7 +136,7 @@ function StrategyDropdown({
                   <span className="truncate">{strategy.name}</span>
                   {value === strategy.id && (
                     <svg
-                      className="text-primary-600 ml-auto h-3.5 w-3.5 shrink-0"
+                      className="text-primary-600 ml-auto size-3.5 shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={2}
@@ -291,7 +291,7 @@ export function AnalyticsFilters({
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
               <svg
-                className="h-3.5 w-3.5 text-gray-400"
+                className="size-3.5 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -338,7 +338,7 @@ export function AnalyticsFilters({
               className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -358,7 +358,7 @@ export function AnalyticsFilters({
           {hasDateFilter && (
             <span className="bg-primary-50 text-primary-700 ring-primary-200/60 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1">
               <svg
-                className="h-3 w-3"
+                className="size-3"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -381,7 +381,7 @@ export function AnalyticsFilters({
                 className="hover:bg-primary-200/60 ml-0.5 rounded-full p-0.5 transition-colors"
               >
                 <svg
-                  className="h-2.5 w-2.5"
+                  className="size-2.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={3}
@@ -395,7 +395,7 @@ export function AnalyticsFilters({
           {model && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 ring-1 ring-violet-200/60">
               <svg
-                className="h-3 w-3"
+                className="size-3"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -414,7 +414,7 @@ export function AnalyticsFilters({
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-violet-200/60"
               >
                 <svg
-                  className="h-2.5 w-2.5"
+                  className="size-2.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={3}
@@ -428,7 +428,7 @@ export function AnalyticsFilters({
           {source !== 'all' && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200/60">
               <svg
-                className="h-3 w-3"
+                className="size-3"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -447,7 +447,7 @@ export function AnalyticsFilters({
                 className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-blue-200/60"
               >
                 <svg
-                  className="h-2.5 w-2.5"
+                  className="size-2.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={3}
@@ -551,7 +551,7 @@ export function AnalyticsFilters({
                         className="rounded-lg p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300"
                       >
                         <svg
-                          className="h-3.5 w-3.5"
+                          className="size-3.5"
                           fill="none"
                           viewBox="0 0 24 24"
                           strokeWidth={2}
@@ -578,7 +578,7 @@ export function AnalyticsFilters({
               className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}

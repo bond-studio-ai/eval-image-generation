@@ -289,7 +289,7 @@ function BatchRunCard({
       >
         <div className="flex items-center gap-3">
           <svg
-            className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            className={`size-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -324,7 +324,7 @@ function BatchRunCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retrying ? (
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -341,7 +341,7 @@ function BatchRunCard({
                 </svg>
               ) : (
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -369,7 +369,7 @@ function BatchRunCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -386,7 +386,7 @@ function BatchRunCard({
                 </svg>
               ) : (
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -540,7 +540,7 @@ function CollapsibleBatchCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 ${retrying ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retrying ? (
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -557,7 +557,7 @@ function CollapsibleBatchCard({
                 </svg>
               ) : (
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -585,7 +585,7 @@ function CollapsibleBatchCard({
               className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 ${retryingJudge ? 'pointer-events-none opacity-50' : ''}`}
             >
               {retryingJudge ? (
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -602,7 +602,7 @@ function CollapsibleBatchCard({
                 </svg>
               ) : (
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -620,7 +620,7 @@ function CollapsibleBatchCard({
           )}
           <StatusBadge status={batch.status} />
           <svg
-            className={`h-5 w-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            className={`size-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -774,7 +774,7 @@ function BatchMatrix({
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                               <svg
-                                className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
+                                className="size-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 strokeWidth={1.5}

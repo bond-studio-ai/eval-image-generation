@@ -230,7 +230,7 @@ export function GenerationsList({
         <div className="divide-y divide-gray-200">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
-              <div className="h-12 w-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
+              <div className="size-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
                 <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />

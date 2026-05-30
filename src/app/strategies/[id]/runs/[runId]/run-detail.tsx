@@ -269,6 +269,7 @@ function AuditImageGrid({ images }: { images: InputImage[] }) {
                 source images
               </p>
               <button
+                type="button"
                 onClick={() => setExpandedGroup(null)}
                 className="text-xs text-violet-600 hover:text-violet-800"
               >
@@ -308,7 +309,7 @@ function AuditCollapsible({ title, children }: { title: string; children: React.
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs font-medium text-gray-500 hover:bg-gray-50"
       >
-        <ChevronIcon open={open} className="h-3 w-3" />
+        <ChevronIcon open={open} className="size-3" />
         {title}
       </button>
       {open && <div className="px-4 pb-3">{children}</div>}
@@ -564,7 +565,7 @@ function GenerationTile({
           />
           {isSelected && (
             <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-3" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
               Judge pick
@@ -596,7 +597,7 @@ function GenerationTile({
       <div className="flex flex-col gap-1.5">
         <div className="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-red-300 bg-red-50 p-3">
           <svg
-            className="h-6 w-6 text-red-400"
+            className="size-6 text-red-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -629,7 +630,7 @@ function GenerationTile({
         <div className="relative h-48 w-full overflow-hidden rounded-lg border-2 border-blue-300 bg-blue-50">
           <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50" />
           <div className="relative flex h-full flex-col items-center justify-center gap-2">
-            <svg className="h-6 w-6 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+            <svg className="size-6 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -644,7 +645,7 @@ function GenerationTile({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            <span className="text-xs font-medium text-blue-600">Generating...</span>
+            <span className="text-xs font-medium text-blue-600">Generating…</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-gray-500">
@@ -660,7 +661,7 @@ function GenerationTile({
       <div className="flex flex-col gap-1.5">
         <div className="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-amber-200 bg-amber-50/50 p-3">
           <svg
-            className="h-6 w-6 text-amber-400"
+            className="size-6 text-amber-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -692,8 +693,8 @@ function GenerationTile({
       <div className="relative h-48 w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2">
-          <div className="h-6 w-6 rounded-full border-2 border-gray-300 bg-gray-200" />
-          <span className="text-xs font-medium text-gray-400">Waiting...</span>
+          <div className="size-6 rounded-full border-2 border-gray-300 bg-gray-200" />
+          <span className="text-xs font-medium text-gray-400">Waiting…</span>
         </div>
       </div>
       <div className="flex items-center gap-2 text-[11px] text-gray-500">
@@ -898,7 +899,7 @@ function StepGroupCard({
                   return (
                     <div className="flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 p-4">
                       <svg
-                        className="h-5 w-5 shrink-0 text-red-400"
+                        className="size-5 shrink-0 text-red-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -921,7 +922,7 @@ function StepGroupCard({
                   return (
                     <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
                       <svg
-                        className="h-5 w-5 shrink-0 text-amber-400"
+                        className="size-5 shrink-0 text-amber-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -946,7 +947,7 @@ function StepGroupCard({
                       <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50" />
                       <div className="relative flex h-full flex-col items-center justify-center gap-3">
                         <svg
-                          className="h-8 w-8 animate-spin text-blue-500"
+                          className="size-8 animate-spin text-blue-500"
                           fill="none"
                           viewBox="0 0 24 24"
                         >
@@ -964,9 +965,7 @@ function StepGroupCard({
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                           />
                         </svg>
-                        <span className="text-sm font-medium text-blue-600">
-                          Generating image...
-                        </span>
+                        <span className="text-sm font-medium text-blue-600">Generating image…</span>
                       </div>
                     </div>
                   );
@@ -975,8 +974,8 @@ function StepGroupCard({
                   <div className="relative h-56 w-full max-w-xl overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
                     <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50" />
                     <div className="relative flex h-full flex-col items-center justify-center gap-2">
-                      <div className="h-8 w-8 rounded-full border-2 border-gray-300 bg-gray-200" />
-                      <span className="text-sm font-medium text-gray-400">Waiting to start...</span>
+                      <div className="size-8 rounded-full border-2 border-gray-300 bg-gray-200" />
+                      <span className="text-sm font-medium text-gray-400">Waiting to start…</span>
                     </div>
                   </div>
                 );
@@ -1082,7 +1081,7 @@ export function RunDetail({
     [runId, fetchData],
   );
 
-  const sorted = [...data.stepResults].sort(
+  const sorted = data.stepResults.toSorted(
     (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
   );
 
@@ -1178,7 +1177,7 @@ export function RunDetail({
             {duration != null && (
               <span className="flex items-center gap-1">
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="size-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -1209,7 +1208,7 @@ export function RunDetail({
               className={`ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${data.isJudgeSelected ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               {data.isJudgeSelected && (
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               )}
@@ -1227,7 +1226,7 @@ export function RunDetail({
               className="ml-auto inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800 transition-colors hover:bg-red-200"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -1277,7 +1276,7 @@ export function RunDetail({
                     <Spinner />
                   ) : (
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="size-3.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
@@ -1566,7 +1565,7 @@ export function RunDetail({
 
 function Spinner() {
   return (
-    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+    <svg className="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"

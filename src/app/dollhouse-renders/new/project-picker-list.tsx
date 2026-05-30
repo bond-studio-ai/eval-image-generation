@@ -159,7 +159,7 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
       {loading ? (
         <div className="flex items-center justify-center gap-3 px-6 py-12">
           <Spinner size="sm" />
-          <span className="text-body text-text-secondary">Loading projects...</span>
+          <span className="text-body text-text-secondary">Loading projects…</span>
         </div>
       ) : isEmptyAfterLoad ? (
         <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p>
@@ -336,7 +336,7 @@ function TableView({
                 size="sm"
                 variant={isSelected ? 'primary' : 'secondary'}
                 onClick={() => onSelect(row.id)}
-                iconLeft={isSelected ? <CheckIcon className="h-3.5 w-3.5" /> : undefined}
+                iconLeft={isSelected ? <CheckIcon className="size-3.5" /> : undefined}
               >
                 {isSelected ? 'Selected' : 'Select'}
               </Button>
@@ -411,7 +411,7 @@ function ProjectGridCard({
           {project.id}
         </span>
         {selected && (
-          <Badge tone="info" variant="solid" size="sm" iconLeft={<CheckIcon className="h-3 w-3" />}>
+          <Badge tone="info" variant="solid" size="sm" iconLeft={<CheckIcon className="size-3" />}>
             Selected
           </Badge>
         )}

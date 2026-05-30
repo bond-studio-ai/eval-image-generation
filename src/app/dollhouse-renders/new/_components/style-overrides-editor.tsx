@@ -25,7 +25,7 @@ export function StyleOverridesEditor({ value, onChange }: StyleOverridesEditorPr
           type="button"
           variant="ghost"
           size="sm"
-          iconLeft={<PlusIcon className="h-4 w-4" />}
+          iconLeft={<PlusIcon className="size-4" />}
           onClick={addRow}
         >
           Add override
@@ -49,7 +49,7 @@ export function StyleOverridesEditor({ value, onChange }: StyleOverridesEditorPr
               />
               <IconButton
                 label="Remove override"
-                icon={<TrashIcon className="h-4 w-4" />}
+                icon={<TrashIcon className="size-4" />}
                 onClick={() => removeRow(index)}
               />
             </div>

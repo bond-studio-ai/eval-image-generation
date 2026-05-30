@@ -157,13 +157,13 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                       src={withImageParams(product.featuredImage.url)}
                       alt={product.name}
                       loading="lazy"
-                      wrapperClassName="h-10 w-10 shrink-0 rounded border border-gray-200"
+                      wrapperClassName="size-10 shrink-0 rounded border border-gray-200"
                       className="object-cover"
                     />
                   ) : (
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100">
                       <svg
-                        className="h-4 w-4 text-gray-400"
+                        className="size-4 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
@@ -215,7 +215,7 @@ export function ProductPicker({ selectedProducts, onProductsChange }: ProductPic
                 className="absolute -top-2 -right-2 hidden rounded-full bg-red-500 p-1 text-white shadow-sm group-hover:block"
               >
                 <svg
-                  className="h-3 w-3"
+                  className="size-3"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}

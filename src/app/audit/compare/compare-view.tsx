@@ -353,7 +353,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <svg className="h-6 w-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+        <svg className="size-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"
@@ -381,10 +381,10 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
     );
   }
 
-  const leftSteps = [...left.stepResults].sort(
+  const leftSteps = left.stepResults.toSorted(
     (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
   );
-  const rightSteps = [...right.stepResults].sort(
+  const rightSteps = right.stepResults.toSorted(
     (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
   );
   const maxSteps = Math.max(leftSteps.length, rightSteps.length);

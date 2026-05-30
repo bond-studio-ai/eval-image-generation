@@ -11,7 +11,7 @@ function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded border border-gray-200">
+    <div className="relative size-12 shrink-0 overflow-hidden rounded border border-gray-200">
       {!loaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -48,9 +48,9 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
 
   if (urls.length === 0) {
     return (
-      <div className="flex h-12 w-12 items-center justify-center rounded border border-gray-200 bg-gray-50">
+      <div className="flex size-12 items-center justify-center rounded border border-gray-200 bg-gray-50">
         <svg
-          className="h-4 w-4 text-gray-300"
+          className="size-4 text-gray-300"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -82,7 +82,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
           <ThumbnailImage key={i} url={url} alt={`Result ${i + 1}`} />
         ))}
         {urls.length > 2 && (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
             +{urls.length - 2}
           </span>
         )}
@@ -109,7 +109,7 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
                 className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
               >
                 <svg
-                  className="h-5 w-5"
+                  className="size-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}

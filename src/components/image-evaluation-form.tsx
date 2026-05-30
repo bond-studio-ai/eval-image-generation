@@ -94,7 +94,7 @@ function IssueCheckboxGroup({
             type="checkbox"
             checked={selected.includes(issue)}
             onChange={() => toggle(issue)}
-            className="text-primary-600 focus:ring-primary-500 h-3.5 w-3.5 rounded border-gray-300"
+            className="text-primary-600 focus:ring-primary-500 size-3.5 rounded border-gray-300"
           />
           {issue}
         </label>
@@ -256,8 +256,8 @@ export function ImageEvaluationForm({
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
-        <Spinner className="h-3 w-3" />
-        Loading evaluation...
+        <Spinner className="size-3" />
+        Loading evaluation…
       </div>
     );
   }
@@ -269,7 +269,7 @@ export function ImageEvaluationForm({
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold text-gray-700 uppercase">Evaluation</h4>
         <div className="flex items-center gap-2">
-          {saving && <Spinner className="h-3 w-3 text-gray-400" />}
+          {saving && <Spinner className="size-3 text-gray-400" />}
           {saved && <span className="text-xs font-medium text-green-600">Saved</span>}
           {error && <span className="text-xs text-red-600">{error}</span>}
         </div>
@@ -309,7 +309,7 @@ export function ImageEvaluationForm({
           <ChevronIcon open={sceneOpen} />
         </button>
         {sceneOpen && (
-          <div className="space-y-3 border-t border-gray-200 px-3 py-3">
+          <div className="space-y-3 border-t border-gray-200 p-3">
             <IssueCheckboxGroup
               options={SCENE_ACCURACY_ISSUES}
               selected={data.sceneAccuracyIssues}
@@ -347,7 +347,7 @@ export function ImageEvaluationForm({
           <ChevronIcon open={productOpen} />
         </button>
         {productOpen && (
-          <div className="space-y-4 border-t border-gray-200 px-3 py-3">
+          <div className="space-y-4 border-t border-gray-200 p-3">
             {activeCategories.length > 0 ? (
               activeCategories.map((category) => {
                 const catData = data.productAccuracy[category] ?? { issues: [], notes: '' };

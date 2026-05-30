@@ -54,7 +54,7 @@ export function groupStrategyRuns<T extends StrategyRunViewInput>(
 
   const items: StrategyRunBatchGroup<T>[] = [];
   for (const [batchId, batchRuns] of batchGroups) {
-    const sorted = [...batchRuns].sort(
+    const sorted = batchRuns.toSorted(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
     items.push({

@@ -39,7 +39,7 @@ export function CloneButton({ strategyId }: { strategyId: string }) {
       variant="secondary"
       onClick={handleClone}
       loading={loading}
-      iconLeft={<CopyIcon className="h-4 w-4" />}
+      iconLeft={<CopyIcon className="size-4" />}
     >
       {loading ? 'Cloning…' : 'Clone'}
     </Button>

@@ -14,7 +14,7 @@ export default function DollhouseRendersPage() {
           <LinkButton
             href="/dollhouse-renders/new"
             variant="primary"
-            iconLeft={<PlusIcon className="h-4 w-4" />}
+            iconLeft={<PlusIcon className="size-4" />}
           >
             New Render
           </LinkButton>

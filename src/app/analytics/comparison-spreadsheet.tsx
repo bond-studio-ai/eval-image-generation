@@ -368,7 +368,7 @@ export function ComparisonSpreadsheet({
               {slices.map((slice) => (
                 <th
                   key={slice.key}
-                  className="border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
+                  className="border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
                 >
                   Count (% of failed)
                 </th>
@@ -385,7 +385,7 @@ export function ComparisonSpreadsheet({
             )}
             {!loading && sceneIssueRows.length === 0 && (
               <tr>
-                <td colSpan={1 + colCount} className="px-4 py-4 text-center text-sm text-gray-400">
+                <td colSpan={1 + colCount} className="p-4 text-center text-sm text-gray-400">
                   No scene accuracy issues found.
                 </td>
               </tr>
@@ -495,11 +495,11 @@ export function ComparisonSpreadsheet({
               </th>
               {slices.map((slice) => (
                 <Fragment key={slice.key}>
-                  <th className="border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+                  <th className="border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                     Rated Images
                   </th>
                   <th
-                    className="cursor-pointer border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-green-700 uppercase select-none hover:bg-gray-200"
+                    className="cursor-pointer border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-green-700 uppercase select-none hover:bg-gray-200"
                     onClick={() => toggleCategorySort(slice.key, 'successPct')}
                   >
                     Success{' '}
@@ -511,7 +511,7 @@ export function ComparisonSpreadsheet({
                     />
                   </th>
                   <th
-                    className="cursor-pointer border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-red-600 uppercase select-none hover:bg-gray-200"
+                    className="cursor-pointer border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-red-600 uppercase select-none hover:bg-gray-200"
                     onClick={() => toggleCategorySort(slice.key, 'failurePct')}
                   >
                     Fail{' '}
@@ -694,7 +694,7 @@ function StepExecutionTimeTable({
             {slices.map((slice) => (
               <th
                 key={slice.key}
-                className="border-r border-b border-gray-300 px-2 py-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
+                className="border-r border-b border-gray-300 p-2 text-center text-[10px] font-bold tracking-wider text-gray-500 uppercase"
               >
                 Avg time (n)
               </th>
@@ -711,7 +711,7 @@ function StepExecutionTimeTable({
           )}
           {!loading && maxStepCount === 0 && (
             <tr>
-              <td colSpan={1 + colCount} className="px-4 py-4 text-center text-sm text-gray-400">
+              <td colSpan={1 + colCount} className="p-4 text-center text-sm text-gray-400">
                 No step execution data available for the selected ranges.
               </td>
             </tr>
@@ -733,7 +733,7 @@ function StepExecutionTimeTable({
                           key={slice.key}
                           className="border-r border-b border-gray-200 px-2 py-1.5 text-center text-[11px] text-gray-400"
                         >
-                          —
+                          -
                         </td>
                       );
                     }
@@ -770,7 +770,7 @@ function StepExecutionTimeTable({
                 return (
                   <td
                     key={slice.key}
-                    className="border-t border-r border-gray-300 px-2 py-2 text-center text-[11px] font-semibold text-gray-900"
+                    className="border-t border-r border-gray-300 p-2 text-center text-[11px] font-semibold text-gray-900"
                   >
                     {total ? formatExecMs(total.avgMs) : '-'}
                   </td>

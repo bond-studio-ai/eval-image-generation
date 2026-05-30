@@ -100,7 +100,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       label: 'Rating',
       icon: (
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -119,7 +119,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       label: 'Output Images',
       icon: (
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -138,7 +138,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       label: 'Info',
       icon: (
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -159,7 +159,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             label: 'Notes',
             icon: (
               <svg
-                className="h-4 w-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -182,7 +182,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             label: 'Scene Images',
             icon: (
               <svg
-                className="h-4 w-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -205,7 +205,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             label: 'Product Images',
             icon: (
               <svg
-                className="h-4 w-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -226,7 +226,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
       label: 'Prompts',
       icon: (
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -259,7 +259,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
             >
               {promptVersion?.name || 'Untitled'}
               <svg
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}

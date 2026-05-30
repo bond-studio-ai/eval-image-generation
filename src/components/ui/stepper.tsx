@@ -118,13 +118,13 @@ function StepButton({
 
 function StepCircle({ state, index }: { state: StepperStepState; index: number }) {
   const baseClass =
-    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-caption font-semibold';
+    'flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-caption font-semibold';
 
   let icon: ReactNode;
   let cls: string;
   switch (state) {
     case 'complete':
-      icon = <CheckIcon className="h-4 w-4" aria-hidden />;
+      icon = <CheckIcon className="size-4" aria-hidden />;
       cls = 'bg-success-600 border-success-600 text-text-inverse';
       break;
     case 'current':
@@ -132,7 +132,7 @@ function StepCircle({ state, index }: { state: StepperStepState; index: number }
       cls = 'bg-surface border-primary-600 text-primary-700';
       break;
     case 'error':
-      icon = <AlertCircleIcon className="h-4 w-4" aria-hidden />;
+      icon = <AlertCircleIcon className="size-4" aria-hidden />;
       cls = 'bg-danger-50 border-danger-600 text-danger-700';
       break;
     case 'pending':

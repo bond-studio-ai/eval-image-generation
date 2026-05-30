@@ -42,6 +42,7 @@ export function DeleteGenerationButton({
       <div className="inline-flex items-center gap-2">
         <span className="text-xs text-red-600">Delete?</span>
         <button
+          type="button"
           onClick={handleDelete}
           disabled={deleting}
           className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
@@ -49,6 +50,7 @@ export function DeleteGenerationButton({
           {deleting ? 'Deleting...' : 'Yes'}
         </button>
         <button
+          type="button"
           onClick={() => setConfirming(false)}
           disabled={deleting}
           className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
@@ -62,6 +64,7 @@ export function DeleteGenerationButton({
   if (variant === 'icon') {
     return (
       <button
+        type="button"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -71,7 +74,7 @@ export function DeleteGenerationButton({
         className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
       >
         <svg
-          className="h-4 w-4"
+          className="size-4"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -89,11 +92,12 @@ export function DeleteGenerationButton({
 
   return (
     <button
+      type="button"
       onClick={() => setConfirming(true)}
       className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
     >
       <svg
-        className="h-4 w-4"
+        className="size-4"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth={1.5}

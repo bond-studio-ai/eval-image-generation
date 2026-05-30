@@ -176,7 +176,7 @@ function JudgeEntryRow({
       <div className="px-4 py-3">
         <div className="flex items-start gap-3">
           {showIndex && (
-            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-600">
+            <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-600">
               {index + 1}
             </span>
           )}
@@ -331,14 +331,14 @@ export function RunJudgeEvaluationsSection({
   judgeResults: StrategyRunJudgeResultEntry[];
   title?: string;
 }) {
-  if (judgeResults.length === 0) return null;
-
   const groups = useMemo(() => groupByJudge(judgeResults), [judgeResults]);
   const slowestMs = useMemo(
     () => groups.reduce((m, g) => Math.max(m, g.executionTimeMs ?? 0), 0),
     [groups],
   );
   const slowestLabel = formatSeconds(slowestMs);
+
+  if (judgeResults.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-indigo-200 bg-white shadow-xs">

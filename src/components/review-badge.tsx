@@ -104,7 +104,7 @@ export function ReviewBadge({ generationId, initialState, onStateChange }: Segme
   if (state.kind === 'checking') {
     return (
       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-        <Spinner className="h-2.5 w-2.5" />
+        <Spinner className="size-2.5" />
         Checking
       </span>
     );
@@ -116,7 +116,7 @@ export function ReviewBadge({ generationId, initialState, onStateChange }: Segme
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
         title="Review in progress"
       >
-        <Spinner className="h-2.5 w-2.5" />
+        <Spinner className="size-2.5" />
         Reviewing
       </span>
     );
@@ -137,7 +137,7 @@ export function ReviewBadge({ generationId, initialState, onStateChange }: Segme
         title={state.cached ? 'Cached. Click to re-run.' : 'Click to re-run review.'}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
-        <CheckIcon className="h-2.5 w-2.5" />
+        <CheckIcon className="size-2.5" />
         {label}
       </button>
     );
@@ -154,7 +154,7 @@ export function ReviewBadge({ generationId, initialState, onStateChange }: Segme
         title={state.message ?? 'Click to retry.'}
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-500"
       >
-        <ErrorIcon className="h-2.5 w-2.5" />
+        <ErrorIcon className="size-2.5" />
         Review failed
       </button>
     );
@@ -169,7 +169,7 @@ export function ReviewBadge({ generationId, initialState, onStateChange }: Segme
       }}
       className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
     >
-      <SparkleIcon className="h-2.5 w-2.5" />
+      <SparkleIcon className="size-2.5" />
       Automate QA
     </button>
   );

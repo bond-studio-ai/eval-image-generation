@@ -68,7 +68,7 @@ export function ViewPromptModal({
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             <svg
-              className="h-5 w-5"
+              className="size-5"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}

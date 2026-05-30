@@ -110,7 +110,7 @@ export function DataTable<T>({
               ))
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={colCount} className="text-body text-text-muted px-6 py-6">
+                <td colSpan={colCount} className="text-body text-text-muted p-6">
                   {emptyMessage}
                 </td>
               </tr>
@@ -205,7 +205,7 @@ export function SearchBar({
   return (
     <div className="relative">
       <SearchIcon
-        className="text-text-disabled pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        className="text-text-disabled pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
         aria-hidden="true"
       />
       <input
@@ -238,7 +238,7 @@ export function SelectAllCheckbox({
           if (el) el.indeterminate = count > 0 && count < total;
         }}
         onChange={onToggle}
-        className="border-border-strong text-primary-600 focus:ring-primary-500 h-4 w-4 cursor-pointer rounded"
+        className="border-border-strong text-primary-600 focus:ring-primary-500 size-4 cursor-pointer rounded"
       />
       {count > 0 ? `${count} selected` : 'Select all'}
     </label>
@@ -297,7 +297,7 @@ export function ToggleFilter({
         }`}
       >
         <span
-          className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+          className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
             checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
           }`}
         />
@@ -312,7 +312,7 @@ export function ToggleFilter({
 // ---------------------------------------------------------------------------
 
 const CHECKBOX_CLASS =
-  'h-4 w-4 cursor-pointer rounded border-border-strong text-primary-600 focus:ring-primary-500';
+  'size-4 cursor-pointer rounded border-border-strong text-primary-600 focus:ring-primary-500';
 
 export function checkboxColumn<T>({
   selected,
@@ -327,7 +327,7 @@ export function checkboxColumn<T>({
 }): DataTableColumn<T> {
   return {
     header: '',
-    headerClassName: 'w-10 px-3 py-3',
+    headerClassName: 'w-10 p-3',
     cell: (row) => {
       if (isSelectable && !isSelectable(row)) return null;
       const id = rowId(row);
@@ -340,7 +340,7 @@ export function checkboxColumn<T>({
         />
       );
     },
-    cellClassName: 'w-10 px-3 py-3',
+    cellClassName: 'w-10 p-3',
   };
 }
 
@@ -349,9 +349,9 @@ export function checkboxColumn<T>({
 // ---------------------------------------------------------------------------
 
 const ACTION_ICONS: Record<'clone' | 'delete' | 'edit', ReactNode> = {
-  clone: <CopyIcon className="h-4 w-4" />,
-  delete: <TrashIcon className="h-4 w-4" />,
-  edit: <EditIcon className="h-4 w-4" />,
+  clone: <CopyIcon className="size-4" />,
+  delete: <TrashIcon className="size-4" />,
+  edit: <EditIcon className="size-4" />,
 };
 
 export type RowAction<T> =

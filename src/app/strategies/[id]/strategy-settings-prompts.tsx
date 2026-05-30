@@ -159,7 +159,7 @@ export function StrategySettingsPrompts({
                           key={i}
                           className="flex items-center gap-3 py-1.5 first:pt-0 last:pb-0"
                         >
-                          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">
+                          <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">
                             {i + 1}
                           </span>
                           <div className="flex flex-1 flex-wrap items-center gap-1.5">

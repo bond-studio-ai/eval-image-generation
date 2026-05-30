@@ -71,7 +71,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-12">
-        <div className="border-t-primary-600 h-8 w-8 animate-spin rounded-full border-4 border-gray-300" />
+        <div className="border-t-primary-600 size-8 animate-spin rounded-full border-4 border-gray-300" />
       </div>
     );
   }

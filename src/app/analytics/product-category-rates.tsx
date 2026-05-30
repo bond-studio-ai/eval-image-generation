@@ -385,7 +385,7 @@ export function ProductCategoryRates({
     return <p className="text-sm text-gray-500">No product evaluation data available.</p>;
   }
 
-  const sortedCompact = [...categories].sort((a, b) => {
+  const sortedCompact = categories.toSorted((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortKey === 'name')
       return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
@@ -459,7 +459,7 @@ export function ProductCategoryRates({
     );
   }
 
-  const sorted = [...categories].sort((a, b) => {
+  const sorted = categories.toSorted((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortKey === 'name')
       return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));

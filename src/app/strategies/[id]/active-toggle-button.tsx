@@ -83,7 +83,7 @@ export function ActiveToggleButton({
     <div className="flex flex-wrap items-center gap-2">
       {activeForSource ? (
         <Badge tone="success" variant="soft">
-          <span className="bg-success-600 mr-1 inline-block h-1.5 w-1.5 rounded-full" />
+          <span className="bg-success-600 mr-1 inline-block size-1.5 rounded-full" />
           Active for {SOURCES.find((s) => s.value === activeForSource)?.label ?? activeForSource}
         </Badge>
       ) : (

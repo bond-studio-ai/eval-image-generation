@@ -118,7 +118,7 @@ export function TwoPaneSplit({
       >
         <div className="group-hover:border-primary-400 group-active:border-primary-500 absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
           <svg
-            className="group-hover:text-primary-500 h-2.5 w-2.5 text-gray-500"
+            className="group-hover:text-primary-500 size-2.5 text-gray-500"
             viewBox="0 0 10 10"
             fill="currentColor"
             aria-hidden="true"

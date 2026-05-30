@@ -433,7 +433,7 @@ function DriftUnifiedRow({
       <td className="px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <span
-            className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-gray-300"
+            className="inline-block size-2.5 shrink-0 rounded-sm ring-1 ring-gray-300"
             style={{ backgroundColor: swatch }}
             aria-hidden="true"
           />
@@ -454,7 +454,7 @@ function DriftUnifiedRow({
               width={200}
               triggerClassName="ml-1 shrink-0 items-center"
             >
-              <WarningIcon className="h-3.5 w-3.5 text-amber-500" />
+              <WarningIcon className="size-3.5 text-amber-500" />
               <span className="sr-only">{DRIFT_ABSENCE_LABELS[metrics.absenceReason]}</span>
             </Tooltip>
           )}
@@ -572,7 +572,7 @@ function DriftUnifiedTable({
     if (sortKey !== null) {
       const key = sortKey;
       const dir = sortDir;
-      filtered = [...filtered].sort((a, b) =>
+      filtered = filtered.toSorted((a, b) =>
         compareSortValues(getSortValue(a, key, lookup), getSortValue(b, key, lookup), dir),
       );
     }
@@ -747,7 +747,7 @@ export function CollapsibleDrift({
       >
         <span className="flex items-center gap-2">
           <ChevronIcon
-            className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
+            className={`size-3.5 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
           />
           <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
             Drift assessment
@@ -785,8 +785,8 @@ export function CollapsibleDrift({
               {assessment.failedSamMaskUrls && assessment.failedSamMaskUrls.length > 0 && (
                 <p className="px-1 text-[10px] text-gray-500 italic">
                   {assessment.failedSamMaskUrls.length} SAM mask
-                  {assessment.failedSamMaskUrls.length === 1 ? '' : 's'} failed to download —
-                  metrics may understate SAM coverage.
+                  {assessment.failedSamMaskUrls.length === 1 ? '' : 's'} failed to download; metrics
+                  may understate SAM coverage.
                 </p>
               )}
             </>

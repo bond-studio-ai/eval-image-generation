@@ -110,7 +110,7 @@ function SelectedProjectBanner({
   return (
     <Banner
       tone="success"
-      icon={<CheckCircleIcon className="h-5 w-5" aria-hidden />}
+      icon={<CheckCircleIcon className="size-5" aria-hidden />}
       title={`Selected project ${project.id}`}
       description={`${project.name ? `${project.name} · ` : ''}${summary}`}
       actions={
