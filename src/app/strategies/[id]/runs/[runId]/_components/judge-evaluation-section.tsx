@@ -16,7 +16,7 @@ export function JudgeEvaluationSection({ data, open, onToggle }: { data: RunData
       count={data.judgeResults.length || undefined}
       badge={
         data.judgeScore != null && data.judgeScore > 0 ? (
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${data.isJudgeSelected ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>Score: {data.judgeScore}</span>
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${data.isJudgeSelected ? "bg-warning-100 text-warning-700" : "bg-surface-sunken text-text-secondary"}`}>Score: {data.judgeScore}</span>
         ) : undefined
       }
     >
@@ -30,26 +30,26 @@ export function JudgeEvaluationSection({ data, open, onToggle }: { data: RunData
           (() => {
             const isFailed = data.judgeScore === 0;
             return (
-              <div className={`rounded-lg border p-4 ${isFailed ? "border-red-200 bg-red-50" : "border-indigo-200 bg-indigo-50"}`}>
-                <p className={`text-sm font-medium ${isFailed ? "text-red-800" : "text-indigo-800"}`}>
+              <div className={`rounded-lg border p-4 ${isFailed ? "border-danger-200 bg-danger-50" : "border-primary-200 bg-primary-50"}`}>
+                <p className={`text-body font-medium ${isFailed ? "text-danger-800" : "text-primary-800"}`}>
                   {isFailed ? "Judge Error" : "Judge Reasoning"}
                   {data.judgeScore != null && data.judgeScore > 0 && (
-                    <span className="ml-2 font-normal text-indigo-600">
+                    <span className="text-primary-600 ml-2 font-normal">
                       (Score: {data.judgeScore}
                       {data.isJudgeSelected ? " — Selected" : ""})
                     </span>
                   )}
                 </p>
-                <p className={`mt-2 text-sm ${isFailed ? "text-red-700" : "text-indigo-700"}`}>{data.judgeReasoning}</p>
+                <p className={`text-body mt-2 ${isFailed ? "text-danger-700" : "text-primary-700"}`}>{data.judgeReasoning}</p>
               </div>
             );
           })()}
 
         {/* Judge output */}
         {data.judgeResults.length !== 1 && data.judgeOutput && (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-sm font-medium text-gray-800">Judge Output</p>
-            <pre className="mt-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{data.judgeOutput}</pre>
+          <div className="border-border bg-surface-muted rounded-lg border p-4">
+            <p className="text-text-secondary text-body font-medium">Judge Output</p>
+            <pre className="text-text-secondary text-caption mt-2 leading-relaxed whitespace-pre-wrap">{data.judgeOutput}</pre>
           </div>
         )}
 
@@ -58,27 +58,27 @@ export function JudgeEvaluationSection({ data, open, onToggle }: { data: RunData
           <div className="space-y-3">
             {data.judgeTypeUsed && (
               <div>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Judge Mode</p>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${data.judgeTypeUsed === "batch" ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"}`}>
+                <p className="text-text-disabled mb-1 text-[10px] font-semibold tracking-wider uppercase">Judge Mode</p>
+                <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${data.judgeTypeUsed === "batch" ? "bg-primary-100 text-primary-700" : "bg-warning-100 text-warning-700"}`}>
                   {data.judgeTypeUsed === "batch" ? "Batch (all images in one request)" : "Individual (one image per request)"}
                 </span>
               </div>
             )}
             {data.judgeSystemPrompt && (
               <div>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Judge System Prompt</p>
-                <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{data.judgeSystemPrompt}</pre>
+                <p className="text-text-disabled mb-1 text-[10px] font-semibold tracking-wider uppercase">Judge System Prompt</p>
+                <pre className="border-border bg-surface-muted text-text-secondary text-caption max-h-48 overflow-auto rounded-md border p-2 leading-relaxed whitespace-pre-wrap">{data.judgeSystemPrompt}</pre>
               </div>
             )}
             {data.judgeUserPrompt && (
               <div>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Judge User Prompt</p>
-                <pre className="max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{data.judgeUserPrompt}</pre>
+                <p className="text-text-disabled mb-1 text-[10px] font-semibold tracking-wider uppercase">Judge User Prompt</p>
+                <pre className="border-border bg-surface-muted text-text-secondary text-caption max-h-48 overflow-auto rounded-md border p-2 leading-relaxed whitespace-pre-wrap">{data.judgeUserPrompt}</pre>
               </div>
             )}
             {data.judgeInputImages && data.judgeInputImages.length > 0 && (
               <div>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Judge Input Images ({data.judgeInputImages.length})</p>
+                <p className="text-text-disabled mb-1 text-[10px] font-semibold tracking-wider uppercase">Judge Input Images ({data.judgeInputImages.length})</p>
                 <AuditImageGrid images={data.judgeInputImages} />
               </div>
             )}

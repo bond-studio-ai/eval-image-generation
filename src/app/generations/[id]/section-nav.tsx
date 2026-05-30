@@ -51,7 +51,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
 
   return (
     <nav className="fixed top-1/2 right-4 z-40 hidden -translate-y-1/2 flex-col gap-1.5 xl:flex">
-      <div className="flex flex-col gap-1.5 rounded-full border border-gray-200 bg-white/90 px-1.5 py-2 shadow-lg backdrop-blur">
+      <div className="border-border bg-surface/90 flex flex-col gap-1.5 rounded-full border px-1.5 py-2 shadow-lg backdrop-blur">
         {sections.map((s) => {
           const isActive = activeId === s.id;
           return (
@@ -59,11 +59,11 @@ export function SectionNav({ sections }: { sections: Section[] }) {
               key={s.id}
               type="button"
               onClick={() => scrollTo(s.id)}
-              className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? "bg-primary-100 text-primary-700" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`}
+              className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? "bg-primary-100 text-primary-700" : "text-text-disabled hover:bg-surface-sunken hover:text-text-secondary"}`}
               aria-label={s.label}
             >
               {s.icon}
-              <span className="pointer-events-none absolute right-full mr-2.5 rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              <span className="text-text-inverse bg-text-primary text-caption pointer-events-none absolute right-full mr-2.5 rounded-md px-2.5 py-1 font-medium whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                 {s.label}
               </span>
             </button>

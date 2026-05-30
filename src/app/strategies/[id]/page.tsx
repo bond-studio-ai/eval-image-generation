@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { StrategyFlowDag, type DagStep } from "@/components/strategy-flow-dag";
+import { LinkButton } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 import { fetchStrategyById, fetchStrategyRuns } from "@/lib/service-client";
 import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { ActiveToggleButton } from "./active-toggle-button";
@@ -38,18 +40,18 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           <>
             <ActiveToggleButton strategyId={result.id} activeForSource={result.activeForSource} />
             <CloneButton strategyId={result.id} />
-            <PrimaryLinkButton href={`/strategies/${result.id}/edit`} icon>
+            <LinkButton href={`/strategies/${result.id}/edit`} iconLeft={<PlusIcon className="size-4" />}>
               Edit Strategy
-            </PrimaryLinkButton>
+            </LinkButton>
           </>
         }
       />
 
       {/* Execution Flow */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Execution Flow</h2>
+        <h2 className="text-text-primary text-h3">Execution Flow</h2>
         {result.steps.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No steps defined. Edit this strategy to add steps.</p>
+          <p className="text-text-secondary text-body mt-4">No steps defined. Edit this strategy to add steps.</p>
         ) : (
           <div className="mt-4">
             <StrategyFlowDag

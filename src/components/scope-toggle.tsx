@@ -33,12 +33,12 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
   );
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+    <div className="border-border bg-surface-muted flex items-center gap-1 rounded-lg border p-0.5">
       <button
         type="button"
         onClick={() => setScope("default")}
         aria-pressed={source === "default"}
-        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${source === "default" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
+        className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "default" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
       >
         {defaultLabel}
       </button>
@@ -46,7 +46,7 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
         type="button"
         onClick={() => setScope("benchmark")}
         aria-pressed={source === "benchmark"}
-        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${source === "benchmark" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
+        className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "benchmark" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
       >
         {benchmarkLabel}
       </button>

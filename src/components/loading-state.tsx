@@ -1,4 +1,5 @@
 /** Reusable skeleton primitives for loading states. */
+import { Card } from "@/components/ui/card";
 
 /** Pulsing block with rounded corners. Use w-*, h-* to size. */
 function Skeleton({ className = "" }: { className?: string }) {
@@ -18,23 +19,23 @@ function PageSkeleton() {
       {/* Stat cards row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-card border-border bg-surface shadow-card border p-4">
+          <Card key={i} padding="sm">
             <Skeleton className="mb-2 h-4 w-20" />
             <Skeleton className="h-7 w-12" />
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Content card */}
-      <div className="rounded-card border-border bg-surface shadow-card space-y-4 border p-6">
+      <Card className="space-y-4">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
-      </div>
+      </Card>
 
       {/* Table skeleton */}
-      <div className="rounded-card border-border bg-surface shadow-card overflow-hidden border">
+      <Card padding="none" className="overflow-hidden">
         <div className="bg-surface-muted flex gap-12 px-6 py-3">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-3 w-16" />
@@ -49,7 +50,7 @@ function PageSkeleton() {
             <Skeleton className="h-4 w-20" />
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }

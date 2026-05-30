@@ -158,7 +158,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       {
         header: "Prompt",
         cell: (gen) => (
-          <Link href={`/generations/${gen.id}`} className="hover:text-primary-600 font-medium text-gray-900">
+          <Link href={`/generations/${gen.id}`} className="hover:text-primary-600 text-text-primary font-medium">
             {gen.promptName || "Untitled"}
           </Link>
         )
@@ -198,13 +198,13 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
   const footer = (
     <div ref={sentinelRef}>
       {loading && (
-        <div className="divide-y divide-gray-200">
+        <div className="divide-border divide-y">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
-              <div className="size-12 shrink-0 animate-pulse rounded border border-gray-200 bg-gray-200" />
+              <div className="border-border bg-border size-12 shrink-0 animate-pulse rounded border" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
+                <div className="bg-border h-4 w-32 animate-pulse rounded" />
+                <div className="bg-surface-sunken h-3 w-20 animate-pulse rounded" />
               </div>
             </div>
           ))}
@@ -212,7 +212,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       )}
       {!loading && !hasMore && generations.length > 0 && (
         <div className="flex items-center justify-center py-4">
-          <p className="text-xs text-gray-400">
+          <p className="text-text-disabled text-caption">
             Showing all {total} generation{total !== 1 ? "s" : ""}
           </p>
         </div>
@@ -222,7 +222,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
 
   return (
     <>
-      <DataTable columns={columns} data={generations} rowKey={(gen) => gen.id} rowClassName={(gen) => `hover:bg-gray-50 ${selected.has(gen.id) ? "bg-primary-50/50" : ""}`} toolbar={toolbar} footer={footer} className="mt-6" />
+      <DataTable columns={columns} data={generations} rowKey={(gen) => gen.id} rowClassName={(gen) => `hover:bg-surface-muted ${selected.has(gen.id) ? "bg-primary-50/50" : ""}`} toolbar={toolbar} footer={footer} className="mt-6" />
 
       <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="generations" />
     </>

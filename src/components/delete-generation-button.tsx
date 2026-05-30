@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { TrashIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
 
@@ -38,37 +40,35 @@ export function DeleteGenerationButton({ generationId, variant = "button" }: Del
   if (confirming) {
     return (
       <div className="inline-flex items-center gap-2">
-        <span className="text-xs text-red-600">Delete?</span>
-        <button type="button" onClick={handleDelete} disabled={deleting} className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
+        <span className="text-danger-600 text-caption">Delete?</span>
+        <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting} loading={deleting}>
           {deleting ? "Deleting..." : "Yes"}
-        </button>
-        <button type="button" onClick={() => setConfirming(false)} disabled={deleting} className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50">
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>
           Cancel
-        </button>
+        </Button>
       </div>
     );
   }
 
   if (variant === "icon") {
     return (
-      <button
-        type="button"
+      <IconButton
+        variant="danger"
+        size="sm"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setConfirming(true);
         }}
-        aria-label="Delete generation"
-        title="Delete generation"
-        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-500"
-      >
-        <TrashIcon className="size-4" />
-      </button>
+        label="Delete generation"
+        icon={<TrashIcon />}
+      />
     );
   }
 
   return (
-    <button type="button" onClick={() => setConfirming(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50">
+    <button type="button" onClick={() => setConfirming(true)} className="border-danger-200 text-danger-600 hover:bg-danger-50 text-body inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors">
       <TrashIcon className="size-4" />
       Delete
     </button>

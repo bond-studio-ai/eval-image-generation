@@ -211,7 +211,7 @@ export function ToggleFilter({ label, checked, onChange }: { label: string; chec
           checked ? "bg-primary-600" : "bg-border-strong"
         }`}
       >
-        <span className={`pointer-events-none inline-block size-3.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"}`} />
+        <span className={`bg-surface pointer-events-none inline-block size-3.5 rounded-full shadow-sm ring-0 transition-transform ${checked ? "translate-x-[18px]" : "translate-x-[3px]"}`} />
       </button>
       <span className="text-body text-text-secondary">{label}</span>
     </label>

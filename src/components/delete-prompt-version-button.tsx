@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon, TrashIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
-import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
 
 interface DeletePromptVersionButtonProps {
@@ -46,38 +46,41 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
 
   return (
     <>
-      <button type="button" onClick={() => setShowConfirm(true)} className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-xs transition-colors hover:bg-red-50">
+      <button
+        type="button"
+        onClick={() => setShowConfirm(true)}
+        className="border-danger-300 bg-surface text-danger-700 hover:bg-danger-50 text-body inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium shadow-xs transition-colors"
+      >
         <TrashIcon className="size-4" />
         Delete
       </button>
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <Modal onClose={() => !deleting && setShowConfirm(false)} labelledById="delete-prompt-version-title" backdropClassName="bg-black/50" className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <Modal onClose={() => !deleting && setShowConfirm(false)} labelledById="delete-prompt-version-title" backdropClassName="bg-overlay/50" className="bg-surface w-full max-w-md rounded-xl p-6 shadow-xl">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangleIcon className="size-5 text-red-600" />
+            <div className="bg-danger-100 flex size-10 shrink-0 items-center justify-center rounded-full">
+              <AlertTriangleIcon className="text-danger-600 size-5" />
             </div>
             <div>
-              <h3 id="delete-prompt-version-title" className="text-lg font-semibold text-gray-900">
+              <h3 id="delete-prompt-version-title" className="text-text-primary text-h3">
                 Delete Prompt Version
               </h3>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="text-text-secondary text-body mt-1">
                 Are you sure you want to delete <strong>{name || "this prompt version"}</strong>? This action cannot be undone.
               </p>
             </div>
           </div>
 
-          {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+          {error && <div className="bg-danger-50 text-danger-700 text-body mt-4 rounded-lg p-3">{error}</div>}
 
           <div className="mt-6 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowConfirm(false)} disabled={deleting} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 disabled:opacity-50">
+            <Button variant="secondary" onClick={() => setShowConfirm(false)} disabled={deleting}>
               Cancel
-            </button>
-            <button type="button" onClick={handleDelete} disabled={deleting} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-red-700 disabled:opacity-50">
-              {deleting && <Spinner className="size-4" />}
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting} loading={deleting}>
               {deleting ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

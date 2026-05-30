@@ -232,7 +232,7 @@ export function StrategiesTable() {
         columns={columns}
         data={items}
         rowKey={(s) => s.id}
-        rowClassName={(s) => `hover:bg-gray-50 ${selected.has(s.id) ? "bg-primary-50/50" : ""}`}
+        rowClassName={(s) => `hover:bg-surface-muted ${selected.has(s.id) ? "bg-primary-50/50" : ""}`}
         emptyMessage={search || activeOnly ? "No strategies match your filters." : "No strategies found."}
         loading={loading}
         toolbar={toolbar}

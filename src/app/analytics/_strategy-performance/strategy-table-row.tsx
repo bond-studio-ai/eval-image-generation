@@ -30,59 +30,59 @@ export function StrategyTableRow({
 }) {
   return (
     <Fragment>
-      <tr className="hover:bg-gray-50/50">
+      <tr className="hover:bg-surface-muted/50">
         <td className="py-2 pr-2" aria-label="Expand row">
-          <button type="button" onClick={() => onToggleExpand(row.id)} className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700" aria-expanded={isExpanded} aria-label={isExpanded ? "Collapse row" : "Expand row"}>
+          <button type="button" onClick={() => onToggleExpand(row.id)} className="text-text-muted hover:text-text-secondary hover:bg-border rounded p-1" aria-expanded={isExpanded} aria-label={isExpanded ? "Collapse row" : "Expand row"}>
             <ChevronRightIcon className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
           </button>
         </td>
-        <td className="py-3 pr-6 text-sm font-medium text-gray-900">
+        <td className="text-text-primary text-body py-3 pr-6 font-medium">
           <StrategyHoverCard strategyId={row.id}>
             <Link href={`/strategies/${row.id}`} className="text-primary-600 hover:text-primary-500">
               {row.name || "Unnamed"}
             </Link>
           </StrategyHoverCard>
         </td>
-        <td className="px-4 py-3 text-right text-sm text-gray-700">{row.generationCount}</td>
-        <td className="px-4 py-3 text-right text-sm">
+        <td className="text-text-secondary text-body px-4 py-3 text-right">{row.generationCount}</td>
+        <td className="text-body px-4 py-3 text-right">
           {row.sceneRatedCount > 0 ? (
             <>
-              <span className="text-green-600">{row.sceneGoodPct}%</span>
-              <span className="text-gray-400"> / </span>
-              <span className="text-orange-600">{row.sceneFailedPct}%</span>
-              <span className="block text-[10px] text-gray-400">{row.sceneRatedCount} rated</span>
+              <span className="text-success-600">{row.sceneGoodPct}%</span>
+              <span className="text-text-disabled"> / </span>
+              <span className="text-warning-600">{row.sceneFailedPct}%</span>
+              <span className="text-text-disabled block text-[10px]">{row.sceneRatedCount} rated</span>
             </>
           ) : (
-            <span className="text-gray-400">{"—"}</span>
+            <span className="text-text-disabled">{"—"}</span>
           )}
         </td>
-        <td className="px-4 py-3 text-right text-sm">
+        <td className="text-body px-4 py-3 text-right">
           {row.productRatedCount > 0 ? (
             <>
-              <span className="text-green-600">{row.productGoodPct}%</span>
-              <span className="text-gray-400"> / </span>
-              <span className="text-orange-600">{row.productFailedPct}%</span>
-              <span className="block text-[10px] text-gray-400">{row.productRatedCount} rated</span>
+              <span className="text-success-600">{row.productGoodPct}%</span>
+              <span className="text-text-disabled"> / </span>
+              <span className="text-warning-600">{row.productFailedPct}%</span>
+              <span className="text-text-disabled block text-[10px]">{row.productRatedCount} rated</span>
             </>
           ) : (
-            <span className="text-gray-400">{"—"}</span>
+            <span className="text-text-disabled">{"—"}</span>
           )}
         </td>
-        <td className="px-4 py-3 text-right text-sm text-gray-500">
+        <td className="text-text-muted text-body px-4 py-3 text-right">
           {row.notRatedCount > 0 ? (
             <>
               {row.notRatedCount}
-              <span className="text-[10px] text-gray-400"> ({row.notRatedPct}%)</span>
+              <span className="text-text-disabled text-[10px]"> ({row.notRatedPct}%)</span>
             </>
           ) : (
-            <span className="text-gray-400">0</span>
+            <span className="text-text-disabled">0</span>
           )}
         </td>
-        <td className="px-4 py-3 text-right text-sm text-gray-700">{row.avgExecTimeMs != null ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s` : "—"}</td>
+        <td className="text-text-secondary text-body px-4 py-3 text-right">{row.avgExecTimeMs != null ? `${(row.avgExecTimeMs / 1000).toFixed(1)}s` : "—"}</td>
       </tr>
       {isExpanded && (
         <tr key={`${row.id}-breakdown`}>
-          <td colSpan={colSpan} className="border-b-2 border-gray-200 bg-gray-50/80 py-6 pr-6 pl-10">
+          <td colSpan={colSpan} className="border-border bg-surface-muted/80 border-b-2 py-6 pr-6 pl-10">
             <StrategyBreakdownPanel strategyId={row.id} breakdown={breakdown} isLoading={isLoadingBreakdown} from={from} to={to} model={model} source={source} />
           </td>
         </tr>

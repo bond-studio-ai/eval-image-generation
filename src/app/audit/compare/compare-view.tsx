@@ -50,16 +50,16 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <Spinner size="lg" className="text-gray-400" />
+        <Spinner size="lg" className="text-text-disabled" />
       </div>
     );
   }
 
   if (error || !left || !right) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center text-red-600">
+      <div className="text-danger-600 flex h-96 flex-col items-center justify-center">
         <p className="font-medium">Error loading runs</p>
-        <p className="mt-1 text-sm">{error ?? "One or both runs not found"}</p>
+        <p className="text-body mt-1">{error ?? "One or both runs not found"}</p>
       </div>
     );
   }
@@ -71,12 +71,12 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Compare Runs</h1>
+        <h1 className="text-text-primary text-display">Compare Runs</h1>
         <div className="flex gap-2">
-          <Link href={`/strategies/${left.strategy.id}/runs/${left.id}`} className="text-primary-600 hover:text-primary-500 text-xs">
+          <Link href={`/strategies/${left.strategy.id}/runs/${left.id}`} className="text-primary-600 hover:text-primary-500 text-caption">
             View left run &rarr;
           </Link>
-          <Link href={`/strategies/${right.strategy.id}/runs/${right.id}`} className="text-primary-600 hover:text-primary-500 text-xs">
+          <Link href={`/strategies/${right.strategy.id}/runs/${right.id}`} className="text-primary-600 hover:text-primary-500 text-caption">
             View right run &rarr;
           </Link>
         </div>

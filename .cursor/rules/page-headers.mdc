@@ -8,14 +8,18 @@ alwaysApply: false
 
 Always use `<PageHeader>` from `@/components/page-header` for page titles. Never write raw `<h1>` tags.
 
+Header actions use the button primitives from `@/components/ui/button` directly — `LinkButton` for navigation CTAs and `Button` for form submits. (The old `PrimaryButton`/`PrimaryLinkButton` wrappers have been removed.)
+
 ```tsx
-import { PageHeader, PrimaryLinkButton, PrimaryButton } from '@/components/page-header';
+import { PageHeader } from '@/components/page-header';
+import { Button, LinkButton } from '@/components/ui/button';
+import { PlusIcon } from '@/components/ui/icons';
 
 // List page with "New" action
 <PageHeader
   title="Strategies"
   subtitle="Multi-step workflows that chain generations together."
-  actions={<PrimaryLinkButton href="/strategies/new" icon>New Strategy</PrimaryLinkButton>}
+  actions={<LinkButton href="/strategies/new" iconLeft={<PlusIcon className="size-4" />}>New Strategy</LinkButton>}
 />
 
 // Detail/edit page with back link
@@ -29,18 +33,18 @@ import { PageHeader, PrimaryLinkButton, PrimaryButton } from '@/components/page-
 <PageHeader
   backHref="/input-presets"
   backLabel="Back to Input Presets"
-  title="New Input Preset"
+  title=""
   actions={
-    <PrimaryButton onClick={handleCreate} disabled={!canCreate} loading={creating}>
+    <Button onClick={handleCreate} disabled={!canCreate} loading={creating}>
       Create Input Preset
-    </PrimaryButton>
+    </Button>
   }
 />
 ```
 
-- `title` renders as `h1 text-2xl font-bold text-gray-900`
+- `title` renders as `<h1 className="text-display text-text-primary">` (empty string hides it)
 - `subtitle` accepts `React.ReactNode` — use JSX for rich subtitles with links
 - `backLabel` defaults to "Back" when omitted
 - `actions` slot goes on the right side of the header row
-- Use `PrimaryLinkButton` for navigation CTAs; pass `icon` for a plus icon
-- Use `PrimaryButton` for form submit buttons (`onClick`, `disabled`, `loading`)
+- Use `LinkButton` for navigation CTAs (pass `iconLeft={<PlusIcon className="size-4" />}` for the plus affordance)
+- Use `Button` for form submit buttons (`onClick`, `disabled`, `loading`)

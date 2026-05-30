@@ -59,20 +59,20 @@ function EllipsisJump({ totalPages, onPageChange, className }: { totalPages: num
           setEditing(false);
           setValue("");
         }}
-        className={`${className} w-12 text-center text-xs text-gray-900 outline-none`}
+        className={`${className} text-text-primary text-caption w-12 text-center outline-none`}
         placeholder="#"
       />
     );
   }
 
   return (
-    <button type="button" onClick={() => setEditing(true)} title="Jump to page" className={`${className} text-gray-400 hover:text-gray-600`}>
+    <button type="button" onClick={() => setEditing(true)} title="Jump to page" className={`${className} text-text-disabled hover:text-text-secondary`}>
       &hellip;
     </button>
   );
 }
 
-const BASE_BTN = "relative inline-flex items-center px-2 py-2 text-sm font-medium ring-1 ring-gray-300 ring-inset focus:z-10";
+const BASE_BTN = "relative inline-flex items-center px-2 py-2 text-body font-medium ring-1 ring-border-strong ring-inset focus:z-10";
 
 export function Pagination({ page, totalPages, total, onPageChange, loading }: PaginationProps) {
   if (totalPages <= 1) return null;
@@ -80,15 +80,21 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
   const pages = pageRange(page, totalPages);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
-      <p className="flex items-center gap-2 text-sm text-gray-700">
-        {loading && <Spinner className="size-3.5 text-gray-400" />}
+    <div className="border-border flex items-center justify-between border-t px-4 py-3 sm:px-6">
+      <p className="text-text-secondary text-body flex items-center gap-2">
+        {loading && <Spinner className="text-text-disabled size-3.5" />}
         Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
-        <span className="text-gray-400"> ({total} results)</span>
+        <span className="text-text-disabled"> ({total} results)</span>
       </p>
 
       <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs">
-        <button type="button" aria-label="Previous page" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className={`${BASE_BTN} rounded-l-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}>
+        <button
+          type="button"
+          aria-label="Previous page"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className={`${BASE_BTN} text-text-secondary hover:bg-surface-muted rounded-l-md disabled:cursor-not-allowed disabled:opacity-50`}
+        >
           <ChevronLeftIcon className="size-5" />
         </button>
 
@@ -101,14 +107,20 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
               type="button"
               onClick={() => onPageChange(p)}
               disabled={p === page}
-              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${p === page ? "bg-primary-50 text-primary-600 ring-primary-500 z-10" : "text-gray-600 hover:bg-gray-50"}`}
+              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${p === page ? "bg-primary-50 text-primary-600 ring-primary-500 z-10" : "text-text-secondary hover:bg-surface-muted"}`}
             >
               {p}
             </button>
           )
         )}
 
-        <button type="button" aria-label="Next page" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className={`${BASE_BTN} rounded-r-md text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50`}>
+        <button
+          type="button"
+          aria-label="Next page"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className={`${BASE_BTN} text-text-secondary hover:bg-surface-muted rounded-r-md disabled:cursor-not-allowed disabled:opacity-50`}
+        >
           <ChevronRightIcon className="size-5" />
         </button>
       </nav>

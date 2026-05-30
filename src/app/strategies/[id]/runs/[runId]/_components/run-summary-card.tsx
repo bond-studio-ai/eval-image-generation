@@ -29,7 +29,7 @@ export function RunSummaryCard({
   onShowJudgeModal: () => void;
 }) {
   return (
-    <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
+    <div className="border-border bg-surface mt-6 rounded-lg border p-5 shadow-xs">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         {/* Status + source */}
         <div className="flex items-center gap-2">
@@ -38,7 +38,7 @@ export function RunSummaryCard({
         </div>
 
         {/* Timing */}
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className="text-text-muted text-caption flex items-center gap-4">
           <span>Created {new Date(data.createdAt).toLocaleString()}</span>
           {duration != null && (
             <span className="flex items-center gap-1">
@@ -56,14 +56,14 @@ export function RunSummaryCard({
           <button
             type="button"
             onClick={onShowJudgeModal}
-            className={`ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${data.isJudgeSelected ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            className={`text-caption ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors ${data.isJudgeSelected ? "bg-warning-100 text-warning-800 hover:bg-warning-200" : "bg-surface-sunken text-text-secondary hover:bg-border"}`}
           >
             {data.isJudgeSelected && <StarIcon className="size-3.5" fill="currentColor" />}
             Score: {data.judgeScore}
           </button>
         )}
         {(data.judgeScore === 0 || (data.strategy.hasJudge && data.status === "completed" && hasOutput && data.judgeScore == null)) && (
-          <button type="button" onClick={onShowJudgeModal} className="ml-auto inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800 transition-colors hover:bg-red-200">
+          <button type="button" onClick={onShowJudgeModal} className="bg-danger-100 text-danger-800 hover:bg-danger-200 text-caption ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors">
             <AlertCircleIcon className="size-3.5" />
             Judge failed
           </button>
@@ -76,7 +76,7 @@ export function RunSummaryCard({
               type="button"
               onClick={() => onMarkStatus("failed")}
               disabled={markingStatus !== "idle"}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+              className="border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
             >
               {markingStatus === "failed" && <Spinner className="size-3.5" />}
               Mark failed
@@ -88,7 +88,7 @@ export function RunSummaryCard({
                 type="button"
                 onClick={() => onMarkStatus("completed")}
                 disabled={markingStatus !== "idle"}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
+                className="border-border bg-surface-muted text-text-secondary hover:bg-surface-sunken text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
               >
                 {markingStatus === "completed" && <Spinner className="size-3.5" />}
                 Mark completed
@@ -97,7 +97,7 @@ export function RunSummaryCard({
                 type="button"
                 onClick={onRetry}
                 disabled={retrying}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                className="border-warning-300 bg-warning-50 text-warning-700 hover:bg-warning-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
               >
                 {retrying ? <Spinner className="size-3.5" /> : <RefreshIcon className="size-3.5" />}
                 Retry
@@ -108,7 +108,7 @@ export function RunSummaryCard({
       </div>
 
       {hasConfig && (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
+        <div className="border-border-subtle mt-4 flex flex-wrap gap-2 border-t pt-4">
           {data.strategy.model != null && <ConfigTag label="Model" value={data.strategy.model} />}
           {data.strategy.aspectRatio != null && <ConfigTag label="Aspect" value={data.strategy.aspectRatio} />}
           {data.strategy.outputResolution != null && <ConfigTag label="Resolution" value={data.strategy.outputResolution} />}

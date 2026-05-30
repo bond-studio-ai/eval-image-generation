@@ -52,7 +52,7 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
 
   return (
     <div>
-      <label htmlFor="design-package-trigger" className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">
+      <label htmlFor="design-package-trigger" className="text-text-secondary text-caption mb-2 block font-medium tracking-wide uppercase">
         Design Package
       </label>
       <button
@@ -60,17 +60,17 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
         type="button"
         onClick={() => setOpen(true)}
         disabled={loading}
-        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface disabled:bg-surface-muted disabled:text-text-disabled hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedOption || (!hasCurrentValue && value) ? "truncate text-gray-900" : "text-gray-400"}>
+        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>
           {selectedOption ? optionLabel(selectedOption) : !hasCurrentValue && value ? `Unknown package (${value})` : loading ? "Loading packages..." : "Select a design package"}
         </span>
-        <ChevronsUpDownIcon className="size-4 shrink-0 text-gray-400" />
+        <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
-      <p className="mt-2 text-xs text-gray-500">Required whenever a room preset layout is selected.</p>
-      {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
+      <p className="text-text-muted text-caption mt-2">Required whenever a room preset layout is selected.</p>
+      {error ? <p className="text-danger-600 text-caption mt-2">{error}</p> : null}
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4 py-6">
+        <div className="bg-overlay/30 fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
           <button
             type="button"
             aria-label="Close design package picker"
@@ -80,11 +80,11 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
               setSearch("");
             }}
           />
-          <div className="relative w-full max-w-xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="border-border bg-surface relative w-full max-w-xl overflow-hidden rounded-xl border shadow-2xl">
+            <div className="border-border-subtle flex items-center justify-between border-b px-5 py-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 uppercase">Select Design Package</h3>
-                <p className="mt-1 text-xs text-gray-500">Search by package title, style, or ID.</p>
+                <h3 className="text-text-primary text-body font-semibold uppercase">Select Design Package</h3>
+                <p className="text-text-muted text-caption mt-1">Search by package title, style, or ID.</p>
               </div>
               <button
                 type="button"
@@ -93,12 +93,12 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
                   setOpen(false);
                   setSearch("");
                 }}
-                className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="text-text-disabled hover:bg-surface-sunken hover:text-text-secondary rounded-md p-1 transition-colors"
               >
                 <XIcon className="size-5" />
               </button>
             </div>
-            <div className="border-b border-gray-100 p-4">
+            <div className="border-border-subtle border-b p-4">
               <input
                 ref={focusOnMount}
                 type="text"
@@ -106,7 +106,7 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search packages..."
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-md border px-3 py-2 focus:ring-1 focus:outline-none"
               />
             </div>
             <div className="max-h-[26rem] overflow-y-auto">
@@ -117,13 +117,13 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
                   setOpen(false);
                   setSearch("");
                 }}
-                className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm transition-colors ${value === "" ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50"}`}
+                className={`border-border-subtle text-body flex w-full items-center justify-between gap-3 border-b px-4 py-3 text-left transition-colors ${value === "" ? "bg-primary-50 text-primary-700" : "text-text-secondary hover:bg-surface-muted"}`}
               >
                 <span className="font-medium">No design package</span>
                 {value === "" ? <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
               </button>
               {filteredOptions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-gray-400">No matching packages.</div>
+                <div className="text-text-disabled text-body px-4 py-8 text-center">No matching packages.</div>
               ) : (
                 filteredOptions.map((option) => (
                   <button
@@ -134,14 +134,14 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
                       setOpen(false);
                       setSearch("");
                     }}
-                    className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm transition-colors last:border-b-0 ${
-                      option.id === value ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50"
+                    className={`border-border-subtle text-body flex w-full items-center justify-between gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 ${
+                      option.id === value ? "bg-primary-50 text-primary-700" : "text-text-secondary hover:bg-surface-muted"
                     }`}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{optionLabel(option)}</span>
-                      {option.style ? <span className="block truncate text-[11px] text-gray-500">{option.style}</span> : null}
-                      <span className="block truncate font-mono text-[11px] text-gray-400">{option.id}</span>
+                      {option.style ? <span className="text-text-muted block truncate text-[11px]">{option.style}</span> : null}
+                      <span className="text-text-disabled block truncate font-mono text-[11px]">{option.id}</span>
                     </span>
                     {option.id === value ? <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
                   </button>

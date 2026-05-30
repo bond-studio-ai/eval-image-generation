@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useMemo, useReducer, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
+import { Button, LinkButton } from "@/components/ui/button";
 import { CopyIcon, LockIcon } from "@/components/ui/icons";
-import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
 import { DeletePromptVersionButton } from "./delete-prompt-version-button";
 import { PromptTemplateEditor } from "./prompt-template-editor";
@@ -186,7 +186,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
   }
 
   // Shared classes for editable inline fields
-  const editableInput = "w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm transition-colors hover:border-gray-300 focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
+  const editableInput = "w-full rounded-lg border border-border bg-transparent px-3 py-2 text-body transition-colors hover:border-border-strong focus:border-primary-500 focus:ring-primary-500 focus:outline-none focus:ring-1";
 
   return (
     <div className="flex flex-col">
@@ -199,47 +199,26 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
           <>
             {isDirty && (
               <>
-                <button
-                  type="button"
-                  onClick={handleDiscard}
-                  disabled={saving}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
-                >
+                <Button variant="secondary" onClick={handleDiscard} disabled={saving}>
                   Discard
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors"
-                >
-                  {saving && <Spinner className="size-4" />}
+                </Button>
+                <Button onClick={handleSave} disabled={saving} loading={saving}>
                   {saving ? "Saving..." : "Save"}
-                </button>
+                </Button>
               </>
             )}
             {generations.length > 0 && !data.deletedAt && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 ring-inset">
+              <span className="bg-surface-sunken text-text-secondary ring-border text-caption inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium ring-1 ring-inset">
                 <LockIcon className="size-3.5" />
                 Locked
               </span>
             )}
-            <button
-              type="button"
-              onClick={handleClone}
-              disabled={cloning}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50 disabled:opacity-50"
-            >
-              <CopyIcon className="size-4" />
+            <Button variant="secondary" onClick={handleClone} loading={cloning} iconLeft={<CopyIcon className="size-4" />}>
               {cloning ? "Cloning…" : "Clone"}
-            </button>
+            </Button>
             {isEditable && <DeletePromptVersionButton id={data.id} name={form.name || "Untitled Prompt Version"} />}
-            {!data.deletedAt && (
-              <Link href="/executions" className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors">
-                New Run
-              </Link>
-            )}
-            {data.deletedAt && <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-600/20 ring-inset">Deleted</span>}
+            {!data.deletedAt && <LinkButton href="/executions">New Run</LinkButton>}
+            {data.deletedAt && <span className="bg-danger-50 text-danger-700 ring-danger-600/20 text-body inline-flex items-center rounded-full px-3 py-1 font-medium ring-1 ring-inset">Deleted</span>}
           </>
         }
       />
@@ -259,21 +238,21 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Generations</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.generationCount}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Generations</p>
+          <p className="text-text-primary text-display mt-1">{stats.generationCount}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Rated</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.ratedCount}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Rated</p>
+          <p className="text-text-primary text-display mt-1">{stats.ratedCount}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{stats.avgRating ?? "-"}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Avg Rating</p>
+          <p className="text-text-primary text-display mt-1">{stats.avgRating ?? "-"}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-sm font-medium text-gray-600">Unrated</p>
-          <p className="mt-1 text-2xl font-bold text-amber-600">{stats.unratedCount}</p>
+        <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Unrated</p>
+          <p className="text-warning-600 text-display mt-1">{stats.unratedCount}</p>
         </div>
       </div>
 
@@ -281,8 +260,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       <TwoPaneSplit
         className="mt-8"
         left={
-          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">System Prompt</h2>
+          <div className="border-border bg-surface flex h-full min-w-0 flex-col rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body shrink-0 font-semibold uppercase">System Prompt</h2>
             {isEditable ? (
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
@@ -294,13 +273,13 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                 />
               </div>
             ) : (
-              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">{data.systemPrompt}</pre>
+              <pre className="text-text-secondary text-body mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap">{data.systemPrompt}</pre>
             )}
           </div>
         }
         right={
-          <div className="flex h-full min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-            <h2 className="shrink-0 text-sm font-semibold text-gray-900 uppercase">User Prompt</h2>
+          <div className="border-border bg-surface flex h-full min-w-0 flex-col rounded-lg border p-6 shadow-xs">
+            <h2 className="text-text-primary text-body shrink-0 font-semibold uppercase">User Prompt</h2>
             {isEditable ? (
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
@@ -312,7 +291,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                 />
               </div>
             ) : (
-              <pre className="mt-3 min-h-0 flex-1 overflow-auto text-sm whitespace-pre-wrap text-gray-700">{data.userPrompt}</pre>
+              <pre className="text-text-secondary text-body mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap">{data.userPrompt}</pre>
             )}
           </div>
         }
@@ -320,24 +299,24 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
 
       {/* Generations List */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Generations</h2>
+        <h2 className="text-text-primary text-h3">Generations</h2>
         {generations.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-600">No generations yet for this prompt version.</p>
+          <p className="text-text-secondary text-body mt-4">No generations yet for this prompt version.</p>
         ) : (
-          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="border-border bg-surface mt-4 overflow-hidden rounded-lg border shadow-xs">
+            <table className="divide-border min-w-full divide-y">
+              <thead className="bg-surface-muted">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Inputs</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Outputs</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-600 uppercase">Created</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Rating</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Inputs</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Outputs</th>
+                  <th className="text-text-secondary text-caption px-6 py-3 text-left font-medium tracking-wider uppercase">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
+              <tbody className="divide-border bg-surface divide-y">
                 {generations.map((gen) => (
-                  <tr key={gen.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm whitespace-nowrap">
+                  <tr key={gen.id} className="hover:bg-surface-muted">
+                    <td className="text-body px-6 py-4 whitespace-nowrap">
                       <Link href={`/generations/${gen.id}`}>
                         <div className="flex gap-1">
                           <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
@@ -345,9 +324,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.inputImageCount}</td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{gen.outputImageCount}</td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">{new Date(gen.createdAt).toLocaleDateString()}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{gen.inputImageCount}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{gen.outputImageCount}</td>
+                    <td className="text-text-secondary text-body px-6 py-4 whitespace-nowrap">{new Date(gen.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

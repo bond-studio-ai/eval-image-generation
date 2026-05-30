@@ -34,7 +34,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
   const hasAny = params.scene_accuracy_rating || params.product_accuracy_rating || params.unrated || params.prompt_version_id || params.from || params.to || params.source === "benchmark";
 
   return (
-    <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
+    <div className="border-border bg-surface mt-4 rounded-lg border p-4 shadow-xs">
       <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
         {/* Rating filters */}
         <FilterGroup label="Scene">
@@ -91,7 +91,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
               const id = e.target.value || undefined;
               router.push(buildGenerationsQuery({ ...params, prompt_version_id: id }));
             }}
-            className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:ring-1 focus:outline-none"
+            className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface text-text-secondary text-caption rounded-md border px-2.5 py-1.5 focus:ring-1 focus:outline-none"
           >
             <option value="">All prompts</option>
             {promptVersions.map((pv) => (
@@ -119,8 +119,8 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
       </div>
 
       {hasAny && (
-        <div className="mt-3 border-t border-gray-100 pt-3">
-          <Link href={buildGenerationsQuery({ source: params.source })} className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700">
+        <div className="border-border-subtle mt-3 border-t pt-3">
+          <Link href={buildGenerationsQuery({ source: params.source })} className="text-danger-600 hover:text-danger-700 text-caption inline-flex items-center gap-1 font-medium">
             <XIcon className="size-3.5" />
             Clear all filters
           </Link>
@@ -141,7 +141,7 @@ export function GenerationsFilters(props: GenerationsFiltersProps) {
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs font-medium text-gray-500">{label}:</span>
+      <span className="text-text-muted text-caption font-medium">{label}:</span>
       <div className="flex items-center gap-1">{children}</div>
     </div>
   );
@@ -149,27 +149,27 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 
 const chipVariants = {
   green: {
-    active: "bg-green-100 text-green-800 ring-1 ring-green-300",
-    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    active: "bg-success-100 text-success-800 ring-1 ring-success-300",
+    inactive: "bg-surface-sunken text-text-secondary hover:bg-border"
   },
   red: {
-    active: "bg-red-100 text-red-800 ring-1 ring-red-300",
-    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    active: "bg-danger-100 text-danger-800 ring-1 ring-danger-300",
+    inactive: "bg-surface-sunken text-text-secondary hover:bg-border"
   },
   amber: {
-    active: "bg-amber-100 text-amber-800 ring-1 ring-amber-300",
-    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    active: "bg-warning-100 text-warning-800 ring-1 ring-warning-300",
+    inactive: "bg-surface-sunken text-text-secondary hover:bg-border"
   },
   neutral: {
     active: "bg-primary-100 text-primary-700 ring-1 ring-primary-300",
-    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    inactive: "bg-surface-sunken text-text-secondary hover:bg-border"
   }
 };
 
 function FilterChip({ href, active, variant, children }: { href: string; active: boolean; variant: keyof typeof chipVariants; children: React.ReactNode }) {
   const v = chipVariants[variant];
   return (
-    <Link href={href} className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${active ? v.active : v.inactive}`}>
+    <Link href={href} className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${active ? v.active : v.inactive}`}>
       {children}
     </Link>
   );
@@ -193,9 +193,9 @@ function DateRangeForm({ from, to, onApply }: { from?: string; to?: string; onAp
         aria-label="From date"
         defaultValue={from}
         onKeyDown={applyOnEnter}
-        className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-text-secondary text-caption rounded-md border px-2 py-1 focus:ring-1 focus:outline-none"
       />
-      <span className="text-xs text-gray-400">–</span>
+      <span className="text-text-disabled text-caption">–</span>
       <input
         ref={toRef}
         type="date"
@@ -203,9 +203,9 @@ function DateRangeForm({ from, to, onApply }: { from?: string; to?: string; onAp
         aria-label="To date"
         defaultValue={to}
         onKeyDown={applyOnEnter}
-        className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-text-secondary text-caption rounded-md border px-2 py-1 focus:ring-1 focus:outline-none"
       />
-      <button type="button" onClick={apply} className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+      <button type="button" onClick={apply} className="bg-surface-sunken text-text-secondary hover:bg-border text-caption rounded-md px-2.5 py-1 font-medium">
         Apply
       </button>
     </div>

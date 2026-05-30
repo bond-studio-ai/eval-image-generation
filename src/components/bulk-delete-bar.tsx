@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { TrashIcon } from "@/components/ui/icons";
-import { Spinner } from "@/components/ui/spinner";
 
 interface BulkDeleteBarProps {
   selectedCount: number;
@@ -28,39 +28,31 @@ export function BulkDeleteBar({ selectedCount, onDelete, onClearSelection, entit
   if (selectedCount === 0) return null;
 
   return (
-    <div className="sticky bottom-0 z-10 border-t border-gray-200 bg-white px-4 py-3 shadow-lg">
+    <div className="border-border bg-surface sticky bottom-0 z-10 border-t px-4 py-3 shadow-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="bg-primary-100 text-primary-700 inline-flex items-center rounded-full px-3 py-1 text-sm font-medium">{selectedCount} selected</span>
-          <button type="button" onClick={onClearSelection} className="text-sm text-gray-500 hover:text-gray-700">
+          <span className="bg-primary-100 text-primary-700 text-body inline-flex items-center rounded-full px-3 py-1 font-medium">{selectedCount} selected</span>
+          <Button variant="ghost" size="sm" onClick={onClearSelection}>
             Clear selection
-          </button>
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           {confirming ? (
             <>
-              <span className="text-sm text-red-600">
+              <span className="text-danger-600 text-body">
                 Delete {selectedCount} {entityName}?
               </span>
-              <button type="button" onClick={() => setConfirming(false)} disabled={deleting} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>
                 Cancel
-              </button>
-              <button type="button" onClick={handleDelete} disabled={deleting} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:bg-red-400">
-                {deleting ? (
-                  <>
-                    <Spinner className="size-4" />
-                    Deleting…
-                  </>
-                ) : (
-                  "Confirm Delete"
-                )}
-              </button>
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting} loading={deleting}>
+                {deleting ? "Deleting…" : "Confirm Delete"}
+              </Button>
             </>
           ) : (
-            <button type="button" onClick={() => setConfirming(true)} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
-              <TrashIcon className="size-4" />
+            <Button variant="danger" size="sm" onClick={() => setConfirming(true)} iconLeft={<TrashIcon className="size-4" />}>
               Delete Selected
-            </button>
+            </Button>
           )}
         </div>
       </div>

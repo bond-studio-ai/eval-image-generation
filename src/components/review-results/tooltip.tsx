@@ -82,7 +82,7 @@ export function useTooltip(hint: ReactNode, options: TooltipOptions = {}) {
               transform: align === "start" ? "translateX(0)" : align === "end" ? "translateX(-100%)" : "translateX(-50%)",
               zIndex: 50
             }}
-            className="pointer-events-none rounded bg-gray-900 px-2 py-1.5 text-[11px] leading-snug font-normal tracking-normal whitespace-normal text-white normal-case shadow-lg"
+            className="text-text-inverse bg-text-primary pointer-events-none rounded px-2 py-1.5 text-[11px] leading-snug font-normal tracking-normal whitespace-normal normal-case shadow-lg"
           >
             {hint}
           </span>,

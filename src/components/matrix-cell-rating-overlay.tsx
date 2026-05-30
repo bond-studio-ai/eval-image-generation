@@ -93,17 +93,17 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
 
   function thumbBtnClass(current: Rating, target: "GOOD" | "FAILED") {
     if (current === target) {
-      return target === "GOOD" ? `${btnBase} bg-sky-500 text-white shadow-sm ring-1 ring-sky-400` : `${btnBase} bg-red-500 text-white shadow-sm ring-1 ring-red-400`;
+      return target === "GOOD" ? `${btnBase} bg-primary-500 text-text-inverse shadow-sm ring-1 ring-primary-400` : `${btnBase} bg-danger-500 text-text-inverse shadow-sm ring-1 ring-danger-400`;
     }
-    return target === "GOOD" ? `${btnBase} text-sky-300 hover:bg-sky-500/30 hover:text-sky-200` : `${btnBase} text-red-300 hover:bg-red-500/30 hover:text-red-200`;
+    return target === "GOOD" ? `${btnBase} text-primary-300 hover:bg-primary-500/30 hover:text-primary-200` : `${btnBase} text-danger-300 hover:bg-danger-500/30 hover:text-danger-200`;
   }
 
   return (
     <div
-      className={`absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2 pt-8 pb-2 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
+      className={`from-overlay/70 absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t to-transparent px-2 pt-8 pb-2 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex gap-4 text-white">
+      <div className="text-text-inverse flex gap-4">
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">Scene</span>
           <div className="flex gap-1">

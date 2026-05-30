@@ -30,16 +30,16 @@ const TIMELINE_STEP_LABELS: Record<string, string> = {
  * this map get a neutral gray.
  */
 const TIMELINE_STEP_COLORS: Record<string, string> = {
-  lookup_result_id: "bg-slate-300",
-  lookup_existing_segmentation: "bg-slate-300",
-  lookup_result_row: "bg-slate-300",
-  lookup_input_row: "bg-slate-300",
-  build_prompts: "bg-slate-300",
-  delete_existing: "bg-amber-300",
-  sam_fanout: "bg-purple-400",
-  overlay_build: "bg-blue-400",
-  overlay_upload: "bg-emerald-400",
-  persist: "bg-slate-400"
+  lookup_result_id: "bg-border-strong",
+  lookup_existing_segmentation: "bg-border-strong",
+  lookup_result_row: "bg-border-strong",
+  lookup_input_row: "bg-border-strong",
+  build_prompts: "bg-border-strong",
+  delete_existing: "bg-warning-300",
+  sam_fanout: "bg-accent-400",
+  overlay_build: "bg-primary-400",
+  overlay_upload: "bg-success-400",
+  persist: "bg-text-disabled"
 };
 
 function timelineStepLabel(name: string): string {
@@ -47,7 +47,7 @@ function timelineStepLabel(name: string): string {
 }
 
 function timelineStepColor(name: string): string {
-  return TIMELINE_STEP_COLORS[name] ?? "bg-gray-400";
+  return TIMELINE_STEP_COLORS[name] ?? "bg-text-disabled";
 }
 
 /**
@@ -99,49 +99,49 @@ function SegmentationTimelineSection({ timings, lookup }: { timings: Segmentatio
 
   return (
     <div>
-      <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5">
+      <div className="border-border bg-surface-muted rounded-md border px-3 py-2.5">
         <div className="flex flex-col gap-1.5">
           {timings.steps.map((step, idx) => {
             const widthPct = Math.max((step.durationMs / inferredTotal) * 100, 0.5);
             const leftPct = Math.min((step.startMs / inferredTotal) * 100, 99.5);
             const sharePct = (step.durationMs / inferredTotal) * 100;
             return (
-              <div key={`${step.name}-${idx}`} className="flex items-center gap-2 text-[11px] text-gray-700">
+              <div key={`${step.name}-${idx}`} className="text-text-secondary flex items-center gap-2 text-[11px]">
                 <span className="w-36 shrink-0 truncate" title={timelineStepLabel(step.name)}>
                   {timelineStepLabel(step.name)}
                 </span>
-                <div className="relative h-3 flex-1 overflow-hidden rounded bg-white ring-1 ring-gray-200">
+                <div className="bg-surface ring-border relative h-3 flex-1 overflow-hidden rounded ring-1">
                   <div
                     className={`absolute top-0 bottom-0 ${timelineStepColor(step.name)}`}
                     style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                     title={`Started at ${formatMs(step.startMs)}, took ${formatMs(step.durationMs)} (${sharePct.toFixed(1)}%)`}
                   />
                 </div>
-                <span className="w-16 shrink-0 text-right text-gray-600 tabular-nums">{formatMs(step.durationMs)}</span>
+                <span className="text-text-secondary w-16 shrink-0 text-right tabular-nums">{formatMs(step.durationMs)}</span>
               </div>
             );
           })}
         </div>
         {perCategoryRows.length > 0 && (
-          <div className="mt-3 border-t border-gray-200 pt-2">
-            <p className="mb-1.5 text-[10px] font-semibold tracking-wide text-gray-500 uppercase">SAM per category</p>
+          <div className="border-border mt-3 border-t pt-2">
+            <p className="text-text-muted mb-1.5 text-[10px] font-semibold tracking-wide uppercase">SAM per category</p>
             <div className="flex flex-col gap-1">
               {perCategoryRows.map((row) => (
-                <div key={row.category} className="flex items-center gap-2 text-[11px] text-gray-700">
+                <div key={row.category} className="text-text-secondary flex items-center gap-2 text-[11px]">
                   <span className="w-36 shrink-0 truncate" title={`${lookup.label(row.category)} — ${row.prompt}`}>
                     {lookup.label(row.category)}
                   </span>
-                  <div className="relative h-2 flex-1 overflow-hidden rounded bg-white ring-1 ring-gray-200">
+                  <div className="bg-surface ring-border relative h-2 flex-1 overflow-hidden rounded ring-1">
                     <div
-                      className={`absolute inset-y-0 left-0 ${row.ok ? "bg-purple-300" : "bg-rose-300"}`}
+                      className={`absolute inset-y-0 left-0 ${row.ok ? "bg-accent-300" : "bg-danger-300"}`}
                       style={{
                         width: `${Math.max((row.durationMs / Math.max(samStep?.durationMs ?? row.durationMs, 1)) * 100, 1)}%`
                       }}
                     />
                   </div>
-                  <span className="w-16 shrink-0 text-right text-gray-600 tabular-nums">{formatMs(row.durationMs)}</span>
+                  <span className="text-text-secondary w-16 shrink-0 text-right tabular-nums">{formatMs(row.durationMs)}</span>
                   {!row.ok && (
-                    <span className="shrink-0 rounded bg-rose-50 px-1 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-rose-200" title={row.error}>
+                    <span className="bg-danger-50 text-danger-700 ring-danger-200 shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold ring-1" title={row.error}>
                       failed
                     </span>
                   )}
@@ -175,16 +175,16 @@ export function CollapsibleTimeline({ timings, lookup }: { timings: Segmentation
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+        className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >
         <span className="flex items-center gap-2">
-          <ChevronIcon className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? "rotate-90" : ""}`} />
-          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Execution timeline</span>
-          <span className="text-[11px] font-normal text-gray-500">
+          <ChevronIcon className={`text-text-muted h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+          <span className="text-text-secondary text-caption font-semibold tracking-wide uppercase">Execution timeline</span>
+          <span className="text-text-muted text-[11px] font-normal">
             {stepCount} {stepCount === 1 ? "step" : "steps"}
           </span>
         </span>
-        <span className="text-[11px] text-gray-500 tabular-nums">{formatMs(timings.totalMs)} total</span>
+        <span className="text-text-muted text-[11px] tabular-nums">{formatMs(timings.totalMs)} total</span>
       </button>
       {open && (
         <div className="mt-2">

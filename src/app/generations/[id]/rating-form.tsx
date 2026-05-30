@@ -5,8 +5,8 @@ import { useState } from "react";
 import { serviceUrl } from "@/lib/api-base";
 
 const options = [
-  { value: "GOOD", label: "Good", color: "bg-green-100 text-green-700 hover:bg-green-200" },
-  { value: "FAILED", label: "Failed", color: "bg-orange-100 text-orange-700 hover:bg-orange-200" }
+  { value: "GOOD", label: "Good", color: "bg-success-100 text-success-700 hover:bg-success-200" },
+  { value: "FAILED", label: "Failed", color: "bg-warning-100 text-warning-700 hover:bg-warning-200" }
 ];
 
 interface RatingFormProps {
@@ -20,7 +20,7 @@ interface RatingFormProps {
 function RatingRow({ label, current, onRate, disabled }: { label: string; current: string | null; onRate: (value: string) => void; disabled: boolean }) {
   return (
     <div className="flex items-center gap-4">
-      <span className="w-36 shrink-0 text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-text-secondary text-body w-36 shrink-0 font-medium">{label}</span>
       <div className="flex flex-wrap gap-2">
         {options.map((r) => (
           <button
@@ -28,7 +28,7 @@ function RatingRow({ label, current, onRate, disabled }: { label: string; curren
             type="button"
             onClick={() => onRate(r.value)}
             disabled={disabled}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${current === r.value ? `${r.color} ring-2 ring-current ring-offset-1` : r.color}`}
+            className={`text-body rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50 ${current === r.value ? `${r.color} ring-2 ring-current ring-offset-1` : r.color}`}
           >
             {r.label}
           </button>

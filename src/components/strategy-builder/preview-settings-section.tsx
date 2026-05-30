@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { Card } from "@/components/ui/card";
 import { SearchableSelect } from "./searchable-select";
 import { defaultPreviewSettings, PREVIEW_RESOLUTIONS, type ModelOption, type PreviewSettings } from "./types";
 
@@ -16,7 +17,7 @@ export function PreviewSettingsSection({
   defaultPreviewModel: string;
 }) {
   return (
-    <div className="rounded-card border-border bg-surface shadow-card border p-5">
+    <Card padding="md">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-h3 text-text-primary font-semibold">Preview Generation</h2>
@@ -39,27 +40,27 @@ export function PreviewSettingsSection({
             }}
             className="peer sr-only"
           />
-          <div className="peer peer-checked:bg-primary-600 peer-focus:ring-primary-300 h-5 w-9 rounded-full bg-gray-200 peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white" />
+          <div className="peer peer-checked:bg-primary-600 peer-focus:ring-primary-300 after:border-border-strong after:bg-surface bg-border peer-checked:after:border-text-inverse h-5 w-9 rounded-full peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:transition-all after:content-[''] peer-checked:after:translate-x-full" />
         </label>
       </div>
 
       {previewSettings.preview_model !== null && (
-        <div className="mt-4 grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
+        <div className="border-border-subtle mt-4 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-2">
           <div>
-            <label htmlFor="preview-model" className="mb-1 block text-xs font-medium text-gray-600">
+            <label htmlFor="preview-model" className="text-text-secondary text-caption mb-1 block font-medium">
               Preview Model
             </label>
             <SearchableSelect id="preview-model" value={previewSettings.preview_model} options={previewModels} onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))} />
           </div>
           <div>
-            <label htmlFor="preview-resolution" className="mb-1 block text-xs font-medium text-gray-600">
+            <label htmlFor="preview-resolution" className="text-text-secondary text-caption mb-1 block font-medium">
               Preview Resolution
             </label>
             <select
               id="preview-resolution"
               value={previewSettings.preview_resolution}
               onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
-              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+              className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
             >
               {PREVIEW_RESOLUTIONS.map((r) => (
                 <option key={r} value={r}>
@@ -70,6 +71,6 @@ export function PreviewSettingsSection({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

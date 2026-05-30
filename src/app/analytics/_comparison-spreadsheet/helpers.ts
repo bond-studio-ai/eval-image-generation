@@ -1,12 +1,12 @@
 import type { CategoryRate, IssueItem, StepPerformanceRow, SummaryData } from "./types";
 
 export const SLICE_BG_COLORS = [
-  { header: "bg-amber-50", headerBorder: "border-amber-200" },
-  { header: "bg-blue-50", headerBorder: "border-blue-200" },
-  { header: "bg-emerald-50", headerBorder: "border-emerald-200" },
-  { header: "bg-violet-50", headerBorder: "border-violet-200" },
-  { header: "bg-rose-50", headerBorder: "border-rose-200" },
-  { header: "bg-cyan-50", headerBorder: "border-cyan-200" }
+  { header: "bg-warning-50", headerBorder: "border-warning-200" },
+  { header: "bg-primary-50", headerBorder: "border-primary-200" },
+  { header: "bg-success-50", headerBorder: "border-success-200" },
+  { header: "bg-accent-50", headerBorder: "border-accent-200" },
+  { header: "bg-danger-50", headerBorder: "border-danger-200" },
+  { header: "bg-info-50", headerBorder: "border-info-200" }
 ];
 
 export function formatCategoryName(name: string): string {

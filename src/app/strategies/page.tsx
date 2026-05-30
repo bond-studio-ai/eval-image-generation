@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
+import { LinkButton } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 import { StrategiesTable } from "./strategies-table";
 
 export const metadata: Metadata = {
@@ -16,9 +18,9 @@ export default function StrategiesPage() {
         title="Strategies"
         subtitle="Multi-step workflows that chain generations together."
         actions={
-          <PrimaryLinkButton href="/strategies/new" icon>
+          <LinkButton href="/strategies/new" iconLeft={<PlusIcon className="size-4" />}>
             New Strategy
-          </PrimaryLinkButton>
+          </LinkButton>
         }
       />
       <StrategiesTable />

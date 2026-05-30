@@ -72,14 +72,14 @@ function DropdownWithSearch({ containerRef, triggerId, open, setOpen, search, se
         type="button"
         id={triggerId}
         onClick={() => setOpen(!open)}
-        className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-xs transition-colors hover:border-gray-300 focus:ring-1"
+        className="focus:border-primary-500 focus:ring-primary-500 border-border bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left shadow-xs transition-colors focus:ring-1"
       >
-        <span className={selectedLabel ? "text-gray-900" : "text-gray-500"}>{selectedLabel || placeholder}</span>
-        <ChevronDownIcon className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className={selectedLabel ? "text-text-primary" : "text-text-muted"}>{selectedLabel || placeholder}</span>
+        <ChevronDownIcon className={`text-text-disabled h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-          <div className="border-b border-gray-200 p-2">
+        <div className="border-border bg-surface absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-hidden rounded-lg border shadow-lg">
+          <div className="border-border border-b p-2">
             <input
               ref={focusOnMount}
               type="text"
@@ -87,12 +87,12 @@ function DropdownWithSearch({ containerRef, triggerId, open, setOpen, search, se
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
               aria-label="Search"
-              className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:ring-1"
+              className="focus:border-primary-500 focus:ring-primary-500 border-border text-body w-full rounded-md border px-3 py-1.5 focus:ring-1"
             />
           </div>
           <ul className="max-h-48 overflow-auto py-1">
             {options.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-gray-500">{emptyMessage}</li>
+              <li className="text-text-muted text-body px-3 py-2">{emptyMessage}</li>
             ) : (
               options.map((option) => (
                 <li key={option.id}>
@@ -102,7 +102,7 @@ function DropdownWithSearch({ containerRef, triggerId, open, setOpen, search, se
                       onSelectId(option.id);
                       setOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${selectedId === option.id ? "bg-primary-50 text-primary-800" : "text-gray-900"}`}
+                    className={`hover:bg-surface-muted text-body w-full px-3 py-2 text-left ${selectedId === option.id ? "bg-primary-50 text-primary-800" : "text-text-primary"}`}
                   >
                     {option.label}
                   </button>
@@ -291,19 +291,19 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
         </div>
       )}
 
-      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <p className="text-sm font-medium text-gray-700">Hardcoded dollhouse source</p>
-        <p className="mt-1 text-sm text-gray-900">{dollhouseSource?.projectLabel ?? "Unavailable"}</p>
-        <p className="mt-2 text-sm text-gray-600">Input presets remain the base preview context. Selecting an area layers in hardcoded `dollhouse.*` attributes on top.</p>
+      <div className="border-border bg-surface mt-6 rounded-lg border p-5 shadow-xs">
+        <p className="text-text-secondary text-body font-medium">Hardcoded dollhouse source</p>
+        <p className="text-text-primary text-body mt-1">{dollhouseSource?.projectLabel ?? "Unavailable"}</p>
+        <p className="text-text-secondary text-body mt-2">Input presets remain the base preview context. Selecting an area layers in hardcoded `dollhouse.*` attributes on top.</p>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="min-w-0">
-          <label htmlFor="preview-prompt-version" className="mb-1.5 block text-xs font-medium text-gray-600">
+          <label htmlFor="preview-prompt-version" className="text-text-secondary text-caption mb-1.5 block font-medium">
             Prompt version
           </label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="border-border bg-surface-muted text-text-muted text-body rounded-lg border px-3 py-2">Loading…</p>
           ) : (
             <DropdownWithSearch
               containerRef={promptRef}
@@ -325,11 +325,11 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
           )}
         </div>
         <div className="min-w-0">
-          <label htmlFor="preview-input-preset" className="mb-1.5 block text-xs font-medium text-gray-600">
+          <label htmlFor="preview-input-preset" className="text-text-secondary text-caption mb-1.5 block font-medium">
             Input preset
           </label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="border-border bg-surface-muted text-text-muted text-body rounded-lg border px-3 py-2">Loading…</p>
           ) : (
             <DropdownWithSearch
               containerRef={presetRef}
@@ -351,11 +351,11 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
           )}
         </div>
         <div className="min-w-0">
-          <label htmlFor="preview-dollhouse-area" className="mb-1.5 block text-xs font-medium text-gray-600">
+          <label htmlFor="preview-dollhouse-area" className="text-text-secondary text-caption mb-1.5 block font-medium">
             Dollhouse area
           </label>
           {loadingOptions ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">Loading…</p>
+            <p className="border-border bg-surface-muted text-text-muted text-body rounded-lg border px-3 py-2">Loading…</p>
           ) : (
             <DropdownWithSearch
               containerRef={areaRef}
@@ -376,15 +376,15 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-          <p className="text-sm font-medium text-gray-700">Selected preset</p>
-          <p className="mt-1 text-sm text-gray-900">{selectedPreset?.name ?? "None selected"}</p>
-          <p className="mt-2 text-xs text-gray-500">Preset content remains the base prompt preview context.</p>
+        <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Selected preset</p>
+          <p className="text-text-primary text-body mt-1">{selectedPreset?.name ?? "None selected"}</p>
+          <p className="text-text-muted text-caption mt-2">Preset content remains the base prompt preview context.</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-          <p className="text-sm font-medium text-gray-700">Selected dollhouse area</p>
-          <p className="mt-1 text-sm text-gray-900">{selectedArea?.summary ?? "None selected"}</p>
-          <p className="mt-2 text-xs break-all text-gray-500">{selectedArea?.imageUrl ?? "The selected preset will still preview normally without dollhouse attributes."}</p>
+        <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+          <p className="text-text-secondary text-body font-medium">Selected dollhouse area</p>
+          <p className="text-text-primary text-body mt-1">{selectedArea?.summary ?? "None selected"}</p>
+          <p className="text-text-muted text-caption mt-2 break-all">{selectedArea?.imageUrl ?? "The selected preset will still preview normally without dollhouse attributes."}</p>
         </div>
       </div>
 
@@ -393,17 +393,17 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
           <ErrorCard message={error} />
         </div>
       )}
-      {loading && <p className="mt-4 text-sm text-gray-500">Loading preview…</p>}
+      {loading && <p className="text-text-muted text-body mt-4">Loading preview…</p>}
 
       {previews.length > 0 && !loading && (
-        <div className="mt-8 grid h-[65vh] min-h-[300px] grid-cols-1 grid-rows-1 gap-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs sm:grid-cols-2">
+        <div className="border-border bg-surface mt-8 grid h-[65vh] min-h-[300px] grid-cols-1 grid-rows-1 gap-6 rounded-lg border p-6 shadow-xs sm:grid-cols-2">
           <div className="flex min-h-0 min-w-0 flex-col">
-            <h2 className="mb-2 shrink-0 text-sm font-semibold text-gray-500 uppercase">System prompt</h2>
-            <pre className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap text-gray-800">{previews[0]?.systemPrompt || "(empty)"}</pre>
+            <h2 className="text-text-muted text-body mb-2 shrink-0 font-semibold uppercase">System prompt</h2>
+            <pre className="border-border bg-surface-muted text-text-secondary text-body min-h-0 flex-1 overflow-y-auto rounded-lg border p-4 whitespace-pre-wrap">{previews[0]?.systemPrompt || "(empty)"}</pre>
           </div>
           <div className="flex min-h-0 min-w-0 flex-col">
-            <h2 className="mb-2 shrink-0 text-sm font-semibold text-gray-500 uppercase">User prompt</h2>
-            <pre className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap text-gray-800">{previews[0]?.userPrompt || "(empty)"}</pre>
+            <h2 className="text-text-muted text-body mb-2 shrink-0 font-semibold uppercase">User prompt</h2>
+            <pre className="border-border bg-surface-muted text-text-secondary text-body min-h-0 flex-1 overflow-y-auto rounded-lg border p-4 whitespace-pre-wrap">{previews[0]?.userPrompt || "(empty)"}</pre>
           </div>
         </div>
       )}

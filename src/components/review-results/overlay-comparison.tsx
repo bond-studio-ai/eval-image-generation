@@ -32,14 +32,14 @@ export function OverlayComparison({ overlayUrl, productMaskUrl }: { overlayUrl: 
   return (
     <div className="mb-5">
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <h4 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">{hasComparison ? "Overlay vs dollhouse mask" : "Combined overlay"}</h4>
-        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-purple-700 hover:text-purple-900 hover:underline">
+        <h4 className="text-text-secondary text-caption font-semibold tracking-wide uppercase">{hasComparison ? "Overlay vs dollhouse mask" : "Combined overlay"}</h4>
+        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="text-accent-700 hover:text-accent-900 text-[11px] hover:underline">
           Open full image
         </a>
       </div>
       {hasComparison ? (
         <>
-          <div className="relative aspect-[4/3] max-h-[480px] w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+          <div className="border-border bg-surface-muted relative aspect-[4/3] max-h-[480px] w-full overflow-hidden rounded-md border">
             <ComparisonSlider
               leftImageUrl={productMaskUrl}
               rightImageUrl={overlayUrl}
@@ -51,10 +51,10 @@ export function OverlayComparison({ overlayUrl, productMaskUrl }: { overlayUrl: 
               rightLabel="Segmentation overlay"
             />
           </div>
-          <p className="mt-1.5 text-center text-[10px] text-gray-500">Drag the bar to reveal the dollhouse product mask underneath. Defaults to 100% overlay.</p>
+          <p className="text-text-muted mt-1.5 text-center text-[10px]">Drag the bar to reveal the dollhouse product mask underneath. Defaults to 100% overlay.</p>
         </>
       ) : (
-        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="relative block w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+        <a href={overlayUrl} target="_blank" rel="noopener noreferrer" className="border-border bg-surface-muted relative block w-full overflow-hidden rounded-md border">
           <SkeletonImage src={overlayUrl} alt="Combined segmentation overlay (all categories tinted)" containerClassName="aspect-[4/3] max-h-[480px] w-full" imgClassName="block h-full w-full object-contain" />
         </a>
       )}

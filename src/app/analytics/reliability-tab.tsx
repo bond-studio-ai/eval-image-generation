@@ -14,10 +14,10 @@ interface ReliabilityTabProps {
 
 function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext?: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-      <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
-      {subtext && <p className="mt-1 text-xs text-gray-500">{subtext}</p>}
+    <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+      <p className="text-text-secondary text-body font-medium">{label}</p>
+      <p className="text-text-primary text-display-lg mt-2">{value}</p>
+      {subtext && <p className="text-text-muted text-caption mt-1">{subtext}</p>}
     </div>
   );
 }
@@ -25,9 +25,9 @@ function StatCard({ label, value, subtext }: { label: string; value: string | nu
 function ErrorTable({ title, errors }: { title: string; errors: { reason: string; count: number }[] }) {
   if (errors.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <p className="mt-3 text-sm text-gray-400">No errors in this period.</p>
+      <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+        <h3 className="text-text-primary text-body font-semibold">{title}</h3>
+        <p className="text-text-disabled text-body mt-3">No errors in this period.</p>
       </div>
     );
   }
@@ -35,19 +35,19 @@ function ErrorTable({ title, errors }: { title: string; errors: { reason: string
   const maxCount = Math.max(...errors.map((e) => e.count), 1);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+      <h3 className="text-text-primary text-body font-semibold">{title}</h3>
       <div className="mt-4 space-y-3">
         {errors.map((err, index) => (
           <div key={`${index}-${err.reason}`}>
-            <div className="flex items-center justify-between text-sm">
-              <span className="max-w-md truncate text-gray-700" title={err.reason}>
+            <div className="text-body flex items-center justify-between">
+              <span className="text-text-secondary max-w-md truncate" title={err.reason}>
                 {err.reason}
               </span>
-              <span className="ml-4 shrink-0 font-mono text-sm font-medium text-gray-900">{err.count}</span>
+              <span className="text-text-primary text-body ml-4 shrink-0 font-mono font-medium">{err.count}</span>
             </div>
-            <div className="mt-1 h-2 w-full rounded-full bg-gray-100">
-              <div className="h-2 rounded-full bg-red-400 transition-all duration-300" style={{ width: `${(err.count / maxCount) * 100}%` }} />
+            <div className="bg-surface-sunken mt-1 h-2 w-full rounded-full">
+              <div className="bg-danger-400 h-2 rounded-full transition-all duration-300" style={{ width: `${(err.count / maxCount) * 100}%` }} />
             </div>
           </div>
         ))}
@@ -59,9 +59,9 @@ function ErrorTable({ title, errors }: { title: string; errors: { reason: string
 function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
   if (trends.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-        <h3 className="text-sm font-semibold text-gray-900">Failure Trends</h3>
-        <p className="mt-3 text-sm text-gray-400">No data available for this period.</p>
+      <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+        <h3 className="text-text-primary text-body font-semibold">Failure Trends</h3>
+        <p className="text-text-disabled text-body mt-3">No data available for this period.</p>
       </div>
     );
   }
@@ -69,20 +69,20 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
   const maxRuns = Math.max(...trends.map((t) => t.totalRuns), 1);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
-      <h3 className="text-sm font-semibold text-gray-900">Daily Failure Trends</h3>
-      <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+    <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
+      <h3 className="text-text-primary text-body font-semibold">Daily Failure Trends</h3>
+      <div className="text-text-muted text-caption mt-2 flex items-center gap-4">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-full bg-gray-300" /> Total runs
+          <span className="bg-border-strong inline-block size-2.5 rounded-full" /> Total runs
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-full bg-red-400" /> Failed runs
+          <span className="bg-danger-400 inline-block size-2.5 rounded-full" /> Failed runs
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-full bg-amber-400" /> Timeouts
+          <span className="bg-warning-400 inline-block size-2.5 rounded-full" /> Timeouts
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-full bg-purple-400" /> Judge failures
+          <span className="bg-accent-400 inline-block size-2.5 rounded-full" /> Judge failures
         </span>
       </div>
       <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
@@ -94,10 +94,10 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
           return (
             <div key={t.period} className="group relative flex flex-1 flex-col items-center" title={`${label}: ${t.totalRuns} runs, ${t.failedRuns} failed, ${t.timedOutSteps} timeouts, ${t.judgeFailures} judge failures`}>
               <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: t.totalRuns > 0 ? 4 : 0 }}>
-                <div className="absolute bottom-0 w-full rounded-t bg-gray-200" style={{ height: "100%" }} />
-                <div className="absolute bottom-0 w-full rounded-t bg-red-400" style={{ height: `${failedH}%` }} />
+                <div className="bg-border absolute bottom-0 w-full rounded-t" style={{ height: "100%" }} />
+                <div className="bg-danger-400 absolute bottom-0 w-full rounded-t" style={{ height: `${failedH}%` }} />
               </div>
-              {i % Math.max(1, Math.floor(trends.length / 10)) === 0 && <span className="mt-1 text-[9px] text-gray-400">{label}</span>}
+              {i % Math.max(1, Math.floor(trends.length / 10)) === 0 && <span className="text-text-disabled mt-1 text-[9px]">{label}</span>}
             </div>
           );
         })}
@@ -141,13 +141,13 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-12">
-        <div className="border-t-primary-600 size-8 animate-spin rounded-full border-4 border-gray-300" />
+        <div className="border-t-primary-600 border-border-strong size-8 animate-spin rounded-full border-4" />
       </div>
     );
   }
 
   if (!data) {
-    return <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">Failed to load reliability data.</div>;
+    return <div className="border-border bg-surface text-text-muted text-body mt-6 rounded-lg border p-6 text-center">Failed to load reliability data.</div>;
   }
 
   return (

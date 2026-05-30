@@ -160,18 +160,18 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
 
   if (loading) {
     return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
-        <p className="mt-4 text-sm text-gray-500">Loading…</p>
+      <div className="border-border bg-surface mt-8 rounded-lg border p-6 shadow-xs">
+        <h2 className="text-text-primary text-h3">Strategy performance</h2>
+        <p className="text-text-muted text-body mt-4">Loading…</p>
       </div>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-        <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
-        <p className="mt-4 text-sm text-gray-600">No strategies or runs yet.</p>
+      <div className="border-border bg-surface mt-8 rounded-lg border p-6 shadow-xs">
+        <h2 className="text-text-primary text-h3">Strategy performance</h2>
+        <p className="text-text-secondary text-body mt-4">No strategies or runs yet.</p>
       </div>
     );
   }
@@ -179,13 +179,13 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
   const COL_SPAN = 7;
 
   return (
-    <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-      <h2 className="text-lg font-semibold text-gray-900">Strategy performance</h2>
-      <p className="mt-1 text-sm text-gray-600">Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue breakdown, failure reasons, and product category rates.</p>
+    <div className="border-border bg-surface mt-8 rounded-lg border p-6 shadow-xs">
+      <h2 className="text-text-primary text-h3">Strategy performance</h2>
+      <p className="text-text-secondary text-body mt-1">Scene and product accuracy percentages per strategy. Expand a row to see evaluation issue breakdown, failure reasons, and product category rates.</p>
       <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="divide-border min-w-full divide-y">
           <StrategyTableHeader sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-border-subtle divide-y">
             {sortedRows.map((row) => (
               <StrategyTableRow
                 key={row.id}

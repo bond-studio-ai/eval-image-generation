@@ -131,7 +131,7 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
 
   return (
     <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4", containerClassName)}>
-      <div className={cn("absolute inset-0 bg-black/40", backdropClassName)} aria-hidden="true" onClick={onClose} />
+      <div className={cn("bg-overlay/40 absolute inset-0", backdropClassName)} aria-hidden="true" onClick={onClose} />
       <dialog ref={dialogRef} open aria-modal="true" aria-label={ariaLabel} aria-labelledby={labelledById} tabIndex={-1} className={cn("rounded-card bg-surface shadow-modal relative m-0 w-full max-w-md", className)}>
         {children}
       </dialog>

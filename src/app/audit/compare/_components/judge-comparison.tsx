@@ -24,18 +24,18 @@ export function JudgeComparison({ left, right }: { left: RunData; right: RunData
       {(left.judgeResults.length > 0 || right.judgeResults.length > 0) && (
         <>
           {!(left.judgeResults.length === 1 && right.judgeResults.length === 1) && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-              <h3 className="text-xs font-semibold tracking-wider text-amber-900 uppercase">Aggregated (average)</h3>
+            <div className="border-warning-200 bg-warning-50/40 rounded-lg border p-4">
+              <h3 className="text-warning-900 text-caption font-semibold tracking-wider uppercase">Aggregated (average)</h3>
               <div className="mt-2 grid grid-cols-2 gap-4">
-                <div className="rounded-md bg-white p-3 ring-1 ring-amber-200/60">
-                  <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Left score</p>
-                  <p className="mt-1 text-lg font-bold text-gray-800">{left.judgeScore ?? "N/A"}</p>
-                  {left.isJudgeSelected && <p className="text-xs text-amber-600">Selected</p>}
+                <div className="bg-surface ring-warning-200/60 rounded-md p-3 ring-1">
+                  <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Left score</p>
+                  <p className="text-text-secondary text-h3 mt-1">{left.judgeScore ?? "N/A"}</p>
+                  {left.isJudgeSelected && <p className="text-warning-600 text-caption">Selected</p>}
                 </div>
-                <div className="rounded-md bg-white p-3 ring-1 ring-amber-200/60">
-                  <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Right score</p>
-                  <p className="mt-1 text-lg font-bold text-gray-800">{right.judgeScore ?? "N/A"}</p>
-                  {right.isJudgeSelected && <p className="text-xs text-amber-600">Selected</p>}
+                <div className="bg-surface ring-warning-200/60 rounded-md p-3 ring-1">
+                  <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Right score</p>
+                  <p className="text-text-secondary text-h3 mt-1">{right.judgeScore ?? "N/A"}</p>
+                  {right.isJudgeSelected && <p className="text-warning-600 text-caption">Selected</p>}
                 </div>
               </div>
               {(left.judgeReasoning || right.judgeReasoning) && (
@@ -63,20 +63,20 @@ export function JudgeComparison({ left, right }: { left: RunData; right: RunData
             const name = lj?.judgeName || rj?.judgeName;
             const label = name || lj?.judgeModel || rj?.judgeModel || judgeId.slice(0, 8);
             return (
-              <div key={judgeId} className="rounded-lg border border-indigo-200 bg-white shadow-xs">
-                <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">
-                  <span className="text-sm font-semibold text-indigo-800">Judge: {label}</span>
-                  <p className="mt-0.5 text-[11px] text-indigo-700/80">Matched by judge configuration ID</p>
+              <div key={judgeId} className="border-primary-200 bg-surface rounded-lg border shadow-xs">
+                <div className="border-primary-200 bg-primary-50 border-b px-4 py-3">
+                  <span className="text-primary-800 text-body font-semibold">Judge: {label}</span>
+                  <p className="text-primary-700/80 mt-0.5 text-[11px]">Matched by judge configuration ID</p>
                 </div>
                 <div className="space-y-4 p-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-md bg-gray-50 p-3">
-                      <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Left raw score</p>
-                      <p className="mt-1 text-lg font-bold text-gray-800">{lj?.judgeScore ?? "N/A"}</p>
+                    <div className="bg-surface-muted rounded-md p-3">
+                      <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Left raw score</p>
+                      <p className="text-text-secondary text-h3 mt-1">{lj?.judgeScore ?? "N/A"}</p>
                     </div>
-                    <div className="rounded-md bg-gray-50 p-3">
-                      <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Right raw score</p>
-                      <p className="mt-1 text-lg font-bold text-gray-800">{rj?.judgeScore ?? "N/A"}</p>
+                    <div className="bg-surface-muted rounded-md p-3">
+                      <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Right raw score</p>
+                      <p className="text-text-secondary text-h3 mt-1">{rj?.judgeScore ?? "N/A"}</p>
                     </div>
                   </div>
                   {(lj?.judgeReasoning || rj?.judgeReasoning) && (
@@ -127,24 +127,24 @@ export function JudgeComparison({ left, right }: { left: RunData; right: RunData
       )}
 
       {left.judgeResults.length === 0 && right.judgeResults.length === 0 && (
-        <div className="rounded-lg border border-indigo-200 bg-white shadow-xs">
-          <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3">
-            <span className="text-sm font-semibold text-indigo-800">Judge</span>
+        <div className="border-primary-200 bg-surface rounded-lg border shadow-xs">
+          <div className="border-primary-200 bg-primary-50 border-b px-4 py-3">
+            <span className="text-primary-800 text-body font-semibold">Judge</span>
           </div>
 
           <div className="space-y-4 p-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-md bg-gray-50 p-3">
-                <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Score</p>
-                <p className="mt-1 text-lg font-bold text-gray-800">{left.judgeScore ?? "N/A"}</p>
-                {left.isJudgeSelected && <p className="text-xs text-amber-600">Selected</p>}
-                {left.judgeReasoning && <p className="mt-1 text-xs text-gray-600">{left.judgeReasoning}</p>}
+              <div className="bg-surface-muted rounded-md p-3">
+                <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Score</p>
+                <p className="text-text-secondary text-h3 mt-1">{left.judgeScore ?? "N/A"}</p>
+                {left.isJudgeSelected && <p className="text-warning-600 text-caption">Selected</p>}
+                {left.judgeReasoning && <p className="text-text-secondary text-caption mt-1">{left.judgeReasoning}</p>}
               </div>
-              <div className="rounded-md bg-gray-50 p-3">
-                <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Score</p>
-                <p className="mt-1 text-lg font-bold text-gray-800">{right.judgeScore ?? "N/A"}</p>
-                {right.isJudgeSelected && <p className="text-xs text-amber-600">Selected</p>}
-                {right.judgeReasoning && <p className="mt-1 text-xs text-gray-600">{right.judgeReasoning}</p>}
+              <div className="bg-surface-muted rounded-md p-3">
+                <p className="text-text-disabled text-[10px] font-semibold tracking-wider uppercase">Score</p>
+                <p className="text-text-secondary text-h3 mt-1">{right.judgeScore ?? "N/A"}</p>
+                {right.isJudgeSelected && <p className="text-warning-600 text-caption">Selected</p>}
+                {right.judgeReasoning && <p className="text-text-secondary text-caption mt-1">{right.judgeReasoning}</p>}
               </div>
             </div>
 

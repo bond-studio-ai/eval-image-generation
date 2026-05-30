@@ -33,31 +33,31 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+        className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >
         <span className="flex items-center gap-2">
-          <ChevronIcon className={`h-3.5 w-3.5 text-gray-500 transition-transform ${open ? "rotate-90" : ""}`} />
-          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Depth drift</span>
+          <ChevronIcon className={`text-text-muted h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+          <span className="text-text-secondary text-caption font-semibold tracking-wide uppercase">Depth drift</span>
           {computed && depth && (
-            <span className="text-[11px] font-normal text-gray-500">
+            <span className="text-text-muted text-[11px] font-normal">
               {depth.width}×{depth.height}
             </span>
           )}
         </span>
         <span className="text-[11px] tabular-nums">
           {computed && metrics?.absRel !== null && metrics?.absRel !== undefined ? (
-            <span className="text-gray-700">
-              <span className="font-semibold">{formatNumber(metrics.absRel, 3)}</span> <span className="text-gray-500">AbsRel</span>
+            <span className="text-text-secondary">
+              <span className="font-semibold">{formatNumber(metrics.absRel, 3)}</span> <span className="text-text-muted">AbsRel</span>
             </span>
           ) : (
-            <span className="text-gray-500">unavailable</span>
+            <span className="text-text-muted">unavailable</span>
           )}
         </span>
       </button>
       {open && (
         <div className="mt-2 space-y-3">
           {!computed && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+            <div className="border-warning-200 bg-warning-50 text-warning-800 rounded-md border px-3 py-2 text-[11px]">
               {depth?.absenceReason === "too_few_valid_pixels" ? "Not enough overlapping valid pixels to fit the affine alignment." : "Depth assessment is not available for this row."}
             </div>
           )}
@@ -73,7 +73,7 @@ function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
   const metrics = depth.metrics;
   const alignment = depth.alignment;
   return (
-    <div className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
+    <div className="border-border bg-surface rounded-md border px-3 py-2.5">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
         <Metric label="AbsRel" value={formatNumber(metrics?.absRel, 3)} hint="Mean absolute relative error after affine fit." />
         <Metric label="RMSE" value={formatNumber(metrics?.rmse, 3)} hint="Root mean squared error after affine fit." />
@@ -93,10 +93,10 @@ function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div>
-      <dt className="font-medium text-gray-500" title={hint}>
+      <dt className="text-text-muted font-medium" title={hint}>
         {label}
       </dt>
-      <dd className="font-mono text-gray-800 tabular-nums">{value}</dd>
+      <dd className="text-text-secondary font-mono tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -112,23 +112,23 @@ function DepthThumbnails({ predictedUrl, dollhouseUrl }: { predictedUrl?: string
 
 function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
   return (
-    <figure className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
-      <figcaption className="border-b border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-medium tracking-wide text-gray-600 uppercase">{label}</figcaption>
-      <div className="relative flex aspect-[4/3] items-center justify-center bg-gray-50">
+    <figure className="border-border bg-surface-muted overflow-hidden rounded-md border">
+      <figcaption className="border-border bg-surface-sunken text-text-secondary border-b px-2 py-1 text-[10px] font-medium tracking-wide uppercase">{label}</figcaption>
+      <div className="bg-surface-muted relative flex aspect-[4/3] items-center justify-center">
         {url ? (
           // EXR thumbnails are .exr files which the browser can't render
           // directly — only the predicted PNG actually loads. The dollhouse
           // tile falls back to a "no preview" hint when the URL points at
           // an EXR. Either way the URL is a stable link reviewers can copy.
           /\.exr(\?|$)/i.test(url) ? (
-            <a href={url} target="_blank" rel="noreferrer" className="px-3 py-2 text-[11px] text-gray-500 underline hover:text-gray-700">
+            <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
               EXR (open externally)
             </a>
           ) : (
             <CdnImage src={url} alt={label} fill sizes="(max-width:768px) 50vw, 320px" className="object-contain" />
           )
         ) : (
-          <span className="text-[11px] text-gray-400">No preview</span>
+          <span className="text-text-disabled text-[11px]">No preview</span>
         )}
       </div>
     </figure>

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Button, LinkButton } from "@/components/ui/button";
-import { ArrowLeftIcon, PlusIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon } from "@/components/ui/icons";
 
 interface PageHeaderProps {
   title: string;
@@ -27,31 +26,5 @@ export function PageHeader({ title, subtitle, backHref, backLabel, actions }: Pa
         {actions && <div className="flex shrink-0 items-center gap-3">{actions}</div>}
       </div>
     </div>
-  );
-}
-
-/**
- * Backward-compatible wrapper around the new `LinkButton` primitive.
- *
- * @deprecated Prefer `<LinkButton>` from `@/components/ui` directly.
- */
-export function PrimaryLinkButton({ href, children, icon }: { href: string; children: React.ReactNode; icon?: boolean }) {
-  return (
-    <LinkButton href={href} variant="primary" iconLeft={icon ? <PlusIcon className="size-4" /> : undefined}>
-      {children}
-    </LinkButton>
-  );
-}
-
-/**
- * Backward-compatible wrapper around the new `Button` primitive.
- *
- * @deprecated Prefer `<Button>` from `@/components/ui` directly.
- */
-export function PrimaryButton({ children, onClick, disabled, loading }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; loading?: boolean }) {
-  return (
-    <Button onClick={onClick} disabled={disabled} loading={loading}>
-      {children}
-    </Button>
   );
 }

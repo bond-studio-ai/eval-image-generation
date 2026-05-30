@@ -62,17 +62,17 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-12">
-        <div className="border-t-primary-600 size-8 animate-spin rounded-full border-4 border-gray-300" />
+        <div className="border-t-primary-600 border-border-strong size-8 animate-spin rounded-full border-4" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">Failed to load accuracy trend data.</div>;
+    return <div className="border-border bg-surface text-text-muted text-body mt-6 rounded-lg border p-6 text-center">Failed to load accuracy trend data.</div>;
   }
 
   if (data.length === 0) {
-    return <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">No accuracy trend data available for this period.</div>;
+    return <div className="border-border bg-surface text-text-muted text-body mt-6 rounded-lg border p-6 text-center">No accuracy trend data available for this period.</div>;
   }
 
   const chartData = data.map((point) => ({
@@ -81,9 +81,9 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   }));
 
   return (
-    <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
-      <h2 className="text-lg font-semibold text-gray-900">Accuracy Over Time</h2>
-      <p className="mt-1 text-sm text-gray-600">Daily scene and product accuracy percentages based on evaluation ratings.</p>
+    <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
+      <h2 className="text-text-primary text-h3">Accuracy Over Time</h2>
+      <p className="text-text-secondary text-body mt-1">Daily scene and product accuracy percentages based on evaluation ratings.</p>
       <div className="mt-4" style={{ width: "100%", height: 360 }}>
         <AccuracyTrendChartGraph chartData={chartData} />
       </div>

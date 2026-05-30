@@ -108,7 +108,7 @@ const DRIFT_METRIC_HINTS = {
  */
 function MetricLabel({ label, hint }: { label: string; hint: string }) {
   return (
-    <Tooltip hint={hint} triggerClassName="decoration-gray-400 decoration-dotted underline-offset-2 hover:underline focus-within:underline">
+    <Tooltip hint={hint} triggerClassName="decoration-text-disabled decoration-dotted underline-offset-2 hover:underline focus-within:underline">
       {label}
     </Tooltip>
   );
@@ -121,25 +121,25 @@ function MetricLabel({ label, hint }: { label: string; hint: string }) {
  */
 function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
   return (
-    <div className="rounded-md border border-gray-200 bg-white px-4 py-3">
+    <div className="border-border bg-surface rounded-md border px-4 py-3">
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
         <div>
-          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+          <p className="text-text-muted text-[10px] font-semibold tracking-wide uppercase">
             <MetricLabel label="Pixels mismatched" hint={DRIFT_METRIC_HINTS.overallMse} />
           </p>
-          <p className="text-2xl font-semibold text-gray-900 tabular-nums">{formatPercent(overall.mse, 2)}</p>
+          <p className="text-text-primary text-display tabular-nums">{formatPercent(overall.mse, 2)}</p>
         </div>
         <div>
-          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+          <p className="text-text-muted text-[10px] font-semibold tracking-wide uppercase">
             <MetricLabel label="Pixel accuracy" hint={DRIFT_METRIC_HINTS.overallPixelAccuracy} />
           </p>
-          <p className="text-base font-medium text-gray-700 tabular-nums">{formatPercent(overall.pixelAccuracy, 2)}</p>
+          <p className="text-text-secondary text-body-lg font-medium tabular-nums">{formatPercent(overall.pixelAccuracy, 2)}</p>
         </div>
         <div>
-          <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+          <p className="text-text-muted text-[10px] font-semibold tracking-wide uppercase">
             <MetricLabel label="Mismatched / total" hint={DRIFT_METRIC_HINTS.overallRaw} />
           </p>
-          <p className="text-base font-medium text-gray-700 tabular-nums">
+          <p className="text-text-secondary text-body-lg font-medium tabular-nums">
             {formatInt(overall.numMismatched)} / {formatInt(overall.totalPixels)}
           </p>
         </div>
@@ -177,7 +177,7 @@ function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
 /** Faded dash for "this metric doesn't apply to this category".
  *  Visually distinct from the regular formatter dash (which means
  *  "metric applies but the value was null"). */
-const NOT_APPLICABLE_CELL = <span className="text-gray-300">{"—"}</span>;
+const NOT_APPLICABLE_CELL = <span className="text-text-disabled">{"—"}</span>;
 
 /**
  * Stable identifiers for every sortable column. Decoupled from the
@@ -254,7 +254,7 @@ function compareSortValues(a: number | string | null, b: number | string | null,
  */
 function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
-    <span aria-hidden="true" className={`text-[9px] ${active ? "text-gray-700" : "text-gray-300"}`}>
+    <span aria-hidden="true" className={`text-[9px] ${active ? "text-text-secondary" : "text-text-disabled"}`}>
       {active ? (dir === "asc" ? "▲" : "▼") : "⇅"}
     </span>
   );
@@ -299,9 +299,9 @@ function SortableHeader({
         onMouseLeave={onMouseLeave}
         onFocus={onFocus}
         onBlur={onBlur}
-        className={`inline-flex w-full items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"} cursor-pointer outline-none hover:text-gray-700 focus-visible:text-gray-700`}
+        className={`inline-flex w-full items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"} hover:text-text-secondary focus-visible:text-text-secondary cursor-pointer outline-none`}
       >
-        <span className="decoration-gray-400 decoration-dotted underline-offset-2">{label}</span>
+        <span className="decoration-text-disabled decoration-dotted underline-offset-2">{label}</span>
         <SortIndicator active={active} dir={currentDir} />
       </button>
       {portal}
@@ -352,7 +352,7 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
     <tr className="align-top">
       <td className="px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="inline-block size-2.5 shrink-0 rounded-sm ring-1 ring-gray-300" style={{ backgroundColor: swatch }} aria-hidden="true" />
+          <span className="ring-border-strong inline-block size-2.5 shrink-0 rounded-sm ring-1" style={{ backgroundColor: swatch }} aria-hidden="true" />
           {groupHint ? (
             <Tooltip hint={groupHint} width={260} triggerClassName="min-w-0">
               <span className="truncate" title={label}>
@@ -366,7 +366,7 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
           )}
           {metrics.absenceReason && (
             <Tooltip hint={DRIFT_ABSENCE_LABELS[metrics.absenceReason]} width={200} triggerClassName="ml-1 shrink-0 items-center">
-              <WarningIcon className="size-3.5 text-amber-500" />
+              <WarningIcon className="text-warning-500 size-3.5" />
               <span className="sr-only">{DRIFT_ABSENCE_LABELS[metrics.absenceReason]}</span>
             </Tooltip>
           )}
@@ -394,15 +394,15 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
       <td className="px-3 py-1.5 text-right">
         {appliesPresence ? (
           (metrics as SmallObjectDriftMetrics).presence === 1 ? (
-            <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 tabular-nums ring-1 ring-emerald-200">1</span>
+            <span className="bg-success-50 text-success-700 ring-success-200 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">1</span>
           ) : (
-            <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 tabular-nums ring-1 ring-gray-200">0</span>
+            <span className="bg-surface-muted text-text-muted ring-border rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">0</span>
           )
         ) : (
           NOT_APPLICABLE_CELL
         )}
       </td>
-      <td className="px-3 py-1.5 text-right text-gray-500 tabular-nums">
+      <td className="text-text-muted px-3 py-1.5 text-right tabular-nums">
         {formatInt(metrics.dollhousePixelCount)} / {formatInt(metrics.samPixelCount)}
       </td>
     </tr>
@@ -473,24 +473,24 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
   if (rows.length === 0) return null;
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white">
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
-        <p className="text-xs font-semibold text-gray-700">Per-category drift</p>
+    <div className="border-border bg-surface rounded-md border">
+      <div className="border-border-subtle flex items-center justify-between gap-2 border-b px-3 py-2">
+        <p className="text-text-secondary text-caption font-semibold">Per-category drift</p>
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
             placeholder="Filter categories…"
-            className="w-40 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
+            className="border-border bg-surface text-text-secondary placeholder:text-text-disabled focus:border-border-strong w-40 rounded border px-2 py-0.5 text-[11px] focus:outline-none"
             aria-label="Filter drift rows by category"
           />
-          <p className="text-[10px] text-gray-500 tabular-nums">{visibleRows.length === rows.length ? `${rows.length} ${rows.length === 1 ? "category" : "categories"}` : `${visibleRows.length} / ${rows.length}`}</p>
+          <p className="text-text-muted text-[10px] tabular-nums">{visibleRows.length === rows.length ? `${rows.length} ${rows.length === 1 ? "category" : "categories"}` : `${visibleRows.length} / ${rows.length}`}</p>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
-          <thead className="bg-gray-50 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+          <thead className="bg-surface-muted text-text-muted text-left text-[10px] font-semibold tracking-wide uppercase">
             <tr>
               <SortableHeader sortKey="category" label="Category" hint="Product type. Surfaces, large fixtures, then small objects by default." currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="left" />
               <SortableHeader sortKey="coverage" label="Coverage" hint={DRIFT_METRIC_HINTS.productMaskCoverage} currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
@@ -504,10 +504,10 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
               <SortableHeader sortKey="pixels" label="Px D/S" hint={DRIFT_METRIC_HINTS.pixels} currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 text-gray-700">
+          <tbody className="divide-border-subtle text-text-secondary divide-y">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-3 py-4 text-center text-[11px] text-gray-500 italic">
+                <td colSpan={10} className="text-text-muted px-3 py-4 text-center text-[11px] italic">
                   No categories match{filter ? ` "${filter}"` : ""}.
                 </td>
               </tr>
@@ -542,31 +542,31 @@ export function CollapsibleDrift({ assessment, status, lookup, categories }: { a
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-100"
+        className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >
         <span className="flex items-center gap-2">
-          <ChevronIcon className={`size-3.5 text-gray-500 transition-transform ${open ? "rotate-90" : ""}`} />
-          <span className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Drift assessment</span>
+          <ChevronIcon className={`text-text-muted size-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+          <span className="text-text-secondary text-caption font-semibold tracking-wide uppercase">Drift assessment</span>
           {computed && assessment && (
-            <span className="text-[11px] font-normal text-gray-500">
+            <span className="text-text-muted text-[11px] font-normal">
               {assessment.imageWidth}×{assessment.imageHeight}
             </span>
           )}
         </span>
         <span className="text-[11px] tabular-nums">
           {computed && overall ? (
-            <span className="text-gray-700">
-              <span className="font-semibold">{formatPercent(overall.mse, 2)}</span> <span className="text-gray-500">mismatched</span>
+            <span className="text-text-secondary">
+              <span className="font-semibold">{formatPercent(overall.mse, 2)}</span> <span className="text-text-muted">mismatched</span>
             </span>
           ) : (
-            <span className="text-gray-500">unavailable</span>
+            <span className="text-text-muted">unavailable</span>
           )}
         </span>
       </button>
       {open && (
         <div className="mt-2 space-y-3">
           {!computed && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+            <div className="border-warning-200 bg-warning-50 text-warning-800 rounded-md border px-3 py-2 text-[11px]">
               {status && status !== "computed" && DRIFT_STATUS_LABELS[status] ? DRIFT_STATUS_LABELS[status] : "Drift assessment is not available for this segmentation row."}
             </div>
           )}
@@ -575,7 +575,7 @@ export function CollapsibleDrift({ assessment, status, lookup, categories }: { a
               <DriftOverallCard overall={overall} />
               <DriftUnifiedTable assessment={assessment} lookup={lookup} categories={categories} />
               {assessment.failedSamMaskUrls && assessment.failedSamMaskUrls.length > 0 && (
-                <p className="px-1 text-[10px] text-gray-500 italic">
+                <p className="text-text-muted px-1 text-[10px] italic">
                   {assessment.failedSamMaskUrls.length} SAM mask
                   {assessment.failedSamMaskUrls.length === 1 ? "" : "s"} failed to download; metrics may understate SAM coverage.
                 </p>

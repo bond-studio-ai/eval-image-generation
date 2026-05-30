@@ -53,26 +53,26 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
-      <div className="relative flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">{promptVersionName || "Prompt"}</h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+      <div className="bg-overlay/50 absolute inset-0" onClick={onClose} aria-hidden />
+      <div className="border-border bg-surface relative flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg border shadow-xl">
+        <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-3">
+          <h2 className="text-text-primary text-h3">{promptVersionName || "Prompt"}</h2>
+          <button type="button" aria-label="Close" onClick={onClose} className="text-text-muted hover:bg-surface-sunken hover:text-text-secondary rounded p-1.5">
             <XIcon className="size-5" />
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {loading && <p className="text-sm text-gray-500">Loading…</p>}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {loading && <p className="text-text-muted text-body">Loading…</p>}
+          {error && <p className="text-danger-600 text-body">{error}</p>}
           {data && (
             <div className="grid min-h-0 grid-cols-2 gap-5">
               <div className="flex flex-col">
-                <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">System prompt{processedSystemPrompt ? " (processed)" : ""}</h3>
-                <pre className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed whitespace-pre-wrap text-gray-800">{processedSystemPrompt || data.systemPrompt || "(empty)"}</pre>
+                <h3 className="text-text-muted text-caption mb-2 font-semibold tracking-wider uppercase">System prompt{processedSystemPrompt ? " (processed)" : ""}</h3>
+                <pre className="border-border bg-surface-muted text-text-secondary text-body flex-1 rounded-lg border p-4 leading-relaxed whitespace-pre-wrap">{processedSystemPrompt || data.systemPrompt || "(empty)"}</pre>
               </div>
               <div className="flex flex-col">
-                <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">User prompt{processedUserPrompt ? " (processed)" : ""}</h3>
-                <pre className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed whitespace-pre-wrap text-gray-800">{processedUserPrompt || data.userPrompt || "(empty)"}</pre>
+                <h3 className="text-text-muted text-caption mb-2 font-semibold tracking-wider uppercase">User prompt{processedUserPrompt ? " (processed)" : ""}</h3>
+                <pre className="border-border bg-surface-muted text-text-secondary text-body flex-1 rounded-lg border p-4 leading-relaxed whitespace-pre-wrap">{processedUserPrompt || data.userPrompt || "(empty)"}</pre>
               </div>
             </div>
           )}

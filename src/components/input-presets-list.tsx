@@ -133,7 +133,7 @@ export function InputPresetsList() {
         columns={columns}
         data={items}
         rowKey={(ip) => ip.id}
-        rowClassName={(ip) => `hover:bg-gray-50 ${selected.has(ip.id) ? "bg-primary-50/50" : ""}`}
+        rowClassName={(ip) => `hover:bg-surface-muted ${selected.has(ip.id) ? "bg-primary-50/50" : ""}`}
         emptyMessage={search ? "No input presets match your search." : "No input presets found."}
         loading={loading}
         toolbar={toolbar}

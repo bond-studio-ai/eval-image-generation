@@ -110,8 +110,8 @@ export function HighlightedTextarea({ value, onChange, className, fillHeight = f
         >
           {lines.map((line, i) => (
             <Fragment key={i}>
-              <div className="self-start pr-2 text-right font-mono text-sm leading-5 text-gray-400 tabular-nums select-none">{i + 1}</div>
-              <div className="pr-3 font-mono text-sm leading-5 break-words whitespace-pre-wrap text-gray-900">{line}</div>
+              <div className="text-text-disabled text-body self-start pr-2 text-right font-mono leading-5 tabular-nums select-none">{i + 1}</div>
+              <div className="text-text-primary text-body pr-3 font-mono leading-5 break-words whitespace-pre-wrap">{line}</div>
             </Fragment>
           ))}
         </div>

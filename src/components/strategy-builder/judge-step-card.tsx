@@ -25,29 +25,29 @@ export function JudgeStepCard({
   defaultJudgeModel: string;
 }) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-5 shadow-xs">
+    <div className="border-warning-200 bg-warning-50/50 rounded-lg border p-5 shadow-xs">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Step {idx + 1} &mdash; Judge</span>
+          <span className="bg-warning-100 text-warning-700 text-caption inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 font-semibold">Step {idx + 1} &mdash; Judge</span>
           <CandidatePicker value={step.number_of_images ?? 4} onChange={(n) => updateStep(idx, { number_of_images: n })} />
         </div>
-        <button type="button" onClick={() => removeStep(idx)} aria-label="Remove step" className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-600">
+        <button type="button" onClick={() => removeStep(idx)} aria-label="Remove step" className="text-text-muted hover:bg-danger-50 hover:text-danger-600 rounded p-1">
           <TrashIcon className="size-4" />
         </button>
       </div>
-      <p className="mt-2 text-xs text-amber-700">Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and picks the best one.</p>
+      <p className="text-warning-700 text-caption mt-2">Runs the preceding step {step.number_of_images ?? 4} times, evaluates results, and picks the best one.</p>
 
       <div className="mt-4 space-y-3">
         {(step.judges ?? []).map((judge, jIdx) => (
-          <div key={judge._uid} className="rounded-lg border border-amber-200 bg-white p-4">
+          <div key={judge._uid} className="border-warning-200 bg-surface rounded-lg border p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">{jIdx + 1}</span>
+              <span className="bg-warning-100 text-warning-700 text-caption inline-flex size-6 items-center justify-center rounded-full font-bold">{jIdx + 1}</span>
               <div className="flex items-center gap-2">
                 {JUDGE_TYPES.map((jt) => (
                   <label
                     key={jt.value}
                     title={jt.description}
-                    className={`cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors ${judge.judge_type === jt.value ? "border-amber-300 bg-amber-50 font-medium text-amber-800" : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"}`}
+                    className={`text-caption cursor-pointer rounded-md border px-2.5 py-1 transition-colors ${judge.judge_type === jt.value ? "border-warning-300 bg-warning-50 text-warning-800 font-medium" : "border-border bg-surface text-text-muted hover:border-border-strong"}`}
                   >
                     <input
                       type="radio"
@@ -73,14 +73,14 @@ export function JudgeStepCard({
                     updateStep(idx, { judges: newJudges });
                   }}
                   aria-label="Remove judge"
-                  className="text-text-muted rounded p-1 hover:bg-red-50 hover:text-red-500"
+                  className="text-text-muted hover:bg-danger-50 hover:text-danger-500 rounded p-1"
                 >
                   <XIcon className="size-4" />
                 </button>
               )}
             </div>
             <div className="mb-3">
-              <label htmlFor={`judge-name-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
+              <label htmlFor={`judge-name-${idx}-${jIdx}`} className="text-text-secondary text-caption mb-1 block font-medium">
                 Name (optional)
               </label>
               <input
@@ -94,12 +94,12 @@ export function JudgeStepCard({
                   updateStep(idx, { judges: newJudges });
                 }}
                 placeholder="e.g. Scene Accuracy"
-                className="focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label htmlFor={`judge-model-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor={`judge-model-${idx}-${jIdx}`} className="text-text-secondary text-caption mb-1 block font-medium">
                   Model
                 </label>
                 <SearchableSelect
@@ -114,7 +114,7 @@ export function JudgeStepCard({
                 />
               </div>
               <div>
-                <label htmlFor={`judge-prompt-${idx}-${jIdx}`} className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor={`judge-prompt-${idx}-${jIdx}`} className="text-text-secondary text-caption mb-1 block font-medium">
                   Prompt
                 </label>
                 <PromptVersionSelector
@@ -130,11 +130,11 @@ export function JudgeStepCard({
               </div>
             </div>
             <div className="mt-3">
-              <label htmlFor={`judge-tolerance-${idx}-${jIdx}`} className="mb-1 flex items-center justify-between text-xs font-medium text-gray-600">
+              <label htmlFor={`judge-tolerance-${idx}-${jIdx}`} className="text-text-secondary text-caption mb-1 flex items-center justify-between font-medium">
                 <span>Tolerance</span>
-                <span className="text-gray-900 tabular-nums">
+                <span className="text-text-primary tabular-nums">
                   {judge.tolerance_threshold}
-                  <span className="ml-0.5 text-gray-400">/100</span>
+                  <span className="text-text-disabled ml-0.5">/100</span>
                 </span>
               </label>
               <input
@@ -152,7 +152,7 @@ export function JudgeStepCard({
                   };
                   updateStep(idx, { judges: newJudges });
                 }}
-                className="w-full accent-amber-500"
+                className="accent-warning-500 w-full"
               />
             </div>
           </div>
@@ -173,7 +173,7 @@ export function JudgeStepCard({
             ];
             updateStep(idx, { judges: newJudges });
           }}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50"
+          className="border-warning-300 bg-surface text-warning-700 hover:bg-warning-50 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors"
         >
           <PlusIcon className="size-3.5" />
           Add Judge

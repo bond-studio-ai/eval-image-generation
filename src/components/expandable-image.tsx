@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 interface ExpandableImageProps {
   src: string;
   alt: string;
-  /** Class for the image container (e.g. "relative h-80 bg-gray-50"). */
+  /** Class for the image container (e.g. "relative h-80 bg-surface-muted"). */
   wrapperClassName?: string;
   /** Extra class on the <img> itself. */
   className?: string;
@@ -32,22 +32,22 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
         <Modal
           onClose={() => setOpen(false)}
           ariaLabel="Expanded image"
-          backdropClassName="bg-black/70"
+          backdropClassName="bg-overlay/70"
           containerClassName="sm:p-6"
-          className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          className="bg-surface relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl shadow-2xl"
         >
           {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
-            <span className="truncate text-sm font-medium text-gray-700">{alt}</span>
-            <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
+          <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
+            <span className="text-text-secondary text-body truncate font-medium">{alt}</span>
+            <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
               <XIcon className="size-5" />
             </button>
           </div>
 
           {/* Image */}
           <div className="flex-1 overflow-auto p-4">
-            <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
-              {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
+            <div className="bg-surface-sunken relative w-full overflow-hidden rounded-lg">
+              {!loaded && <div className="bg-border aspect-[4/3] w-full animate-pulse" />}
               <CdnImage
                 src={src}
                 alt={alt}

@@ -9,7 +9,7 @@ const CONFIG_LABELS: Record<string, string> = {
 
 export function ConfigDiff({ left, right }: { left: Record<string, unknown> | null; right: Record<string, unknown> | null }) {
   const allKeys = [...new Set([...Object.keys(left ?? {}), ...Object.keys(right ?? {})])];
-  if (allKeys.length === 0) return <p className="text-xs text-gray-400">No config data</p>;
+  if (allKeys.length === 0) return <p className="text-text-disabled text-caption">No config data</p>;
 
   return (
     <div className="space-y-1">
@@ -18,16 +18,16 @@ export function ConfigDiff({ left, right }: { left: Record<string, unknown> | nu
         const rv = String((right ?? {})[key] ?? "");
         const changed = lv !== rv;
         return (
-          <div key={key} className={`flex items-center gap-2 rounded px-2 py-0.5 text-[11px] ${changed ? "bg-amber-50 ring-1 ring-amber-200" : "bg-gray-50"}`}>
-            <span className="w-28 shrink-0 font-medium text-gray-500">{CONFIG_LABELS[key] ?? key}</span>
+          <div key={key} className={`flex items-center gap-2 rounded px-2 py-0.5 text-[11px] ${changed ? "bg-warning-50 ring-warning-200 ring-1" : "bg-surface-muted"}`}>
+            <span className="text-text-muted w-28 shrink-0 font-medium">{CONFIG_LABELS[key] ?? key}</span>
             {changed ? (
               <>
-                <span className="rounded bg-red-100 px-1 text-red-700 line-through">{lv || "(none)"}</span>
-                <span className="text-gray-400">&rarr;</span>
-                <span className="rounded bg-green-100 px-1 text-green-700">{rv || "(none)"}</span>
+                <span className="bg-danger-100 text-danger-700 rounded px-1 line-through">{lv || "(none)"}</span>
+                <span className="text-text-disabled">&rarr;</span>
+                <span className="bg-success-100 text-success-700 rounded px-1">{rv || "(none)"}</span>
               </>
             ) : (
-              <span className="text-gray-700">{lv}</span>
+              <span className="text-text-secondary">{lv}</span>
             )}
           </div>
         );

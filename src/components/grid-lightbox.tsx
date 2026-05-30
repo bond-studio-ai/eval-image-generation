@@ -109,18 +109,18 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           if (!expandedImage) onClose();
         }}
         ariaLabel="Generation result"
-        backdropClassName="bg-black/80"
+        backdropClassName="bg-overlay/80"
         containerClassName="z-[9999] p-6"
-        className="relative flex max-h-[90vh] w-[1200px] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="bg-surface relative flex max-h-[90vh] w-[1200px] max-w-[95vw] flex-col overflow-hidden rounded-xl shadow-2xl"
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
+        <div className="border-border flex shrink-0 items-center justify-between border-b px-6 py-3">
           <div className="flex items-center gap-3">
-            <Link href={runHref} className="text-primary-600 hover:text-primary-500 text-sm font-medium">
+            <Link href={runHref} className="text-primary-600 hover:text-primary-500 text-body font-medium">
               View run details &rarr;
             </Link>
-            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && <span className="text-sm text-gray-500">Comparing with {sceneImages[selectedSceneIndex].label}</span>}
+            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && <span className="text-text-muted text-body">Comparing with {sceneImages[selectedSceneIndex].label}</span>}
           </div>
-          <button type="button" aria-label="Close" onClick={onClose} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
+          <button type="button" aria-label="Close" onClick={onClose} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
             <XIcon className="size-5" />
           </button>
         </div>
@@ -155,7 +155,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
             </div>
             {sceneImages.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-gray-500">Compare with:</span>
+                <span className="text-text-muted text-caption font-medium">Compare with:</span>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {sceneImages.map((img, i) => (
                     <button
@@ -165,11 +165,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                         e.stopPropagation();
                         setSelectedSceneIndex(selectedSceneIndex === i ? null : i);
                       }}
-                      className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? "border-primary-500 ring-primary-500 ring-1" : "border-transparent hover:border-gray-300"}`}
+                      className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? "border-primary-500 ring-primary-500 ring-1" : "hover:border-border-strong border-transparent"}`}
                       title={selectedSceneIndex === i ? "Click to disable compare" : "Click to compare with scene reference"}
                     >
                       <CdnImage src={img.url} alt={img.label} width={56} height={56} className="size-14 object-cover" />
-                      <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">{img.label}</span>
+                      <span className="text-text-muted max-w-[4rem] truncate text-[10px] font-medium">{img.label}</span>
                     </button>
                   ))}
                 </div>
@@ -179,10 +179,10 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           {generationId && (
             <>
               {productImages.length > 0 && (
-                <div className="mt-4 border-t border-gray-200 pt-6">
+                <div className="border-border mt-4 border-t pt-6">
                   <div className="flex flex-wrap gap-2">
                     {productImages.map((img) => (
-                      <div key={img.key} className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5">
+                      <div key={img.key} className="border-border bg-surface flex flex-col items-center gap-1 rounded-lg border p-1.5">
                         {img.urls.length === 1 ? (
                           <button
                             type="button"
@@ -211,7 +211,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                             ))}
                           </div>
                         )}
-                        <span className="max-w-[5rem] truncate text-center text-[10px] font-medium text-gray-700">
+                        <span className="text-text-secondary max-w-[5rem] truncate text-center text-[10px] font-medium">
                           {img.label}
                           {img.urls.length > 1 && ` (${img.urls.length})`}
                         </span>
@@ -220,19 +220,19 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                   </div>
                 </div>
               )}
-              <div className="mt-6 grid grid-cols-1 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-2">
+              <div className="border-border mt-6 grid grid-cols-1 gap-6 border-t pt-6 lg:grid-cols-2">
                 {initialResultId && (
                   <div>
-                    <p className="mb-2 text-sm font-medium text-gray-700">Scene & product issues</p>
+                    <p className="text-text-secondary text-body mb-2 font-medium">Scene & product issues</p>
                     <ImageEvaluationForm resultId={initialResultId} productCategories={productCategories} />
                   </div>
                 )}
                 <div>
-                  <p className="mb-2 text-sm font-medium text-gray-700">Rate generation</p>
+                  <p className="text-text-secondary text-body mb-2 font-medium">Rate generation</p>
                   {generation ? (
                     <RatingForm generationId={generationId} currentSceneAccuracyRating={generation.sceneAccuracyRating} currentProductAccuracyRating={generation.productAccuracyRating} onRated={handleRated} />
                   ) : (
-                    <p className="text-sm text-gray-500">Loading…</p>
+                    <p className="text-text-muted text-body">Loading…</p>
                   )}
                 </div>
               </div>
@@ -245,15 +245,15 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
         <Modal
           onClose={() => setExpandedImage(null)}
           ariaLabel="Expanded image"
-          backdropClassName="bg-black/80"
+          backdropClassName="bg-overlay/80"
           containerClassName="z-[10000] p-6"
           className="relative max-h-[90vh] w-auto max-w-[90vw] overflow-hidden rounded-lg bg-transparent p-0 shadow-none"
         >
           <CdnImage src={expandedImage.src} alt={expandedImage.alt} width={0} height={0} sizes="100vw" className="h-auto max-h-[90vh] w-auto max-w-full object-contain" />
-          <div className="absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b from-black/60 to-transparent px-3 py-2">
-            <span className="text-sm font-medium text-white">{expandedImage.alt}</span>
+          <div className="from-overlay/60 absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b to-transparent px-3 py-2">
+            <span className="text-text-inverse text-body font-medium">{expandedImage.alt}</span>
           </div>
-          <button type="button" onClick={() => setExpandedImage(null)} className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70" aria-label="Close">
+          <button type="button" onClick={() => setExpandedImage(null)} className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5" aria-label="Close">
             <XIcon className="size-5" />
           </button>
         </Modal>
