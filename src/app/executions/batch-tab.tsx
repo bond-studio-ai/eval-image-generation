@@ -3,15 +3,19 @@
 import { GridLightbox } from '@/components/grid-lightbox';
 import { Spinner, toast, useConfirm } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 import { BatchErrorCard } from './_components/batch-error-card';
 import { BatchList } from './_components/batch-list';
 import { BatchLoadingSkeleton } from './_components/batch-loading-skeleton';
 import { BatchToolbar } from './_components/batch-toolbar';
-import { type BatchRow, type FetchState, type RunRow } from './_components/batch-types';
+import { isAwaitingJudgeBatch, type BatchRow, type RunRow } from './_components/batch-types';
 import { useBatchListMachinery } from './_components/use-batch-list-machinery';
 
 const BATCH_PAGE_SIZE = 20;
+const POLL_INTERVAL = 5000;
+/** Stable empty set so `expandedIds` keeps a constant identity when collapsed. */
+const EMPTY_EXPANDED: Set<string> = new Set<string>();
 
 function normalizeBatch(b: Record<string, unknown>): BatchRow {
   const runs = (Array.isArray(b.runs) ? b.runs : []).map((r: Record<string, unknown>) => ({
@@ -26,77 +30,10 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
   return { ...b, runs } as BatchRow;
 }
 
-type FetchAction =
-  | { type: 'replaceStart'; setRefreshing: boolean }
-  | { type: 'loadMoreStart' }
-  | { type: 'fetchErrorResponse'; error: string; clearHasMore: boolean }
-  | { type: 'mergeFirstPage'; normalized: BatchRow[]; priorFirstPageIds: Set<string> }
-  | { type: 'replaceSuccess'; normalized: BatchRow[]; hasMore: boolean }
-  | { type: 'appendSuccess'; normalized: BatchRow[]; page: number; hasMore: boolean }
-  | { type: 'fetchSettled' }
-  | { type: 'setLoading'; loading: boolean };
-
-const initialFetchState: FetchState = {
-  batches: [],
-  page: 1,
-  hasMore: false,
-  loading: true,
-  loadingMore: false,
-  fetchError: null,
-  refreshing: false,
-};
-
-function fetchReducer(state: FetchState, action: FetchAction): FetchState {
-  switch (action.type) {
-    case 'replaceStart':
-      // setFetchError(null), and setRefreshing(true) only when caller was not loading.
-      return {
-        ...state,
-        fetchError: null,
-        refreshing: action.setRefreshing ? true : state.refreshing,
-      };
-    case 'loadMoreStart':
-      return { ...state, loadingMore: true };
-    case 'fetchErrorResponse':
-      return {
-        ...state,
-        fetchError: action.error,
-        hasMore: action.clearHasMore ? false : state.hasMore,
-      };
-    case 'mergeFirstPage': {
-      const { normalized, priorFirstPageIds } = action;
-      const topIds = new Set(normalized.map((b) => b.id));
-      const prevIds = new Set(state.batches.map((b) => b.id));
-      const mergeIncludesNewBatchId = normalized.some((b) => !prevIds.has(b.id));
-      const tail = state.batches.filter((b) => {
-        if (topIds.has(b.id)) return false;
-        if (priorFirstPageIds.has(b.id) && !mergeIncludesNewBatchId) return false;
-        return true;
-      });
-      return {
-        ...state,
-        fetchError: null,
-        batches: [...normalized, ...tail],
-        hasMore: mergeIncludesNewBatchId ? true : state.hasMore,
-      };
-    }
-    case 'replaceSuccess':
-      return { ...state, batches: action.normalized, page: 1, hasMore: action.hasMore };
-    case 'appendSuccess': {
-      const existingIds = new Set(state.batches.map((b) => b.id));
-      const added = action.normalized.filter((b) => !existingIds.has(b.id));
-      return {
-        ...state,
-        batches: [...state.batches, ...added],
-        page: action.page,
-        hasMore: action.hasMore,
-      };
-    }
-    case 'fetchSettled':
-      return { ...state, loading: false, loadingMore: false, refreshing: false };
-    case 'setLoading':
-      return { ...state, loading: action.loading };
-  }
+interface BatchPage {
+  batches: BatchRow[];
+  hasMore: boolean;
+  page: number;
 }
 
 /** Row-action-in-flight ids (retry run / retry batch / delete batch). */
@@ -155,94 +92,114 @@ export function BatchRunsTab({
   refreshKey?: number;
   source?: 'default' | 'benchmark';
 }) {
-  const [fetchState, fetchDispatch] = useReducer(fetchReducer, initialFetchState);
   const [pending, pendingDispatch] = useReducer(pendingReducer, initialPendingState);
   const [appliedRange, appliedRangeDispatch] = useReducer(
     appliedRangeReducer,
     initialAppliedRangeState,
   );
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // Expanded rows are scoped to the current filter/source/refresh "list key". Storing
+  // that key alongside the ids lets a filter change collapse everything by derivation
+  // (no reset effect): when `listKey` changes, `expandedIds` falls back to empty.
+  const listKey = `${appliedRange.from}|${appliedRange.to}|${source}|${refreshKey ?? ''}`;
+  const [expandedState, setExpandedState] = useState<{ key: string; ids: Set<string> }>({
+    key: listKey,
+    ids: new Set(),
+  });
+  const expandedIds = expandedState.key === listKey ? expandedState.ids : EMPTY_EXPANDED;
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
   const [lightbox, setLightbox] = useState<{
     src: string;
     runHref: string;
     generationId: string | null;
   } | null>(null);
-  /** Prior page-1 id set; merge uses it to prune likely deletes when the refreshed page 1 has no new batch ids. */
-  const lastFetchedFirstPageIdsRef = useRef<Set<string>>(new Set());
 
-  const fetchBatches = useCallback(
-    async (opts: { replace?: boolean; pageToFetch?: number; mergeFirstPage?: boolean } = {}) => {
-      const mergeFirstPage = opts.mergeFirstPage === true;
-      const replace = mergeFirstPage ? false : (opts.replace ?? true);
-      const pageToFetch = mergeFirstPage ? 1 : (opts.pageToFetch ?? 1);
-      const limit = BATCH_PAGE_SIZE;
-      if (replace && !mergeFirstPage) {
-        fetchDispatch({ type: 'replaceStart', setRefreshing: !fetchState.loading });
-        if (!fetchState.loading) {
-          setExpandedIds(new Set());
-        }
-      } else if (!replace && !mergeFirstPage) {
-        fetchDispatch({ type: 'loadMoreStart' });
+  const {
+    data,
+    isPending,
+    isPlaceholderData,
+    isError,
+    error: queryError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['strategy-batch-runs', appliedRange.from, appliedRange.to, source, refreshKey],
+    queryFn: async ({ pageParam, signal }): Promise<BatchPage> => {
+      const params = new URLSearchParams({
+        page: String(pageParam),
+        limit: String(BATCH_PAGE_SIZE),
+      });
+      if (appliedRange.from) params.set('from', appliedRange.from);
+      if (appliedRange.to) params.set('to', appliedRange.to);
+      if (source === 'benchmark') params.set('source', 'benchmark');
+      const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), {
+        cache: 'no-store',
+        signal,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = (err as { error?: { message?: string } })?.error?.message;
+        throw new Error(
+          msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
+        );
       }
-      try {
-        const params = new URLSearchParams({ page: String(pageToFetch), limit: String(limit) });
-        if (appliedRange.from) params.set('from', appliedRange.from);
-        if (appliedRange.to) params.set('to', appliedRange.to);
-        if (source === 'benchmark') params.set('source', 'benchmark');
-        const res = await fetch(serviceUrl(`strategy-batch-runs?${params}`), { cache: 'no-store' });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          const msg = (err as { error?: { message?: string } })?.error?.message;
-          fetchDispatch({
-            type: 'fetchErrorResponse',
-            error: msg || `Failed to load (${res.status}). Check that the backend is reachable.`,
-            clearHasMore: !mergeFirstPage,
-          });
-          return;
-        }
-        const json = await res.json();
-        const raw = (json.data ?? []) as Record<string, unknown>[];
-        const apiHasMore = json.hasMore === true;
-        const normalized = raw.map((b) => normalizeBatch(b));
-        if (mergeFirstPage) {
-          const priorFirstPageIds = lastFetchedFirstPageIdsRef.current;
-          fetchDispatch({ type: 'mergeFirstPage', normalized, priorFirstPageIds });
-          lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
-        } else if (replace) {
-          fetchDispatch({ type: 'replaceSuccess', normalized, hasMore: apiHasMore });
-          lastFetchedFirstPageIdsRef.current = new Set(normalized.map((b) => b.id));
-        } else {
-          fetchDispatch({
-            type: 'appendSuccess',
-            normalized,
-            page: pageToFetch,
-            hasMore: apiHasMore,
-          });
-        }
-      } catch (e) {
-        fetchDispatch({
-          type: 'fetchErrorResponse',
-          error: e instanceof Error ? e.message : 'Network error. Check backend and try again.',
-          clearHasMore: !mergeFirstPage,
-        });
-      } finally {
-        fetchDispatch({ type: 'fetchSettled' });
-      }
+      const json = await res.json();
+      const raw = (json.data ?? []) as Record<string, unknown>[];
+      return { batches: raw.map(normalizeBatch), hasMore: json.hasMore === true, page: pageParam };
     },
-    // `fetchState.loading` is intentionally read stale (omitted from deps), matching the
-    // pre-reducer behavior where `loading` was captured at callback creation: replace-refetches
-    // triggered by retry/delete must not flip on the refreshing overlay or collapse expanded rows.
-    [appliedRange.from, appliedRange.to, source],
-  );
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    // Keep the current list visible (with a "refreshing" hint) while a filter/source
+    // change refetches, instead of flashing the skeleton.
+    placeholderData: keepPreviousData,
+    // Poll only while a batch is running or awaiting judging. A poll refetches every
+    // loaded page, which naturally prunes deleted batches and surfaces new ones —
+    // the merge/dedup the hand-rolled version did by hand.
+    refetchInterval: (query) => {
+      const pages = query.state.data?.pages ?? [];
+      const polling = pages.some((p) =>
+        p.batches.some(
+          (b) => b.status === 'running' || isAwaitingJudgeBatch(b.runs, b.numberOfImages),
+        ),
+      );
+      return polling ? POLL_INTERVAL : false;
+    },
+  });
 
-  const { sentinelRef, containerRef, fetchBatchesKeepScroll } = useBatchListMachinery({
-    fetchState,
-    fetchBatches,
-    from: appliedRange.from,
-    to: appliedRange.to,
-    source,
-    refreshKey,
+  // Flatten paginated results, de-duping ids in case offset pagination shifts items.
+  const batches = useMemo(() => {
+    const seen = new Set<string>();
+    const out: BatchRow[] = [];
+    for (const p of data?.pages ?? []) {
+      for (const b of p.batches) {
+        if (!seen.has(b.id)) {
+          seen.add(b.id);
+          out.push(b);
+        }
+      }
+    }
+    return out;
+  }, [data]);
+
+  const loading = isPending;
+  const refreshing = isPlaceholderData;
+  const fetchError = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Network error. Check backend and try again.'
+    : null;
+
+  const loadMore = useCallback(() => {
+    if (isFetchingNextPage || !hasNextPage) return;
+    fetchNextPage();
+  }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
+
+  const { sentinelRef, containerRef, refetchKeepScroll } = useBatchListMachinery({
+    hasMore: hasNextPage,
+    loadingMore: isFetchingNextPage,
+    loadMore,
+    refetch,
   });
 
   const handleDateChange = useCallback((from: string, to: string) => {
@@ -259,14 +216,14 @@ export function BatchRunsTab({
       try {
         const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: 'POST' });
         if (!res.ok) return;
-        await fetchBatches();
+        await refetch();
       } catch {
         /* ignore */
       } finally {
         pendingDispatch({ type: 'retryingRun', id: null });
       }
     },
-    [fetchBatches],
+    [refetch],
   );
 
   const handleRetryFailed = useCallback(
@@ -277,14 +234,14 @@ export function BatchRunsTab({
           method: 'POST',
         });
         if (!res.ok) return;
-        await fetchBatches();
+        await refetch();
       } catch {
         /* ignore */
       } finally {
         pendingDispatch({ type: 'retryingBatch', id: null });
       }
     },
-    [fetchBatches],
+    [refetch],
   );
 
   const confirm = useConfirm();
@@ -306,13 +263,13 @@ export function BatchRunsTab({
           });
           return;
         }
-        setExpandedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(batchId);
-          return next;
+        setExpandedState((prev) => {
+          const ids = prev.key === listKey ? new Set(prev.ids) : new Set<string>();
+          ids.delete(batchId);
+          return { key: listKey, ids };
         });
         toast.success(`Deleted batch "${displayName}"`);
-        await fetchBatches();
+        await refetch();
       } catch (e) {
         toast.error('Failed to delete batch', {
           description: e instanceof Error ? e.message : undefined,
@@ -321,17 +278,20 @@ export function BatchRunsTab({
         pendingDispatch({ type: 'deletingBatch', id: null });
       }
     },
-    [fetchBatches, confirm],
+    [refetch, confirm, listKey],
   );
 
-  const handleToggle = useCallback((batchId: string, isExpanded: boolean) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (isExpanded) next.delete(batchId);
-      else next.add(batchId);
-      return next;
-    });
-  }, []);
+  const handleToggle = useCallback(
+    (batchId: string, isExpanded: boolean) => {
+      setExpandedState((prev) => {
+        const ids = prev.key === listKey ? new Set(prev.ids) : new Set<string>();
+        if (isExpanded) ids.delete(batchId);
+        else ids.add(batchId);
+        return { key: listKey, ids };
+      });
+    },
+    [listKey],
+  );
 
   const handleImageClick = useCallback((run: RunRow) => {
     setLightbox({
@@ -342,16 +302,15 @@ export function BatchRunsTab({
   }, []);
 
   const handleRetryFetch = useCallback(() => {
-    fetchDispatch({ type: 'setLoading', loading: true });
-    fetchBatches();
-  }, [fetchBatches]);
+    refetch();
+  }, [refetch]);
 
-  if (fetchState.loading) {
+  if (loading) {
     return <BatchLoadingSkeleton />;
   }
 
-  if (fetchState.fetchError) {
-    return <BatchErrorCard error={fetchState.fetchError} onRetry={handleRetryFetch} />;
+  if (fetchError) {
+    return <BatchErrorCard error={fetchError} onRetry={handleRetryFetch} />;
   }
 
   return (
@@ -365,7 +324,7 @@ export function BatchRunsTab({
         onViewModeChange={setViewMode}
       />
 
-      {fetchState.refreshing && (
+      {refreshing && (
         <div className="text-body text-text-muted flex items-center gap-2">
           <Spinner size="sm" />
           Loading {source === 'benchmark' ? 'benchmark' : 'standard'} runs…
@@ -373,11 +332,11 @@ export function BatchRunsTab({
       )}
 
       <BatchList
-        batches={fetchState.batches}
-        loading={fetchState.loading}
-        refreshing={fetchState.refreshing}
-        hasMore={fetchState.hasMore}
-        loadingMore={fetchState.loadingMore}
+        batches={batches}
+        loading={loading}
+        refreshing={refreshing}
+        hasMore={hasNextPage}
+        loadingMore={isFetchingNextPage}
         appliedFrom={appliedRange.from}
         appliedTo={appliedRange.to}
         sentinelRef={sentinelRef}
@@ -391,7 +350,7 @@ export function BatchRunsTab({
         onRetryFailed={handleRetryFailed}
         onDeleteBatch={handleDeleteBatch}
         onRetry={handleRetry}
-        onRated={fetchBatchesKeepScroll}
+        onRated={refetchKeepScroll}
         onImageClick={handleImageClick}
       />
       {lightbox && (
@@ -399,7 +358,7 @@ export function BatchRunsTab({
           src={lightbox.src}
           runHref={lightbox.runHref}
           generationId={lightbox.generationId}
-          onRated={() => fetchBatchesKeepScroll()}
+          onRated={() => refetchKeepScroll()}
           onClose={() => setLightbox(null)}
         />
       )}

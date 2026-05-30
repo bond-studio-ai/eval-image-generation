@@ -37,22 +37,6 @@ export interface BatchRow {
   runs: RunRow[];
 }
 
-/**
- * List-fetch / pagination state machine for `BatchRunsTab`. Grouped into a
- * reducer because `fetchBatches` mutates this whole cluster together and relies on
- * functional updates (`setBatches(prev => ...)`, `setHasMore(more => ...)`); the
- * `mergeFirstPage` action reproduces that merge byte-for-byte from current state.
- */
-export interface FetchState {
-  batches: BatchRow[];
-  page: number;
-  hasMore: boolean;
-  loading: boolean;
-  loadingMore: boolean;
-  fetchError: string | null;
-  refreshing: boolean;
-}
-
 export function deriveRunReviewStatus(run: RunRow): string {
   if (run.status === 'running' || run.status === 'pending') return 'running';
   if (run.totalGenerations === 0) return 'pending';
