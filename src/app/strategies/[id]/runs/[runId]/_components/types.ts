@@ -1,4 +1,7 @@
+import type { InputImage } from '@/lib/run-image-types';
 import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
+
+export type { InputImage };
 
 export interface StepInfo {
   stepOrder: number;
@@ -11,13 +14,6 @@ export interface StepInfo {
   realPhotoFromStep: number | null;
   moodBoardFromStep: number | null;
   promptVersion: { id: string; name: string | null } | null;
-}
-
-export interface InputImage {
-  url: string;
-  label: string;
-  isComposite?: boolean;
-  sourceImages?: { url: string; label: string }[];
 }
 
 /**

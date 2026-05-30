@@ -148,6 +148,45 @@ export function defaultStep(promptVersionId: string, model = FALLBACK_GENERATION
   };
 }
 
+export function defaultJudgeStep(
+  model = FALLBACK_GENERATION_MODEL,
+  judgeModel = FALLBACK_JUDGE_MODEL,
+): StepData {
+  return {
+    _uid: nextUid(),
+    type: 'judge',
+    name: 'Judge',
+    number_of_images: 4,
+    prompt_version_id: '',
+    model,
+    aspect_ratio: '1:1',
+    output_resolution: '1K',
+    temperature: 1.0,
+    use_google_search: false,
+    tag_images: true,
+    dollhouse_view_from_step: null,
+    real_photo_from_step: null,
+    mood_board_from_step: null,
+    include_dollhouse: true,
+    include_real_photo: true,
+    include_mood_board: true,
+    include_product_images: true,
+    include_product_categories: [],
+    product_image_types: {},
+    arbitrary_image_from_step: null,
+    judges: [
+      {
+        _uid: nextUid(),
+        name: '',
+        judge_model: judgeModel,
+        judge_type: 'individual',
+        judge_prompt_version_id: '',
+        tolerance_threshold: 1,
+      },
+    ],
+  };
+}
+
 export const ASPECT_RATIOS = [
   '1:1',
   '2:3',

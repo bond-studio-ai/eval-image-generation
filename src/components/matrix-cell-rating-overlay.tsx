@@ -52,6 +52,9 @@ export function MatrixCellRatingOverlay({
       };
     },
     enabled: !!generationId,
+    // Match the prior module-level cache: fetch a generation's rating once and
+    // keep it; the optimistic `setQueryData` in `rate` handles in-session updates.
+    staleTime: Infinity,
   });
 
   const sceneRating = data?.scene ?? null;

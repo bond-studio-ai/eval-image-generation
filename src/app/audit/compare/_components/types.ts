@@ -1,11 +1,7 @@
+import type { InputImage } from '@/lib/run-image-types';
 import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
 
-export interface InputImage {
-  url: string;
-  label: string;
-  isComposite?: boolean;
-  sourceImages?: { url: string; label: string }[];
-}
+export type { InputImage };
 
 export interface StepResult {
   id: string;

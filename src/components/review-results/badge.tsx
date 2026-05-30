@@ -49,6 +49,10 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
       return json?.data?.record ?? null;
     },
     enabled: showModal && !!generationId,
+    // Match the prior per-`state` cache: a record is immutable for a given
+    // review state, so don't refetch on reopen; a force re-run yields a new
+    // `state` object (new queryKey) and fetches fresh.
+    staleTime: Infinity,
   });
 
   if (!ready) return null;

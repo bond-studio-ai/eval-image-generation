@@ -1,12 +1,13 @@
 'use client';
 
-import { ResourceFormHeader } from '@/components/resource-form-header';
+import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
 import { buildStrategyPayload } from '@/components/strategy-builder/build-payload';
 import { PreviewSettingsSection } from '@/components/strategy-builder/preview-settings-section';
 import { SaveActionBar } from '@/components/strategy-builder/save-action-bar';
 import { StepsSection } from '@/components/strategy-builder/steps-section';
 import { StrategySettingsSection } from '@/components/strategy-builder/strategy-settings-section';
 import {
+  defaultJudgeStep,
   defaultPreviewSettings,
   defaultStep,
   defaultStrategySettings,
@@ -105,42 +106,7 @@ export function StrategyBuilder({
   }, [defaultGenerationModel, promptVersions]);
 
   const addJudgeStep = useCallback(() => {
-    setSteps((prev) => [
-      ...prev,
-      {
-        _uid: nextUid(),
-        type: 'judge' as const,
-        name: 'Judge',
-        number_of_images: 4,
-        prompt_version_id: '',
-        model: defaultGenerationModel,
-        aspect_ratio: '1:1',
-        output_resolution: '1K',
-        temperature: 1.0,
-        use_google_search: false,
-        tag_images: true,
-        dollhouse_view_from_step: null,
-        real_photo_from_step: null,
-        mood_board_from_step: null,
-        include_dollhouse: true,
-        include_real_photo: true,
-        include_mood_board: true,
-        include_product_images: true,
-        include_product_categories: [],
-        product_image_types: {},
-        arbitrary_image_from_step: null,
-        judges: [
-          {
-            _uid: nextUid(),
-            name: '',
-            judge_model: defaultJudgeModel,
-            judge_type: 'individual',
-            judge_prompt_version_id: '',
-            tolerance_threshold: 1,
-          },
-        ],
-      },
-    ]);
+    setSteps((prev) => [...prev, defaultJudgeStep(defaultGenerationModel, defaultJudgeModel)]);
   }, [defaultGenerationModel, defaultJudgeModel]);
 
   const removeStep = useCallback((idx: number) => {
@@ -263,11 +229,7 @@ export function StrategyBuilder({
       />
 
       {/* Error */}
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
+      {error && <ErrorCard message={error} />}
     </div>
   );
 }
