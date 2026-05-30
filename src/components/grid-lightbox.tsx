@@ -1,12 +1,12 @@
 'use client';
 
 import { RatingForm } from '@/app/generations/[id]/rating-form';
+import { CdnImage } from '@/components/cdn-image';
 import { ComparisonSlider } from '@/components/comparison-slider';
 import { ImageEvaluationForm } from '@/components/image-evaluation-form';
 import { Modal } from '@/components/ui';
 import { serviceUrl } from '@/lib/api-base';
 import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
-import { withImageParams } from '@/lib/image-utils';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -177,11 +177,13 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                   }}
                   className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <CdnImage
                     src={outputUrl}
                     alt="Output"
-                    className="max-h-full max-w-full rounded-lg object-contain"
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain"
                   />
                 </button>
               )}
@@ -205,8 +207,13 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                           : 'Click to compare with scene reference'
                       }
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt={img.label} className="size-14 object-cover" />
+                      <CdnImage
+                        src={img.url}
+                        alt={img.label}
+                        width={56}
+                        height={56}
+                        className="size-14 object-cover"
+                      />
                       <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">
                         {img.label}
                       </span>
@@ -233,13 +240,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                               e.stopPropagation();
                               setExpandedImage({ src: img.urls[0], alt: img.label });
                             }}
-                            className="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                            className="relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={withImageParams(img.urls[0], 96)}
+                            <CdnImage
+                              src={img.urls[0]}
                               alt={img.label}
-                              className="h-full w-full object-cover"
+                              fill
+                              sizes="48px"
+                              className="object-cover"
                             />
                           </button>
                         ) : (
@@ -252,13 +260,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                                   e.stopPropagation();
                                   setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` });
                                 }}
-                                className="size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
+                                className="relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
                               >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={withImageParams(url, 80)}
+                                <CdnImage
+                                  src={url}
                                   alt={`${img.label} ${i + 1}`}
-                                  className="h-full w-full object-cover"
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
                                 />
                               </button>
                             ))}
@@ -310,11 +319,13 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           containerClassName="z-[10000] p-6"
           className="relative max-h-[90vh] w-auto max-w-[90vw] overflow-hidden rounded-lg bg-transparent p-0 shadow-none"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={withImageParams(expandedImage.src, 512)}
+          <CdnImage
+            src={expandedImage.src}
             alt={expandedImage.alt}
-            className="max-h-[90vh] max-w-full object-contain"
+            width={0}
+            height={0}
+            sizes="100vw"
+            className="h-auto max-h-[90vh] w-auto max-w-full object-contain"
           />
           <div className="absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b from-black/60 to-transparent px-3 py-2">
             <span className="text-sm font-medium text-white">{expandedImage.alt}</span>

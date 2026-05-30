@@ -5,7 +5,6 @@ import { RenderStatusBadge } from '@/components/render-status-badge';
 import { Card, Spinner } from '@/components/ui';
 import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-renders';
 import { imageGenerationV2Base } from '@/lib/env';
-import { withImageParams } from '@/lib/image-utils';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { RenderAutoRefresh } from './render-auto-refresh';
@@ -165,7 +164,7 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
                 <Card key={frame.id} padding="none" className="overflow-hidden">
                   <div className="bg-surface-sunken">
                     <ExpandableImage
-                      src={withImageParams(frame.prettyUrl || frame.imageUrl, 1024)}
+                      src={frame.prettyUrl || frame.imageUrl}
                       alt={frame.summary || `Frame ${frame.frameIndex + 1}`}
                       wrapperClassName="relative block aspect-[4/3] w-full"
                     />

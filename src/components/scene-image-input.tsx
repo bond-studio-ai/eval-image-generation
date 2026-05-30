@@ -2,7 +2,6 @@
 
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { localUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useRef, useState } from 'react';
 
 interface SceneImageInputProps {
@@ -70,9 +69,8 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       {value ? (
         <div className="group relative">
           <ImageWithSkeleton
-            src={withImageParams(value, 1024)}
+            src={value}
             alt={label}
-            loading="lazy"
             wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50"
           />
           <button

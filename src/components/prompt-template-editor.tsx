@@ -589,8 +589,11 @@ function TemplateErrors({ errors }: { errors: { line: number; message: string }[
   return (
     <div className="mt-1.5 shrink-0 rounded-md bg-red-50 px-3 py-2">
       <div className="space-y-0.5">
-        {visible.map((err, i) => (
-          <p key={i} className="flex items-start gap-1.5 text-xs text-red-700">
+        {visible.map((err) => (
+          <p
+            key={`${err.line}:${err.message}`}
+            className="flex items-start gap-1.5 text-xs text-red-700"
+          >
             <svg
               className="mt-0.5 size-3 shrink-0 text-red-500"
               viewBox="0 0 20 20"

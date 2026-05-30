@@ -31,8 +31,6 @@ export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
 
   useEffect(() => {
     if (!isPolling) return;
-    setSecondsLeft(REFRESH_INTERVAL_MS / 1000);
-    setRefreshing(false);
 
     // We have to track every timer the effect spawns so cleanup can clear
     // them all. The flash `setTimeout` in particular previously leaked past

@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { DateRangePicker } from '@/components/date-range-picker';
 import { GridLightbox } from '@/components/grid-lightbox';
 import { JudgeScoreBadge } from '@/components/judge-score-badge';
@@ -989,15 +990,14 @@ function MatrixView({
                               key={run.id}
                               type="button"
                               onClick={() => onImageClick(run)}
-                              className="group relative block cursor-pointer"
+                              className="group relative block aspect-square cursor-pointer"
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <CdnImage
                                 src={run.lastOutputUrl}
                                 alt=""
-                                loading="lazy"
-                                className={`w-full rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
-                                style={{ aspectRatio: '1' }}
+                                fill
+                                sizes="(max-width:768px) 25vw, 150px"
+                                className={`rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
                               />
                               <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/0 transition-colors group-hover:bg-black/20">
                                 <svg
@@ -1049,13 +1049,12 @@ function MatrixView({
                             onClick={() => onImageClick(firstRun)}
                             className="relative block cursor-pointer"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <CdnImage
                               src={firstRun.lastOutputUrl}
                               alt=""
-                              loading="lazy"
+                              width={CELL - 20}
+                              height={CELL - 20}
                               className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
-                              style={{ width: CELL - 20, height: CELL - 20 }}
                             />
                             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                               <svg
@@ -1189,13 +1188,12 @@ function RunCell({
               onClick={() => onImageClick(run)}
               className="relative block cursor-pointer"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <CdnImage
                 src={run.lastOutputUrl}
                 alt=""
-                loading="lazy"
+                width={cellSize - 20}
+                height={cellSize - 20}
                 className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? 'border-warning-400 ring-warning-200 border-2 ring-2' : 'border-border border'}`}
-                style={{ width: cellSize - 20, height: cellSize - 20 }}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-colors group-hover:bg-black/20">
                 <svg

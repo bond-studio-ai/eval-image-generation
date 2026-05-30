@@ -1,8 +1,8 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { ExpandableImage } from '@/components/expandable-image';
 import { serviceUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
@@ -206,15 +206,15 @@ function ImageCompare({ left, right }: { left: InputImage[] | null; right: Input
               </div>
               <div className="grid flex-1 grid-cols-2 gap-2">
                 <div
-                  className={`aspect-square w-20 overflow-hidden rounded-md border bg-gray-100 ${isComposite ? 'border-violet-400' : 'border-gray-200'}`}
+                  className={`relative aspect-square w-20 overflow-hidden rounded-md border bg-gray-100 ${isComposite ? 'border-violet-400' : 'border-gray-200'}`}
                 >
                   {lImg?.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={withImageParams(lImg.url)}
+                    <CdnImage
+                      src={lImg.url}
                       alt={label}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-[10px] text-gray-400">
@@ -223,15 +223,15 @@ function ImageCompare({ left, right }: { left: InputImage[] | null; right: Input
                   )}
                 </div>
                 <div
-                  className={`aspect-square w-20 overflow-hidden rounded-md border bg-gray-100 ${isComposite ? 'border-violet-400' : 'border-gray-200'}`}
+                  className={`relative aspect-square w-20 overflow-hidden rounded-md border bg-gray-100 ${isComposite ? 'border-violet-400' : 'border-gray-200'}`}
                 >
                   {rImg?.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={withImageParams(rImg.url)}
+                    <CdnImage
+                      src={rImg.url}
                       alt={label}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-[10px] text-gray-400">
@@ -253,15 +253,15 @@ function ImageCompare({ left, right }: { left: InputImage[] | null; right: Input
                   {sourceImages.length} source images
                 </p>
                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                  {sourceImages.map((src, j) => (
-                    <div key={j}>
-                      <div className="aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={withImageParams(src.url)}
+                  {sourceImages.map((src) => (
+                    <div key={src.url}>
+                      <div className="relative aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
+                        <CdnImage
+                          src={src.url}
                           alt={src.label}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
+                          fill
+                          sizes="(max-width:768px) 25vw, 96px"
+                          className="object-cover"
                         />
                       </div>
                       <p className="mt-0.5 truncate text-[10px] text-violet-700" title={src.label}>
@@ -487,7 +487,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
                       <div>
                         {ls?.outputUrl ? (
                           <ExpandableImage
-                            src={withImageParams(ls.outputUrl, 1024)}
+                            src={ls.outputUrl}
                             alt="Left output"
                             wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50"
                           />
@@ -505,7 +505,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
                       <div>
                         {rs?.outputUrl ? (
                           <ExpandableImage
-                            src={withImageParams(rs.outputUrl, 1024)}
+                            src={rs.outputUrl}
                             alt="Right output"
                             wrapperClassName="relative block h-64 w-full rounded-lg border border-gray-200 bg-gray-50"
                           />

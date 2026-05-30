@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { useState } from 'react';
 import { formatInt, formatNumber, formatPercent } from '../format';
 import { ChevronIcon } from '../icons';
@@ -165,7 +166,7 @@ function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
       <figcaption className="border-b border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-medium tracking-wide text-gray-600 uppercase">
         {label}
       </figcaption>
-      <div className="flex aspect-[4/3] items-center justify-center bg-gray-50">
+      <div className="relative flex aspect-[4/3] items-center justify-center bg-gray-50">
         {url ? (
           // EXR thumbnails are .exr files which the browser can't render
           // directly — only the predicted PNG actually loads. The dollhouse
@@ -181,8 +182,13 @@ function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
               EXR (open externally)
             </a>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt={label} className="h-full w-full object-contain" />
+            <CdnImage
+              src={url}
+              alt={label}
+              fill
+              sizes="(max-width:768px) 50vw, 320px"
+              className="object-contain"
+            />
           )
         ) : (
           <span className="text-[11px] text-gray-400">No preview</span>

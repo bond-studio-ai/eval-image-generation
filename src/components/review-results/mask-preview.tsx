@@ -1,10 +1,11 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { useEffect, useRef, useState } from 'react';
 import type { CategoryMask } from './types';
 
 /**
- * Plain `<img>` with a pulsing gray skeleton that fills the container
+ * `next/image` (via {@link CdnImage}) with a pulsing gray skeleton that fills the container
  * until the network image actually loads. The S3 overlays can take a
  * couple of seconds to fetch, especially for large composites, and
  * showing nothing during that window made the modal feel broken.
@@ -43,14 +44,14 @@ export function SkeletonImage({
           Failed to load image
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <CdnImage
         src={src}
         alt={alt}
-        loading="lazy"
+        fill
+        sizes="(max-width:768px) 50vw, 33vw"
         onLoad={() => setLoadedSrc(src)}
         onError={() => setErroredSrc(src)}
-        className={`${imgClassName} transition-opacity duration-150 ${loaded && !errored ? 'opacity-100' : 'opacity-0'}`}
+        className={`${imgClassName} object-contain transition-opacity duration-150 ${loaded && !errored ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   );

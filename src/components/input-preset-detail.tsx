@@ -4,7 +4,6 @@ import { DesignSettingsDisplay, useCatalogProducts } from '@/components/design-s
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
 import { localUrl, serviceUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import {
   getInputPresetStoredImages,
   INPUT_PRESET_DESIGN_FIELD_KEYS,
@@ -350,9 +349,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                     <span className="text-xs font-semibold text-gray-700">{s.label}</span>
                   </div>
                   <ImageWithSkeleton
-                    src={withImageParams(s.url)}
+                    src={s.url}
                     alt={s.label}
-                    loading="lazy"
                     wrapperClassName="h-48 w-full bg-gray-50 p-1"
                   />
                 </div>
@@ -375,9 +373,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                 >
                   {item.previewUrl ? (
                     <ImageWithSkeleton
-                      src={withImageParams(item.previewUrl)}
+                      src={item.previewUrl}
                       alt={item.label}
-                      loading="lazy"
                       wrapperClassName="h-32 w-full bg-gray-50 p-1"
                     />
                   ) : item.isLoadingPreview ? (

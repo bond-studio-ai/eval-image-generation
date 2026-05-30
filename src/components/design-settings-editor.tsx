@@ -1,10 +1,10 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { SceneImageInput } from '@/components/scene-image-input';
 import { Modal } from '@/components/ui';
 import { localUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type FieldType = 'select' | 'boolean' | 'product';
@@ -406,8 +406,6 @@ function ProductImagePreviewModal({
   onClose: () => void;
 }) {
   const [loaded, setLoaded] = useState(false);
-  const sep = url.includes('?') ? '&' : '?';
-  const webpUrl = `${url}${sep}f=webp`;
   const safeName = (productName ?? 'product').replace(/[^a-zA-Z0-9_-]/g, '_');
 
   return (
@@ -469,12 +467,14 @@ function ProductImagePreviewModal({
       <div className="flex-1 overflow-auto p-4">
         <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
           {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={webpUrl}
+          <CdnImage
+            src={url}
             alt={`${productName ?? 'Product'} - ${IMAGE_TAG_LABELS[tag]}`}
+            width={0}
+            height={0}
+            sizes="100vw"
             onLoad={() => setLoaded(true)}
-            className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+            className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
           />
         </div>
       </div>
@@ -1078,9 +1078,8 @@ function ProductField({
         <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
           {previewUrl ? (
             <ImageWithSkeleton
-              src={withImageParams(previewUrl, 1024)}
+              src={previewUrl}
               alt={field.label}
-              loading="lazy"
               wrapperClassName="h-24 w-full bg-gray-50 p-1"
             />
           ) : selectedId && !loaded ? (
@@ -1377,9 +1376,9 @@ function ProductSelectionModal({
                   <span className="shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
                     {product.featuredImage?.url ? (
                       <ImageWithSkeleton
-                        src={withImageParams(product.featuredImage.url)}
+                        src={product.featuredImage.url}
                         alt={product.name}
-                        loading="lazy"
+                        sizes="48px"
                         wrapperClassName="size-12 bg-gray-50 p-1"
                       />
                     ) : (

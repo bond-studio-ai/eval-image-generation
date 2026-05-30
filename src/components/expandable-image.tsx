@@ -1,5 +1,6 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { ImageWithSkeleton } from '@/components/image-with-skeleton';
 import { Modal } from '@/components/ui';
 import { useState } from 'react';
@@ -28,7 +29,7 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
         className={`cursor-pointer ${wrapperClassName ?? ''}`}
         aria-label={`Expand ${alt}`}
       >
-        <ImageWithSkeleton src={src} alt={alt} loading="lazy" className={className} />
+        <ImageWithSkeleton src={src} alt={alt} className={className} />
       </button>
 
       {open && (
@@ -64,12 +65,14 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
           <div className="flex-1 overflow-auto p-4">
             <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
               {!loaded && <div className="aspect-[4/3] w-full animate-pulse bg-gray-200" />}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <CdnImage
                 src={src}
                 alt={alt}
+                width={0}
+                height={0}
+                sizes="100vw"
                 onLoad={() => setLoaded(true)}
-                className={`w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+                className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
               />
             </div>
           </div>

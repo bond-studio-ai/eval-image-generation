@@ -156,7 +156,7 @@ export function StrategySettingsPrompts({
                     <div className="mt-2 divide-y divide-amber-200/60">
                       {step.judges.map((j, i) => (
                         <div
-                          key={i}
+                          key={j.judgePromptVersionId}
                           className="flex items-center gap-3 py-1.5 first:pt-0 last:pb-0"
                         >
                           <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">

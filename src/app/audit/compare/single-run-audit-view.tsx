@@ -1,9 +1,9 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { ExpandableImage } from '@/components/expandable-image';
 import { RunJudgeEvaluationsSection } from '@/components/run-judge-evaluations-section';
 import { serviceUrl } from '@/lib/api-base';
-import { withImageParams } from '@/lib/image-utils';
 import {
   parseStrategyRunJudgeResults,
   type StrategyRunJudgeResultEntry,
@@ -84,19 +84,19 @@ function ImageGrid({ images }: { images: InputImage[] }) {
     <div className="space-y-2">
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
         {images.map((img, i) => (
-          <div key={i}>
+          <div key={img.url}>
             <div
-              className={`aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? 'cursor-pointer border-violet-400 ring-1 ring-violet-200' : 'border-gray-200'}`}
+              className={`relative aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? 'cursor-pointer border-violet-400 ring-1 ring-violet-200' : 'border-gray-200'}`}
               {...(img.isComposite
                 ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) }
                 : {})}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={withImageParams(img.url)}
+              <CdnImage
+                src={img.url}
                 alt={img.label}
-                className="h-full w-full object-cover"
-                loading="lazy"
+                fill
+                sizes="(max-width:768px) 25vw, 120px"
+                className="object-cover"
               />
             </div>
             <div className="mt-0.5 flex items-center gap-1">
@@ -131,15 +131,15 @@ function ImageGrid({ images }: { images: InputImage[] }) {
               </button>
             </div>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-              {images[expandedGroup].sourceImages!.map((src, j) => (
-                <div key={j}>
-                  <div className="aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={withImageParams(src.url)}
+              {images[expandedGroup].sourceImages!.map((src) => (
+                <div key={src.url}>
+                  <div className="relative aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
+                    <CdnImage
+                      src={src.url}
                       alt={src.label}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="(max-width:768px) 25vw, 120px"
+                      className="object-cover"
                     />
                   </div>
                   <p className="mt-0.5 truncate text-[10px] text-violet-700" title={src.label}>
@@ -340,7 +340,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
                     <SectionHeader title="Output" />
                     <div className="mt-2">
                       <ExpandableImage
-                        src={withImageParams(sr.outputUrl, 1024)}
+                        src={sr.outputUrl}
                         alt={`${stepName} output`}
                         wrapperClassName="relative block h-64 w-full max-w-xl rounded-lg border border-gray-200 bg-gray-50"
                       />

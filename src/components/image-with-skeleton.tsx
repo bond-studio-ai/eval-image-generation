@@ -1,10 +1,15 @@
 'use client';
 
+import { CdnImage } from '@/components/cdn-image';
 import { useState } from 'react';
 
-type ImageWithSkeletonProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+type ImageWithSkeletonProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> & {
+  src: string;
+  alt?: string;
   /** Optional wrapper className for the container (relative + size). Omit to render fragment (skeleton + img only; parent must be relative with size). */
   wrapperClassName?: string;
+  /** `sizes` hint for the responsive srcset. Default suits half/third-width layouts; pass a tighter value (e.g. "56px") for small thumbnails so the CDN isn't asked for an oversized image. */
+  sizes?: string;
 };
 
 /**
@@ -17,23 +22,22 @@ export function ImageWithSkeleton({
   alt,
   className = '',
   wrapperClassName,
-  ...props
+  sizes = '(max-width:768px) 50vw, 33vw',
 }: ImageWithSkeletonProps) {
   const [loaded, setLoaded] = useState(false);
 
-  const fillClass = wrapperClassName ? 'h-full w-full' : 'absolute inset-0 h-full w-full';
   const content = (
     <>
       {!loaded && (
         <div className="absolute inset-0 animate-pulse rounded-[inherit] bg-gray-200" aria-hidden />
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <CdnImage
         src={src}
-        alt={alt}
+        alt={alt ?? ''}
+        fill
+        sizes={sizes}
         onLoad={() => setLoaded(true)}
-        className={`${fillClass} object-contain transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'} ${className}`}
-        {...props}
+        className={`object-contain transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'} ${className}`}
       />
     </>
   );
