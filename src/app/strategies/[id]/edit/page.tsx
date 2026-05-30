@@ -1,17 +1,12 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { StrategyBuilder } from '@/components/strategy-builder';
-import {
-  fetchInputPresets,
-  fetchPromptVersions,
-  fetchStrategyById,
-  fetchStrategyModelCatalog,
-} from '@/lib/service-client';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/page-header";
+import { StrategyBuilder } from "@/components/strategy-builder";
+import { fetchInputPresets, fetchPromptVersions, fetchStrategyById, fetchStrategyModelCatalog } from "@/lib/service-client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: 'Edit Strategy' };
+export const metadata: Metadata = { title: "Edit Strategy" };
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,12 +15,7 @@ interface PageProps {
 export default async function EditStrategyPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [strat, promptVersions, inputPresets, modelCatalog] = await Promise.all([
-    fetchStrategyById(id),
-    fetchPromptVersions(100),
-    fetchInputPresets(100),
-    fetchStrategyModelCatalog(),
-  ]);
+  const [strat, promptVersions, inputPresets, modelCatalog] = await Promise.all([fetchStrategyById(id), fetchPromptVersions(100), fetchInputPresets(100), fetchStrategyModelCatalog()]);
 
   if (!strat) {
     notFound();
@@ -33,16 +23,12 @@ export default async function EditStrategyPage({ params }: PageProps) {
 
   return (
     <div>
-      <PageHeader
-        backHref={`/strategies/${id}`}
-        backLabel={`Back to ${strat.name}`}
-        title="Edit Strategy"
-      />
+      <PageHeader backHref={`/strategies/${id}`} backLabel={`Back to ${strat.name}`} title="Edit Strategy" />
       <div className="mt-6">
         <StrategyBuilder
           strategyId={strat.id}
           initialName={strat.name}
-          initialDescription={strat.description ?? ''}
+          initialDescription={strat.description ?? ""}
           initialStrategySettings={{
             model: strat.model,
             aspect_ratio: strat.aspectRatio,
@@ -52,18 +38,18 @@ export default async function EditStrategyPage({ params }: PageProps) {
             tag_images: strat.tagImages,
             group_product_images: strat.groupProductImages ?? false,
             check_scene_accuracy: strat.checkSceneAccuracy ?? false,
-            enable_multi_turn_context: strat.enableMultiTurnContext ?? false,
+            enable_multi_turn_context: strat.enableMultiTurnContext ?? false
           }}
           initialPreviewSettings={{
             preview_model: strat.previewModel ?? null,
-            preview_resolution: strat.previewResolution ?? '512',
+            preview_resolution: strat.previewResolution ?? "512"
           }}
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
-            type: s.type ?? 'generation',
+            type: s.type ?? "generation",
             number_of_images: s.numberOfImages ?? undefined,
-            name: s.name ?? '',
-            prompt_version_id: s.promptVersionId ?? '',
+            name: s.name ?? "",
+            prompt_version_id: s.promptVersionId ?? "",
             model: s.model,
             aspect_ratio: s.aspectRatio,
             output_resolution: s.outputResolution,
@@ -78,22 +64,19 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_mood_board: s.includeMoodBoard ?? true,
             include_product_images: s.includeProductImages ?? true,
             include_product_categories: s.includeProductCategories ?? [],
-            product_image_types: (s.productImageTypes ?? {}) as Record<
-              string,
-              'featured-image' | 'photo-image' | 'line-drawing' | 'tear-sheet'
-            >,
+            product_image_types: (s.productImageTypes ?? {}) as Record<string, "featured-image" | "photo-image" | "line-drawing" | "tear-sheet">,
             arbitrary_image_from_step: s.arbitraryImageFromStep,
             judges:
-              s.type === 'judge'
+              s.type === "judge"
                 ? (s.judges ?? []).map((j) => ({
                     id: j.id,
-                    name: j.name ?? '',
+                    name: j.name ?? "",
                     judge_model: j.judgeModel,
-                    judge_type: j.judgeType as 'batch' | 'individual',
+                    judge_type: j.judgeType as "batch" | "individual",
                     judge_prompt_version_id: j.judgePromptVersionId,
-                    tolerance_threshold: j.toleranceThreshold,
+                    tolerance_threshold: j.toleranceThreshold
                   }))
-                : undefined,
+                : undefined
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

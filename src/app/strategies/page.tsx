@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import { StrategiesTable } from './strategies-table';
+import type { Metadata } from "next";
+import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { StrategiesTable } from "./strategies-table";
 
 export const metadata: Metadata = {
-  title: 'Strategies',
-  description: 'Multi-step workflows that chain generations together.',
+  title: "Strategies",
+  description: "Multi-step workflows that chain generations together."
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default function StrategiesPage() {
   return (

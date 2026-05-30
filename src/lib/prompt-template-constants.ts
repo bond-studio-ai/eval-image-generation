@@ -4,63 +4,63 @@
  */
 
 export const PRODUCT_CATEGORIES = [
-  'faucets',
-  'lightings',
-  'lvps',
-  'mirrors',
-  'paints',
-  'robe_hooks',
-  'shelves',
-  'shower_glasses',
-  'shower_systems',
-  'floor_tiles',
-  'wall_tiles',
-  'shower_wall_tiles',
-  'shower_floor_tiles',
-  'shower_curb_tiles',
-  'toilet_paper_holders',
-  'toilets',
-  'towel_bars',
-  'towel_rings',
-  'tub_doors',
-  'tub_fillers',
-  'tubs',
-  'vanities',
-  'wallpapers',
+  "faucets",
+  "lightings",
+  "lvps",
+  "mirrors",
+  "paints",
+  "robe_hooks",
+  "shelves",
+  "shower_glasses",
+  "shower_systems",
+  "floor_tiles",
+  "wall_tiles",
+  "shower_wall_tiles",
+  "shower_floor_tiles",
+  "shower_curb_tiles",
+  "toilet_paper_holders",
+  "toilets",
+  "towel_bars",
+  "towel_rings",
+  "tub_doors",
+  "tub_fillers",
+  "tubs",
+  "vanities",
+  "wallpapers"
 ] as const;
 
 /** Singular camelCase for template: products.vanity, products.faucet, etc. */
 const TO_CAMEL_SINGULAR: Record<(typeof PRODUCT_CATEGORIES)[number], string> = {
-  faucets: 'faucet',
-  lightings: 'lighting',
-  lvps: 'lvp',
-  mirrors: 'mirror',
-  paints: 'paint',
-  robe_hooks: 'robeHook',
-  shelves: 'shelf',
-  shower_glasses: 'showerGlass',
-  shower_systems: 'showerSystem',
-  floor_tiles: 'floorTile',
-  wall_tiles: 'wallTile',
-  shower_wall_tiles: 'showerWallTile',
-  shower_floor_tiles: 'showerFloorTile',
-  shower_curb_tiles: 'showerCurbTile',
-  toilet_paper_holders: 'toiletPaperHolder',
-  toilets: 'toilet',
-  towel_bars: 'towelBar',
-  towel_rings: 'towelRing',
-  tub_doors: 'tubDoor',
-  tub_fillers: 'tubFiller',
-  tubs: 'tub',
-  vanities: 'vanity',
-  wallpapers: 'wallpaper',
+  faucets: "faucet",
+  lightings: "lighting",
+  lvps: "lvp",
+  mirrors: "mirror",
+  paints: "paint",
+  robe_hooks: "robeHook",
+  shelves: "shelf",
+  shower_glasses: "showerGlass",
+  shower_systems: "showerSystem",
+  floor_tiles: "floorTile",
+  wall_tiles: "wallTile",
+  shower_wall_tiles: "showerWallTile",
+  shower_floor_tiles: "showerFloorTile",
+  shower_curb_tiles: "showerCurbTile",
+  toilet_paper_holders: "toiletPaperHolder",
+  toilets: "toilet",
+  towel_bars: "towelBar",
+  towel_rings: "towelRing",
+  tub_doors: "tubDoor",
+  tub_fillers: "tubFiller",
+  tubs: "tub",
+  vanities: "vanity",
+  wallpapers: "wallpaper"
 };
 
-const SCENE_KEYS = ['dollhouse_view', 'real_photo', 'mood_board'] as const;
+const SCENE_KEYS = ["dollhouse_view", "real_photo", "mood_board"] as const;
 const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
-  dollhouse_view: 'dollhouseView',
-  real_photo: 'realPhoto',
-  mood_board: 'moodBoard',
+  dollhouse_view: "dollhouseView",
+  real_photo: "realPhoto",
+  mood_board: "moodBoard"
 };
 
 /**
@@ -69,22 +69,22 @@ const SCENE_TO_CAMEL: Record<(typeof SCENE_KEYS)[number], string> = {
  * product key differs (e.g. design.curbTile vs products.showerCurbTile).
  */
 const DESIGN_PROMPT_PATHS = [
-  'design.floorTilePattern',
-  'design.nicheTile',
-  'design.nicheTilePattern',
-  'design.showerFloorTilePattern',
-  'design.curbTile',
-  'design.curbTilePattern',
-  'design.showerWallTilePattern',
-  'design.showerShortWallTile',
-  'design.showerShortWallTilePattern',
-  'design.wallpaperPlacement',
-  'design.wallTilePlacement',
-  'design.wallTilePattern',
-  'design.mirrorPlacement',
-  'design.lightingPlacement',
-  'design.isShowerGlassVisible',
-  'design.isTubDoorVisible',
+  "design.floorTilePattern",
+  "design.nicheTile",
+  "design.nicheTilePattern",
+  "design.showerFloorTilePattern",
+  "design.curbTile",
+  "design.curbTilePattern",
+  "design.showerWallTilePattern",
+  "design.showerShortWallTile",
+  "design.showerShortWallTilePattern",
+  "design.wallpaperPlacement",
+  "design.wallTilePlacement",
+  "design.wallTilePattern",
+  "design.mirrorPlacement",
+  "design.lightingPlacement",
+  "design.isShowerGlassVisible",
+  "design.isTubDoorVisible"
 ] as const;
 
 /** Display labels for conditionals: product categories + scene + design */
@@ -92,28 +92,28 @@ export const CONDITIONAL_OPTIONS: { value: string; label: string; isProduct: boo
   ...PRODUCT_CATEGORIES.map((k) => ({
     value: TO_CAMEL_SINGULAR[k],
     label: toTitleCase(TO_CAMEL_SINGULAR[k]),
-    isProduct: true,
+    isProduct: true
   })),
   ...SCENE_KEYS.map((k) => ({
     value: SCENE_TO_CAMEL[k],
-    label: toTitleCase(SCENE_TO_CAMEL[k].replace(/([A-Z])/g, ' $1').trim()),
-    isProduct: false,
+    label: toTitleCase(SCENE_TO_CAMEL[k].replace(/([A-Z])/g, " $1").trim()),
+    isProduct: false
   })),
   ...DESIGN_PROMPT_PATHS.map((path) => {
-    const field = path.slice('design.'.length);
+    const field = path.slice("design.".length);
     return {
       value: path,
       label: `Design: ${toTitleCase(field)}`,
-      isProduct: false,
+      isProduct: false
     };
-  }),
+  })
 ];
 
 /** Display labels for reference: product categories only */
 export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
   value: k,
   singular: TO_CAMEL_SINGULAR[k],
-  label: toTitleCase(TO_CAMEL_SINGULAR[k]),
+  label: toTitleCase(TO_CAMEL_SINGULAR[k])
 }));
 
 /**
@@ -129,30 +129,30 @@ export const REFERENCE_OPTIONS = PRODUCT_CATEGORIES.map((k) => ({
  * keys to match newly-added product types.
  */
 export const DOLLHOUSE_PRODUCT_TYPES = [
-  'faucet',
-  'floorTile',
-  'lighting',
-  'lvp',
-  'mirror',
-  'robeHook',
-  'shelves',
-  'showerCurbTile',
-  'showerFloorTile',
-  'showerGlass',
-  'showerShortWallTile',
-  'showerSystem',
-  'showerWallTile',
-  'toilet',
-  'toiletPaperHolder',
-  'towelBar',
-  'towelRing',
-  'tub',
-  'tubDoor',
-  'tubFiller',
-  'vanity',
-  'wallPaint',
-  'wallTile',
-  'wallpaper',
+  "faucet",
+  "floorTile",
+  "lighting",
+  "lvp",
+  "mirror",
+  "robeHook",
+  "shelves",
+  "showerCurbTile",
+  "showerFloorTile",
+  "showerGlass",
+  "showerShortWallTile",
+  "showerSystem",
+  "showerWallTile",
+  "toilet",
+  "toiletPaperHolder",
+  "towelBar",
+  "towelRing",
+  "tub",
+  "tubDoor",
+  "tubFiller",
+  "vanity",
+  "wallPaint",
+  "wallTile",
+  "wallpaper"
 ] as const;
 
 /**
@@ -178,69 +178,66 @@ export type DollhouseAttribute = {
 
 export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
   {
-    value: 'quantity',
-    helper: 'How many instances of this product are anchored in the area',
-    build: (p) => `{{${p}.quantity}}`,
+    value: "quantity",
+    helper: "How many instances of this product are anchored in the area",
+    build: (p) => `{{${p}.quantity}}`
   },
   {
-    value: '#each visibility → visible',
-    helper: 'Iterate every framing and print its visibility percentage (0–100)',
-    build: (p) => `{{#each ${p}.visibility}}{{visible}}{{/each}}`,
+    value: "#each visibility → visible",
+    helper: "Iterate every framing and print its visibility percentage (0–100)",
+    build: (p) => `{{#each ${p}.visibility}}{{visible}}{{/each}}`
   },
   {
-    value: '#each visibility → location',
-    helper: 'Iterate every framing and print its layout location',
-    build: (p) => `{{#each ${p}.visibility}}{{location}}{{/each}}`,
+    value: "#each visibility → location",
+    helper: "Iterate every framing and print its layout location",
+    build: (p) => `{{#each ${p}.visibility}}{{location}}{{/each}}`
   },
   {
-    value: '#each visibility → facing',
-    helper: 'Iterate every framing and print its facing direction',
-    build: (p) => `{{#each ${p}.visibility}}{{facing}}{{/each}}`,
+    value: "#each visibility → facing",
+    helper: "Iterate every framing and print its facing direction",
+    build: (p) => `{{#each ${p}.visibility}}{{facing}}{{/each}}`
   },
   {
-    value: '#each visibility → location (visible%)',
+    value: "#each visibility → location (visible%)",
     helper: 'Iterate every framing and print "location (visible%)" for each',
-    build: (p) => `{{#each ${p}.visibility}}{{location}} ({{visible}}%){{/each}}`,
+    build: (p) => `{{#each ${p}.visibility}}{{location}} ({{visible}}%){{/each}}`
   },
   {
-    value: '#each visibility → facing (visible%)',
+    value: "#each visibility → facing (visible%)",
     helper: 'Iterate every framing and print "facing (visible%)" for each',
-    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}%){{/each}}`,
-  },
+    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}%){{/each}}`
+  }
 ] as const;
 
 export type DollhouseProductType = string;
 
 /** Render helper so the editor can build the handlebars path in one place. */
-export function dollhouseReferencePath(
-  product: DollhouseProductType,
-  attr: DollhouseAttribute,
-): string {
+export function dollhouseReferencePath(product: DollhouseProductType, attr: DollhouseAttribute): string {
   return attr.build(`dollhouse.${product}`);
 }
 
 export function toDollhousePathKey(input: string): string {
   const trimmed = input.trim();
-  if (!trimmed) return '';
+  if (!trimmed) return "";
   if (/^[a-z][A-Za-z0-9]*$/.test(trimmed)) return trimmed;
   if (/^[A-Z][A-Za-z0-9]*$/.test(trimmed)) {
     return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
   }
 
   const words = trimmed.split(/[^a-zA-Z0-9]+/).filter(Boolean);
-  if (words.length === 0) return '';
+  if (words.length === 0) return "";
 
   return words
     .map((word, index) => {
       const lower = word.toLowerCase();
       return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
     })
-    .join('');
+    .join("");
 }
 
 function toTitleCase(s: string): string {
   return s
-    .replace(/([A-Z])/g, ' $1')
+    .replace(/([A-Z])/g, " $1")
     .replace(/^./, (c) => c.toUpperCase())
     .trim();
 }

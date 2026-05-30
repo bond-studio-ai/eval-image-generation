@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function BatchLoadingSkeleton() {
   return (
@@ -13,10 +13,7 @@ export function BatchLoadingSkeleton() {
             <div className="flex flex-1 items-center gap-3">
               <div className="bg-surface-sunken size-4 animate-pulse rounded" />
               <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
-              <div
-                className="bg-surface-sunken h-4 animate-pulse rounded"
-                style={{ width: 120 + (i % 3) * 40 }}
-              />
+              <div className="bg-surface-sunken h-4 animate-pulse rounded" style={{ width: 120 + (i % 3) * 40 }} />
               <div className="bg-surface-sunken h-4 w-20 animate-pulse rounded" />
               <div className="bg-surface-muted h-3 w-24 animate-pulse rounded" />
             </div>
@@ -40,10 +37,7 @@ export function BatchLoadMoreSkeleton() {
             <div className="flex flex-1 items-center gap-3">
               <div className="bg-surface-sunken size-4 animate-pulse rounded" />
               <div className="rounded-pill bg-surface-sunken h-5 w-16 animate-pulse" />
-              <div
-                className="bg-surface-sunken h-4 animate-pulse rounded"
-                style={{ width: 120 + (i % 3) * 40 }}
-              />
+              <div className="bg-surface-sunken h-4 animate-pulse rounded" style={{ width: 120 + (i % 3) * 40 }} />
               <div className="bg-surface-sunken h-4 w-20 animate-pulse rounded" />
             </div>
             <div className="bg-surface-muted h-3 w-28 animate-pulse rounded" />

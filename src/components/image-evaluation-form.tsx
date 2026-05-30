@@ -1,29 +1,18 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { ChevronDownIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
-import { serviceUrl } from '@/lib/api-base';
-import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from '@/lib/validation';
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { ChevronDownIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { serviceUrl } from "@/lib/api-base";
+import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from "@/lib/validation";
 
 const EMPTY_CATEGORIES: string[] = [];
 
 // Issue options
-const PRODUCT_ACCURACY_ISSUES = [
-  'Incorrect scale',
-  'Incorrect finish',
-  "Didn't follow the reference image",
-  'Incorrect tile pattern',
-];
+const PRODUCT_ACCURACY_ISSUES = ["Incorrect scale", "Incorrect finish", "Didn't follow the reference image", "Incorrect tile pattern"];
 
-const SCENE_ACCURACY_ISSUES = [
-  'Unrealistic lighting & shadows',
-  'Perspective drift',
-  'Incorrect existing conditions',
-  'Changed aspect ratio',
-  'Hallucinated details in the room',
-];
+const SCENE_ACCURACY_ISSUES = ["Unrealistic lighting & shadows", "Perspective drift", "Incorrect existing conditions", "Changed aspect ratio", "Hallucinated details in the room"];
 
 function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`);
@@ -47,15 +36,7 @@ interface ImageEvaluationFormProps {
   productCategories?: string[];
 }
 
-function IssueCheckboxGroup({
-  options,
-  selected,
-  onChange,
-}: {
-  options: string[];
-  selected: string[];
-  onChange: (selected: string[]) => void;
-}) {
+function IssueCheckboxGroup({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (selected: string[]) => void }) {
   const toggle = (issue: string) => {
     if (selected.includes(issue)) {
       onChange(selected.filter((s) => s !== issue));
@@ -68,12 +49,7 @@ function IssueCheckboxGroup({
     <div className="space-y-1.5">
       {options.map((issue) => (
         <label key={issue} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={selected.includes(issue)}
-            onChange={() => toggle(issue)}
-            className="text-primary-600 focus:ring-primary-500 size-3.5 rounded border-gray-300"
-          />
+          <input type="checkbox" checked={selected.includes(issue)} onChange={() => toggle(issue)} className="text-primary-600 focus:ring-primary-500 size-3.5 rounded border-gray-300" />
           {issue}
         </label>
       ))}
@@ -81,10 +57,7 @@ function IssueCheckboxGroup({
   );
 }
 
-export function ImageEvaluationForm({
-  resultId,
-  productCategories = EMPTY_CATEGORIES,
-}: ImageEvaluationFormProps) {
+export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGORIES }: ImageEvaluationFormProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +70,7 @@ export function ImageEvaluationForm({
   const [data, setData] = useState<EvaluationData>({
     productAccuracy: {},
     sceneAccuracyIssues: [],
-    sceneAccuracyNotes: '',
+    sceneAccuracyNotes: ""
   });
 
   // Track whether the initial load has completed so we don't auto-save the
@@ -106,7 +79,7 @@ export function ImageEvaluationForm({
 
   // Load existing evaluation
   const { data: loadedData, isLoading: loading } = useQuery({
-    queryKey: ['evaluation', resultId, productCategories],
+    queryKey: ["evaluation", resultId, productCategories],
     queryFn: async ({ signal }): Promise<EvaluationData> => {
       const res = await fetch(serviceUrl(`evaluations/${resultId}`), { signal });
       if (!res.ok) throw new Error(`Failed to load evaluation (${res.status})`);
@@ -124,7 +97,7 @@ export function ImageEvaluationForm({
         }
         const productAccuracy: Record<string, CategoryEval> = {};
         for (const cat of productCategories) {
-          productAccuracy[cat] = pa[cat] ?? { issues: [], notes: '' };
+          productAccuracy[cat] = pa[cat] ?? { issues: [], notes: "" };
         }
         for (const [key, val] of Object.entries(pa)) {
           if (!productAccuracy[key]) {
@@ -135,16 +108,16 @@ export function ImageEvaluationForm({
         return {
           productAccuracy,
           sceneAccuracyIssues: d.sceneAccuracyIssues ?? [],
-          sceneAccuracyNotes: d.sceneAccuracyNotes ?? '',
+          sceneAccuracyNotes: d.sceneAccuracyNotes ?? ""
         };
       }
       // Initialize empty product accuracy for all active categories
       const productAccuracy: Record<string, CategoryEval> = {};
       for (const cat of productCategories) {
-        productAccuracy[cat] = { issues: [], notes: '' };
+        productAccuracy[cat] = { issues: [], notes: "" };
       }
-      return { productAccuracy, sceneAccuracyIssues: [], sceneAccuracyNotes: '' };
-    },
+      return { productAccuracy, sceneAccuracyIssues: [], sceneAccuracyNotes: "" };
+    }
   });
 
   // Seed the editable form state from the loaded evaluation. Marking loaded
@@ -157,21 +130,18 @@ export function ImageEvaluationForm({
     });
   }, [loadedData]);
 
-  const updateCategoryEval = useCallback(
-    (category: string, field: 'issues' | 'notes', value: string[] | string) => {
-      setData((prev) => ({
-        ...prev,
-        productAccuracy: {
-          ...prev.productAccuracy,
-          [category]: {
-            ...prev.productAccuracy[category],
-            [field]: value,
-          },
-        },
-      }));
-    },
-    [],
-  );
+  const updateCategoryEval = useCallback((category: string, field: "issues" | "notes", value: string[] | string) => {
+    setData((prev) => ({
+      ...prev,
+      productAccuracy: {
+        ...prev.productAccuracy,
+        [category]: {
+          ...prev.productAccuracy[category],
+          [field]: value
+        }
+      }
+    }));
+  }, []);
 
   // Persist evaluation to the server.
   const save = useCallback(
@@ -181,27 +151,27 @@ export function ImageEvaluationForm({
       setError(null);
 
       try {
-        const res = await fetch(serviceUrl('evaluations'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resultId, ...payload }),
+        const res = await fetch(serviceUrl("evaluations"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resultId, ...payload })
         });
 
         if (!res.ok) {
           const json = await res.json();
-          setError(json.error?.message || 'Failed to save');
+          setError(json.error?.message || "Failed to save");
           return;
         }
 
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch {
-        setError('Network error');
+        setError("Network error");
       } finally {
         setSaving(false);
       }
     },
-    [resultId],
+    [resultId]
   );
 
   const onSave = useEffectEvent(save);
@@ -217,21 +187,18 @@ export function ImageEvaluationForm({
   }, [data]);
 
   // Count total issues
-  const totalProductIssues = Object.values(data.productAccuracy).reduce(
-    (sum, cat) => sum + cat.issues.length,
-    0,
-  );
+  const totalProductIssues = Object.values(data.productAccuracy).reduce((sum, cat) => sum + cat.issues.length, 0);
   const totalSceneIssues = data.sceneAccuracyIssues.length;
 
   // Collect all active issue labels for the tag strip
-  const allIssueTags: { label: string; color: 'red' | 'amber' }[] = [];
+  const allIssueTags: { label: string; color: "red" | "amber" }[] = [];
   for (const issue of data.sceneAccuracyIssues) {
-    allIssueTags.push({ label: issue, color: 'red' });
+    allIssueTags.push({ label: issue, color: "red" });
   }
   for (const [category, catData] of Object.entries(data.productAccuracy)) {
     const catLabel = CATEGORY_LABELS[category] ?? category;
     for (const issue of catData.issues) {
-      allIssueTags.push({ label: `${catLabel}: ${issue}`, color: 'amber' });
+      allIssueTags.push({ label: `${catLabel}: ${issue}`, color: "amber" });
     }
   }
 
@@ -261,12 +228,7 @@ export function ImageEvaluationForm({
       {allIssueTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {allIssueTags.map((tag) => (
-            <span
-              key={tag.label}
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                tag.color === 'red' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-              }`}
-            >
+            <span key={tag.label} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tag.color === "red" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
               {tag.label}
             </span>
           ))}
@@ -275,30 +237,16 @@ export function ImageEvaluationForm({
 
       {/* Scene Accuracy (first) */}
       <div className="rounded-md border border-gray-200">
-        <button
-          type="button"
-          onClick={() => setSceneOpen(!sceneOpen)}
-          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
-        >
+        <button type="button" onClick={() => setSceneOpen(!sceneOpen)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50">
           <span className="flex items-center gap-2">
             Scene Accuracy
-            {totalSceneIssues > 0 && (
-              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
-                {totalSceneIssues}
-              </span>
-            )}
+            {totalSceneIssues > 0 && <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">{totalSceneIssues}</span>}
           </span>
-          <ChevronDownIcon
-            className={`h-4 w-4 transition-transform ${sceneOpen ? 'rotate-180' : ''}`}
-          />
+          <ChevronDownIcon className={`h-4 w-4 transition-transform ${sceneOpen ? "rotate-180" : ""}`} />
         </button>
         {sceneOpen && (
           <div className="space-y-3 border-t border-gray-200 p-3">
-            <IssueCheckboxGroup
-              options={SCENE_ACCURACY_ISSUES}
-              selected={data.sceneAccuracyIssues}
-              onChange={(v) => setData({ ...data, sceneAccuracyIssues: v })}
-            />
+            <IssueCheckboxGroup options={SCENE_ACCURACY_ISSUES} selected={data.sceneAccuracyIssues} onChange={(v) => setData({ ...data, sceneAccuracyIssues: v })} />
             <div>
               <p className="mb-1 text-xs font-medium text-gray-600">Notes</p>
               <textarea
@@ -316,45 +264,29 @@ export function ImageEvaluationForm({
 
       {/* Product Accuracy (always shown; empty state when no product refs) */}
       <div className="rounded-md border border-gray-200">
-        <button
-          type="button"
-          onClick={() => setProductOpen(!productOpen)}
-          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
-        >
+        <button type="button" onClick={() => setProductOpen(!productOpen)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50">
           <span className="flex items-center gap-2">
             Product Accuracy
-            {totalProductIssues > 0 && (
-              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">
-                {totalProductIssues}
-              </span>
-            )}
+            {totalProductIssues > 0 && <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-600">{totalProductIssues}</span>}
           </span>
-          <ChevronDownIcon
-            className={`h-4 w-4 transition-transform ${productOpen ? 'rotate-180' : ''}`}
-          />
+          <ChevronDownIcon className={`h-4 w-4 transition-transform ${productOpen ? "rotate-180" : ""}`} />
         </button>
         {productOpen && (
           <div className="space-y-4 border-t border-gray-200 p-3">
             {activeCategories.length > 0 ? (
               activeCategories.map((category) => {
-                const catData = data.productAccuracy[category] ?? { issues: [], notes: '' };
+                const catData = data.productAccuracy[category] ?? { issues: [], notes: "" };
                 const label = CATEGORY_LABELS[category] ?? category;
                 const categoryIssues = CATEGORY_SPECIFIC_ISSUES[category];
-                const issueOptions = categoryIssues
-                  ? [...PRODUCT_ACCURACY_ISSUES, ...categoryIssues]
-                  : [...PRODUCT_ACCURACY_ISSUES];
+                const issueOptions = categoryIssues ? [...PRODUCT_ACCURACY_ISSUES, ...categoryIssues] : [...PRODUCT_ACCURACY_ISSUES];
                 return (
                   <div key={category} className="rounded border border-gray-100 bg-gray-50/50 p-3">
                     <p className="mb-2 text-xs font-semibold text-gray-700">{label}</p>
-                    <IssueCheckboxGroup
-                      options={issueOptions}
-                      selected={catData.issues}
-                      onChange={(v) => updateCategoryEval(category, 'issues', v)}
-                    />
+                    <IssueCheckboxGroup options={issueOptions} selected={catData.issues} onChange={(v) => updateCategoryEval(category, "issues", v)} />
                     <div className="mt-2">
                       <textarea
                         value={catData.notes}
-                        onChange={(e) => updateCategoryEval(category, 'notes', e.target.value)}
+                        onChange={(e) => updateCategoryEval(category, "notes", e.target.value)}
                         aria-label={`${label} notes`}
                         placeholder="Notes about this category..."
                         rows={2}
@@ -365,9 +297,7 @@ export function ImageEvaluationForm({
                 );
               })
             ) : (
-              <p className="text-sm text-gray-500">
-                No product references were used for this generation.
-              </p>
+              <p className="text-sm text-gray-500">No product references were used for this generation.</p>
             )}
           </div>
         )}

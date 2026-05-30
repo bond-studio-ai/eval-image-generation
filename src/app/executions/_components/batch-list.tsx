@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import type { RefObject } from 'react';
-import { BatchListItem } from './batch-list-item';
-import { BatchLoadMoreSkeleton } from './batch-loading-skeleton';
-import type { BatchRow, RunRow } from './batch-types';
+import type { RefObject } from "react";
+import { BatchListItem } from "./batch-list-item";
+import { BatchLoadMoreSkeleton } from "./batch-loading-skeleton";
+import type { BatchRow, RunRow } from "./batch-types";
 
 export function BatchList({
   batches,
@@ -24,7 +24,7 @@ export function BatchList({
   onDeleteBatch,
   onRetry,
   onRated,
-  onImageClick,
+  onImageClick
 }: {
   batches: BatchRow[];
   refreshing: boolean;
@@ -34,8 +34,8 @@ export function BatchList({
   appliedTo: string;
   sentinelRef: RefObject<HTMLDivElement | null>;
   expandedIds: Set<string>;
-  source: 'default' | 'benchmark';
-  viewMode: 'list' | 'matrix';
+  source: "default" | "benchmark";
+  viewMode: "list" | "matrix";
   retryingBatchId: string | null;
   deletingBatchId: string | null;
   retryingRunId: string | null;
@@ -47,19 +47,11 @@ export function BatchList({
   onImageClick: (run: RunRow) => void;
 }) {
   if (batches.length === 0 && !refreshing) {
-    return (
-      <p className="text-body text-text-secondary">
-        {appliedFrom || appliedTo
-          ? 'No runs match the selected date range.'
-          : 'No runs yet. Use \u201cRun\u201d to create one.'}
-      </p>
-    );
+    return <p className="text-body text-text-secondary">{appliedFrom || appliedTo ? "No runs match the selected date range." : "No runs yet. Use \u201cRun\u201d to create one."}</p>;
   }
 
   return (
-    <div
-      className={`space-y-4 transition-opacity duration-200 ${refreshing ? 'pointer-events-none opacity-40' : 'opacity-100'}`}
-    >
+    <div className={`space-y-4 transition-opacity duration-200 ${refreshing ? "pointer-events-none opacity-40" : "opacity-100"}`}>
       {batches.map((batch) => (
         <BatchListItem
           key={batch.id}
@@ -78,11 +70,7 @@ export function BatchList({
           onImageClick={onImageClick}
         />
       ))}
-      {hasMore && (
-        <div ref={sentinelRef}>
-          {loadingMore ? <BatchLoadMoreSkeleton /> : <div className="py-4">&nbsp;</div>}
-        </div>
-      )}
+      {hasMore && <div ref={sentinelRef}>{loadingMore ? <BatchLoadMoreSkeleton /> : <div className="py-4">&nbsp;</div>}</div>}
     </div>
   );
 }

@@ -1,22 +1,20 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { CdnImage } from '@/components/cdn-image';
-import { ChevronRightIcon } from '@/components/ui/icons';
-import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { CdnImage } from "@/components/cdn-image";
+import { ChevronRightIcon } from "@/components/ui/icons";
+import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 function SectionHeader({ title }: { title: string }) {
-  return (
-    <h4 className="border-b border-gray-200 pb-1.5 text-xs font-semibold text-gray-800">{title}</h4>
-  );
+  return <h4 className="border-b border-gray-200 pb-1.5 text-xs font-semibold text-gray-800">{title}</h4>;
 }
 
 interface JudgeGroup {
   judgeId: string;
   judgeName: string | null;
   judgeModel: string;
-  judgeType: 'batch' | 'individual';
+  judgeType: "batch" | "individual";
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
   position: number;
@@ -40,7 +38,7 @@ function groupByJudge(results: StrategyRunJudgeResultEntry[]): JudgeGroup[] {
         judgePromptVersionName: r.judgePromptVersionName,
         position: r.position,
         executionTimeMs: null,
-        entries: [],
+        entries: []
       });
     }
     const group = map.get(r.strategyJudgeId)!;
@@ -60,52 +58,23 @@ function formatSeconds(ms: number | null | undefined): string | null {
 function JudgeGroupCard({ group }: { group: JudgeGroup }) {
   const [open, setOpen] = useState(false);
 
-  const scoredEntries = group.entries.filter(
-    (e): e is typeof e & { judgeScore: number } => e.judgeScore != null,
-  );
+  const scoredEntries = group.entries.filter((e): e is typeof e & { judgeScore: number } => e.judgeScore != null);
   const scores = scoredEntries.map((e) => e.judgeScore);
-  const avgScore =
-    scores.length > 0
-      ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
-      : null;
+  const avgScore = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null;
   const isSingle = group.entries.length === 1;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50/50">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50"
-      >
-        <ChevronRightIcon
-          className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
-        />
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50">
+        <ChevronRightIcon className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {group.judgeName && (
-            <span className="text-xs font-semibold text-gray-900">{group.judgeName}</span>
-          )}
+          {group.judgeName && <span className="text-xs font-semibold text-gray-900">{group.judgeName}</span>}
           <span className="font-mono text-xs font-medium text-gray-600">{group.judgeModel}</span>
-          <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-              group.judgeType === 'batch'
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            {group.judgeType}
-          </span>
-          {!isSingle && (
-            <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-              &times;{group.entries.length} evaluations
-            </span>
-          )}
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${group.judgeType === "batch" ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-600"}`}>{group.judgeType}</span>
+          {!isSingle && <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">&times;{group.entries.length} evaluations</span>}
           {group.judgePromptVersionId && (
-            <Link
-              href={`/prompt-versions/${group.judgePromptVersionId}`}
-              className="text-primary-600 hover:text-primary-500 text-[11px]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {group.judgePromptVersionName || 'Prompt version'}
+            <Link href={`/prompt-versions/${group.judgePromptVersionId}`} className="text-primary-600 hover:text-primary-500 text-[11px]" onClick={(e) => e.stopPropagation()}>
+              {group.judgePromptVersionName || "Prompt version"}
             </Link>
           )}
         </div>
@@ -118,33 +87,20 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
           {!isSingle && scores.length > 0 && (
             <div className="flex items-center gap-1">
               {scoredEntries.map((e) => (
-                <span
-                  key={e.id}
-                  className="inline-flex rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 tabular-nums"
-                >
+                <span key={e.id} className="inline-flex rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 tabular-nums">
                   {e.judgeScore}
                 </span>
               ))}
             </div>
           )}
-          {avgScore != null && (
-            <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-800 tabular-nums">
-              {isSingle ? scores[0] : `avg ${avgScore}`}
-            </span>
-          )}
+          {avgScore != null && <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-800 tabular-nums">{isSingle ? scores[0] : `avg ${avgScore}`}</span>}
         </div>
       </button>
 
       {open && (
         <div className="border-t border-gray-200">
           {group.entries.map((j, idx) => (
-            <JudgeEntryRow
-              key={j.id}
-              j={j}
-              index={idx}
-              total={group.entries.length}
-              showIndex={!isSingle}
-            />
+            <JudgeEntryRow key={j.id} j={j} index={idx} total={group.entries.length} showIndex={!isSingle} />
           ))}
         </div>
       )}
@@ -152,32 +108,15 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
   );
 }
 
-function JudgeEntryRow({
-  j,
-  index,
-  total,
-  showIndex,
-}: {
-  j: StrategyRunJudgeResultEntry;
-  index: number;
-  total: number;
-  showIndex: boolean;
-}) {
+function JudgeEntryRow({ j, index, total, showIndex }: { j: StrategyRunJudgeResultEntry; index: number; total: number; showIndex: boolean }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const hasPrompts =
-    j.judgeSystemPrompt ||
-    j.judgeUserPrompt ||
-    (j.judgeInputImages && j.judgeInputImages.length > 0);
+  const hasPrompts = j.judgeSystemPrompt || j.judgeUserPrompt || (j.judgeInputImages && j.judgeInputImages.length > 0);
 
   return (
-    <div className={`${index > 0 ? 'border-t border-gray-100' : ''}`}>
+    <div className={`${index > 0 ? "border-t border-gray-100" : ""}`}>
       <div className="px-4 py-3">
         <div className="flex items-start gap-3">
-          {showIndex && (
-            <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-600">
-              {index + 1}
-            </span>
-          )}
+          {showIndex && <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-600">{index + 1}</span>}
           <div className="min-w-0 flex-1">
             {j.judgeScore != null && (
               <div className="flex items-baseline gap-2">
@@ -189,21 +128,11 @@ function JudgeEntryRow({
                 )}
               </div>
             )}
-            {j.judgeReasoning && (
-              <p className="mt-1 text-sm leading-relaxed text-gray-700">{j.judgeReasoning}</p>
-            )}
-            {j.judgeOutput && (
-              <pre className="mt-2 max-h-32 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-                {j.judgeOutput}
-              </pre>
-            )}
+            {j.judgeReasoning && <p className="mt-1 text-sm leading-relaxed text-gray-700">{j.judgeReasoning}</p>}
+            {j.judgeOutput && <pre className="mt-2 max-h-32 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{j.judgeOutput}</pre>}
             {hasPrompts && (
-              <button
-                type="button"
-                onClick={() => setDetailsOpen(!detailsOpen)}
-                className="mt-2 text-[11px] text-gray-500 underline hover:text-gray-700"
-              >
-                {detailsOpen ? 'Hide prompts & inputs' : 'Show prompts & inputs'}
+              <button type="button" onClick={() => setDetailsOpen(!detailsOpen)} className="mt-2 text-[11px] text-gray-500 underline hover:text-gray-700">
+                {detailsOpen ? "Hide prompts & inputs" : "Show prompts & inputs"}
               </button>
             )}
             {detailsOpen && (
@@ -211,17 +140,13 @@ function JudgeEntryRow({
                 {j.judgeSystemPrompt && (
                   <div>
                     <SectionHeader title="System prompt" />
-                    <pre className="mt-2 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-                      {j.judgeSystemPrompt}
-                    </pre>
+                    <pre className="mt-2 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{j.judgeSystemPrompt}</pre>
                   </div>
                 )}
                 {j.judgeUserPrompt && (
                   <div>
                     <SectionHeader title="User prompt" />
-                    <pre className="mt-2 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">
-                      {j.judgeUserPrompt}
-                    </pre>
+                    <pre className="mt-2 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white p-2 text-xs leading-relaxed whitespace-pre-wrap text-gray-700">{j.judgeUserPrompt}</pre>
                   </div>
                 )}
                 {j.judgeInputImages && j.judgeInputImages.length > 0 && (
@@ -241,11 +166,7 @@ function JudgeEntryRow({
   );
 }
 
-function JudgeInputImageGrid({
-  images,
-}: {
-  images: NonNullable<StrategyRunJudgeResultEntry['judgeInputImages']>;
-}) {
+function JudgeInputImageGrid({ images }: { images: NonNullable<StrategyRunJudgeResultEntry["judgeInputImages"]> }) {
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
   return (
@@ -254,25 +175,13 @@ function JudgeInputImageGrid({
         {images.map((img, i) => (
           <div key={img.url}>
             <div
-              className={`relative aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? 'cursor-pointer border-violet-400 ring-1 ring-violet-200' : 'border-gray-200'}`}
-              {...(img.isComposite
-                ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) }
-                : {})}
+              className={`relative aspect-square overflow-hidden rounded-md border bg-gray-50 ${img.isComposite ? "cursor-pointer border-violet-400 ring-1 ring-violet-200" : "border-gray-200"}`}
+              {...(img.isComposite ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) } : {})}
             >
-              <CdnImage
-                src={img.url}
-                alt={img.label}
-                fill
-                sizes="(max-width:768px) 25vw, 200px"
-                className="object-cover"
-              />
+              <CdnImage src={img.url} alt={img.label} fill sizes="(max-width:768px) 25vw, 200px" className="object-cover" />
             </div>
             <div className="mt-0.5 flex items-center gap-1">
-              {img.isComposite && (
-                <span className="inline-flex shrink-0 items-center rounded bg-violet-100 px-1 py-px text-[9px] font-semibold text-violet-700">
-                  Group
-                </span>
-              )}
+              {img.isComposite && <span className="inline-flex shrink-0 items-center rounded bg-violet-100 px-1 py-px text-[9px] font-semibold text-violet-700">Group</span>}
               <p className="truncate text-[10px] text-gray-500" title={img.label}>
                 {img.label}
               </p>
@@ -281,59 +190,37 @@ function JudgeInputImageGrid({
         ))}
       </div>
 
-      {expandedGroup != null &&
-        images[expandedGroup]?.isComposite &&
-        images[expandedGroup].sourceImages && (
-          <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold text-violet-800">
-                {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length}{' '}
-                source images
-              </p>
-              <button
-                type="button"
-                onClick={() => setExpandedGroup(null)}
-                className="text-xs text-violet-600 hover:text-violet-800"
-              >
-                Close
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-              {images[expandedGroup].sourceImages!.map((src) => (
-                <div key={src.url}>
-                  <div className="relative aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
-                    <CdnImage
-                      src={src.url}
-                      alt={src.label}
-                      fill
-                      sizes="(max-width:768px) 25vw, 200px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <p className="mt-0.5 truncate text-[10px] text-violet-700" title={src.label}>
-                    {src.label}
-                  </p>
-                </div>
-              ))}
-            </div>
+      {expandedGroup != null && images[expandedGroup]?.isComposite && images[expandedGroup].sourceImages && (
+        <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-violet-800">
+              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length} source images
+            </p>
+            <button type="button" onClick={() => setExpandedGroup(null)} className="text-xs text-violet-600 hover:text-violet-800">
+              Close
+            </button>
           </div>
-        )}
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+            {images[expandedGroup].sourceImages!.map((src) => (
+              <div key={src.url}>
+                <div className="relative aspect-square overflow-hidden rounded-md border border-violet-200 bg-white">
+                  <CdnImage src={src.url} alt={src.label} fill sizes="(max-width:768px) 25vw, 200px" className="object-cover" />
+                </div>
+                <p className="mt-0.5 truncate text-[10px] text-violet-700" title={src.label}>
+                  {src.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export function RunJudgeEvaluationsSection({
-  judgeResults,
-  title = 'Judge evaluations',
-}: {
-  judgeResults: StrategyRunJudgeResultEntry[];
-  title?: string;
-}) {
+export function RunJudgeEvaluationsSection({ judgeResults, title = "Judge evaluations" }: { judgeResults: StrategyRunJudgeResultEntry[]; title?: string }) {
   const groups = useMemo(() => groupByJudge(judgeResults), [judgeResults]);
-  const slowestMs = useMemo(
-    () => groups.reduce((m, g) => Math.max(m, g.executionTimeMs ?? 0), 0),
-    [groups],
-  );
+  const slowestMs = useMemo(() => groups.reduce((m, g) => Math.max(m, g.executionTimeMs ?? 0), 0), [groups]);
   const slowestLabel = formatSeconds(slowestMs);
 
   if (judgeResults.length === 0) return null;
@@ -344,15 +231,11 @@ export function RunJudgeEvaluationsSection({
         <div className="flex-1">
           <span className="text-sm font-semibold text-indigo-800">{title}</span>
           <p className="mt-0.5 text-[11px] text-indigo-700/80">
-            {groups.length} {groups.length === 1 ? 'judge' : 'judges'} · {judgeResults.length}{' '}
-            {judgeResults.length === 1 ? 'evaluation' : 'evaluations'} across candidates
+            {groups.length} {groups.length === 1 ? "judge" : "judges"} · {judgeResults.length} {judgeResults.length === 1 ? "evaluation" : "evaluations"} across candidates
           </p>
         </div>
         {slowestLabel && (
-          <span
-            className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-medium text-indigo-800 tabular-nums"
-            title="Slowest judge invocation"
-          >
+          <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-medium text-indigo-800 tabular-nums" title="Slowest judge invocation">
             Slowest: {slowestLabel}
           </span>
         )}

@@ -3,20 +3,17 @@
  * Used by SSR pages to fetch data.
  */
 
-import { imageGenerationBase, imageGenerationV2Base } from './env';
-import type { InputPresetDesignFields } from './input-preset-design';
+import { imageGenerationBase, imageGenerationV2Base } from "./env";
+import type { InputPresetDesignFields } from "./input-preset-design";
 
-export {
-  parseStrategyRunJudgeResults,
-  type StrategyRunJudgeResultEntry,
-} from './strategy-run-judge-results';
+export { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "./strategy-run-judge-results";
 
 const getBase = () => imageGenerationBase();
 const getV2Base = () => imageGenerationV2Base();
 
 async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getBase()}${path.startsWith('/') ? path : `/${path}`}`;
-  const res = await fetch(url, { cache: 'no-store', ...init });
+  const url = `${getBase()}${path.startsWith("/") ? path : `/${path}`}`;
+  const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
@@ -25,8 +22,8 @@ async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getV2Base()}${path.startsWith('/') ? path : `/${path}`}`;
-  const res = await fetch(url, { cache: 'no-store', ...init });
+  const url = `${getV2Base()}${path.startsWith("/") ? path : `/${path}`}`;
+  const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
@@ -65,7 +62,7 @@ export interface PromptPreviewDollhouseSource {
   areas: PromptPreviewDollhouseArea[];
 }
 
-export type StrategyRunSource = 'dollhouse' | 'photo' | 'pdp';
+export type StrategyRunSource = "dollhouse" | "photo" | "pdp";
 
 export interface StrategyListItem {
   id: string;
@@ -83,7 +80,7 @@ export interface StrategyListItem {
 export interface StrategyStepItem {
   id: string;
   stepOrder: number;
-  type: 'generation' | 'judge';
+  type: "generation" | "judge";
   numberOfImages: number | null;
   name: string | null;
   promptVersionId: string | null;
@@ -112,7 +109,7 @@ export interface StrategyJudgeItem {
   strategyId: string;
   name: string | null;
   judgeModel: string;
-  judgeType: 'batch' | 'individual';
+  judgeType: "batch" | "individual";
   judgePromptVersionId: string;
   judgePromptVersionName: string | null;
   toleranceThreshold: number;
@@ -186,13 +183,7 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   createdAt: string;
 }
 
-export type ProviderModelUseCase =
-  | 'IMAGE_GENERATION'
-  | 'PREVIEW_IMAGE_GENERATION'
-  | 'IMAGE_GENERATION_FALLBACK'
-  | 'JUDGING'
-  | 'SEGMENTATION'
-  | 'DEPTH_ANALYSIS';
+export type ProviderModelUseCase = "IMAGE_GENERATION" | "PREVIEW_IMAGE_GENERATION" | "IMAGE_GENERATION_FALLBACK" | "JUDGING" | "SEGMENTATION" | "DEPTH_ANALYSIS";
 
 export interface ProviderModelCapability {
   id: string;
@@ -206,7 +197,7 @@ export interface ProviderModelCapability {
 export interface ProviderModelV2 {
   id: string;
   providerId: string;
-  providerKey: 'gemini' | 'openai' | 'fal';
+  providerKey: "gemini" | "openai" | "fal";
   providerDisplayName: string;
   providerModelId: string;
   displayName: string;
@@ -231,23 +222,22 @@ async function fetchProviderModelsV2(
     productAvailable?: boolean;
     providerId?: string;
     useCase?: ProviderModelUseCase;
-  } = {},
+  } = {}
 ): Promise<ProviderModelV2[]> {
   const query = new URLSearchParams();
-  if (params.productAvailable !== undefined)
-    query.set('productAvailable', String(params.productAvailable));
-  if (params.providerId) query.set('providerId', params.providerId);
-  if (params.useCase) query.set('useCase', params.useCase);
-  query.set('perPage', '200');
+  if (params.productAvailable !== undefined) query.set("productAvailable", String(params.productAvailable));
+  if (params.providerId) query.set("providerId", params.providerId);
+  if (params.useCase) query.set("useCase", params.useCase);
+  query.set("perPage", "200");
   const suffix = query.toString();
-  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${suffix ? `?${suffix}` : ''}`);
+  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${suffix ? `?${suffix}` : ""}`);
 }
 
 export async function fetchStrategyModelCatalog(): Promise<StrategyModelCatalog> {
   const [generation, preview, judge] = await Promise.all([
-    fetchProviderModelsV2({ productAvailable: true, useCase: 'IMAGE_GENERATION' }),
-    fetchProviderModelsV2({ productAvailable: true, useCase: 'PREVIEW_IMAGE_GENERATION' }),
-    fetchProviderModelsV2({ productAvailable: true, useCase: 'JUDGING' }),
+    fetchProviderModelsV2({ productAvailable: true, useCase: "IMAGE_GENERATION" }),
+    fetchProviderModelsV2({ productAvailable: true, useCase: "PREVIEW_IMAGE_GENERATION" }),
+    fetchProviderModelsV2({ productAvailable: true, useCase: "JUDGING" })
   ]);
   return { generation, preview, judge };
 }
@@ -263,7 +253,7 @@ export async function fetchPromptVersionsMinimal(limit = 100): Promise<PromptVer
 }
 
 export async function fetchPromptPreviewDollhouseSource(): Promise<PromptPreviewDollhouseSource> {
-  return fetchService<PromptPreviewDollhouseSource>('/prompt-versions/preview/dollhouse-source');
+  return fetchService<PromptPreviewDollhouseSource>("/prompt-versions/preview/dollhouse-source");
 }
 
 export async function fetchPromptVersionById(id: string) {
@@ -316,9 +306,9 @@ export async function fetchGenerationById(id: string) {
 
 export async function fetchGenerations(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  const url = `/generations${qs ? `?${qs}` : ''}`;
+  const url = `/generations${qs ? `?${qs}` : ""}`;
   const base = getBase();
-  const res = await fetch(`${base}${url}`, { cache: 'no-store' });
+  const res = await fetch(`${base}${url}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Service ${res.status}`);
   const json = await res.json();
   return json as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
@@ -332,14 +322,12 @@ export async function fetchAnalyticsRatings(params: Record<string, string>) {
     totalGenerations: number;
     ratedGenerations: number;
     distribution: { rating: string; count: number; percentage: number }[];
-  }>(`/analytics/ratings${qs ? `?${qs}` : ''}`);
+  }>(`/analytics/ratings${qs ? `?${qs}` : ""}`);
 }
 
 export async function fetchAnalyticsStrategyPerformance(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(
-    `/analytics/strategy-performance${qs ? `?${qs}` : ''}`,
-  );
+  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(`/analytics/strategy-performance${qs ? `?${qs}` : ""}`);
 }
 
 export interface ReliabilityData {

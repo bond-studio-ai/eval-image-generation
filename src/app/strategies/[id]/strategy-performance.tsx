@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { serviceUrl } from '@/lib/api-base';
+import { useCallback, useEffect, useState } from "react";
+import { serviceUrl } from "@/lib/api-base";
 
 interface PerformanceData {
   generationCount: number;
@@ -27,7 +27,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(serviceUrl(`strategies/${strategyId}/performance`), {
-        cache: 'no-store',
+        cache: "no-store"
       });
       if (!res.ok) return;
       const json = await res.json();
@@ -56,17 +56,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
     return null;
   }
 
-  const {
-    generationCount,
-    sceneGoodPct,
-    sceneFailedPct,
-    productGoodPct,
-    productFailedPct,
-    notRatedCount,
-    sceneRatedCount,
-    productRatedCount,
-    avgExecutionTimeMs,
-  } = data;
+  const { generationCount, sceneGoodPct, sceneFailedPct, productGoodPct, productFailedPct, notRatedCount, sceneRatedCount, productRatedCount, avgExecutionTimeMs } = data;
 
   return (
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-xs">
@@ -100,9 +90,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500">Avg exec time</p>
-          <p className="mt-0.5 text-xl font-semibold text-gray-900">
-            {avgExecutionTimeMs != null ? `${(avgExecutionTimeMs / 1000).toFixed(1)}s` : '—'}
-          </p>
+          <p className="mt-0.5 text-xl font-semibold text-gray-900">{avgExecutionTimeMs != null ? `${(avgExecutionTimeMs / 1000).toFixed(1)}s` : "—"}</p>
         </div>
       </div>
     </div>

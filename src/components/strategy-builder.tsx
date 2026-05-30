@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
-import { ErrorCard, ResourceFormHeader } from '@/components/resource-form-header';
-import { buildStrategyPayload } from '@/components/strategy-builder/build-payload';
-import { PreviewSettingsSection } from '@/components/strategy-builder/preview-settings-section';
-import { SaveActionBar } from '@/components/strategy-builder/save-action-bar';
-import { StepsSection } from '@/components/strategy-builder/steps-section';
-import { StrategySettingsSection } from '@/components/strategy-builder/strategy-settings-section';
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
+import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
+import { buildStrategyPayload } from "@/components/strategy-builder/build-payload";
+import { PreviewSettingsSection } from "@/components/strategy-builder/preview-settings-section";
+import { SaveActionBar } from "@/components/strategy-builder/save-action-bar";
+import { StepsSection } from "@/components/strategy-builder/steps-section";
+import { StrategySettingsSection } from "@/components/strategy-builder/strategy-settings-section";
 import {
   defaultJudgeStep,
   defaultPreviewSettings,
@@ -18,36 +18,16 @@ import {
   type PreviewSettings,
   type StepData,
   type StrategyBuilderProps,
-  type StrategySettings,
-} from '@/components/strategy-builder/types';
-import { useModelCatalog } from '@/components/strategy-builder/use-model-catalog';
-import { serviceUrl } from '@/lib/api-base';
+  type StrategySettings
+} from "@/components/strategy-builder/types";
+import { useModelCatalog } from "@/components/strategy-builder/use-model-catalog";
+import { serviceUrl } from "@/lib/api-base";
 
-export function StrategyBuilder({
-  strategyId,
-  initialName = '',
-  initialDescription = '',
-  initialStrategySettings,
-  initialPreviewSettings,
-  initialSteps,
-  initialJudges,
-  promptVersions,
-  inputPresets,
-  modelCatalog,
-}: StrategyBuilderProps) {
-  const {
-    providerModelIdForSelection,
-    catalogSelectionForProviderModelId,
-    defaultGenerationModel,
-    defaultPreviewModel,
-    defaultJudgeModel,
-    generationModels,
-    previewModels,
-    judgeModels,
-  } = useModelCatalog(
+export function StrategyBuilder({ strategyId, initialName = "", initialDescription = "", initialStrategySettings, initialPreviewSettings, initialSteps, initialJudges, promptVersions, inputPresets, modelCatalog }: StrategyBuilderProps) {
+  const { providerModelIdForSelection, catalogSelectionForProviderModelId, defaultGenerationModel, defaultPreviewModel, defaultJudgeModel, generationModels, previewModels, judgeModels } = useModelCatalog(
     modelCatalog,
     initialStrategySettings?.model,
-    initialPreviewSettings?.preview_model,
+    initialPreviewSettings?.preview_model
   );
 
   const router = useRouter();
@@ -57,25 +37,17 @@ export function StrategyBuilder({
     initialStrategySettings
       ? {
           ...initialStrategySettings,
-          model: catalogSelectionForProviderModelId(
-            initialStrategySettings.model,
-            defaultGenerationModel,
-          ),
+          model: catalogSelectionForProviderModelId(initialStrategySettings.model, defaultGenerationModel)
         }
-      : { ...defaultStrategySettings, model: defaultGenerationModel },
+      : { ...defaultStrategySettings, model: defaultGenerationModel }
   );
   const [previewSettings, setPreviewSettings] = useState<PreviewSettings>(
     initialPreviewSettings
       ? {
           ...initialPreviewSettings,
-          preview_model: initialPreviewSettings.preview_model
-            ? catalogSelectionForProviderModelId(
-                initialPreviewSettings.preview_model,
-                defaultPreviewModel,
-              )
-            : null,
+          preview_model: initialPreviewSettings.preview_model ? catalogSelectionForProviderModelId(initialPreviewSettings.preview_model, defaultPreviewModel) : null
         }
-      : defaultPreviewSettings,
+      : defaultPreviewSettings
   );
   const [steps, setSteps] = useState<StepData[]>(
     initialSteps?.length
@@ -86,11 +58,11 @@ export function StrategyBuilder({
           judges: step.judges?.map((judge) => ({
             ...judge,
             _uid: judge._uid ?? nextUid(),
-            judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel),
+            judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel)
           })),
-          product_image_types: normalizeProductImageTypes(step.product_image_types),
+          product_image_types: normalizeProductImageTypes(step.product_image_types)
         }))
-      : [defaultStep(promptVersions[0]?.id ?? '', defaultGenerationModel)],
+      : [defaultStep(promptVersions[0]?.id ?? "", defaultGenerationModel)]
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +74,7 @@ export function StrategyBuilder({
   }, []);
 
   const addStep = useCallback(() => {
-    setSteps((prev) => [...prev, defaultStep(promptVersions[0]?.id ?? '', defaultGenerationModel)]);
+    setSteps((prev) => [...prev, defaultStep(promptVersions[0]?.id ?? "", defaultGenerationModel)]);
   }, [defaultGenerationModel, promptVersions]);
 
   const addJudgeStep = useCallback(() => {
@@ -114,22 +86,10 @@ export function StrategyBuilder({
       const next = prev.filter((_, i) => i !== idx);
       return next.map((s) => ({
         ...s,
-        dollhouse_view_from_step:
-          s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length
-            ? null
-            : s.dollhouse_view_from_step,
-        real_photo_from_step:
-          s.real_photo_from_step && s.real_photo_from_step > next.length
-            ? null
-            : s.real_photo_from_step,
-        mood_board_from_step:
-          s.mood_board_from_step && s.mood_board_from_step > next.length
-            ? null
-            : s.mood_board_from_step,
-        arbitrary_image_from_step:
-          s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length
-            ? null
-            : s.arbitrary_image_from_step,
+        dollhouse_view_from_step: s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length ? null : s.dollhouse_view_from_step,
+        real_photo_from_step: s.real_photo_from_step && s.real_photo_from_step > next.length ? null : s.real_photo_from_step,
+        mood_board_from_step: s.mood_board_from_step && s.mood_board_from_step > next.length ? null : s.mood_board_from_step,
+        arbitrary_image_from_step: s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length ? null : s.arbitrary_image_from_step
       }));
     });
   }, []);
@@ -148,85 +108,46 @@ export function StrategyBuilder({
         strategySettings,
         previewSettings,
         steps,
-        providerModelIdForSelection,
+        providerModelIdForSelection
       });
 
-      const url = isEditing ? serviceUrl(`strategies/${strategyId}`) : serviceUrl('strategies');
-      const method = isEditing ? 'PATCH' : 'POST';
+      const url = isEditing ? serviceUrl(`strategies/${strategyId}`) : serviceUrl("strategies");
+      const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error?.message || 'Failed to save strategy');
+        setError(data.error?.message || "Failed to save strategy");
         return;
       }
 
       const sid = isEditing ? strategyId : data.data.id;
       router.push(`/strategies/${sid}`);
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setSaving(false);
     }
-  }, [
-    name,
-    description,
-    strategySettings,
-    previewSettings,
-    steps,
-    isEditing,
-    strategyId,
-    router,
-    providerModelIdForSelection,
-  ]);
+  }, [name, description, strategySettings, previewSettings, steps, isEditing, strategyId, router, providerModelIdForSelection]);
 
   return (
     <div className="space-y-6">
       {/* Header with save */}
-      <SaveActionBar
-        onSave={handleSave}
-        disabled={!name.trim() || steps.length === 0 || saving}
-        saving={saving}
-        isEditing={isEditing}
-      />
+      <SaveActionBar onSave={handleSave} disabled={!name.trim() || steps.length === 0 || saving} saving={saving} isEditing={isEditing} />
 
-      <ResourceFormHeader
-        name={name}
-        onNameChange={setName}
-        namePlaceholder="e.g. Modern bathroom 3-step refinement"
-        description={description}
-        onDescriptionChange={setDescription}
-      />
+      <ResourceFormHeader name={name} onNameChange={setName} namePlaceholder="e.g. Modern bathroom 3-step refinement" description={description} onDescriptionChange={setDescription} />
 
-      <StrategySettingsSection
-        strategySettings={strategySettings}
-        setStrategySettings={setStrategySettings}
-        generationModels={generationModels}
-      />
+      <StrategySettingsSection strategySettings={strategySettings} setStrategySettings={setStrategySettings} generationModels={generationModels} />
 
-      <PreviewSettingsSection
-        previewSettings={previewSettings}
-        setPreviewSettings={setPreviewSettings}
-        previewModels={previewModels}
-        defaultPreviewModel={defaultPreviewModel}
-      />
+      <PreviewSettingsSection previewSettings={previewSettings} setPreviewSettings={setPreviewSettings} previewModels={previewModels} defaultPreviewModel={defaultPreviewModel} />
 
-      <StepsSection
-        steps={steps}
-        updateStep={updateStep}
-        removeStep={removeStep}
-        addStep={addStep}
-        addJudgeStep={addJudgeStep}
-        promptVersions={promptVersions}
-        judgeModels={judgeModels}
-        defaultJudgeModel={defaultJudgeModel}
-      />
+      <StepsSection steps={steps} updateStep={updateStep} removeStep={removeStep} addStep={addStep} addJudgeStep={addJudgeStep} promptVersions={promptVersions} judgeModels={judgeModels} defaultJudgeModel={defaultJudgeModel} />
 
       {/* Error */}
       {error && <ErrorCard message={error} />}

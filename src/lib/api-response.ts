@@ -1,17 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export function successResponse<T>(data: T, status = 200) {
   return NextResponse.json({ data }, { status });
 }
 
-type ErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'NOT_FOUND'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'CONFLICT'
-  | 'UNPROCESSABLE_ENTITY'
-  | 'INTERNAL_ERROR';
+type ErrorCode = "VALIDATION_ERROR" | "NOT_FOUND" | "UNAUTHORIZED" | "FORBIDDEN" | "CONFLICT" | "UNPROCESSABLE_ENTITY" | "INTERNAL_ERROR";
 
 const ERROR_STATUS: Record<ErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -20,7 +13,7 @@ const ERROR_STATUS: Record<ErrorCode, number> = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   UNPROCESSABLE_ENTITY: 422,
-  INTERNAL_ERROR: 500,
+  INTERNAL_ERROR: 500
 };
 
 export function errorResponse(code: ErrorCode, message: string, details?: Record<string, unknown>) {
@@ -29,9 +22,9 @@ export function errorResponse(code: ErrorCode, message: string, details?: Record
       error: {
         code,
         message,
-        ...(details && { details }),
-      },
+        ...(details && { details })
+      }
     },
-    { status: ERROR_STATUS[code] },
+    { status: ERROR_STATUS[code] }
   );
 }

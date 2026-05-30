@@ -1,14 +1,14 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: "node",
     globals: true,
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"]
   },
   resolve: {
     alias: {
-      '@': new URL('./src', import.meta.url).pathname,
-    },
-  },
+      "@": new URL("./src", import.meta.url).pathname
+    }
+  }
 });

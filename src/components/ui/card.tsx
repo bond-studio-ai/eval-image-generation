@@ -1,7 +1,7 @@
-import { type HTMLAttributes, type ReactNode, type Ref } from 'react';
-import { cn } from './cn';
+import { type HTMLAttributes, type ReactNode, type Ref } from "react";
+import { cn } from "./cn";
 
-type CardPadding = 'sm' | 'md' | 'lg' | 'none';
+type CardPadding = "sm" | "md" | "lg" | "none";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /** Outer padding for the card body. Use `none` when nesting a custom layout. */
@@ -14,10 +14,10 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const PADDING: Record<CardPadding, string> = {
-  none: '',
-  sm: 'p-4',
-  md: 'p-5',
-  lg: 'p-6',
+  none: "",
+  sm: "p-4",
+  md: "p-5",
+  lg: "p-6"
 };
 
 /**
@@ -25,27 +25,8 @@ const PADDING: Record<CardPadding, string> = {
  * `rounded-lg border border-gray-200 bg-white p-6 shadow-xs` snippet that's
  * copy-pasted across pages.
  */
-export function Card({
-  padding = 'lg',
-  borderless = false,
-  interactive = false,
-  className,
-  ref,
-  ...rest
-}: CardProps) {
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        'rounded-card bg-surface shadow-card',
-        !borderless && 'border-border border',
-        PADDING[padding],
-        interactive && 'hover:shadow-card-hover transition-shadow',
-        className,
-      )}
-      {...rest}
-    />
-  );
+export function Card({ padding = "lg", borderless = false, interactive = false, className, ref, ...rest }: CardProps) {
+  return <div ref={ref} className={cn("rounded-card bg-surface shadow-card", !borderless && "border-border border", PADDING[padding], interactive && "hover:shadow-card-hover transition-shadow", className)} {...rest} />;
 }
 
 interface StatCardProps {

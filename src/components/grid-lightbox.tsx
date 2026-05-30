@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RatingForm } from '@/app/generations/[id]/rating-form';
-import { CdnImage } from '@/components/cdn-image';
-import { ComparisonSlider } from '@/components/comparison-slider';
-import { ImageEvaluationForm } from '@/components/image-evaluation-form';
-import { XIcon } from '@/components/ui/icons';
-import { Modal } from '@/components/ui/modal';
-import { serviceUrl } from '@/lib/api-base';
-import { getActiveProductCategories, getProductImagesFromInput } from '@/lib/generation-utils';
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RatingForm } from "@/app/generations/[id]/rating-form";
+import { CdnImage } from "@/components/cdn-image";
+import { ComparisonSlider } from "@/components/comparison-slider";
+import { ImageEvaluationForm } from "@/components/image-evaluation-form";
+import { XIcon } from "@/components/ui/icons";
+import { Modal } from "@/components/ui/modal";
+import { serviceUrl } from "@/lib/api-base";
+import { getActiveProductCategories, getProductImagesFromInput } from "@/lib/generation-utils";
 
 interface GridLightboxProps {
   src: string;
@@ -53,10 +53,10 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           productAccuracyRating: data.productAccuracyRating ?? null,
           results: results.map((r: { id: string; url?: string }) => ({
             id: r.id,
-            url: r.url ?? '',
+            url: r.url ?? ""
           })),
-          input: data.input ?? null,
-        },
+          input: data.input ?? null
+        }
       });
     } catch {
       setFetched(null);
@@ -72,26 +72,17 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
     onRated?.();
   }, [generationId, fetchGeneration, onRated]);
 
-  const productCategories = useMemo(
-    () => getActiveProductCategories(generation?.input ?? null),
-    [generation?.input],
-  );
+  const productCategories = useMemo(() => getActiveProductCategories(generation?.input ?? null), [generation?.input]);
 
-  const productImages = useMemo(
-    () => getProductImagesFromInput(generation?.input ?? null),
-    [generation?.input],
-  );
+  const productImages = useMemo(() => getProductImagesFromInput(generation?.input ?? null), [generation?.input]);
 
   const sceneImages = useMemo(() => {
     const input = generation?.input;
     if (!input) return [];
     const entries: { label: string; url: string }[] = [];
-    if (typeof input.dollhouseView === 'string' && input.dollhouseView)
-      entries.push({ label: 'Dollhouse', url: input.dollhouseView });
-    if (typeof input.realPhoto === 'string' && input.realPhoto)
-      entries.push({ label: 'Real Photo', url: input.realPhoto });
-    if (typeof input.moodBoard === 'string' && input.moodBoard)
-      entries.push({ label: 'Mood Board', url: input.moodBoard });
+    if (typeof input.dollhouseView === "string" && input.dollhouseView) entries.push({ label: "Dollhouse", url: input.dollhouseView });
+    if (typeof input.realPhoto === "string" && input.realPhoto) entries.push({ label: "Real Photo", url: input.realPhoto });
+    if (typeof input.moodBoard === "string" && input.moodBoard) entries.push({ label: "Mood Board", url: input.moodBoard });
     return entries;
   }, [generation?.input]);
 
@@ -124,24 +115,12 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
       >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-3">
-            <Link
-              href={runHref}
-              className="text-primary-600 hover:text-primary-500 text-sm font-medium"
-            >
+            <Link href={runHref} className="text-primary-600 hover:text-primary-500 text-sm font-medium">
               View run details &rarr;
             </Link>
-            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && (
-              <span className="text-sm text-gray-500">
-                Comparing with {sceneImages[selectedSceneIndex].label}
-              </span>
-            )}
+            {selectedSceneIndex !== null && sceneImages[selectedSceneIndex] && <span className="text-sm text-gray-500">Comparing with {sceneImages[selectedSceneIndex].label}</span>}
           </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
-          >
+          <button type="button" aria-label="Close" onClick={onClose} className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
             <XIcon className="size-5" />
           </button>
         </div>
@@ -166,18 +145,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setExpandedImage({ src: outputUrl, alt: 'Output' });
+                    setExpandedImage({ src: outputUrl, alt: "Output" });
                   }}
                   className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center"
                 >
-                  <CdnImage
-                    src={outputUrl}
-                    alt="Output"
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain"
-                  />
+                  <CdnImage src={outputUrl} alt="Output" width={0} height={0} sizes="100vw" className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain" />
                 </button>
               )}
             </div>
@@ -193,23 +165,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                         e.stopPropagation();
                         setSelectedSceneIndex(selectedSceneIndex === i ? null : i);
                       }}
-                      className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? 'border-primary-500 ring-primary-500 ring-1' : 'border-transparent hover:border-gray-300'}`}
-                      title={
-                        selectedSceneIndex === i
-                          ? 'Click to disable compare'
-                          : 'Click to compare with scene reference'
-                      }
+                      className={`flex shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded border-2 ${selectedSceneIndex === i ? "border-primary-500 ring-primary-500 ring-1" : "border-transparent hover:border-gray-300"}`}
+                      title={selectedSceneIndex === i ? "Click to disable compare" : "Click to compare with scene reference"}
                     >
-                      <CdnImage
-                        src={img.url}
-                        alt={img.label}
-                        width={56}
-                        height={56}
-                        className="size-14 object-cover"
-                      />
-                      <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">
-                        {img.label}
-                      </span>
+                      <CdnImage src={img.url} alt={img.label} width={56} height={56} className="size-14 object-cover" />
+                      <span className="max-w-[4rem] truncate text-[10px] font-medium text-gray-500">{img.label}</span>
                     </button>
                   ))}
                 </div>
@@ -222,10 +182,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                 <div className="mt-4 border-t border-gray-200 pt-6">
                   <div className="flex flex-wrap gap-2">
                     {productImages.map((img) => (
-                      <div
-                        key={img.key}
-                        className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5"
-                      >
+                      <div key={img.key} className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5">
                         {img.urls.length === 1 ? (
                           <button
                             type="button"
@@ -235,13 +192,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                             }}
                             className="relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
                           >
-                            <CdnImage
-                              src={img.urls[0]}
-                              alt={img.label}
-                              fill
-                              sizes="48px"
-                              className="object-cover"
-                            />
+                            <CdnImage src={img.urls[0]} alt={img.label} fill sizes="48px" className="object-cover" />
                           </button>
                         ) : (
                           <div className="flex gap-0.5">
@@ -255,13 +206,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                                 }}
                                 className="relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
                               >
-                                <CdnImage
-                                  src={url}
-                                  alt={`${img.label} ${i + 1}`}
-                                  fill
-                                  sizes="40px"
-                                  className="object-cover"
-                                />
+                                <CdnImage src={url} alt={`${img.label} ${i + 1}`} fill sizes="40px" className="object-cover" />
                               </button>
                             ))}
                           </div>
@@ -279,21 +224,13 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                 {initialResultId && (
                   <div>
                     <p className="mb-2 text-sm font-medium text-gray-700">Scene & product issues</p>
-                    <ImageEvaluationForm
-                      resultId={initialResultId}
-                      productCategories={productCategories}
-                    />
+                    <ImageEvaluationForm resultId={initialResultId} productCategories={productCategories} />
                   </div>
                 )}
                 <div>
                   <p className="mb-2 text-sm font-medium text-gray-700">Rate generation</p>
                   {generation ? (
-                    <RatingForm
-                      generationId={generationId}
-                      currentSceneAccuracyRating={generation.sceneAccuracyRating}
-                      currentProductAccuracyRating={generation.productAccuracyRating}
-                      onRated={handleRated}
-                    />
+                    <RatingForm generationId={generationId} currentSceneAccuracyRating={generation.sceneAccuracyRating} currentProductAccuracyRating={generation.productAccuracyRating} onRated={handleRated} />
                   ) : (
                     <p className="text-sm text-gray-500">Loading…</p>
                   )}
@@ -312,23 +249,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           containerClassName="z-[10000] p-6"
           className="relative max-h-[90vh] w-auto max-w-[90vw] overflow-hidden rounded-lg bg-transparent p-0 shadow-none"
         >
-          <CdnImage
-            src={expandedImage.src}
-            alt={expandedImage.alt}
-            width={0}
-            height={0}
-            sizes="100vw"
-            className="h-auto max-h-[90vh] w-auto max-w-full object-contain"
-          />
+          <CdnImage src={expandedImage.src} alt={expandedImage.alt} width={0} height={0} sizes="100vw" className="h-auto max-h-[90vh] w-auto max-w-full object-contain" />
           <div className="absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b from-black/60 to-transparent px-3 py-2">
             <span className="text-sm font-medium text-white">{expandedImage.alt}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setExpandedImage(null)}
-            className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-            aria-label="Close"
-          >
+          <button type="button" onClick={() => setExpandedImage(null)} className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70" aria-label="Close">
             <XIcon className="size-5" />
           </button>
         </Modal>

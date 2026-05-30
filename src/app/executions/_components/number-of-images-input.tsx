@@ -1,23 +1,16 @@
-'use client';
+"use client";
 
-import { useCallback, useState } from 'react';
-import { MinusIcon, PlusIcon } from '@/components/ui/icons';
+import { useCallback, useState } from "react";
+import { MinusIcon, PlusIcon } from "@/components/ui/icons";
 
-export function NumberOfImagesInput({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number | null) => void;
-}) {
+export function NumberOfImagesInput({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
   const isDefault = value === null;
   const isPreset = !isDefault && [1, 2, 4, 8].includes(value);
   const [customImages, setCustomImages] = useState(!isDefault && !isPreset);
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
-  const activeCls = 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm';
-  const inactiveCls =
-    'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50';
+  const activeCls = "border-primary-500 bg-primary-50 text-primary-700 shadow-sm";
+  const inactiveCls = "border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50";
 
   return (
     <div className="flex items-center gap-3">
@@ -74,9 +67,7 @@ export function NumberOfImagesInput({
               max={100}
               aria-label="Image count"
               value={value ?? 1}
-              onChange={(e) =>
-                onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))
-              }
+              onChange={(e) => onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
               className="h-8 w-12 [appearance:textfield] border-none bg-transparent text-center text-sm font-semibold text-gray-900 focus:ring-0 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
             <button

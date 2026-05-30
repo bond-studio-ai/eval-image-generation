@@ -1,11 +1,7 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
-type ProxyErrorCode =
-  | 'INTERNAL_ERROR'
-  | 'PROXY_CONFIG_ERROR'
-  | 'UPSTREAM_NETWORK_ERROR'
-  | 'UPSTREAM_BAD_JSON';
+type ProxyErrorCode = "INTERNAL_ERROR" | "PROXY_CONFIG_ERROR" | "UPSTREAM_NETWORK_ERROR" | "UPSTREAM_BAD_JSON";
 
 /**
  * Optional rewrite of inbound query params before the upstream call (e.g.
@@ -31,21 +27,16 @@ interface ProxyUpstreamOptions {
   transformJson?: ProxyJsonTransformer;
 }
 
-function errorJson(
-  code: ProxyErrorCode,
-  message: string,
-  status: number,
-  details?: Record<string, unknown>,
-) {
+function errorJson(code: ProxyErrorCode, message: string, status: number, details?: Record<string, unknown>) {
   return NextResponse.json(
     {
       error: {
         code,
         message,
-        ...(details ? { details } : {}),
-      },
+        ...(details ? { details } : {})
+      }
     },
-    { status },
+    { status }
   );
 }
 
@@ -53,12 +44,7 @@ function forwardedRequestHeaders(request: NextRequest, extraHeaders?: HeadersIni
   const headers = new Headers();
   request.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (
-      lower === 'accept' ||
-      lower === 'content-type' ||
-      lower === 'authorization' ||
-      lower.startsWith('x-')
-    ) {
+    if (lower === "accept" || lower === "content-type" || lower === "authorization" || lower.startsWith("x-")) {
       headers.set(key, value);
     }
   });
@@ -74,33 +60,18 @@ function forwardedResponseHeaders(response: Response): Headers {
   const headers = new Headers();
   response.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (
-      lower === 'content-type' ||
-      lower === 'content-length' ||
-      lower === 'cache-control' ||
-      lower.startsWith('x-')
-    ) {
+    if (lower === "content-type" || lower === "content-length" || lower === "cache-control" || lower.startsWith("x-")) {
       headers.set(key, value);
     }
   });
   return headers;
 }
 
-async function proxyUpstream({
-  request,
-  pathSegments,
-  baseUrl,
-  serviceName,
-  extraHeaders,
-  rewriteQuery,
-  transformJson,
-}: ProxyUpstreamOptions) {
-  const path = pathSegments.length > 0 ? pathSegments.join('/') : '';
-  const outboundParams = rewriteQuery
-    ? rewriteQuery(request.nextUrl.searchParams)
-    : request.nextUrl.searchParams;
+async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extraHeaders, rewriteQuery, transformJson }: ProxyUpstreamOptions) {
+  const path = pathSegments.length > 0 ? pathSegments.join("/") : "";
+  const outboundParams = rewriteQuery ? rewriteQuery(request.nextUrl.searchParams) : request.nextUrl.searchParams;
   const search = outboundParams.toString();
-  const url = `${baseUrl}${path ? `/${path}` : ''}${search ? `?${search}` : ''}`;
+  const url = `${baseUrl}${path ? `/${path}` : ""}${search ? `?${search}` : ""}`;
   const headers = forwardedRequestHeaders(request, extraHeaders);
 
   let body: string | undefined;
@@ -115,7 +86,7 @@ async function proxyUpstream({
     res = await fetch(url, {
       method: request.method,
       headers,
-      body: body && body.length > 0 ? body : undefined,
+      body: body && body.length > 0 ? body : undefined
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -123,14 +94,14 @@ async function proxyUpstream({
       method: request.method,
       url,
       error: message,
-      bodyLen: body?.length ?? 0,
+      bodyLen: body?.length ?? 0
     });
-    return errorJson('UPSTREAM_NETWORK_ERROR', message, 502, { url });
+    return errorJson("UPSTREAM_NETWORK_ERROR", message, 502, { url });
   }
 
-  const contentType = res.headers.get('content-type') ?? '';
-  const isJson = contentType.includes('application/json');
-  const rawBody = await res.text().catch(() => '');
+  const contentType = res.headers.get("content-type") ?? "";
+  const isJson = contentType.includes("application/json");
+  const rawBody = await res.text().catch(() => "");
 
   if (!res.ok) {
     console.error(`${serviceName} proxy upstream error`, {
@@ -138,7 +109,7 @@ async function proxyUpstream({
       url,
       status: res.status,
       contentType,
-      bodySnippet: rawBody.slice(0, 600),
+      bodySnippet: rawBody.slice(0, 600)
     });
   }
 
@@ -154,11 +125,11 @@ async function proxyUpstream({
         url,
         upstreamStatus: res.status,
         error: err instanceof Error ? err.message : String(err),
-        bodySnippet: rawBody.slice(0, 300),
+        bodySnippet: rawBody.slice(0, 300)
       });
-      return errorJson('UPSTREAM_BAD_JSON', 'Upstream returned malformed JSON', 502, {
+      return errorJson("UPSTREAM_BAD_JSON", "Upstream returned malformed JSON", 502, {
         upstreamStatus: res.status,
-        bodySnippet: rawBody.slice(0, 300),
+        bodySnippet: rawBody.slice(0, 300)
       });
     }
     const transformed = transformJson && res.ok ? transformJson(parsed) : parsed;
@@ -168,7 +139,7 @@ async function proxyUpstream({
   return new NextResponse(rawBody, {
     status: res.status,
     statusText: res.statusText,
-    headers: forwardedResponseHeaders(res),
+    headers: forwardedResponseHeaders(res)
   });
 }
 
@@ -183,10 +154,7 @@ interface CreateCatchAllProxyOptions {
   transformJson?: ProxyJsonTransformer;
 }
 
-type RouteHandler = (
-  request: NextRequest,
-  ctx: { params: Promise<{ path?: string[] }> },
-) => Promise<Response>;
+type RouteHandler = (request: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) => Promise<Response>;
 
 type CatchAllRouteHandlers = {
   GET: RouteHandler;
@@ -211,11 +179,11 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
         return NextResponse.json(
           {
             error: {
-              code: 'UNAUTHORIZED',
-              message: `Sign in is required to access the ${serviceName} API.`,
-            },
+              code: "UNAUTHORIZED",
+              message: `Sign in is required to access the ${serviceName} API.`
+            }
           },
-          { status: 401 },
+          { status: 401 }
         );
       }
     }
@@ -228,7 +196,7 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
       // 500 (not 502): the proxy itself is misconfigured; we never even tried
       // to reach upstream. `PROXY_CONFIG_ERROR` distinguishes this from
       // `UPSTREAM_NETWORK_ERROR` in logs and from any consumer trying to react.
-      return errorJson('PROXY_CONFIG_ERROR', 'Backend BASE_API_HOSTNAME is not configured', 500);
+      return errorJson("PROXY_CONFIG_ERROR", "Backend BASE_API_HOSTNAME is not configured", 500);
     }
 
     const { path = [] } = await params;
@@ -238,7 +206,7 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
       baseUrl,
       serviceName,
       rewriteQuery,
-      transformJson,
+      transformJson
     });
   };
 

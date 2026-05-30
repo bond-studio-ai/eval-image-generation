@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
-import { ChevronsUpDownIcon, XIcon } from '@/components/ui/icons';
-import { serviceUrl } from '@/lib/api-base';
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { ChevronsUpDownIcon, XIcon } from "@/components/ui/icons";
+import { serviceUrl } from "@/lib/api-base";
 
 export interface LayoutPresetOption {
   id: string;
@@ -22,90 +22,55 @@ export function useLayoutPresets() {
     data: options = [],
     isLoading: loading,
     isError,
-    error: queryError,
+    error: queryError
   } = useQuery({
-    queryKey: ['layout-presets'],
+    queryKey: ["layout-presets"],
     queryFn: async ({ signal }) => {
-      const res = await fetch(serviceUrl('layout-presets'), { signal });
+      const res = await fetch(serviceUrl("layout-presets"), { signal });
       if (!res.ok) throw new Error(`Failed to fetch presets (${res.status})`);
       const json = (await res.json()) as { data?: LayoutPresetOption[] };
       return Array.isArray(json.data) ? json.data : [];
-    },
+    }
   });
 
-  const error = isError
-    ? queryError instanceof Error
-      ? queryError.message
-      : 'Failed to fetch layout presets'
-    : null;
+  const error = isError ? (queryError instanceof Error ? queryError.message : "Failed to fetch layout presets") : null;
 
   return { options, loading, error };
 }
 
-export function LayoutPresetSelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string, option?: LayoutPresetOption | null) => void;
-}) {
-  const [search, setSearch] = useState('');
+export function LayoutPresetSelect({ value, onChange }: { value: string; onChange: (value: string, option?: LayoutPresetOption | null) => void }) {
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const { options, loading, error } = useLayoutPresets();
 
-  const hasCurrentValue = useMemo(
-    () => !value || options.some((option) => option.id === value),
-    [options, value],
-  );
-  const selectedOption = useMemo(
-    () => options.find((option) => option.id === value) ?? null,
-    [options, value],
-  );
+  const hasCurrentValue = useMemo(() => !value || options.some((option) => option.id === value), [options, value]);
+  const selectedOption = useMemo(() => options.find((option) => option.id === value) ?? null, [options, value]);
 
   const filteredOptions = useMemo(() => {
     const query = search.toLowerCase().trim();
-    const base =
-      !hasCurrentValue && value ? [{ id: value, name: `Unknown layout (${value})` }] : [];
+    const base = !hasCurrentValue && value ? [{ id: value, name: `Unknown layout (${value})` }] : [];
     const source = [...base, ...options];
     if (!query) return source;
-    return source.filter(
-      (option) =>
-        option.name.toLowerCase().includes(query) || option.id.toLowerCase().includes(query),
-    );
+    return source.filter((option) => option.name.toLowerCase().includes(query) || option.id.toLowerCase().includes(query));
   }, [hasCurrentValue, options, search, value]);
 
   return (
     <div>
-      <span className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">
-        Layout
-      </span>
+      <span className="mb-2 block text-xs font-medium tracking-wide text-gray-600 uppercase">Layout</span>
       <button
         type="button"
         onClick={() => setOpen(true)}
         disabled={loading}
         className="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-gray-400 focus:ring-1 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
       >
-        <span
-          className={
-            selectedOption || (!hasCurrentValue && value)
-              ? 'truncate text-gray-900'
-              : 'text-gray-400'
-          }
-        >
-          {selectedOption?.name ??
-            (!hasCurrentValue && value
-              ? `Unknown layout (${value})`
-              : loading
-                ? 'Loading layouts...'
-                : 'Select a layout')}
+        <span className={selectedOption || (!hasCurrentValue && value) ? "truncate text-gray-900" : "text-gray-400"}>
+          {selectedOption?.name ?? (!hasCurrentValue && value ? `Unknown layout (${value})` : loading ? "Loading layouts..." : "Select a layout")}
         </span>
         <ChevronsUpDownIcon className="size-4 shrink-0 text-gray-400" />
       </button>
-      <p className="mt-2 text-xs text-gray-500">
-        Saved instead of a dollhouse upload. Runtime will resolve the room from this preset.
-      </p>
+      <p className="mt-2 text-xs text-gray-500">Saved instead of a dollhouse upload. Runtime will resolve the room from this preset.</p>
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4 py-6">
@@ -115,7 +80,7 @@ export function LayoutPresetSelect({
             className="absolute inset-0 cursor-default"
             onClick={() => {
               setOpen(false);
-              setSearch('');
+              setSearch("");
             }}
           />
           <div className="relative w-full max-w-xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
@@ -129,7 +94,7 @@ export function LayoutPresetSelect({
                 aria-label="Close"
                 onClick={() => {
                   setOpen(false);
-                  setSearch('');
+                  setSearch("");
                 }}
                 className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
@@ -151,25 +116,17 @@ export function LayoutPresetSelect({
               <button
                 type="button"
                 onClick={() => {
-                  onChange('', null);
+                  onChange("", null);
                   setOpen(false);
-                  setSearch('');
+                  setSearch("");
                 }}
-                className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm transition-colors ${
-                  value === '' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm transition-colors ${value === "" ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50"}`}
               >
                 <span className="font-medium">No layout preset</span>
-                {value === '' ? (
-                  <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">
-                    Selected
-                  </span>
-                ) : null}
+                {value === "" ? <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
               </button>
               {filteredOptions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-gray-400">
-                  No matching layouts.
-                </div>
+                <div className="px-4 py-8 text-center text-sm text-gray-400">No matching layouts.</div>
               ) : (
                 filteredOptions.map((option) => (
                   <button
@@ -178,25 +135,17 @@ export function LayoutPresetSelect({
                     onClick={() => {
                       onChange(option.id, option);
                       setOpen(false);
-                      setSearch('');
+                      setSearch("");
                     }}
                     className={`flex w-full items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm transition-colors last:border-b-0 ${
-                      option.id === value
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      option.id === value ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{option.name}</span>
-                      <span className="block truncate font-mono text-[11px] text-gray-400">
-                        {option.id}
-                      </span>
+                      <span className="block truncate font-mono text-[11px] text-gray-400">{option.id}</span>
                     </span>
-                    {option.id === value ? (
-                      <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">
-                        Selected
-                      </span>
-                    ) : null}
+                    {option.id === value ? <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span> : null}
                   </button>
                 ))
               )}

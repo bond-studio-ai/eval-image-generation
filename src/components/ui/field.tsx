@@ -1,11 +1,5 @@
-import {
-  useId,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type Ref,
-  type TextareaHTMLAttributes,
-} from 'react';
-import { cn } from './cn';
+import { useId, type InputHTMLAttributes, type ReactNode, type Ref, type TextareaHTMLAttributes } from "react";
+import { cn } from "./cn";
 
 /**
  * Standard label/hint wrapper for a form control. Pair with `<TextInput>`,
@@ -29,19 +23,9 @@ interface FieldProps {
   children: ReactNode | ((controlId: string) => ReactNode);
 }
 
-const LABEL_CLASS =
-  'text-caption text-text-secondary mb-1 block font-medium uppercase tracking-wide';
+const LABEL_CLASS = "text-caption text-text-secondary mb-1 block font-medium uppercase tracking-wide";
 
-export function Field({
-  label,
-  hint,
-  error,
-  required,
-  optional,
-  className,
-  controlId,
-  children,
-}: FieldProps) {
+export function Field({ label, hint, error, required, optional, className, controlId, children }: FieldProps) {
   const autoId = useId();
   const id = controlId ?? autoId;
   const helper = error ?? hint;
@@ -52,43 +36,29 @@ export function Field({
         {required && <span className="text-danger-500"> *</span>}
         {optional && <span className="text-text-muted normal-case"> (optional)</span>}
       </label>
-      {typeof children === 'function' ? children(id) : children}
-      {helper && (
-        <p className={cn('text-caption mt-1', error ? 'text-danger-700' : 'text-text-muted')}>
-          {helper}
-        </p>
-      )}
+      {typeof children === "function" ? children(id) : children}
+      {helper && <p className={cn("text-caption mt-1", error ? "text-danger-700" : "text-text-muted")}>{helper}</p>}
     </div>
   );
 }
 
 const CONTROL_CLASS =
-  'rounded-input border-border-strong bg-surface text-body text-text-primary placeholder:text-text-disabled focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none disabled:bg-surface-muted disabled:text-text-disabled';
+  "rounded-input border-border-strong bg-surface text-body text-text-primary placeholder:text-text-disabled focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none disabled:bg-surface-muted disabled:text-text-disabled";
 
 /**
  * Standard single-line text input. Use directly for free-form text or as the
  * control inside a `<Field>`. For numeric values prefer the consuming
  * component's own `inputMode='numeric'` / regex constraints.
  */
-export function TextInput({
-  className,
-  type = 'text',
-  ref,
-  ...rest
-}: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
+export function TextInput({ className, type = "text", ref, ...rest }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   return <input ref={ref} type={type} className={cn(CONTROL_CLASS, className)} {...rest} />;
 }
 
-export function Textarea({
-  className,
-  rows = 3,
-  ref,
-  ...rest
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
+export function Textarea({ className, rows = 3, ref, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
   return <textarea ref={ref} rows={rows} className={cn(CONTROL_CLASS, className)} {...rest} />;
 }
 
-interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   /** Inline label rendered to the right of the checkbox. */
   label?: ReactNode;
   ref?: Ref<HTMLInputElement>;
@@ -100,17 +70,7 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'typ
  * the surrounding layout manually.
  */
 export function Checkbox({ label, className, ref, ...rest }: CheckboxProps) {
-  const input = (
-    <input
-      ref={ref}
-      type="checkbox"
-      className={cn(
-        'border-border-strong text-primary-600 focus:ring-primary-500 h-4 w-4 cursor-pointer rounded',
-        className,
-      )}
-      {...rest}
-    />
-  );
+  const input = <input ref={ref} type="checkbox" className={cn("border-border-strong text-primary-600 focus:ring-primary-500 h-4 w-4 cursor-pointer rounded", className)} {...rest} />;
   if (label === undefined) return input;
   return (
     <label className="text-body text-text-primary inline-flex cursor-pointer items-center gap-2 select-none">

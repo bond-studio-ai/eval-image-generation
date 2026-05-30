@@ -1,21 +1,13 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckIcon, ChevronDownIcon, SearchIcon } from '@/components/ui/icons';
-import type { StrategyListItem } from '@/lib/service-client';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckIcon, ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
+import type { StrategyListItem } from "@/lib/service-client";
 
-export function StrategyDropdown({
-  value,
-  strategies,
-  onChange,
-}: {
-  value: string;
-  strategies: StrategyListItem[];
-  onChange: (strategyId: string) => void;
-}) {
+export function StrategyDropdown({ value, strategies, onChange }: { value: string; strategies: StrategyListItem[]; onChange: (strategyId: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const selected = strategies.find((s) => s.id === value);
 
   // Focus the search field when it mounts (i.e. when the dropdown opens) via a
@@ -26,11 +18,11 @@ export function StrategyDropdown({
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
-        setSearch('');
+        setSearch("");
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const filtered = useMemo(() => {
@@ -44,21 +36,15 @@ export function StrategyDropdown({
       <button
         type="button"
         onClick={() => {
-          if (open) setSearch('');
+          if (open) setSearch("");
           setOpen(!open);
         }}
         className={`flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 py-1.5 text-left text-xs transition-colors ${
-          open
-            ? 'border-primary-400 ring-primary-400 ring-1'
-            : 'border-gray-200 hover:border-gray-300'
+          open ? "border-primary-400 ring-primary-400 ring-1" : "border-gray-200 hover:border-gray-300"
         }`}
       >
-        <span className={`truncate ${selected ? 'font-medium text-gray-900' : 'text-gray-400'}`}>
-          {selected?.name ?? 'Select strategy…'}
-        </span>
-        <ChevronDownIcon
-          className={`size-3.5 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
+        <span className={`truncate ${selected ? "font-medium text-gray-900" : "text-gray-400"}`}>{selected?.name ?? "Select strategy…"}</span>
+        <ChevronDownIcon className={`size-3.5 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
@@ -88,18 +74,12 @@ export function StrategyDropdown({
                   onClick={() => {
                     onChange(strategy.id);
                     setOpen(false);
-                    setSearch('');
+                    setSearch("");
                   }}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
-                    value === strategy.id
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${value === strategy.id ? "bg-primary-50 text-primary-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
                 >
                   <span className="truncate">{strategy.name}</span>
-                  {value === strategy.id && (
-                    <CheckIcon className="text-primary-600 ml-auto size-3.5 shrink-0" />
-                  )}
+                  {value === strategy.id && <CheckIcon className="text-primary-600 ml-auto size-3.5 shrink-0" />}
                 </button>
               ))
             )}

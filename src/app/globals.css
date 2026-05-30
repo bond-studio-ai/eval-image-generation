@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 html,
 body {
@@ -107,14 +107,9 @@ body {
   /* ---------------------------------------------------------------- */
   /* Typography                                                        */
   /* ---------------------------------------------------------------- */
-  --font-body:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-display:
-    var(--font-inter-display, var(--font-inter)), ui-sans-serif, system-ui, -apple-system,
-    'Segoe UI', Roboto, sans-serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-inter-display, var(--font-inter)), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   /* Type scale: caption / body / h3 / h2 / display / display-lg.
      Each token defines size + line-height in Tailwind v4's preferred
@@ -186,7 +181,7 @@ body {
 body {
   background-color: var(--color-bg-app);
   color: var(--color-text-primary);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 /*
@@ -194,23 +189,23 @@ body {
  */
 a,
 button:not(:disabled),
-[role='button']:not(:disabled),
-[type='button'],
-[type='submit'],
-[type='reset'] {
+[role="button"]:not(:disabled),
+[type="button"],
+[type="submit"],
+[type="reset"] {
   cursor: pointer;
 }
 
 button:disabled,
-[role='button']:disabled,
-[aria-disabled='true'] {
+[role="button"]:disabled,
+[aria-disabled="true"] {
   cursor: not-allowed;
 }
 
 /*
  * Form control text color & placeholder color.
  */
-input:not([type='checkbox']):not([type='radio']),
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
   color: var(--color-text-primary);
@@ -226,7 +221,7 @@ textarea::placeholder {
  * don't already paint their own ring. Components opt out by setting
  * `focus-visible:outline-none` plus their own ring style.
  */
-:where(a, button, [role='button'], input, textarea, select):focus-visible {
+:where(a, button, [role="button"], input, textarea, select):focus-visible {
   outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
 }

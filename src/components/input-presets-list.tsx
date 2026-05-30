@@ -1,21 +1,13 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
-import { BulkDeleteBar } from '@/components/bulk-delete-bar';
-import {
-  DataTable,
-  DateCell,
-  NameCell,
-  SearchBar,
-  SelectAllCheckbox,
-  StatusBadge,
-  type DataTableColumn,
-} from '@/components/data-table';
-import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
-import { Pagination } from '@/components/pagination';
-import { useInfiniteList } from '@/hooks/use-infinite-list';
-import { serviceUrl } from '@/lib/api-base';
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import { BulkDeleteBar } from "@/components/bulk-delete-bar";
+import { DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, type DataTableColumn } from "@/components/data-table";
+import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
+import { Pagination } from "@/components/pagination";
+import { useInfiniteList } from "@/hooks/use-infinite-list";
+import { serviceUrl } from "@/lib/api-base";
 
 export interface InputPresetRow {
   id: string;
@@ -35,24 +27,13 @@ export function InputPresetsList() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cloningId, setCloningId] = useState<string | null>(null);
 
-  const {
-    items,
-    loading,
-    total,
-    totalPages,
-    page,
-    search,
-    setSearch,
-    goToPage,
-    paginating,
-    refresh,
-  } = useInfiniteList<InputPresetRow>('input-presets', { limit: 20 });
+  const { items, loading, total, totalPages, page, search, setSearch, goToPage, paginating, refresh } = useInfiniteList<InputPresetRow>("input-presets", { limit: 20 });
 
   const handleClone = useCallback(
     async (id: string) => {
       setCloningId(id);
       try {
-        const res = await fetch(serviceUrl(`input-presets/${id}/clone`), { method: 'POST' });
+        const res = await fetch(serviceUrl(`input-presets/${id}/clone`), { method: "POST" });
         if (!res.ok) return;
         const json = await res.json();
         const newId = json.data?.id;
@@ -63,7 +44,7 @@ export function InputPresetsList() {
         setCloningId(null);
       }
     },
-    [router],
+    [router]
   );
 
   const activeItems = useMemo(() => items.filter((ip) => !ip.deletedAt), [items]);
@@ -86,10 +67,10 @@ export function InputPresetsList() {
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch(serviceUrl('input-presets/bulk-delete'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
+    const res = await fetch(serviceUrl("input-presets/bulk-delete"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids })
     });
     if (res.ok) {
       setSelected(new Set());
@@ -103,38 +84,36 @@ export function InputPresetsList() {
         selected,
         onToggle: toggleSelect,
         rowId: (ip) => ip.id,
-        isSelectable: (ip) => !ip.deletedAt,
+        isSelectable: (ip) => !ip.deletedAt
       }),
       {
-        header: 'Name',
-        cell: (ip) => (
-          <NameCell href={`/input-presets/${ip.id}`} name={ip.name} subtitle={ip.description} />
-        ),
-        cellClassName: 'px-6 py-4',
+        header: "Name",
+        cell: (ip) => <NameCell href={`/input-presets/${ip.id}`} name={ip.name} subtitle={ip.description} />,
+        cellClassName: "px-6 py-4"
       },
       {
-        header: 'Generations',
-        cell: (ip) => ip.stats?.generationCount ?? 0,
+        header: "Generations",
+        cell: (ip) => ip.stats?.generationCount ?? 0
       },
       {
-        header: 'Created',
-        cell: (ip) => <DateCell date={ip.createdAt} />,
+        header: "Created",
+        cell: (ip) => <DateCell date={ip.createdAt} />
       },
       {
-        header: 'Status',
-        cell: (ip) => <StatusBadge status={ip.deletedAt ? 'deleted' : 'active'} />,
+        header: "Status",
+        cell: (ip) => <StatusBadge status={ip.deletedAt ? "deleted" : "active"} />
       },
       actionsColumn<InputPresetRow>([
         {
-          icon: 'clone',
-          label: 'Clone preset',
+          icon: "clone",
+          label: "Clone preset",
           onClick: (ip) => handleClone(ip.id),
           loading: (ip) => cloningId === ip.id,
-          hidden: (ip) => !!ip.deletedAt,
-        },
-      ]),
+          hidden: (ip) => !!ip.deletedAt
+        }
+      ])
     ],
-    [selected, toggleSelect, handleClone, cloningId],
+    [selected, toggleSelect, handleClone, cloningId]
   );
 
   const toolbar = (
@@ -154,27 +133,14 @@ export function InputPresetsList() {
         columns={columns}
         data={items}
         rowKey={(ip) => ip.id}
-        rowClassName={(ip) => `hover:bg-gray-50 ${selected.has(ip.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage={search ? 'No input presets match your search.' : 'No input presets found.'}
+        rowClassName={(ip) => `hover:bg-gray-50 ${selected.has(ip.id) ? "bg-primary-50/50" : ""}`}
+        emptyMessage={search ? "No input presets match your search." : "No input presets found."}
         loading={loading}
         toolbar={toolbar}
-        footer={
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            onPageChange={goToPage}
-            loading={paginating}
-          />
-        }
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
-      <BulkDeleteBar
-        selectedCount={selected.size}
-        onDelete={handleBulkDelete}
-        onClearSelection={() => setSelected(new Set())}
-        entityName="input presets"
-      />
+      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="input presets" />
     </>
   );
 }

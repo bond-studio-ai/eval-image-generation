@@ -1,20 +1,15 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useReducer, useState } from 'react';
-import { PlayIcon } from '@/components/ui/icons';
-import { Modal } from '@/components/ui/modal';
-import { Spinner } from '@/components/ui/spinner';
-import { MultiSelectColumn } from './_components/multi-select-column';
-import { NumberOfImagesInput } from './_components/number-of-images-input';
-import {
-  BENCHMARK_PROJECT_IDS,
-  DEFAULT_BENCHMARK_PROJECT_IDS,
-  executeRuns,
-  fetchRunOptions,
-} from './_components/run-options';
-import { INITIAL_SELECTION, selectionReducer } from './_components/selection-state';
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo, useReducer, useState } from "react";
+import { PlayIcon } from "@/components/ui/icons";
+import { Modal } from "@/components/ui/modal";
+import { Spinner } from "@/components/ui/spinner";
+import { MultiSelectColumn } from "./_components/multi-select-column";
+import { NumberOfImagesInput } from "./_components/number-of-images-input";
+import { BENCHMARK_PROJECT_IDS, DEFAULT_BENCHMARK_PROJECT_IDS, executeRuns, fetchRunOptions } from "./_components/run-options";
+import { INITIAL_SELECTION, selectionReducer } from "./_components/selection-state";
 
 export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
   return (
@@ -26,24 +21,17 @@ export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
 
 function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void }) {
   const searchParams = useSearchParams();
-  const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
+  const source = searchParams.get("source") === "benchmark" ? "benchmark" : "default";
   const [showModal, setShowModal] = useState(false);
   const { data, isLoading: loading } = useQuery({
-    queryKey: ['executions-run-options'],
+    queryKey: ["executions-run-options"],
     queryFn: ({ signal }) => fetchRunOptions(signal),
-    enabled: showModal,
+    enabled: showModal
   });
   const strategies = useMemo(() => data?.strategies ?? [], [data]);
   const presets = useMemo(() => data?.presets ?? [], [data]);
   const [selection, dispatchSelection] = useReducer(selectionReducer, INITIAL_SELECTION);
-  const {
-    selectedStrategyIds,
-    selectedPresetIds,
-    selectedBenchmarkProjectIds,
-    strategySearch,
-    presetSearch,
-    benchmarkMode,
-  } = selection;
+  const { selectedStrategyIds, selectedPresetIds, selectedBenchmarkProjectIds, strategySearch, presetSearch, benchmarkMode } = selection;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
@@ -57,7 +45,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
   const filteredPresets = useMemo(() => {
     const q = presetSearch.toLowerCase().trim();
     if (!q) return presets;
-    return presets.filter((p) => (p.name ?? '').toLowerCase().includes(q));
+    return presets.filter((p) => (p.name ?? "").toLowerCase().includes(q));
   }, [presets, presetSearch]);
 
   const filteredBenchmarkProjects = useMemo(() => {
@@ -67,15 +55,15 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
   }, [presetSearch]);
 
   const toggleStrategy = useCallback((id: string) => {
-    dispatchSelection({ type: 'toggleStrategy', id });
+    dispatchSelection({ type: "toggleStrategy", id });
   }, []);
 
   const togglePreset = useCallback((id: string) => {
-    dispatchSelection({ type: 'togglePreset', id });
+    dispatchSelection({ type: "togglePreset", id });
   }, []);
 
   const toggleBenchmarkProject = useCallback((id: string) => {
-    dispatchSelection({ type: 'toggleBenchmarkProject', id });
+    dispatchSelection({ type: "toggleBenchmarkProject", id });
   }, []);
 
   const handleRun = useCallback(async () => {
@@ -91,43 +79,27 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
         selectedPresetIds,
         selectedBenchmarkProjectIds,
         numberOfImages,
-        groupId,
+        groupId
       });
-      const failures = results.filter(
-        (result): result is PromiseRejectedResult => result.status === 'rejected',
-      );
+      const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
       if (failures.length > 0) {
         const succeeded = results.length - failures.length;
-        setError(
-          `${failures[0]?.reason instanceof Error ? failures[0].reason.message : 'Failed to start run'}${
-            succeeded > 0 ? ' Some runs were still created.' : ''
-          }`,
-        );
+        setError(`${failures[0]?.reason instanceof Error ? failures[0].reason.message : "Failed to start run"}${succeeded > 0 ? " Some runs were still created." : ""}`);
         if (succeeded > 0) onRunCreated?.();
         setSubmitting(false);
         return;
       }
       setShowModal(false);
-      dispatchSelection({ type: 'resetAfterRun', benchmarkMode: source === 'benchmark' });
+      dispatchSelection({ type: "resetAfterRun", benchmarkMode: source === "benchmark" });
       onRunCreated?.();
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setSubmitting(false);
     }
-  }, [
-    benchmarkMode,
-    selectedBenchmarkProjectIds,
-    selectedPresetIds,
-    selectedStrategyIds,
-    numberOfImages,
-    onRunCreated,
-    source,
-  ]);
+  }, [benchmarkMode, selectedBenchmarkProjectIds, selectedPresetIds, selectedStrategyIds, numberOfImages, onRunCreated, source]);
 
-  const secondaryCount = benchmarkMode
-    ? selectedBenchmarkProjectIds.length
-    : selectedPresetIds.length;
+  const secondaryCount = benchmarkMode ? selectedBenchmarkProjectIds.length : selectedPresetIds.length;
 
   return (
     <>
@@ -137,9 +109,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
           setShowModal(true);
           setError(null);
           dispatchSelection({
-            type: 'openModal',
-            benchmarkMode: source === 'benchmark',
-            benchmarkProjectIds: source === 'benchmark' ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+            type: "openModal",
+            benchmarkMode: source === "benchmark",
+            benchmarkProjectIds: source === "benchmark" ? DEFAULT_BENCHMARK_PROJECT_IDS : []
           });
         }}
         className="bg-primary-600 hover:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
@@ -165,8 +137,8 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
             </h3>
             <p className="mt-1 text-sm text-gray-600">
               {benchmarkMode
-                ? 'Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies.'
-                : 'Select strategies and input presets. This creates one batch: strategies × presets × images to generate.'}
+                ? "Select strategies and benchmark project IDs. This creates benchmark runs for the selected strategies."
+                : "Select strategies and input presets. This creates one batch: strategies × presets × images to generate."}
             </p>
             <label className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
               <input
@@ -174,9 +146,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                 checked={benchmarkMode}
                 onChange={(e) => {
                   dispatchSelection({
-                    type: 'setBenchmarkMode',
+                    type: "setBenchmarkMode",
                     benchmarkMode: e.target.checked,
-                    benchmarkProjectIds: e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : [],
+                    benchmarkProjectIds: e.target.checked ? DEFAULT_BENCHMARK_PROJECT_IDS : []
                   });
                 }}
                 className="size-4 rounded border-gray-300"
@@ -186,53 +158,43 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
           </div>
 
           {loading ? (
-            <div className="flex flex-1 items-center justify-center py-12 text-sm text-gray-500">
-              Loading…
-            </div>
+            <div className="flex flex-1 items-center justify-center py-12 text-sm text-gray-500">Loading…</div>
           ) : (
             <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-gray-200 overflow-hidden">
               <MultiSelectColumn
                 title="Strategies"
                 selectedCount={selectedStrategyIds.length}
-                onClear={() => dispatchSelection({ type: 'clearStrategies' })}
+                onClear={() => dispatchSelection({ type: "clearStrategies" })}
                 searchValue={strategySearch}
-                onSearchChange={(value) => dispatchSelection({ type: 'setStrategySearch', value })}
+                onSearchChange={(value) => dispatchSelection({ type: "setStrategySearch", value })}
                 searchPlaceholder="Search strategies…"
                 searchAriaLabel="Search strategies"
-                items={filteredStrategies.map((s) => ({ id: s.id, label: s.name || 'Unnamed' }))}
+                items={filteredStrategies.map((s) => ({ id: s.id, label: s.name || "Unnamed" }))}
                 selectedIds={selectedStrategyIds}
                 onToggle={toggleStrategy}
-                emptyMessage={strategies.length === 0 ? 'No strategies available' : 'No matches'}
+                emptyMessage={strategies.length === 0 ? "No strategies available" : "No matches"}
               />
 
               <MultiSelectColumn
-                title={benchmarkMode ? 'Benchmark projects' : 'Input presets'}
+                title={benchmarkMode ? "Benchmark projects" : "Input presets"}
                 selectedCount={secondaryCount}
                 onClear={() =>
                   dispatchSelection({
-                    type: benchmarkMode ? 'clearBenchmarkProjects' : 'clearPresets',
+                    type: benchmarkMode ? "clearBenchmarkProjects" : "clearPresets"
                   })
                 }
                 searchValue={presetSearch}
-                onSearchChange={(value) => dispatchSelection({ type: 'setPresetSearch', value })}
-                searchPlaceholder={benchmarkMode ? 'Search project IDs…' : 'Search presets…'}
-                searchAriaLabel={benchmarkMode ? 'Search project IDs' : 'Search presets'}
-                items={(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map(
-                  (entry) => {
-                    const id = typeof entry === 'string' ? entry : entry.id;
-                    const label = typeof entry === 'string' ? entry : entry.name || 'Untitled';
-                    return { id, label };
-                  },
-                )}
+                onSearchChange={(value) => dispatchSelection({ type: "setPresetSearch", value })}
+                searchPlaceholder={benchmarkMode ? "Search project IDs…" : "Search presets…"}
+                searchAriaLabel={benchmarkMode ? "Search project IDs" : "Search presets"}
+                items={(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map((entry) => {
+                  const id = typeof entry === "string" ? entry : entry.id;
+                  const label = typeof entry === "string" ? entry : entry.name || "Untitled";
+                  return { id, label };
+                })}
                 selectedIds={benchmarkMode ? selectedBenchmarkProjectIds : selectedPresetIds}
                 onToggle={benchmarkMode ? toggleBenchmarkProject : togglePreset}
-                emptyMessage={
-                  benchmarkMode
-                    ? 'No matches'
-                    : presets.length === 0
-                      ? 'No presets available'
-                      : 'No matches'
-                }
+                emptyMessage={benchmarkMode ? "No matches" : presets.length === 0 ? "No presets available" : "No matches"}
               />
             </div>
           )}
@@ -244,23 +206,13 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
           </div>
 
           <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-3">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
               Cancel
             </button>
             <button
               type="button"
               onClick={handleRun}
-              disabled={
-                submitting ||
-                selectedStrategyIds.length === 0 ||
-                (benchmarkMode
-                  ? selectedBenchmarkProjectIds.length === 0
-                  : selectedPresetIds.length === 0)
-              }
+              disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)}
               className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed"
             >
               {submitting ? (
@@ -269,9 +221,9 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                   Starting…
                 </>
               ) : benchmarkMode ? (
-                'Run benchmarks'
+                "Run benchmarks"
               ) : (
-                'Run (1 batch)'
+                "Run (1 batch)"
               )}
             </button>
           </div>

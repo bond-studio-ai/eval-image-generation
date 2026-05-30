@@ -1,9 +1,4 @@
-import {
-  normalizeProductImageTypes,
-  type PreviewSettings,
-  type StepData,
-  type StrategySettings,
-} from './types';
+import { normalizeProductImageTypes, type PreviewSettings, type StepData, type StrategySettings } from "./types";
 
 /**
  * Builds the API request payload (camelCase) from the builder's local state.
@@ -16,7 +11,7 @@ export function buildStrategyPayload({
   strategySettings,
   previewSettings,
   steps,
-  providerModelIdForSelection,
+  providerModelIdForSelection
 }: {
   name: string;
   description: string;
@@ -37,17 +32,15 @@ export function buildStrategyPayload({
     groupProductImages: strategySettings.group_product_images,
     checkSceneAccuracy: strategySettings.check_scene_accuracy,
     enableMultiTurnContext: strategySettings.enable_multi_turn_context,
-    previewModel: previewSettings.preview_model
-      ? providerModelIdForSelection(previewSettings.preview_model)
-      : null,
+    previewModel: previewSettings.preview_model ? providerModelIdForSelection(previewSettings.preview_model) : null,
     previewResolution: previewSettings.preview_model ? previewSettings.preview_resolution : null,
     steps: steps.map((s, i) => ({
       id: s.id ?? undefined,
-      type: s.type ?? 'generation',
-      numberOfImages: s.type === 'judge' ? (s.number_of_images ?? 4) : undefined,
+      type: s.type ?? "generation",
+      numberOfImages: s.type === "judge" ? (s.number_of_images ?? 4) : undefined,
       name: s.name.trim() || null,
       stepOrder: i + 1,
-      promptVersionId: s.type === 'judge' ? null : s.prompt_version_id,
+      promptVersionId: s.type === "judge" ? null : s.prompt_version_id,
       model: providerModelIdForSelection(strategySettings.model),
       aspectRatio: strategySettings.aspect_ratio,
       outputResolution: strategySettings.output_resolution,
@@ -66,7 +59,7 @@ export function buildStrategyPayload({
       productImageTypes: normalizeProductImageTypes(s.product_image_types),
       arbitraryImageFromStep: s.arbitrary_image_from_step ?? null,
       judges:
-        s.type === 'judge' && s.judges?.length
+        s.type === "judge" && s.judges?.length
           ? s.judges.map((j, ji) => ({
               id: j.id,
               name: j.name || null,
@@ -74,9 +67,9 @@ export function buildStrategyPayload({
               judgeType: j.judge_type,
               judgePromptVersionId: j.judge_prompt_version_id,
               toleranceThreshold: j.tolerance_threshold,
-              position: ji + 1,
+              position: ji + 1
             }))
-          : undefined,
-    })),
+          : undefined
+    }))
   };
 }

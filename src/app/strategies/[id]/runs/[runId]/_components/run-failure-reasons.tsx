@@ -1,12 +1,8 @@
-import type { StepResult } from './types';
+import type { StepResult } from "./types";
 
 export function RunFailureReasons({ status, sorted }: { status: string; sorted: StepResult[] }) {
-  if (status === 'skipped') {
-    const reasons = sorted.flatMap((sr) =>
-      sr.status === 'skipped' && sr.error
-        ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
-        : [],
-    );
+  if (status === "skipped") {
+    const reasons = sorted.flatMap((sr) => (sr.status === "skipped" && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }] : []));
     if (reasons.length === 0) return null;
     return (
       <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -22,12 +18,8 @@ export function RunFailureReasons({ status, sorted }: { status: string; sorted: 
     );
   }
 
-  if (status === 'failed') {
-    const reasons = sorted.flatMap((sr) =>
-      (sr.status === 'failed' || sr.status === 'skipped') && sr.error
-        ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }]
-        : [],
-    );
+  if (status === "failed") {
+    const reasons = sorted.flatMap((sr) => ((sr.status === "failed" || sr.status === "skipped") && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }] : []));
     if (reasons.length === 0) return null;
     return (
       <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">

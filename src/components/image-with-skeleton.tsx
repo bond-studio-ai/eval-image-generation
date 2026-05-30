@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { CdnImage } from '@/components/cdn-image';
+import { useState } from "react";
+import { CdnImage } from "@/components/cdn-image";
 
-type ImageWithSkeletonProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> & {
+type ImageWithSkeletonProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> & {
   src: string;
   alt?: string;
   /** Optional wrapper className for the container (relative + size). Omit to render fragment (skeleton + img only; parent must be relative with size). */
@@ -17,28 +17,13 @@ type ImageWithSkeletonProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 's
  * Pass wrapperClassName when the image should be in its own sized container (e.g. "h-56 w-full rounded-lg").
  * Omit wrapperClassName when the parent already has relative and size (skeleton + img will fill parent).
  */
-export function ImageWithSkeleton({
-  src,
-  alt,
-  className = '',
-  wrapperClassName,
-  sizes = '(max-width:768px) 50vw, 33vw',
-}: ImageWithSkeletonProps) {
+export function ImageWithSkeleton({ src, alt, className = "", wrapperClassName, sizes = "(max-width:768px) 50vw, 33vw" }: ImageWithSkeletonProps) {
   const [loaded, setLoaded] = useState(false);
 
   const content = (
     <>
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse rounded-[inherit] bg-gray-200" aria-hidden />
-      )}
-      <CdnImage
-        src={src}
-        alt={alt ?? ''}
-        fill
-        sizes={sizes}
-        onLoad={() => setLoaded(true)}
-        className={`object-contain transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'} ${className}`}
-      />
+      {!loaded && <div className="absolute inset-0 animate-pulse rounded-[inherit] bg-gray-200" aria-hidden />}
+      <CdnImage src={src} alt={alt ?? ""} fill sizes={sizes} onLoad={() => setLoaded(true)} className={`object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"} ${className}`} />
     </>
   );
 

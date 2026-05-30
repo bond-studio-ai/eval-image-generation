@@ -1,15 +1,15 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { fetchStrategyRunById } from '@/lib/service-client';
-import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
-import { RunDetail } from './run-detail';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { fetchStrategyRunById } from "@/lib/service-client";
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { RunDetail } from "./run-detail";
 
 export const metadata: Metadata = {
-  title: 'Strategy Run',
-  description: 'Detailed results for a strategy run.',
+  title: "Strategy Run",
+  description: "Detailed results for a strategy run."
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string; runId: string }>;
@@ -91,7 +91,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
       temperature: strategy.temperature,
       useGoogleSearch: strategy.useGoogleSearch,
       tagImages: strategy.tagImages,
-      hasJudge: !!(run.judgeTypeUsed || run.judgeScore != null),
+      hasJudge: !!(run.judgeTypeUsed || run.judgeScore != null)
     },
     stepResults: stepResults.map((sr) => ({
       id: sr.id,
@@ -116,11 +116,11 @@ export default async function StrategyRunPage({ params }: PageProps) {
             dollhouseViewFromStep: sr.step.dollhouseViewFromStep,
             realPhotoFromStep: sr.step.realPhotoFromStep,
             moodBoardFromStep: sr.step.moodBoardFromStep,
-            promptVersion: sr.step.promptVersion,
+            promptVersion: sr.step.promptVersion
           }
         : null,
-      segmentation: sr.segmentation ?? null,
-    })),
+      segmentation: sr.segmentation ?? null
+    }))
   };
 
   return <RunDetail strategyId={id} runId={runId} initialData={initialData} />;

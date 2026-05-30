@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useRef, type KeyboardEvent } from 'react';
-import { XIcon } from '@/components/ui/icons';
-import type { PromptVersionListItem } from '@/lib/types';
-import { buildGenerationsQuery, type FilterParams } from './query-utils';
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useRef, type KeyboardEvent } from "react";
+import { XIcon } from "@/components/ui/icons";
+import type { PromptVersionListItem } from "@/lib/types";
+import { buildGenerationsQuery, type FilterParams } from "./query-utils";
 
 interface GenerationsFiltersProps {
   params: FilterParams;
@@ -16,65 +16,55 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const link = useCallback(
-    (overrides: Partial<FilterParams>) => buildGenerationsQuery({ ...params, ...overrides }),
-    [params],
-  );
+  const link = useCallback((overrides: Partial<FilterParams>) => buildGenerationsQuery({ ...params, ...overrides }), [params]);
 
   const handleDateApply = useCallback(
     (from: string, to: string) => {
       const next = new URLSearchParams(searchParams.toString());
-      next.set('tab', 'generations');
-      if (from) next.set('from', from);
-      else next.delete('from');
-      if (to) next.set('to', to);
-      else next.delete('to');
+      next.set("tab", "generations");
+      if (from) next.set("from", from);
+      else next.delete("from");
+      if (to) next.set("to", to);
+      else next.delete("to");
       router.push(`/executions?${next}`);
     },
-    [router, searchParams],
+    [router, searchParams]
   );
 
-  const hasAny =
-    params.scene_accuracy_rating ||
-    params.product_accuracy_rating ||
-    params.unrated ||
-    params.prompt_version_id ||
-    params.from ||
-    params.to ||
-    params.source === 'benchmark';
+  const hasAny = params.scene_accuracy_rating || params.product_accuracy_rating || params.unrated || params.prompt_version_id || params.from || params.to || params.source === "benchmark";
 
   return (
     <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
       <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
         {/* Rating filters */}
         <FilterGroup label="Scene">
-          {['GOOD', 'FAILED'].map((r) => (
+          {["GOOD", "FAILED"].map((r) => (
             <FilterChip
               key={`scene-${r}`}
               href={link({
                 scene_accuracy_rating: params.scene_accuracy_rating === r ? undefined : r,
-                unrated: undefined,
+                unrated: undefined
               })}
               active={params.scene_accuracy_rating === r}
-              variant={r === 'GOOD' ? 'green' : 'red'}
+              variant={r === "GOOD" ? "green" : "red"}
             >
-              {r === 'GOOD' ? 'Good' : 'Failed'}
+              {r === "GOOD" ? "Good" : "Failed"}
             </FilterChip>
           ))}
         </FilterGroup>
 
         <FilterGroup label="Product">
-          {['GOOD', 'FAILED'].map((r) => (
+          {["GOOD", "FAILED"].map((r) => (
             <FilterChip
               key={`product-${r}`}
               href={link({
                 product_accuracy_rating: params.product_accuracy_rating === r ? undefined : r,
-                unrated: undefined,
+                unrated: undefined
               })}
               active={params.product_accuracy_rating === r}
-              variant={r === 'GOOD' ? 'green' : 'red'}
+              variant={r === "GOOD" ? "green" : "red"}
             >
-              {r === 'GOOD' ? 'Good' : 'Failed'}
+              {r === "GOOD" ? "Good" : "Failed"}
             </FilterChip>
           ))}
         </FilterGroup>
@@ -82,11 +72,11 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
         <FilterGroup label="Status">
           <FilterChip
             href={link({
-              unrated: params.unrated === 'true' ? undefined : 'true',
+              unrated: params.unrated === "true" ? undefined : "true",
               scene_accuracy_rating: undefined,
-              product_accuracy_rating: undefined,
+              product_accuracy_rating: undefined
             })}
-            active={params.unrated === 'true'}
+            active={params.unrated === "true"}
             variant="amber"
           >
             Unrated only
@@ -96,7 +86,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
         {/* Prompt filter */}
         <FilterGroup label="Prompt">
           <select
-            value={params.prompt_version_id ?? ''}
+            value={params.prompt_version_id ?? ""}
             onChange={(e) => {
               const id = e.target.value || undefined;
               router.push(buildGenerationsQuery({ ...params, prompt_version_id: id }));
@@ -106,7 +96,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
             <option value="">All prompts</option>
             {promptVersions.map((pv) => (
               <option key={pv.id} value={pv.id}>
-                {pv.name ?? 'Untitled'}
+                {pv.name ?? "Untitled"}
               </option>
             ))}
           </select>
@@ -119,18 +109,10 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
         {/* Sort */}
         <FilterGroup label="Sort">
-          <FilterChip
-            href={link({ order: 'desc' })}
-            active={params.order !== 'asc'}
-            variant="neutral"
-          >
+          <FilterChip href={link({ order: "desc" })} active={params.order !== "asc"} variant="neutral">
             Newest
           </FilterChip>
-          <FilterChip
-            href={link({ order: 'asc' })}
-            active={params.order === 'asc'}
-            variant="neutral"
-          >
+          <FilterChip href={link({ order: "asc" })} active={params.order === "asc"} variant="neutral">
             Oldest
           </FilterChip>
         </FilterGroup>
@@ -138,10 +120,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
       {hasAny && (
         <div className="mt-3 border-t border-gray-100 pt-3">
-          <Link
-            href={buildGenerationsQuery({ source: params.source })}
-            className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
-          >
+          <Link href={buildGenerationsQuery({ source: params.source })} className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700">
             <XIcon className="size-3.5" />
             Clear all filters
           </Link>
@@ -170,61 +149,40 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 
 const chipVariants = {
   green: {
-    active: 'bg-green-100 text-green-800 ring-1 ring-green-300',
-    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+    active: "bg-green-100 text-green-800 ring-1 ring-green-300",
+    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
   },
   red: {
-    active: 'bg-red-100 text-red-800 ring-1 ring-red-300',
-    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+    active: "bg-red-100 text-red-800 ring-1 ring-red-300",
+    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
   },
   amber: {
-    active: 'bg-amber-100 text-amber-800 ring-1 ring-amber-300',
-    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+    active: "bg-amber-100 text-amber-800 ring-1 ring-amber-300",
+    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
   },
   neutral: {
-    active: 'bg-primary-100 text-primary-700 ring-1 ring-primary-300',
-    inactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-  },
+    active: "bg-primary-100 text-primary-700 ring-1 ring-primary-300",
+    inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+  }
 };
 
-function FilterChip({
-  href,
-  active,
-  variant,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  variant: keyof typeof chipVariants;
-  children: React.ReactNode;
-}) {
+function FilterChip({ href, active, variant, children }: { href: string; active: boolean; variant: keyof typeof chipVariants; children: React.ReactNode }) {
   const v = chipVariants[variant];
   return (
-    <Link
-      href={href}
-      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${active ? v.active : v.inactive}`}
-    >
+    <Link href={href} className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${active ? v.active : v.inactive}`}>
       {children}
     </Link>
   );
 }
 
-function DateRangeForm({
-  from,
-  to,
-  onApply,
-}: {
-  from?: string;
-  to?: string;
-  onApply: (from: string, to: string) => void;
-}) {
+function DateRangeForm({ from, to, onApply }: { from?: string; to?: string; onApply: (from: string, to: string) => void }) {
   const fromRef = useRef<HTMLInputElement>(null);
   const toRef = useRef<HTMLInputElement>(null);
   const apply = () => {
-    onApply(fromRef.current?.value ?? '', toRef.current?.value ?? '');
+    onApply(fromRef.current?.value ?? "", toRef.current?.value ?? "");
   };
   const applyOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') apply();
+    if (e.key === "Enter") apply();
   };
   return (
     <div className="flex items-center gap-1.5">
@@ -247,11 +205,7 @@ function DateRangeForm({
         onKeyDown={applyOnEnter}
         className="focus:border-primary-500 focus:ring-primary-500 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:outline-none"
       />
-      <button
-        type="button"
-        onClick={apply}
-        className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
-      >
+      <button type="button" onClick={apply} className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
         Apply
       </button>
     </div>

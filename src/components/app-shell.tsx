@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useUser } from '@clerk/nextjs';
-import { usePathname } from 'next/navigation';
-import { AppShellSkeleton } from './loading-state';
-import { Sidebar } from './sidebar';
-import { TopBar } from './top-bar';
+import { useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
+import { AppShellSkeleton } from "./loading-state";
+import { Sidebar } from "./sidebar";
+import { TopBar } from "./top-bar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useUser();
   const pathname = usePathname();
 
-  const isAuthPage = pathname.startsWith('/auth');
+  const isAuthPage = pathname.startsWith("/auth");
   const showShell = isSignedIn && !isAuthPage;
 
   if (!isLoaded) {

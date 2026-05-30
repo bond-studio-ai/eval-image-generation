@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo } from 'react';
-import { type ReviewState } from '@/components/review-badge';
-import { runReviewPost } from '@/components/run-review-post';
-import { AlertCircleIcon, CheckIcon, SparklesIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
+import { useCallback, useMemo } from "react";
+import { type ReviewState } from "@/components/review-badge";
+import { runReviewPost } from "@/components/run-review-post";
+import { AlertCircleIcon, CheckIcon, SparklesIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
 
 /**
  * Badge that fans out `POST /generations/:id/review` for every
@@ -52,7 +52,7 @@ interface AggregateState {
    *   We still treat this as actionable (click to fill in the rest).
    * - `error`: every settled id is `error` (none `done`, none `running`).
    */
-  kind: 'idle' | 'checking' | 'running' | 'done' | 'mixed' | 'error';
+  kind: "idle" | "checking" | "running" | "done" | "mixed" | "error";
   /** Total ids the badge is responsible for. */
   total: number;
   /** Count currently `running`. */
@@ -73,30 +73,26 @@ function aggregate(generationIds: string[], statuses: Map<string, ReviewState>):
   let checking = 0;
   let idle = 0;
   for (const id of generationIds) {
-    const state = statuses.get(id) ?? { kind: 'idle' as const };
-    if (state.kind === 'running') running++;
-    else if (state.kind === 'done') done++;
-    else if (state.kind === 'error') errors++;
-    else if (state.kind === 'checking') checking++;
+    const state = statuses.get(id) ?? { kind: "idle" as const };
+    if (state.kind === "running") running++;
+    else if (state.kind === "done") done++;
+    else if (state.kind === "error") errors++;
+    else if (state.kind === "checking") checking++;
     else idle++;
   }
 
-  let kind: AggregateState['kind'];
-  if (running > 0) kind = 'running';
-  else if (checking > 0 && done === 0 && errors === 0 && idle === 0) kind = 'checking';
-  else if (done === total) kind = 'done';
-  else if (errors === total) kind = 'error';
-  else if (done > 0) kind = 'mixed';
-  else kind = 'idle';
+  let kind: AggregateState["kind"];
+  if (running > 0) kind = "running";
+  else if (checking > 0 && done === 0 && errors === 0 && idle === 0) kind = "checking";
+  else if (done === total) kind = "done";
+  else if (errors === total) kind = "error";
+  else if (done > 0) kind = "mixed";
+  else kind = "idle";
 
   return { kind, total, running, done, errors, idle };
 }
 
-export function ReviewRunGroupBadge({
-  generationIds,
-  statuses,
-  setStatus,
-}: ReviewRunGroupBadgeProps) {
+export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: ReviewRunGroupBadgeProps) {
   const summary = useMemo(() => aggregate(generationIds, statuses), [generationIds, statuses]);
 
   const runForAll = useCallback(async () => {
@@ -105,9 +101,9 @@ export function ReviewRunGroupBadge({
     // us double-fire on an id that is already running.
     const targets: Array<{ id: string; force: boolean }> = [];
     for (const id of generationIds) {
-      const state = statuses.get(id) ?? { kind: 'idle' as const };
-      if (state.kind === 'running' || state.kind === 'checking') continue;
-      targets.push({ id, force: state.kind === 'done' });
+      const state = statuses.get(id) ?? { kind: "idle" as const };
+      if (state.kind === "running" || state.kind === "checking") continue;
+      targets.push({ id, force: state.kind === "done" });
     }
     if (targets.length === 0) return;
 
@@ -117,7 +113,7 @@ export function ReviewRunGroupBadge({
     // row badge's `running` aggregate matches the user's mental model of
     // "I asked for all of them" even though we'll process them one by one.
     for (const target of targets) {
-      setStatus(target.id, { kind: 'running' });
+      setStatus(target.id, { kind: "running" });
     }
 
     // Walk the queue sequentially. A single failure must not stop the
@@ -131,8 +127,8 @@ export function ReviewRunGroupBadge({
         next = await runReviewPost(id, force);
       } catch (err) {
         next = {
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Unexpected error',
+          kind: "error",
+          message: err instanceof Error ? err.message : "Unexpected error"
         };
       }
       setStatus(id, next);
@@ -141,7 +137,7 @@ export function ReviewRunGroupBadge({
 
   if (generationIds.length === 0) return null;
 
-  if (summary.kind === 'checking') {
+  if (summary.kind === "checking") {
     return (
       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
         <Spinner className="size-2.5" />
@@ -150,22 +146,19 @@ export function ReviewRunGroupBadge({
     );
   }
 
-  if (summary.kind === 'running') {
+  if (summary.kind === "running") {
     // `completed` includes both done and error so the counter monotonically
     // advances toward `total` instead of stalling on partial failures.
     const completed = summary.done + summary.errors;
     return (
-      <span
-        className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm"
-        title={`Reviewing ${completed}/${summary.total} generations`}
-      >
+      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm" title={`Reviewing ${completed}/${summary.total} generations`}>
         <Spinner className="size-2.5" />
         Reviewing {completed}/{summary.total}
       </span>
     );
   }
 
-  if (summary.kind === 'done') {
+  if (summary.kind === "done") {
     return (
       <button
         type="button"
@@ -182,7 +175,7 @@ export function ReviewRunGroupBadge({
     );
   }
 
-  if (summary.kind === 'mixed') {
+  if (summary.kind === "mixed") {
     // Click runs whatever is idle/error (force=false on those, force=true
     // on the already-done ones to keep them in sync with a fresh re-run).
     return (
@@ -201,7 +194,7 @@ export function ReviewRunGroupBadge({
     );
   }
 
-  if (summary.kind === 'error') {
+  if (summary.kind === "error") {
     return (
       <button
         type="button"

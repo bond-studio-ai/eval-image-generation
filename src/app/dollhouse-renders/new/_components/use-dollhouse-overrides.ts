@@ -1,12 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo, useState } from 'react';
-import type { UnitySlimDesignMaterials } from '@/lib/dollhouse-renders';
-import {
-  parseDesignMaterialsOverride,
-  parseRoomDataOverride,
-  type OverrideParseResult,
-} from './build-request';
+import { useCallback, useMemo, useState } from "react";
+import type { UnitySlimDesignMaterials } from "@/lib/dollhouse-renders";
+import { parseDesignMaterialsOverride, parseRoomDataOverride, type OverrideParseResult } from "./build-request";
 
 export interface DollhouseOverridesController {
   designMaterialsInput: string;
@@ -27,18 +23,15 @@ export interface DollhouseOverridesController {
  * threaded through `ProjectDataSection` just to plumb this state around.
  */
 export function useDollhouseOverrides(): DollhouseOverridesController {
-  const [designMaterialsInput, setDesignMaterialsInput] = useState('');
-  const [roomDataInput, setRoomDataInput] = useState('');
+  const [designMaterialsInput, setDesignMaterialsInput] = useState("");
+  const [roomDataInput, setRoomDataInput] = useState("");
 
-  const designResult = useMemo(
-    () => parseDesignMaterialsOverride(designMaterialsInput),
-    [designMaterialsInput],
-  );
+  const designResult = useMemo(() => parseDesignMaterialsOverride(designMaterialsInput), [designMaterialsInput]);
   const roomResult = useMemo(() => parseRoomDataOverride(roomDataInput), [roomDataInput]);
 
   const reset = useCallback(() => {
-    setDesignMaterialsInput('');
-    setRoomDataInput('');
+    setDesignMaterialsInput("");
+    setRoomDataInput("");
   }, []);
 
   const hasContent = designResult.provided || roomResult.provided;
@@ -51,6 +44,6 @@ export function useDollhouseOverrides(): DollhouseOverridesController {
     designResult,
     roomResult,
     hasContent,
-    reset,
+    reset
   };
 }

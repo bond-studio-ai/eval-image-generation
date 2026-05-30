@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
-import { ThumbsDownIcon, ThumbsUpIcon } from '@/components/ui/icons';
-import { serviceUrl } from '@/lib/api-base';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { ThumbsDownIcon, ThumbsUpIcon } from "@/components/ui/icons";
+import { serviceUrl } from "@/lib/api-base";
 
-type Rating = 'GOOD' | 'FAILED' | null;
+type Rating = "GOOD" | "FAILED" | null;
 
 interface GenerationRating {
   scene: Rating;
@@ -21,44 +21,40 @@ interface MatrixCellRatingOverlayProps {
 const thumbUp = <ThumbsUpIcon className="size-4" fill="currentColor" aria-hidden />;
 const thumbDown = <ThumbsDownIcon className="size-4" fill="currentColor" aria-hidden />;
 
-export function MatrixCellRatingOverlay({
-  generationId,
-  onRated,
-  className = '',
-}: MatrixCellRatingOverlayProps) {
+export function MatrixCellRatingOverlay({ generationId, onRated, className = "" }: MatrixCellRatingOverlayProps) {
   const queryClient = useQueryClient();
-  const ratingKey = ['generation-rating', generationId];
+  const ratingKey = ["generation-rating", generationId];
 
   const { data } = useQuery({
     queryKey: ratingKey,
     queryFn: async ({ signal }): Promise<GenerationRating> => {
       const res = await fetch(serviceUrl(`generations/${generationId}`), {
-        cache: 'no-store',
-        signal,
+        cache: "no-store",
+        signal
       });
       if (!res.ok) throw new Error(`Failed to load generation (${res.status})`);
       const json = await res.json();
       const d = json.data ?? json;
       return {
         scene: (d.sceneAccuracyRating ?? null) as Rating,
-        product: (d.productAccuracyRating ?? null) as Rating,
+        product: (d.productAccuracyRating ?? null) as Rating
       };
     },
     enabled: !!generationId,
     // Match the prior module-level cache: fetch a generation's rating once and
     // keep it; the optimistic `setQueryData` in `rate` handles in-session updates.
-    staleTime: Infinity,
+    staleTime: Infinity
   });
 
   const sceneRating = data?.scene ?? null;
   const productRating = data?.product ?? null;
 
   const rate = useCallback(
-    async (scene?: 'GOOD' | 'FAILED', product?: 'GOOD' | 'FAILED') => {
-      const key = ['generation-rating', generationId];
+    async (scene?: "GOOD" | "FAILED", product?: "GOOD" | "FAILED") => {
+      const key = ["generation-rating", generationId];
       const prev = queryClient.getQueryData<GenerationRating>(key) ?? {
         scene: null,
-        product: null,
+        product: null
       };
 
       // Optimistic update: write straight to the query cache.
@@ -72,16 +68,16 @@ export function MatrixCellRatingOverlay({
         if (scene !== undefined) body.sceneAccuracyRating = scene;
         if (product !== undefined) body.productAccuracyRating = product;
         const res = await fetch(serviceUrl(`generations/${generationId}/rating`), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
         });
         if (res.ok) {
           const json = await res.json();
           const d = json.data ?? json;
           queryClient.setQueryData<GenerationRating>(key, {
             scene: (d.sceneAccuracyRating ?? nextScene) as Rating,
-            product: (d.productAccuracyRating ?? nextProduct) as Rating,
+            product: (d.productAccuracyRating ?? nextProduct) as Rating
           });
         } else {
           queryClient.setQueryData<GenerationRating>(key, prev);
@@ -90,20 +86,16 @@ export function MatrixCellRatingOverlay({
         queryClient.setQueryData<GenerationRating>(key, prev);
       }
     },
-    [generationId, onRated, queryClient],
+    [generationId, onRated, queryClient]
   );
 
-  const btnBase = 'rounded-md p-1.5 transition-all';
+  const btnBase = "rounded-md p-1.5 transition-all";
 
-  function thumbBtnClass(current: Rating, target: 'GOOD' | 'FAILED') {
+  function thumbBtnClass(current: Rating, target: "GOOD" | "FAILED") {
     if (current === target) {
-      return target === 'GOOD'
-        ? `${btnBase} bg-sky-500 text-white shadow-sm ring-1 ring-sky-400`
-        : `${btnBase} bg-red-500 text-white shadow-sm ring-1 ring-red-400`;
+      return target === "GOOD" ? `${btnBase} bg-sky-500 text-white shadow-sm ring-1 ring-sky-400` : `${btnBase} bg-red-500 text-white shadow-sm ring-1 ring-red-400`;
     }
-    return target === 'GOOD'
-      ? `${btnBase} text-sky-300 hover:bg-sky-500/30 hover:text-sky-200`
-      : `${btnBase} text-red-300 hover:bg-red-500/30 hover:text-red-200`;
+    return target === "GOOD" ? `${btnBase} text-sky-300 hover:bg-sky-500/30 hover:text-sky-200` : `${btnBase} text-red-300 hover:bg-red-500/30 hover:text-red-200`;
   }
 
   return (
@@ -115,43 +107,21 @@ export function MatrixCellRatingOverlay({
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">Scene</span>
           <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => rate('GOOD')}
-              className={thumbBtnClass(sceneRating, 'GOOD')}
-              title="Scene good"
-            >
+            <button type="button" onClick={() => rate("GOOD")} className={thumbBtnClass(sceneRating, "GOOD")} title="Scene good">
               {thumbUp}
             </button>
-            <button
-              type="button"
-              onClick={() => rate('FAILED')}
-              className={thumbBtnClass(sceneRating, 'FAILED')}
-              title="Scene failed"
-            >
+            <button type="button" onClick={() => rate("FAILED")} className={thumbBtnClass(sceneRating, "FAILED")} title="Scene failed">
               {thumbDown}
             </button>
           </div>
         </div>
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">
-            Product
-          </span>
+          <span className="text-[10px] font-medium tracking-wide uppercase drop-shadow">Product</span>
           <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => rate(undefined, 'GOOD')}
-              className={thumbBtnClass(productRating, 'GOOD')}
-              title="Product good"
-            >
+            <button type="button" onClick={() => rate(undefined, "GOOD")} className={thumbBtnClass(productRating, "GOOD")} title="Product good">
               {thumbUp}
             </button>
-            <button
-              type="button"
-              onClick={() => rate(undefined, 'FAILED')}
-              className={thumbBtnClass(productRating, 'FAILED')}
-              title="Product failed"
-            >
+            <button type="button" onClick={() => rate(undefined, "FAILED")} className={thumbBtnClass(productRating, "FAILED")} title="Product failed">
               {thumbDown}
             </button>
           </div>

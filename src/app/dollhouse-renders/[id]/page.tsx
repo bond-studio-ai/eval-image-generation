@@ -1,21 +1,21 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { DateTimeCell } from '@/components/date-cells';
-import { ExpandableImage } from '@/components/expandable-image';
-import { PageHeader } from '@/components/page-header';
-import { RenderStatusBadge } from '@/components/render-status-badge';
-import { Card } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
-import { getDollhouseRender, type DollhouseRender } from '@/lib/dollhouse-renders';
-import { imageGenerationV2Base } from '@/lib/env';
-import { RenderAutoRefresh } from './render-auto-refresh';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { DateTimeCell } from "@/components/date-cells";
+import { ExpandableImage } from "@/components/expandable-image";
+import { PageHeader } from "@/components/page-header";
+import { RenderStatusBadge } from "@/components/render-status-badge";
+import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import { getDollhouseRender, type DollhouseRender } from "@/lib/dollhouse-renders";
+import { imageGenerationV2Base } from "@/lib/env";
+import { RenderAutoRefresh } from "./render-auto-refresh";
 
 export const metadata: Metadata = {
-  title: 'Dollhouse Render',
-  description: 'Dollhouse render details and frames.',
+  title: "Dollhouse Render",
+  description: "Dollhouse render details and frames."
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -29,16 +29,14 @@ interface PageProps {
 async function fetchRender(id: string): Promise<DollhouseRender | null> {
   return getDollhouseRender(id, {
     includeFrames: true,
-    baseUrl: imageGenerationV2Base(),
+    baseUrl: imageGenerationV2Base()
   });
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-3">
-      <dt className="text-caption text-text-secondary font-medium tracking-wide uppercase">
-        {label}
-      </dt>
+      <dt className="text-caption text-text-secondary font-medium tracking-wide uppercase">{label}</dt>
       <dd className="text-body text-text-primary">{children}</dd>
     </div>
   );
@@ -51,26 +49,22 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
 
   const frames = render.frames ?? [];
 
-  const imageConfigSummary = `${render.imageConfig.width}×${render.imageConfig.height} ${render.imageConfig.format}${
-    render.imageConfig.superSamplingMultiplier
-      ? ` (SSM ×${render.imageConfig.superSamplingMultiplier})`
-      : ''
-  }`;
+  const imageConfigSummary = `${render.imageConfig.width}×${render.imageConfig.height} ${render.imageConfig.format}${render.imageConfig.superSamplingMultiplier ? ` (SSM ×${render.imageConfig.superSamplingMultiplier})` : ""}`;
 
   const renderConfigEntries: { label: string; value: React.ReactNode }[] = [];
   if (render.renderConfig?.renderMode) {
-    renderConfigEntries.push({ label: 'Render mode', value: render.renderConfig.renderMode });
+    renderConfigEntries.push({ label: "Render mode", value: render.renderConfig.renderMode });
   }
-  if (typeof render.renderConfig?.advancedSegmentation === 'boolean') {
+  if (typeof render.renderConfig?.advancedSegmentation === "boolean") {
     renderConfigEntries.push({
-      label: 'Advanced segmentation',
-      value: render.renderConfig.advancedSegmentation ? 'On' : 'Off',
+      label: "Advanced segmentation",
+      value: render.renderConfig.advancedSegmentation ? "On" : "Off"
     });
   }
-  if (typeof render.renderConfig?.overrideCameraHeight === 'number') {
+  if (typeof render.renderConfig?.overrideCameraHeight === "number") {
     renderConfigEntries.push({
-      label: 'Override camera height',
-      value: render.renderConfig.overrideCameraHeight,
+      label: "Override camera height",
+      value: render.renderConfig.overrideCameraHeight
     });
   }
 
@@ -137,23 +131,18 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
         <div className="flex items-baseline justify-between">
           <h2 className="text-h2 text-text-primary font-semibold">Frames</h2>
           <span className="text-caption text-text-muted">
-            {frames.length} frame{frames.length === 1 ? '' : 's'}
+            {frames.length} frame{frames.length === 1 ? "" : "s"}
           </span>
         </div>
         {frames.length === 0 ? (
           <Card className="mt-4">
-            {render.status === 'pending' || render.status === 'posted' ? (
+            {render.status === "pending" || render.status === "posted" ? (
               <div className="flex items-center gap-3">
                 <Spinner size="sm" />
-                <p className="text-body text-text-secondary">
-                  This render is still processing. The page refreshes automatically and frames will
-                  appear here once the callback completes.
-                </p>
+                <p className="text-body text-text-secondary">This render is still processing. The page refreshes automatically and frames will appear here once the callback completes.</p>
               </div>
             ) : (
-              <p className="text-body text-text-secondary">
-                No frames are available for this render.
-              </p>
+              <p className="text-body text-text-secondary">No frames are available for this render.</p>
             )}
           </Card>
         ) : (
@@ -164,16 +153,10 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
               .map((frame) => (
                 <Card key={frame.id} padding="none" className="overflow-hidden">
                   <div className="bg-surface-sunken">
-                    <ExpandableImage
-                      src={frame.prettyUrl || frame.imageUrl}
-                      alt={frame.summary || `Frame ${frame.frameIndex + 1}`}
-                      wrapperClassName="relative block aspect-[4/3] w-full"
-                    />
+                    <ExpandableImage src={frame.prettyUrl || frame.imageUrl} alt={frame.summary || `Frame ${frame.frameIndex + 1}`} wrapperClassName="relative block aspect-[4/3] w-full" />
                   </div>
                   <div className="border-border-subtle border-t px-4 py-3">
-                    <p className="text-body text-text-primary truncate font-medium">
-                      {frame.summary || `Frame ${frame.frameIndex + 1}`}
-                    </p>
+                    <p className="text-body text-text-primary truncate font-medium">{frame.summary || `Frame ${frame.frameIndex + 1}`}</p>
                     <p className="text-caption text-text-muted mt-0.5">
                       Priority {frame.priority} · Index {frame.frameIndex}
                     </p>

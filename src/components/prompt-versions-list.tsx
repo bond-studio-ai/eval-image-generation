@@ -1,21 +1,13 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
-import { BulkDeleteBar } from '@/components/bulk-delete-bar';
-import {
-  DataTable,
-  DateCell,
-  NameCell,
-  SearchBar,
-  SelectAllCheckbox,
-  StatusBadge,
-  type DataTableColumn,
-} from '@/components/data-table';
-import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
-import { Pagination } from '@/components/pagination';
-import { useInfiniteList } from '@/hooks/use-infinite-list';
-import { serviceUrl } from '@/lib/api-base';
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import { BulkDeleteBar } from "@/components/bulk-delete-bar";
+import { DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, type DataTableColumn } from "@/components/data-table";
+import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
+import { Pagination } from "@/components/pagination";
+import { useInfiniteList } from "@/hooks/use-infinite-list";
+import { serviceUrl } from "@/lib/api-base";
 
 export interface PromptVersionRow {
   id: string;
@@ -33,18 +25,7 @@ export function PromptVersionsList() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cloningId, setCloningId] = useState<string | null>(null);
 
-  const {
-    items,
-    loading,
-    total,
-    totalPages,
-    page,
-    search,
-    setSearch,
-    goToPage,
-    paginating,
-    refresh,
-  } = useInfiniteList<PromptVersionRow>('prompt-versions', { limit: 20 });
+  const { items, loading, total, totalPages, page, search, setSearch, goToPage, paginating, refresh } = useInfiniteList<PromptVersionRow>("prompt-versions", { limit: 20 });
 
   const activeItems = useMemo(() => items.filter((pv) => !pv.deletedAt), [items]);
 
@@ -66,10 +47,10 @@ export function PromptVersionsList() {
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch(serviceUrl('prompt-versions/bulk-delete'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
+    const res = await fetch(serviceUrl("prompt-versions/bulk-delete"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids })
     });
     if (res.ok) {
       setSelected(new Set());
@@ -81,15 +62,15 @@ export function PromptVersionsList() {
     async (pv: PromptVersionRow) => {
       setCloningId(pv.id);
       try {
-        const res = await fetch(serviceUrl('prompt-versions'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(serviceUrl("prompt-versions"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: `Copy of ${pv.name || 'Untitled'}`,
+            name: `Copy of ${pv.name || "Untitled"}`,
             description: pv.description || undefined,
             system_prompt: pv.systemPrompt,
-            user_prompt: pv.userPrompt,
-          }),
+            user_prompt: pv.userPrompt
+          })
         });
         if (!res.ok) return;
         const json = await res.json();
@@ -101,7 +82,7 @@ export function PromptVersionsList() {
         setCloningId(null);
       }
     },
-    [router],
+    [router]
   );
 
   const columns = useMemo<DataTableColumn<PromptVersionRow>[]>(
@@ -110,37 +91,35 @@ export function PromptVersionsList() {
         selected,
         onToggle: toggleSelect,
         rowId: (pv) => pv.id,
-        isSelectable: (pv) => !pv.deletedAt,
+        isSelectable: (pv) => !pv.deletedAt
       }),
       {
-        header: 'Name',
-        cell: (pv) => (
-          <NameCell href={`/prompt-versions/${pv.id}`} name={pv.name} subtitle={pv.userPrompt} />
-        ),
-        cellClassName: 'px-6 py-4',
+        header: "Name",
+        cell: (pv) => <NameCell href={`/prompt-versions/${pv.id}`} name={pv.name} subtitle={pv.userPrompt} />,
+        cellClassName: "px-6 py-4"
       },
       {
-        header: 'Generations',
-        cell: (pv) => pv.stats?.generationCount ?? 0,
+        header: "Generations",
+        cell: (pv) => pv.stats?.generationCount ?? 0
       },
       {
-        header: 'Created',
-        cell: (pv) => <DateCell date={pv.createdAt} />,
+        header: "Created",
+        cell: (pv) => <DateCell date={pv.createdAt} />
       },
       {
-        header: 'Status',
-        cell: (pv) => <StatusBadge status={pv.deletedAt ? 'deleted' : 'active'} />,
+        header: "Status",
+        cell: (pv) => <StatusBadge status={pv.deletedAt ? "deleted" : "active"} />
       },
       actionsColumn<PromptVersionRow>([
         {
-          icon: 'clone',
-          label: 'Clone prompt version',
+          icon: "clone",
+          label: "Clone prompt version",
           onClick: (pv) => handleClone(pv),
-          loading: (pv) => cloningId === pv.id,
-        },
-      ]),
+          loading: (pv) => cloningId === pv.id
+        }
+      ])
     ],
-    [selected, toggleSelect, handleClone, cloningId],
+    [selected, toggleSelect, handleClone, cloningId]
   );
 
   const toolbar = (
@@ -160,29 +139,14 @@ export function PromptVersionsList() {
         columns={columns}
         data={items}
         rowKey={(pv) => pv.id}
-        rowClassName={(pv) => `hover:bg-gray-50 ${selected.has(pv.id) ? 'bg-primary-50/50' : ''}`}
-        emptyMessage={
-          search ? 'No prompt versions match your search.' : 'No prompt versions found.'
-        }
+        rowClassName={(pv) => `hover:bg-gray-50 ${selected.has(pv.id) ? "bg-primary-50/50" : ""}`}
+        emptyMessage={search ? "No prompt versions match your search." : "No prompt versions found."}
         loading={loading}
         toolbar={toolbar}
-        footer={
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            onPageChange={goToPage}
-            loading={paginating}
-          />
-        }
+        footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
-      <BulkDeleteBar
-        selectedCount={selected.size}
-        onDelete={handleBulkDelete}
-        onClearSelection={() => setSelected(new Set())}
-        entityName="prompt versions"
-      />
+      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="prompt versions" />
     </>
   );
 }

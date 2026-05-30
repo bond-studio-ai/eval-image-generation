@@ -50,9 +50,7 @@ export interface SegmentationCategoryResponse {
  * frontend never sees the legacy form (but the type still tolerates
  * the absent case during the cutover).
  */
-export type ConceptGroupResults = Partial<
-  Record<string, Partial<Record<string, SegmentationCategoryResponse>>>
->;
+export type ConceptGroupResults = Partial<Record<string, Partial<Record<string, SegmentationCategoryResponse>>>>;
 
 /**
  * Per-step wall-clock breakdown the backend records on every fresh run
@@ -81,7 +79,7 @@ export interface SegmentationTimings {
  * `drift-assessment.ts` — kept literal so the UI copy can be
  * exhaustive over the enum at compile time.
  */
-export type DriftAbsenceReason = 'absent_in_dollhouse' | 'absent_in_sam' | 'absent_in_both';
+export type DriftAbsenceReason = "absent_in_dollhouse" | "absent_in_sam" | "absent_in_both";
 
 export interface DriftCategoryHeader {
   category: string;
@@ -232,7 +230,7 @@ export interface DepthAssessment {
    * fit nor the metric triplet was attempted. Absent on the happy
    * path.
    */
-  absenceReason?: 'too_few_valid_pixels';
+  absenceReason?: "too_few_valid_pixels";
 }
 
 /**
@@ -241,14 +239,7 @@ export interface DepthAssessment {
  * populate the column because it isn't a DB field, but the type
  * stays in sync with the backend contract.
  */
-export type DriftStatus =
-  | 'computed'
-  | 'no_dollhouse_view'
-  | 'no_strategy_batch_run'
-  | 'no_dollhouse_capture'
-  | 'no_product_mask'
-  | 'no_sam_results'
-  | 'failed';
+export type DriftStatus = "computed" | "no_dollhouse_view" | "no_strategy_batch_run" | "no_dollhouse_capture" | "no_product_mask" | "no_sam_results" | "failed";
 
 /**
  * Per-plugin lifecycle status keyed by plugin id. Mirrors the service's
@@ -398,7 +389,7 @@ export interface PerCategoryTiming {
  * Which drift bucket a row belongs to. Drives which metric columns
  * the unified drift table renders for each row.
  */
-export type DriftBucketKind = 'largeObject' | 'surface' | 'smallObject';
+export type DriftBucketKind = "largeObject" | "surface" | "smallObject";
 
 export interface DriftRow {
   key: string;

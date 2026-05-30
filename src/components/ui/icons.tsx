@@ -76,5 +76,5 @@ export {
   Lock as LockIcon,
   MessageSquare as MessageSquareIcon,
   GripVertical as GripVerticalIcon,
-  Inbox as InboxIcon,
-} from 'lucide-react';
+  Inbox as InboxIcon
+} from "lucide-react";

@@ -1,38 +1,26 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { ErrorCard } from '@/components/resource-form-header';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
-import { Stepper } from '@/components/ui/stepper';
-import { toast } from '@/components/ui/toaster';
-import {
-  cameraFrameKey,
-  createDollhouseRender,
-  DollhouseRenderApiError,
-  DollhouseRenderUnexpectedResponseError,
-} from '@/lib/dollhouse-renders';
-import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from '@/lib/projects';
-import { AdvancedSection } from './_components/advanced-section';
-import {
-  buildCreateRenderBody,
-  DEFAULT_IMAGE_CONFIG,
-  DEFAULT_RENDER_CONFIG,
-  DEFAULT_SSM_PARAMS,
-  type ImageConfigState,
-  type RenderConfigState,
-} from './_components/build-request';
-import { ImageConfigSection } from './_components/image-config-section';
-import { ProjectDataSection } from './_components/project-data-section';
-import { ProjectPickerSection } from './_components/project-picker-section';
-import { RenderConfigSection } from './_components/render-config-section';
-import type { SsmParamsState } from './_components/ssm-params-editor';
-import type { StyleOverrideRow } from './_components/style-overrides-editor';
-import { useDollhouseOverrides } from './_components/use-dollhouse-overrides';
-import { buildWizardModel, WIZARD_SECTION_IDS } from './_components/wizard-model';
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { ErrorCard } from "@/components/resource-form-header";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import { Stepper } from "@/components/ui/stepper";
+import { toast } from "@/components/ui/toaster";
+import { cameraFrameKey, createDollhouseRender, DollhouseRenderApiError, DollhouseRenderUnexpectedResponseError } from "@/lib/dollhouse-renders";
+import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from "@/lib/projects";
+import { AdvancedSection } from "./_components/advanced-section";
+import { buildCreateRenderBody, DEFAULT_IMAGE_CONFIG, DEFAULT_RENDER_CONFIG, DEFAULT_SSM_PARAMS, type ImageConfigState, type RenderConfigState } from "./_components/build-request";
+import { ImageConfigSection } from "./_components/image-config-section";
+import { ProjectDataSection } from "./_components/project-data-section";
+import { ProjectPickerSection } from "./_components/project-picker-section";
+import { RenderConfigSection } from "./_components/render-config-section";
+import type { SsmParamsState } from "./_components/ssm-params-editor";
+import type { StyleOverrideRow } from "./_components/style-overrides-editor";
+import { useDollhouseOverrides } from "./_components/use-dollhouse-overrides";
+import { buildWizardModel, WIZARD_SECTION_IDS } from "./_components/wizard-model";
 
 type ProjectState = {
   projectIdInput: string;
@@ -42,40 +30,40 @@ type ProjectState = {
 };
 
 type ProjectAction =
-  | { type: 'setInput'; value: string }
-  | { type: 'loadStart'; projectId: string }
-  | { type: 'loadSuccess'; bootstrap: ProjectRenderBootstrap }
-  | { type: 'loadError'; message: string }
-  | { type: 'loadSettled' }
-  | { type: 'clear' };
+  | { type: "setInput"; value: string }
+  | { type: "loadStart"; projectId: string }
+  | { type: "loadSuccess"; bootstrap: ProjectRenderBootstrap }
+  | { type: "loadError"; message: string }
+  | { type: "loadSettled" }
+  | { type: "clear" };
 
 const INITIAL_PROJECT: ProjectState = {
-  projectIdInput: '',
+  projectIdInput: "",
   bootstrap: null,
   loadingProject: false,
-  projectError: null,
+  projectError: null
 };
 
 function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
   switch (action.type) {
-    case 'setInput':
+    case "setInput":
       return { ...state, projectIdInput: action.value };
-    case 'loadStart':
+    case "loadStart":
       return {
         ...state,
         projectIdInput: action.projectId,
         loadingProject: true,
         projectError: null,
-        bootstrap: null,
+        bootstrap: null
       };
-    case 'loadSuccess':
+    case "loadSuccess":
       return { ...state, bootstrap: action.bootstrap };
-    case 'loadError':
+    case "loadError":
       return { ...state, projectError: action.message };
-    case 'loadSettled':
+    case "loadSettled":
       return { ...state, loadingProject: false };
-    case 'clear':
-      return { ...state, bootstrap: null, projectError: null, projectIdInput: '' };
+    case "clear":
+      return { ...state, bootstrap: null, projectError: null, projectIdInput: "" };
   }
 }
 
@@ -111,7 +99,7 @@ export function NewRenderForm() {
     () => () => {
       loadAbortRef.current?.abort();
     },
-    [],
+    []
   );
 
   const loadProject = useCallback(
@@ -123,7 +111,7 @@ export function NewRenderForm() {
       const controller = new AbortController();
       loadAbortRef.current = controller;
 
-      dispatchProject({ type: 'loadStart', projectId: trimmed });
+      dispatchProject({ type: "loadStart", projectId: trimmed });
       setExcludedFrameKeys(new Set());
       // Pasted overrides almost certainly target the project being navigated
       // away from. Reset on every load (not just via the explicit "Change
@@ -132,26 +120,26 @@ export function NewRenderForm() {
       resetOverrides();
       try {
         const result = await fetchProjectWithRenderBootstrap(trimmed, {
-          signal: controller.signal,
+          signal: controller.signal
         });
         if (controller.signal.aborted) return;
-        dispatchProject({ type: 'loadSuccess', bootstrap: result });
+        dispatchProject({ type: "loadSuccess", bootstrap: result });
       } catch (err) {
         // Aborts come through as either a DOMException with `name === 'AbortError'`
         // or a TypeError depending on runtime; check the controller as the source of truth.
         if (controller.signal.aborted) return;
         dispatchProject({
-          type: 'loadError',
-          message: err instanceof Error ? err.message : 'Failed to fetch project',
+          type: "loadError",
+          message: err instanceof Error ? err.message : "Failed to fetch project"
         });
       } finally {
         if (loadAbortRef.current === controller) {
           loadAbortRef.current = null;
-          dispatchProject({ type: 'loadSettled' });
+          dispatchProject({ type: "loadSettled" });
         }
       }
     },
-    [resetOverrides],
+    [resetOverrides]
   );
 
   const handleManualLoad = useCallback(() => {
@@ -160,7 +148,7 @@ export function NewRenderForm() {
 
   const clearProject = useCallback(() => {
     loadAbortRef.current?.abort();
-    dispatchProject({ type: 'clear' });
+    dispatchProject({ type: "clear" });
     setExcludedFrameKeys(new Set());
     resetOverrides();
   }, [resetOverrides]);
@@ -184,22 +172,15 @@ export function NewRenderForm() {
         designOverride: overrides.designResult,
         roomOverride: overrides.roomResult,
         excludedFrameKeys,
-        imageConfig,
+        imageConfig
       }),
-    [
-      project.bootstrap,
-      project.projectError,
-      overrides.designResult,
-      overrides.roomResult,
-      excludedFrameKeys,
-      imageConfig,
-    ],
+    [project.bootstrap, project.projectError, overrides.designResult, overrides.roomResult, excludedFrameKeys, imageConfig]
   );
 
   const scrollToStep = useCallback((id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   // Narrow the model into the three fields we actually need for submit.
@@ -212,11 +193,9 @@ export function NewRenderForm() {
     if (!project.bootstrap || !effectiveDesignMaterials || !effectiveRoomData) return;
     setSubmitError(null);
 
-    const filteredFrames = cameraFrames.filter(
-      (frame, idx) => !excludedFrameKeys.has(cameraFrameKey(frame, idx)),
-    );
+    const filteredFrames = cameraFrames.filter((frame, idx) => !excludedFrameKeys.has(cameraFrameKey(frame, idx)));
     if (filteredFrames.length === 0) {
-      setSubmitError('Select at least one camera frame to render.');
+      setSubmitError("Select at least one camera frame to render.");
       return;
     }
 
@@ -228,7 +207,7 @@ export function NewRenderForm() {
       imageConfig,
       renderConfig,
       ssmParams,
-      styleOverrides,
+      styleOverrides
     });
 
     setSubmitting(true);
@@ -237,38 +216,15 @@ export function NewRenderForm() {
       toast.success(`Render ${created.id.slice(0, 8)} created.`);
       router.push(`/dollhouse-renders/${created.id}`);
     } catch (err) {
-      const message =
-        err instanceof DollhouseRenderApiError
-          ? err.message
-          : err instanceof DollhouseRenderUnexpectedResponseError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : 'Failed to create render';
+      const message = err instanceof DollhouseRenderApiError ? err.message : err instanceof DollhouseRenderUnexpectedResponseError ? err.message : err instanceof Error ? err.message : "Failed to create render";
       setSubmitError(message);
       setSubmitting(false);
     }
-  }, [
-    project.bootstrap,
-    cameraFrames,
-    effectiveDesignMaterials,
-    effectiveRoomData,
-    excludedFrameKeys,
-    imageConfig,
-    renderConfig,
-    router,
-    ssmParams,
-    styleOverrides,
-  ]);
+  }, [project.bootstrap, cameraFrames, effectiveDesignMaterials, effectiveRoomData, excludedFrameKeys, imageConfig, renderConfig, router, ssmParams, styleOverrides]);
 
   return (
     <div>
-      <PageHeader
-        backHref="/dollhouse-renders"
-        backLabel="Back to Dollhouse Renders"
-        title="New Dollhouse Render"
-        subtitle="Step through the wizard: pick a project, review the project data, then configure the render."
-      />
+      <PageHeader backHref="/dollhouse-renders" backLabel="Back to Dollhouse Renders" title="New Dollhouse Render" subtitle="Step through the wizard: pick a project, review the project data, then configure the render." />
 
       <div className="bg-bg-app sticky top-0 z-10 -mx-4 mt-6 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <Stepper steps={model.steps} onStepClick={scrollToStep} label="Render wizard progress" />
@@ -278,7 +234,7 @@ export function NewRenderForm() {
         <section id={WIZARD_SECTION_IDS.project} className="scroll-mt-32">
           <ProjectPickerSection
             projectIdInput={project.projectIdInput}
-            onProjectIdInputChange={(value) => dispatchProject({ type: 'setInput', value })}
+            onProjectIdInputChange={(value) => dispatchProject({ type: "setInput", value })}
             onLoadManualInput={handleManualLoad}
             onSelectFromTable={(id) => void loadProject(id)}
             loadingProject={project.loadingProject}
@@ -312,12 +268,7 @@ export function NewRenderForm() {
         </section>
 
         <section id={WIZARD_SECTION_IDS.advanced} className="scroll-mt-32">
-          <AdvancedSection
-            styleOverrides={styleOverrides}
-            onStyleOverridesChange={setStyleOverrides}
-            ssmParams={ssmParams}
-            onSsmParamsChange={setSsmParams}
-          />
+          <AdvancedSection styleOverrides={styleOverrides} onStyleOverridesChange={setStyleOverrides} ssmParams={ssmParams} onSsmParamsChange={setSsmParams} />
         </section>
 
         <section id={WIZARD_SECTION_IDS.create} className="scroll-mt-32">
@@ -333,11 +284,7 @@ export function NewRenderForm() {
                 </ul>
               )}
             </div>
-            <Button
-              onClick={handleSubmit}
-              disabled={!model.canSubmit || submitting}
-              loading={submitting}
-            >
+            <Button onClick={handleSubmit} disabled={!model.canSubmit || submitting} loading={submitting}>
               Create Render
             </Button>
           </Card>

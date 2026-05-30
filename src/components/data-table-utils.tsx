@@ -1,43 +1,24 @@
-import { Fragment, type ReactNode } from 'react';
-import { IconButton } from '@/components/ui/icon-button';
-import { CopyIcon, EditIcon, TrashIcon } from '@/components/ui/icons';
-import type { DataTableColumn, RowAction } from './data-table';
+import { Fragment, type ReactNode } from "react";
+import { IconButton } from "@/components/ui/icon-button";
+import { CopyIcon, EditIcon, TrashIcon } from "@/components/ui/icons";
+import type { DataTableColumn, RowAction } from "./data-table";
 
 // ---------------------------------------------------------------------------
 // Column factories
 // ---------------------------------------------------------------------------
 
-const CHECKBOX_CLASS =
-  'size-4 cursor-pointer rounded border-border-strong text-primary-600 focus:ring-primary-500';
+const CHECKBOX_CLASS = "size-4 cursor-pointer rounded border-border-strong text-primary-600 focus:ring-primary-500";
 
-export function checkboxColumn<T>({
-  selected,
-  onToggle,
-  rowId,
-  isSelectable,
-}: {
-  selected: Set<string>;
-  onToggle: (id: string) => void;
-  rowId: (row: T) => string;
-  isSelectable?: (row: T) => boolean;
-}): DataTableColumn<T> {
+export function checkboxColumn<T>({ selected, onToggle, rowId, isSelectable }: { selected: Set<string>; onToggle: (id: string) => void; rowId: (row: T) => string; isSelectable?: (row: T) => boolean }): DataTableColumn<T> {
   return {
-    header: '',
-    headerClassName: 'w-10 p-3',
+    header: "",
+    headerClassName: "w-10 p-3",
     cell: (row) => {
       if (isSelectable && !isSelectable(row)) return null;
       const id = rowId(row);
-      return (
-        <input
-          type="checkbox"
-          aria-label="Select row"
-          checked={selected.has(id)}
-          onChange={() => onToggle(id)}
-          className={CHECKBOX_CLASS}
-        />
-      );
+      return <input type="checkbox" aria-label="Select row" checked={selected.has(id)} onChange={() => onToggle(id)} className={CHECKBOX_CLASS} />;
     },
-    cellClassName: 'w-10 p-3',
+    cellClassName: "w-10 p-3"
   };
 }
 
@@ -45,10 +26,10 @@ export function checkboxColumn<T>({
 // Actions column
 // ---------------------------------------------------------------------------
 
-const ACTION_ICONS: Record<'clone' | 'delete' | 'edit', ReactNode> = {
+const ACTION_ICONS: Record<"clone" | "delete" | "edit", ReactNode> = {
   clone: <CopyIcon className="size-4" />,
   delete: <TrashIcon className="size-4" />,
-  edit: <EditIcon className="size-4" />,
+  edit: <EditIcon className="size-4" />
 };
 
 /**
@@ -61,28 +42,19 @@ const ACTION_ICONS: Record<'clone' | 'delete' | 'edit', ReactNode> = {
 export function actionsColumn<T>(actions: RowAction<T>[]): DataTableColumn<T> {
   return {
     header: <span className="sr-only">Actions</span>,
-    headerClassName: 'relative px-6 py-3',
+    headerClassName: "relative px-6 py-3",
     cell: (row) => (
       <div className="flex justify-end gap-1">
         {actions.map((action, i) => {
-          if ('render' in action) {
+          if ("render" in action) {
             return <Fragment key={i}>{action.render(row)}</Fragment>;
           }
           if (action.hidden?.(row)) return null;
           const isLoading = action.loading?.(row) ?? false;
-          return (
-            <IconButton
-              key={action.label}
-              label={action.label}
-              icon={ACTION_ICONS[action.icon]}
-              variant={action.variant === 'danger' ? 'danger' : 'default'}
-              loading={isLoading}
-              onClick={() => action.onClick(row)}
-            />
-          );
+          return <IconButton key={action.label} label={action.label} icon={ACTION_ICONS[action.icon]} variant={action.variant === "danger" ? "danger" : "default"} loading={isLoading} onClick={() => action.onClick(row)} />;
         })}
       </div>
     ),
-    cellClassName: 'whitespace-nowrap px-6 py-4 text-right',
+    cellClassName: "whitespace-nowrap px-6 py-4 text-right"
   };
 }

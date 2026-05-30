@@ -1,5 +1,5 @@
-import type { InputImage } from '@/lib/run-image-types';
-import type { StrategyRunJudgeResultEntry } from '@/lib/strategy-run-judge-results';
+import type { InputImage } from "@/lib/run-image-types";
+import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 export type { InputImage };
 
@@ -109,13 +109,13 @@ export interface ViewingPromptState {
 
 export type ViewingPromptAction =
   | {
-      type: 'open';
+      type: "open";
       id: string;
       name: string | null;
       processedSystemPrompt: string | null;
       processedUserPrompt: string | null;
     }
-  | { type: 'close' };
+  | { type: "close" };
 
 export function groupStepResults(sorted: StepResult[]): StepGroup[] {
   const map = new Map<number, StepGroup>();
@@ -125,9 +125,9 @@ export function groupStepResults(sorted: StepResult[]): StepGroup[] {
       map.set(order, {
         stepOrder: order,
         name: sr.step?.name || `Step ${order}`,
-        model: sr.step?.model ?? '',
+        model: sr.step?.model ?? "",
         step: sr.step,
-        results: [],
+        results: []
       });
     }
     map.get(order)!.results.push(sr);

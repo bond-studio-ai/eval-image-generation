@@ -1,15 +1,7 @@
-'use client';
+"use client";
 
-import {
-  useCallback,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
-import { GripVerticalIcon } from '@/components/ui/icons';
+import { useCallback, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { GripVerticalIcon } from "@/components/ui/icons";
 
 interface TwoPaneSplitProps {
   left: ReactNode;
@@ -40,14 +32,7 @@ interface TwoPaneSplitProps {
  * so at ratio 0.5 the two widths are pixel-identical regardless of
  * rounding.
  */
-export function TwoPaneSplit({
-  left,
-  right,
-  defaultRatio = 0.5,
-  minPaneWidth = 240,
-  height = 520,
-  className = '',
-}: TwoPaneSplitProps) {
+export function TwoPaneSplit({ left, right, defaultRatio = 0.5, minPaneWidth = 240, height = 520, className = "" }: TwoPaneSplitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const hDividerRef = useRef<HTMLDivElement>(null);
   const hDragging = useRef(false);
@@ -74,7 +59,7 @@ export function TwoPaneSplit({
       const next = Math.min(maxRatio, Math.max(minRatio, x / rect.width));
       setRatio(next);
     },
-    [minPaneWidth],
+    [minPaneWidth]
   );
 
   const endHDrag = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
@@ -94,37 +79,30 @@ export function TwoPaneSplit({
         const minRatio = width > 0 ? Math.min(0.4, minPaneWidth / width) : 0.15;
         return Math.min(1 - minRatio, Math.max(minRatio, r));
       };
-      if (e.key === 'ArrowLeft') {
+      if (e.key === "ArrowLeft") {
         e.preventDefault();
         setRatio((r) => clamp(r - STEP));
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === "ArrowRight") {
         e.preventDefault();
         setRatio((r) => clamp(r + STEP));
-      } else if (e.key === 'Home') {
+      } else if (e.key === "Home") {
         e.preventDefault();
         setRatio(0.5);
       }
     },
-    [minPaneWidth],
+    [minPaneWidth]
   );
 
   const containerStyle = {
-    '--tpane-left-grow': ratio.toFixed(6),
-    '--tpane-right-grow': (1 - ratio).toFixed(6),
+    "--tpane-left-grow": ratio.toFixed(6),
+    "--tpane-right-grow": (1 - ratio).toFixed(6)
   } as CSSProperties;
 
   const paneStyle: CSSProperties = { height: `${height}px` };
 
   return (
-    <div
-      ref={containerRef}
-      style={containerStyle}
-      className={`flex min-h-0 flex-col gap-6 sm:flex-row sm:gap-0 ${className}`}
-    >
-      <div
-        className="flex min-w-0 flex-col sm:flex-[var(--tpane-left-grow)_1_0%]"
-        style={paneStyle}
-      >
+    <div ref={containerRef} style={containerStyle} className={`flex min-h-0 flex-col gap-6 sm:flex-row sm:gap-0 ${className}`}>
+      <div className="flex min-w-0 flex-col sm:flex-[var(--tpane-left-grow)_1_0%]" style={paneStyle}>
         {left}
       </div>
       <div className="group relative hidden w-6 shrink-0 sm:block">
@@ -147,16 +125,10 @@ export function TwoPaneSplit({
           className="absolute inset-0 h-full w-full cursor-col-resize touch-none select-none"
         />
         <div className="group-hover:border-primary-400 group-active:border-primary-500 pointer-events-none absolute top-1/2 left-1/2 flex h-7 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-gray-300 bg-white shadow-xs transition-colors">
-          <GripVerticalIcon
-            className="group-hover:text-primary-500 size-2.5 text-gray-500"
-            aria-hidden="true"
-          />
+          <GripVerticalIcon className="group-hover:text-primary-500 size-2.5 text-gray-500" aria-hidden="true" />
         </div>
       </div>
-      <div
-        className="flex min-w-0 flex-col sm:flex-[var(--tpane-right-grow)_1_0%]"
-        style={paneStyle}
-      >
+      <div className="flex min-w-0 flex-col sm:flex-[var(--tpane-right-grow)_1_0%]" style={paneStyle}>
         {right}
       </div>
     </div>

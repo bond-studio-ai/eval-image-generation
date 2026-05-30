@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useCallback, useRef, useState } from 'react';
-import { ImageWithSkeleton } from '@/components/image-with-skeleton';
-import { UploadIcon, XIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
-import { localUrl } from '@/lib/api-base';
+import { useCallback, useRef, useState } from "react";
+import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { UploadIcon, XIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { localUrl } from "@/lib/api-base";
 
 interface SceneImageInputProps {
   label: string;
@@ -25,11 +25,11 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
       try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append("file", file);
 
-        const res = await fetch(localUrl('upload'), {
-          method: 'POST',
-          body: formData,
+        const res = await fetch(localUrl("upload"), {
+          method: "POST",
+          body: formData
         });
 
         const json = await res.json();
@@ -37,12 +37,12 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
         onChange(json.data.publicUrl);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to upload image');
+        setError(err instanceof Error ? err.message : "Failed to upload image");
       } finally {
         setUploading(false);
       }
     },
-    [onChange],
+    [onChange]
   );
 
   const handleFiles = useCallback(
@@ -50,7 +50,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       const file = Array.from(files)[0];
       if (file) uploadFile(file);
     },
-    [uploadFile],
+    [uploadFile]
   );
 
   const handleDrop = useCallback(
@@ -61,7 +61,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
         handleFiles(e.dataTransfer.files);
       }
     },
-    [handleFiles],
+    [handleFiles]
   );
 
   return (
@@ -70,17 +70,8 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
       {value ? (
         <div className="group relative">
-          <ImageWithSkeleton
-            src={value}
-            alt={label}
-            wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50"
-          />
-          <button
-            type="button"
-            aria-label="Remove image"
-            onClick={() => onChange(null)}
-            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-          >
+          <ImageWithSkeleton src={value} alt={label} wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-gray-200 bg-gray-50" />
+          <button type="button" aria-label="Remove image" onClick={() => onChange(null)} className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
             <XIcon className="size-3" />
           </button>
         </div>
@@ -94,16 +85,14 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
             className="hidden"
             onChange={(e) => {
               if (e.target.files) handleFiles(e.target.files);
-              e.target.value = '';
+              e.target.value = "";
             }}
           />
           <button
             type="button"
             aria-label={`Upload ${label}`}
             className={`flex min-h-72 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-              dragOver
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400'
+              dragOver ? "border-primary-500 bg-primary-50" : "border-gray-300 hover:border-gray-400"
             }`}
             onDragOver={(e) => {
               e.preventDefault();

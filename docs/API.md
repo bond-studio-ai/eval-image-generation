@@ -274,10 +274,7 @@ POST /generations
 {
   "prompt_version_id": "550e8400-e29b-41d4-a716-446655440000",
   "input_images": [{ "url": "https://storage.example.com/inputs/ref-image-1.jpg" }],
-  "output_images": [
-    { "url": "https://storage.example.com/outputs/gen-image-1.jpg" },
-    { "url": "https://storage.example.com/outputs/gen-image-2.jpg" }
-  ]
+  "output_images": [{ "url": "https://storage.example.com/outputs/gen-image-1.jpg" }, { "url": "https://storage.example.com/outputs/gen-image-2.jpg" }]
 }
 ```
 

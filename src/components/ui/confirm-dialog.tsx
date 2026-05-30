@@ -1,16 +1,8 @@
-'use client';
+"use client";
 
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import { Button } from './button';
-import { Modal } from './modal';
+import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "./button";
+import { Modal } from "./modal";
 
 export interface ConfirmOptions {
   title: string;
@@ -18,7 +10,7 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   /** Use 'danger' for destructive actions (delete, etc.). */
-  tone?: 'default' | 'danger';
+  tone?: "default" | "danger";
 }
 
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
@@ -45,7 +37,7 @@ interface ConfirmState extends ConfirmOptions {
  * destructive actions, Confirm for benign ones).
  */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<ConfirmState>({ open: false, title: '' });
+  const [state, setState] = useState<ConfirmState>({ open: false, title: "" });
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -73,7 +65,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         setState({ ...options, open: true });
       });
     },
-    [settlePending],
+    [settlePending]
   );
 
   const close = useCallback(
@@ -81,7 +73,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       settlePending(value);
       setState((s) => ({ ...s, open: false }));
     },
-    [settlePending],
+    [settlePending]
   );
 
   const cancel = useCallback(() => close(false), [close]);
@@ -98,28 +90,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmContext.Provider value={confirm}>
       {children}
       {state.open && (
-        <Modal
-          onClose={cancel}
-          labelledById="confirm-dialog-title"
-          className="max-w-md p-6"
-          initialFocusRef={state.tone === 'danger' ? cancelButtonRef : confirmButtonRef}
-        >
+        <Modal onClose={cancel} labelledById="confirm-dialog-title" className="max-w-md p-6" initialFocusRef={state.tone === "danger" ? cancelButtonRef : confirmButtonRef}>
           <h2 id="confirm-dialog-title" className="text-h3 text-text-primary font-semibold">
             {state.title}
           </h2>
-          {state.description && (
-            <div className="text-body text-text-secondary mt-2">{state.description}</div>
-          )}
+          {state.description && <div className="text-body text-text-secondary mt-2">{state.description}</div>}
           <div className="mt-6 flex justify-end gap-2">
             <Button ref={cancelButtonRef} variant="secondary" onClick={() => close(false)}>
-              {state.cancelLabel ?? 'Cancel'}
+              {state.cancelLabel ?? "Cancel"}
             </Button>
-            <Button
-              ref={confirmButtonRef}
-              variant={state.tone === 'danger' ? 'danger' : 'primary'}
-              onClick={() => close(true)}
-            >
-              {state.confirmLabel ?? 'Confirm'}
+            <Button ref={confirmButtonRef} variant={state.tone === "danger" ? "danger" : "primary"} onClick={() => close(true)}>
+              {state.confirmLabel ?? "Confirm"}
             </Button>
           </div>
         </Modal>
@@ -136,7 +117,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 export function useConfirm(): ConfirmFn {
   const ctx = use(ConfirmContext);
   if (!ctx) {
-    throw new Error('useConfirm must be used inside <ConfirmProvider>');
+    throw new Error("useConfirm must be used inside <ConfirmProvider>");
   }
   return ctx;
 }

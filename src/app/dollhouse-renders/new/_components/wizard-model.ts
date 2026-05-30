@@ -1,11 +1,7 @@
-import type { StepperStep, StepperStepState } from '@/components/ui/stepper';
-import {
-  cameraFrameKey,
-  type DollhouseCameraFrame,
-  type UnitySlimDesignMaterials,
-} from '@/lib/dollhouse-renders';
-import type { ProjectRenderBootstrap } from '@/lib/projects';
-import type { ImageConfigState, OverrideParseResult } from './build-request';
+import type { StepperStep, StepperStepState } from "@/components/ui/stepper";
+import { cameraFrameKey, type DollhouseCameraFrame, type UnitySlimDesignMaterials } from "@/lib/dollhouse-renders";
+import type { ProjectRenderBootstrap } from "@/lib/projects";
+import type { ImageConfigState, OverrideParseResult } from "./build-request";
 
 /**
  * Scroll-anchor ids for every section on the new-render form. The three
@@ -15,11 +11,11 @@ import type { ImageConfigState, OverrideParseResult } from './build-request';
  * can target any anchor without a second lookup table.
  */
 export const WIZARD_SECTION_IDS = {
-  project: 'step-project',
-  data: 'step-project-data',
-  config: 'step-config',
-  advanced: 'step-advanced',
-  create: 'step-create',
+  project: "step-project",
+  data: "step-project-data",
+  config: "step-config",
+  advanced: "step-advanced",
+  create: "step-create"
 } as const;
 
 /**
@@ -27,7 +23,7 @@ export const WIZARD_SECTION_IDS = {
  * wizard's actual steps" (the stepper, the cascade, the test contract)
  * iterates this tuple — changing it is the one place to add a new step.
  */
-const STEP_KEYS = ['project', 'data', 'config'] as const;
+const STEP_KEYS = ["project", "data", "config"] as const;
 export type WizardStepKey = (typeof STEP_KEYS)[number];
 
 export interface WizardInput {
@@ -69,34 +65,19 @@ export interface WizardModel {
  * without React.
  */
 export function buildWizardModel(input: WizardInput): WizardModel {
-  const effectiveDesignMaterials = input.designOverride.provided
-    ? input.designOverride.value
-    : (input.bootstrap?.designMaterials ?? null);
-  const effectiveRoomData = input.roomOverride.provided
-    ? input.roomOverride.value
-    : (input.bootstrap?.roomData ?? null);
+  const effectiveDesignMaterials = input.designOverride.provided ? input.designOverride.value : (input.bootstrap?.designMaterials ?? null);
+  const effectiveRoomData = input.roomOverride.provided ? input.roomOverride.value : (input.bootstrap?.roomData ?? null);
   const cameraFrames = input.bootstrap?.cameraFrames ?? [];
 
-  const includedFrameCount = cameraFrames.filter(
-    (frame, idx) => !input.excludedFrameKeys.has(cameraFrameKey(frame, idx)),
-  ).length;
+  const includedFrameCount = cameraFrames.filter((frame, idx) => !input.excludedFrameKeys.has(cameraFrameKey(frame, idx))).length;
 
   const imageWidth = Number.parseInt(input.imageConfig.width, 10);
   const imageHeight = Number.parseInt(input.imageConfig.height, 10);
-  const imageConfigValid =
-    Number.isFinite(imageWidth) &&
-    imageWidth > 0 &&
-    Number.isFinite(imageHeight) &&
-    imageHeight > 0;
+  const imageConfigValid = Number.isFinite(imageWidth) && imageWidth > 0 && Number.isFinite(imageHeight) && imageHeight > 0;
 
   const overrideErrors = !!input.designOverride.error || !!input.roomOverride.error;
 
-  const projectDataReady =
-    !!effectiveDesignMaterials &&
-    !!effectiveRoomData &&
-    cameraFrames.length > 0 &&
-    includedFrameCount > 0 &&
-    !overrideErrors;
+  const projectDataReady = !!effectiveDesignMaterials && !!effectiveRoomData && cameraFrames.length > 0 && includedFrameCount > 0 && !overrideErrors;
 
   // Camera frames have to come from a project — that's the user-stated
   // constraint. So `canSubmit` requires a bootstrap even if both override
@@ -111,7 +92,7 @@ export function buildWizardModel(input: WizardInput): WizardModel {
     effectiveDesignMaterials,
     effectiveRoomData,
     cameraFrames,
-    includedFrameCount,
+    includedFrameCount
   });
   const configIssues = collectConfigIssues({ imageConfigValid });
   const allIssues = [...projectIssues, ...dataIssues, ...configIssues];
@@ -121,35 +102,33 @@ export function buildWizardModel(input: WizardInput): WizardModel {
     bootstrapLoaded: !!input.bootstrap,
     overrideErrors,
     projectDataReady,
-    imageConfigValid,
+    imageConfigValid
   });
 
   const steps: StepperStep[] = [
     {
       id: WIZARD_SECTION_IDS.project,
-      label: 'Project',
-      description: input.bootstrap ? input.bootstrap.project.id : 'Pick or paste an ID',
-      state: stepStates.project,
+      label: "Project",
+      description: input.bootstrap ? input.bootstrap.project.id : "Pick or paste an ID",
+      state: stepStates.project
     },
     {
       id: WIZARD_SECTION_IDS.data,
-      label: 'Project data',
-      description: input.bootstrap
-        ? `${includedFrameCount}/${cameraFrames.length} frames`
-        : 'Frames & overrides',
-      state: stepStates.data,
+      label: "Project data",
+      description: input.bootstrap ? `${includedFrameCount}/${cameraFrames.length} frames` : "Frames & overrides",
+      state: stepStates.data
     },
     {
       id: WIZARD_SECTION_IDS.config,
-      label: 'Image & render',
-      description: `${input.imageConfig.width || '?'}×${input.imageConfig.height || '?'} ${input.imageConfig.format}`,
-      state: stepStates.config,
-    },
+      label: "Image & render",
+      description: `${input.imageConfig.width || "?"}×${input.imageConfig.height || "?"} ${input.imageConfig.format}`,
+      state: stepStates.config
+    }
   ];
 
   const summary = canSubmit
-    ? `Submit ${includedFrameCount} frame${includedFrameCount === 1 ? '' : 's'} for project ${input.bootstrap?.project.id} at ${imageWidth}×${imageHeight} ${input.imageConfig.format}.`
-    : 'Complete the steps above to enable Create Render.';
+    ? `Submit ${includedFrameCount} frame${includedFrameCount === 1 ? "" : "s"} for project ${input.bootstrap?.project.id} at ${imageWidth}×${imageHeight} ${input.imageConfig.format}.`
+    : "Complete the steps above to enable Create Render.";
 
   return {
     effectiveDesignMaterials,
@@ -166,7 +145,7 @@ export function buildWizardModel(input: WizardInput): WizardModel {
     configIssues,
     allIssues,
     summary,
-    steps,
+    steps
   };
 }
 
@@ -191,7 +170,7 @@ function computeStepStates({
   bootstrapLoaded,
   overrideErrors,
   projectDataReady,
-  imageConfigValid,
+  imageConfigValid
 }: {
   projectError: string | null;
   bootstrapLoaded: boolean;
@@ -201,31 +180,31 @@ function computeStepStates({
 }): Record<WizardStepKey, StepperStepState> {
   // Step 1: Project
   if (projectError) {
-    return { project: 'error', data: 'pending', config: 'pending' };
+    return { project: "error", data: "pending", config: "pending" };
   }
   if (!bootstrapLoaded) {
-    return { project: 'current', data: 'pending', config: 'pending' };
+    return { project: "current", data: "pending", config: "pending" };
   }
 
   // Step 2: Project data
   if (overrideErrors) {
-    return { project: 'complete', data: 'error', config: 'pending' };
+    return { project: "complete", data: "error", config: "pending" };
   }
   if (!projectDataReady) {
-    return { project: 'complete', data: 'current', config: 'pending' };
+    return { project: "complete", data: "current", config: "pending" };
   }
 
   // Step 3: Image & render
   if (!imageConfigValid) {
-    return { project: 'complete', data: 'complete', config: 'current' };
+    return { project: "complete", data: "complete", config: "current" };
   }
-  return { project: 'complete', data: 'complete', config: 'complete' };
+  return { project: "complete", data: "complete", config: "complete" };
 }
 
 function collectProjectIssues(input: WizardInput): string[] {
   const issues: string[] = [];
   if (!input.bootstrap) {
-    issues.push('Load a project in step 1 to populate camera frames.');
+    issues.push("Load a project in step 1 to populate camera frames.");
   }
   return issues;
 }
@@ -249,20 +228,20 @@ function collectDataIssues(input: DataIssueInput): string[] {
     issues.push(`Room data: ${input.roomOverride.error}`);
   }
   if (input.bootstrap && !input.effectiveDesignMaterials) {
-    issues.push('Design materials are missing for this project.');
+    issues.push("Design materials are missing for this project.");
   }
   if (input.bootstrap && !input.effectiveRoomData) {
-    issues.push('Room layout is missing for this project.');
+    issues.push("Room layout is missing for this project.");
   }
   if (input.bootstrap && input.cameraFrames.length === 0) {
-    issues.push('This project has no camera frames.');
+    issues.push("This project has no camera frames.");
   }
   if (input.cameraFrames.length > 0 && input.includedFrameCount === 0) {
-    issues.push('Select at least one camera frame to render.');
+    issues.push("Select at least one camera frame to render.");
   }
   return issues;
 }
 
 function collectConfigIssues({ imageConfigValid }: { imageConfigValid: boolean }): string[] {
-  return imageConfigValid ? [] : ['Set positive width and height in the image config.'];
+  return imageConfigValid ? [] : ["Set positive width and height in the image config."];
 }

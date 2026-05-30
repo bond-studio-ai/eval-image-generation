@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BulkDeleteBar } from '@/components/bulk-delete-bar';
-import { DataTable, SelectAllCheckbox, type DataTableColumn } from '@/components/data-table';
-import { actionsColumn, checkboxColumn } from '@/components/data-table-utils';
-import { DeleteGenerationButton } from '@/components/delete-generation-button';
-import { GenerationThumbnails } from '@/components/generation-thumbnails';
-import { RatingBadge } from '@/components/rating-badge';
-import { serviceUrl } from '@/lib/api-base';
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BulkDeleteBar } from "@/components/bulk-delete-bar";
+import { DataTable, SelectAllCheckbox, type DataTableColumn } from "@/components/data-table";
+import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
+import { DeleteGenerationButton } from "@/components/delete-generation-button";
+import { GenerationThumbnails } from "@/components/generation-thumbnails";
+import { RatingBadge } from "@/components/rating-badge";
+import { serviceUrl } from "@/lib/api-base";
 
 export interface GenerationRow {
   id: string;
@@ -40,12 +40,7 @@ interface GenerationsListProps {
   };
 }
 
-export function GenerationsList({
-  initialData,
-  initialTotal,
-  pageSize,
-  filters,
-}: GenerationsListProps) {
+export function GenerationsList({ initialData, initialTotal, pageSize, filters }: GenerationsListProps) {
   const [generations, setGenerations] = useState<GenerationRow[]>(initialData);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
@@ -73,10 +68,10 @@ export function GenerationsList({
 
   const handleBulkDelete = useCallback(async () => {
     const ids = [...selected];
-    const res = await fetch(serviceUrl('generations/bulk-delete'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
+    const res = await fetch(serviceUrl("generations/bulk-delete"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids })
     });
     if (res.ok) {
       setGenerations((prev) => prev.filter((g) => !selected.has(g.id)));
@@ -91,16 +86,15 @@ export function GenerationsList({
 
     const nextPage = pageRef.current + 1;
     const params = new URLSearchParams({ page: String(nextPage), limit: String(pageSize) });
-    if (filters.sceneAccuracyRating) params.set('sceneAccuracyRating', filters.sceneAccuracyRating);
-    if (filters.productAccuracyRating)
-      params.set('productAccuracyRating', filters.productAccuracyRating);
-    if (filters.unrated) params.set('unrated', filters.unrated);
-    if (filters.promptVersionId) params.set('promptVersionId', filters.promptVersionId);
-    if (filters.from) params.set('from', filters.from);
-    if (filters.to) params.set('to', filters.to);
-    if (filters.sort) params.set('sort', filters.sort);
-    if (filters.order) params.set('order', filters.order);
-    if (filters.source === 'benchmark') params.set('source', 'benchmark');
+    if (filters.sceneAccuracyRating) params.set("sceneAccuracyRating", filters.sceneAccuracyRating);
+    if (filters.productAccuracyRating) params.set("productAccuracyRating", filters.productAccuracyRating);
+    if (filters.unrated) params.set("unrated", filters.unrated);
+    if (filters.promptVersionId) params.set("promptVersionId", filters.promptVersionId);
+    if (filters.from) params.set("from", filters.from);
+    if (filters.to) params.set("to", filters.to);
+    if (filters.sort) params.set("sort", filters.sort);
+    if (filters.order) params.set("order", filters.order);
+    if (filters.source === "benchmark") params.set("source", "benchmark");
 
     try {
       const res = await fetch(serviceUrl(`generations?${params}`));
@@ -117,7 +111,7 @@ export function GenerationsList({
           executionTime: row.executionTime as number | null,
           createdAt: row.createdAt as string,
           resultUrls: (row.resultUrls ?? []) as string[],
-          resultCount: (row.resultCount ?? 0) as number,
+          resultCount: (row.resultCount ?? 0) as number
         }));
         setGenerations((prev) => [...prev, ...newRows]);
         pageRef.current = nextPage;
@@ -126,7 +120,7 @@ export function GenerationsList({
         }
       }
     } catch (error) {
-      console.error('Failed to load more generations:', error);
+      console.error("Failed to load more generations:", error);
     } finally {
       setLoading(false);
     }
@@ -142,7 +136,7 @@ export function GenerationsList({
           loadMore();
         }
       },
-      { rootMargin: '200px' },
+      { rootMargin: "200px" }
     );
 
     observer.observe(sentinel);
@@ -154,50 +148,45 @@ export function GenerationsList({
       checkboxColumn<GenerationRow>({
         selected,
         onToggle: toggleSelect,
-        rowId: (gen) => gen.id,
+        rowId: (gen) => gen.id
       }),
       {
-        header: 'Output',
+        header: "Output",
         cell: (gen) => <GenerationThumbnails urls={gen.resultUrls} />,
-        cellClassName: 'px-4 py-3',
+        cellClassName: "px-4 py-3"
       },
       {
-        header: 'Prompt',
+        header: "Prompt",
         cell: (gen) => (
-          <Link
-            href={`/generations/${gen.id}`}
-            className="hover:text-primary-600 font-medium text-gray-900"
-          >
-            {gen.promptName || 'Untitled'}
+          <Link href={`/generations/${gen.id}`} className="hover:text-primary-600 font-medium text-gray-900">
+            {gen.promptName || "Untitled"}
           </Link>
-        ),
+        )
       },
       {
-        header: 'Rating',
+        header: "Rating",
         cell: (gen) => (
           <div className="flex flex-wrap gap-1">
             <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
             <RatingBadge rating={gen.productAccuracyRating} label="Product" />
           </div>
-        ),
+        )
       },
       {
-        header: 'Results',
-        cell: (gen) => `${gen.resultCount} result${gen.resultCount !== 1 ? 's' : ''}`,
+        header: "Results",
+        cell: (gen) => `${gen.resultCount} result${gen.resultCount !== 1 ? "s" : ""}`
       },
       {
-        header: 'Time',
-        cell: (gen) => (gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : '-'),
+        header: "Time",
+        cell: (gen) => (gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : "-")
       },
       {
-        header: 'Created',
-        cell: (gen) => new Date(gen.createdAt).toLocaleDateString(),
+        header: "Created",
+        cell: (gen) => new Date(gen.createdAt).toLocaleDateString()
       },
-      actionsColumn<GenerationRow>([
-        { render: (gen) => <DeleteGenerationButton generationId={gen.id} variant="icon" /> },
-      ]),
+      actionsColumn<GenerationRow>([{ render: (gen) => <DeleteGenerationButton generationId={gen.id} variant="icon" /> }])
     ],
-    [selected, toggleSelect],
+    [selected, toggleSelect]
   );
 
   const toolbar = (
@@ -224,7 +213,7 @@ export function GenerationsList({
       {!loading && !hasMore && generations.length > 0 && (
         <div className="flex items-center justify-center py-4">
           <p className="text-xs text-gray-400">
-            Showing all {total} generation{total !== 1 ? 's' : ''}
+            Showing all {total} generation{total !== 1 ? "s" : ""}
           </p>
         </div>
       )}
@@ -233,22 +222,9 @@ export function GenerationsList({
 
   return (
     <>
-      <DataTable
-        columns={columns}
-        data={generations}
-        rowKey={(gen) => gen.id}
-        rowClassName={(gen) => `hover:bg-gray-50 ${selected.has(gen.id) ? 'bg-primary-50/50' : ''}`}
-        toolbar={toolbar}
-        footer={footer}
-        className="mt-6"
-      />
+      <DataTable columns={columns} data={generations} rowKey={(gen) => gen.id} rowClassName={(gen) => `hover:bg-gray-50 ${selected.has(gen.id) ? "bg-primary-50/50" : ""}`} toolbar={toolbar} footer={footer} className="mt-6" />
 
-      <BulkDeleteBar
-        selectedCount={selected.size}
-        onDelete={handleBulkDelete}
-        onClearSelection={() => setSelected(new Set())}
-        entityName="generations"
-      />
+      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="generations" />
     </>
   );
 }

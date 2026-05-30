@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { Banner } from '@/components/ui/banner';
-import { RefreshIcon } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Banner } from "@/components/ui/banner";
+import { RefreshIcon } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
 
 interface RenderAutoRefreshProps {
   status: string;
@@ -26,7 +26,7 @@ const FLASH_MS = 400;
  */
 export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
   const router = useRouter();
-  const isPolling = status === 'pending' || status === 'posted';
+  const isPolling = status === "pending" || status === "posted";
 
   const [secondsLeft, setSecondsLeft] = useState(REFRESH_INTERVAL_MS / 1000);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,15 +71,7 @@ export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
   // state change (pending → completed) the user cares about.
   return (
     <div className="mt-4">
-      <Banner
-        tone="info"
-        icon={refreshing ? <Spinner size="xs" /> : <RefreshIcon className="size-4" aria-hidden />}
-        description={
-          refreshing
-            ? 'Refreshing now...'
-            : `Render in progress — auto-refreshing in ${Math.ceil(secondsLeft)}s`
-        }
-      />
+      <Banner tone="info" icon={refreshing ? <Spinner size="xs" /> : <RefreshIcon className="size-4" aria-hidden />} description={refreshing ? "Refreshing now..." : `Render in progress — auto-refreshing in ${Math.ceil(secondsLeft)}s`} />
     </div>
   );
 }

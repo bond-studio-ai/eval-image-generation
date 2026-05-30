@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { serviceUrl } from '@/lib/api-base';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { serviceUrl } from "@/lib/api-base";
 
 const options = [
-  { value: 'GOOD', label: 'Good', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-  { value: 'FAILED', label: 'Failed', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+  { value: "GOOD", label: "Good", color: "bg-green-100 text-green-700 hover:bg-green-200" },
+  { value: "FAILED", label: "Failed", color: "bg-orange-100 text-orange-700 hover:bg-orange-200" }
 ];
 
 interface RatingFormProps {
@@ -17,17 +17,7 @@ interface RatingFormProps {
   onRated?: () => void;
 }
 
-function RatingRow({
-  label,
-  current,
-  onRate,
-  disabled,
-}: {
-  label: string;
-  current: string | null;
-  onRate: (value: string) => void;
-  disabled: boolean;
-}) {
+function RatingRow({ label, current, onRate, disabled }: { label: string; current: string | null; onRate: (value: string) => void; disabled: boolean }) {
   return (
     <div className="flex items-center gap-4">
       <span className="w-36 shrink-0 text-sm font-medium text-gray-700">{label}</span>
@@ -38,9 +28,7 @@ function RatingRow({
             type="button"
             onClick={() => onRate(r.value)}
             disabled={disabled}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-              current === r.value ? `${r.color} ring-2 ring-current ring-offset-1` : r.color
-            }`}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${current === r.value ? `${r.color} ring-2 ring-current ring-offset-1` : r.color}`}
           >
             {r.label}
           </button>
@@ -50,12 +38,7 @@ function RatingRow({
   );
 }
 
-export function RatingForm({
-  generationId,
-  currentSceneAccuracyRating,
-  currentProductAccuracyRating,
-  onRated,
-}: RatingFormProps) {
+export function RatingForm({ generationId, currentSceneAccuracyRating, currentProductAccuracyRating, onRated }: RatingFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -63,14 +46,14 @@ export function RatingForm({
     setLoading(true);
     try {
       await fetch(serviceUrl(`generations/${generationId}/rating`), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
       if (onRated) onRated();
       else router.refresh();
     } catch (error) {
-      console.error('Failed to rate:', error);
+      console.error("Failed to rate:", error);
     } finally {
       setLoading(false);
     }
@@ -78,18 +61,8 @@ export function RatingForm({
 
   return (
     <div className="space-y-3">
-      <RatingRow
-        label="Scene Accuracy"
-        current={currentSceneAccuracyRating}
-        onRate={(v) => handleRate({ sceneAccuracyRating: v })}
-        disabled={loading}
-      />
-      <RatingRow
-        label="Product Accuracy"
-        current={currentProductAccuracyRating}
-        onRate={(v) => handleRate({ productAccuracyRating: v })}
-        disabled={loading}
-      />
+      <RatingRow label="Scene Accuracy" current={currentSceneAccuracyRating} onRate={(v) => handleRate({ sceneAccuracyRating: v })} disabled={loading} />
+      <RatingRow label="Product Accuracy" current={currentProductAccuracyRating} onRate={(v) => handleRate({ productAccuracyRating: v })} disabled={loading} />
     </div>
   );
 }

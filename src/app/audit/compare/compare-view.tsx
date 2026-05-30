@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import { Spinner } from '@/components/ui/spinner';
-import { serviceUrl } from '@/lib/api-base';
-import { parseStrategyRunJudgeResults } from '@/lib/strategy-run-judge-results';
-import { JudgeComparison } from './_components/judge-comparison';
-import { RunHeader } from './_components/run-header';
-import { StepComparison } from './_components/step-comparison';
-import type { RunData } from './_components/types';
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
+import { serviceUrl } from "@/lib/api-base";
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { JudgeComparison } from "./_components/judge-comparison";
+import { RunHeader } from "./_components/run-header";
+import { StepComparison } from "./_components/step-comparison";
+import type { RunData } from "./_components/types";
 
 export function CompareView({ leftId, rightId }: { leftId: string; rightId: string }) {
   const {
     data,
     isLoading: loading,
     isError,
-    error: queryError,
+    error: queryError
   } = useQuery({
-    queryKey: ['audit-compare', leftId, rightId],
+    queryKey: ["audit-compare", leftId, rightId],
     queryFn: async ({ signal }) => {
       const res = await fetch(serviceUrl(`strategy-runs/compare?left=${leftId}&right=${rightId}`), {
-        cache: 'no-store',
-        signal,
+        cache: "no-store",
+        signal
       });
       if (!res.ok) {
         throw new Error(`Failed to load: ${res.status}`);
@@ -32,24 +32,20 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
       return {
         left: {
           ...(json.data.left as RunData),
-          judgeResults: parseStrategyRunJudgeResults(rawL.judgeResults),
+          judgeResults: parseStrategyRunJudgeResults(rawL.judgeResults)
         },
         right: {
           ...(json.data.right as RunData),
-          judgeResults: parseStrategyRunJudgeResults(rawR.judgeResults),
-        },
+          judgeResults: parseStrategyRunJudgeResults(rawR.judgeResults)
+        }
       };
     },
-    enabled: Boolean(leftId) && Boolean(rightId),
+    enabled: Boolean(leftId) && Boolean(rightId)
   });
 
   const left = data?.left ?? null;
   const right = data?.right ?? null;
-  const error = isError
-    ? queryError instanceof Error
-      ? queryError.message
-      : 'Unknown error'
-    : null;
+  const error = isError ? (queryError instanceof Error ? queryError.message : "Unknown error") : null;
 
   if (loading) {
     return (
@@ -63,17 +59,13 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
     return (
       <div className="flex h-96 flex-col items-center justify-center text-red-600">
         <p className="font-medium">Error loading runs</p>
-        <p className="mt-1 text-sm">{error ?? 'One or both runs not found'}</p>
+        <p className="mt-1 text-sm">{error ?? "One or both runs not found"}</p>
       </div>
     );
   }
 
-  const leftSteps = left.stepResults.toSorted(
-    (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
-  );
-  const rightSteps = right.stepResults.toSorted(
-    (a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0),
-  );
+  const leftSteps = left.stepResults.toSorted((a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0));
+  const rightSteps = right.stepResults.toSorted((a, b) => (a.step?.stepOrder ?? 0) - (b.step?.stepOrder ?? 0));
   const maxSteps = Math.max(leftSteps.length, rightSteps.length);
 
   return (
@@ -81,16 +73,10 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Compare Runs</h1>
         <div className="flex gap-2">
-          <Link
-            href={`/strategies/${left.strategy.id}/runs/${left.id}`}
-            className="text-primary-600 hover:text-primary-500 text-xs"
-          >
+          <Link href={`/strategies/${left.strategy.id}/runs/${left.id}`} className="text-primary-600 hover:text-primary-500 text-xs">
             View left run &rarr;
           </Link>
-          <Link
-            href={`/strategies/${right.strategy.id}/runs/${right.id}`}
-            className="text-primary-600 hover:text-primary-500 text-xs"
-          >
+          <Link href={`/strategies/${right.strategy.id}/runs/${right.id}`} className="text-primary-600 hover:text-primary-500 text-xs">
             View right run &rarr;
           </Link>
         </div>

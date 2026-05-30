@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { PageHeader, PrimaryLinkButton } from '@/components/page-header';
-import { PromptVersionsList } from '@/components/prompt-versions-list';
+import type { Metadata } from "next";
+import { PageHeader, PrimaryLinkButton } from "@/components/page-header";
+import { PromptVersionsList } from "@/components/prompt-versions-list";
 
 export const metadata: Metadata = {
-  title: 'Prompt Versions',
-  description: 'Manage versioned prompts for image generation.',
+  title: "Prompt Versions",
+  description: "Manage versioned prompts for image generation."
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default function PromptVersionsPage() {
   return (

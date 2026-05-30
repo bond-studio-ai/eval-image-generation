@@ -1,19 +1,12 @@
-'use client';
+"use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useRef } from 'react';
-import {
-  COMPARE_COLUMN_QUERY_KEY,
-  createEmptyComparisonColumn,
-  encodeComparisonColumn,
-  parseComparisonState,
-  type AnalyticsComparisonColumn,
-  type AnalyticsComparisonSource,
-} from '@/app/analytics/comparison-utils';
-import { browserTimezone } from '@/lib/api-base';
-import type { StrategyListItem } from '@/lib/service-client';
-import { ComparisonColumnsEditor } from './_analytics-filters/comparison-columns-editor';
-import { PrimaryFilters } from './_analytics-filters/primary-filters';
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo, useRef } from "react";
+import { COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState, type AnalyticsComparisonColumn, type AnalyticsComparisonSource } from "@/app/analytics/comparison-utils";
+import { browserTimezone } from "@/lib/api-base";
+import type { StrategyListItem } from "@/lib/service-client";
+import { ComparisonColumnsEditor } from "./_analytics-filters/comparison-columns-editor";
+import { PrimaryFilters } from "./_analytics-filters/primary-filters";
 
 interface AnalyticsFiltersProps {
   models: string[];
@@ -24,30 +17,25 @@ interface AnalyticsFiltersProps {
 function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isCompare = activeTab === 'compare';
+  const isCompare = activeTab === "compare";
 
-  const from = searchParams.get('from') ?? '';
-  const to = searchParams.get('to') ?? '';
-  const model = searchParams.get('model') ?? '';
-  const source = searchParams.get('source') ?? 'all';
+  const from = searchParams.get("from") ?? "";
+  const to = searchParams.get("to") ?? "";
+  const model = searchParams.get("model") ?? "";
+  const source = searchParams.get("source") ?? "all";
   // Memoize on the serialized params: `parseComparisonState` mints a fresh
   // `crypto.randomUUID()` for legacy (pre-id) columns, so re-parsing on every
   // render would hand the editor unstable React keys. Same params → same ids.
   const comparison = useMemo(() => parseComparisonState(searchParams), [searchParams]);
 
-  const defaultSource: AnalyticsComparisonSource =
-    source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
+  const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
 
   // Show a starter column when entering compare mode with none yet. It lives in
   // memory (not the URL) until the user edits it, which avoids a redirect-in-
   // effect; the memoized id keeps the row's inputs from remounting each render
   // and round-trips into the URL on the first edit.
-  const defaultColumn = useMemo(
-    () => createEmptyComparisonColumn({ from, to, source: defaultSource }),
-    [from, to, defaultSource],
-  );
-  const columns =
-    isCompare && comparison.columns.length === 0 ? [defaultColumn] : comparison.columns;
+  const defaultColumn = useMemo(() => createEmptyComparisonColumn({ from, to, source: defaultSource }), [from, to, defaultSource]);
+  const columns = isCompare && comparison.columns.length === 0 ? [defaultColumn] : comparison.columns;
 
   const columnsRef = useRef(columns);
   columnsRef.current = columns;
@@ -58,7 +46,7 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
       mutate(next);
       return `/?${next}`;
     },
-    [searchParams],
+    [searchParams]
   );
 
   const applyFilters = useCallback(
@@ -70,12 +58,12 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
             else next.delete(key);
           }
           const tz = browserTimezone();
-          if (tz && (next.has('from') || next.has('to'))) next.set('tz', tz);
-          else next.delete('tz');
-        }),
+          if (tz && (next.has("from") || next.has("to"))) next.set("tz", tz);
+          else next.delete("tz");
+        })
       );
     },
-    [router, buildUrl],
+    [router, buildUrl]
   );
 
   const updateComparisonColumns = useCallback(
@@ -86,56 +74,34 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
           for (const column of columns) {
             next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(column));
           }
-        }),
+        })
       );
     },
-    [router, buildUrl],
+    [router, buildUrl]
   );
 
   const addComparisonColumn = useCallback(() => {
     const cols = columnsRef.current;
     const lastColumn = cols.at(-1);
-    const defaultSource: AnalyticsComparisonSource =
-      source === 'raw_input' ? 'raw_input' : source === 'benchmark' ? 'benchmark' : 'preset';
-    updateComparisonColumns([
-      ...cols,
-      createEmptyComparisonColumn(lastColumn ?? { from, to, source: defaultSource }),
-    ]);
+    const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
+    updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: defaultSource })]);
   }, [from, source, to, updateComparisonColumns]);
 
   const clearAll = useCallback(() => {
-    const tab = searchParams.get('tab');
+    const tab = searchParams.get("tab");
     const next = new URLSearchParams();
-    if (tab) next.set('tab', tab);
-    router.replace(`/${next.toString() ? `?${next}` : ''}`);
+    if (tab) next.set("tab", tab);
+    router.replace(`/${next.toString() ? `?${next}` : ""}`);
   }, [router, searchParams]);
 
   const hasDateFilter = !!(from || to);
-  const hasAnyFilter = hasDateFilter || !!model || source !== 'all';
+  const hasAnyFilter = hasDateFilter || !!model || source !== "all";
 
   return (
     <div className="mt-4 flex flex-col gap-3">
-      <PrimaryFilters
-        models={models}
-        isCompare={isCompare}
-        from={from}
-        to={to}
-        model={model}
-        source={source}
-        hasDateFilter={hasDateFilter}
-        hasAnyFilter={hasAnyFilter}
-        applyFilters={applyFilters}
-        clearAll={clearAll}
-      />
+      <PrimaryFilters models={models} isCompare={isCompare} from={from} to={to} model={model} source={source} hasDateFilter={hasDateFilter} hasAnyFilter={hasAnyFilter} applyFilters={applyFilters} clearAll={clearAll} />
 
-      {isCompare && (
-        <ComparisonColumnsEditor
-          columns={columns}
-          strategies={strategies}
-          updateComparisonColumns={updateComparisonColumns}
-          addComparisonColumn={addComparisonColumn}
-        />
-      )}
+      {isCompare && <ComparisonColumnsEditor columns={columns} strategies={strategies} updateComparisonColumns={updateComparisonColumns} addComparisonColumn={addComparisonColumn} />}
     </div>
   );
 }

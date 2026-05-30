@@ -1,7 +1,7 @@
-import { type HTMLAttributes, type ReactNode } from 'react';
-import { cn } from './cn';
+import { type HTMLAttributes, type ReactNode } from "react";
+import { cn } from "./cn";
 
-interface FormSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+interface FormSectionProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
   title: ReactNode;
   description?: ReactNode;
   /** Right-side header slot (e.g. "Add step" button). */
@@ -15,19 +15,9 @@ interface FormSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
  * forms (Strategy builder, Catalog prompt builder, etc.) instead of stacking
  * unlabeled `<div>`s. Pair with `<ResourceFormHeader>` at the top of the page.
  */
-export function FormSection({
-  title,
-  description,
-  actions,
-  className,
-  children,
-  ...rest
-}: FormSectionProps) {
+export function FormSection({ title, description, actions, className, children, ...rest }: FormSectionProps) {
   return (
-    <section
-      className={cn('rounded-card border-border bg-surface shadow-card border', className)}
-      {...rest}
-    >
+    <section className={cn("rounded-card border-border bg-surface shadow-card border", className)} {...rest}>
       <header className="border-border-subtle flex items-start justify-between gap-4 border-b px-5 py-4">
         <div className="min-w-0">
           <h2 className="text-h3 text-text-primary font-semibold">{title}</h2>

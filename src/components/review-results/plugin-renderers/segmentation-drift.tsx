@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { CollapsibleDrift } from '../drift';
-import type { DriftAssessment } from '../types';
-import type { PluginRendererProps } from './index';
+import { CollapsibleDrift } from "../drift";
+import type { DriftAssessment } from "../types";
+import type { PluginRendererProps } from "./index";
 
 /**
  * Segmentation drift plugin renderer. Wraps the existing
@@ -14,12 +14,5 @@ import type { PluginRendererProps } from './index';
  */
 export function SegmentationDriftRenderer({ assessment, lookup, categories }: PluginRendererProps) {
   const drift = (assessment as DriftAssessment | null | undefined) ?? null;
-  return (
-    <CollapsibleDrift
-      assessment={drift}
-      status="computed"
-      lookup={lookup}
-      categories={categories}
-    />
-  );
+  return <CollapsibleDrift assessment={drift} status="computed" lookup={lookup} categories={categories} />;
 }

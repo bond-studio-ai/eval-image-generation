@@ -1,26 +1,22 @@
-'use client';
+"use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { ScopeToggle } from '@/components/scope-toggle';
-import { Spinner } from '@/components/ui/spinner';
-import { ExecutionsRunButton } from './executions-run-button';
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback } from "react";
+import { PageHeader } from "@/components/page-header";
+import { ScopeToggle } from "@/components/scope-toggle";
+import { Spinner } from "@/components/ui/spinner";
+import { ExecutionsRunButton } from "./executions-run-button";
 
 function ExecutionsPageHeaderInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const source = searchParams.get('source') === 'benchmark' ? 'benchmark' : 'default';
+  const source = searchParams.get("source") === "benchmark" ? "benchmark" : "default";
   const handleRunCreated = useCallback(() => router.refresh(), [router]);
 
   return (
     <PageHeader
       title="Runs"
-      subtitle={
-        source === 'benchmark'
-          ? 'Browse benchmark generations and compare benchmark results.'
-          : 'Run strategies and browse generated images.'
-      }
+      subtitle={source === "benchmark" ? "Browse benchmark generations and compare benchmark results." : "Run strategies and browse generated images."}
       actions={
         <>
           <ScopeToggle />

@@ -6,13 +6,13 @@ import {
   type DollhouseRenderConfig,
   type DollhouseRenderMode,
   type DollhouseSsmParams,
-  type UnitySlimDesignMaterials,
-} from '@/lib/dollhouse-renders';
-import type { SsmParamsState } from './ssm-params-editor';
-import type { StyleOverrideRow } from './style-overrides-editor';
+  type UnitySlimDesignMaterials
+} from "@/lib/dollhouse-renders";
+import type { SsmParamsState } from "./ssm-params-editor";
+import type { StyleOverrideRow } from "./style-overrides-editor";
 
-export type ImageFormat = DollhouseImageConfig['format'];
-export type RenderModeOption = DollhouseRenderMode | 'default';
+export type ImageFormat = DollhouseImageConfig["format"];
+export type RenderModeOption = DollhouseRenderMode | "default";
 
 export interface ImageConfigState {
   format: ImageFormat;
@@ -28,57 +28,55 @@ export interface RenderConfigState {
 }
 
 export const FORMAT_OPTIONS: { value: ImageFormat; label: string }[] = [
-  { value: 'Png', label: 'PNG' },
-  { value: 'Jpeg', label: 'JPEG' },
-  { value: 'Exr', label: 'EXR' },
+  { value: "Png", label: "PNG" },
+  { value: "Jpeg", label: "JPEG" },
+  { value: "Exr", label: "EXR" }
 ];
 
 export const RENDER_MODE_OPTIONS: { value: RenderModeOption; label: string }[] = [
-  { value: 'default', label: 'Default' },
-  { value: 'STANDARD_LIT', label: 'Standard Lit' },
-  { value: 'LINEWORK', label: 'Linework' },
-  { value: 'COLORIZED_LINEWORK', label: 'Colorized Linework' },
+  { value: "default", label: "Default" },
+  { value: "STANDARD_LIT", label: "Standard Lit" },
+  { value: "LINEWORK", label: "Linework" },
+  { value: "COLORIZED_LINEWORK", label: "Colorized Linework" }
 ];
 
 export const DEFAULT_IMAGE_CONFIG: ImageConfigState = {
   // Match the service's existing dollhouse-capture defaults. The project
   // camera frames are 4:3 (`aspect: 1.333...`); sending a square 1024x1024 JPEG
   // can get accepted by the gateway but stall before the final callback.
-  format: 'Png',
-  width: '1920',
-  height: '1440',
-  superSamplingMultiplier: '',
+  format: "Png",
+  width: "1920",
+  height: "1440",
+  superSamplingMultiplier: ""
 };
 
 export const DEFAULT_RENDER_CONFIG: RenderConfigState = {
-  renderMode: 'default',
+  renderMode: "default",
   advancedSegmentation: false,
-  overrideCameraHeight: '',
+  overrideCameraHeight: ""
 };
 
 export const DEFAULT_SSM_PARAMS: SsmParamsState = {
-  addressablesCatalog: '',
-  host: '',
-  uploadBucket: '',
+  addressablesCatalog: "",
+  host: "",
+  uploadBucket: ""
 };
 
 export function buildImageConfig(state: ImageConfigState): DollhouseImageConfig {
   const width = Number.parseInt(state.width, 10);
   const height = Number.parseInt(state.height, 10);
-  const ssm = state.superSamplingMultiplier
-    ? Number.parseInt(state.superSamplingMultiplier, 10)
-    : null;
+  const ssm = state.superSamplingMultiplier ? Number.parseInt(state.superSamplingMultiplier, 10) : null;
   return {
     format: state.format,
     width: Number.isFinite(width) && width > 0 ? width : 1920,
     height: Number.isFinite(height) && height > 0 ? height : 1440,
-    ...(ssm !== null && Number.isFinite(ssm) && ssm > 0 ? { superSamplingMultiplier: ssm } : {}),
+    ...(ssm !== null && Number.isFinite(ssm) && ssm > 0 ? { superSamplingMultiplier: ssm } : {})
   };
 }
 
 function buildRenderConfig(state: RenderConfigState): DollhouseRenderConfig | undefined {
   const config: DollhouseRenderConfig = {};
-  if (state.renderMode !== 'default') {
+  if (state.renderMode !== "default") {
     config.renderMode = state.renderMode;
   }
   if (state.advancedSegmentation) {
@@ -125,23 +123,21 @@ function parseJsonObject(raw: string): {
   if (!trimmed) return { value: null, error: null };
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { value: null, error: 'Expected a JSON object.' };
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { value: null, error: "Expected a JSON object." };
     }
     return { value: parsed as Record<string, unknown>, error: null };
   } catch (err) {
-    return { value: null, error: err instanceof Error ? err.message : 'Invalid JSON.' };
+    return { value: null, error: err instanceof Error ? err.message : "Invalid JSON." };
   }
 }
 
-export function parseDesignMaterialsOverride(
-  raw: string,
-): OverrideParseResult<UnitySlimDesignMaterials> {
+export function parseDesignMaterialsOverride(raw: string): OverrideParseResult<UnitySlimDesignMaterials> {
   const trimmed = raw.trim();
   if (!trimmed) return { provided: false, value: null, error: null };
   const parsed = parseJsonObject(raw);
   if (parsed.error || !parsed.value) {
-    return { provided: true, value: null, error: parsed.error ?? 'Invalid JSON.' };
+    return { provided: true, value: null, error: parsed.error ?? "Invalid JSON." };
   }
   const validated = validateUnitySlimDesign(parsed.value);
   if (!validated.ok) return { provided: true, value: null, error: validated.error };
@@ -152,7 +148,7 @@ export function parseRoomDataOverride(raw: string): OverrideParseResult<Record<s
   const trimmed = raw.trim();
   if (!trimmed) return { provided: false, value: null, error: null };
   const { value, error } = parseJsonObject(raw);
-  if (error || !value) return { provided: true, value: null, error: error ?? 'Invalid JSON.' };
+  if (error || !value) return { provided: true, value: null, error: error ?? "Invalid JSON." };
   return { provided: true, value, error: null };
 }
 
@@ -166,15 +162,13 @@ export function buildCreateRenderBody(input: BuildCreateBodyInput): CreateDollho
     cameraFrames: input.cameraFrames,
     designMaterials: input.designMaterials,
     imageConfig: buildImageConfig(input.imageConfig),
-    roomData: input.roomData,
+    roomData: input.roomData
   };
   const renderConfig = buildRenderConfig(input.renderConfig);
   if (renderConfig) body.renderConfig = renderConfig;
   const ssmParams = buildSsmParams(input.ssmParams);
   if (ssmParams) body.ssmParams = ssmParams;
-  const cleanOverrides = input.styleOverrides.flatMap(({ product, style }) =>
-    product.trim() && style.trim() ? [{ product, style }] : [],
-  );
+  const cleanOverrides = input.styleOverrides.flatMap(({ product, style }) => (product.trim() && style.trim() ? [{ product, style }] : []));
   if (cleanOverrides.length > 0) body.styleOverrides = cleanOverrides;
   return body;
 }

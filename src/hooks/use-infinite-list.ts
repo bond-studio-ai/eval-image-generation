@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { serviceUrl } from '@/lib/api-base';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { serviceUrl } from "@/lib/api-base";
 
 interface PaginationResponse {
   page: number;
@@ -59,18 +59,17 @@ export interface UseInfiniteListReturn<T> {
   refresh: () => void;
 }
 
-const URL_KEY_SEARCH = 'search';
-const URL_KEY_PAGE = 'page';
+const URL_KEY_SEARCH = "search";
+const URL_KEY_PAGE = "page";
 
 function readInitialParams() {
-  if (typeof window === 'undefined')
-    return { search: '', page: 1, filters: {} as Record<string, string> };
+  if (typeof window === "undefined") return { search: "", page: 1, filters: {} as Record<string, string> };
   const sp = new URLSearchParams(window.location.search);
-  const search = sp.get(URL_KEY_SEARCH) ?? '';
-  const page = Math.max(1, parseInt(sp.get(URL_KEY_PAGE) ?? '1', 10) || 1);
+  const search = sp.get(URL_KEY_SEARCH) ?? "";
+  const page = Math.max(1, parseInt(sp.get(URL_KEY_PAGE) ?? "1", 10) || 1);
   const filters: Record<string, string> = {};
   sp.forEach((val, key) => {
-    if (key === URL_KEY_SEARCH || key === URL_KEY_PAGE || key === 'limit') return;
+    if (key === URL_KEY_SEARCH || key === URL_KEY_PAGE || key === "limit") return;
     filters[key] = val;
   });
   return { search, page, filters };
@@ -87,10 +86,7 @@ function appendStaticParams(qs: URLSearchParams, staticParams: StaticParams | un
   }
 }
 
-export function useInfiniteList<T>(
-  endpoint: string,
-  options: UseInfiniteListOptions = {},
-): UseInfiniteListReturn<T> {
+export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOptions = {}): UseInfiniteListReturn<T> {
   const { limit = 20, debounceMs = 300, urlFor = serviceUrl, staticParams } = options;
 
   const initial = useMemo(() => readInitialParams(), []);
@@ -136,13 +132,13 @@ export function useInfiniteList<T>(
     const params = new URLSearchParams();
     if (s) params.set(URL_KEY_SEARCH, s);
     for (const [key, val] of Object.entries(f)) {
-      if (val !== undefined && val !== '') params.set(key, val);
+      if (val !== undefined && val !== "") params.set(key, val);
     }
     if (p > 1) params.set(URL_KEY_PAGE, String(p));
 
     const qs = params.toString();
     const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-    window.history.replaceState(null, '', url);
+    window.history.replaceState(null, "", url);
   }, []);
 
   const prevSyncKey = useRef(`${initial.search}|${JSON.stringify(initial.filters)}`);
@@ -171,16 +167,16 @@ export function useInfiniteList<T>(
 
       try {
         const qs = new URLSearchParams();
-        qs.set('page', String(pageNum));
-        qs.set('limit', String(limit));
-        if (debouncedSearch) qs.set('search', debouncedSearch);
+        qs.set("page", String(pageNum));
+        qs.set("limit", String(limit));
+        if (debouncedSearch) qs.set("search", debouncedSearch);
         for (const [key, val] of Object.entries(filters)) {
-          if (val !== undefined && val !== '') qs.set(key, val);
+          if (val !== undefined && val !== "") qs.set(key, val);
         }
         appendStaticParams(qs, staticParams);
 
         const res = await fetch(`${urlFor(endpoint)}?${qs}`, {
-          signal: controller.signal,
+          signal: controller.signal
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -194,7 +190,7 @@ export function useInfiniteList<T>(
         setTotalPages(json.pagination.totalPages);
         setPage(pageNum);
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
         if (!mountedRef.current) return;
         setItems([]);
         setTotal(0);
@@ -209,7 +205,7 @@ export function useInfiniteList<T>(
     // staticParams is captured via its stringified key so a fresh object literal
     // from the caller doesn't refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [endpoint, limit, debouncedSearch, filters, urlFor, staticParamsKey],
+    [endpoint, limit, debouncedSearch, filters, urlFor, staticParamsKey]
   );
 
   const initialPageRef = useRef(initial.page);
@@ -229,7 +225,7 @@ export function useInfiniteList<T>(
       syncUrl(debouncedSearch, filters, p);
       fetchPage(p, { preserveScroll: true });
     },
-    [fetchPage, page, syncUrl, debouncedSearch, filters],
+    [fetchPage, page, syncUrl, debouncedSearch, filters]
   );
 
   const refresh = useCallback(() => {
@@ -256,6 +252,6 @@ export function useInfiniteList<T>(
     filters,
     setFilters,
     goToPage,
-    refresh,
+    refresh
   };
 }
