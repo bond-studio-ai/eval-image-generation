@@ -122,3 +122,17 @@ or maps to a semantically-wrong tag.
 - `react-doctor/prefer-tag-over-role` — `src/components/comparison-slider.tsx:76` — `role="slider"` maps to void `<input>`, which can't host the slider's image/label/bar children or its drag + keyboard handlers.
 - `react-doctor/prefer-tag-over-role` — `src/components/two-pane-split.tsx:132` — `role="separator"` maps to void `<hr>`, which can't carry the focusable/draggable resizer (`tabIndex`, pointer + key handlers, `aria-valuenow`).
 - `react-doctor/prefer-tag-over-role` — `src/components/ui/tabs.tsx:138` — `role="group"`'s only native mapping the rule offers is `<address>`, which is semantically wrong for a view-switch tab strip.
+
+## react-doctor/prefer-useReducer
+
+Pure count heuristic (fires at >=5 useState in a component body). Each site
+below either already extracts its genuinely-coordinated state into a reducer,
+or holds independent unrelated slices — the rule explicitly says to leave
+those as their own `useState`.
+
+- `react-doctor/prefer-useReducer` — `src/app/dollhouse-renders/new/new-render-form.tsx:82` — already uses `projectReducer`; the remaining useStates are independent config sections (image/render/ssm/style) + submit flags.
+- `react-doctor/prefer-useReducer` — `src/app/audit/compare/audit-compare-page.tsx:180` — already uses `filtersReducer`; the rest are independent fetch/pagination, comparison selection, and expansion slices.
+- `react-doctor/prefer-useReducer` — `src/app/strategies/[id]/runs/[runId]/run-detail.tsx:54` — already uses `viewingPromptReducer`; the rest are independent display toggles, polled data, and per-action flags.
+- `react-doctor/prefer-useReducer` — `src/app/strategies/strategies-table.tsx:26` — independent per-action loading flags (`deletingId`/`togglingId`/`cloningId`) + selection + filter; matches the DataTable convention.
+- `react-doctor/prefer-useReducer` — `src/components/image-evaluation-form.tsx:112` — independent save-status, section open/close toggles, and form-data slices.
+- `react-doctor/prefer-useReducer` — `src/components/strategy-builder.tsx:37` — independent form-section fields (name/description/settings/steps) + save flags.
