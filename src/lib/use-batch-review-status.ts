@@ -1,39 +1,38 @@
 "use client";
 
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { uniq } from "es-toolkit";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { ReviewState } from "@/components/review-badge";
 import { serviceUrl } from "@/lib/api-base";
 import { HTTP_NOT_FOUND } from "@/lib/http-status";
 
-/**
- * Module-level cache of *resolved* review states only (`idle` /
- * `done` / `error` — never the transient `checking`). Keyed by the
- * generation id used in `POST /generations/:id/review`. Lets a
- * collapse-then-re-expand reuse the prior probe instead of refetching.
- */
-const cache = new Map<string, ReviewState>();
+function reviewStatusKey(id: string) {
+  return ["review-status", id] as const;
+}
 
 /**
- * Promise dedupe for currently-in-flight `GET` probes. Multiple hook
- * instances (or React StrictMode's double-mount in dev) share the same
- * promise instead of firing parallel requests; the result is written
- * back to `cache` once, regardless of which subscriber's effect "wins".
- */
-const inFlight = new Map<string, Promise<ReviewState>>();
-
-/**
- * Hydrate per-run review badge state for a batch view. While
- * `enabled` is true, the hook fires `GET /generations/:id/review`
- * in parallel for every previously-unhydrated `generationId` (using
- * `Promise.allSettled` so one slow request doesn't block the others).
- * Results map straight to a `ReviewBadge` initial state:
- *   - 200 → `done`
+ * Single `GET /generations/:id/review` probe mapped to a badge state:
+ *   - 200 → `done` (a review record exists)
  *   - 404 → `idle`
  *   - anything else → `error`
+ */
+async function probeReviewStatus(generationId: string): Promise<ReviewState> {
+  const res = await fetch(serviceUrl(`generations/${generationId}/review`), { cache: "no-store" });
+  if (res.status === HTTP_NOT_FOUND) return { kind: "idle" };
+  if (!res.ok) return { kind: "error", message: `HTTP ${res.status}` };
+  return { kind: "done" };
+}
+
+/**
+ * Hydrate per-run review badge state for a batch view. While `enabled`, fires a
+ * shared `GET /generations/:id/review` per id through React Query — which gives
+ * us cross-instance request dedupe and a session-lived cache for free (replacing
+ * the previous module-level cache + in-flight promise map).
  *
- * The returned `setStatus` is wired into each badge's `onStateChange`
- * so user-driven runs stay reflected here too.
+ * The returned `setStatus` writes user-driven POST results straight into the
+ * query cache so they persist and stay authoritative: a `running`/`done` state
+ * already in the cache is never clobbered by a slower GET probe.
  */
 export function useBatchReviewStatus(
   generationIds: readonly (string | null | undefined)[],
@@ -42,128 +41,56 @@ export function useBatchReviewStatus(
   statuses: Map<string, ReviewState>;
   setStatus: (id: string, state: ReviewState) => void;
 } {
-  // Holds only the states this hook owns: GET-probe results plus user-driven
-  // POST states pushed through `setStatus`. Everything else (cache hits, the
-  // transient "checking" spinner) is derived during render, so the effect
-  // never has to setState synchronously to prime the map.
-  const [resolved, setResolved] = useState<Map<string, ReviewState>>(new Map());
+  const queryClient = useQueryClient();
+
   // Stable string key derived from the (possibly fresh-ref each render)
-  // `generationIds` array. The effect should only re-run when the *set*
-  // of ids changes, not when the parent re-renders.
+  // `generationIds` array, so the queries only change when the *set* of ids does.
   const idsKey = uniq(generationIds.filter((id): id is string => Boolean(id)))
     .sort()
     .join("|");
   const ids = useMemo(() => (idsKey ? idsKey.split("|") : []), [idsKey]);
 
-  // Derive the badge map: our own resolved/user states win, then the module
-  // cache (so collapse-then-re-expand shows prior probes immediately), then a
-  // spinner for any id we're about to (or currently) probe.
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: reviewStatusKey(id),
+      queryFn: async (): Promise<ReviewState> => {
+        // A user-driven POST (running/done) pushed in via setStatus is more
+        // authoritative than this GET probe — don't overwrite it.
+        const prior = queryClient.getQueryData<ReviewState>(reviewStatusKey(id));
+        if (prior && (prior.kind === "running" || prior.kind === "done")) return prior;
+        return probeReviewStatus(id);
+      },
+      enabled,
+      retry: false,
+      staleTime: Number.POSITIVE_INFINITY,
+      gcTime: Number.POSITIVE_INFINITY
+    }))
+  });
+
   const statuses = useMemo(() => {
     const next = new Map<string, ReviewState>();
-    for (const id of ids) {
-      const own = resolved.get(id);
-      if (own) {
-        next.set(id, own);
-        continue;
+    ids.forEach((id, i) => {
+      const result = results[i];
+      if (!result) return;
+      if (result.data) {
+        next.set(id, result.data);
+        return;
       }
-      const cached = cache.get(id);
-      if (cached) {
-        next.set(id, cached);
-        continue;
+      if (result.isError) {
+        next.set(id, { kind: "error", message: result.error instanceof Error ? result.error.message : "Network error" });
+        return;
       }
       if (enabled) next.set(id, { kind: "checking" });
-    }
-    return next;
-  }, [ids, resolved, enabled]);
-
-  useEffect(() => {
-    if (!enabled) return undefined;
-    const targets = ids.filter((id) => !cache.has(id));
-    if (targets.length === 0) return undefined;
-
-    let cancelled = false;
-    void (async () => {
-      try {
-        const results = await Promise.allSettled(targets.map((id) => probeDeduped(id)));
-        if (cancelled) return;
-        setResolved((prev) => {
-          const next = new Map(prev);
-          results.forEach((result, i) => {
-            const id = targets[i];
-            if (id === undefined) return;
-            const probed: ReviewState =
-              result.status === "fulfilled"
-                ? result.value
-                : {
-                    kind: "error",
-                    message: result.reason instanceof Error ? result.reason.message : "Network error"
-                  };
-            // If the user already kicked off a POST (or one already
-            // completed) while the GET was racing, that state is more
-            // authoritative than the GET probe — don't clobber it.
-            const cached = cache.get(id);
-            const winner: ReviewState = cached && (cached.kind === "running" || cached.kind === "done") ? cached : probed;
-            next.set(id, winner);
-          });
-          return next;
-        });
-      } catch {
-        /* probe failures fall back to the cached palette */
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, ids]);
-
-  const setStatus = useCallback((id: string, state: ReviewState) => {
-    cache.set(id, state);
-    setResolved((prev) => {
-      const next = new Map(prev);
-      next.set(id, state);
-      return next;
     });
-  }, []);
+    return next;
+  }, [ids, results, enabled]);
+
+  const setStatus = useCallback(
+    (id: string, state: ReviewState) => {
+      queryClient.setQueryData(reviewStatusKey(id), state);
+    },
+    [queryClient]
+  );
 
   return { statuses, setStatus };
-}
-
-/**
- * Resolves to the review state for `generationId`, sharing a single
- * `GET` per id across all callers. The result is always written to the
- * module-level cache — even if every observer was unmounted while the
- * fetch was in flight — so the next mount picks it up immediately.
- */
-function probeDeduped(generationId: string): Promise<ReviewState> {
-  const cached = cache.get(generationId);
-  if (cached) return Promise.resolve(cached);
-  const existing = inFlight.get(generationId);
-  if (existing) return existing;
-
-  const promise = (async () => {
-    try {
-      const resolved = await probe(generationId);
-      const prior = cache.get(generationId);
-      const winner: ReviewState = prior && (prior.kind === "running" || prior.kind === "done") ? prior : resolved;
-      cache.set(generationId, winner);
-      return winner;
-    } finally {
-      inFlight.delete(generationId);
-    }
-  })();
-
-  inFlight.set(generationId, promise);
-  return promise;
-}
-
-async function probe(generationId: string): Promise<ReviewState> {
-  const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
-    cache: "no-store"
-  });
-  if (res.status === HTTP_NOT_FOUND) return { kind: "idle" };
-  if (!res.ok) return { kind: "error", message: `HTTP ${res.status}` };
-  // Successful GET means a record exists. We don't have prompt counts here
-  // (those only come back from POST), so the badge falls back to "Reviewed".
-  return { kind: "done" };
 }
