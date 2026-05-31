@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import ms from "ms";
 import { useCallback, useMemo, useReducer, useState } from "react";
 import { GridLightbox } from "@/components/grid-lightbox";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -18,7 +19,7 @@ import { type BatchRow, isAwaitingJudgeBatch, type RunRow } from "./_components/
 import { useBatchListMachinery } from "./_components/use-batch-list-machinery";
 
 const BATCH_PAGE_SIZE = 20;
-const POLL_INTERVAL = 5000;
+const POLL_INTERVAL = ms("5s");
 /**
  * Shared empty set returned as `expandedIds` whenever the stored expansion belongs
  * to a stale list key — a constant identity so a collapsed list doesn't churn

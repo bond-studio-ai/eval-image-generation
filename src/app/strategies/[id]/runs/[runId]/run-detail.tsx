@@ -1,5 +1,6 @@
 "use client";
 
+import ms from "ms";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { serviceUrl } from "@/lib/api-base";
@@ -14,7 +15,7 @@ import { StepResultsSection } from "./_components/step-results-section";
 import { groupStepResults } from "./_components/types";
 import type { RunData, ViewingPromptAction, ViewingPromptState } from "./_components/types";
 
-const POLL_INTERVAL = 3000;
+const POLL_INTERVAL = ms("3s");
 
 /* ---------- Prompt-viewer modal state ---------- */
 

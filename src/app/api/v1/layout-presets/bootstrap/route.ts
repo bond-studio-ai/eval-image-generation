@@ -1,3 +1,4 @@
+import ms from "ms";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { parseJsonOrEmpty } from "@/lib/async-utils";
 import { platformApiBase } from "@/lib/env";
@@ -6,8 +7,8 @@ import { logger } from "@/lib/logger";
 const API_BASE = platformApiBase();
 const PROJECTS_BASE = `${API_BASE}/v2/projects`;
 const SPATIAL_BASE = `${API_BASE}/spatial/v1`;
-const POLL_INTERVAL_MS = 750;
-const POLL_TIMEOUT_MS = 12_000;
+const POLL_INTERVAL_MS = ms("750ms");
+const POLL_TIMEOUT_MS = ms("12s");
 const STABLE_READS_REQUIRED = 2;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -28,9 +29,9 @@ interface RawRoom {
   layout?: unknown;
 }
 
-async function sleep(ms: number): Promise<void> {
+async function sleep(durationMs: number): Promise<void> {
   await new Promise((resolve) => {
-    setTimeout(resolve, ms);
+    setTimeout(resolve, durationMs);
   });
 }
 

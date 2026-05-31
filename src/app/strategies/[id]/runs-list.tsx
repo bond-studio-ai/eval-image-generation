@@ -1,5 +1,6 @@
 "use client";
 
+import ms from "ms";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GridLightbox } from "@/components/grid-lightbox";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "@/components/ui/icons";
@@ -10,7 +11,7 @@ import { BatchMatrix } from "./runs-list-matrix";
 import { type ListItem, normalizeStrategyRuns, type Run } from "./runs-list-model";
 import { StatusBadge } from "./status-badge";
 
-const POLL_INTERVAL = 3000;
+const POLL_INTERVAL = ms("3s");
 
 export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strategyId: string; hasJudge?: boolean; initialRuns: Run[] }) {
   const [runs, setRuns] = useState<Run[]>(initialRuns);

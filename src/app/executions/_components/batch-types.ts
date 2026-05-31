@@ -1,3 +1,5 @@
+import ms from "ms";
+
 export interface RunRow {
   id: string;
   batchRunId: string | null;
@@ -45,10 +47,7 @@ export function deriveRunReviewStatus(run: RunRow): string {
   return "in_progress";
 }
 
-const JUDGE_TIMEOUT_MINUTES = 5;
-const SECONDS_PER_MINUTE = 60;
-const MS_PER_SECOND = 1000;
-const JUDGE_TIMEOUT_MS = JUDGE_TIMEOUT_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
+const JUDGE_TIMEOUT_MS = ms("5m");
 /** A judged batch needs at least two candidate outputs to compare. */
 const MIN_JUDGED_BATCH_SIZE = 2;
 

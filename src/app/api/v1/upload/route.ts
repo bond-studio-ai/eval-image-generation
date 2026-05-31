@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
+import bytes from "bytes";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { s3UploadConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const BYTES_PER_KB = 1024;
-const MAX_SIZE_MB = 10;
-const MAX_SIZE = MAX_SIZE_MB * BYTES_PER_KB * BYTES_PER_KB;
+// `bytes` returns `number | null`; fall back to 0 (reject) if the literal ever fails to parse.
+const MAX_SIZE = bytes("10MB") ?? 0;
 
 export async function POST(request: Request) {
   try {
