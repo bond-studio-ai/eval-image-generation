@@ -37,13 +37,6 @@ const eslintConfig = [
       }
     },
     rules: {
-      "no-unused-vars": "off",
-      // The repo has existing React Compiler diagnostics in older UI
-      // surfaces. Keep lint usable while those files are refactored
-      // behind focused tests.
-      "react-hooks/refs": "off",
-      "react-hooks/rules-of-hooks": "off",
-      "react-hooks/set-state-in-effect": "off",
       // Import ordering (replaces @ianvs/prettier-plugin-sort-imports). The
       // `import` plugin ships with eslint-config-next; `eslint --fix` sorts.
       "import/order": [
@@ -96,6 +89,25 @@ const eslintConfig = [
     files: ["src/lib/strategy-property-colors.ts"],
     rules: {
       "better-tailwindcss/no-restricted-classes": "off"
+    }
+  },
+  {
+    // TypeScript-aware unused-vars: the core `no-unused-vars` rule misreads TS
+    // (type-only usages, function-type signature params) and floods false
+    // positives, so use the @typescript-eslint version (registered by
+    // eslint-config-next for TS files). Underscore-prefixed names are opt-out.
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          args: "after-used",
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true
+        }
+      ]
     }
   },
   {

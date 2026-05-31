@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReviewState } from "@/components/review-badge";
 import { serviceUrl } from "@/lib/api-base";
 
@@ -40,37 +40,52 @@ export function useBatchReviewStatus(
   statuses: Map<string, ReviewState>;
   setStatus: (id: string, state: ReviewState) => void;
 } {
-  const [statuses, setStatuses] = useState<Map<string, ReviewState>>(() => snapshotFromCache(generationIds));
+  // Holds only the states this hook owns: GET-probe results plus user-driven
+  // POST states pushed through `setStatus`. Everything else (cache hits, the
+  // transient "checking" spinner) is derived during render, so the effect
+  // never has to setState synchronously to prime the map.
+  const [resolved, setResolved] = useState<Map<string, ReviewState>>(new Map());
   // Stable string key derived from the (possibly fresh-ref each render)
   // `generationIds` array. The effect should only re-run when the *set*
   // of ids changes, not when the parent re-renders.
   const idsKey = uniqueIds(generationIds).sort().join("|");
+  const ids = useMemo(() => (idsKey ? idsKey.split("|") : []), [idsKey]);
+
+  // Derive the badge map: our own resolved/user states win, then the module
+  // cache (so collapse-then-re-expand shows prior probes immediately), then a
+  // spinner for any id we're about to (or currently) probe.
+  const statuses = useMemo(() => {
+    const next = new Map<string, ReviewState>();
+    for (const id of ids) {
+      const own = resolved.get(id);
+      if (own) {
+        next.set(id, own);
+        continue;
+      }
+      const cached = cache.get(id);
+      if (cached) {
+        next.set(id, cached);
+        continue;
+      }
+      if (enabled) next.set(id, { kind: "checking" });
+    }
+    return next;
+  }, [ids, resolved, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
-    const ids = idsKey ? idsKey.split("|") : [];
     const targets = ids.filter((id) => !cache.has(id));
-
-    // Prime local state with whatever the cache already has (so collapses and
-    // re-expansions show their resolved badges immediately) and show the
-    // spinner pill for every probe-in-flight target in a single update.
-    setStatuses((prev) => {
-      const next = mergeWithCache(prev, ids);
-      for (const id of targets) next.set(id, { kind: "checking" });
-      return next;
-    });
-
     if (targets.length === 0) return;
 
     let cancelled = false;
     Promise.allSettled(targets.map((id) => probeDeduped(id))).then((results) => {
       if (cancelled) return;
-      setStatuses((prev) => {
+      setResolved((prev) => {
         const next = new Map(prev);
         results.forEach((result, i) => {
           const id = targets[i];
           if (id === undefined) return;
-          const resolved: ReviewState =
+          const probed: ReviewState =
             result.status === "fulfilled"
               ? result.value
               : {
@@ -81,7 +96,7 @@ export function useBatchReviewStatus(
           // completed) while the GET was racing, that state is more
           // authoritative than the GET probe — don't clobber it.
           const cached = cache.get(id);
-          const winner: ReviewState = cached && (cached.kind === "running" || cached.kind === "done") ? cached : resolved;
+          const winner: ReviewState = cached && (cached.kind === "running" || cached.kind === "done") ? cached : probed;
           next.set(id, winner);
         });
         return next;
@@ -91,11 +106,11 @@ export function useBatchReviewStatus(
     return () => {
       cancelled = true;
     };
-  }, [enabled, idsKey]);
+  }, [enabled, ids]);
 
   const setStatus = useCallback((id: string, state: ReviewState) => {
     cache.set(id, state);
-    setStatuses((prev) => {
+    setResolved((prev) => {
       const next = new Map(prev);
       next.set(id, state);
       return next;
@@ -114,26 +129,6 @@ function uniqueIds(ids: ReadonlyArray<string | null | undefined>): string[] {
     out.push(id);
   }
   return out;
-}
-
-function snapshotFromCache(ids: ReadonlyArray<string | null | undefined>): Map<string, ReviewState> {
-  const out = new Map<string, ReviewState>();
-  for (const id of uniqueIds(ids)) {
-    const hit = cache.get(id);
-    if (hit) out.set(id, hit);
-  }
-  return out;
-}
-
-/** Layer cached resolved states on top of the current local map without
- * dropping any in-flight `checking`/`running` entries we set ourselves. */
-function mergeWithCache(prev: Map<string, ReviewState>, ids: string[]): Map<string, ReviewState> {
-  const next = new Map(prev);
-  for (const id of ids) {
-    const hit = cache.get(id);
-    if (hit) next.set(id, hit);
-  }
-  return next;
 }
 
 /**

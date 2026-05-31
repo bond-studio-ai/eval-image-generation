@@ -19,12 +19,10 @@ export const WIZARD_SECTION_IDS = {
 } as const;
 
 /**
- * The three gating steps in display order. Anything that walks "the
- * wizard's actual steps" (the stepper, the cascade, the test contract)
- * iterates this tuple — changing it is the one place to add a new step.
+ * The three gating steps in display order — the one place to add a new step.
+ * The stepper and cascade build their entries from these keys.
  */
-const STEP_KEYS = ["project", "data", "config"] as const;
-export type WizardStepKey = (typeof STEP_KEYS)[number];
+export type WizardStepKey = "project" | "data" | "config";
 
 export interface WizardInput {
   bootstrap: ProjectRenderBootstrap | null;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { SearchIcon } from "@/components/ui/icons";
 
@@ -56,9 +56,9 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
 export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage = "No items found.", loading = false, skeletonRows = 5, toolbar, footer, className = "mt-8" }: DataTableProps<T>) {
   const colCount = columns.length;
 
-  const lastRowCount = useRef(skeletonRows);
-  if (data.length > 0) lastRowCount.current = data.length;
-  const displaySkeletonRows = loading ? lastRowCount.current : 0;
+  // While loading, size the skeleton to the page already on screen (data is
+  // kept during re-fetches); fall back to the prop on the first load.
+  const displaySkeletonRows = loading ? data.length || skeletonRows : 0;
 
   return (
     <div className={`rounded-card border-border bg-surface shadow-card overflow-clip border ${className}`}>

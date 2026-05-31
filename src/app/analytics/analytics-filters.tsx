@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState, type AnalyticsComparisonColumn, type AnalyticsComparisonSource } from "@/app/analytics/comparison-utils";
 import { browserTimezone } from "@/lib/api-base";
 import type { StrategyListItem } from "@/lib/service-client";
@@ -37,8 +37,13 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const defaultColumn = useMemo(() => createEmptyComparisonColumn({ from, to, source: defaultSource }), [from, to, defaultSource]);
   const columns = isCompare && comparison.columns.length === 0 ? [defaultColumn] : comparison.columns;
 
+  // `addComparisonColumn` reads the latest columns from a ref (it's an event
+  // handler, not render-path), so keep the ref in sync via an effect rather
+  // than writing it during render.
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
+  useEffect(() => {
+    columnsRef.current = columns;
+  });
 
   const buildUrl = useCallback(
     (mutate: (next: URLSearchParams) => void) => {

@@ -1,7 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RatingForm } from "@/app/generations/[id]/rating-form";
 import { CdnImage } from "@/components/cdn-image";
 import { ComparisonSlider } from "@/components/comparison-slider";
@@ -35,10 +36,28 @@ interface GenerationData {
 }
 
 export function GridLightbox({ src, runHref, generationId, onRated, onClose }: GridLightboxProps) {
-  // Tag fetched data with the id it belongs to so a `generationId` change
-  // makes stale data disappear by derivation — no effect needed to clear it.
-  const [fetched, setFetched] = useState<{ id: string; data: GenerationData } | null>(null);
-  const generation = generationId && fetched?.id === generationId ? fetched.data : null;
+  // Keyed on `generationId` so switching results loads fresh data and a stale
+  // payload disappears by derivation — no effect needed to clear it.
+  const { data: generation = null, refetch } = useQuery({
+    queryKey: ["generation", generationId],
+    queryFn: async ({ signal }): Promise<GenerationData> => {
+      const res = await fetch(serviceUrl(`generations/${generationId}`), { signal });
+      if (!res.ok) throw new Error(`Failed to fetch generation (${res.status})`);
+      const json = await res.json();
+      const data = json.data ?? json;
+      const results = Array.isArray(data.results) ? data.results : [];
+      return {
+        sceneAccuracyRating: data.sceneAccuracyRating ?? null,
+        productAccuracyRating: data.productAccuracyRating ?? null,
+        results: results.map((r: { id: string; url?: string }) => ({
+          id: r.id,
+          url: r.url ?? ""
+        })),
+        input: data.input ?? null
+      };
+    },
+    enabled: !!generationId
+  });
   /** Which scene to compare (0/1/2 = Dollhouse/Real Photo/Mood Board). null = output only. */
   const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
   /** 0–100: position of the comparison bar (left % shows scene, right % shows output). */
@@ -46,38 +65,10 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   /** When set, show a simple overlay with the full image. */
   const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
 
-  const fetchGeneration = useCallback(async (id: string) => {
-    try {
-      const res = await fetch(serviceUrl(`generations/${id}`));
-      if (!res.ok) return;
-      const json = await res.json();
-      const data = json.data ?? json;
-      const results = Array.isArray(data.results) ? data.results : [];
-      setFetched({
-        id,
-        data: {
-          sceneAccuracyRating: data.sceneAccuracyRating ?? null,
-          productAccuracyRating: data.productAccuracyRating ?? null,
-          results: results.map((r: { id: string; url?: string }) => ({
-            id: r.id,
-            url: r.url ?? ""
-          })),
-          input: data.input ?? null
-        }
-      });
-    } catch {
-      setFetched(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (generationId) fetchGeneration(generationId);
-  }, [generationId, fetchGeneration]);
-
   const handleRated = useCallback(() => {
-    if (generationId) fetchGeneration(generationId);
+    void refetch();
     onRated?.();
-  }, [generationId, fetchGeneration, onRated]);
+  }, [refetch, onRated]);
 
   const productCategories = useMemo(() => getActiveProductCategories(generation?.input ?? null), [generation?.input]);
 

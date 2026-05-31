@@ -33,7 +33,6 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -80,21 +79,27 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
     };
   }, []);
 
-  useEffect(() => {
-    if (!open || !cardRef.current || !pos) return;
-    const card = cardRef.current;
-    const rect = card.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let { top, left } = pos;
-    if (left + rect.width > vw - 16) left = vw - rect.width - 16;
-    if (left < 16) left = 16;
-    if (top + rect.height > vh - 16) {
-      const triggerRect = triggerRef.current?.getBoundingClientRect();
-      if (triggerRect) top = triggerRect.top - rect.height - 8;
-    }
-    if (top !== pos.top || left !== pos.left) setPos({ top, left });
-  }, [open, pos]);
+  // Clamp the card into the viewport once it mounts. Measuring needs the
+  // rendered dimensions, so we do it in a callback ref (not an effect): the
+  // ref re-fires whenever `pos` changes, and the clamp converges in one pass
+  // because a second measure of the already-clamped position is a no-op.
+  const measureCard = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || !pos) return;
+      const rect = node.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let { top, left } = pos;
+      if (left + rect.width > vw - 16) left = vw - rect.width - 16;
+      if (left < 16) left = 16;
+      if (top + rect.height > vh - 16) {
+        const triggerRect = triggerRef.current?.getBoundingClientRect();
+        if (triggerRect) top = triggerRect.top - rect.height - 8;
+      }
+      if (top !== pos.top || left !== pos.left) setPos({ top, left });
+    },
+    [pos]
+  );
 
   return (
     <>
@@ -104,7 +109,7 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       {open &&
         pos &&
         createPortal(
-          <div ref={cardRef} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
+          <div ref={measureCard} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
             {!data ? (
               <p className="text-text-muted text-caption">Loading…</p>
             ) : (
