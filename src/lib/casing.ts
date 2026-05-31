@@ -21,9 +21,7 @@ export function snakeToCamel(key: string): string {
 export function camelizeDeep(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(camelizeDeep);
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), camelizeDeep(entry)])
-  );
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), camelizeDeep(entry)]));
 }
 
 /**
