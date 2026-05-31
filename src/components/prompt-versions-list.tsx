@@ -8,6 +8,8 @@ import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 
 export interface PromptVersionRow {
   id: string;
@@ -73,8 +75,8 @@ export function PromptVersionsList() {
           })
         });
         if (!res.ok) return;
-        const json = await res.json();
-        const newId = json.data?.id;
+        const json: unknown = await res.json();
+        const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "prompt version clone").data.id;
         if (newId) router.push(`/prompt-versions/${newId}`);
       } catch {
         /* ignore */
@@ -114,7 +116,9 @@ export function PromptVersionsList() {
         {
           icon: "clone",
           label: "Clone prompt version",
-          onClick: (pv) => handleClone(pv),
+          onClick: (pv) => {
+            void handleClone(pv);
+          },
           loading: (pv) => cloningId === pv.id
         }
       ])

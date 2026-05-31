@@ -99,7 +99,7 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
         img.src = url;
       });
 
-    (async () => {
+    void (async () => {
       try {
         const images = await Promise.all(masks.map((mask) => loadImage(mask.url)));
         if (cancelled) return;

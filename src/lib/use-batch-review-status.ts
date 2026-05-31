@@ -78,8 +78,9 @@ export function useBatchReviewStatus(
     if (targets.length === 0) return;
 
     let cancelled = false;
-    Promise.allSettled(targets.map((id) => probeDeduped(id)))
-      .then((results) => {
+    void (async () => {
+      try {
+        const results = await Promise.allSettled(targets.map((id) => probeDeduped(id)));
         if (cancelled) return;
         setResolved((prev) => {
           const next = new Map(prev);
@@ -102,8 +103,10 @@ export function useBatchReviewStatus(
           });
           return next;
         });
-      })
-      .catch(() => undefined);
+      } catch {
+        /* probe failures fall back to the cached palette */
+      }
+    })();
 
     return () => {
       cancelled = true;

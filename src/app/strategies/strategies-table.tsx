@@ -11,6 +11,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { toast } from "@/components/ui/toaster";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 import type { StrategyListItem } from "@/lib/types";
 
 export function StrategiesTable() {
@@ -43,8 +45,8 @@ export function StrategiesTable() {
           });
           return;
         }
-        const json = await res.json();
-        const newId = json.data?.id;
+        const json: unknown = await res.json();
+        const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "strategy clone").data.id;
         if (newId) {
           toast.success("Strategy cloned");
           router.push(`/strategies/${newId}/edit`);
@@ -147,13 +149,17 @@ export function StrategiesTable() {
       {
         icon: "clone",
         label: "Clone strategy",
-        onClick: (strategy) => handleClone(strategy.id),
+        onClick: (strategy) => {
+          void handleClone(strategy.id);
+        },
         loading: (strategy) => cloningId === strategy.id
       },
       {
         icon: "delete",
         label: "Delete strategy",
-        onClick: (strategy) => handleDelete(strategy.id, strategy.name),
+        onClick: (strategy) => {
+          void handleDelete(strategy.id, strategy.name);
+        },
         variant: "danger",
         loading: (strategy) => deletingId === strategy.id
       }

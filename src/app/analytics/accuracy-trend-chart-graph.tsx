@@ -26,7 +26,7 @@ export function AccuracyTrendChartGraph({ chartData }: AccuracyTrendChartGraphPr
             const [year, month, day] = point.date.split("-");
             if (year && month && day) {
               const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-              return `${months[Number(month) - 1]} ${Number(day)}, ${year}`;
+              return `${months[Number(month) - 1] ?? ""} ${Number(day)}, ${year}`;
             }
             return String(_label);
           }}

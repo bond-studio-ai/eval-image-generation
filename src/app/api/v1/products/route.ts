@@ -48,8 +48,8 @@ export async function GET(request: Request) {
       return errorResponse("INTERNAL_ERROR", `Catalog API returned ${res.status}`);
     }
 
-    const json = await res.json();
-    const products: Product[] = json.data ?? json;
+    const json = (await res.json()) as { data?: Product[] } | Product[];
+    const products: Product[] = Array.isArray(json) ? json : (json.data ?? []);
 
     return successResponse(products);
   } catch (error) {

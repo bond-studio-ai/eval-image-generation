@@ -9,6 +9,8 @@ import { DeleteGenerationButton } from "@/components/delete-generation-button";
 import { GenerationThumbnails } from "@/components/generation-thumbnails";
 import { RatingBadge } from "@/components/rating-badge";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { generationListResponseSchema } from "@/lib/api/schemas";
 import { type GenerationRow, normalizeGenerationRow } from "@/lib/generation-row";
 
 interface GenerationsListProps {
@@ -85,16 +87,14 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     if (filters.source === "benchmark") params.set("source", "benchmark");
 
     try {
-      const res = await fetch(serviceUrl(`generations?${params}`));
-      const json = await res.json();
+      const json = await fetchJson(serviceUrl(`generations?${params}`), generationListResponseSchema);
 
-      if (json.data) {
-        const newRows: GenerationRow[] = json.data.map(normalizeGenerationRow);
-        setGenerations((prev) => [...prev, ...newRows]);
-        pageRef.current = nextPage;
-        if (json.pagination?.total !== undefined) {
-          setTotal(json.pagination.total);
-        }
+      const newRows: GenerationRow[] = json.data.map(normalizeGenerationRow);
+      setGenerations((prev) => [...prev, ...newRows]);
+      pageRef.current = nextPage;
+      const newTotal = json.pagination?.total;
+      if (newTotal !== undefined) {
+        setTotal(newTotal);
       }
     } catch (error) {
       console.error("Failed to load more generations:", error);
@@ -110,7 +110,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          loadMore();
+          void loadMore();
         }
       },
       { rootMargin: "200px" }

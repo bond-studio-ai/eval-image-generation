@@ -154,7 +154,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
       if (!res.ok) {
         throw new Error(`Failed to load: ${res.status}`);
       }
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       const raw = json.data as RawRunJudgeResults;
       return {
         ...(json.data as RunData),

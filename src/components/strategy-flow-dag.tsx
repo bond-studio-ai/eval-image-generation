@@ -236,7 +236,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           </marker>
         </defs>
 
-        {allEdges.map((edge, i) => {
+        {allEdges.map((edge) => {
           const fromPos = positions.get(edge.from);
           const toPos = positions.get(edge.to);
           if (!fromPos || !toPos) return null;
@@ -251,7 +251,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           const labelY = (y1 + y2) / 2 - 10;
 
           return (
-            <g key={i}>
+            <g key={`${edge.from}-${edge.to}-${edge.label}`}>
               <path d={path} fill="none" className="stroke-border-strong" strokeWidth="2" markerEnd="url(#arrowhead)" />
               <rect x={labelX - 34} y={labelY - 9} width={68} height={18} rx={4} className="fill-surface stroke-border" strokeWidth="0.5" />
               <text x={labelX} y={labelY + 4} textAnchor="middle" className="fill-text-muted text-[10px] font-medium">
@@ -261,19 +261,19 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           );
         })}
 
-        {steps.map((step, idx) => {
+        {steps.map((step) => {
           const pos = positions.get(step.stepOrder);
           if (!pos) return null;
 
           const status = step.status ?? "default";
-          const border = STATUS_BORDER[status] ?? STATUS_BORDER["default"];
-          const bg = STATUS_BG[status] ?? STATUS_BG["default"];
-          const headerBg = STATUS_HEADER_BG[status] ?? STATUS_HEADER_BG["default"];
-          const headerText = STATUS_HEADER_TEXT[status] ?? STATUS_HEADER_TEXT["default"];
+          const border = STATUS_BORDER[status] ?? STATUS_BORDER["default"] ?? "";
+          const bg = STATUS_BG[status] ?? STATUS_BG["default"] ?? "";
+          const headerBg = STATUS_HEADER_BG[status] ?? STATUS_HEADER_BG["default"] ?? "";
+          const headerText = STATUS_HEADER_TEXT[status] ?? STATUS_HEADER_TEXT["default"] ?? "";
           const modelLabel = step.model ? (MODEL_LABELS[step.model] ?? step.model) : "";
 
           return (
-            <foreignObject key={`${step.stepOrder}-${idx}`} x={pos.x} y={pos.y} width={NODE_WIDTH} height={NODE_HEIGHT}>
+            <foreignObject key={step.stepOrder} x={pos.x} y={pos.y} width={NODE_WIDTH} height={NODE_HEIGHT}>
               <div className={`flex h-full flex-col overflow-hidden rounded-lg border-2 ${border} ${bg} shadow-sm`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between px-3 py-2 ${headerBg}`}>

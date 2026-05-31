@@ -5,6 +5,8 @@ import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { UploadIcon, XIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { localUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { uploadResponseSchema } from "@/lib/api/schemas";
 
 interface SceneImageInputProps {
   label: string;
@@ -32,10 +34,10 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           body: formData
         });
 
-        const json = await res.json();
-        if (!res.ok) throw new Error(json?.error?.message || `Upload failed (${res.status})`);
+        const json = parseOrFallback(uploadResponseSchema, await res.json(), {}, "scene image upload");
+        if (!res.ok) throw new Error(json.error?.message || `Upload failed (${res.status})`);
 
-        onChange(json.data.publicUrl);
+        if (json.data?.publicUrl) onChange(json.data.publicUrl);
       } catch (error_) {
         setError(error_ instanceof Error ? error_.message : "Failed to upload image");
       } finally {
@@ -48,7 +50,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
       const file = Array.from(files)[0];
-      if (file) uploadFile(file);
+      if (file) void uploadFile(file);
     },
     [uploadFile]
   );

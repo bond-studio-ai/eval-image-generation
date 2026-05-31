@@ -126,7 +126,7 @@ async function bootstrapLayoutPreset(layoutTypeId: string, pkgId: string): Promi
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ layout_type_id: layoutTypeId, pkg_id: pkgId })
   });
-  const json = await res.json().catch(() => ({}));
+  const json: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to bootstrap layout preset");
   }
@@ -139,7 +139,7 @@ async function upsertProjectDesign(projectId: string, design: Record<string, unk
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ design })
   });
-  const json = await res.json().catch(() => ({}));
+  const json: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to persist project design");
   }
@@ -187,7 +187,7 @@ export async function fetchPresetRunRequests(presetIds: string[], options: { bat
   const presetDetails = await Promise.all(
     presetIds.map(async (presetId) => {
       const res = await fetch(serviceUrl(`input-presets/${presetId}`), { cache: "no-store" });
-      const json = await res.json().catch(() => ({}));
+      const json: unknown = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to load preset details");
       }

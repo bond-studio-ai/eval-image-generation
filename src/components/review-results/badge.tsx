@@ -40,7 +40,7 @@ export function ReviewResultsBadge({ generationId, state }: ReviewResultsBadgePr
   } = useQuery({
     queryKey: ["review-record", generationId, state],
     queryFn: async ({ signal }): Promise<ReviewRecord | null> => {
-      const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
+      const res = await fetch(serviceUrl(`generations/${generationId ?? ""}/review`), {
         cache: "no-store",
         signal
       });

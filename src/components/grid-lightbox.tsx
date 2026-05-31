@@ -10,6 +10,8 @@ import { ImageEvaluationForm } from "@/components/image-evaluation-form";
 import { XIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { dataEnvelope, generationDetailSchema } from "@/lib/api/schemas";
 import { getActiveProductCategories, getProductImagesFromInput } from "@/lib/generation-utils";
 
 interface GridLightboxProps {
@@ -41,18 +43,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   const { data: generation = null, refetch } = useQuery({
     queryKey: ["generation", generationId],
     queryFn: async ({ signal }): Promise<GenerationData> => {
-      const res = await fetch(serviceUrl(`generations/${generationId}`), { signal });
-      if (!res.ok) throw new Error(`Failed to fetch generation (${res.status})`);
-      const json = await res.json();
-      const data = json.data ?? json;
-      const results = Array.isArray(data.results) ? data.results : [];
+      const { data } = await fetchJson(serviceUrl(`generations/${generationId ?? ""}`), dataEnvelope(generationDetailSchema), { signal });
       return {
         sceneAccuracyRating: data.sceneAccuracyRating ?? null,
         productAccuracyRating: data.productAccuracyRating ?? null,
-        results: results.map((result: { id: string; url?: string }) => ({
-          id: result.id,
-          url: result.url ?? ""
-        })),
+        results: data.results,
         input: data.input ?? null
       };
     },

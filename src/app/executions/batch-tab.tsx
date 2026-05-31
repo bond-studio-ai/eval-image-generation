@@ -165,11 +165,11 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
         signal
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const err: unknown = await res.json().catch(() => ({}));
         const msg = (err as { error?: { message?: string } })?.error?.message;
         throw new Error(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
       }
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown; hasMore?: unknown };
       const raw = (json.data ?? []) as Record<string, unknown>[];
       return { batches: raw.map(normalizeBatch), hasMore: json.hasMore === true };
     },
@@ -211,7 +211,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
 
   const loadMore = useCallback(() => {
     if (isFetchingNextPage || !hasNextPage) return;
-    fetchNextPage();
+    void fetchNextPage();
   }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
 
   const { sentinelRef, containerRef, refetchKeepScroll } = useBatchListMachinery({
@@ -315,7 +315,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
   }, []);
 
   const handleRetryFetch = useCallback(() => {
-    refetch();
+    void refetch();
   }, [refetch]);
 
   if (loading) {

@@ -94,7 +94,7 @@ export async function executeRuns({ benchmarkMode, selectedStrategyIds, selected
               ...(numberOfImages ? { number_of_images: numberOfImages } : {})
             })
           });
-          const data = await res.json().catch(() => ({}));
+          const data: unknown = await res.json().catch(() => ({}));
           if (!res.ok) {
             throw new Error((data as { error?: { message?: string } }).error?.message || "Failed to start benchmark run");
           }
@@ -117,7 +117,7 @@ export async function executeRuns({ benchmarkMode, selectedStrategyIds, selected
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody)
         });
-        const data = await res.json().catch(() => ({}));
+        const data: unknown = await res.json().catch(() => ({}));
         if (!res.ok) {
           throw new Error((data as { error?: { message?: string } }).error?.message || "Failed to start run");
         }

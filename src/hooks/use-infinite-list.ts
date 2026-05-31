@@ -187,7 +187,7 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
 
         if (!mountedRef.current) return;
 
-        const json: ListResponse<T> = await res.json();
+        const json = (await res.json()) as ListResponse<T>;
 
         setItems(json.data);
         setTotal(json.pagination.total);
@@ -216,7 +216,7 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
   useEffect(() => {
     const startPage = initialPageRef.current;
     initialPageRef.current = 1;
-    fetchPage(startPage);
+    void fetchPage(startPage);
   }, [fetchPage]);
 
   // ---------------------------------------------------------------------------
@@ -227,13 +227,13 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
     (targetPage: number) => {
       if (targetPage < 1 || targetPage === page) return;
       syncUrl(debouncedSearch, filters, targetPage);
-      fetchPage(targetPage, { preserveScroll: true });
+      void fetchPage(targetPage, { preserveScroll: true });
     },
     [fetchPage, page, syncUrl, debouncedSearch, filters]
   );
 
   const refresh = useCallback(() => {
-    fetchPage(page);
+    void fetchPage(page);
   }, [fetchPage, page]);
 
   const setSearch = useCallback((value: string) => {

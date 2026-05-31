@@ -64,7 +64,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
     try {
       const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), { cache: "no-store" });
       if (!res.ok) return;
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       const raw = (json.data ?? []) as Record<string, unknown>[];
       setRuns(
         raw.map((row) => ({
@@ -79,7 +79,9 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
 
   useEffect(() => {
     if (shouldPoll) {
-      intervalRef.current = setInterval(fetchRuns, POLL_INTERVAL);
+      intervalRef.current = setInterval(() => {
+        void fetchRuns();
+      }, POLL_INTERVAL);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -251,13 +253,13 @@ function BatchRunCard({
         method: "POST"
       });
       if (res.ok) {
-        const body = await res.json().catch(() => null);
+        const body: unknown = await res.json().catch(() => null);
         const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
       } else {
-        const body = await res.json().catch(() => null);
+        const body: unknown = await res.json().catch(() => null);
         const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       }
@@ -299,7 +301,7 @@ function BatchRunCard({
               tabIndex={0}
               onClick={handleRetryFailed}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleRetryFailed(e as unknown as React.MouseEvent);
+                if (e.key === "Enter" || e.key === " ") void handleRetryFailed(e as unknown as React.MouseEvent);
               }}
               className={`border-warning-300 bg-warning-50 text-warning-700 hover:bg-warning-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retrying ? "pointer-events-none opacity-50" : ""}`}
             >
@@ -313,7 +315,7 @@ function BatchRunCard({
               tabIndex={0}
               onClick={handleRetryJudge}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleRetryJudge(e as unknown as React.MouseEvent);
+                if (e.key === "Enter" || e.key === " ") void handleRetryJudge(e as unknown as React.MouseEvent);
               }}
               className={`border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
             >
@@ -405,13 +407,13 @@ function CollapsibleBatchCard({
         method: "POST"
       });
       if (res.ok) {
-        const body = await res.json().catch(() => null);
+        const body: unknown = await res.json().catch(() => null);
         const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
       } else {
-        const body = await res.json().catch(() => null);
+        const body: unknown = await res.json().catch(() => null);
         const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       }
@@ -441,7 +443,7 @@ function CollapsibleBatchCard({
               tabIndex={0}
               onClick={handleRetryFailed}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleRetryFailed(e as unknown as React.MouseEvent);
+                if (e.key === "Enter" || e.key === " ") void handleRetryFailed(e as unknown as React.MouseEvent);
               }}
               className={`border-warning-300 bg-warning-50 text-warning-700 hover:bg-warning-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retrying ? "pointer-events-none opacity-50" : ""}`}
             >
@@ -455,7 +457,7 @@ function CollapsibleBatchCard({
               tabIndex={0}
               onClick={handleRetryJudge}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleRetryJudge(e as unknown as React.MouseEvent);
+                if (e.key === "Enter" || e.key === " ") void handleRetryJudge(e as unknown as React.MouseEvent);
               }}
               className={`border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors ${retryingJudge ? "pointer-events-none opacity-50" : ""}`}
             >
@@ -637,5 +639,5 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"]}`}>{status}</span>;
+  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"] ?? ""}`}>{status}</span>;
 }

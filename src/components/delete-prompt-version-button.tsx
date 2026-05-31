@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon, TrashIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { errorEnvelopeSchema } from "@/lib/api/schemas";
 
 interface DeletePromptVersionButtonProps {
   id: string;
@@ -33,8 +35,8 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
       }
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error?.message || "Failed to delete");
+        const data: unknown = await res.json();
+        throw new Error(parseOrFallback(errorEnvelopeSchema, data, {}, "prompt version delete").error?.message || "Failed to delete");
       }
 
       router.push("/prompt-versions");

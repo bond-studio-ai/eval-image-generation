@@ -104,7 +104,7 @@ export function MatrixView({
             {strategyNames.map((name, i) => (
               <th key={strategyIds[i]} className="text-caption text-text-secondary px-2 py-2.5 text-center font-medium tracking-wider" style={{ minWidth: CELL }}>
                 <StrategyHoverCard strategyId={strategyIds[i]!}>
-                  <Link href={`/strategies/${strategyIds[i]}`} className="text-primary-600 hover:text-primary-500">
+                  <Link href={`/strategies/${strategyIds[i]!}`} className="text-primary-600 hover:text-primary-500">
                     {name}
                   </Link>
                 </StrategyHoverCard>

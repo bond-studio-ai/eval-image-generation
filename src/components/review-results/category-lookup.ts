@@ -95,13 +95,14 @@ export function useSegmentationCategories(): SegmentationCategoryMetadata[] | nu
 
   useEffect(() => {
     let cancelled = false;
-    getSegmentationCategories()
-      .then((data) => {
+    void (async () => {
+      try {
+        const data = await getSegmentationCategories();
         if (!cancelled) setEntries(data);
-      })
-      .catch(() => {
+      } catch {
         /* swallowed: fallback palette is in place */
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };

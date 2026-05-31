@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { parseOrFallback } from "@/lib/api/parse";
+import { dataEnvelope, generationRatingSchema } from "@/lib/api/schemas";
 
 type Rating = "GOOD" | "FAILED" | null;
 
@@ -28,13 +31,7 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
   const { data } = useQuery({
     queryKey: ratingKey,
     queryFn: async ({ signal }): Promise<GenerationRating> => {
-      const res = await fetch(serviceUrl(`generations/${generationId}`), {
-        cache: "no-store",
-        signal
-      });
-      if (!res.ok) throw new Error(`Failed to load generation (${res.status})`);
-      const json = await res.json();
-      const payload = json.data ?? json;
+      const { data: payload } = await fetchJson(serviceUrl(`generations/${generationId}`), dataEnvelope(generationRatingSchema), { cache: "no-store", signal });
       return {
         scene: (payload.sceneAccuracyRating ?? null) as Rating,
         product: (payload.productAccuracyRating ?? null) as Rating
@@ -58,8 +55,8 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
       };
 
       // Optimistic update: write straight to the query cache.
-      const nextScene = scene === undefined ? prev.scene : scene;
-      const nextProduct = product === undefined ? prev.product : product;
+      const nextScene = scene ?? prev.scene;
+      const nextProduct = product ?? prev.product;
       queryClient.setQueryData<GenerationRating>(key, { scene: nextScene, product: nextProduct });
       onRated?.();
 
@@ -73,8 +70,8 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
           body: JSON.stringify(body)
         });
         if (res.ok) {
-          const json = await res.json();
-          const payload = json.data ?? json;
+          const json: unknown = await res.json();
+          const payload = parseOrFallback(dataEnvelope(generationRatingSchema), json, { data: {} }, "generation rating patch").data;
           queryClient.setQueryData<GenerationRating>(key, {
             scene: (payload.sceneAccuracyRating ?? nextScene) as Rating,
             product: (payload.productAccuracyRating ?? nextProduct) as Rating

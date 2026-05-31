@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { DownloadIcon, FileTextIcon, ImageIcon, PencilIcon, XIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { localUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { catalogProductImagesResponseSchema } from "@/lib/api/schemas";
 
 type FieldType = "select" | "boolean" | "product";
 type CatalogImageTag = "photo-image" | "tear-sheet" | "line-drawing";
@@ -272,21 +274,16 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
   const { data: images = [], isLoading } = useQuery({
     queryKey: ["catalog-product-images", catalogCategory, productId],
     queryFn: async ({ signal }) => {
-      const res = await fetch(localUrl(`catalog/products/${catalogCategory}/${productId}`), {
-        signal
-      });
-      if (!res.ok) throw new Error(`Failed to fetch catalog product images (${res.status})`);
-      const json = await res.json();
-      const product = json.data ?? json;
-      const rawImages = Array.isArray(product?.images) ? product.images : [];
+      const json = await fetchJson(localUrl(`catalog/products/${catalogCategory ?? ""}/${productId ?? ""}`), catalogProductImagesResponseSchema, { signal });
+      const product = json.data;
       const variants: CatalogImageVariant[] = [];
-      const featured = product?.featured_image?.url ?? product?.featuredImage?.url;
+      const featured = product?.featuredImage?.url;
       if (featured) variants.push({ tag: "photo-image", url: featured });
-      for (const img of rawImages) {
-        if (!img?.url || !img.tag) continue;
+      for (const img of product?.images ?? []) {
+        if (!img.url || !img.tag) continue;
         if (img.tag === "photo-image" && variants.some((variant) => variant.tag === "photo-image")) continue;
         if (DOWNLOADABLE_IMAGE_TAGS.has(img.tag)) {
-          variants.push({ tag: img.tag, url: img.url });
+          variants.push({ tag: img.tag as CatalogImageTag, url: img.url });
         }
       }
       return variants;
@@ -460,7 +457,7 @@ export function useCatalogProducts(retailerId?: string) {
       const query = retailerId ? `?retailerId=${encodeURIComponent(retailerId)}` : "";
       const res = await fetch(localUrl(`products${query}`), { signal });
       if (!res.ok) throw new Error(`Failed to fetch catalog products (${res.status})`);
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       return Array.isArray(json.data) ? (json.data as CatalogProduct[]) : [];
     }
   });

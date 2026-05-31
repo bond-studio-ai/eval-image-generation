@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { strategyDetailPerformanceResponseSchema } from "@/lib/api/schemas";
 
 interface PerformanceData {
   generationCount: number;
@@ -26,11 +28,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}/performance`), {
-        cache: "no-store"
-      });
-      if (!res.ok) return;
-      const json = await res.json();
+      const json = await fetchJson(serviceUrl(`strategies/${strategyId}/performance`), strategyDetailPerformanceResponseSchema, { cache: "no-store" });
       setData(json.data ?? null);
     } catch {
       /* ignore */
@@ -40,7 +38,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
   }, [strategyId]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   if (loading) {

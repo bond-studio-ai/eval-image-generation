@@ -15,8 +15,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
       return errorResponse("INTERNAL_ERROR", `Catalog API returned ${res.status}`);
     }
 
-    const json = await res.json();
-    const product = Array.isArray(json.data) ? json.data[0] : json.data;
+    const json = (await res.json()) as { data?: unknown };
+    const product: unknown = Array.isArray(json.data) ? json.data[0] : json.data;
 
     return successResponse(product);
   } catch (error) {

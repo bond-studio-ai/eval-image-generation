@@ -5,6 +5,9 @@ import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react"
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { parseOrFallback } from "@/lib/api/parse";
+import { errorEnvelopeSchema, evaluationResponseSchema } from "@/lib/api/schemas";
 import { CATEGORY_LABELS, CATEGORY_SPECIFIC_ISSUES } from "@/lib/validation";
 
 const EMPTY_CATEGORIES: string[] = [];
@@ -88,17 +91,15 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   const { data: loadedData, isLoading: loading } = useQuery({
     queryKey: ["evaluation", resultId, productCategories],
     queryFn: async ({ signal }): Promise<EvaluationData> => {
-      const res = await fetch(serviceUrl(`evaluations/${resultId}`), { signal });
-      if (!res.ok) throw new Error(`Failed to load evaluation (${res.status})`);
-      const json = await res.json();
-      if (json.data) {
-        const payload = json.data;
-        const rawPa = payload.productAccuracy ?? {};
+      const json = await fetchJson(serviceUrl(`evaluations/${resultId}`), evaluationResponseSchema, { signal });
+      const payload = json.data;
+      if (payload) {
+        const rawPa = payload.productAccuracy;
         const pa: Record<string, CategoryEval> = {};
         for (const [key, val] of Object.entries(rawPa)) {
           const normalized = toSnakeCase(key);
           const existing = pa[normalized];
-          const categoryEval = val as CategoryEval;
+          const categoryEval = val;
           if (existing && existing.issues.length > 0) continue;
           pa[normalized] = categoryEval;
         }
@@ -159,8 +160,9 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
         });
 
         if (!res.ok) {
-          const json = await res.json();
-          setError(json.error?.message || "Failed to save");
+          const json: unknown = await res.json();
+          const parsed = parseOrFallback(errorEnvelopeSchema, json, {}, "evaluation save error");
+          setError(parsed.error?.message || "Failed to save");
           return;
         }
 
@@ -184,7 +186,7 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   useEffect(() => {
     if (!loadedRef.current) return;
     const timer = setTimeout(() => {
-      onSave(data);
+      void onSave(data);
     }, 800);
     return () => {
       clearTimeout(timer);

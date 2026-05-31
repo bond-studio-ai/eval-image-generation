@@ -61,7 +61,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
     try {
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
       if (!res.ok) return;
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       if (json.data) {
         const raw = json.data as { judgeResults?: unknown };
         setData({
@@ -76,8 +76,10 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
 
   useEffect(() => {
     if (isActive) {
-      fetchData();
-      intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
+      void fetchData();
+      intervalRef.current = setInterval(() => {
+        void fetchData();
+      }, POLL_INTERVAL);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

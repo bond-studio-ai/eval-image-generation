@@ -22,6 +22,8 @@ import {
 } from "@/components/strategy-builder/types";
 import { useModelCatalog } from "@/components/strategy-builder/use-model-catalog";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { mutationResponseSchema } from "@/lib/api/schemas";
 
 export function StrategyBuilder({ strategyId, initialName = "", initialDescription = "", initialStrategySettings, initialPreviewSettings, initialSteps, promptVersions, modelCatalog }: StrategyBuilderProps) {
   const { providerModelIdForSelection, catalogSelectionForProviderModelId, defaultGenerationModel, defaultPreviewModel, defaultJudgeModel, generationModels, previewModels, judgeModels } = useModelCatalog(
@@ -115,7 +117,7 @@ export function StrategyBuilder({ strategyId, initialName = "", initialDescripti
         providerModelIdForSelection
       });
 
-      const url = isEditing ? serviceUrl(`strategies/${strategyId}`) : serviceUrl("strategies");
+      const url = isEditing ? serviceUrl(`strategies/${strategyId ?? ""}`) : serviceUrl("strategies");
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -124,15 +126,15 @@ export function StrategyBuilder({ strategyId, initialName = "", initialDescripti
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const data = parseOrFallback(mutationResponseSchema, await res.json(), {}, "strategy save");
 
       if (!res.ok) {
         setError(data.error?.message || "Failed to save strategy");
         return;
       }
 
-      const sid = isEditing ? strategyId : data.data.id;
-      router.push(`/strategies/${sid}`);
+      const sid = isEditing ? strategyId : data.data?.id;
+      if (sid) router.push(`/strategies/${sid}`);
     } catch {
       setError("Network error");
     } finally {

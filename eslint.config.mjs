@@ -98,7 +98,7 @@ const eslintConfig = [
       "no-console": WARN,
       "no-const-assign": ERROR,
       "no-constant-condition": ERROR,
-      "no-continue": WARN,
+      "no-continue": OFF, // pure-style; `continue` is idiomatic in our loops
       "no-control-regex": ERROR,
       "no-debugger": ERROR,
       "no-delete-var": ERROR,
@@ -136,7 +136,7 @@ const eslintConfig = [
       "no-obj-calls": ERROR,
       "no-octal": ERROR,
       "no-octal-escape": ERROR,
-      "no-plusplus": WARN,
+      "no-plusplus": OFF, // pure-style; `i++` is idiomatic and harmless here
       "no-proto": ERROR,
       "no-regex-spaces": ERROR,
       "no-script-url": ERROR,
@@ -247,15 +247,9 @@ const eslintConfig = [
       "no-unused-private-class-members": ERROR,
       "no-constant-binary-expression": ERROR,
       "no-empty-static-block": ERROR,
-      "no-magic-numbers": [
-        WARN,
-        {
-          ignore: [0, 1],
-          enforceConst: true,
-          ignoreDefaultValues: true,
-          ignoreClassFieldInitialValues: true
-        }
-      ],
+      // Disabled in favor of the type-aware @typescript-eslint/no-magic-numbers
+      // below — the two rules double-report every literal across the TS codebase.
+      "no-magic-numbers": OFF,
       complexity: [WARN, { max: 10 }],
       "func-names": [ERROR, "as-needed"],
       // hardcore sets func-style: declaration, which forbids the
@@ -617,6 +611,7 @@ const eslintConfig = [
         {
           ignore: [0, 1],
           enforceConst: true,
+          ignoreArrayIndexes: true,
           ignoreDefaultValues: true,
           ignoreClassFieldInitialValues: true,
           ignoreEnums: true,
@@ -655,12 +650,20 @@ const eslintConfig = [
       // Noisy type-aware rules: keep as signal, not blockers ---------------
       "@typescript-eslint/no-unnecessary-condition": WARN,
       "@typescript-eslint/strict-boolean-expressions": OFF, // truthy checks are idiomatic here
-      "@typescript-eslint/no-unsafe-assignment": WARN,
-      "@typescript-eslint/no-unsafe-member-access": WARN,
-      "@typescript-eslint/no-unsafe-call": WARN,
-      "@typescript-eslint/no-unsafe-return": WARN,
-      "@typescript-eslint/no-unsafe-argument": WARN,
-      "@typescript-eslint/restrict-template-expressions": WARN,
+      // Errors: the API layer is now zod-validated at every fetch boundary
+      // (see src/lib/api/), so `any` should no longer leak into the app. Keep
+      // these as hard blockers to prevent regressions.
+      "@typescript-eslint/no-unsafe-assignment": ERROR,
+      "@typescript-eslint/no-unsafe-member-access": ERROR,
+      "@typescript-eslint/no-unsafe-call": ERROR,
+      "@typescript-eslint/no-unsafe-return": ERROR,
+      "@typescript-eslint/no-unsafe-argument": ERROR,
+      // Numbers stringify safely and predictably in template literals
+      // (`${count}`, `${width}px`); wrapping them in String() is pure noise.
+      // Keep any/nullish flagged — those can leak "undefined"/"null"/"[object Object]"
+      // into URLs and classNames (explicit opts so the permissive rule defaults
+      // for allowAny/allowNullish don't silently apply).
+      "@typescript-eslint/restrict-template-expressions": [WARN, { allowNumber: true, allowBoolean: true, allowAny: false, allowNullish: false, allowRegExp: true, allowArray: false }],
       "@typescript-eslint/no-confusing-void-expression": WARN,
       "@typescript-eslint/prefer-nullish-coalescing": WARN,
       "@typescript-eslint/prefer-optional-chain": WARN,
@@ -782,7 +785,9 @@ const eslintConfig = [
       "sonarjs/no-identical-functions": OFF,
       "@typescript-eslint/no-unsafe-assignment": OFF,
       "@typescript-eslint/no-unsafe-member-access": OFF,
-      "@typescript-eslint/no-unsafe-call": OFF
+      "@typescript-eslint/no-unsafe-call": OFF,
+      "@typescript-eslint/no-unsafe-return": OFF,
+      "@typescript-eslint/no-unsafe-argument": OFF
     }
   },
 
@@ -847,6 +852,17 @@ const eslintConfig = [
           message: "Use the <Button>/<IconButton> primitives from @/components/ui instead of a raw <button>. See .cursor/rules/ui-conventions.mdc."
         }
       ]
+    }
+  },
+
+  // JSX is saturated with positional/size literals (layout offsets, recharts
+  // coordinates, pixel math, z-index, durations). Magic-number tracking there is
+  // almost entirely noise, so disable it for components while keeping it on for
+  // plain TS modules where extracted constants genuinely aid readability.
+  {
+    files: ["**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-magic-numbers": OFF
     }
   },
 

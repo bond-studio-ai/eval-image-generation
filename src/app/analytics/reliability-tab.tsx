@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { AccuracyTrendChart } from "@/app/analytics/accuracy-trend-chart";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { reliabilityResponseSchema } from "@/lib/api/schemas";
 import { definedProps } from "@/lib/defined-props";
 import type { ReliabilityData } from "@/lib/service-client";
 
@@ -39,8 +41,8 @@ function ErrorTable({ title, errors }: { title: string; errors: { reason: string
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
       <h3 className="text-text-primary text-body font-semibold">{title}</h3>
       <div className="mt-4 space-y-3">
-        {errors.map((err, index) => (
-          <div key={`${index}-${err.reason}`}>
+        {errors.map((err) => (
+          <div key={err.reason}>
             <div className="text-body flex items-center justify-between">
               <span className="text-text-secondary max-w-md truncate" title={err.reason}>
                 {err.reason}
@@ -126,11 +128,7 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const res = await fetch(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ""}`), {
-        cache: "no-store"
-      });
-      if (!res.ok) return;
-      const json = await res.json();
+      const json = await fetchJson(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ""}`), reliabilityResponseSchema, { cache: "no-store" });
       setData(json.data ?? null);
     } catch {
       /* ignore */
@@ -140,7 +138,7 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
   }, [from, to, model, source]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   if (loading) {

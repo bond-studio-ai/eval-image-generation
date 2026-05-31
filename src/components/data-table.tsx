@@ -46,7 +46,7 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
     <tr>
       {Array.from({ length: colCount }, (_, i) => (
         <td key={i} aria-hidden="true" tabIndex={-1} className="px-6 py-4">
-          <div className={`bg-surface-sunken h-4 animate-pulse rounded ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length]}`} />
+          <div className={`bg-surface-sunken h-4 animate-pulse rounded ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length] ?? ""}`} />
         </td>
       ))}
     </tr>

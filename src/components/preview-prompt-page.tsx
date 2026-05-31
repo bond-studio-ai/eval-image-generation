@@ -6,6 +6,9 @@ import { PageHeader } from "@/components/page-header";
 import { ErrorCard } from "@/components/resource-form-header";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { parseOrFallback } from "@/lib/api/parse";
+import { dollhouseSourceResponseSchema, errorEnvelopeSchema, minimalListResponseSchema, previewResponseSchema } from "@/lib/api/schemas";
 
 interface PromptVersionItem {
   id: string;
@@ -172,21 +175,21 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
     queryKey: ["preview-options"],
     queryFn: async ({ signal }): Promise<PreviewOptions> => {
       const [pvRes, presetRes] = await Promise.all([fetch(serviceUrl("prompt-versions?limit=100&minimal=true"), { signal }), fetch(serviceUrl("input-presets?limit=100&minimal=true"), { signal })]);
-      const [pvJson, presetJson] = await Promise.all([pvRes.json(), presetRes.json()]);
+      const [pvRaw, presetRaw] = await Promise.all([pvRes.json() as Promise<unknown>, presetRes.json() as Promise<unknown>]);
+      const pvJson = parseOrFallback(minimalListResponseSchema, pvRaw, { data: [] }, "preview prompt versions");
+      const presetJson = parseOrFallback(minimalListResponseSchema, presetRaw, { data: [] }, "preview input presets");
       if (!pvRes.ok) {
-        throw new Error(pvJson?.error?.message ?? "Failed to load prompt versions");
+        throw new Error(pvJson.error?.message ?? "Failed to load prompt versions");
       }
       if (!presetRes.ok) {
-        throw new Error(presetJson?.error?.message ?? "Failed to load input presets");
+        throw new Error(presetJson.error?.message ?? "Failed to load input presets");
       }
-      const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
-      const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
       return {
-        promptVersions: pvData.map((promptVersion: { id: string; name?: string | null }) => ({
+        promptVersions: pvJson.data.map((promptVersion) => ({
           id: promptVersion.id,
           name: promptVersion.name ?? null
         })),
-        presets: presetData.map((preset: { id: string; name?: string | null }) => ({
+        presets: presetJson.data.map((preset) => ({
           id: preset.id,
           name: preset.name ?? null
         }))
@@ -199,10 +202,8 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
   const dollhouseQuery = useQuery({
     queryKey: ["dollhouse-source"],
     queryFn: async ({ signal }): Promise<DollhouseSource | null> => {
-      const res = await fetch(serviceUrl("prompt-versions/preview/dollhouse-source"), { signal });
-      if (!res.ok) throw new Error("Failed to load dollhouse source");
-      const json = await res.json();
-      return (json.data ?? null) as DollhouseSource | null;
+      const json = await fetchJson(serviceUrl("prompt-versions/preview/dollhouse-source"), dollhouseSourceResponseSchema, { signal });
+      return json.data ?? null;
     },
     enabled: initialDollhouseSource == null,
     initialData: initialDollhouseSource ?? undefined
@@ -216,7 +217,7 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
   const previewQuery = useQuery({
     queryKey: ["preview", selectedPromptId, selectedPresetId, selectedAreaSummary],
     queryFn: async ({ signal }): Promise<PreviewItem[]> => {
-      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId}/preview`), {
+      const res = await fetch(serviceUrl(`prompt-versions/${selectedPromptId ?? ""}/preview`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -226,11 +227,11 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
         signal
       });
       if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(errorJson.error?.message || "Failed to load preview");
+        const errorJson: unknown = await res.json();
+        throw new Error(parseOrFallback(errorEnvelopeSchema, errorJson, {}, "prompt preview").error?.message || "Failed to load preview");
       }
-      const json = await res.json();
-      const preview = json.data;
+      const json: unknown = await res.json();
+      const preview = parseOrFallback(previewResponseSchema, json, { data: null }, "prompt preview").data;
       return preview ? [preview] : [];
     },
     enabled: previewEnabled

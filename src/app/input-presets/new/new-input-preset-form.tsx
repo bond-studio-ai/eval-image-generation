@@ -11,6 +11,8 @@ import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header
 import { SceneImageInput } from "@/components/scene-image-input";
 import { Button } from "@/components/ui/button";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { mutationResponseSchema } from "@/lib/api/schemas";
 import { type DesignPackageOption, designSettingsFromPackage, isPowderRoomLayoutName } from "@/lib/design-package";
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from "@/lib/input-preset-design";
 import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
@@ -122,13 +124,14 @@ export function NewInputPresetForm() {
         throw new Error(res.redirected || res.status === 401 ? "Session expired. Please refresh the page." : `Unexpected response from server (${res.status}). Please try again.`);
       }
 
-      const json = await res.json();
+      const json = parseOrFallback(mutationResponseSchema, await res.json(), {}, "input preset create");
 
       if (!res.ok) {
         throw new Error(json.error?.message || "Failed to create");
       }
 
-      router.push(`/input-presets/${json.data.id}`);
+      const newId = json.data?.id;
+      if (newId) router.push(`/input-presets/${newId}`);
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setCreating(false);

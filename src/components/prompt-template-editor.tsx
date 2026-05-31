@@ -118,10 +118,10 @@ export function PromptTemplateEditor({
     try {
       const segment = category.replaceAll("_", "-");
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
-      const json: {
+      const json = (await res.json()) as {
         data?: { attributes?: unknown };
         error?: { message?: string };
-      } = await res.json();
+      };
       if (!res.ok) {
         dispatchAttributes({
           type: "fetchError",
@@ -142,7 +142,7 @@ export function PromptTemplateEditor({
   const handleReferenceCategorySelect = useCallback(
     (cat: (typeof REFERENCE_OPTIONS)[number]) => {
       dispatchReference({ type: "setCategory", value: cat.value });
-      fetchAttributes(cat.value);
+      void fetchAttributes(cat.value);
     },
     [fetchAttributes]
   );

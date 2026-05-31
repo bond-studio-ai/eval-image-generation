@@ -3,8 +3,11 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
 import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, type InputPresetStats } from "@/lib/input-preset-design";
-import { fetchInputPresetById } from "@/lib/service-client";
+import { fetchInputPresetById, type InputPresetDetailItem } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
+
+/** Loose view over the preset that allows dynamic/snake-case key reads without `any`. */
+type RawInputPreset = InputPresetDetailItem & { stats?: InputPresetStats; [key: string]: unknown };
 
 export const metadata: Metadata = {
   title: "Edit Input Preset",
@@ -25,8 +28,8 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
 
-  const preset = presetData as any;
-  const stats = preset.stats as InputPresetStats | undefined;
+  const preset = presetData as RawInputPreset;
+  const { stats } = preset;
   const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 
   if (generationCount > 0 && !force) {
@@ -51,7 +54,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     return value === undefined || value === null || value === "" ? [] : [[key, value] as const];
   });
   const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
-  const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
+  const storedImages = getInputPresetStoredImages(preset);
   const arbitraryImagesBySlot = Object.fromEntries(storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])));
   const savedImageUrlsBySlot = Object.fromEntries(storedImages.map((image) => [image.slot, image.url]));
 

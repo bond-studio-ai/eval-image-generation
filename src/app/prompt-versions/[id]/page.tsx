@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PromptVersionDetail } from "@/components/prompt-version-detail";
+import { parseOrFallback } from "@/lib/api/parse";
+import { generationSummaryArraySchema } from "@/lib/api/schemas";
 import { fetchGenerations, fetchPromptVersionById } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
@@ -14,34 +16,27 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-interface PromptVersionStats {
-  generationCount?: number;
-  ratedCount?: number;
-  avgRatingScore?: number;
-}
-
 export default async function PromptVersionDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   const pvData = await fetchPromptVersionById(id).catch(() => null);
   if (!pvData) notFound();
 
-  const pv = pvData as any;
-  const stats = pv.stats as PromptVersionStats | undefined;
+  const { stats } = pvData;
 
   const genResult = await fetchGenerations({ promptVersionId: id, limit: "100" });
-  const generations = (genResult.data ?? []) as any[];
+  const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "prompt-version related generations");
 
   const serializedData = {
-    id: pv.id,
-    name: pv.name ?? null,
-    description: pv.description ?? null,
-    systemPrompt: pv.systemPrompt,
-    userPrompt: pv.userPrompt,
-    deletedAt: pv.deletedAt ?? null
+    id: pvData.id,
+    name: pvData.name ?? null,
+    description: pvData.description ?? null,
+    systemPrompt: pvData.systemPrompt,
+    userPrompt: pvData.userPrompt,
+    deletedAt: pvData.deletedAt ?? null
   };
 
-  const serializedGenerations = generations.map((generation: any) => ({
+  const serializedGenerations = generations.map((generation) => ({
     id: generation.id,
     sceneAccuracyRating: generation.sceneAccuracyRating ?? null,
     productAccuracyRating: generation.productAccuracyRating ?? null,
@@ -51,7 +46,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   }));
 
   const generationCount = stats?.generationCount ?? generations.length;
-  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((generation: { sceneAccuracyRating: string | null }) => generation.sceneAccuracyRating !== null).length;
+  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((generation) => generation.sceneAccuracyRating !== null).length;
   const avgRating = stats?.avgRatingScore ?? null;
 
   return (

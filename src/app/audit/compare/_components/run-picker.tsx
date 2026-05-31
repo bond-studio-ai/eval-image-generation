@@ -100,7 +100,7 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
           setError(`Failed to load runs (${res.status})`);
           return;
         }
-        const json = await res.json();
+        const json = (await res.json()) as { data?: unknown; pagination?: { total?: unknown } };
         const data = (json.data ?? []) as RunListItem[];
         const paginationTotal = Number(json.pagination?.total ?? 0);
 
@@ -125,12 +125,12 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
-    fetchRuns({ replace: false, pageToFetch: pageRef.current + 1 });
+    void fetchRuns({ replace: false, pageToFetch: pageRef.current + 1 });
   }, [hasMore, loadingMore, fetchRuns]);
 
   useEffect(() => {
     setLoading(true);
-    fetchRuns({ replace: true });
+    void fetchRuns({ replace: true });
   }, [fetchRuns]);
 
   useEffect(() => {

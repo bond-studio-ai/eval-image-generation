@@ -68,7 +68,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runReview(true);
+          void runReview(true);
         }}
         title={state.cached ? "Cached. Click to re-run." : "Click to re-run review."}
         className="text-text-inverse bg-text-secondary/80 hover:bg-text-secondary mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
@@ -85,7 +85,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runReview(false);
+          void runReview(false);
         }}
         title={state.message ?? "Click to retry."}
         className="bg-danger-500/90 text-text-inverse hover:bg-danger-500 mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
@@ -101,7 +101,7 @@ export function ReviewBadge({ generationId, state: stateProp, onStateChange }: S
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        runReview(false);
+        void runReview(false);
       }}
       className="border-border-strong bg-surface text-text-secondary hover:bg-surface-muted hover:border-border-strong mt-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium transition-colors"
     >

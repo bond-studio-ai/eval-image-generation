@@ -40,24 +40,22 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const data = await fetchGenerationById(id).catch(() => null);
   if (!data) notFound();
 
-  const result = data as any;
-
-  const { promptVersion } = result;
-  const inputData = result.input as Record<string, unknown> | null;
-  const results: ResultImage[] = result.results ?? [];
+  const { promptVersion } = data;
+  const inputData = data.input ?? null;
+  const results: ResultImage[] = data.results;
 
   const { activeProductCategories, productImages } = deriveProductImages(inputData);
 
-  const sceneAccuracyRating = result.sceneAccuracyRating ?? null;
-  const productAccuracyRating = result.productAccuracyRating ?? null;
-  const executionTime = result.executionTime ?? null;
-  const { createdAt } = result;
-  const notes = result.notes ?? null;
+  const sceneAccuracyRating = data.sceneAccuracyRating ?? null;
+  const productAccuracyRating = data.productAccuracyRating ?? null;
+  const executionTime = data.executionTime ?? null;
+  const { createdAt } = data;
+  const notes = data.notes ?? null;
 
   const sceneInput = inputData as GenerationSceneInput | null;
-  const dollhouseView = sceneInput?.dollhouseView as string | undefined;
-  const realPhoto = sceneInput?.realPhoto as string | undefined;
-  const moodBoard = sceneInput?.moodBoard as string | undefined;
+  const dollhouseView = typeof sceneInput?.dollhouseView === "string" ? sceneInput.dollhouseView : undefined;
+  const realPhoto = typeof sceneInput?.realPhoto === "string" ? sceneInput.realPhoto : undefined;
+  const moodBoard = typeof sceneInput?.moodBoard === "string" ? sceneInput.moodBoard : undefined;
 
   const hasNotes = Boolean(notes);
   const hasSceneImages = Boolean(dollhouseView || realPhoto || moodBoard);
@@ -76,7 +74,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
         subtitle={
           <span>
             Prompt Version:{" "}
-            <Link href={`/prompt-versions/${promptVersion?.id}`} className="text-primary-600 hover:text-primary-500 inline-flex items-center gap-1">
+            <Link href={`/prompt-versions/${String(promptVersion?.id)}`} className="text-primary-600 hover:text-primary-500 inline-flex items-center gap-1">
               {promptVersion?.name || "Untitled"}
               <ExternalLinkIcon className="size-3.5" />
             </Link>
@@ -86,12 +84,12 @@ export default async function GenerationDetailPage({ params }: PageProps) {
           <>
             <RatingBadge rating={sceneAccuracyRating} label="Scene" />
             <RatingBadge rating={productAccuracyRating} label="Product" />
-            <DeleteGenerationButton generationId={result.id} />
+            <DeleteGenerationButton generationId={data.id} />
           </>
         }
       />
 
-      <RatingSection generationId={result.id} sceneAccuracyRating={sceneAccuracyRating} productAccuracyRating={productAccuracyRating} />
+      <RatingSection generationId={data.id} sceneAccuracyRating={sceneAccuracyRating} productAccuracyRating={productAccuracyRating} />
 
       <OutputImagesSection results={results} activeProductCategories={activeProductCategories} />
 
@@ -101,7 +99,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
 
       <ProductImagesSection productImages={productImages} />
 
-      <PromptsSection systemPrompt={promptVersion?.systemPrompt} userPrompt={promptVersion?.userPrompt} />
+      <PromptsSection systemPrompt={promptVersion?.systemPrompt ?? undefined} userPrompt={promptVersion?.userPrompt ?? undefined} />
     </div>
   );
 }

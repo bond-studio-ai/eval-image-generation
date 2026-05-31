@@ -42,7 +42,7 @@ export function StepComparison({ ls, rs, stepName }: { ls: StepResult | null; rs
         )}
 
         {/* Input images */}
-        {(ls?.inputImages || rs?.inputImages) && (
+        {(ls?.inputImages ?? rs?.inputImages) && (
           <div>
             <SectionHeader title="Input Images" />
             <div className="mt-2">

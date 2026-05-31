@@ -235,7 +235,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       isLoadingDetail.current = true;
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
       if (!res.ok) return;
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       const raw = (json.data ?? {}) as RawJudgeDetail;
       const allJudgeResults = parseStrategyRunJudgeResults(raw.judgeResults);
 
@@ -280,7 +280,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
           className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""} ${isJudgeSelected ? "bg-warning-400 text-warning-900" : "text-text-inverse bg-text-secondary/70"}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") openDetailModal(e);
+            if (e.key === "Enter" || e.key === " ") void openDetailModal(e);
           }}
         >
           {judgeScore}
@@ -309,7 +309,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
           className={`bg-danger-500/90 text-text-inverse absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") openDetailModal(e);
+            if (e.key === "Enter" || e.key === " ") void openDetailModal(e);
           }}
         >
           <InfoIcon className="size-2.5" />

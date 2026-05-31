@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ViewPromptModal } from "@/components/view-prompt-modal";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { dataEnvelope, strategyHoverSchema } from "@/lib/api/schemas";
 import { STRATEGY_PROPERTY_COLORS } from "@/lib/strategy-property-colors";
 
 interface StrategyData {
@@ -41,12 +43,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       return;
     }
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}`));
-      if (!res.ok) return;
-      const json = await res.json();
-      const payload = json.data ?? json;
-      cache.set(strategyId, payload);
-      setData(payload);
+      const json = await fetchJson(serviceUrl(`strategies/${strategyId}`), dataEnvelope(strategyHoverSchema));
+      cache.set(strategyId, json.data);
+      setData(json.data);
     } catch {
       /* ignore */
     }
@@ -56,7 +55,7 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setOpen(true);
-      fetchData();
+      void fetchData();
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         setPos({ top: rect.bottom + 8, left: rect.left });

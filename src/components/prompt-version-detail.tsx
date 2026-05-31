@@ -8,6 +8,8 @@ import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header
 import { Button, LinkButton } from "@/components/ui/button";
 import { CopyIcon, LockIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema, errorEnvelopeSchema } from "@/lib/api/schemas";
 import { DeletePromptVersionButton } from "./delete-prompt-version-button";
 import { PromptTemplateEditor } from "./prompt-template-editor";
 import { RatingBadge } from "./rating-badge";
@@ -127,8 +129,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       if (!res.ok) {
         const ct = res.headers.get("content-type") ?? "";
         if (ct.includes("application/json")) {
-          const errorJson = await res.json();
-          throw new Error(errorJson.error?.message || "Failed to save");
+          const errorJson: unknown = await res.json();
+          throw new Error(parseOrFallback(errorEnvelopeSchema, errorJson, {}, "prompt version save").error?.message || "Failed to save");
         }
         throw new Error(res.status === 401 || res.redirected ? "Session expired. Please refresh the page." : `Failed to save (${res.status})`);
       }
@@ -176,11 +178,11 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         })
       });
       if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(errorJson.error?.message || "Failed to clone");
+        const errorJson: unknown = await res.json();
+        throw new Error(parseOrFallback(errorEnvelopeSchema, errorJson, {}, "prompt version clone").error?.message || "Failed to clone");
       }
-      const json = await res.json();
-      const newId = json.data?.id;
+      const json: unknown = await res.json();
+      const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "prompt version clone").data.id;
       if (newId) router.push(`/prompt-versions/${newId}`);
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Clone failed");

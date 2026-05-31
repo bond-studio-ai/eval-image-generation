@@ -11,6 +11,8 @@ import { LinkButton } from "@/components/ui/button";
 import { CopyIcon, PencilIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { localUrl, serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_LABELS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY, readInputPresetValue } from "@/lib/input-preset-design";
 import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
 import type { InputPresetDetailItem } from "@/lib/service-client";
@@ -161,8 +163,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                       method: "POST"
                     });
                     if (!res.ok) throw new Error("Clone failed");
-                    const json = await res.json();
-                    const newId = json.data?.id;
+                    const json: unknown = await res.json();
+                    const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "input preset clone").data.id;
                     if (newId) {
                       router.refresh();
                       router.push(`/input-presets/${newId}/edit`);

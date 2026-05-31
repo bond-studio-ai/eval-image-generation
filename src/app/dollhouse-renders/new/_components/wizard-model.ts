@@ -125,7 +125,7 @@ export function buildWizardModel(input: WizardInput): WizardModel {
   ];
 
   const summary = canSubmit
-    ? `Submit ${includedFrameCount} frame${includedFrameCount === 1 ? "" : "s"} for project ${input.bootstrap?.project.id} at ${imageWidth}×${imageHeight} ${input.imageConfig.format}.`
+    ? `Submit ${includedFrameCount} frame${includedFrameCount === 1 ? "" : "s"} for project ${input.bootstrap?.project.id ?? ""} at ${imageWidth}×${imageHeight} ${input.imageConfig.format}.`
     : "Complete the steps above to enable Create Render.";
 
   return {

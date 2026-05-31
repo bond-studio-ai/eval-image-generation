@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Fragment, useCallback, useState } from "react";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { productCategoryRatesResponseSchema } from "@/lib/api/schemas";
 
 // Shared frozen empty set returned when the expanded state belongs to a stale
 // filter combination, so the derived value keeps a stable identity.
@@ -306,12 +308,7 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
       if (strategyId) params.set("strategy_id", strategyId);
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
-      const res = await fetch(serviceUrl(`analytics/product-category-rates?${params}`), {
-        cache: "no-store",
-        signal
-      });
-      if (!res.ok) throw new Error("Failed to load product category rates");
-      const json = await res.json();
+      const json = await fetchJson(serviceUrl(`analytics/product-category-rates?${params}`), productCategoryRatesResponseSchema, { cache: "no-store", signal });
       return normalizeCategoryRows(json.data?.categories);
     }
   });

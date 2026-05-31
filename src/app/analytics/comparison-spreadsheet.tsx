@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { dataRecordEnvelopeSchema } from "@/lib/api/schemas";
 import { CategoryRatesTable } from "./_comparison-spreadsheet/category-rates-table";
 import { formatCategoryName, normalizeCategoryRows, normalizeIssueItems, normalizeStepPerformanceRows, normalizeSummary } from "./_comparison-spreadsheet/helpers";
 import { SceneIssuesTable } from "./_comparison-spreadsheet/scene-issues-table";
@@ -50,16 +52,16 @@ export function ComparisonSpreadsheet({ slices, model }: { slices: AnalyticsComp
             })
           ]);
 
-          const catJson = catRes.ok ? await catRes.json() : {};
-          const stepJson = stepRes.ok ? await stepRes.json() : {};
+          const catJson = parseOrFallback(dataRecordEnvelopeSchema, catRes.ok ? await catRes.json() : {}, { data: null }, "comparison category rates");
+          const stepJson = parseOrFallback(dataRecordEnvelopeSchema, stepRes.ok ? await stepRes.json() : {}, { data: null }, "comparison step performance");
 
           return {
             key: slice.key,
             data: {
-              summary: normalizeSummary(catJson.data?.summary),
-              sceneIssues: normalizeIssueItems(catJson.data?.sceneIssues),
-              categories: normalizeCategoryRows(catJson.data?.categories),
-              steps: normalizeStepPerformanceRows(stepJson.data?.steps)
+              summary: normalizeSummary(catJson.data?.["summary"]),
+              sceneIssues: normalizeIssueItems(catJson.data?.["sceneIssues"]),
+              categories: normalizeCategoryRows(catJson.data?.["categories"]),
+              steps: normalizeStepPerformanceRows(stepJson.data?.["steps"])
             }
           };
         })

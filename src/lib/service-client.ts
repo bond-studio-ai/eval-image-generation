@@ -3,6 +3,9 @@
  * Used by SSR pages to fetch data.
  */
 
+import type { z } from "zod";
+import { parseOrThrow } from "./api/parse";
+import { generationDetailSchema, promptVersionDetailSchema } from "./api/schemas";
 import { imageGenerationBase, imageGenerationV2Base } from "./env";
 import type { InputPresetDesignFields } from "./input-preset-design";
 
@@ -17,8 +20,19 @@ async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
-  const json = await res.json();
+  const json = (await res.json()) as { data?: unknown };
   return json.data as T;
+}
+
+/** Like `fetchService`, but validates `json.data` against a zod schema. */
+async function fetchServiceParsed<S extends z.ZodType>(path: string, schema: S, init?: RequestInit): Promise<z.infer<S>> {
+  const url = `${getBase()}${path.startsWith("/") ? path : `/${path}`}`;
+  const res = await fetch(url, { cache: "no-store", ...init });
+  if (!res.ok) {
+    throw new Error(`Service ${res.status}: ${url}`);
+  }
+  const json = (await res.json()) as { data?: unknown };
+  return parseOrThrow(schema, json.data, `service ${path}`);
 }
 
 async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
@@ -27,7 +41,7 @@ async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
-  const json = await res.json();
+  const json = (await res.json()) as { data?: unknown };
   return json.data as T;
 }
 
@@ -257,7 +271,7 @@ export async function fetchPromptPreviewDollhouseSource(): Promise<PromptPreview
 }
 
 export async function fetchPromptVersionById(id: string) {
-  return fetchService<Record<string, unknown>>(`/prompt-versions/${id}`);
+  return fetchServiceParsed(`/prompt-versions/${id}`, promptVersionDetailSchema);
 }
 
 // ─── Strategies ──────────────────────────────────────────────────────────────
@@ -301,7 +315,7 @@ export async function fetchInputPresetById(id: string): Promise<InputPresetDetai
 // ─── Generations ─────────────────────────────────────────────────────────────
 
 export async function fetchGenerationById(id: string) {
-  return fetchService<Record<string, unknown>>(`/generations/${id}`);
+  return fetchServiceParsed(`/generations/${id}`, generationDetailSchema);
 }
 
 export async function fetchGenerations(params: Record<string, string>) {
@@ -310,7 +324,7 @@ export async function fetchGenerations(params: Record<string, string>) {
   const base = getBase();
   const res = await fetch(`${base}${url}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Service ${res.status}`);
-  const json = await res.json();
+  const json: unknown = await res.json();
   return json as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
 }
 

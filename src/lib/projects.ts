@@ -120,7 +120,7 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
   // BFF is pass-through; upstream wraps the project in `{ data: [project] }`.
   const wrapper = (await res.json()) as { data?: unknown };
   const projectArray = wrapper.data;
-  const project = Array.isArray(projectArray) ? projectArray[0] : null;
+  const project: unknown = Array.isArray(projectArray) ? projectArray[0] : null;
   if (!project || !isRecord(project)) {
     throw new Error(`Project ${trimmed} not found`);
   }

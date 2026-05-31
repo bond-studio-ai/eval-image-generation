@@ -26,7 +26,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
       if (!res.ok) {
         throw new Error(`Failed to load: ${res.status}`);
       }
-      const json = await res.json();
+      const json = (await res.json()) as { data: { left?: unknown; right?: unknown } };
       const rawL = json.data.left as RawRunJudgeResults;
       const rawR = json.data.right as RawRunJudgeResults;
       return {

@@ -111,7 +111,7 @@ export function JudgeComparison({ left, right }: { left: RunData; right: RunData
                       </div>
                     </div>
                   )}
-                  {(lj?.judgeInputImages || rj?.judgeInputImages) && (
+                  {(lj?.judgeInputImages ?? rj?.judgeInputImages) && (
                     <div>
                       <SectionHeader title="Input images" />
                       <div className="mt-2">
@@ -175,7 +175,7 @@ export function JudgeComparison({ left, right }: { left: RunData; right: RunData
               </div>
             )}
 
-            {(left.judgeInputImages || right.judgeInputImages) && (
+                {(left.judgeInputImages ?? right.judgeInputImages) && (
               <div>
                 <SectionHeader title="Judge Input Images" />
                 <div className="mt-2">

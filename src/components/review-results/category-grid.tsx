@@ -75,7 +75,7 @@ function CategoryCard({ row }: { row: CategoryRow }) {
           <div className="grid grid-cols-3 gap-1.5">
             {row.masks.map((mask, idx) => (
               <a
-                key={`${mask.url}-${idx}`}
+                key={mask.url}
                 href={mask.url}
                 target="_blank"
                 rel="noopener noreferrer"
