@@ -1,3 +1,4 @@
+import { type ClassValue, clsx } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
 /**
@@ -48,9 +49,11 @@ const twMergeWithTokens = extendTailwindMerge({
 });
 
 /**
- * Class-name joiner with Tailwind conflict resolution. Accepts strings, falsy
- * values (skipped), and arrays. Useful inside primitives that compose
- * conditional Tailwind classes and expose a `className` override prop.
+ * Class-name joiner with Tailwind conflict resolution. Flattens any `clsx`
+ * input (strings, arrays, and `{ class: boolean }` objects; falsy values are
+ * skipped), then resolves conflicts via `tailwind-merge`. Useful inside
+ * primitives that compose conditional Tailwind classes and expose a
+ * `className` override prop.
  *
  * Order matters: when two classes target the same property (e.g. a primitive's
  * default `max-w-md` and a caller's `max-w-4xl`), the later one wins. Callers
@@ -59,18 +62,6 @@ const twMergeWithTokens = extendTailwindMerge({
  * stylesheet order, not class-attribute order — so we lean on `tailwind-merge`
  * instead of authoring order.
  */
-export type ClassValue = string | false | null | undefined | ClassValue[];
-
 export function cn(...values: ClassValue[]): string {
-  const out: string[] = [];
-  const walk = (value: ClassValue) => {
-    if (!value) return;
-    if (typeof value === "string") {
-      out.push(value);
-      return;
-    }
-    for (const item of value) walk(item);
-  };
-  walk(values);
-  return twMergeWithTokens(out.join(" "));
+  return twMergeWithTokens(clsx(values));
 }
