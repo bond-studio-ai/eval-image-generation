@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { serviceUrl } from "@/lib/api-base";
 
@@ -92,150 +93,78 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
 
   const initial = useMemo(() => readInitialParams(), []);
 
-  const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(initial.page);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [paginating, setPaginating] = useState(false);
   const [search, setSearchRaw] = useState(initial.search);
   const [debouncedSearch] = useDebounceValue(search, debounceMs);
   const [filters, setFiltersRaw] = useState<Record<string, string>>(initial.filters);
 
-  const abortRef = useRef<AbortController | null>(null);
-  const mountedRef = useRef(true);
-
-  // Keep a stable identity for staticParams across renders unless the actual
-  // shape changes, so the fetch effect doesn't re-fire on every render.
+  // Stable identities for keying: staticParams and filters as their serialized
+  // shape, so a fresh object literal from the caller doesn't churn the query.
   const staticParamsKey = useMemo(() => JSON.stringify(staticParams ?? null), [staticParams]);
+  const filtersKey = JSON.stringify(filters);
 
+  const { data, isLoading, isPlaceholderData, refetch } = useQuery({
+    queryKey: [endpoint, limit, debouncedSearch, filtersKey, page, staticParamsKey] as const,
+    queryFn: async ({ signal }): Promise<ListResponse<T>> => {
+      const qs = new URLSearchParams();
+      qs.set("page", String(page));
+      qs.set("limit", String(limit));
+      if (debouncedSearch) qs.set("search", debouncedSearch);
+      for (const [key, val] of Object.entries(filters)) {
+        if (val !== undefined && val !== "") qs.set(key, val);
+      }
+      appendStaticParams(qs, staticParams);
+
+      const res = await fetch(`${urlFor(endpoint)}?${qs}`, { signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as ListResponse<T>;
+    },
+    // Keep the current page visible while the next one loads (drives `paginating`).
+    placeholderData: keepPreviousData
+  });
+
+  const items = data?.data ?? [];
+  const total = data?.pagination.total ?? 0;
+  const totalPages = data?.pagination.totalPages ?? 0;
+
+  // Mirror state into the URL via history.replaceState — shallow, no Next.js
+  // navigation, no history pollution.
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Sync state → URL via history.replaceState (no Next.js re-render)
-  // ---------------------------------------------------------------------------
-
-  const syncUrl = useCallback((searchValue: string, filterValues: Record<string, string>, pageNumber: number) => {
     const params = new URLSearchParams();
-    if (searchValue) params.set(URL_KEY_SEARCH, searchValue);
-    for (const [key, val] of Object.entries(filterValues)) {
+    if (debouncedSearch) params.set(URL_KEY_SEARCH, debouncedSearch);
+    for (const [key, val] of Object.entries(filters)) {
       if (val !== undefined && val !== "") params.set(key, val);
     }
-    if (pageNumber > 1) params.set(URL_KEY_PAGE, String(pageNumber));
-
+    if (page > 1) params.set(URL_KEY_PAGE, String(page));
     const qs = params.toString();
-    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-    window.history.replaceState(null, "", url);
+    window.history.replaceState(null, "", qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+  }, [debouncedSearch, filters, page]);
+
+  const goToPage = useCallback((targetPage: number) => {
+    if (targetPage < 1) return;
+    setPage(targetPage);
   }, []);
 
-  const prevSyncKey = useRef(`${initial.search}|${JSON.stringify(initial.filters)}`);
-  useEffect(() => {
-    const key = `${debouncedSearch}|${JSON.stringify(filters)}`;
-    if (key === prevSyncKey.current) return;
-    prevSyncKey.current = key;
-    syncUrl(debouncedSearch, filters, 1);
-  }, [debouncedSearch, filters, syncUrl]);
-
-  // ---------------------------------------------------------------------------
-  // Fetch
-  // ---------------------------------------------------------------------------
-
-  const fetchPage = useCallback(
-    async (pageNum: number, { preserveScroll }: { preserveScroll?: boolean } = {}) => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      if (preserveScroll) {
-        setPaginating(true);
-      } else {
-        setLoading(true);
-      }
-
-      try {
-        const qs = new URLSearchParams();
-        qs.set("page", String(pageNum));
-        qs.set("limit", String(limit));
-        if (debouncedSearch) qs.set("search", debouncedSearch);
-        for (const [key, val] of Object.entries(filters)) {
-          if (val !== undefined && val !== "") qs.set(key, val);
-        }
-        appendStaticParams(qs, staticParams);
-
-        const res = await fetch(`${urlFor(endpoint)}?${qs}`, {
-          signal: controller.signal
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        if (!mountedRef.current) return;
-
-        const json = (await res.json()) as ListResponse<T>;
-
-        setItems(json.data);
-        setTotal(json.pagination.total);
-        setTotalPages(json.pagination.totalPages);
-        setPage(pageNum);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        if (!mountedRef.current) return;
-        setItems([]);
-        setTotal(0);
-        setTotalPages(0);
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-          setPaginating(false);
-        }
-      }
-    },
-    // staticParams is captured via its stringified key so a fresh object literal
-    // from the caller doesn't refetch on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [endpoint, limit, debouncedSearch, filters, urlFor, staticParamsKey]
-  );
-
-  const initialPageRef = useRef(initial.page);
-  useEffect(() => {
-    const startPage = initialPageRef.current;
-    initialPageRef.current = 1;
-    void fetchPage(startPage);
-  }, [fetchPage]);
-
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
-
-  const goToPage = useCallback(
-    (targetPage: number) => {
-      if (targetPage < 1 || targetPage === page) return;
-      syncUrl(debouncedSearch, filters, targetPage);
-      void fetchPage(targetPage, { preserveScroll: true });
-    },
-    [fetchPage, page, syncUrl, debouncedSearch, filters]
-  );
-
   const refresh = useCallback(() => {
-    void fetchPage(page);
-  }, [fetchPage, page]);
+    void refetch();
+  }, [refetch]);
 
+  // Changing the search or filters resets to the first page (the prior page may
+  // not exist in the new result set).
   const setSearch = useCallback((value: string) => {
     setSearchRaw(value);
+    setPage(1);
   }, []);
 
   const setFilters = useCallback((nextFilters: Record<string, string>) => {
     setFiltersRaw(nextFilters);
+    setPage(1);
   }, []);
 
   return {
     items,
-    loading,
-    paginating,
+    loading: isLoading,
+    paginating: isPlaceholderData,
     total,
     totalPages,
     page,
