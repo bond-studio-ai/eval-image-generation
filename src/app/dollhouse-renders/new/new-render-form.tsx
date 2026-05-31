@@ -22,12 +22,12 @@ import type { StyleOverrideRow } from "./_components/style-overrides-editor";
 import { useDollhouseOverrides } from "./_components/use-dollhouse-overrides";
 import { buildWizardModel, WIZARD_SECTION_IDS } from "./_components/wizard-model";
 
-type ProjectState = {
+interface ProjectState {
   projectIdInput: string;
   bootstrap: ProjectRenderBootstrap | null;
   loadingProject: boolean;
   projectError: string | null;
-};
+}
 
 type ProjectAction =
   | { type: "setInput"; value: string }
@@ -46,9 +46,16 @@ const INITIAL_PROJECT: ProjectState = {
 
 function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
   switch (action.type) {
-    case "setInput":
-      return { ...state, projectIdInput: action.value };
-    case "loadStart":
+    case "clear": {
+      return { ...state, bootstrap: null, projectError: null, projectIdInput: "" };
+    }
+    case "loadError": {
+      return { ...state, projectError: action.message };
+    }
+    case "loadSettled": {
+      return { ...state, loadingProject: false };
+    }
+    case "loadStart": {
       return {
         ...state,
         projectIdInput: action.projectId,
@@ -56,14 +63,13 @@ function projectReducer(state: ProjectState, action: ProjectAction): ProjectStat
         projectError: null,
         bootstrap: null
       };
-    case "loadSuccess":
+    }
+    case "loadSuccess": {
       return { ...state, bootstrap: action.bootstrap };
-    case "loadError":
-      return { ...state, projectError: action.message };
-    case "loadSettled":
-      return { ...state, loadingProject: false };
-    case "clear":
-      return { ...state, bootstrap: null, projectError: null, projectIdInput: "" };
+    }
+    case "setInput": {
+      return { ...state, projectIdInput: action.value };
+    }
   }
 }
 
@@ -124,13 +130,13 @@ export function NewRenderForm() {
         });
         if (controller.signal.aborted) return;
         dispatchProject({ type: "loadSuccess", bootstrap: result });
-      } catch (err) {
+      } catch (error) {
         // Aborts come through as either a DOMException with `name === 'AbortError'`
         // or a TypeError depending on runtime; check the controller as the source of truth.
         if (controller.signal.aborted) return;
         dispatchProject({
           type: "loadError",
-          message: err instanceof Error ? err.message : "Failed to fetch project"
+          message: error instanceof Error ? error.message : "Failed to fetch project"
         });
       } finally {
         if (loadAbortRef.current === controller) {
@@ -215,8 +221,8 @@ export function NewRenderForm() {
       const created = await createDollhouseRender(body);
       toast.success(`Render ${created.id.slice(0, 8)} created.`);
       router.push(`/dollhouse-renders/${created.id}`);
-    } catch (err) {
-      const message = err instanceof DollhouseRenderApiError ? err.message : err instanceof DollhouseRenderUnexpectedResponseError ? err.message : err instanceof Error ? err.message : "Failed to create render";
+    } catch (error) {
+      const message = error instanceof DollhouseRenderApiError ? error.message : error instanceof DollhouseRenderUnexpectedResponseError ? error.message : error instanceof Error ? error.message : "Failed to create render";
       setSubmitError(message);
       setSubmitting(false);
     }
@@ -234,9 +240,13 @@ export function NewRenderForm() {
         <section id={WIZARD_SECTION_IDS.project} className="scroll-mt-32">
           <ProjectPickerSection
             projectIdInput={project.projectIdInput}
-            onProjectIdInputChange={(value) => dispatchProject({ type: "setInput", value })}
+            onProjectIdInputChange={(value) => {
+              dispatchProject({ type: "setInput", value });
+            }}
             onLoadManualInput={handleManualLoad}
-            onSelectFromTable={(id) => void loadProject(id)}
+            onSelectFromTable={(id) => {
+              void loadProject(id);
+            }}
             loadingProject={project.loadingProject}
             projectError={project.projectError}
             selectedBootstrap={project.bootstrap}
@@ -258,7 +268,9 @@ export function NewRenderForm() {
             onToggleFrame={toggleFrame}
             overrides={overrides}
             issues={model.dataIssues}
-            onScrollToProjectStep={() => scrollToStep(WIZARD_SECTION_IDS.project)}
+            onScrollToProjectStep={() => {
+              scrollToStep(WIZARD_SECTION_IDS.project);
+            }}
           />
         </section>
 

@@ -7,7 +7,7 @@ import { ReliabilityTab } from "@/app/analytics/reliability-tab";
 import { StrategyPerformanceSection } from "@/app/analytics/strategy-performance-section";
 import { PageHeader } from "@/components/page-header";
 import { Card, StatCard } from "@/components/ui/card";
-import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { type TabItem, Tabs } from "@/components/ui/tabs";
 import { definedProps } from "@/lib/defined-props";
 import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance, fetchStrategies } from "@/lib/service-client";
 
@@ -29,7 +29,11 @@ interface PageProps {
   }>;
 }
 
-type DistEntry = { rating: string; count: number; percentage: number };
+interface DistEntry {
+  rating: string;
+  count: number;
+  percentage: number;
+}
 
 const RATING_BAR_COLOR: Record<string, string> = {
   GOOD: "bg-success-500",
@@ -37,22 +41,22 @@ const RATING_BAR_COLOR: Record<string, string> = {
 };
 
 function DistributionChart({ data, title }: { data: DistEntry[]; title: string }) {
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const maxCount = Math.max(...data.map((entry) => entry.count), 1);
 
   return (
     <Card>
       <h2 className="text-h3 text-text-primary font-semibold">{title}</h2>
       <div className="mt-6 space-y-4">
-        {data.map((d) => (
-          <div key={d.rating} className="flex items-center gap-4">
-            <span className="text-body text-text-secondary w-20 font-medium">{d.rating}</span>
+        {data.map((entry) => (
+          <div key={entry.rating} className="flex items-center gap-4">
+            <span className="text-body text-text-secondary w-20 font-medium">{entry.rating}</span>
             <div className="flex-1">
               <div className="rounded-pill bg-surface-sunken h-8 w-full">
-                <div className={`rounded-pill h-8 ${RATING_BAR_COLOR[d.rating] ?? "bg-text-disabled"} transition-all duration-500`} style={{ width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%` }} />
+                <div className={`rounded-pill h-8 ${RATING_BAR_COLOR[entry.rating] ?? "bg-text-disabled"} transition-all duration-500`} style={{ width: `${maxCount > 0 ? (entry.count / maxCount) * 100 : 0}%` }} />
               </div>
             </div>
-            <span className="text-body text-text-primary w-12 text-right font-medium">{d.count}</span>
-            <span className="text-body text-text-secondary w-14 text-right">{d.percentage}%</span>
+            <span className="text-body text-text-primary w-12 text-right font-medium">{entry.count}</span>
+            <span className="text-body text-text-secondary w-14 text-right">{entry.percentage}%</span>
           </div>
         ))}
       </div>
@@ -113,7 +117,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     totalGenerations: sceneRatings?.totalGenerations ?? 0,
     ratedGenerations: sceneRatings?.ratedGenerations ?? 0
   };
-  const models = perfData.models;
+  const { models } = perfData;
   const comparisonSlices = buildComparisonSlices(comparison, strategies);
 
   const filterProps = definedProps({ from, to, model, source });

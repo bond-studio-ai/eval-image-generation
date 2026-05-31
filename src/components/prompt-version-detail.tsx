@@ -63,10 +63,12 @@ type FormAction =
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
-    case "setField":
-      return { ...state, [action.field]: action.value };
-    case "reset":
+    case "reset": {
       return action.value;
+    }
+    case "setField": {
+      return { ...state, [action.field]: action.value };
+    }
   }
 }
 
@@ -93,7 +95,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
     systemPrompt: baseline.systemPrompt,
     userPrompt: baseline.userPrompt
   });
-  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => dispatch({ type: "setField", field, value });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+    dispatch({ type: "setField", field, value });
+  };
 
   const [saving, setSaving] = useState(false);
   const [cloning, setCloning] = useState(false);
@@ -123,8 +127,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
       if (!res.ok) {
         const ct = res.headers.get("content-type") ?? "";
         if (ct.includes("application/json")) {
-          const d = await res.json();
-          throw new Error(d.error?.message || "Failed to save");
+          const errorJson = await res.json();
+          throw new Error(errorJson.error?.message || "Failed to save");
         }
         throw new Error(res.status === 401 || res.redirected ? "Session expired. Please refresh the page." : `Failed to save (${res.status})`);
       }
@@ -137,8 +141,8 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         userPrompt: form.userPrompt
       });
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -172,14 +176,14 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         })
       });
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || "Failed to clone");
+        const errorJson = await res.json();
+        throw new Error(errorJson.error?.message || "Failed to clone");
       }
       const json = await res.json();
       const newId = json.data?.id;
       if (newId) router.push(`/prompt-versions/${newId}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Clone failed");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Clone failed");
     } finally {
       setCloning(false);
     }
@@ -194,7 +198,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         backHref="/prompt-versions"
         backLabel="Back to Prompt Versions"
         title={isEditable ? "" : data.name || "Untitled Prompt Version"}
-        subtitle={!isEditable ? (data.description ?? undefined) : undefined}
+        subtitle={isEditable ? undefined : (data.description ?? undefined)}
         actions={
           <>
             {isDirty && (
@@ -227,11 +231,15 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
         <div className="mt-6">
           <ResourceFormHeader
             name={form.name}
-            onNameChange={(value) => setField("name", value)}
+            onNameChange={(value) => {
+              setField("name", value);
+            }}
             namePlaceholder="e.g. Bathroom generation v2"
             nameRequired={false}
             description={form.description}
-            onDescriptionChange={(value) => setField("description", value)}
+            onDescriptionChange={(value) => {
+              setField("description", value);
+            }}
           />
         </div>
       )}
@@ -266,7 +274,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
                   value={form.systemPrompt}
-                  onChange={(value) => setField("systemPrompt", value)}
+                  onChange={(value) => {
+                    setField("systemPrompt", value);
+                  }}
                   placeholder="Enter the system prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight
@@ -284,7 +294,9 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
               <div className="mt-3 flex min-h-0 flex-1 flex-col">
                 <PromptTemplateEditor
                   value={form.userPrompt}
-                  onChange={(value) => setField("userPrompt", value)}
+                  onChange={(value) => {
+                    setField("userPrompt", value);
+                  }}
                   placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                   className={`font-mono ${editableInput}`}
                   fillHeight

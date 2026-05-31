@@ -43,13 +43,13 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     deletedAt: ipData.deletedAt ?? ipData.deleted_at ?? null
   };
 
-  const serializedGenerations = generations.map((g: any) => ({
-    id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating ?? null,
-    productAccuracyRating: g.productAccuracyRating ?? null,
-    createdAt: g.createdAt,
-    outputImageCount: g.resultCount ?? 0,
-    promptVersionName: g.promptName ?? null
+  const serializedGenerations = generations.map((generation: any) => ({
+    id: generation.id,
+    sceneAccuracyRating: generation.sceneAccuracyRating ?? null,
+    productAccuracyRating: generation.productAccuracyRating ?? null,
+    createdAt: generation.createdAt,
+    outputImageCount: generation.resultCount ?? 0,
+    promptVersionName: generation.promptName ?? null
   }));
 
   const generationCount = stats?.generationCount ?? stats?.generation_count ?? generations.length;

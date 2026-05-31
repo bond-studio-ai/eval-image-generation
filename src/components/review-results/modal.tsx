@@ -10,7 +10,7 @@ import { buildRows } from "./category-rows";
 import { OverlayComparison } from "./overlay-comparison";
 import { pluginEntriesFor } from "./plugin-renderers";
 import { CollapsibleTimeline } from "./timeline";
-import type { DriftAssessment, ReviewRecord } from "./types";
+import type { ReviewRecord } from "./types";
 
 /**
  * Modal layout for the review results view. Composes the timeline,
@@ -26,7 +26,7 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
   const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
   const pluginEntries = useMemo(() => pluginEntriesFor(record?.reviewAssessment ?? null), [record]);
-  const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ?? null) as DriftAssessment | null;
+  const segmentationDrift = record?.reviewAssessment?.plugins?.segmentationDrift ?? null;
 
   return (
     <Modal onClose={onClose} labelledById="review-modal-title" backdropClassName="bg-overlay/60" className="bg-surface flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl">

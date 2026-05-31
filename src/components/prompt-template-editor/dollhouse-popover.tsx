@@ -28,44 +28,16 @@ export function DollhousePopover({ state, dispatch, filteredProducts, customProd
       </button>
       {state.open && (
         <div className="border-border bg-surface absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border shadow-lg">
-          {!state.product ? (
-            <>
-              <p className="border-border-subtle text-text-muted border-b px-3 py-2 text-[11px]">
-                Pick a <strong>product</strong>. Inserts a <code className="bg-surface-sunken rounded px-0.5">{`{{#each dollhouse.{product}.visibility}}…{{/each}}`}</code> block; the{" "}
-                <code className="bg-surface-sunken rounded px-0.5">dollhouse</code> namespace is bound per image at render time.
-              </p>
-              <div className="border-border border-b p-2">
-                <input
-                  type="text"
-                  aria-label="Search dollhouse products"
-                  value={state.search}
-                  onChange={(e) => dispatch({ type: "setSearch", value: e.target.value })}
-                  placeholder="Search or type a custom product key…"
-                  className="focus:border-primary-500 focus:ring-primary-500 border-border text-body w-full rounded-md border px-3 py-1.5 focus:ring-1"
-                />
-                {customProduct && !DOLLHOUSE_PRODUCT_TYPES.some((product) => product === customProduct) && (
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: "setProduct", value: customProduct })}
-                    className="border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 text-body mt-2 w-full rounded-md border border-dashed px-3 py-2 text-left"
-                  >
-                    Use custom product key <span className="font-mono">{customProduct}</span>
-                  </button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-auto py-1">
-                {filteredProducts.map((product) => (
-                  <button key={product} type="button" onClick={() => dispatch({ type: "setProduct", value: product })} className="text-text-primary hover:bg-surface-muted text-caption w-full px-3 py-2 text-left font-mono">
-                    {product}
-                  </button>
-                ))}
-                {filteredProducts.length === 0 && <p className="text-text-muted text-body px-3 py-2">No matches</p>}
-              </div>
-            </>
-          ) : (
+          {state.product ? (
             <>
               <div className="border-border-subtle flex items-center gap-1 border-b px-2 py-1.5">
-                <button type="button" onClick={() => dispatch({ type: "clearProduct" })} className="text-primary-700 hover:bg-primary-50 text-caption rounded px-2 py-1 font-medium">
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch({ type: "clearProduct" });
+                  }}
+                  className="text-primary-700 hover:bg-primary-50 text-caption rounded px-2 py-1 font-medium"
+                >
                   ← Back
                 </button>
                 <span className="text-text-secondary text-caption min-w-0 flex-1 truncate font-medium">
@@ -77,11 +49,64 @@ export function DollhousePopover({ state, dispatch, filteredProducts, customProd
               </p>
               <div className="max-h-60 overflow-auto py-1">
                 {DOLLHOUSE_ATTRIBUTES.map((attr) => (
-                  <button key={attr.value} type="button" onClick={() => onAttributeSelect(attr)} className="hover:bg-surface-muted flex w-full flex-col items-start px-3 py-2 text-left">
+                  <button
+                    key={attr.value}
+                    type="button"
+                    onClick={() => {
+                      onAttributeSelect(attr);
+                    }}
+                    className="hover:bg-surface-muted flex w-full flex-col items-start px-3 py-2 text-left"
+                  >
                     <span className="text-text-primary text-caption font-mono">{attr.value}</span>
                     <span className="text-text-muted text-[11px]">{attr.helper}</span>
                   </button>
                 ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="border-border-subtle text-text-muted border-b px-3 py-2 text-[11px]">
+                Pick a <strong>product</strong>. Inserts a <code className="bg-surface-sunken rounded px-0.5">{`{{#each dollhouse.{product}.visibility}}…{{/each}}`}</code> block; the{" "}
+                <code className="bg-surface-sunken rounded px-0.5">dollhouse</code> namespace is bound per image at render time.
+              </p>
+              <div className="border-border border-b p-2">
+                <input
+                  type="text"
+                  aria-label="Search dollhouse products"
+                  value={state.search}
+                  onChange={(e) => {
+                    dispatch({ type: "setSearch", value: e.target.value });
+                  }}
+                  placeholder="Search or type a custom product key…"
+                  className="focus:border-primary-500 focus:ring-primary-500 border-border text-body w-full rounded-md border px-3 py-1.5 focus:ring-1"
+                />
+                {/* eslint-disable-next-line unicorn/prefer-includes -- readonly literal tuple: .includes() rejects an arbitrary string arg */}
+                {customProduct && !DOLLHOUSE_PRODUCT_TYPES.some((product) => product === customProduct) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch({ type: "setProduct", value: customProduct });
+                    }}
+                    className="border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 text-body mt-2 w-full rounded-md border border-dashed px-3 py-2 text-left"
+                  >
+                    Use custom product key <span className="font-mono">{customProduct}</span>
+                  </button>
+                )}
+              </div>
+              <div className="max-h-60 overflow-auto py-1">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product}
+                    type="button"
+                    onClick={() => {
+                      dispatch({ type: "setProduct", value: product });
+                    }}
+                    className="text-text-primary hover:bg-surface-muted text-caption w-full px-3 py-2 text-left font-mono"
+                  >
+                    {product}
+                  </button>
+                ))}
+                {filteredProducts.length === 0 && <p className="text-text-muted text-body px-3 py-2">No matches</p>}
               </div>
             </>
           )}

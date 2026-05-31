@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 type ProxyErrorCode = "INTERNAL_ERROR" | "PROXY_CONFIG_ERROR" | "UPSTREAM_NETWORK_ERROR" | "UPSTREAM_BAD_JSON";
 
@@ -50,7 +51,9 @@ function forwardedRequestHeaders(request: NextRequest, extraHeaders?: HeadersIni
   });
 
   if (extraHeaders) {
-    new Headers(extraHeaders).forEach((value, key) => headers.set(key, value));
+    new Headers(extraHeaders).forEach((value, key) => {
+      headers.set(key, value);
+    });
   }
 
   return headers;
@@ -89,8 +92,8 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
     };
     if (body && body.length > 0) fetchInit.body = body;
     res = await fetch(url, fetchInit);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error(`${serviceName} proxy network error`, {
       method: request.method,
       url,
@@ -121,11 +124,11 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
     let parsed: unknown;
     try {
       parsed = JSON.parse(rawBody);
-    } catch (err) {
+    } catch (error) {
       console.error(`${serviceName} proxy JSON parse failed`, {
         url,
         upstreamStatus: res.status,
-        error: err instanceof Error ? err.message : String(err),
+        error: error instanceof Error ? error.message : String(error),
         bodySnippet: rawBody.slice(0, 300)
       });
       return errorJson("UPSTREAM_BAD_JSON", "Upstream returned malformed JSON", 502, {
@@ -157,13 +160,13 @@ interface CreateCatchAllProxyOptions {
 
 type RouteHandler = (request: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) => Promise<Response>;
 
-type CatchAllRouteHandlers = {
+interface CatchAllRouteHandlers {
   GET: RouteHandler;
   POST: RouteHandler;
   PATCH: RouteHandler;
   PUT: RouteHandler;
   DELETE: RouteHandler;
-};
+}
 
 /**
  * Build the five HTTP-method handlers for a Next.js `[[...path]]` proxy route.
@@ -192,8 +195,8 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
     let baseUrl: string;
     try {
       baseUrl = getBaseUrl();
-    } catch (err) {
-      console.error(`${serviceName} proxy base-url error`, err);
+    } catch (error) {
+      console.error(`${serviceName} proxy base-url error`, error);
       // 500 (not 502): the proxy itself is misconfigured; we never even tried
       // to reach upstream. `PROXY_CONFIG_ERROR` distinguishes this from
       // `UPSTREAM_NETWORK_ERROR` in logs and from any consumer trying to react.

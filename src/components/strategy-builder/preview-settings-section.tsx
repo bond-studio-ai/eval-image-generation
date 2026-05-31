@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { SearchableSelect } from "./searchable-select";
-import { defaultPreviewSettings, PREVIEW_RESOLUTIONS, type ModelOption, type PreviewSettings } from "./types";
+import { defaultPreviewSettings, type ModelOption, PREVIEW_RESOLUTIONS, type PreviewSettings } from "./types";
 
 export function PreviewSettingsSection({
   previewSettings,
@@ -50,7 +50,14 @@ export function PreviewSettingsSection({
             <label htmlFor="preview-model" className="text-text-secondary text-caption mb-1 block font-medium">
               Preview Model
             </label>
-            <SearchableSelect id="preview-model" value={previewSettings.preview_model} options={previewModels} onChange={(v) => setPreviewSettings((s) => ({ ...s, preview_model: v }))} />
+            <SearchableSelect
+              id="preview-model"
+              value={previewSettings.preview_model}
+              options={previewModels}
+              onChange={(value) => {
+                setPreviewSettings((prev) => ({ ...prev, preview_model: value }));
+              }}
+            />
           </div>
           <div>
             <label htmlFor="preview-resolution" className="text-text-secondary text-caption mb-1 block font-medium">
@@ -59,12 +66,14 @@ export function PreviewSettingsSection({
             <select
               id="preview-resolution"
               value={previewSettings.preview_resolution}
-              onChange={(e) => setPreviewSettings((s) => ({ ...s, preview_resolution: e.target.value }))}
+              onChange={(e) => {
+                setPreviewSettings((prev) => ({ ...prev, preview_resolution: e.target.value }));
+              }}
               className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
             >
-              {PREVIEW_RESOLUTIONS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
+              {PREVIEW_RESOLUTIONS.map((resolution) => (
+                <option key={resolution} value={resolution}>
+                  {resolution}
                 </option>
               ))}
             </select>

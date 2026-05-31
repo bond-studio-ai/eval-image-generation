@@ -1,7 +1,7 @@
-export type TemplateError = {
+export interface TemplateError {
   line: number;
   message: string;
-};
+}
 
 /**
  * Handlebars template validator.
@@ -30,6 +30,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
   if (!template.trim()) return errors;
 
   const lineStarts: number[] = [0];
+  // eslint-disable-next-line unicorn/no-for-loop -- needs the char offset (i + 1) to record line starts
   for (let i = 0; i < template.length; i++) {
     if (template[i] === "\n") lineStarts.push(i + 1);
   }
@@ -72,8 +73,8 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
     while (lineStart > 0 && template[lineStart - 1] !== "\n") lineStart--;
     let n = 0;
     for (let j = lineStart; j < pos; j++) {
-      const c = template[j];
-      if (c === " " || c === "\t") n++;
+      const char = template[j];
+      if (char === " " || char === "\t") n++;
       else return n;
     }
     return n;
@@ -92,9 +93,9 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
   function findClose(start: number, delim: string): number {
     let j = start;
     while (j <= template.length - delim.length) {
-      const c = template[j];
-      if (c === '"' || c === "'") {
-        const quote = c;
+      const char = template[j];
+      if (char === '"' || char === "'") {
+        const quote = char;
         j++;
         while (j < template.length && template[j] !== quote) {
           if (template[j] === "\\") j += 2;
@@ -217,15 +218,15 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
 
       if (first === "/") {
         const name = helperName(content.slice(1));
-        if (!name) {
-          errors.push({ line, message: 'Invalid "{{/}}" — missing block name' });
-        } else {
+        if (name) {
           tokens.push({
             kind: "blockClose",
             name,
             line,
             indent: columnIndent(start)
           });
+        } else {
+          errors.push({ line, message: 'Invalid "{{/}}" — missing block name' });
         }
         i = close + 2;
         continue;
@@ -237,18 +238,18 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         if (body.startsWith(">")) body = body.slice(1).trimStart(); // `#>` partial block
         if (body.startsWith("*")) body = body.slice(1).trimStart(); // `#*inline`
         const name = helperName(body);
-        if (!name) {
-          errors.push({
-            line,
-            message: `Invalid "{{${first}}}" — missing block name`
-          });
-        } else {
+        if (name) {
           tokens.push({
             kind: "blockOpen",
             name,
             line,
             indent: columnIndent(start),
             display: `{{${content}}}`
+          });
+        } else {
+          errors.push({
+            line,
+            message: `Invalid "{{${first}}}" — missing block name`
           });
         }
         i = close + 2;
@@ -263,45 +264,28 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
     i++;
   }
 
-  type StackEntry = {
+  interface StackEntry {
     name: string;
     line: number;
     indent: number;
     display: string;
-  };
+  }
   const blockStack: StackEntry[] = [];
   let rawStackDepth = 0;
 
-  for (const t of tokens) {
+  for (const token of tokens) {
     if (rawStackDepth > 0) {
-      if (t.kind === "rawClose") rawStackDepth--;
-      if (t.kind === "rawOpen") rawStackDepth++;
+      if (token.kind === "rawClose") rawStackDepth--;
+      if (token.kind === "rawOpen") rawStackDepth++;
       continue;
     }
 
-    switch (t.kind) {
-      case "rawOpen":
-        rawStackDepth++;
-        break;
-      case "rawClose":
-        errors.push({
-          line: t.line,
-          message: `Unexpected {{{{/${t.name}}}}} with no matching {{{{${t.name}}}}}`
-        });
-        break;
-      case "blockOpen":
-        blockStack.push({
-          name: t.name,
-          line: t.line,
-          indent: t.indent,
-          display: t.display
-        });
-        break;
+    switch (token.kind) {
       case "blockClose": {
         if (blockStack.length === 0) {
           errors.push({
-            line: t.line,
-            message: `Unexpected {{/${t.name}}} with no matching {{#${t.name}}}`
+            line: token.line,
+            message: `Unexpected {{/${token.name}}} with no matching {{#${token.name}}}`
           });
           break;
         }
@@ -319,7 +303,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         let matchIdx = -1;
         for (let j = blockStack.length - 1; j >= 0; j--) {
           const open = blockStack[j]!;
-          if (open.name === t.name && open.indent <= t.indent) {
+          if (open.name === token.name && open.indent <= token.indent) {
             matchIdx = j;
             break;
           }
@@ -330,7 +314,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           // last-resort search that ignores indent. If even that
           // misses, it's an orphan close.
           for (let j = blockStack.length - 1; j >= 0; j--) {
-            if (blockStack[j]!.name === t.name) {
+            if (blockStack[j]!.name === token.name) {
               matchIdx = j;
               break;
             }
@@ -341,10 +325,10 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           // Name isn't on the stack at all. Report as mismatch
           // against whatever is on top of the stack, which preserves
           // the original "did you mean {{/x}}?" messaging.
-          const last = blockStack[blockStack.length - 1]!;
+          const last = blockStack.at(-1)!;
           errors.push({
-            line: t.line,
-            message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`
+            line: token.line,
+            message: `Mismatched {{/${token.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`
           });
           blockStack.pop();
           break;
@@ -358,22 +342,44 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           const unclosed = blockStack[j]!;
           errors.push({
             line: unclosed.line,
-            message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`
+            message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${token.name}}} on line ${token.line}`
           });
         }
         blockStack.length = matchIdx;
         break;
       }
-      case "else":
+      case "blockOpen": {
+        blockStack.push({
+          name: token.name,
+          line: token.line,
+          indent: token.indent,
+          display: token.display
+        });
+        break;
+      }
+      case "else": {
         if (blockStack.length === 0) {
           errors.push({
-            line: t.line,
+            line: token.line,
             message: "{{else}} outside of any {{#if}} / {{#each}} / {{#unless}} block"
           });
         }
         break;
-      default:
+      }
+      case "rawClose": {
+        errors.push({
+          line: token.line,
+          message: `Unexpected {{{{/${token.name}}}}} with no matching {{{{${token.name}}}}}`
+        });
         break;
+      }
+      case "rawOpen": {
+        rawStackDepth++;
+        break;
+      }
+      default: {
+        break;
+      }
     }
   }
 
@@ -392,10 +398,10 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
  * trimmed content. Handlebars allows `{{~#if foo~}}` and similar.
  */
 function stripTildes(content: string): string {
-  let s = content;
-  if (s.startsWith("~")) s = s.slice(1).trimStart();
-  if (s.endsWith("~")) s = s.slice(0, -1).trimEnd();
-  return s;
+  let stripped = content;
+  if (stripped.startsWith("~")) stripped = stripped.slice(1).trimStart();
+  if (stripped.endsWith("~")) stripped = stripped.slice(0, -1).trimEnd();
+  return stripped;
 }
 
 /**
@@ -404,14 +410,14 @@ function stripTildes(content: string): string {
  * (e.g. `raw-helper`).
  */
 function helperName(body: string): string | null {
-  const s = body.trimStart();
-  if (!s) return null;
-  if (s.startsWith('"') || s.startsWith("'")) {
-    const quote = s.charAt(0);
-    const end = s.indexOf(quote, 1);
+  const trimmed = body.trimStart();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
+    const quote = trimmed.charAt(0);
+    const end = trimmed.indexOf(quote, 1);
     if (end === -1) return null;
-    return s.slice(1, end);
+    return trimmed.slice(1, end);
   }
-  const m = s.match(/^[A-Za-z_][\w.\-/]*/);
-  return m ? m[0] : null;
+  const match = /^[a-z_][\w.\-/]*/i.exec(trimmed);
+  return match ? match[0] : null;
 }

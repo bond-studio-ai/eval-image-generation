@@ -38,7 +38,7 @@ function isLikelyId(segment: string): boolean {
 function titleCase(segment: string): string {
   return segment
     .split("-")
-    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
 

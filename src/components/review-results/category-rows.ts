@@ -1,5 +1,5 @@
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
-import type { CategoryLookup, CategoryMask, CategoryRow, ConceptGroupResults, ReviewRecord, SegmentationCategoryResponse, SegmentationFalAsset } from "./types";
+import type { CategoryLookup, CategoryMask, CategoryRow, ReviewRecord, SegmentationCategoryResponse, SegmentationFalAsset } from "./types";
 
 /**
  * Top-level keys on the review record that describe the row itself
@@ -7,11 +7,18 @@ import type { CategoryLookup, CategoryMask, CategoryRow, ConceptGroupResults, Re
  * treated as a category payload by `buildRows`.
  */
 const RECORD_METADATA_KEYS = new Set<string>([
-  "id",
-  "generationResultId",
-  "createdAt",
   "combinedOverlayUrl",
-  "timings",
+  // Canonical group-keyed payload; `buildRows` reads it directly and
+  // ignores its presence at the top-level scan below.
+  "conceptGroupResults",
+  "createdAt",
+  "generationResultId",
+  "id",
+  // Only present on the POST response synthesized from the run
+  // outcome. The GET endpoint that this modal calls doesn't populate
+  // it because it isn't a DB column, but we include it here so the
+  // metadata filter ignores it if a caller hands us a POST payload.
+  "pluginStatuses",
   // Plugin-keyed review envelope (`segmentationDrift`, `depthDrift`,
   // future plugins). Lives on the row alongside the per-category
   // JSONB columns; the case-converter rewrites the column name to
@@ -19,14 +26,7 @@ const RECORD_METADATA_KEYS = new Set<string>([
   // builder doesn't try to interpret the plugin payload as a SAM
   // category result.
   "reviewAssessment",
-  // Only present on the POST response synthesized from the run
-  // outcome. The GET endpoint that this modal calls doesn't populate
-  // it because it isn't a DB column, but we include it here so the
-  // metadata filter ignores it if a caller hands us a POST payload.
-  "pluginStatuses",
-  // Canonical group-keyed payload; `buildRows` reads it directly and
-  // ignores its presence at the top-level scan below.
-  "conceptGroupResults"
+  "timings"
 ]);
 
 /**
@@ -42,7 +42,7 @@ function assetUrl(asset: SegmentationFalAsset | string | null | undefined): stri
 }
 
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
+  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
 }
 
 /**
@@ -93,18 +93,18 @@ function readResponse(value: unknown): {
     .map((mask, idx): CategoryMask | null => {
       const url = assetUrl(mask);
       if (!url) return null;
-      const score = typeof scores[idx] === "number" ? scores[idx]! : null;
+      const score = typeof scores[idx] === "number" ? scores[idx] : null;
       return { url, score };
     })
-    .filter((m): m is CategoryMask => m !== null);
+    .filter((mask): mask is CategoryMask => mask !== null);
 
   const composite = assetUrl(data.image) ?? masks[0]?.url ?? null;
   if (masks.length === 0 && composite) {
-    const fallbackScore = typeof scores[0] === "number" ? scores[0]! : null;
+    const fallbackScore = typeof scores[0] === "number" ? scores[0] : null;
     masks.push({ url: composite, score: fallbackScore });
   }
 
-  const numericScores = masks.map((m) => m.score).filter((s): s is number => typeof s === "number");
+  const numericScores = masks.map((mask) => mask.score).filter((score): score is number => typeof score === "number");
   return {
     composite,
     masks,
@@ -140,7 +140,7 @@ function readResponse(value: unknown): {
 export function buildRows(record: ReviewRecord | null, lookup: CategoryLookup, metadata: SegmentationCategoryMetadata[] | null = null): CategoryRow[] {
   if (!record || typeof record !== "object") return [];
 
-  const conceptGroupResults = record.conceptGroupResults && typeof record.conceptGroupResults === "object" ? (record.conceptGroupResults as ConceptGroupResults) : null;
+  const conceptGroupResults = record.conceptGroupResults && typeof record.conceptGroupResults === "object" ? record.conceptGroupResults : null;
 
   const rows: CategoryRow[] = [];
   if (conceptGroupResults) {
@@ -167,9 +167,9 @@ export function buildRows(record: ReviewRecord | null, lookup: CategoryLookup, m
         const promptLabel =
           member?.samPrompt ??
           memberKey
-            .replace(/([a-z])([A-Z])/g, "$1 $2")
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase());
+            .replaceAll(/(?<=[a-z])(?=[A-Z])/g, " ")
+            .replaceAll("_", " ")
+            .replaceAll(/\b\w/g, (char) => char.toUpperCase());
         const seenLabels = new Set<string>();
         const consumerLabels: string[] = [];
         for (const entry of groupMembers) {

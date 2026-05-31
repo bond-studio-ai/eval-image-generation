@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/components/ui/cn";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { RunPickerCard } from "./run-picker-card";
-import { SOURCE_LABELS, type AuditRunGroup } from "./run-picker-types";
+import { type AuditRunGroup, SOURCE_LABELS } from "./run-picker-types";
 
 interface RunGroupRowProps {
   group: AuditRunGroup;
@@ -38,7 +38,14 @@ export function RunGroupRow({ group, isExpanded, onToggleExpanded, leftId, right
       {isExpanded ? (
         <div className="border-border bg-surface space-y-1.5 border-t p-2">
           {group.runs.map((run) => (
-            <RunPickerCard key={run.id} run={run} isSelected={run.id === leftId || run.id === rightId} onSelect={() => onToggleSelect(run.id)} />
+            <RunPickerCard
+              key={run.id}
+              run={run}
+              isSelected={run.id === leftId || run.id === rightId}
+              onSelect={() => {
+                onToggleSelect(run.id);
+              }}
+            />
           ))}
         </div>
       ) : null}

@@ -66,7 +66,7 @@ function readInitialParams() {
   if (typeof window === "undefined") return { search: "", page: 1, filters: {} as Record<string, string> };
   const sp = new URLSearchParams(window.location.search);
   const search = sp.get(URL_KEY_SEARCH) ?? "";
-  const page = Math.max(1, parseInt(sp.get(URL_KEY_PAGE) ?? "1", 10) || 1);
+  const page = Math.max(1, Number.parseInt(sp.get(URL_KEY_PAGE) ?? "1", 10) || 1);
   const filters: Record<string, string> = {};
   sp.forEach((val, key) => {
     if (key === URL_KEY_SEARCH || key === URL_KEY_PAGE || key === "limit") return;
@@ -79,7 +79,7 @@ function appendStaticParams(qs: URLSearchParams, staticParams: StaticParams | un
   if (!staticParams) return;
   for (const [key, value] of Object.entries(staticParams)) {
     if (Array.isArray(value)) {
-      for (const v of value) qs.append(key, v);
+      for (const item of value) qs.append(key, item);
     } else {
       qs.append(key, value);
     }
@@ -120,21 +120,25 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), debounceMs);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, debounceMs);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [search, debounceMs]);
 
   // ---------------------------------------------------------------------------
   // Sync state → URL via history.replaceState (no Next.js re-render)
   // ---------------------------------------------------------------------------
 
-  const syncUrl = useCallback((s: string, f: Record<string, string>, p: number) => {
+  const syncUrl = useCallback((searchValue: string, filterValues: Record<string, string>, pageNumber: number) => {
     const params = new URLSearchParams();
-    if (s) params.set(URL_KEY_SEARCH, s);
-    for (const [key, val] of Object.entries(f)) {
+    if (searchValue) params.set(URL_KEY_SEARCH, searchValue);
+    for (const [key, val] of Object.entries(filterValues)) {
       if (val !== undefined && val !== "") params.set(key, val);
     }
-    if (p > 1) params.set(URL_KEY_PAGE, String(p));
+    if (pageNumber > 1) params.set(URL_KEY_PAGE, String(pageNumber));
 
     const qs = params.toString();
     const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
@@ -189,8 +193,8 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
         setTotal(json.pagination.total);
         setTotalPages(json.pagination.totalPages);
         setPage(pageNum);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         if (!mountedRef.current) return;
         setItems([]);
         setTotal(0);
@@ -220,10 +224,10 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
   // ---------------------------------------------------------------------------
 
   const goToPage = useCallback(
-    (p: number) => {
-      if (p < 1 || p === page) return;
-      syncUrl(debouncedSearch, filters, p);
-      fetchPage(p, { preserveScroll: true });
+    (targetPage: number) => {
+      if (targetPage < 1 || targetPage === page) return;
+      syncUrl(debouncedSearch, filters, targetPage);
+      fetchPage(targetPage, { preserveScroll: true });
     },
     [fetchPage, page, syncUrl, debouncedSearch, filters]
   );
@@ -232,12 +236,12 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
     fetchPage(page);
   }, [fetchPage, page]);
 
-  const setSearch = useCallback((q: string) => {
-    setSearchRaw(q);
+  const setSearch = useCallback((value: string) => {
+    setSearchRaw(value);
   }, []);
 
-  const setFilters = useCallback((f: Record<string, string>) => {
-    setFiltersRaw(f);
+  const setFilters = useCallback((nextFilters: Record<string, string>) => {
+    setFiltersRaw(nextFilters);
   }, []);
 
   return {

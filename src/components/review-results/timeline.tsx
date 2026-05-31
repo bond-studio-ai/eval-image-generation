@@ -43,7 +43,7 @@ const TIMELINE_STEP_COLORS: Record<string, string> = {
 };
 
 function timelineStepLabel(name: string): string {
-  return TIMELINE_STEP_LABELS[name] ?? name.replace(/_/g, " ");
+  return TIMELINE_STEP_LABELS[name] ?? name.replaceAll("_", " ");
 }
 
 function timelineStepColor(name: string): string {
@@ -173,7 +173,9 @@ export function CollapsibleTimeline({ timings, lookup }: { timings: Segmentation
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >

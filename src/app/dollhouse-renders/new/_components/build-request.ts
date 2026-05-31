@@ -1,12 +1,12 @@
 import {
-  validateUnitySlimDesign,
   type CreateDollhouseRenderBody,
   type DollhouseCameraFrame,
   type DollhouseImageConfig,
   type DollhouseRenderConfig,
   type DollhouseRenderMode,
   type DollhouseSsmParams,
-  type UnitySlimDesignMaterials
+  type UnitySlimDesignMaterials,
+  validateUnitySlimDesign
 } from "@/lib/dollhouse-renders";
 import type { SsmParamsState } from "./ssm-params-editor";
 import type { StyleOverrideRow } from "./style-overrides-editor";
@@ -83,8 +83,8 @@ function buildRenderConfig(state: RenderConfigState): DollhouseRenderConfig | un
     config.advancedSegmentation = true;
   }
   if (state.overrideCameraHeight) {
-    const v = Number.parseFloat(state.overrideCameraHeight);
-    if (Number.isFinite(v)) config.overrideCameraHeight = v;
+    const value = Number.parseFloat(state.overrideCameraHeight);
+    if (Number.isFinite(value)) config.overrideCameraHeight = value;
   }
   return Object.keys(config).length > 0 ? config : undefined;
 }
@@ -127,8 +127,8 @@ function parseJsonObject(raw: string): {
       return { value: null, error: "Expected a JSON object." };
     }
     return { value: parsed as Record<string, unknown>, error: null };
-  } catch (err) {
-    return { value: null, error: err instanceof Error ? err.message : "Invalid JSON." };
+  } catch (error) {
+    return { value: null, error: error instanceof Error ? error.message : "Invalid JSON." };
   }
 }
 

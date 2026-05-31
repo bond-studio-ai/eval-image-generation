@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/toaster";
 import { serviceUrl } from "@/lib/api-base";
 import type { StrategyRunSource } from "@/lib/types";
 
-const SOURCES: ReadonlyArray<{ value: StrategyRunSource; label: string }> = [
+const SOURCES: readonly { value: StrategyRunSource; label: string }[] = [
   { value: "dollhouse", label: "Dollhouse" },
   { value: "photo", label: "Photo" },
   { value: "pdp", label: "PDP" }
@@ -37,10 +37,10 @@ export function ActiveToggleButton({ strategyId, activeForSource }: { strategyId
           });
           return;
         }
-        toast.success(`Activated for ${SOURCES.find((s) => s.value === source)?.label ?? source}`);
+        toast.success(`Activated for ${SOURCES.find((option) => option.value === source)?.label ?? source}`);
         router.refresh();
-      } catch (e) {
-        toast.error("Failed to activate strategy", e instanceof Error ? { description: e.message } : {});
+      } catch (error) {
+        toast.error("Failed to activate strategy", error instanceof Error ? { description: error.message } : {});
       } finally {
         setPendingSource(null);
       }
@@ -62,8 +62,8 @@ export function ActiveToggleButton({ strategyId, activeForSource }: { strategyId
       }
       toast.success("Strategy deactivated");
       router.refresh();
-    } catch (e) {
-      toast.error("Failed to deactivate strategy", e instanceof Error ? { description: e.message } : {});
+    } catch (error) {
+      toast.error("Failed to deactivate strategy", error instanceof Error ? { description: error.message } : {});
     } finally {
       setPendingSource(null);
     }
@@ -76,7 +76,7 @@ export function ActiveToggleButton({ strategyId, activeForSource }: { strategyId
       {activeForSource ? (
         <Badge tone="success" variant="soft">
           <span className="bg-success-600 mr-1 inline-block size-1.5 rounded-full" />
-          Active for {SOURCES.find((s) => s.value === activeForSource)?.label ?? activeForSource}
+          Active for {SOURCES.find((option) => option.value === activeForSource)?.label ?? activeForSource}
         </Badge>
       ) : (
         <Badge tone="neutral" variant="soft">

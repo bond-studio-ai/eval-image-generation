@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, SelectAllCheckbox, type DataTableColumn } from "@/components/data-table";
+import { DataTable, type DataTableColumn, SelectAllCheckbox } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { DeleteGenerationButton } from "@/components/delete-generation-button";
 import { GenerationThumbnails } from "@/components/generation-thumbnails";
@@ -50,19 +50,19 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
   const toggleAll = useCallback(() => {
     setSelected((prev) => {
       if (prev.size === generations.length) return new Set();
-      return new Set(generations.map((g) => g.id));
+      return new Set(generations.map((generation) => generation.id));
     });
   }, [generations]);
 
   const handleBulkDelete = useCallback(async () => {
-    const ids = [...selected];
+    const ids = Array.from(selected);
     const res = await fetch(serviceUrl("generations/bulk-delete"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids })
     });
     if (res.ok) {
-      setGenerations((prev) => prev.filter((g) => !selected.has(g.id)));
+      setGenerations((prev) => prev.filter((generation) => !selected.has(generation.id)));
       setTotal((prev) => prev - ids.length);
       setSelected(new Set());
     }
@@ -117,7 +117,9 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     );
 
     observer.observe(sentinel);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [loadMore]);
 
   const columns = useMemo<DataTableColumn<GenerationRow>[]>(
@@ -151,7 +153,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       },
       {
         header: "Results",
-        cell: (gen) => `${gen.resultCount} result${gen.resultCount !== 1 ? "s" : ""}`
+        cell: (gen) => `${gen.resultCount} result${gen.resultCount === 1 ? "" : "s"}`
       },
       {
         header: "Time",
@@ -176,7 +178,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     <div ref={sentinelRef}>
       {loading && (
         <div className="divide-border divide-y">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
               <div className="border-border bg-border size-12 shrink-0 animate-pulse rounded border" />
               <div className="flex-1 space-y-2">
@@ -190,7 +192,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       {!loading && !hasMore && generations.length > 0 && (
         <div className="flex items-center justify-center py-4">
           <p className="text-text-disabled text-caption">
-            Showing all {total} generation{total !== 1 ? "s" : ""}
+            Showing all {total} generation{total === 1 ? "" : "s"}
           </p>
         </div>
       )}
@@ -201,7 +203,14 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     <>
       <DataTable columns={columns} data={generations} rowKey={(gen) => gen.id} rowClassName={(gen) => `hover:bg-surface-muted ${selected.has(gen.id) ? "bg-primary-50/50" : ""}`} toolbar={toolbar} footer={footer} className="mt-6" />
 
-      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="generations" />
+      <BulkDeleteBar
+        selectedCount={selected.size}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => {
+          setSelected(new Set());
+        }}
+        entityName="generations"
+      />
     </>
   );
 }

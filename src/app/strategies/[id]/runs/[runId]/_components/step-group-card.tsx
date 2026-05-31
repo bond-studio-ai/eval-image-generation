@@ -120,22 +120,28 @@ export function StepGroupCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const isMulti = group.results.length > 1;
-  const step = group.step;
+  const { step } = group;
   const representative = group.results[0];
 
-  const completedCount = group.results.filter((r) => r.status === "completed").length;
-  const failedCount = group.results.filter((r) => r.status === "failed").length;
-  const runningCount = group.results.filter((r) => r.status === "running").length;
+  const completedCount = group.results.filter((run) => run.status === "completed").length;
+  const failedCount = group.results.filter((run) => run.status === "failed").length;
+  const runningCount = group.results.filter((run) => run.status === "running").length;
 
   const groupStatus = runningCount > 0 ? "running" : failedCount === group.results.length ? "failed" : completedCount > 0 ? "completed" : (group.results[0]?.status ?? "pending");
 
   // Candidates run in parallel within a generation step, so the step's
   // wall-clock is the slowest candidate, not the sum of all candidates.
-  const stepWallClockMs = group.results.reduce((longest, r) => Math.max(longest, r.executionTime ?? 0), 0);
+  const stepWallClockMs = group.results.reduce((longest, run) => Math.max(longest, run.executionTime ?? 0), 0);
 
   return (
     <div className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
-      <button type="button" onClick={() => setOpen(!open)} className="hover:bg-surface-muted flex w-full items-center gap-3 px-4 py-3 text-left transition-colors">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="hover:bg-surface-muted flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
+      >
         <ChevronIcon open={open} />
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STEP_STATUS_DOT[groupStatus] ?? STEP_STATUS_DOT["pending"]}`} />
         <span className="text-text-primary text-body font-semibold">{group.name}</span>

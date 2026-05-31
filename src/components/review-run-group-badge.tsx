@@ -74,11 +74,27 @@ function aggregate(generationIds: string[], statuses: Map<string, ReviewState>):
   let idle = 0;
   for (const id of generationIds) {
     const state = statuses.get(id) ?? { kind: "idle" as const };
-    if (state.kind === "running") running++;
-    else if (state.kind === "done") done++;
-    else if (state.kind === "error") errors++;
-    else if (state.kind === "checking") checking++;
-    else idle++;
+    switch (state.kind) {
+      case "checking": {
+        checking++;
+        break;
+      }
+      case "done": {
+        done++;
+        break;
+      }
+      case "error": {
+        errors++;
+        break;
+      }
+      case "running": {
+        running++;
+        break;
+      }
+      default: {
+        idle++;
+      }
+    }
   }
 
   let kind: AggregateState["kind"];
@@ -99,7 +115,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
     // Capture targets at click time so a state-change race (e.g. a
     // per-cell click landing between `aggregate` and here) can't make
     // us double-fire on an id that is already running.
-    const targets: Array<{ id: string; force: boolean }> = [];
+    const targets: { id: string; force: boolean }[] = [];
     for (const id of generationIds) {
       const state = statuses.get(id) ?? { kind: "idle" as const };
       if (state.kind === "running" || state.kind === "checking") continue;
@@ -125,10 +141,10 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
       let next: ReviewState;
       try {
         next = await runReviewPost(id, force);
-      } catch (err) {
+      } catch (error) {
         next = {
           kind: "error",
-          message: err instanceof Error ? err.message : "Unexpected error"
+          message: error instanceof Error ? error.message : "Unexpected error"
         };
       }
       setStatus(id, next);

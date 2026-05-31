@@ -16,27 +16,57 @@ export function StrategyTableHeader({ sortKey, sortDir, onSort }: { sortKey: Sor
     <thead>
       <tr>
         <th aria-label="Expand row" className="text-text-secondary text-caption py-3 pr-4 text-left font-medium tracking-wider uppercase" style={{ width: 40 }} />
-        <th className="text-text-secondary hover:text-text-primary text-caption cursor-pointer py-3 pr-6 text-left font-medium tracking-wider uppercase transition-colors select-none" onClick={() => onSort("name")}>
+        <th
+          className="text-text-secondary hover:text-text-primary text-caption cursor-pointer py-3 pr-6 text-left font-medium tracking-wider uppercase transition-colors select-none"
+          onClick={() => {
+            onSort("name");
+          }}
+        >
           Strategy
           <SortIcon active={sortKey === "name"} dir={sortDir} />
         </th>
-        <th className={thClass} onClick={() => onSort("generationCount")}>
+        <th
+          className={thClass}
+          onClick={() => {
+            onSort("generationCount");
+          }}
+        >
           Gens
           <SortIcon active={sortKey === "generationCount"} dir={sortDir} />
         </th>
-        <th className={thClass} onClick={() => onSort("sceneGoodPct")}>
+        <th
+          className={thClass}
+          onClick={() => {
+            onSort("sceneGoodPct");
+          }}
+        >
           Scene
           <SortIcon active={sortKey === "sceneGoodPct" || sortKey === "sceneFailedPct"} dir={sortDir} />
         </th>
-        <th className={thClass} onClick={() => onSort("productGoodPct")}>
+        <th
+          className={thClass}
+          onClick={() => {
+            onSort("productGoodPct");
+          }}
+        >
           Product
           <SortIcon active={sortKey === "productGoodPct" || sortKey === "productFailedPct"} dir={sortDir} />
         </th>
-        <th className={thClass} onClick={() => onSort("notRatedCount")}>
+        <th
+          className={thClass}
+          onClick={() => {
+            onSort("notRatedCount");
+          }}
+        >
           Unrated
           <SortIcon active={sortKey === "notRatedCount"} dir={sortDir} />
         </th>
-        <th className={thClass} onClick={() => onSort("avgExecTimeMs")}>
+        <th
+          className={thClass}
+          onClick={() => {
+            onSort("avgExecTimeMs");
+          }}
+        >
           Avg time
           <SortIcon active={sortKey === "avgExecTimeMs"} dir={sortDir} />
         </th>

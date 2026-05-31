@@ -6,37 +6,37 @@ const COMPARE_SOURCE_QUERY_KEY = "compareSource";
 
 export type AnalyticsComparisonSource = "preset" | "raw_input" | "benchmark";
 
-export type AnalyticsComparisonRange = {
+export interface AnalyticsComparisonRange {
   from: string;
   to: string;
-};
+}
 
-export type AnalyticsComparisonColumn = {
+export interface AnalyticsComparisonColumn {
   id: string;
   from: string;
   to: string;
   strategyId: string;
   source: AnalyticsComparisonSource;
-};
+}
 
-export type AnalyticsComparisonState = {
+export interface AnalyticsComparisonState {
   enabled: boolean;
   columns: AnalyticsComparisonColumn[];
-};
+}
 
-export type AnalyticsComparisonStrategyOption = {
+export interface AnalyticsComparisonStrategyOption {
   id: string;
   name: string;
-};
+}
 
-export type AnalyticsComparisonSlice = {
+export interface AnalyticsComparisonSlice {
   key: string;
   range: AnalyticsComparisonRange;
   strategyId: string;
   strategyName: string;
   source: AnalyticsComparisonSource;
   label: string;
-};
+}
 
 export type AnalyticsSearchParams = Record<string, string | string[] | undefined>;
 
@@ -143,7 +143,7 @@ export function createEmptyComparisonColumn(defaults?: Partial<Omit<AnalyticsCom
 }
 
 function isComparisonColumnComplete(column: AnalyticsComparisonColumn): boolean {
-  return !!(column.from && column.to && column.strategyId);
+  return Boolean(column.from && column.to && column.strategyId);
 }
 
 export function buildComparisonSlices(state: AnalyticsComparisonState, strategies: AnalyticsComparisonStrategyOption[]): AnalyticsComparisonSlice[] {

@@ -42,7 +42,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
 
   const result = data as any;
 
-  const promptVersion = result.promptVersion;
+  const { promptVersion } = result;
   const inputData = result.input as Record<string, unknown> | null;
   const results: ResultImage[] = result.results ?? [];
 
@@ -51,7 +51,7 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const sceneAccuracyRating = result.sceneAccuracyRating ?? null;
   const productAccuracyRating = result.productAccuracyRating ?? null;
   const executionTime = result.executionTime ?? null;
-  const createdAt = result.createdAt;
+  const { createdAt } = result;
   const notes = result.notes ?? null;
 
   const sceneInput = inputData as GenerationSceneInput | null;
@@ -59,8 +59,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const realPhoto = sceneInput?.realPhoto as string | undefined;
   const moodBoard = sceneInput?.moodBoard as string | undefined;
 
-  const hasNotes = !!notes;
-  const hasSceneImages = !!(dollhouseView || realPhoto || moodBoard);
+  const hasNotes = Boolean(notes);
+  const hasSceneImages = Boolean(dollhouseView || realPhoto || moodBoard);
   const hasProductImages = productImages.length > 0;
 
   const navSections = buildNavSections({ hasNotes, hasSceneImages, hasProductImages });

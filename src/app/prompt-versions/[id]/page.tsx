@@ -41,17 +41,17 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     deletedAt: pv.deletedAt ?? null
   };
 
-  const serializedGenerations = generations.map((g: any) => ({
-    id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating ?? null,
-    productAccuracyRating: g.productAccuracyRating ?? null,
-    createdAt: g.createdAt,
+  const serializedGenerations = generations.map((generation: any) => ({
+    id: generation.id,
+    sceneAccuracyRating: generation.sceneAccuracyRating ?? null,
+    productAccuracyRating: generation.productAccuracyRating ?? null,
+    createdAt: generation.createdAt,
     inputImageCount: 0,
-    outputImageCount: g.resultCount ?? 0
+    outputImageCount: generation.resultCount ?? 0
   }));
 
   const generationCount = stats?.generationCount ?? generations.length;
-  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null).length;
+  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((generation: { sceneAccuracyRating: string | null }) => generation.sceneAccuracyRating !== null).length;
   const avgRating = stats?.avgRatingScore ?? null;
 
   return (
@@ -61,7 +61,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
       stats={{
         generationCount,
         ratedCount,
-        avgRating: avgRating !== null ? String(avgRating) : null,
+        avgRating: avgRating === null ? null : String(avgRating),
         unratedCount: generationCount - ratedCount
       }}
     />

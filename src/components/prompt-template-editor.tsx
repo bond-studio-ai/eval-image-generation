@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { localUrl } from "@/lib/api-base";
-import { CONDITIONAL_OPTIONS, DOLLHOUSE_ATTRIBUTES, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
+import type { DOLLHOUSE_ATTRIBUTES } from "@/lib/prompt-template-constants";
+import { CONDITIONAL_OPTIONS, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
 import { validateHandlebarsTemplate } from "@/lib/validate-handlebars";
 import { ConditionalPopover } from "./prompt-template-editor/conditional-popover";
 import { DollhousePopover } from "./prompt-template-editor/dollhouse-popover";
@@ -106,14 +107,16 @@ export function PromptTemplateEditor({
     // inside the wrapper (matches the previous behaviour).
     if (!selected) {
       const caret = start + prefix.length + 1;
-      requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+      requestAnimationFrame(() => {
+        el.setSelectionRange(caret, caret);
+      });
     }
   }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
     dispatchAttributes({ type: "fetchStart" });
     try {
-      const segment = category.replace(/_/g, "-");
+      const segment = category.replaceAll("_", "-");
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
       const json: {
         data?: { attributes?: unknown };
@@ -172,21 +175,21 @@ export function PromptTemplateEditor({
   }, []);
 
   const filteredConditionalOptions = useMemo(() => {
-    const q = conditional.search.trim().toLowerCase();
-    if (!q) return CONDITIONAL_OPTIONS;
-    return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q));
+    const query = conditional.search.trim().toLowerCase();
+    if (!query) return CONDITIONAL_OPTIONS;
+    return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(query));
   }, [conditional.search]);
 
   const filteredReferenceOptions = useMemo(() => {
-    const q = reference.search.trim().toLowerCase();
-    if (!q) return REFERENCE_OPTIONS;
-    return REFERENCE_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q));
+    const query = reference.search.trim().toLowerCase();
+    if (!query) return REFERENCE_OPTIONS;
+    return REFERENCE_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(query) || opt.value.toLowerCase().includes(query));
   }, [reference.search]);
 
   const filteredDollhouseProducts = useMemo(() => {
-    const q = dollhouse.search.trim().toLowerCase();
-    if (!q) return DOLLHOUSE_PRODUCT_TYPES;
-    return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
+    const query = dollhouse.search.trim().toLowerCase();
+    if (!query) return DOLLHOUSE_PRODUCT_TYPES;
+    return DOLLHOUSE_PRODUCT_TYPES.filter((product) => product.toLowerCase().includes(query));
   }, [dollhouse.search]);
 
   const customDollhouseProduct = useMemo(() => toDollhousePathKey(dollhouse.search), [dollhouse.search]);
@@ -198,7 +201,9 @@ export function PromptTemplateEditor({
       closeAll();
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
   }, [conditional.open, reference.open, dollhouse.open, closeAll]);
 
   if (!showPicker) {
@@ -207,7 +212,9 @@ export function PromptTemplateEditor({
         <HighlightedTextarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           placeholder={placeholder}
           rows={rows}
           className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
@@ -269,7 +276,9 @@ export function PromptTemplateEditor({
       <HighlightedTextarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         rows={rows}
         className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}

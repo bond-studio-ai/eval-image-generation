@@ -27,10 +27,10 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
         return;
       }
       const json = await res.json();
-      const d = json.data ?? json;
+      const payload = json.data ?? json;
       setData({
-        systemPrompt: d.systemPrompt ?? "",
-        userPrompt: d.userPrompt ?? ""
+        systemPrompt: payload.systemPrompt ?? "",
+        userPrompt: payload.userPrompt ?? ""
       });
     } catch {
       setError("Failed to load prompt");
@@ -48,7 +48,9 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
   }, [onClose]);
 
   return (

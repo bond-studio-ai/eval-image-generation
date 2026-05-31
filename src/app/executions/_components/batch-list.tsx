@@ -47,7 +47,7 @@ export function BatchList({
   onImageClick: (run: RunRow) => void;
 }) {
   if (batches.length === 0 && !refreshing) {
-    return <p className="text-body text-text-secondary">{appliedFrom || appliedTo ? "No runs match the selected date range." : "No runs yet. Use \u201cRun\u201d to create one."}</p>;
+    return <p className="text-body text-text-secondary">{appliedFrom || appliedTo ? "No runs match the selected date range." : "No runs yet. Use \u201CRun\u201D to create one."}</p>;
   }
 
   return (

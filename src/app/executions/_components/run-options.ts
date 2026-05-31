@@ -20,7 +20,7 @@ async function fetchAllInputPresets(signal?: AbortSignal): Promise<PresetItem[]>
 
     const json = (await res.json()) as ListResponse<{ id: string; name: string | null }>;
     const pageItems = json.data ?? json.items ?? [];
-    presets.push(...pageItems.map((p) => ({ id: p.id, name: p.name ?? null })));
+    presets.push(...pageItems.map((item) => ({ id: item.id, name: item.name ?? null })));
 
     totalPages = json.pagination?.totalPages ?? page;
     page += 1;
@@ -39,7 +39,7 @@ export async function fetchRunOptions(signal?: AbortSignal): Promise<{ strategie
       if (!res.ok) throw new Error(`Failed to load strategies (${res.status})`);
       const stratRes = (await res.json()) as ListResponse<{ id: string; name: string }>;
       const stratData = stratRes.data ?? stratRes.items ?? [];
-      return Array.isArray(stratData) ? stratData.map((s) => ({ id: s.id, name: s.name })) : [];
+      return Array.isArray(stratData) ? stratData.map((strategy) => ({ id: strategy.id, name: strategy.name })) : [];
     })(),
     fetchAllInputPresets(signal)
   ]);
@@ -69,7 +69,7 @@ export const BENCHMARK_PROJECT_IDS = [
   "PRJ-XB6SETAU7"
 ] as const;
 
-export const DEFAULT_BENCHMARK_PROJECT_IDS = [...BENCHMARK_PROJECT_IDS];
+export const DEFAULT_BENCHMARK_PROJECT_IDS = Array.from(BENCHMARK_PROJECT_IDS);
 
 interface ExecuteRunsParams {
   benchmarkMode: boolean;

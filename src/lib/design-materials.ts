@@ -30,7 +30,10 @@ const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
   wallTile: "wall_tiles"
 };
 
-type TextureScale = { x: number | null; y: number | null };
+interface TextureScale {
+  x: number | null;
+  y: number | null;
+}
 
 /**
  * Loose shape of the upstream JSON blobs (project scans, catalog products,
@@ -111,10 +114,18 @@ interface RawDesignObject {
 
 type ScanLike = RawDesignObject;
 type CatalogProduct = RawDesignObject;
-type Color = { hue: number; chroma: number; luminance: number };
-type ObjectComponent = { categoryComponent: string; color: Color; materialType: string };
+interface Color {
+  hue: number;
+  chroma: number;
+  luminance: number;
+}
+interface ObjectComponent {
+  categoryComponent: string;
+  color: Color;
+  materialType: string;
+}
 
-type SurfaceItem = {
+interface SurfaceItem {
   productId?: string | undefined;
   texture: string;
   scale: { x: string; y: string };
@@ -124,9 +135,9 @@ type SurfaceItem = {
   pattern?: string;
   pieceLength?: string;
   pieceWidth?: string;
-};
+}
 
-type ObjectItem = {
+interface ObjectItem {
   productId?: string | undefined;
   asset?: string | null;
   size?: { length: string; width: string; height: string };
@@ -137,9 +148,9 @@ type ObjectItem = {
   counterHeight?: string;
   sinkOffset?: string;
   components?: ObjectComponent[];
-};
+}
 
-export type UnitySlimDesignMaterials = {
+export interface UnitySlimDesignMaterials {
   id: string;
   surfaces: {
     floorTile?: SurfaceItem;
@@ -169,7 +180,7 @@ export type UnitySlimDesignMaterials = {
     showerGlass?: ObjectItem;
     showerSystem?: ObjectItem;
   };
-};
+}
 
 const SURFACE_SLOTS = ["floorTile", "showerWallTile", "showerFloorTile", "showerShortWallTile", "curbTile", "nicheTile", "paint", "wallpaper", "wallTile"] as const;
 
@@ -197,7 +208,7 @@ const TILE_PATTERN_BY_ID_KEY: Record<string, string> = {
 const TILE_PATTERN_VALUES = new Set(Object.values(TILE_PATTERN_BY_ID_KEY));
 
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
+  return value.replaceAll(/_([a-z])/g, (_, char: string) => char.toUpperCase());
 }
 
 function toCamelCase(value: unknown): unknown {
@@ -273,8 +284,8 @@ function projectTileExtras(product: CatalogProduct): Pick<SurfaceItem, "shape" |
   const pieceWidth = asNumber(product.pieceWidth);
   return {
     ...(shape ? { shape } : {}),
-    ...(pieceLength != null ? { pieceLength: String(pieceLength) } : {}),
-    ...(pieceWidth != null ? { pieceWidth: String(pieceWidth) } : {})
+    ...(pieceLength == null ? {} : { pieceLength: String(pieceLength) }),
+    ...(pieceWidth == null ? {} : { pieceWidth: String(pieceWidth) })
   };
 }
 
@@ -309,8 +320,8 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
       if (scan && isScanLike(scan)) return scan;
       if (isScanLike(camel)) return camel;
     }
-  } catch (err) {
-    console.error("[design-materials] Failed to fetch project scan", err);
+  } catch (error) {
+    console.error("[design-materials] Failed to fetch project scan", error);
   }
   return null;
 }
@@ -334,11 +345,11 @@ async function fetchCatalogProduct(category: string, productId: string): Promise
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: CatalogProduct };
     return json.data ?? null;
-  } catch (err) {
+  } catch (error) {
     console.error("[design-materials] Failed to fetch catalog product", {
       category,
       productId,
-      err
+      err: error
     });
     return null;
   }
@@ -428,8 +439,8 @@ function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOT
     productId: asString(material.id) ?? undefined,
     texture,
     scale: {
-      x: scale.x != null ? String(scale.x) : "1",
-      y: scale.y != null ? String(scale.y) : "1"
+      x: scale.x == null ? "1" : String(scale.x),
+      y: scale.y == null ? "1" : String(scale.y)
     }
   };
   if (slot === "wallpaper") out.placement = asString(design.wallpaperPlacement) ?? "VanityWall";
@@ -500,8 +511,8 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   if (slot === "vanity") {
     const numberOfSinks = asNumber(material.numberOfSinks);
     if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight != null ? String(material.counterHeight) : null);
-    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset != null ? String(material.sinkOffset) : null);
+    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight == null ? null : String(material.counterHeight));
+    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset == null ? null : String(material.sinkOffset));
     if (counterHeight) out.counterHeight = counterHeight;
     if (sinkOffset) out.sinkOffset = sinkOffset;
   }
@@ -539,8 +550,8 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
 
 export async function buildDesignMaterials(params: { design: RawDesignObject; roomData?: RawDesignObject; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
   const scan = await resolveScan({
-    ...(params.roomData !== undefined ? { roomData: params.roomData } : {}),
-    ...(params.projectId !== undefined ? { projectId: params.projectId } : {})
+    ...(params.roomData === undefined ? {} : { roomData: params.roomData }),
+    ...(params.projectId === undefined ? {} : { projectId: params.projectId })
   });
   if (!scan) return null;
 
@@ -569,8 +580,8 @@ export async function buildDesignMaterials(params: { design: RawDesignObject; ro
     if (slot === "curbTile") {
       const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
       const hasCurbInScan = showers.some((shower) => {
-        const s = asRecord(shower);
-        return (asNumber(s?.curbHeight) ?? 0) > 0 && (asNumber(s?.curbThickness) ?? 0) > 0;
+        const record = asRecord(shower);
+        return (asNumber(record?.curbHeight) ?? 0) > 0 && (asNumber(record?.curbThickness) ?? 0) > 0;
       });
       if (!product && hasCurbInScan) product = productBySlot.get("showerFloorTile") ?? null;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatComparisonRange, formatComparisonSource, type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
+import { type AnalyticsComparisonSlice, formatComparisonRange, formatComparisonSource } from "@/app/analytics/comparison-utils";
 import { SLICE_BG_COLORS } from "./helpers";
 import type { SliceData } from "./types";
 
@@ -34,17 +34,17 @@ export function SceneIssuesTable({ slices, dataBySlice, loading, sceneIssueRows 
           <tr className="bg-surface-muted/60">
             <th className="border-border text-text-secondary border-r border-b px-3 py-1.5 text-left text-[11px] font-semibold">Overall</th>
             {slices.map((slice, i) => {
-              const s = dataBySlice[slice.key]?.summary;
+              const summary = dataBySlice[slice.key]?.summary;
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <td key={slice.key} className={`border-border border-r border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>
-                  {s ? (
+                  {summary ? (
                     <>
-                      <span className="text-text-muted">{s.sceneRatedCount} rated</span>
+                      <span className="text-text-muted">{summary.sceneRatedCount} rated</span>
                       {" · "}
-                      <span className="text-success-700 font-semibold">{s.sceneGoodPct}%</span>
+                      <span className="text-success-700 font-semibold">{summary.sceneGoodPct}%</span>
                       <span className="text-text-disabled"> / </span>
-                      <span className="text-danger-600 font-semibold">{s.sceneFailedPct}%</span>
+                      <span className="text-danger-600 font-semibold">{summary.sceneFailedPct}%</span>
                     </>
                   ) : (
                     "-"
@@ -82,9 +82,9 @@ export function SceneIssuesTable({ slices, dataBySlice, loading, sceneIssueRows 
               <tr key={issueName} className="bg-surface">
                 <th className="border-border bg-surface text-text-secondary sticky left-0 z-10 border-r border-b px-3 py-1.5 text-left text-[11px] font-normal">{issueName}</th>
                 {slices.map((slice) => {
-                  const d = dataBySlice[slice.key];
-                  const item = d?.sceneIssues.find((i) => i.issue === issueName);
-                  const sceneFailed = d?.summary ? Math.round((d.summary.sceneFailedPct / 100) * d.summary.sceneRatedCount) : 0;
+                  const sliceData = dataBySlice[slice.key];
+                  const item = sliceData?.sceneIssues.find((issue) => issue.issue === issueName);
+                  const sceneFailed = sliceData?.summary ? Math.round((sliceData.summary.sceneFailedPct / 100) * sliceData.summary.sceneRatedCount) : 0;
                   const pct = item && sceneFailed > 0 ? Math.round((item.count / sceneFailed) * 100) : 0;
                   return (
                     <td key={slice.key} className="border-border text-danger-600 border-r border-b px-2 py-1.5 text-center text-[11px]">

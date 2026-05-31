@@ -73,14 +73,14 @@ export function buildWizardModel(input: WizardInput): WizardModel {
   const imageHeight = Number.parseInt(input.imageConfig.height, 10);
   const imageConfigValid = Number.isFinite(imageWidth) && imageWidth > 0 && Number.isFinite(imageHeight) && imageHeight > 0;
 
-  const overrideErrors = !!input.designOverride.error || !!input.roomOverride.error;
+  const overrideErrors = Boolean(input.designOverride.error) || Boolean(input.roomOverride.error);
 
-  const projectDataReady = !!effectiveDesignMaterials && !!effectiveRoomData && cameraFrames.length > 0 && includedFrameCount > 0 && !overrideErrors;
+  const projectDataReady = Boolean(effectiveDesignMaterials) && Boolean(effectiveRoomData) && cameraFrames.length > 0 && includedFrameCount > 0 && !overrideErrors;
 
   // Camera frames have to come from a project — that's the user-stated
   // constraint. So `canSubmit` requires a bootstrap even if both override
   // textareas are filled.
-  const canSubmit = !!input.bootstrap && projectDataReady && imageConfigValid && !overrideErrors;
+  const canSubmit = Boolean(input.bootstrap) && projectDataReady && imageConfigValid && !overrideErrors;
 
   const projectIssues = collectProjectIssues(input);
   const dataIssues = collectDataIssues({
@@ -97,7 +97,7 @@ export function buildWizardModel(input: WizardInput): WizardModel {
 
   const stepStates = computeStepStates({
     projectError: input.projectError,
-    bootstrapLoaded: !!input.bootstrap,
+    bootstrapLoaded: Boolean(input.bootstrap),
     overrideErrors,
     projectDataReady,
     imageConfigValid

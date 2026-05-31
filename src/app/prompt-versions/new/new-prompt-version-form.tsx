@@ -24,10 +24,12 @@ type FormAction =
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
-    case "setField":
-      return { ...state, [action.field]: action.value };
-    case "reset":
+    case "reset": {
       return action.value;
+    }
+    case "setField": {
+      return { ...state, [action.field]: action.value };
+    }
   }
 }
 
@@ -42,7 +44,9 @@ export function NewPromptVersionForm() {
   const router = useRouter();
 
   const [form, dispatch] = useReducer(formReducer, initialFormState);
-  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => dispatch({ type: "setField", field, value });
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+    dispatch({ type: "setField", field, value });
+  };
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,8 +82,8 @@ export function NewPromptVersionForm() {
       }
 
       router.push(`/prompt-versions/${json.data.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setCreating(false);
     }
   }
@@ -102,11 +106,15 @@ export function NewPromptVersionForm() {
       <div className="mt-6">
         <ResourceFormHeader
           name={form.name}
-          onNameChange={(value) => setField("name", value)}
+          onNameChange={(value) => {
+            setField("name", value);
+          }}
           namePlaceholder="e.g. Bathroom generation v2"
           nameRequired={false}
           description={form.description}
-          onDescriptionChange={(value) => setField("description", value)}
+          onDescriptionChange={(value) => {
+            setField("description", value);
+          }}
         />
       </div>
 
@@ -137,7 +145,9 @@ export function NewPromptVersionForm() {
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
                 value={form.systemPrompt}
-                onChange={(value) => setField("systemPrompt", value)}
+                onChange={(value) => {
+                  setField("systemPrompt", value);
+                }}
                 placeholder="System prompt. Use {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                 className={`font-mono ${editableInput}`}
                 fillHeight
@@ -153,7 +163,9 @@ export function NewPromptVersionForm() {
             <div className="mt-3 flex min-h-0 flex-1 flex-col">
               <PromptTemplateEditor
                 value={form.userPrompt}
-                onChange={(value) => setField("userPrompt", value)}
+                onChange={(value) => {
+                  setField("userPrompt", value);
+                }}
                 placeholder="Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}"
                 className={`font-mono ${editableInput}`}
                 fillHeight

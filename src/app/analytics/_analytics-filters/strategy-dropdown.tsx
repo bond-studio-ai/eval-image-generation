@@ -8,7 +8,7 @@ export function StrategyDropdown({ value, strategies, onChange }: { value: strin
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const selected = strategies.find((s) => s.id === value);
+  const selected = strategies.find((strategy) => strategy.id === value);
 
   // Focus the search field when it mounts (i.e. when the dropdown opens) via a
   // stable callback ref — no effect, and no autoFocus prop.
@@ -22,12 +22,14 @@ export function StrategyDropdown({ value, strategies, onChange }: { value: strin
       }
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
   }, []);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = q ? strategies.filter((s) => s.name.toLowerCase().includes(q)) : strategies;
+    const query = search.trim().toLowerCase();
+    const list = query ? strategies.filter((strategy) => strategy.name.toLowerCase().includes(query)) : strategies;
     return list.slice(0, 30);
   }, [search, strategies]);
 
@@ -57,7 +59,9 @@ export function StrategyDropdown({ value, strategies, onChange }: { value: strin
                 type="text"
                 aria-label="Search strategies"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
                 placeholder="Search strategies…"
                 className="focus:border-primary-300 focus:ring-primary-300 border-border bg-surface-muted text-text-secondary placeholder:text-text-disabled focus:bg-surface text-caption w-full rounded-md border py-1.5 pr-3 pl-8 focus:ring-1 focus:outline-none"
               />

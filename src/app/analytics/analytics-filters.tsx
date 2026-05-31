@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
-import { COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState, type AnalyticsComparisonColumn, type AnalyticsComparisonSource } from "@/app/analytics/comparison-utils";
+import { type AnalyticsComparisonColumn, type AnalyticsComparisonSource, COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState } from "@/app/analytics/comparison-utils";
 import { browserTimezone } from "@/lib/api-base";
 import type { StrategyListItem } from "@/lib/service-client";
 import { ComparisonColumnsEditor } from "./_analytics-filters/comparison-columns-editor";
@@ -72,11 +72,11 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   );
 
   const updateComparisonColumns = useCallback(
-    (columns: AnalyticsComparisonColumn[]) => {
+    (nextColumns: AnalyticsComparisonColumn[]) => {
       router.replace(
         buildUrl((next) => {
           next.delete(COMPARE_COLUMN_QUERY_KEY);
-          for (const column of columns) {
+          for (const column of nextColumns) {
             next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(column));
           }
         })
@@ -88,8 +88,8 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const addComparisonColumn = useCallback(() => {
     const cols = columnsRef.current;
     const lastColumn = cols.at(-1);
-    const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
-    updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: defaultSource })]);
+    const nextDefaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
+    updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: nextDefaultSource })]);
   }, [from, source, to, updateComparisonColumns]);
 
   const clearAll = useCallback(() => {
@@ -99,8 +99,8 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
     router.replace(`/${next.toString() ? `?${next}` : ""}`);
   }, [router, searchParams]);
 
-  const hasDateFilter = !!(from || to);
-  const hasAnyFilter = hasDateFilter || !!model || source !== "all";
+  const hasDateFilter = Boolean(from || to);
+  const hasAnyFilter = hasDateFilter || Boolean(model) || source !== "all";
 
   return (
     <div className="mt-4 flex flex-col gap-3">

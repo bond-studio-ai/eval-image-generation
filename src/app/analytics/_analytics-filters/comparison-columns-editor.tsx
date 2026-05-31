@@ -1,6 +1,6 @@
 "use client";
 
-import { formatComparisonSource, type AnalyticsComparisonColumn, type AnalyticsComparisonSource } from "@/app/analytics/comparison-utils";
+import { type AnalyticsComparisonColumn, type AnalyticsComparisonSource, formatComparisonSource } from "@/app/analytics/comparison-utils";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { PlusIcon, XIcon } from "@/components/ui/icons";
 import type { StrategyListItem } from "@/lib/service-client";
@@ -41,7 +41,7 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                     value={column.strategyId}
                     strategies={strategies}
                     onChange={(strategyId) => {
-                      const nextColumns = [...columns];
+                      const nextColumns = Array.from(columns);
                       nextColumns[index] = { ...column, strategyId };
                       updateComparisonColumns(nextColumns);
                     }}
@@ -51,13 +51,13 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                   <DateRangePicker
                     from={column.from}
                     to={column.to}
-                    onChange={(f, t) => {
-                      const nextColumns = [...columns];
-                      nextColumns[index] = { ...column, from: f, to: t };
+                    onChange={(from, to) => {
+                      const nextColumns = Array.from(columns);
+                      nextColumns[index] = { ...column, from, to };
                       updateComparisonColumns(nextColumns);
                     }}
                     onClear={() => {
-                      const nextColumns = [...columns];
+                      const nextColumns = Array.from(columns);
                       nextColumns[index] = { ...column, from: "", to: "" };
                       updateComparisonColumns(nextColumns);
                     }}
@@ -65,18 +65,18 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="border-border bg-surface-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-                    {COMPARISON_SOURCE_OPTIONS.map((s) => (
+                    {COMPARISON_SOURCE_OPTIONS.map((sourceOption) => (
                       <button
-                        key={s}
+                        key={sourceOption}
                         type="button"
                         onClick={() => {
-                          const nextColumns = [...columns];
-                          nextColumns[index] = { ...column, source: s };
+                          const nextColumns = Array.from(columns);
+                          nextColumns[index] = { ...column, source: sourceOption };
                           updateComparisonColumns(nextColumns);
                         }}
-                        className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${column.source === s ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
+                        className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${column.source === sourceOption ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
                       >
-                        {formatComparisonSource(s)}
+                        {formatComparisonSource(sourceOption)}
                       </button>
                     ))}
                   </div>
@@ -85,7 +85,9 @@ export function ComparisonColumnsEditor({ columns, strategies, updateComparisonC
                   <button
                     type="button"
                     aria-label="Remove column"
-                    onClick={() => updateComparisonColumns(columns.filter((_, i) => i !== index))}
+                    onClick={() => {
+                      updateComparisonColumns(columns.filter((_, i) => i !== index));
+                    }}
                     disabled={columns.length <= 1}
                     className="text-text-disabled disabled:hover:text-text-disabled hover:bg-danger-50 hover:text-danger-500 rounded-lg p-1 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   >

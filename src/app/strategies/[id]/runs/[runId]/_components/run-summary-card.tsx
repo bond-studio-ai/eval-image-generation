@@ -74,7 +74,9 @@ export function RunSummaryCard({
           {data.status !== "failed" && data.status !== "skipped" && (
             <button
               type="button"
-              onClick={() => onMarkStatus("failed")}
+              onClick={() => {
+                onMarkStatus("failed");
+              }}
               disabled={markingStatus !== "idle"}
               className="border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
             >
@@ -86,7 +88,9 @@ export function RunSummaryCard({
             <>
               <button
                 type="button"
-                onClick={() => onMarkStatus("completed")}
+                onClick={() => {
+                  onMarkStatus("completed");
+                }}
                 disabled={markingStatus !== "idle"}
                 className="border-border bg-surface-muted text-text-secondary hover:bg-surface-sunken text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
               >

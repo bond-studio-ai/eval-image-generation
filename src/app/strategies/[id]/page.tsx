@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { StrategyFlowDag, type DagStep } from "@/components/strategy-flow-dag";
+import { type DagStep, StrategyFlowDag } from "@/components/strategy-flow-dag";
 import { LinkButton } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { fetchStrategyById, fetchStrategyRuns } from "@/lib/service-client";
@@ -97,16 +97,16 @@ export default async function StrategyDetailPage({ params }: PageProps) {
                     ]
               )}
               judges={result.steps.flatMap((step) =>
-                step.type !== "judge"
-                  ? []
-                  : (step.judges ?? []).map((j, ji) => ({
+                step.type === "judge"
+                  ? (step.judges ?? []).map((j, ji) => ({
                       name: j.name,
-                      type: j.judgeType as "batch" | "individual",
+                      type: j.judgeType,
                       model: j.judgeModel,
                       promptName: j.judgePromptVersionName,
                       toleranceThreshold: j.toleranceThreshold,
                       position: ji + 1
                     }))
+                  : []
               )}
             />
           </div>
@@ -125,17 +125,17 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         enableMultiTurnContext={result.enableMultiTurnContext ?? false}
         checkSceneAccuracy={result.checkSceneAccuracy ?? false}
         description={result.description}
-        steps={result.steps.map((s) => ({
-          stepOrder: s.stepOrder,
-          type: s.type ?? ("generation" as const),
-          numberOfImages: s.numberOfImages,
-          name: s.name,
-          promptVersionId: s.promptVersionId,
-          promptVersionName: s.promptVersionName,
-          judges: (s.judges ?? []).map((j) => ({
+        steps={result.steps.map((step) => ({
+          stepOrder: step.stepOrder,
+          type: step.type ?? ("generation" as const),
+          numberOfImages: step.numberOfImages,
+          name: step.name,
+          promptVersionId: step.promptVersionId,
+          promptVersionName: step.promptVersionName,
+          judges: (step.judges ?? []).map((j) => ({
             name: j.name,
             judgeModel: j.judgeModel,
-            judgeType: j.judgeType as "batch" | "individual",
+            judgeType: j.judgeType,
             toleranceThreshold: j.toleranceThreshold,
             judgePromptVersionId: j.judgePromptVersionId,
             judgePromptVersionName: j.judgePromptVersionName
@@ -152,7 +152,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       {/* Runs section */}
       <StrategyRunsSection
         strategyId={result.id}
-        hasJudge={result.steps.some((s) => s.type === "judge")}
+        hasJudge={result.steps.some((step) => step.type === "judge")}
         initialRuns={runsRaw.map((rawRun) => {
           const run = rawRun as RawStrategyRunSummary;
           const inputPresetName = (run.inputPresetName as string) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;

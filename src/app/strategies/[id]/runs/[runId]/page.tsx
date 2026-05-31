@@ -111,7 +111,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
       temperature: strategy.temperature,
       useGoogleSearch: strategy.useGoogleSearch,
       tagImages: strategy.tagImages,
-      hasJudge: !!(run.judgeTypeUsed || run.judgeScore != null)
+      hasJudge: Boolean(run.judgeTypeUsed || run.judgeScore != null)
     },
     stepResults: stepResults.map((sr) => ({
       id: sr.id,

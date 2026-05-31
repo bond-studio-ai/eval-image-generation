@@ -2,13 +2,15 @@ import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-resul
 
 export function orderedJudgeIds(left: StrategyRunJudgeResultEntry[], right: StrategyRunJudgeResultEntry[]): string[] {
   const byId = new Map<string, number>();
-  for (const j of left) {
-    const p = j.position;
-    if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!) byId.set(j.strategyJudgeId, p);
+  for (const judge of left) {
+    const position = judge.position;
+    if (!byId.has(judge.strategyJudgeId) || position < byId.get(judge.strategyJudgeId)!) byId.set(judge.strategyJudgeId, position);
   }
-  for (const j of right) {
-    const p = j.position;
-    if (!byId.has(j.strategyJudgeId) || p < byId.get(j.strategyJudgeId)!) byId.set(j.strategyJudgeId, p);
+  for (const judge of right) {
+    const position = judge.position;
+    if (!byId.has(judge.strategyJudgeId) || position < byId.get(judge.strategyJudgeId)!) byId.set(judge.strategyJudgeId, position);
   }
-  return [...byId.entries()].toSorted((a, b) => a[1] - b[1]).map(([id]) => id);
+  return Array.from(byId.entries())
+    .toSorted((a, b) => a[1] - b[1])
+    .map(([id]) => id);
 }

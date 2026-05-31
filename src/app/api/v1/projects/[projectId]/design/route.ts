@@ -162,8 +162,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
       room_data: roomData,
       design: persistedDesign
     });
-  } catch (err) {
-    console.error("[project design upsert] Error:", err);
+  } catch (error) {
+    console.error("[project design upsert] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to persist project design");
   }
 }

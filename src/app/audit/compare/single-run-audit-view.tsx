@@ -84,7 +84,13 @@ function ImageGrid({ images }: { images: InputImage[] }) {
           <div key={img.url}>
             <div
               className={`bg-surface-muted relative aspect-square overflow-hidden rounded-md border ${img.isComposite ? "border-accent-400 ring-accent-200 cursor-pointer ring-1" : "border-border"}`}
-              {...(img.isComposite ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) } : {})}
+              {...(img.isComposite
+                ? {
+                    onClick: () => {
+                      setExpandedGroup(expandedGroup === i ? null : i);
+                    }
+                  }
+                : {})}
             >
               <CdnImage src={img.url} alt={img.label} fill sizes="(max-width:768px) 25vw, 120px" className="object-cover" />
             </div>
@@ -102,14 +108,20 @@ function ImageGrid({ images }: { images: InputImage[] }) {
         <div className="border-accent-200 bg-accent-50 rounded-lg border p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-accent-800 text-caption font-semibold">
-              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length} source images
+              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages.length} source images
             </p>
-            <button type="button" onClick={() => setExpandedGroup(null)} className="text-accent-600 hover:text-accent-800 text-caption">
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedGroup(null);
+              }}
+              className="text-accent-600 hover:text-accent-800 text-caption"
+            >
               Close
             </button>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-            {images[expandedGroup].sourceImages!.map((src) => (
+            {images[expandedGroup].sourceImages.map((src) => (
               <div key={src.url}>
                 <div className="border-accent-200 bg-surface relative aspect-square overflow-hidden rounded-md border">
                   <CdnImage src={src.url} alt={src.label} fill sizes="(max-width:768px) 25vw, 120px" className="object-cover" />

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
 import type { AccuracyTrendPoint } from "@/lib/service-client";
 
-const AccuracyTrendChartGraph = dynamic(() => import("./accuracy-trend-chart-graph").then((m) => m.AccuracyTrendChartGraph), { ssr: false });
+const AccuracyTrendChartGraph = dynamic(() => import("./accuracy-trend-chart-graph").then((module) => module.AccuracyTrendChartGraph), { ssr: false });
 
 interface AccuracyTrendChartProps {
   from?: string;
@@ -17,8 +17,8 @@ interface AccuracyTrendChartProps {
 function formatDate(dateStr: string): string {
   const parts = dateStr.split("-");
   if (parts.length === 3) return `${Number(parts[1])}/${Number(parts[2])}`;
-  const d = new Date(dateStr);
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+  const date = new Date(dateStr);
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
 }
 
 export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendChartProps) {

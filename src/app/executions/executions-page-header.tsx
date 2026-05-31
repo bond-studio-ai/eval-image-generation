@@ -11,7 +11,9 @@ function ExecutionsPageHeaderInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const source = searchParams.get("source") === "benchmark" ? "benchmark" : "default";
-  const handleRunCreated = useCallback(() => router.refresh(), [router]);
+  const handleRunCreated = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   return (
     <PageHeader

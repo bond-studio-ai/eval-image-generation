@@ -49,14 +49,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
       return {
         sceneAccuracyRating: data.sceneAccuracyRating ?? null,
         productAccuracyRating: data.productAccuracyRating ?? null,
-        results: results.map((r: { id: string; url?: string }) => ({
-          id: r.id,
-          url: r.url ?? ""
+        results: results.map((result: { id: string; url?: string }) => ({
+          id: result.id,
+          url: result.url ?? ""
         })),
         input: data.input ?? null
       };
     },
-    enabled: !!generationId
+    enabled: Boolean(generationId)
   });
   /** Which scene to compare (0/1/2 = Dollhouse/Real Photo/Mood Board). null = output only. */
   const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
@@ -88,16 +88,16 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   const outputUrl = useMemo(() => {
     const list = generation?.results ?? [];
     if (list.length === 0) return src;
-    const idx = list.findIndex((r) => r.url === src);
-    return idx >= 0 ? (list[idx]?.url ?? src) : (list[0]?.url ?? src);
+    const idx = list.findIndex((result) => result.url === src);
+    return idx === -1 ? (list[0]?.url ?? src) : (list[idx]?.url ?? src);
   }, [generation?.results, src]);
 
   /** Result ID for the evaluation form: always the output that was opened (matches src). */
   const initialResultId = useMemo(() => {
     if (!generation?.results?.length) return null;
-    const idx = generation.results.findIndex((r) => r.url === src);
-    const r = idx >= 0 ? generation.results[idx] : generation.results[0];
-    return r?.id ?? null;
+    const idx = generation.results.findIndex((result) => result.url === src);
+    const result = idx === -1 ? generation.results[0] : generation.results[idx];
+    return result?.id ?? null;
   }, [generation?.results, src]);
 
   return (
@@ -241,7 +241,9 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
 
       {expandedImage && (
         <Modal
-          onClose={() => setExpandedImage(null)}
+          onClose={() => {
+            setExpandedImage(null);
+          }}
           ariaLabel="Expanded image"
           backdropClassName="bg-overlay/80"
           containerClassName="z-[10000] p-6"
@@ -251,7 +253,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           <div className="from-overlay/60 absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b to-transparent px-3 py-2">
             <span className="text-text-inverse text-body font-medium">{expandedImage.alt}</span>
           </div>
-          <button type="button" onClick={() => setExpandedImage(null)} className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5" aria-label="Close">
+          <button
+            type="button"
+            onClick={() => {
+              setExpandedImage(null);
+            }}
+            className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5"
+            aria-label="Close"
+          >
             <XIcon className="size-5" />
           </button>
         </Modal>

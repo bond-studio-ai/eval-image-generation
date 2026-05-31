@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import { formatComparisonRange, formatComparisonSource, type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
+import { type AnalyticsComparisonSlice, formatComparisonRange, formatComparisonSource } from "@/app/analytics/comparison-utils";
 import { formatCategoryName, SLICE_BG_COLORS } from "./helpers";
 import type { CategoryRow, SliceData, SortCol, SortField } from "./types";
 
@@ -43,8 +43,8 @@ export function CategoryRatesTable({
             <th aria-label="Category" className="border-border-strong bg-surface w-48 min-w-[180px] border-r border-b px-3 py-2" />
             {slices.map((slice, i) => {
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
-              const s = dataBySlice[slice.key]?.summary;
-              const ratedCount = s?.productRatedCount ?? 0;
+              const summary = dataBySlice[slice.key]?.summary;
+              const ratedCount = summary?.productRatedCount ?? 0;
               return (
                 <th key={slice.key} colSpan={3} className={`border-border-strong border-r border-b px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 320 }}>
                   <div className="text-text-primary text-caption font-bold">{slice.strategyName}</div>
@@ -61,13 +61,13 @@ export function CategoryRatesTable({
           <tr className="bg-surface-muted/60">
             <th className="border-border-strong text-text-secondary border-r border-b px-3 py-1.5 text-left text-[11px] font-semibold">Product Accuracy (Overall)</th>
             {slices.map((slice, i) => {
-              const s = dataBySlice[slice.key]?.summary;
+              const summary = dataBySlice[slice.key]?.summary;
               const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <Fragment key={slice.key}>
-                  <td className={`border-border-strong text-text-muted border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>{s?.productRatedCount ?? ""}</td>
-                  <td className={`border-border-strong text-success-700 border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{s ? `${s.productGoodPct}%` : "-"}</td>
-                  <td className={`border-border-strong text-danger-600 border-r border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{s ? `${s.productFailedPct}%` : "-"}</td>
+                  <td className={`border-border-strong text-text-muted border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>{summary?.productRatedCount ?? ""}</td>
+                  <td className={`border-border-strong text-success-700 border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{summary ? `${summary.productGoodPct}%` : "-"}</td>
+                  <td className={`border-border-strong text-danger-600 border-r border-b px-2 py-1.5 text-center text-[11px] font-semibold ${color.header}`}>{summary ? `${summary.productFailedPct}%` : "-"}</td>
                 </Fragment>
               );
             })}
@@ -81,13 +81,17 @@ export function CategoryRatesTable({
                 <th className="border-border-strong text-text-muted border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase">Rated Images</th>
                 <th
                   className="border-border-strong text-success-700 hover:bg-border cursor-pointer border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase select-none"
-                  onClick={() => toggleCategorySort(slice.key, "successPct")}
+                  onClick={() => {
+                    toggleCategorySort(slice.key, "successPct");
+                  }}
                 >
                   Success <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === "successPct"} dir={categorySort?.dir} />
                 </th>
                 <th
                   className="border-border-strong text-danger-600 hover:bg-border cursor-pointer border-r border-b p-2 text-center text-[10px] font-bold tracking-wider uppercase select-none"
-                  onClick={() => toggleCategorySort(slice.key, "failurePct")}
+                  onClick={() => {
+                    toggleCategorySort(slice.key, "failurePct");
+                  }}
                 >
                   Fail <SortArrow active={categorySort?.sliceKey === slice.key && categorySort.field === "failurePct"} dir={categorySort?.dir} />
                 </th>
@@ -125,7 +129,7 @@ export function CategoryRatesTable({
                   </th>
                   {slices.map((slice) => {
                     const cats = dataBySlice[slice.key]?.categories ?? [];
-                    const cat = cats.find((c) => c.name === row.categoryName);
+                    const cat = cats.find((category) => category.name === row.categoryName);
 
                     if (isCategory) {
                       return (

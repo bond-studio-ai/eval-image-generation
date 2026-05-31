@@ -14,7 +14,7 @@ export function MetadataSection({ createdAt, executionTime, resultCount, notes }
         <div className="border-border bg-surface rounded-lg border p-4 shadow-xs">
           <p className="text-text-secondary text-caption font-medium">Results</p>
           <p className="text-text-primary text-body mt-1 font-medium">
-            {resultCount} output image{resultCount !== 1 ? "s" : ""}
+            {resultCount} output image{resultCount === 1 ? "" : "s"}
           </p>
         </div>
       </div>

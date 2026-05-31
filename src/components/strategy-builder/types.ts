@@ -73,7 +73,11 @@ export interface StrategyBuilderProps {
   modelCatalog: StrategyModelCatalog;
 }
 
-export type ModelOption = { label: string; meta?: string; value: string };
+export interface ModelOption {
+  label: string;
+  meta?: string;
+  value: string;
+}
 
 export const PRODUCT_CATEGORIES = [
   "faucets",
@@ -109,7 +113,7 @@ export const IMAGE_TYPE_OPTIONS: { value: ProductImageType; label: string }[] = 
 ];
 
 export function categoryLabel(cat: string): string {
-  return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return cat.replaceAll("_", " ").replaceAll(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export const FALLBACK_GENERATION_MODEL = "gemini-3-pro-image-preview";
@@ -132,7 +136,7 @@ export function defaultStep(promptVersionId: string, model = FALLBACK_GENERATION
     model,
     aspect_ratio: "1:1",
     output_resolution: "1K",
-    temperature: 1.0,
+    temperature: 1,
     use_google_search: false,
     tag_images: true,
     dollhouse_view_from_step: null,
@@ -158,7 +162,7 @@ export function defaultJudgeStep(model = FALLBACK_GENERATION_MODEL, judgeModel =
     model,
     aspect_ratio: "1:1",
     output_resolution: "1K",
-    temperature: 1.0,
+    temperature: 1,
     use_google_search: false,
     tag_images: true,
     dollhouse_view_from_step: null,
@@ -211,7 +215,7 @@ export const defaultStrategySettings: StrategySettings = {
   model: FALLBACK_GENERATION_MODEL,
   aspect_ratio: "1:1",
   output_resolution: "1K",
-  temperature: 1.0,
+  temperature: 1,
   use_google_search: false,
   tag_images: true,
   group_product_images: false,

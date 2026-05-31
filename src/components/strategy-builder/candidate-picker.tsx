@@ -29,7 +29,13 @@ export function CandidatePicker({ value, onChange }: { value: number; onChange: 
             {n}
           </button>
         ))}
-        <button type="button" onClick={() => setCustom(true)} className={`${btnBase} ${custom ? activeCls : inactiveCls}`}>
+        <button
+          type="button"
+          onClick={() => {
+            setCustom(true);
+          }}
+          className={`${btnBase} ${custom ? activeCls : inactiveCls}`}
+        >
           Custom
         </button>
         {custom && (
@@ -40,8 +46,8 @@ export function CandidatePicker({ value, onChange }: { value: number; onChange: 
             aria-label="Candidates"
             value={value}
             onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              if (!Number.isNaN(v) && v >= 1 && v <= 100) onChange(v);
+              const parsed = Number.parseInt(e.target.value, 10);
+              if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 100) onChange(parsed);
               else if (e.target.value === "") onChange(1);
             }}
             className="border-warning-300 bg-surface text-warning-900 focus:border-warning-500 focus:ring-warning-500 text-caption w-12 [appearance:textfield] rounded-md border px-1.5 py-1 text-center font-semibold focus:ring-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"

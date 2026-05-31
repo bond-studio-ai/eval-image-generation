@@ -30,7 +30,9 @@ export function GenerationStepCard({
             <input
               type="text"
               value={step.name}
-              onChange={(e) => updateStep(idx, { name: e.target.value })}
+              onChange={(e) => {
+                updateStep(idx, { name: e.target.value });
+              }}
               placeholder="Name this step..."
               aria-label="Step name"
               className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface-muted text-text-secondary placeholder:text-text-disabled hover:bg-surface focus:bg-surface hover:border-border-strong text-body w-56 rounded-lg border py-1.5 pr-8 pl-3 font-medium transition-colors focus:ring-1 focus:outline-none"
@@ -39,7 +41,14 @@ export function GenerationStepCard({
           </div>
         </div>
         {stepsLength > 1 && (
-          <button type="button" onClick={() => removeStep(idx)} aria-label="Remove step" className="text-text-muted hover:bg-danger-50 hover:text-danger-600 rounded p-1">
+          <button
+            type="button"
+            onClick={() => {
+              removeStep(idx);
+            }}
+            aria-label="Remove step"
+            className="text-text-muted hover:bg-danger-50 hover:text-danger-600 rounded p-1"
+          >
             <TrashIcon className="size-4" />
           </button>
         )}
@@ -51,7 +60,14 @@ export function GenerationStepCard({
           <label htmlFor={`step-prompt-version-${idx}`} className="text-text-secondary text-caption mb-1 block font-medium">
             Prompt Version
           </label>
-          <PromptVersionSelector id={`step-prompt-version-${idx}`} value={step.prompt_version_id} promptVersions={promptVersions} onChange={(id) => updateStep(idx, { prompt_version_id: id })} />
+          <PromptVersionSelector
+            id={`step-prompt-version-${idx}`}
+            value={step.prompt_version_id}
+            promptVersions={promptVersions}
+            onChange={(id) => {
+              updateStep(idx, { prompt_version_id: id });
+            }}
+          />
         </div>
       </div>
 
@@ -86,7 +102,9 @@ export function GenerationStepCard({
                     type="checkbox"
                     checked={overridden ? false : step[key]}
                     disabled={overridden}
-                    onChange={(e) => updateStep(idx, { [key]: e.target.checked })}
+                    onChange={(e) => {
+                      updateStep(idx, { [key]: e.target.checked });
+                    }}
                     className="text-primary-600 focus:ring-primary-500 border-border-strong rounded disabled:opacity-50"
                   />
                   {label}
@@ -96,14 +114,28 @@ export function GenerationStepCard({
             })}
           </div>
           <label className="text-text-secondary text-body flex cursor-pointer items-center gap-2">
-            <input type="checkbox" checked={step.include_product_images} onChange={(e) => updateStep(idx, { include_product_images: e.target.checked })} className="text-primary-600 focus:ring-primary-500 border-border-strong rounded" />
+            <input
+              type="checkbox"
+              checked={step.include_product_images}
+              onChange={(e) => {
+                updateStep(idx, { include_product_images: e.target.checked });
+              }}
+              className="text-primary-600 focus:ring-primary-500 border-border-strong rounded"
+            />
             Product images
           </label>
         </div>
       </div>
 
       {/* Product Image Type Overrides */}
-      {step.include_product_images && <ProductImageTypeOverrides value={step.product_image_types} onChange={(v) => updateStep(idx, { product_image_types: v })} />}
+      {step.include_product_images && (
+        <ProductImageTypeOverrides
+          value={step.product_image_types}
+          onChange={(value) => {
+            updateStep(idx, { product_image_types: value });
+          }}
+        />
+      )}
 
       {/* Scene Field Overrides (only for step 2+) */}
       {idx > 0 && (
@@ -161,11 +193,11 @@ export function GenerationStepCard({
           <div className="max-w-xs">
             <select
               value={step.arbitrary_image_from_step ?? ""}
-              onChange={(e) =>
+              onChange={(e) => {
                 updateStep(idx, {
                   arbitrary_image_from_step: e.target.value ? Number(e.target.value) : null
-                })
-              }
+                });
+              }}
               className="border-primary-300 bg-surface focus:border-primary-500 focus:ring-primary-500 text-body w-full rounded border px-2 py-1.5 focus:ring-1 focus:outline-none"
             >
               <option value="">-- None --</option>

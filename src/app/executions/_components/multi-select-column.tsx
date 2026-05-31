@@ -39,7 +39,9 @@ export function MultiSelectColumn({ title, selectedCount, onClear, searchValue, 
           <input
             type="text"
             value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => {
+              onSearchChange(e.target.value);
+            }}
             placeholder={searchPlaceholder}
             aria-label={searchAriaLabel}
             className="focus:border-primary-400 focus:ring-primary-400 border-border bg-surface placeholder:text-text-disabled text-caption w-full rounded-md border py-1.5 pr-3 pl-8 focus:ring-1 focus:outline-none"
@@ -57,7 +59,9 @@ export function MultiSelectColumn({ title, selectedCount, onClear, searchValue, 
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => onToggle(item.id)}
+                  onClick={() => {
+                    onToggle(item.id);
+                  }}
                   className={`text-body flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${
                     selected ? "border-primary-400 bg-primary-50 shadow-sm" : "border-border bg-surface hover:border-border-strong hover:bg-surface-muted"
                   }`}

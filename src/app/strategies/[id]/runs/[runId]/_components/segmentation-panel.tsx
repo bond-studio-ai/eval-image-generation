@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ExpandableImage } from "@/components/expandable-image";
 import { AuditCollapsible } from "./audit";
-import type { Segmentation, SegmentationCategoryResponse, SegmentationCategoryRow } from "./types";
+import type { Segmentation, SegmentationCategoryRow } from "./types";
 
 /**
  * Human-friendly labels for the 23 product categories the backend may segment.
@@ -37,19 +37,19 @@ const SEGMENTATION_CATEGORY_LABELS: Record<string, string> = {
 };
 
 function categoryLabel(category: string): string {
-  return SEGMENTATION_CATEGORY_LABELS[category] ?? category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return SEGMENTATION_CATEGORY_LABELS[category] ?? category.replaceAll("_", " ").replaceAll(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function buildSegmentationRows(segmentation: Segmentation): SegmentationCategoryRow[] {
-  const results = segmentation.results;
+  const { results } = segmentation;
   if (!results || typeof results !== "object" || Array.isArray(results)) return [];
   return Object.entries(results)
     .filter(([, value]) => value !== null && value !== undefined)
     .map(([category, value]) => {
-      const data = (value ?? {}) as SegmentationCategoryResponse;
+      const data = value ?? {};
       const masks = Array.isArray(data.masks) ? data.masks : [];
       const scores = Array.isArray(data.scores) ? data.scores : [];
-      const numericScores = scores.filter((s): s is number => typeof s === "number");
+      const numericScores = scores.filter((score): score is number => typeof score === "number");
       const composite = typeof data.image === "string" && data.image.length > 0 ? data.image : null;
       return {
         category,
@@ -105,7 +105,13 @@ export function SegmentationPanel({ segmentation }: { segmentation: Segmentation
           <span>
             Result {segmentation.generationResultId.slice(0, 8)}… · {new Date(segmentation.createdAt).toLocaleString()}
           </span>
-          <button type="button" onClick={() => setShowRaw((v) => !v)} className="text-text-muted hover:text-text-secondary underline">
+          <button
+            type="button"
+            onClick={() => {
+              setShowRaw((prev) => !prev);
+            }}
+            className="text-text-muted hover:text-text-secondary underline"
+          >
             {showRaw ? "Hide" : "Show"} raw JSON
           </button>
         </div>

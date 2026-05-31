@@ -130,7 +130,7 @@ const TILE_PATTERN_OPTIONS = [
   { value: "Straight", label: "Straight" }
 ];
 
-const SETTING_FIELDS: Array<SelectFieldDef | BooleanFieldDef> = [
+const SETTING_FIELDS: (SelectFieldDef | BooleanFieldDef)[] = [
   {
     key: "wallpaperPlacement",
     label: "Wallpaper Placement",
@@ -266,7 +266,7 @@ interface CatalogImageVariant {
   url: string;
 }
 
-const DOWNLOADABLE_IMAGE_TAGS = new Set<string>(["photo-image", "tear-sheet", "line-drawing"]);
+const DOWNLOADABLE_IMAGE_TAGS = new Set<string>(["line-drawing", "photo-image", "tear-sheet"]);
 
 function useCatalogProductImages(catalogCategory: string | null, productId: string | null) {
   const { data: images = [], isLoading } = useQuery({
@@ -276,22 +276,22 @@ function useCatalogProductImages(catalogCategory: string | null, productId: stri
         signal
       });
       if (!res.ok) throw new Error(`Failed to fetch catalog product images (${res.status})`);
-      const r = await res.json();
-      const product = r.data ?? r;
+      const json = await res.json();
+      const product = json.data ?? json;
       const rawImages = Array.isArray(product?.images) ? product.images : [];
       const variants: CatalogImageVariant[] = [];
       const featured = product?.featured_image?.url ?? product?.featuredImage?.url;
       if (featured) variants.push({ tag: "photo-image", url: featured });
       for (const img of rawImages) {
         if (!img?.url || !img.tag) continue;
-        if (img.tag === "photo-image" && variants.some((v) => v.tag === "photo-image")) continue;
+        if (img.tag === "photo-image" && variants.some((variant) => variant.tag === "photo-image")) continue;
         if (DOWNLOADABLE_IMAGE_TAGS.has(img.tag)) {
           variants.push({ tag: img.tag, url: img.url });
         }
       }
       return variants;
     },
-    enabled: !!productId && !!catalogCategory
+    enabled: Boolean(productId) && Boolean(catalogCategory)
   });
 
   return { images, loading: isLoading };
@@ -310,9 +310,9 @@ function downloadUrl(url: string, filename: string) {
   a.download = filename.replace(/\.\w+$/, ".webp");
   a.target = "_blank";
   a.rel = "noopener noreferrer";
-  document.body.appendChild(a);
+  document.body.append(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
 }
 
 const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
@@ -323,7 +323,7 @@ const TAG_ICONS: Record<CatalogImageTag, React.ReactNode> = {
 
 function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: CatalogImageTag; url: string; productName: string | null; onClose: () => void }) {
   const [loaded, setLoaded] = useState(false);
-  const safeName = (productName ?? "product").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safeName = (productName ?? "product").replaceAll(/[^\w-]/g, "_");
 
   return (
     <Modal
@@ -342,7 +342,9 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => downloadUrl(url, `${safeName}_${tag}.webp`)}
+            onClick={() => {
+              downloadUrl(url, `${safeName}_${tag}.webp`);
+            }}
             className="border-border text-text-secondary hover:bg-surface-muted text-caption inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-medium transition-colors"
           >
             <DownloadIcon className="size-3.5" />
@@ -362,7 +364,9 @@ function ProductImagePreviewModal({ tag, url, productName, onClose }: { tag: Cat
             width={0}
             height={0}
             sizes="100vw"
-            onLoad={() => setLoaded(true)}
+            onLoad={() => {
+              setLoaded(true);
+            }}
             className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
           />
         </div>
@@ -390,7 +394,16 @@ function ImageTypeIconButton({ tag, url, productName }: { tag: CatalogImageTag; 
       <span className="text-text-inverse bg-text-primary pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded px-2 py-1 text-[10px] font-medium whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
         {IMAGE_TAG_LABELS[tag]}
       </span>
-      {previewOpen && <ProductImagePreviewModal tag={tag} url={url} productName={productName} onClose={() => setPreviewOpen(false)} />}
+      {previewOpen && (
+        <ProductImagePreviewModal
+          tag={tag}
+          url={url}
+          productName={productName}
+          onClose={() => {
+            setPreviewOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -399,7 +412,7 @@ function ProductImageDownloadButtons({ images, productName }: { images: CatalogI
   return (
     <>
       {(["photo-image", "tear-sheet", "line-drawing"] as CatalogImageTag[]).map((tag) => {
-        const img = images.find((v) => v.tag === tag);
+        const img = images.find((variant) => variant.tag === tag);
         if (!img) return null;
         return <ImageTypeIconButton key={tag} tag={tag} url={img.url} productName={productName} />;
       })}
@@ -447,8 +460,8 @@ export function useCatalogProducts(retailerId?: string) {
       const query = retailerId ? `?retailerId=${encodeURIComponent(retailerId)}` : "";
       const res = await fetch(localUrl(`products${query}`), { signal });
       if (!res.ok) throw new Error(`Failed to fetch catalog products (${res.status})`);
-      const r = await res.json();
-      return Array.isArray(r.data) ? (r.data as CatalogProduct[]) : [];
+      const json = await res.json();
+      return Array.isArray(json.data) ? (json.data as CatalogProduct[]) : [];
     }
   });
 
@@ -515,7 +528,7 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
         setJsonError("Must be a JSON object.");
         return;
       }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
+      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
       onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
@@ -538,7 +551,7 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
         setJsonError("Must be a JSON object.");
         return;
       }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => !!url && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
+      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
       onArbitraryImagesBySlotChange(nextImages);
       onChange(parsed as Record<string, unknown>);
       setJsonError(null);
@@ -590,9 +603,23 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {SETTING_FIELDS.map((field) =>
                   field.type === "select" ? (
-                    <SelectField key={field.key} field={field} value={data[field.key]} onChange={(nextValue) => setField(field.key, nextValue)} />
+                    <SelectField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => {
+                        setField(field.key, nextValue);
+                      }}
+                    />
                   ) : (
-                    <BooleanField key={field.key} field={field} value={data[field.key]} onChange={(nextValue) => setField(field.key, nextValue)} />
+                    <BooleanField
+                      key={field.key}
+                      field={field}
+                      value={data[field.key]}
+                      onChange={(nextValue) => {
+                        setField(field.key, nextValue);
+                      }}
+                    />
                   )
                 )}
               </div>
@@ -706,9 +733,11 @@ function SelectField({ field, value, onChange }: { field: SelectFieldDef; value:
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
-          onClick={() => onChange(null)}
+          onClick={() => {
+            onChange(null);
+          }}
           className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
-            !currentValue ? "border-border-strong bg-surface-sunken text-text-secondary shadow-sm" : "border-border bg-surface text-text-disabled hover:border-border-strong hover:text-text-secondary"
+            currentValue ? "border-border bg-surface text-text-disabled hover:border-border-strong hover:text-text-secondary" : "border-border-strong bg-surface-sunken text-text-secondary shadow-sm"
           }`}
         >
           Not set
@@ -717,7 +746,9 @@ function SelectField({ field, value, onChange }: { field: SelectFieldDef; value:
           <button
             key={option.value}
             type="button"
-            onClick={() => onChange(option.value)}
+            onClick={() => {
+              onChange(option.value);
+            }}
             className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
               currentValue === option.value ? "border-primary-300 bg-primary-50 text-primary-700 ring-primary-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
             }`}
@@ -738,7 +769,9 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
       <div className="flex gap-1.5">
         <button
           type="button"
-          onClick={() => onChange(null)}
+          onClick={() => {
+            onChange(null);
+          }}
           className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
             currentValue === null ? "border-border-strong bg-surface-sunken text-text-secondary shadow-sm" : "border-border bg-surface text-text-disabled hover:border-border-strong hover:text-text-secondary"
           }`}
@@ -747,7 +780,9 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
         </button>
         <button
           type="button"
-          onClick={() => onChange(true)}
+          onClick={() => {
+            onChange(true);
+          }}
           className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
             currentValue === true ? "border-success-300 bg-success-50 text-success-700 ring-success-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
           }`}
@@ -756,7 +791,9 @@ function BooleanField({ field, value, onChange }: { field: BooleanFieldDef; valu
         </button>
         <button
           type="button"
-          onClick={() => onChange(false)}
+          onClick={() => {
+            onChange(false);
+          }}
           className={`text-caption rounded-md border px-3 py-1.5 font-medium transition-all ${
             currentValue === false ? "border-danger-300 bg-danger-50 text-danger-700 ring-danger-200 shadow-sm ring-1" : "border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted"
           }`}
@@ -796,13 +833,19 @@ function ProductField({
   const selectedImageType = readProductImageType(imageTypeValue);
   const attachedArbitraryUrl = arbitraryImagesBySlot[field.key] ?? null;
   const previewUrl = attachedArbitraryUrl ?? selectedProduct?.featuredImage?.url ?? savedImageUrl ?? null;
-  const hasSelection = !!selectedId || !!selectedImageType || !!attachedArbitraryUrl || !!savedImageUrl;
+  const hasSelection = Boolean(selectedId) || Boolean(selectedImageType) || Boolean(attachedArbitraryUrl) || Boolean(savedImageUrl);
   const effectiveImageType = selectedImageType ?? DEFAULT_PRODUCT_IMAGE_TYPE;
   const summaryText = selectedProduct ? selectedProduct.name : attachedArbitraryUrl || savedImageUrl ? "URL-only attachment" : "Not set";
 
   return (
     <div className="border-border bg-surface rounded-md border p-2.5">
-      <button type="button" onClick={() => setPickerOpen(true)} className="block w-full text-left">
+      <button
+        type="button"
+        onClick={() => {
+          setPickerOpen(true);
+        }}
+        className="block w-full text-left"
+      >
         <div className="border-border bg-surface-muted overflow-hidden rounded-md border">
           {previewUrl ? (
             <ImageWithSkeleton src={previewUrl} alt={field.label} wrapperClassName="h-24 w-full bg-surface-muted p-1" />
@@ -854,7 +897,9 @@ function ProductField({
             onClearSelection();
             setPickerOpen(false);
           }}
-          onClose={() => setPickerOpen(false)}
+          onClose={() => {
+            setPickerOpen(false);
+          }}
         />
       ) : null}
     </div>
@@ -894,7 +939,7 @@ function ProductSelectionModal({
 
   const draftSelectedProduct = useMemo(() => products.find((product) => product.id === draftSelectedId) ?? null, [products, draftSelectedId]);
   const isArbitraryMode = draftImageType === "arbitrary";
-  const canAccept = !isArbitraryMode || !!draftArbitraryUrl;
+  const canAccept = !isArbitraryMode || Boolean(draftArbitraryUrl);
 
   const handleAccept = () => {
     if (!canAccept) return;
@@ -968,7 +1013,9 @@ function ProductSelectionModal({
                 role="switch"
                 aria-label="Use custom image override"
                 aria-checked={isArbitraryMode}
-                onClick={() => setDraftImageType(isArbitraryMode ? "featured-image" : "arbitrary")}
+                onClick={() => {
+                  setDraftImageType(isArbitraryMode ? "featured-image" : "arbitrary");
+                }}
                 className={`focus-visible:ring-accent-500 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
                   isArbitraryMode ? "bg-accent-600" : "bg-border-strong"
                 }`}
@@ -985,55 +1032,65 @@ function ProductSelectionModal({
           ) : null}
         </div>
 
-        {!isArbitraryMode ? (
+        {isArbitraryMode ? null : (
           <input
             ref={searchInputRef}
             aria-label={`Search ${field.label.toLowerCase()}`}
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             placeholder={loaded ? `Search ${field.label.toLowerCase()}...` : "Loading products..."}
             disabled={!loaded}
             className="focus:border-primary-500 focus:ring-primary-500 border-border-strong disabled:bg-surface-muted disabled:text-text-disabled text-body w-full rounded-md border px-3 py-2 focus:ring-1 focus:outline-none"
           />
-        ) : null}
+        )}
       </div>
-      {!isArbitraryMode ? (
+      {isArbitraryMode ? null : (
         <div className="overflow-y-auto">
-          {!loaded ? (
-            <p className="text-text-muted text-body px-4 py-6">Loading products…</p>
-          ) : filteredProducts.length === 0 ? (
-            <p className="text-text-muted text-body px-4 py-6">No matching products.</p>
-          ) : (
-            filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className={`border-border-subtle flex w-full items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 ${product.id === draftSelectedId ? "bg-primary-50 text-primary-700" : "text-text-secondary hover:bg-surface-muted"}`}
-              >
-                <button type="button" onClick={() => setDraftSelectedId(product.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <span className="border-border bg-surface shrink-0 overflow-hidden rounded border">
-                    {product.featuredImage?.url ? (
-                      <ImageWithSkeleton src={product.featuredImage.url} alt={product.name} sizes="48px" wrapperClassName="size-12 bg-surface-muted p-1" />
-                    ) : (
-                      <span className="text-text-disabled flex size-12 items-center justify-center text-[10px]">No image</span>
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{product.name}</span>
-                    <span className="text-text-muted block truncate text-[11px]">
-                      {product.category?.name ?? "No category"} • {product.id}
+          {loaded ? (
+            filteredProducts.length === 0 ? (
+              <p className="text-text-muted text-body px-4 py-6">No matching products.</p>
+            ) : (
+              filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className={`border-border-subtle flex w-full items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 ${product.id === draftSelectedId ? "bg-primary-50 text-primary-700" : "text-text-secondary hover:bg-surface-muted"}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftSelectedId(product.id);
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className="border-border bg-surface shrink-0 overflow-hidden rounded border">
+                      {product.featuredImage?.url ? (
+                        <ImageWithSkeleton src={product.featuredImage.url} alt={product.name} sizes="48px" wrapperClassName="size-12 bg-surface-muted p-1" />
+                      ) : (
+                        <span className="text-text-disabled flex size-12 items-center justify-center text-[10px]">No image</span>
+                      )}
                     </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{product.name}</span>
+                      <span className="text-text-muted block truncate text-[11px]">
+                        {product.category?.name ?? "No category"} • {product.id}
+                      </span>
+                    </span>
+                  </button>
+                  <span className="flex shrink-0 items-center gap-1">
+                    {catalogCategory && <ProductListItemDownloads catalogCategory={catalogCategory} productId={product.id} productName={product.name} />}
+                    {product.id === draftSelectedId && <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span>}
                   </span>
-                </button>
-                <span className="flex shrink-0 items-center gap-1">
-                  {catalogCategory && <ProductListItemDownloads catalogCategory={catalogCategory} productId={product.id} productName={product.name} />}
-                  {product.id === draftSelectedId && <span className="bg-primary-100 rounded px-2 py-0.5 text-[10px] font-semibold">Selected</span>}
-                </span>
-              </div>
-            ))
+                </div>
+              ))
+            )
+          ) : (
+            <p className="text-text-muted text-body px-4 py-6">Loading products…</p>
           )}
         </div>
-      ) : null}
+      )}
       <div className="border-border-subtle flex items-center justify-end gap-2 border-t px-5 py-4">
         <Button variant="secondary" onClick={onClose}>
           Cancel

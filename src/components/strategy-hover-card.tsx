@@ -44,9 +44,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       const res = await fetch(serviceUrl(`strategies/${strategyId}`));
       if (!res.ok) return;
       const json = await res.json();
-      const d = json.data ?? json;
-      cache.set(strategyId, d);
-      setData(d);
+      const payload = json.data ?? json;
+      cache.set(strategyId, payload);
+      setData(payload);
     } catch {
       /* ignore */
     }
@@ -66,7 +66,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
 
   const hide = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setOpen(false), 200);
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 200);
   }, []);
 
   const keepOpen = useCallback(() => {
@@ -110,9 +112,7 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
         pos &&
         createPortal(
           <div ref={measureCard} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
-            {!data ? (
-              <p className="text-text-muted text-caption">Loading…</p>
-            ) : (
+            {data ? (
               <div className="space-y-3">
                 <div>
                   <Link href={`/strategies/${data.id}`} className="text-primary-600 hover:text-primary-500 text-body font-semibold">
@@ -141,12 +141,12 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
                               <span className="text-text-disabled">: </span>
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
                                   setViewingPrompt({
                                     id: step.promptVersion!.id,
                                     name: step.promptVersion!.name
-                                  })
-                                }
+                                  });
+                                }}
                                 className="text-primary-600 hover:text-primary-500 hover:underline"
                               >
                                 {step.promptVersion.name || "Untitled prompt"}
@@ -159,16 +159,26 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
                   </div>
                 )}
               </div>
+            ) : (
+              <p className="text-text-muted text-caption">Loading…</p>
             )}
           </div>,
           document.body
         )}
-      {viewingPrompt && <ViewPromptModal promptVersionId={viewingPrompt.id} promptVersionName={viewingPrompt.name} onClose={() => setViewingPrompt(null)} />}
+      {viewingPrompt && (
+        <ViewPromptModal
+          promptVersionId={viewingPrompt.id}
+          promptVersionName={viewingPrompt.name}
+          onClose={() => {
+            setViewingPrompt(null);
+          }}
+        />
+      )}
     </>
   );
 }
 
 function Badge({ children, color }: { children: React.ReactNode; color: keyof typeof STRATEGY_PROPERTY_COLORS }) {
-  const c = STRATEGY_PROPERTY_COLORS[color];
-  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${c.bg} ${c.text}`}>{children}</span>;
+  const colors = STRATEGY_PROPERTY_COLORS[color];
+  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text}`}>{children}</span>;
 }

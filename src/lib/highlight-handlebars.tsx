@@ -71,7 +71,7 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
         ) : (
           <span key={k}>{part}</span>
         );
-        lines[lines.length - 1]!.push(node);
+        lines.at(-1)!.push(node);
       }
       if (i < parts.length - 1) lines.push([]);
     });

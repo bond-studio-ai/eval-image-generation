@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { RenderStatusBadge } from "@/components/render-status-badge";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { getDollhouseRender, type DollhouseRender } from "@/lib/dollhouse-renders";
+import { type DollhouseRender, getDollhouseRender } from "@/lib/dollhouse-renders";
 import { imageGenerationV2Base } from "@/lib/env";
 import { RenderAutoRefresh } from "./render-auto-refresh";
 

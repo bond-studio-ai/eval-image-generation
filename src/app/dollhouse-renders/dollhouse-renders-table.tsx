@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { DataTable, DateCell, FilterPills, NameCell, SearchBar, type DataTableColumn } from "@/components/data-table";
+import { DataTable, type DataTableColumn, DateCell, FilterPills, NameCell, SearchBar } from "@/components/data-table";
 import { actionsColumn } from "@/components/data-table-utils";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { Pagination } from "@/components/pagination";
@@ -30,7 +30,7 @@ function readStatusFilter(value: string | undefined): StatusFilter {
 
 function FramesPreview({ frames }: { frames: DollhouseRender["frames"] }) {
   if (!frames || frames.length === 0) {
-    return <span className="text-text-muted">{"—"}</span>;
+    return <span className="text-text-muted">—</span>;
   }
   const visible = frames.slice(0, 3);
   const remaining = frames.length - visible.length;
@@ -118,13 +118,15 @@ export function DollhouseRendersTable() {
       },
       {
         header: "Completed",
-        cell: (row) => (row.completedAt ? <DateCell date={row.completedAt} /> : <span className="text-text-muted">{"—"}</span>)
+        cell: (row) => (row.completedAt ? <DateCell date={row.completedAt} /> : <span className="text-text-muted">—</span>)
       },
       actionsColumn<DollhouseRender>([
         {
           icon: "edit",
           label: "View render",
-          onClick: (row) => router.push(`/dollhouse-renders/${row.id}`)
+          onClick: (row) => {
+            router.push(`/dollhouse-renders/${row.id}`);
+          }
         }
       ])
     ],

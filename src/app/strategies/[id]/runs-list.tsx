@@ -55,10 +55,10 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
   const [viewMode, setViewMode] = useState<"list" | "matrix">("list");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const hasActiveRun = runs.some((r) => r.status === "running" || r.status === "pending");
+  const hasActiveRun = runs.some((run) => run.status === "running" || run.status === "pending");
 
   const hasAwaitingJudge = hasJudge && groupStrategyRuns(runs, hasJudge).some((group) => group.awaitingJudge);
-  const shouldPoll = hasActiveRun || !!hasAwaitingJudge;
+  const shouldPoll = hasActiveRun || Boolean(hasAwaitingJudge);
 
   const fetchRuns = useCallback(async () => {
     try {
@@ -104,7 +104,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
 
   const fetchRunsKeepScroll = useCallback(async () => {
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>(".overflow-x-auto");
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
+    pendingScrollRef.current = scrollers ? Array.from(scrollers, (el) => el.scrollLeft) : [];
     await fetchRuns();
   }, [fetchRuns]);
 
@@ -116,14 +116,18 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
           <div className="border-border bg-surface-muted flex rounded-lg border p-0.5">
             <button
               type="button"
-              onClick={() => setViewMode("list")}
+              onClick={() => {
+                setViewMode("list");
+              }}
               className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${viewMode === "list" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
             >
               List
             </button>
             <button
               type="button"
-              onClick={() => setViewMode("matrix")}
+              onClick={() => {
+                setViewMode("matrix");
+              }}
               className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${viewMode === "matrix" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
             >
               Matrix
@@ -142,13 +146,13 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
               batch={item}
               strategyId={strategyId}
               onRated={fetchRunsKeepScroll}
-              onImageClick={(run) =>
+              onImageClick={(run) => {
                 setLightbox({
                   src: run.lastOutputUrl!,
                   runHref: `/strategies/${strategyId}/runs/${run.id}`,
                   generationId: run.lastOutputGenerationId ?? null
-                })
-              }
+                });
+              }}
             />
           ))}
         </div>
@@ -160,18 +164,28 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
               batch={item}
               strategyId={strategyId}
               onRated={fetchRunsKeepScroll}
-              onImageClick={(run) =>
+              onImageClick={(run) => {
                 setLightbox({
                   src: run.lastOutputUrl!,
                   runHref: `/strategies/${strategyId}/runs/${run.id}`,
                   generationId: run.lastOutputGenerationId ?? null
-                })
-              }
+                });
+              }}
             />
           ))}
         </div>
       )}
-      {lightbox && <GridLightbox src={lightbox.src} runHref={lightbox.runHref} generationId={lightbox.generationId} onRated={() => fetchRunsKeepScroll()} onClose={() => setLightbox(null)} />}
+      {lightbox && (
+        <GridLightbox
+          src={lightbox.src}
+          runHref={lightbox.runHref}
+          generationId={lightbox.generationId}
+          onRated={() => fetchRunsKeepScroll()}
+          onClose={() => {
+            setLightbox(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -200,16 +214,16 @@ function BatchRunCard({
   const [retrying, setRetrying] = useState(false);
   const [retryingJudge, setRetryingJudge] = useState(false);
   const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
-  const presetNames = new Set(batch.runs.map((r) => r.inputPresetName ?? "(no preset)"));
-  const completedRuns = batch.runs.filter((r) => r.status === "completed").length;
-  const failedRuns = batch.runs.filter((r) => r.status === "failed" || r.status === "skipped").length;
+  const presetNames = new Set(batch.runs.map((run) => run.inputPresetName ?? "(no preset)"));
+  const completedRuns = batch.runs.filter((run) => run.status === "completed").length;
+  const failedRuns = batch.runs.filter((run) => run.status === "failed" || run.status === "skipped").length;
 
   const showRetryJudge = (() => {
-    const completed = batch.runs.filter((r) => r.status === "completed" && r.lastOutputUrl);
+    const completed = batch.runs.filter((run) => run.status === "completed" && run.lastOutputUrl);
     if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing = completed.some((run) => run.judgeScore === 0) || completed.every((run) => run.judgeScore == null);
     if (hasFailedOrMissing) return true;
-    const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
+    const missingPerJudge = completed.some((run) => !run.judgeResults || run.judgeResults.length === 0);
     return missingPerJudge;
   })();
 
@@ -236,20 +250,20 @@ function BatchRunCard({
       const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
         method: "POST"
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
-        setJudgeRetryError(msg);
-      } else {
+      if (res.ok) {
         const body = await res.json().catch(() => null);
         const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
+      } else {
+        const body = await res.json().catch(() => null);
+        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError(msg);
       }
       onRated?.();
-    } catch (err) {
-      setJudgeRetryError(err instanceof Error ? err.message : "Network error");
+    } catch (error) {
+      setJudgeRetryError(error instanceof Error ? error.message : "Network error");
       onRated?.();
     } finally {
       setRetryingJudge(false);
@@ -258,7 +272,13 @@ function BatchRunCard({
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">
-      <button type="button" onClick={() => setExpanded(!expanded)} className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-5 py-3 text-left">
+      <button
+        type="button"
+        onClick={() => {
+          setExpanded(!expanded);
+        }}
+        className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-5 py-3 text-left"
+      >
         <div className="flex items-center gap-3">
           <ChevronRightIcon className={`text-text-disabled size-4 transition-transform ${expanded ? "rotate-90" : ""}`} />
           <span className={`text-caption inline-flex items-center rounded-full px-2 py-0.5 font-medium ${batch.isStandalone ? "bg-surface-sunken text-text-secondary" : "bg-primary-50 text-primary-700"}`}>
@@ -307,7 +327,13 @@ function BatchRunCard({
       {judgeRetryError && (
         <div className="border-danger-100 bg-danger-50 flex items-center justify-between border-b px-5 py-2">
           <span className="text-danger-700 text-caption">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-danger-400 hover:text-danger-600 text-caption">
+          <button
+            type="button"
+            onClick={() => {
+              setJudgeRetryError(null);
+            }}
+            className="text-danger-400 hover:text-danger-600 text-caption"
+          >
             dismiss
           </button>
         </div>
@@ -344,14 +370,14 @@ function CollapsibleBatchCard({
   const [retrying, setRetrying] = useState(false);
   const [retryingJudge, setRetryingJudge] = useState(false);
   const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
-  const failedRuns = batch.runs.filter((r) => r.status === "failed" || r.status === "skipped").length;
+  const failedRuns = batch.runs.filter((run) => run.status === "failed" || run.status === "skipped").length;
 
   const showRetryJudge = (() => {
-    const completed = batch.runs.filter((r) => r.status === "completed" && r.lastOutputUrl);
+    const completed = batch.runs.filter((run) => run.status === "completed" && run.lastOutputUrl);
     if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((r) => r.judgeScore === 0) || completed.every((r) => r.judgeScore == null);
+    const hasFailedOrMissing = completed.some((run) => run.judgeScore === 0) || completed.every((run) => run.judgeScore == null);
     if (hasFailedOrMissing) return true;
-    const missingPerJudge = completed.some((r) => !r.judgeResults || r.judgeResults.length === 0);
+    const missingPerJudge = completed.some((run) => !run.judgeResults || run.judgeResults.length === 0);
     return missingPerJudge;
   })();
 
@@ -378,20 +404,20 @@ function CollapsibleBatchCard({
       const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
         method: "POST"
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
-        setJudgeRetryError(msg);
-      } else {
+      if (res.ok) {
         const body = await res.json().catch(() => null);
         const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
+      } else {
+        const body = await res.json().catch(() => null);
+        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError(msg);
       }
       onRated?.();
-    } catch (err) {
-      setJudgeRetryError(err instanceof Error ? err.message : "Network error");
+    } catch (error) {
+      setJudgeRetryError(error instanceof Error ? error.message : "Network error");
       onRated?.();
     } finally {
       setRetryingJudge(false);
@@ -400,7 +426,13 @@ function CollapsibleBatchCard({
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">
-      <button type="button" onClick={() => setExpanded(!expanded)} className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-4 py-2 text-left">
+      <button
+        type="button"
+        onClick={() => {
+          setExpanded(!expanded);
+        }}
+        className="border-border-subtle hover:bg-surface-muted/50 flex w-full items-center justify-between border-b px-4 py-2 text-left"
+      >
         <span className="text-text-secondary text-body font-medium">Batch · {new Date(batch.createdAt).toLocaleString()}</span>
         <div className="flex items-center gap-2">
           {failedRuns > 0 && !batch.isStandalone && (
@@ -438,7 +470,13 @@ function CollapsibleBatchCard({
       {judgeRetryError && (
         <div className="border-danger-100 bg-danger-50 flex items-center justify-between border-b px-4 py-2">
           <span className="text-danger-700 text-caption">{judgeRetryError}</span>
-          <button type="button" onClick={() => setJudgeRetryError(null)} className="text-danger-400 hover:text-danger-600 text-caption">
+          <button
+            type="button"
+            onClick={() => {
+              setJudgeRetryError(null);
+            }}
+            className="text-danger-400 hover:text-danger-600 text-caption"
+          >
             dismiss
           </button>
         </div>
@@ -479,13 +517,13 @@ function BatchMatrix({
     arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
   const presetNames = Array.from(byPreset.keys()).sort();
-  const maxExecutions = Math.max(0, ...Array.from(byPreset.values()).map((a) => a.length));
+  const maxExecutions = Math.max(0, ...Array.from(byPreset.values(), (a) => a.length));
 
   // Hydrate per-run segmentation status when the parent accordion opens.
   // We track *every* run's generation id (not just the canonical-per-row one)
   // so the per-cell masks badge can reflect that specific run's status.
-  const segmentationGenerationIds = runs.map((r) => r.lastOutputGenerationId ?? null);
-  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(segmentationGenerationIds, !!expanded);
+  const segmentationGenerationIds = runs.map((run) => run.lastOutputGenerationId ?? null);
+  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(segmentationGenerationIds, Boolean(expanded));
 
   const CELL = 240;
 
@@ -516,7 +554,15 @@ function BatchMatrix({
                   {canonicalGenerationId &&
                     (() => {
                       const state = segmentationStatuses.get(canonicalGenerationId);
-                      return <ReviewBadge generationId={canonicalGenerationId} {...(state !== undefined ? { state } : {})} onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)} />;
+                      return (
+                        <ReviewBadge
+                          generationId={canonicalGenerationId}
+                          {...(state === undefined ? {} : { state })}
+                          onStateChange={(next) => {
+                            setSegmentationStatus(canonicalGenerationId, next);
+                          }}
+                        />
+                      );
                     })()}
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
@@ -524,47 +570,51 @@ function BatchMatrix({
                   return (
                     <td key={i} className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>
                       <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                        {!run ? (
-                          <span className="text-text-disabled">&mdash;</span>
-                        ) : run.lastOutputUrl ? (
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onImageClick(run)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") onImageClick(run);
-                            }}
-                            className="group relative block cursor-pointer"
-                          >
-                            <CdnImage
-                              src={run.lastOutputUrl}
-                              alt=""
-                              width={CELL - 20}
-                              height={CELL - 20}
-                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
-                            />
-                            <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
-                              <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
+                        {run ? (
+                          run.lastOutputUrl ? (
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => {
+                                onImageClick(run);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") onImageClick(run);
+                              }}
+                              className="group relative block cursor-pointer"
+                            >
+                              <CdnImage
+                                src={run.lastOutputUrl}
+                                alt=""
+                                width={CELL - 20}
+                                height={CELL - 20}
+                                className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
+                              />
+                              <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
+                                <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
+                              </div>
+                              <JudgeScoreBadge
+                                runId={run.id}
+                                judgeScore={run.judgeScore}
+                                isJudgeSelected={run.isJudgeSelected ?? false}
+                                judgeReasoning={run.judgeReasoning ?? null}
+                                judgeOutput={run.judgeOutput ?? null}
+                                judgeSystemPrompt={run.judgeSystemPrompt ?? null}
+                                judgeUserPrompt={run.judgeUserPrompt ?? null}
+                                judgeTypeUsed={run.judgeTypeUsed ?? null}
+                                judgeResults={run.judgeResults ?? null}
+                                awaitingJudge={awaitingJudge ?? false}
+                              />
+                              <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
+                              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
                             </div>
-                            <JudgeScoreBadge
-                              runId={run.id}
-                              judgeScore={run.judgeScore}
-                              isJudgeSelected={run.isJudgeSelected ?? false}
-                              judgeReasoning={run.judgeReasoning ?? null}
-                              judgeOutput={run.judgeOutput ?? null}
-                              judgeSystemPrompt={run.judgeSystemPrompt ?? null}
-                              judgeUserPrompt={run.judgeUserPrompt ?? null}
-                              judgeTypeUsed={run.judgeTypeUsed ?? null}
-                              judgeResults={run.judgeResults ?? null}
-                              awaitingJudge={awaitingJudge ?? false}
-                            />
-                            <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
-                            {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
-                          </div>
+                          ) : (
+                            <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
+                              <StatusBadge status={run.status} />
+                            </Link>
+                          )
                         ) : (
-                          <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
-                            <StatusBadge status={run.status} />
-                          </Link>
+                          <span className="text-text-disabled">&mdash;</span>
                         )}
                       </div>
                     </td>

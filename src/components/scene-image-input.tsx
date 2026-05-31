@@ -36,8 +36,8 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
         if (!res.ok) throw new Error(json?.error?.message || `Upload failed (${res.status})`);
 
         onChange(json.data.publicUrl);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to upload image");
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_.message : "Failed to upload image");
       } finally {
         setUploading(false);
       }
@@ -71,7 +71,14 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       {value ? (
         <div className="group relative">
           <ImageWithSkeleton src={value} alt={label} wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-border bg-surface-muted" />
-          <button type="button" aria-label="Remove image" onClick={() => onChange(null)} className="bg-danger-500 text-text-inverse absolute -top-2 -right-2 rounded-full p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            aria-label="Remove image"
+            onClick={() => {
+              onChange(null);
+            }}
+            className="bg-danger-500 text-text-inverse absolute -top-2 -right-2 rounded-full p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+          >
             <XIcon className="size-3" />
           </button>
         </div>
@@ -98,7 +105,9 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
               e.preventDefault();
               setDragOver(true);
             }}
-            onDragLeave={() => setDragOver(false)}
+            onDragLeave={() => {
+              setDragOver(false);
+            }}
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
           >

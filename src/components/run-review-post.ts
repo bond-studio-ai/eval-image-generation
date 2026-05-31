@@ -35,8 +35,8 @@ export async function runReviewPost(generationId: string, force: boolean): Promi
       ...(typeof data.succeeded === "number" ? { succeeded: data.succeeded } : {}),
       ...(typeof data.promptCount === "number" ? { total: data.promptCount } : {})
     };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Network error";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network error";
     return { kind: "error", message };
   }
 }

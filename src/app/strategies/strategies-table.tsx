@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter, type DataTableColumn, type RowAction } from "@/components/data-table";
+import { DataTable, type DataTableColumn, DateCell, NameCell, type RowAction, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -49,8 +49,8 @@ export function StrategiesTable() {
           toast.success("Strategy cloned");
           router.push(`/strategies/${newId}/edit`);
         }
-      } catch (e) {
-        toast.error("Failed to clone strategy", e instanceof Error ? { description: e.message } : {});
+      } catch (error) {
+        toast.error("Failed to clone strategy", error instanceof Error ? { description: error.message } : {});
       } finally {
         setCloningId(null);
       }
@@ -78,8 +78,8 @@ export function StrategiesTable() {
         }
         toast.success(`Deleted strategy "${name}"`);
         refresh();
-      } catch (e) {
-        toast.error("Failed to delete strategy", e instanceof Error ? { description: e.message } : {});
+      } catch (error) {
+        toast.error("Failed to delete strategy", error instanceof Error ? { description: error.message } : {});
       } finally {
         setDeletingId(null);
       }
@@ -100,8 +100,8 @@ export function StrategiesTable() {
         }
         toast.success("Strategy deactivated");
         refresh();
-      } catch (e) {
-        toast.error("Failed to deactivate strategy", e instanceof Error ? { description: e.message } : {});
+      } catch (error) {
+        toast.error("Failed to deactivate strategy", error instanceof Error ? { description: error.message } : {});
       } finally {
         setTogglingId(null);
       }
@@ -121,14 +121,14 @@ export function StrategiesTable() {
   const toggleAll = useCallback(() => {
     setSelected((prev) => {
       if (prev.size === items.length) return new Set();
-      return new Set(items.map((s) => s.id));
+      return new Set(items.map((strategy) => strategy.id));
     });
   }, [items]);
 
   const handleBulkDelete = useCallback(async () => {
-    const ids = [...selected];
+    const ids = Array.from(selected);
     const results = await Promise.allSettled(ids.map((id) => fetch(serviceUrl(`strategies/${id}`), { method: "DELETE" })));
-    const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)).length;
+    const failed = results.filter((result) => result.status === "rejected" || (result.status === "fulfilled" && !result.value.ok)).length;
     if (failed === 0) {
       toast.success(`Deleted ${ids.length} strateg${ids.length === 1 ? "y" : "ies"}`);
     } else if (failed === ids.length) {
@@ -147,15 +147,15 @@ export function StrategiesTable() {
       {
         icon: "clone",
         label: "Clone strategy",
-        onClick: (s) => handleClone(s.id),
-        loading: (s) => cloningId === s.id
+        onClick: (strategy) => handleClone(strategy.id),
+        loading: (strategy) => cloningId === strategy.id
       },
       {
         icon: "delete",
         label: "Delete strategy",
-        onClick: (s) => handleDelete(s.id, s.name),
+        onClick: (strategy) => handleDelete(strategy.id, strategy.name),
         variant: "danger",
-        loading: (s) => deletingId === s.id
+        loading: (strategy) => deletingId === strategy.id
       }
     ],
     [handleClone, handleDelete, cloningId, deletingId]
@@ -166,26 +166,26 @@ export function StrategiesTable() {
       checkboxColumn<StrategyListItem>({
         selected,
         onToggle: toggleSelect,
-        rowId: (s) => s.id
+        rowId: (strategy) => strategy.id
       }),
       {
         header: "Name",
-        cell: (s) => <NameCell href={`/strategies/${s.id}`} name={s.name} subtitle={s.description} />,
+        cell: (strategy) => <NameCell href={`/strategies/${strategy.id}`} name={strategy.name} subtitle={strategy.description} />,
         cellClassName: "px-6 py-4"
       },
       {
         header: "Status",
-        cell: (s) => {
-          if (!s.activeForSource) {
+        cell: (strategy) => {
+          if (!strategy.activeForSource) {
             return (
-              <Link href={`/strategies/${s.id}`} title="Open strategy to activate it">
+              <Link href={`/strategies/${strategy.id}`} title="Open strategy to activate it">
                 <StatusBadge status="inactive" />
               </Link>
             );
           }
-          const sourceLabel = s.activeForSource === "photo" ? "Photo" : s.activeForSource === "pdp" ? "PDP" : "Dollhouse";
+          const sourceLabel = strategy.activeForSource === "photo" ? "Photo" : strategy.activeForSource === "pdp" ? "PDP" : "Dollhouse";
           return (
-            <button type="button" onClick={() => handleDeactivate(s.id)} disabled={togglingId === s.id} className="disabled:opacity-50" title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}>
+            <button type="button" onClick={() => handleDeactivate(strategy.id)} disabled={togglingId === strategy.id} className="disabled:opacity-50" title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}>
               <StatusBadge status="active" label={`Active · ${sourceLabel}`} />
             </button>
           );
@@ -193,15 +193,15 @@ export function StrategiesTable() {
       },
       {
         header: "Steps",
-        cell: (s) => `${s.stepCount} step${s.stepCount !== 1 ? "s" : ""}`
+        cell: (strategy) => `${strategy.stepCount} step${strategy.stepCount === 1 ? "" : "s"}`
       },
       {
         header: "Runs",
-        cell: (s) => `${s.runCount} run${s.runCount !== 1 ? "s" : ""}`
+        cell: (strategy) => `${strategy.runCount} run${strategy.runCount === 1 ? "" : "s"}`
       },
       {
         header: "Created",
-        cell: (s) => <DateCell date={s.createdAt} />
+        cell: (strategy) => <DateCell date={strategy.createdAt} />
       },
       actionsColumn(actions)
     ],
@@ -225,15 +225,22 @@ export function StrategiesTable() {
       <DataTable
         columns={columns}
         data={items}
-        rowKey={(s) => s.id}
-        rowClassName={(s) => `hover:bg-surface-muted ${selected.has(s.id) ? "bg-primary-50/50" : ""}`}
+        rowKey={(strategy) => strategy.id}
+        rowClassName={(strategy) => `hover:bg-surface-muted ${selected.has(strategy.id) ? "bg-primary-50/50" : ""}`}
         emptyMessage={search || activeOnly ? "No strategies match your filters." : "No strategies found."}
         loading={loading}
         toolbar={toolbar}
         footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
-      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="strategies" />
+      <BulkDeleteBar
+        selectedCount={selected.size}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => {
+          setSelected(new Set());
+        }}
+        entityName="strategies"
+      />
     </>
   );
 }

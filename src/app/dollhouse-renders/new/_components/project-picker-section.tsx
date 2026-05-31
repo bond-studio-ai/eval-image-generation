@@ -38,7 +38,9 @@ export function ProjectPickerSection({ projectIdInput, onProjectIdInputChange, o
               <TextInput
                 id={id}
                 value={projectIdInput}
-                onChange={(e) => onProjectIdInputChange(e.target.value)}
+                onChange={(e) => {
+                  onProjectIdInputChange(e.target.value);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

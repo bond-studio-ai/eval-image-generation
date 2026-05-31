@@ -71,7 +71,9 @@ function DropdownWithSearch({ containerRef, triggerId, open, setOpen, search, se
       <button
         type="button"
         id={triggerId}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+        }}
         className="focus:border-primary-500 focus:ring-primary-500 border-border bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left shadow-xs transition-colors focus:ring-1"
       >
         <span className={selectedLabel ? "text-text-primary" : "text-text-muted"}>{selectedLabel || placeholder}</span>
@@ -84,7 +86,9 @@ function DropdownWithSearch({ containerRef, triggerId, open, setOpen, search, se
               ref={focusOnMount}
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
               placeholder="Search…"
               aria-label="Search"
               className="focus:border-primary-500 focus:ring-primary-500 border-border text-body w-full rounded-md border px-3 py-1.5 focus:ring-1"
@@ -126,12 +130,15 @@ type DropdownAction = { type: "select"; id: string | null } | { type: "setOpen";
 
 function dropdownReducer(state: DropdownState, action: DropdownAction): DropdownState {
   switch (action.type) {
-    case "select":
+    case "select": {
       return { ...state, selectedId: action.id };
-    case "setOpen":
+    }
+    case "setOpen": {
       return { ...state, open: action.open };
-    case "setSearch":
+    }
+    case "setSearch": {
       return { ...state, search: action.search };
+    }
   }
 }
 
@@ -175,13 +182,13 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
       const pvData = Array.isArray(pvJson.data) ? pvJson.data : [];
       const presetData = Array.isArray(presetJson.data) ? presetJson.data : [];
       return {
-        promptVersions: pvData.map((p: { id: string; name?: string | null }) => ({
-          id: p.id,
-          name: p.name ?? null
+        promptVersions: pvData.map((promptVersion: { id: string; name?: string | null }) => ({
+          id: promptVersion.id,
+          name: promptVersion.name ?? null
         })),
-        presets: presetData.map((p: { id: string; name?: string | null }) => ({
-          id: p.id,
-          name: p.name ?? null
+        presets: presetData.map((preset: { id: string; name?: string | null }) => ({
+          id: preset.id,
+          name: preset.name ?? null
         }))
       };
     },
@@ -205,7 +212,7 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
   const presets = useMemo(() => optionsQuery.data?.presets ?? initialPresets ?? [], [optionsQuery.data, initialPresets]);
   const dollhouseSource = dollhouseQuery.data ?? null;
 
-  const previewEnabled = !!selectedPromptId && !!selectedPresetId;
+  const previewEnabled = Boolean(selectedPromptId) && Boolean(selectedPresetId);
   const previewQuery = useQuery({
     queryKey: ["preview", selectedPromptId, selectedPresetId, selectedAreaSummary],
     queryFn: async ({ signal }): Promise<PreviewItem[]> => {
@@ -219,8 +226,8 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
         signal
       });
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error?.message || "Failed to load preview");
+        const errorJson = await res.json();
+        throw new Error(errorJson.error?.message || "Failed to load preview");
       }
       const json = await res.json();
       const preview = json.data;
@@ -231,32 +238,32 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
 
   const loadingOptions = !hasInitialOptions && optionsQuery.isLoading;
   const optionsErrorMessage = optionsQuery.isError ? (optionsQuery.error instanceof Error ? optionsQuery.error.message : "Failed to load options") : null;
-  const loadError = optionsErrorMessage ? optionsErrorMessage : !hasInitialOptions && optionsQuery.isSuccess && dollhouseQuery.isError ? DOLLHOUSE_UNAVAILABLE_MESSAGE : null;
+  const loadError = optionsErrorMessage || (!hasInitialOptions && optionsQuery.isSuccess && dollhouseQuery.isError ? DOLLHOUSE_UNAVAILABLE_MESSAGE : null);
 
   const previews = previewEnabled ? (previewQuery.data ?? []) : [];
   const loading = previewEnabled && previewQuery.isLoading;
   const error = previewEnabled && previewQuery.isError ? (previewQuery.error instanceof Error ? previewQuery.error.message : "Preview failed") : null;
 
   const filteredPrompts = useMemo(() => {
-    const q = promptDropdown.search.trim().toLowerCase();
-    if (!q) return promptVersions;
-    return promptVersions.filter((p) => (p.name ?? "").toLowerCase().includes(q));
+    const query = promptDropdown.search.trim().toLowerCase();
+    if (!query) return promptVersions;
+    return promptVersions.filter((promptVersion) => (promptVersion.name ?? "").toLowerCase().includes(query));
   }, [promptVersions, promptDropdown.search]);
 
   const filteredPresets = useMemo(() => {
-    const q = presetDropdown.search.trim().toLowerCase();
-    if (!q) return presets;
-    return presets.filter((preset) => (preset.name ?? "").toLowerCase().includes(q));
+    const query = presetDropdown.search.trim().toLowerCase();
+    if (!query) return presets;
+    return presets.filter((preset) => (preset.name ?? "").toLowerCase().includes(query));
   }, [presets, presetDropdown.search]);
 
   const filteredAreas = useMemo(() => {
-    const q = areaDropdown.search.trim().toLowerCase();
+    const query = areaDropdown.search.trim().toLowerCase();
     const areas = dollhouseSource?.areas ?? [];
-    if (!q) return areas;
-    return areas.filter((area) => area.summary.toLowerCase().includes(q));
+    if (!query) return areas;
+    return areas.filter((area) => area.summary.toLowerCase().includes(query));
   }, [areaDropdown.search, dollhouseSource]);
 
-  const selectedPrompt = useMemo(() => promptVersions.find((p) => p.id === selectedPromptId), [promptVersions, selectedPromptId]);
+  const selectedPrompt = useMemo(() => promptVersions.find((promptVersion) => promptVersion.id === selectedPromptId), [promptVersions, selectedPromptId]);
   const selectedPreset = useMemo(() => presets.find((preset) => preset.id === selectedPresetId), [presets, selectedPresetId]);
   const selectedArea = useMemo(() => (dollhouseSource?.areas ?? []).find((area) => area.summary === selectedAreaSummary), [dollhouseSource, selectedAreaSummary]);
 
@@ -278,7 +285,9 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
       }
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
   }, []);
 
   return (
@@ -309,9 +318,13 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
               containerRef={promptRef}
               triggerId="preview-prompt-version"
               open={promptDropdown.open}
-              setOpen={(v) => promptDispatch({ type: "setOpen", open: v })}
+              setOpen={(open) => {
+                promptDispatch({ type: "setOpen", open });
+              }}
               search={promptDropdown.search}
-              setSearch={(v) => promptDispatch({ type: "setSearch", search: v })}
+              setSearch={(search) => {
+                promptDispatch({ type: "setSearch", search });
+              }}
               placeholder="Select prompt version…"
               options={filteredPrompts.map((prompt) => ({
                 id: prompt.id,
@@ -319,7 +332,9 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
               }))}
               selectedId={selectedPrompt?.id ?? null}
               selectedLabel={selectedPrompt?.name || null}
-              onSelectId={(id) => promptDispatch({ type: "select", id })}
+              onSelectId={(id) => {
+                promptDispatch({ type: "select", id });
+              }}
               emptyMessage="No prompt versions"
             />
           )}
@@ -335,9 +350,13 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
               containerRef={presetRef}
               triggerId="preview-input-preset"
               open={presetDropdown.open}
-              setOpen={(v) => presetDispatch({ type: "setOpen", open: v })}
+              setOpen={(open) => {
+                presetDispatch({ type: "setOpen", open });
+              }}
               search={presetDropdown.search}
-              setSearch={(v) => presetDispatch({ type: "setSearch", search: v })}
+              setSearch={(search) => {
+                presetDispatch({ type: "setSearch", search });
+              }}
               placeholder="Select input preset…"
               options={filteredPresets.map((preset) => ({
                 id: preset.id,
@@ -345,7 +364,9 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
               }))}
               selectedId={selectedPreset?.id ?? null}
               selectedLabel={selectedPreset?.name || null}
-              onSelectId={(id) => presetDispatch({ type: "select", id })}
+              onSelectId={(id) => {
+                presetDispatch({ type: "select", id });
+              }}
               emptyMessage="No presets"
             />
           )}
@@ -361,14 +382,20 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
               containerRef={areaRef}
               triggerId="preview-dollhouse-area"
               open={areaDropdown.open}
-              setOpen={(v) => areaDispatch({ type: "setOpen", open: v })}
+              setOpen={(open) => {
+                areaDispatch({ type: "setOpen", open });
+              }}
               search={areaDropdown.search}
-              setSearch={(v) => areaDispatch({ type: "setSearch", search: v })}
+              setSearch={(search) => {
+                areaDispatch({ type: "setSearch", search });
+              }}
               placeholder="Select dollhouse area…"
               options={filteredAreas.map((area) => ({ id: area.summary, label: area.summary }))}
               selectedId={selectedArea?.summary ?? null}
               selectedLabel={selectedArea?.summary || null}
-              onSelectId={(id) => areaDispatch({ type: "select", id })}
+              onSelectId={(id) => {
+                areaDispatch({ type: "select", id });
+              }}
               emptyMessage={dollhouseSource ? "No dollhouse areas" : "Dollhouse preview unavailable"}
             />
           )}

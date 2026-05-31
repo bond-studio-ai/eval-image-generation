@@ -34,7 +34,17 @@ export function Stepper({ steps, onStepClick, className, label }: StepperProps) 
           const isLast = index === steps.length - 1;
           return (
             <li key={step.id} className={cn("flex min-w-0 items-start", !isLast && "flex-1")}>
-              <StepButton step={step} index={index} onClick={onStepClick ? () => onStepClick(step.id) : undefined} />
+              <StepButton
+                step={step}
+                index={index}
+                onClick={
+                  onStepClick
+                    ? () => {
+                        onStepClick(step.id);
+                      }
+                    : undefined
+                }
+              />
               {!isLast && <Connector state={step.state} />}
             </li>
           );
@@ -83,22 +93,26 @@ function StepCircle({ state, index }: { state: StepperStepState; index: number }
   let icon: ReactNode;
   let cls: string;
   switch (state) {
-    case "complete":
+    case "complete": {
       icon = <CheckIcon className="size-4" aria-hidden />;
       cls = "bg-success-600 border-success-600 text-text-inverse";
       break;
-    case "current":
+    }
+    case "current": {
       icon = index + 1;
       cls = "bg-surface border-primary-600 text-primary-700";
       break;
-    case "error":
+    }
+    case "error": {
       icon = <AlertCircleIcon className="size-4" aria-hidden />;
       cls = "bg-danger-50 border-danger-600 text-danger-700";
       break;
-    case "pending":
+    }
+    case "pending": {
       icon = index + 1;
       cls = "bg-surface border-border-strong text-text-muted";
       break;
+    }
   }
 
   return <span className={cn(baseClass, cls)}>{icon}</span>;

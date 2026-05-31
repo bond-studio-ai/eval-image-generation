@@ -59,7 +59,7 @@ const FALLBACK_COLORS: Record<string, string> = {
 const NEUTRAL_SWATCH = "#9CA3AF";
 
 function fallbackLabel(category: string): string {
-  return category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return category.replaceAll("_", " ").replaceAll(/\b\w/g, (char) => char.toUpperCase());
 }
 
 /**

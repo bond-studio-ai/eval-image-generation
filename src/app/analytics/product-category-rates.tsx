@@ -9,11 +9,17 @@ import { browserTimezone, serviceUrl } from "@/lib/api-base";
 // filter combination, so the derived value keeps a stable identity.
 const EMPTY_EXPANDED: ReadonlySet<string> = new Set<string>();
 
-type CategoryIssueCount = { issue: string; count: number };
+interface CategoryIssueCount {
+  issue: string;
+  count: number;
+}
 
-type CategoryNoteCount = { text: string; count: number };
+interface CategoryNoteCount {
+  text: string;
+  count: number;
+}
 
-type CategoryRate = {
+interface CategoryRate {
   name: string;
   total: number;
   success: number;
@@ -23,7 +29,7 @@ type CategoryRate = {
   issues: CategoryIssueCount[];
   notes: CategoryNoteCount[];
   notesTruncated: boolean; // True when the API omitted some note buckets (e.g. cap exceeded)
-};
+}
 
 interface RawIssueItem {
   issue?: unknown;
@@ -52,11 +58,11 @@ function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
   const out: CategoryIssueCount[] = [];
   for (const x of raw) {
     if (!x || typeof x !== "object") continue;
-    const o = x as RawIssueItem;
-    if (typeof o.issue !== "string") continue;
-    const count = Number(o.count);
+    const item = x as RawIssueItem;
+    if (typeof item.issue !== "string") continue;
+    const count = Number(item.count);
     if (!Number.isFinite(count)) continue;
-    out.push({ issue: o.issue, count });
+    out.push({ issue: item.issue, count });
   }
   return out;
 }
@@ -66,19 +72,19 @@ function normalizeNoteItems(raw: unknown): CategoryNoteCount[] {
   const out: CategoryNoteCount[] = [];
   for (const x of raw) {
     if (!x || typeof x !== "object") continue;
-    const o = x as RawNoteItem;
-    if (typeof o.text !== "string") continue;
-    const count = Number(o.count);
+    const item = x as RawNoteItem;
+    if (typeof item.text !== "string") continue;
+    const count = Number(item.count);
     if (!Number.isFinite(count)) continue;
-    out.push({ text: o.text, count });
+    out.push({ text: item.text, count });
   }
   return out;
 }
 
 function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((c) => {
-    const row = c as RawCategoryRow;
+  return raw.map((entry) => {
+    const row = entry as RawCategoryRow;
     return {
       name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
       total: Number(row.total) || 0,
@@ -93,15 +99,15 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   });
 }
 
-function cn(...parts: Array<string | undefined | false>) {
+function cn(...parts: (string | undefined | false)[]) {
   return parts.filter(Boolean).join(" ");
 }
 
 function formatCategoryName(name: string): string {
   return name
-    .replace(/([A-Z])/g, " $1")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replaceAll(/([A-Z])/g, " $1")
+    .replaceAll("_", " ")
+    .replaceAll(/\b\w/g, (char) => char.toUpperCase())
     .trim();
 }
 
@@ -269,7 +275,7 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
   const toggleSort = useCallback((key: ProdSortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
-        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
         return key;
       }
       setSortDir(key === "name" ? "asc" : "desc");
@@ -321,7 +327,7 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
   const sortedCompact = categories.toSorted((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     if (sortKey === "name") return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
-    return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+    return dir * (a[sortKey] - b[sortKey]);
   });
 
   if (compact) {
@@ -339,7 +345,9 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
               <button
                 key={key}
                 type="button"
-                onClick={() => toggleSort(key)}
+                onClick={() => {
+                  toggleSort(key);
+                }}
                 className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${sortKey === key ? "text-text-secondary bg-border" : "text-text-disabled hover:text-text-secondary"}`}
               >
                 {label}
@@ -377,7 +385,7 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
   const sorted = categories.toSorted((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     if (sortKey === "name") return dir * formatCategoryName(a.name).localeCompare(formatCategoryName(b.name));
-    return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+    return dir * (a[sortKey] - b[sortKey]);
   });
 
   const thBase = "px-4 py-2 text-right text-caption font-medium uppercase tracking-wider text-text-secondary cursor-pointer select-none hover:text-text-primary transition-colors";
@@ -393,19 +401,39 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
         <thead>
           <tr>
             <th className="w-10 py-2 pr-0" aria-hidden tabIndex={-1} />
-            <th className="text-text-secondary hover:text-text-primary text-caption cursor-pointer py-2 pr-4 text-left font-medium tracking-wider uppercase transition-colors select-none" onClick={() => toggleSort("name")}>
+            <th
+              className="text-text-secondary hover:text-text-primary text-caption cursor-pointer py-2 pr-4 text-left font-medium tracking-wider uppercase transition-colors select-none"
+              onClick={() => {
+                toggleSort("name");
+              }}
+            >
               Product Category
               <ProdSortIcon active={sortKey === "name"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort("total")}>
+            <th
+              className={thBase}
+              onClick={() => {
+                toggleSort("total");
+              }}
+            >
               Evaluated
               <ProdSortIcon active={sortKey === "total"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort("successPct")}>
+            <th
+              className={thBase}
+              onClick={() => {
+                toggleSort("successPct");
+              }}
+            >
               Success
               <ProdSortIcon active={sortKey === "successPct"} dir={sortDir} />
             </th>
-            <th className={thBase} onClick={() => toggleSort("failurePct")}>
+            <th
+              className={thBase}
+              onClick={() => {
+                toggleSort("failurePct");
+              }}
+            >
               Failure
               <ProdSortIcon active={sortKey === "failurePct"} dir={sortDir} />
             </th>
@@ -421,7 +449,9 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
                   <td className="py-2 pr-0">
                     <button
                       type="button"
-                      onClick={() => toggleExpand(cat.name)}
+                      onClick={() => {
+                        toggleExpand(cat.name);
+                      }}
                       className="text-text-muted hover:text-text-secondary hover:bg-border rounded p-1"
                       aria-expanded={isExpanded}
                       aria-label={isExpanded ? "Collapse breakdown" : "Expand breakdown"}

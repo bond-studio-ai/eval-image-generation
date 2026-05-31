@@ -10,10 +10,10 @@ const REVIEW_STATUS_CONFIG: Record<string, { tone: "info" | "neutral" | "warning
 };
 
 export function ReviewStatusBadge({ status }: { status: string }) {
-  const c = REVIEW_STATUS_CONFIG[status] ?? REVIEW_STATUS_CONFIG["pending"]!;
+  const config = REVIEW_STATUS_CONFIG[status] ?? REVIEW_STATUS_CONFIG["pending"]!;
   return (
-    <Badge tone={c.tone} variant="soft">
-      {c.label}
+    <Badge tone={config.tone} variant="soft">
+      {config.label}
     </Badge>
   );
 }

@@ -5,7 +5,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 const Y_TICKS = [0, 20, 40, 60, 80, 100];
 
 interface AccuracyTrendChartGraphProps {
-  chartData: Array<Record<string, unknown> & { label: string }>;
+  chartData: (Record<string, unknown> & { label: string })[];
 }
 
 export function AccuracyTrendChartGraph({ chartData }: AccuracyTrendChartGraphProps) {
@@ -14,7 +14,7 @@ export function AccuracyTrendChartGraph({ chartData }: AccuracyTrendChartGraphPr
       <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}>
         <CartesianGrid stroke="#e5e7eb" />
         <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#9ca3af" tickLine={false} />
-        <YAxis domain={[0, 100]} ticks={Y_TICKS} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 12 }} stroke="#9ca3af" tickLine={false} />
+        <YAxis domain={[0, 100]} ticks={Y_TICKS} tickFormatter={(value: number) => `${value}%`} tick={{ fontSize: 12 }} stroke="#9ca3af" tickLine={false} />
         <Tooltip
           formatter={(value: unknown, name: unknown) => {
             const n = Number(value);
@@ -23,10 +23,10 @@ export function AccuracyTrendChartGraph({ chartData }: AccuracyTrendChartGraphPr
           labelFormatter={(_label, payload) => {
             const point = payload?.[0]?.payload as { date?: string } | undefined;
             if (!point?.date) return String(_label);
-            const [y, m, d] = point.date.split("-");
-            if (y && m && d) {
+            const [year, month, day] = point.date.split("-");
+            if (year && month && day) {
               const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-              return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
+              return `${months[Number(month) - 1]} ${Number(day)}, ${year}`;
             }
             return String(_label);
           }}

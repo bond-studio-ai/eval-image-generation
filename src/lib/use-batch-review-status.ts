@@ -34,7 +34,7 @@ const inFlight = new Map<string, Promise<ReviewState>>();
  * so user-driven runs stay reflected here too.
  */
 export function useBatchReviewStatus(
-  generationIds: ReadonlyArray<string | null | undefined>,
+  generationIds: readonly (string | null | undefined)[],
   enabled: boolean
 ): {
   statuses: Map<string, ReviewState>;
@@ -78,30 +78,32 @@ export function useBatchReviewStatus(
     if (targets.length === 0) return;
 
     let cancelled = false;
-    Promise.allSettled(targets.map((id) => probeDeduped(id))).then((results) => {
-      if (cancelled) return;
-      setResolved((prev) => {
-        const next = new Map(prev);
-        results.forEach((result, i) => {
-          const id = targets[i];
-          if (id === undefined) return;
-          const probed: ReviewState =
-            result.status === "fulfilled"
-              ? result.value
-              : {
-                  kind: "error",
-                  message: result.reason instanceof Error ? result.reason.message : "Network error"
-                };
-          // If the user already kicked off a POST (or one already
-          // completed) while the GET was racing, that state is more
-          // authoritative than the GET probe — don't clobber it.
-          const cached = cache.get(id);
-          const winner: ReviewState = cached && (cached.kind === "running" || cached.kind === "done") ? cached : probed;
-          next.set(id, winner);
+    Promise.allSettled(targets.map((id) => probeDeduped(id)))
+      .then((results) => {
+        if (cancelled) return;
+        setResolved((prev) => {
+          const next = new Map(prev);
+          results.forEach((result, i) => {
+            const id = targets[i];
+            if (id === undefined) return;
+            const probed: ReviewState =
+              result.status === "fulfilled"
+                ? result.value
+                : {
+                    kind: "error",
+                    message: result.reason instanceof Error ? result.reason.message : "Network error"
+                  };
+            // If the user already kicked off a POST (or one already
+            // completed) while the GET was racing, that state is more
+            // authoritative than the GET probe — don't clobber it.
+            const cached = cache.get(id);
+            const winner: ReviewState = cached && (cached.kind === "running" || cached.kind === "done") ? cached : probed;
+            next.set(id, winner);
+          });
+          return next;
         });
-        return next;
-      });
-    });
+      })
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;
@@ -120,7 +122,7 @@ export function useBatchReviewStatus(
   return { statuses, setStatus };
 }
 
-function uniqueIds(ids: ReadonlyArray<string | null | undefined>): string[] {
+function uniqueIds(ids: readonly (string | null | undefined)[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const id of ids) {

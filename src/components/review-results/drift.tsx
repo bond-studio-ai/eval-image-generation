@@ -8,7 +8,7 @@ import { Tooltip, useTooltip } from "./tooltip";
 import type { CategoryLookup, DriftAbsenceReason, DriftAssessment, DriftRow, DriftStatus, LargeObjectDriftMetrics, OverallDriftMetrics, SmallObjectDriftMetrics, SurfaceDriftMetrics } from "./types";
 
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
+  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
 }
 
 /**
@@ -35,17 +35,17 @@ function indexGroupMetadata(entries: SegmentationCategoryMetadata[] | null): Map
  * tooltip stays in sync with the backend even when the rules change.
  */
 function resolutionLabel(entry: SegmentationCategoryMetadata): string {
-  const promptByName = new Map(entry.groupPrompts.map((p) => [p.slug, p.prompt]));
+  const promptByName = new Map(entry.groupPrompts.map((groupPrompt) => [groupPrompt.slug, groupPrompt.prompt]));
   const promptNames = entry.resolvedPromptSlugs.map((slug) => promptByName.get(slug) ?? slug);
   // Multiple group members can fire the same SAM prompt string
   // (paints + wallpapers both send `Wall`); collapse adjacent
   // duplicates so the tooltip reads cleanly.
   const deduped: string[] = [];
   for (const name of promptNames) {
-    if (deduped[deduped.length - 1] !== name) deduped.push(name);
+    if (deduped.at(-1) !== name) deduped.push(name);
   }
   if (entry.resolutionKind === "union") {
-    return deduped.length === 1 ? deduped[0]! : `${deduped.join(" + ")}`;
+    return deduped.length === 1 ? deduped[0]! : deduped.join(" + ");
   }
   return deduped.join(" fallback ");
 }
@@ -160,7 +160,7 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
  *   dilutes the actually-interesting drift.
  */
 function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
-  const include = (m: { dollhousePixelCount: number; samPixelCount: number }) => m.dollhousePixelCount > 0 || m.samPixelCount > 0;
+  const include = (metrics: { dollhousePixelCount: number; samPixelCount: number }) => metrics.dollhousePixelCount > 0 || metrics.samPixelCount > 0;
   const rows: DriftRow[] = [];
   for (const [key, metrics] of Object.entries(assessment.surfaces)) {
     if (include(metrics)) rows.push({ key, kind: "surface", metrics });
@@ -177,7 +177,7 @@ function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
 /** Faded dash for "this metric doesn't apply to this category".
  *  Visually distinct from the regular formatter dash (which means
  *  "metric applies but the value was null"). */
-const NOT_APPLICABLE_CELL = <span className="text-text-disabled">{"—"}</span>;
+const NOT_APPLICABLE_CELL = <span className="text-text-disabled">—</span>;
 
 /**
  * Stable identifiers for every sortable column. Decoupled from the
@@ -204,34 +204,44 @@ type SortDir = "asc" | "desc";
 function getSortValue(row: DriftRow, key: SortKey, lookup: CategoryLookup): number | string | null {
   const { kind, metrics } = row;
   switch (key) {
-    case "category":
-      return lookup.label(row.key).toLowerCase();
-    case "coverage":
-      return metrics.productMaskCoverage?.recall ?? null;
-    case "iou":
-      if (kind === "largeObject" || kind === "surface") return (metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou;
+    case "areaRatio": {
+      if (kind === "largeObject") return (metrics as LargeObjectDriftMetrics).areaRatio;
       return null;
-    case "centroid":
+    }
+    case "boundary": {
+      if (kind === "surface") return (metrics as SurfaceDriftMetrics).boundaryDriftPx;
+      return null;
+    }
+    case "category": {
+      return lookup.label(row.key).toLowerCase();
+    }
+    case "centroid": {
       if (kind === "largeObject" || kind === "smallObject") return (metrics as LargeObjectDriftMetrics | SmallObjectDriftMetrics).centroidDriftPx;
       return null;
-    case "p95":
+    }
+    case "coverage": {
+      return metrics.productMaskCoverage?.recall ?? null;
+    }
+    case "iou": {
+      if (kind === "largeObject" || kind === "surface") return (metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou;
+      return null;
+    }
+    case "p95": {
       if (kind === "largeObject") return (metrics as LargeObjectDriftMetrics).p95SymmetricDistancePx;
       if (kind === "smallObject") return (metrics as SmallObjectDriftMetrics).p95DistancePx;
       return null;
-    case "areaRatio":
-      if (kind === "largeObject") return (metrics as LargeObjectDriftMetrics).areaRatio;
-      return null;
-    case "boundary":
-      if (kind === "surface") return (metrics as SurfaceDriftMetrics).boundaryDriftPx;
-      return null;
-    case "pixelAccuracy":
+    }
+    case "pixelAccuracy": {
       if (kind === "surface") return (metrics as SurfaceDriftMetrics).pixelClassAccuracy;
       return null;
-    case "presence":
+    }
+    case "pixels": {
+      return metrics.dollhousePixelCount;
+    }
+    case "presence": {
       if (kind === "smallObject") return (metrics as SmallObjectDriftMetrics).presence;
       return null;
-    case "pixels":
-      return metrics.dollhousePixelCount;
+    }
   }
 }
 
@@ -294,7 +304,9 @@ function SortableHeader({
       <button
         ref={ref}
         type="button"
-        onClick={() => onSort(sortKey)}
+        onClick={() => {
+          onSort(sortKey);
+        }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onFocus={onFocus}
@@ -314,7 +326,7 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
   const label = lookup.label(key);
   const swatch = lookup.color(key);
   const entry = groupMetadata.get(key) ?? null;
-  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${entry.group !== key ? ` (group ${entry.group})` : ""}` : null;
+  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${entry.group === key ? "" : ` (group ${entry.group})`}` : null;
 
   // Each `applies*` flag controls whether this column renders a value
   // for the current row's bucket. Inapplicable cells render the muted
@@ -457,10 +469,10 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
   }
 
   const visibleRows = useMemo(() => {
-    const q = filter.trim().toLowerCase();
+    const query = filter.trim().toLowerCase();
     let filtered = rows;
-    if (q.length > 0) {
-      filtered = rows.filter((row) => lookup.label(row.key).toLowerCase().includes(q) || row.key.toLowerCase().includes(q));
+    if (query.length > 0) {
+      filtered = rows.filter((row) => lookup.label(row.key).toLowerCase().includes(query) || row.key.toLowerCase().includes(query));
     }
     if (sortKey !== null) {
       const key = sortKey;
@@ -480,7 +492,9 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
           <input
             type="text"
             value={filter}
-            onChange={(event) => setFilter(event.target.value)}
+            onChange={(event) => {
+              setFilter(event.target.value);
+            }}
             placeholder="Filter categories…"
             className="border-border bg-surface text-text-secondary placeholder:text-text-disabled focus:border-border-strong w-40 rounded border px-2 py-0.5 text-[11px] focus:outline-none"
             aria-label="Filter drift rows by category"
@@ -534,13 +548,15 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
 export function CollapsibleDrift({ assessment, status, lookup, categories }: { assessment: DriftAssessment | null; status: DriftStatus | null; lookup: CategoryLookup; categories: SegmentationCategoryMetadata[] | null }) {
   const [open, setOpen] = useState(false);
   const overall = assessment?.overall ?? null;
-  const computed = !!assessment && (status === null || status === "computed");
+  const computed = Boolean(assessment) && (status === null || status === "computed");
 
   return (
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >

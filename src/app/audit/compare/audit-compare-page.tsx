@@ -17,7 +17,7 @@ export function AuditComparePage() {
       setRightId(null);
     } else if (!leftId) {
       setLeftId(id);
-    } else if (!rightId) {
+    } else if (rightId) {
       setRightId(id);
     } else {
       setRightId(id);
@@ -34,8 +34,12 @@ export function AuditComparePage() {
         leftId={leftId}
         rightId={rightId}
         onToggle={toggle}
-        onClearLeft={() => setLeftId(null)}
-        onClearRight={() => setRightId(null)}
+        onClearLeft={() => {
+          setLeftId(null);
+        }}
+        onClearRight={() => {
+          setRightId(null);
+        }}
         onClearAll={() => {
           setLeftId(null);
           setRightId(null);

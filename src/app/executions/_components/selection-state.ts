@@ -35,33 +35,16 @@ function toggleId(ids: string[], id: string): string[] {
 
 export function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
-    case "toggleStrategy":
-      return { ...state, selectedStrategyIds: toggleId(state.selectedStrategyIds, action.id) };
-    case "togglePreset":
-      return { ...state, selectedPresetIds: toggleId(state.selectedPresetIds, action.id) };
-    case "toggleBenchmarkProject":
-      return {
-        ...state,
-        selectedBenchmarkProjectIds: toggleId(state.selectedBenchmarkProjectIds, action.id)
-      };
-    case "setStrategySearch":
-      return { ...state, strategySearch: action.value };
-    case "setPresetSearch":
-      return { ...state, presetSearch: action.value };
-    case "clearStrategies":
-      return { ...state, selectedStrategyIds: [] };
-    case "clearPresets":
-      return { ...state, selectedPresetIds: [] };
-    case "clearBenchmarkProjects":
+    case "clearBenchmarkProjects": {
       return { ...state, selectedBenchmarkProjectIds: [] };
-    case "setBenchmarkMode":
-      return {
-        ...state,
-        benchmarkMode: action.benchmarkMode,
-        selectedPresetIds: [],
-        selectedBenchmarkProjectIds: action.benchmarkProjectIds
-      };
-    case "openModal":
+    }
+    case "clearPresets": {
+      return { ...state, selectedPresetIds: [] };
+    }
+    case "clearStrategies": {
+      return { ...state, selectedStrategyIds: [] };
+    }
+    case "openModal": {
       return {
         ...state,
         selectedStrategyIds: [],
@@ -69,7 +52,8 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
         selectedBenchmarkProjectIds: action.benchmarkProjectIds,
         benchmarkMode: action.benchmarkMode
       };
-    case "resetAfterRun":
+    }
+    case "resetAfterRun": {
       return {
         ...state,
         selectedStrategyIds: [],
@@ -79,5 +63,32 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
         presetSearch: "",
         benchmarkMode: action.benchmarkMode
       };
+    }
+    case "setBenchmarkMode": {
+      return {
+        ...state,
+        benchmarkMode: action.benchmarkMode,
+        selectedPresetIds: [],
+        selectedBenchmarkProjectIds: action.benchmarkProjectIds
+      };
+    }
+    case "setPresetSearch": {
+      return { ...state, presetSearch: action.value };
+    }
+    case "setStrategySearch": {
+      return { ...state, strategySearch: action.value };
+    }
+    case "toggleBenchmarkProject": {
+      return {
+        ...state,
+        selectedBenchmarkProjectIds: toggleId(state.selectedBenchmarkProjectIds, action.id)
+      };
+    }
+    case "togglePreset": {
+      return { ...state, selectedPresetIds: toggleId(state.selectedPresetIds, action.id) };
+    }
+    case "toggleStrategy": {
+      return { ...state, selectedStrategyIds: toggleId(state.selectedStrategyIds, action.id) };
+    }
   }
 }

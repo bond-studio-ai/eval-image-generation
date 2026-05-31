@@ -90,7 +90,7 @@ export function StrategyPerformance({ strategyId }: { strategyId: string }) {
         </div>
         <div>
           <p className="text-text-muted text-caption font-medium">Avg exec time</p>
-          <p className="text-text-primary text-h2 mt-0.5">{avgExecutionTimeMs != null ? `${(avgExecutionTimeMs / 1000).toFixed(1)}s` : "—"}</p>
+          <p className="text-text-primary text-h2 mt-0.5">{avgExecutionTimeMs == null ? "—" : `${(avgExecutionTimeMs / 1000).toFixed(1)}s`}</p>
         </div>
       </div>
     </div>

@@ -15,7 +15,8 @@ interface NumberInputProps {
 }
 
 const INTEGER_RE = /^\d*$/;
-const DECIMAL_RE = /^-?\d*\.?\d*$/;
+// eslint-disable-next-line security/detect-unsafe-regex -- linear, no nested/overlapping quantifiers (confirmed by regexp/no-super-linear-backtracking)
+const DECIMAL_RE = /^-?\d*(?:\.\d*)?$/;
 
 /**
  * Numeric `<input type="text">` with regex-constrained editing, so the field

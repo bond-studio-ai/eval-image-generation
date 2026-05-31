@@ -58,7 +58,9 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
       <button
         id="design-package-trigger"
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+        }}
         disabled={loading}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface disabled:bg-surface-muted disabled:text-text-disabled hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
@@ -104,7 +106,9 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
                 type="text"
                 aria-label="Search packages"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
                 placeholder="Search packages..."
                 className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-md border px-3 py-2 focus:ring-1 focus:outline-none"
               />

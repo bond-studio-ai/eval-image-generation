@@ -26,15 +26,17 @@ const INITIAL_VIEWING_PROMPT: ViewingPromptState = {
 
 function viewingPromptReducer(_state: ViewingPromptState, action: ViewingPromptAction): ViewingPromptState {
   switch (action.type) {
-    case "open":
+    case "close": {
+      return INITIAL_VIEWING_PROMPT;
+    }
+    case "open": {
       return {
         id: action.id,
         name: action.name,
         processedSystemPrompt: action.processedSystemPrompt,
         processedUserPrompt: action.processedUserPrompt
       };
-    case "close":
-      return INITIAL_VIEWING_PROMPT;
+    }
   }
 }
 
@@ -149,21 +151,53 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
         retrying={retrying}
         onMarkStatus={handleMarkStatus}
         onRetry={handleRetry}
-        onShowJudgeModal={() => setShowJudgeModal(true)}
+        onShowJudgeModal={() => {
+          setShowJudgeModal(true);
+        }}
       />
 
       <RunFailureReasons status={data.status} sorted={sorted} />
 
       {/* ──── Collapsible sections ──── */}
       <div className="mt-6 space-y-4">
-        <ExecutionFlowSection stepGroups={stepGroups} judgeResults={data.judgeResults} open={showExecFlow} onToggle={() => setShowExecFlow(!showExecFlow)} />
+        <ExecutionFlowSection
+          stepGroups={stepGroups}
+          judgeResults={data.judgeResults}
+          open={showExecFlow}
+          onToggle={() => {
+            setShowExecFlow(!showExecFlow);
+          }}
+        />
 
-        <JudgeEvaluationSection data={data} open={showJudge} onToggle={() => setShowJudge(!showJudge)} />
+        <JudgeEvaluationSection
+          data={data}
+          open={showJudge}
+          onToggle={() => {
+            setShowJudge(!showJudge);
+          }}
+        />
 
-        <StepResultsSection stepGroups={stepGroups} open={showSteps} onToggle={() => setShowSteps(!showSteps)} onViewPrompt={handleViewPrompt} />
+        <StepResultsSection
+          stepGroups={stepGroups}
+          open={showSteps}
+          onToggle={() => {
+            setShowSteps(!showSteps);
+          }}
+          onViewPrompt={handleViewPrompt}
+        />
       </div>
 
-      <RunDetailModals data={data} showJudgeModal={showJudgeModal} onCloseJudgeModal={() => setShowJudgeModal(false)} viewingPrompt={viewingPrompt} onCloseViewingPrompt={() => dispatchViewingPrompt({ type: "close" })} />
+      <RunDetailModals
+        data={data}
+        showJudgeModal={showJudgeModal}
+        onCloseJudgeModal={() => {
+          setShowJudgeModal(false);
+        }}
+        viewingPrompt={viewingPrompt}
+        onCloseViewingPrompt={() => {
+          dispatchViewingPrompt({ type: "close" });
+        }}
+      />
     </div>
   );
 }

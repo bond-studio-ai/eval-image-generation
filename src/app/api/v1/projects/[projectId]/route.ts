@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
       }
     }
     const qs = forwarded.toString();
-    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}` + (qs ? `?${qs}` : "");
+    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}${qs ? `?${qs}` : ""}`;
 
     const res = await fetch(upstreamUrl, {
       headers: { Accept: "application/json" },
@@ -39,8 +39,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
     // would buy us is a confusing second `.data` to unwrap on the client.
     const json: unknown = await res.json();
     return NextResponse.json(json, { status: 200 });
-  } catch (err) {
-    console.error("[project detail] Error:", err);
+  } catch (error) {
+    console.error("[project detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch project details");
   }
 }

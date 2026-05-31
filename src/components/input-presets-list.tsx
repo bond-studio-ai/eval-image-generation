@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, type DataTableColumn } from "@/components/data-table";
+import { DataTable, type DataTableColumn, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -66,7 +66,7 @@ export function InputPresetsList() {
   }, [activeItems]);
 
   const handleBulkDelete = useCallback(async () => {
-    const ids = [...selected];
+    const ids = Array.from(selected);
     const res = await fetch(serviceUrl("input-presets/bulk-delete"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -109,7 +109,7 @@ export function InputPresetsList() {
           label: "Clone preset",
           onClick: (ip) => handleClone(ip.id),
           loading: (ip) => cloningId === ip.id,
-          hidden: (ip) => !!ip.deletedAt
+          hidden: (ip) => Boolean(ip.deletedAt)
         }
       ])
     ],
@@ -140,7 +140,14 @@ export function InputPresetsList() {
         footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
-      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="input presets" />
+      <BulkDeleteBar
+        selectedCount={selected.size}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => {
+          setSelected(new Set());
+        }}
+        entityName="input presets"
+      />
     </>
   );
 }

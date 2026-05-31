@@ -38,8 +38,8 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
       }
 
       router.push("/prompt-versions");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setDeleting(false);
     }
   }
@@ -48,7 +48,9 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
     <>
       <button
         type="button"
-        onClick={() => setShowConfirm(true)}
+        onClick={() => {
+          setShowConfirm(true);
+        }}
         className="border-danger-300 bg-surface text-danger-700 hover:bg-danger-50 text-body inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium shadow-xs transition-colors"
       >
         <TrashIcon className="size-4" />
@@ -75,7 +77,13 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
           {error && <div className="bg-danger-50 text-danger-700 text-body mt-4 rounded-lg p-3">{error}</div>}
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowConfirm(false)} disabled={deleting}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowConfirm(false);
+              }}
+              disabled={deleting}
+            >
               Cancel
             </Button>
             <Button variant="danger" onClick={handleDelete} disabled={deleting} loading={deleting}>

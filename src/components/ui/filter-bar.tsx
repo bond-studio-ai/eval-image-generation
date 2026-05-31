@@ -44,7 +44,9 @@ export function FilterSearch({ value, onChange, placeholder = "Search...", width
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         className={cn(
           "rounded-input border-border-strong bg-surface text-body text-text-primary w-full border py-1.5 pr-3 pl-9",

@@ -11,9 +11,9 @@ export const SLICE_BG_COLORS = [
 
 export function formatCategoryName(name: string): string {
   return name
-    .replace(/([A-Z])/g, " $1")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replaceAll(/([A-Z])/g, " $1")
+    .replaceAll("_", " ")
+    .replaceAll(/\b\w/g, (char) => char.toUpperCase())
     .trim();
 }
 
@@ -86,7 +86,7 @@ export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[]
   return raw
     .flatMap((entry) => {
       const row = entry as RawStepPerformanceRow;
-      const numberOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+      const numberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
       const mapped = {
         stepId: String(row.stepId ?? ""),
         stepOrder: Number(row.stepOrder ?? 0),
@@ -130,13 +130,13 @@ interface RawSummary {
 
 export function normalizeSummary(raw: unknown): SummaryData | null {
   if (!raw || typeof raw !== "object") return null;
-  const s = raw as RawSummary;
+  const summary = raw as RawSummary;
   return {
-    sceneRatedCount: Number(s.sceneRatedCount) || 0,
-    sceneGoodPct: Number(s.sceneGoodPct) || 0,
-    sceneFailedPct: Number(s.sceneFailedPct) || 0,
-    productRatedCount: Number(s.productRatedCount) || 0,
-    productGoodPct: Number(s.productGoodPct) || 0,
-    productFailedPct: Number(s.productFailedPct) || 0
+    sceneRatedCount: Number(summary.sceneRatedCount) || 0,
+    sceneGoodPct: Number(summary.sceneGoodPct) || 0,
+    sceneFailedPct: Number(summary.sceneFailedPct) || 0,
+    productRatedCount: Number(summary.productRatedCount) || 0,
+    productGoodPct: Number(summary.productGoodPct) || 0,
+    productFailedPct: Number(summary.productFailedPct) || 0
   };
 }

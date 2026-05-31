@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from "react";
 import { GripVerticalIcon } from "@/components/ui/icons";
 
 interface TwoPaneSplitProps {
@@ -69,25 +69,38 @@ export function TwoPaneSplit({ left, right, defaultRatio = 0.5, minPaneWidth = 2
     }
   }, []);
 
-  const resetRatio = useCallback(() => setRatio(0.5), []);
+  const resetRatio = useCallback(() => {
+    setRatio(0.5);
+  }, []);
 
   const onHKeyDown = useCallback(
     (e: ReactKeyboardEvent<HTMLDivElement>) => {
       const STEP = 0.02;
-      const clamp = (r: number) => {
+      const clamp = (value: number) => {
         const width = containerRef.current?.getBoundingClientRect().width ?? 0;
         const minRatio = width > 0 ? Math.min(0.4, minPaneWidth / width) : 0.15;
-        return Math.min(1 - minRatio, Math.max(minRatio, r));
+        return Math.min(1 - minRatio, Math.max(minRatio, value));
       };
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setRatio((r) => clamp(r - STEP));
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        setRatio((r) => clamp(r + STEP));
-      } else if (e.key === "Home") {
-        e.preventDefault();
-        setRatio(0.5);
+      switch (e.key) {
+        case "ArrowLeft": {
+          e.preventDefault();
+          setRatio((prev) => clamp(prev - STEP));
+
+          break;
+        }
+        case "ArrowRight": {
+          e.preventDefault();
+          setRatio((prev) => clamp(prev + STEP));
+
+          break;
+        }
+        case "Home": {
+          e.preventDefault();
+          setRatio(0.5);
+
+          break;
+        }
+        // No default
       }
     },
     [minPaneWidth]

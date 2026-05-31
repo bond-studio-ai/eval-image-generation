@@ -1,6 +1,6 @@
 import { type Dispatch } from "react";
 import { ChevronDownIcon } from "@/components/ui/icons";
-import { CONDITIONAL_OPTIONS } from "@/lib/prompt-template-constants";
+import type { CONDITIONAL_OPTIONS } from "@/lib/prompt-template-constants";
 import { type ConditionalAction, type ConditionalState } from "./state";
 
 interface ConditionalPopoverProps {
@@ -31,14 +31,23 @@ export function ConditionalPopover({ state, dispatch, options, onToggle, onSelec
               type="text"
               aria-label="Search conditionals"
               value={state.search}
-              onChange={(e) => dispatch({ type: "setSearch", value: e.target.value })}
+              onChange={(e) => {
+                dispatch({ type: "setSearch", value: e.target.value });
+              }}
               placeholder="Search…"
               className="focus:border-primary-500 focus:ring-primary-500 border-border text-body w-full rounded-md border px-3 py-1.5 focus:ring-1"
             />
           </div>
           <div className="max-h-48 overflow-auto py-1">
             {options.map((opt) => (
-              <button key={opt.value} type="button" onClick={() => onSelect(opt)} className="text-text-primary hover:bg-surface-muted text-body w-full px-3 py-2 text-left">
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onSelect(opt);
+                }}
+                className="text-text-primary hover:bg-surface-muted text-body w-full px-3 py-2 text-left"
+              >
                 {opt.label}
               </button>
             ))}

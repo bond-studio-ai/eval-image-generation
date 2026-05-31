@@ -71,10 +71,10 @@ export function StrategyBuilder({ strategyId, initialName = "", initialDescripti
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isEditing = !!strategyId;
+  const isEditing = Boolean(strategyId);
 
   const updateStep = useCallback((idx: number, partial: Partial<StepData>) => {
-    setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, ...partial } : s)));
+    setSteps((prev) => prev.map((step, i) => (i === idx ? { ...step, ...partial } : step)));
   }, []);
 
   const addStep = useCallback(() => {
@@ -88,12 +88,12 @@ export function StrategyBuilder({ strategyId, initialName = "", initialDescripti
   const removeStep = useCallback((idx: number) => {
     setSteps((prev) => {
       const next = prev.filter((_, i) => i !== idx);
-      return next.map((s) => ({
-        ...s,
-        dollhouse_view_from_step: s.dollhouse_view_from_step && s.dollhouse_view_from_step > next.length ? null : s.dollhouse_view_from_step,
-        real_photo_from_step: s.real_photo_from_step && s.real_photo_from_step > next.length ? null : s.real_photo_from_step,
-        mood_board_from_step: s.mood_board_from_step && s.mood_board_from_step > next.length ? null : s.mood_board_from_step,
-        arbitrary_image_from_step: s.arbitrary_image_from_step != null && s.arbitrary_image_from_step > next.length ? null : s.arbitrary_image_from_step
+      return next.map((step) => ({
+        ...step,
+        dollhouse_view_from_step: step.dollhouse_view_from_step && step.dollhouse_view_from_step > next.length ? null : step.dollhouse_view_from_step,
+        real_photo_from_step: step.real_photo_from_step && step.real_photo_from_step > next.length ? null : step.real_photo_from_step,
+        mood_board_from_step: step.mood_board_from_step && step.mood_board_from_step > next.length ? null : step.mood_board_from_step,
+        arbitrary_image_from_step: step.arbitrary_image_from_step != null && step.arbitrary_image_from_step > next.length ? null : step.arbitrary_image_from_step
       }));
     });
   }, []);

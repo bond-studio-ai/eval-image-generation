@@ -44,7 +44,14 @@ export function DeleteGenerationButton({ generationId, variant = "button" }: Del
         <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting} loading={deleting}>
           {deleting ? "Deleting..." : "Yes"}
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setConfirming(false);
+          }}
+          disabled={deleting}
+        >
           Cancel
         </Button>
       </div>
@@ -68,7 +75,13 @@ export function DeleteGenerationButton({ generationId, variant = "button" }: Del
   }
 
   return (
-    <button type="button" onClick={() => setConfirming(true)} className="border-danger-200 text-danger-600 hover:bg-danger-50 text-body inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors">
+    <button
+      type="button"
+      onClick={() => {
+        setConfirming(true);
+      }}
+      className="border-danger-200 text-danger-600 hover:bg-danger-50 text-body inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors"
+    >
       <TrashIcon className="size-4" />
       Delete
     </button>

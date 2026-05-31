@@ -24,7 +24,9 @@ export function useBatchListMachinery({ hasMore, loadingMore, loadMore, refetch 
       { rootMargin: "200px", threshold: 0 }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+    };
   }, [hasMore, loadingMore, loadMore]);
 
   useLayoutEffect(() => {
@@ -40,7 +42,7 @@ export function useBatchListMachinery({ hasMore, loadingMore, loadMore, refetch 
 
   const refetchKeepScroll = useCallback(async () => {
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>(".overflow-x-auto");
-    pendingScrollRef.current = scrollers ? Array.from(scrollers).map((el) => el.scrollLeft) : [];
+    pendingScrollRef.current = scrollers ? Array.from(scrollers, (el) => el.scrollLeft) : [];
     await refetch();
   }, [refetch]);
 

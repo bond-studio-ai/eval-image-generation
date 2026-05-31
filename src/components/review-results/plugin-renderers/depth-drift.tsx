@@ -31,7 +31,9 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >
@@ -70,8 +72,8 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
 }
 
 function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
-  const metrics = depth.metrics;
-  const alignment = depth.alignment;
+  const { metrics } = depth;
+  const { alignment } = depth;
   return (
     <div className="border-border bg-surface rounded-md border px-3 py-2.5">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
@@ -120,7 +122,7 @@ function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
           // directly — only the predicted PNG actually loads. The dollhouse
           // tile falls back to a "no preview" hint when the URL points at
           // an EXR. Either way the URL is a stable link reviewers can copy.
-          /\.exr(\?|$)/i.test(url) ? (
+          /\.exr(?:\?|$)/i.test(url) ? (
             <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
               EXR (open externally)
             </a>

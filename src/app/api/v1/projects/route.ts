@@ -46,8 +46,8 @@ export async function GET(request: Request) {
 
     const json: unknown = await res.json();
     return NextResponse.json(normalizeV2PaginationResponse(json), { status: 200 });
-  } catch (err) {
-    console.error("[projects list] Error:", err);
+  } catch (error) {
+    console.error("[projects list] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch projects");
   }
 }

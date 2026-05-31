@@ -152,7 +152,9 @@ export function SearchBar({ value, onChange, placeholder = "Search..." }: { valu
         type="text"
         aria-label={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         className="rounded-input border-border-strong bg-surface text-body text-text-primary placeholder:text-text-disabled focus:border-primary-500 focus:ring-primary-500 w-full border py-1.5 pr-3 pl-9 focus:ring-1 focus:outline-none"
       />
@@ -186,7 +188,9 @@ export function FilterPills<V extends string>({ options, value, onChange }: { op
         <button
           key={opt.value}
           type="button"
-          onClick={() => onChange(opt.value)}
+          onClick={() => {
+            onChange(opt.value);
+          }}
           className={`rounded-pill px-3 py-1 text-[11px] font-medium transition-colors ${
             value === opt.value ? "bg-primary-100 text-primary-700 ring-primary-600/20 ring-1 ring-inset" : "bg-surface-sunken text-text-muted hover:bg-surface-muted"
           }`}
@@ -206,7 +210,9 @@ export function ToggleFilter({ label, checked, onChange }: { label: string; chec
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
+        onClick={() => {
+          onChange(!checked);
+        }}
         className={`rounded-pill focus-visible:ring-primary-500 relative inline-flex h-5 w-9 shrink-0 items-center transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
           checked ? "bg-primary-600" : "bg-border-strong"
         }`}

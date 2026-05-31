@@ -59,7 +59,7 @@ export function designSettingsFromPackage(pkg: DesignPackageOption | null | unde
     : [];
 
   if (vanitySizes.length > 0) {
-    const selectedSize = options?.isPowderRoom ? vanitySizes[0] : vanitySizes[vanitySizes.length - 1];
+    const selectedSize = options?.isPowderRoom ? vanitySizes[0] : vanitySizes.at(-1);
     const sizeKey = String(selectedSize);
     const vanityId = vanityDict?.[sizeKey];
     const faucetId = faucetDict?.[sizeKey];

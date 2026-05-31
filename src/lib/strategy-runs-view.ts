@@ -8,7 +8,7 @@ export interface StrategyRunViewInput {
   judgeScore?: number | null;
 }
 
-export type StrategyRunBatchGroup<T extends StrategyRunViewInput> = {
+export interface StrategyRunBatchGroup<T extends StrategyRunViewInput> {
   kind: "batch";
   id: string;
   runs: T[];
@@ -16,7 +16,7 @@ export type StrategyRunBatchGroup<T extends StrategyRunViewInput> = {
   createdAt: string;
   awaitingJudge: boolean;
   isStandalone: boolean;
-};
+}
 
 export function isAwaitingJudge<T extends StrategyRunViewInput>(batchRuns: T[], hasJudge?: boolean): boolean {
   if (!hasJudge || batchRuns.length < 2) return false;
@@ -30,7 +30,7 @@ export function deriveBatchStatus<T extends StrategyRunViewInput>(runs: T[]): st
   const statuses = runs.map((run) => run.status);
   if (statuses.every((status) => status === "completed")) return "completed";
   if (statuses.some((status) => status === "running" || status === "pending")) return "running";
-  if (statuses.some((status) => status === "failed")) return "failed";
+  if (statuses.includes("failed")) return "failed";
   return "pending";
 }
 

@@ -41,7 +41,7 @@ export interface SegmentationCategoryMetadata {
    * eval modal can use this to render a per-member legend hint
    * without a second round-trip.
    */
-  groupPrompts: ReadonlyArray<{ slug: string; prompt: string }>;
+  groupPrompts: readonly { slug: string; prompt: string }[];
   /**
    * Member categories whose own SAM masks this category considers
    * during drift comparison. Order is meaningful for
@@ -64,7 +64,7 @@ let cache: Promise<SegmentationCategoryMetadata[]> | null = null;
  * snake_case, so we register both.
  */
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
+  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
 }
 
 async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
@@ -77,7 +77,7 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
   const json = (await res.json()) as { data?: SegmentationCategoryMetadata[] | null } | null;
   const data = json?.data;
   if (!Array.isArray(data)) {
-    throw new Error("Malformed segmentation categories response");
+    throw new TypeError("Malformed segmentation categories response");
   }
   return data;
 }
@@ -91,9 +91,9 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
  * service was temporarily down during the first open).
  */
 export function getSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
-  cache ??= fetchOnce().catch((err: unknown) => {
+  cache ??= fetchOnce().catch((error: unknown) => {
     cache = null;
-    throw err;
+    throw error;
   });
   return cache;
 }

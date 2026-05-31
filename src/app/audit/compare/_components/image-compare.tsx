@@ -12,7 +12,7 @@ export function ImageCompare({ left, right }: { left: InputImage[] | null; right
 
   const leftByLabel = new Map(leftImgs.map((img) => [img.label, img]));
   const rightByLabel = new Map(rightImgs.map((img) => [img.label, img]));
-  const allLabels = [...new Set([...leftImgs.map((i) => i.label), ...rightImgs.map((i) => i.label)])];
+  const allLabels = Array.from(new Set([...leftImgs.map((i) => i.label), ...rightImgs.map((i) => i.label)]));
 
   return (
     <div className="space-y-2">
@@ -26,7 +26,13 @@ export function ImageCompare({ left, right }: { left: InputImage[] | null; right
           <div key={label}>
             <div
               className={`flex items-start gap-3 rounded-lg p-2 ${same ? "bg-surface-muted" : "bg-warning-50 ring-warning-200 ring-1"} ${isComposite ? "cursor-pointer" : ""}`}
-              {...(isComposite ? { onClick: () => setExpandedGroup(expandedGroup === label ? null : label) } : {})}
+              {...(isComposite
+                ? {
+                    onClick: () => {
+                      setExpandedGroup(expandedGroup === label ? null : label);
+                    }
+                  }
+                : {})}
             >
               <div className="w-28 shrink-0 pt-1">
                 <p className="text-text-muted text-[10px] font-medium">{label}</p>

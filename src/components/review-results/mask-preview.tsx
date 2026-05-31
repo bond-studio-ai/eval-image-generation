@@ -33,8 +33,12 @@ export function SkeletonImage({ src, alt, containerClassName, imgClassName }: { 
         alt={alt}
         fill
         sizes="(max-width:768px) 50vw, 33vw"
-        onLoad={() => setLoadedSrc(src)}
-        onError={() => setErroredSrc(src)}
+        onLoad={() => {
+          setLoadedSrc(src);
+        }}
+        onError={() => {
+          setErroredSrc(src);
+        }}
         className={`${imgClassName} object-contain transition-opacity duration-150 ${loaded && !errored ? "opacity-100" : "opacity-0"}`}
       />
     </div>
@@ -67,7 +71,7 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
   // Stable identity for `useEffect` so we don't repaint on every render
   // (each `buildRows` call returns fresh `masks` arrays even when the
   // URLs are unchanged).
-  const maskKey = masks.map((m) => m.url).join("|");
+  const maskKey = masks.map((mask) => mask.url).join("|");
   // Remember which `maskKey` the async paint resolved for. When `maskKey`
   // changes the stored result falls stale, so `status` derives back to
   // 'loading' during render — no effect reset needed.
@@ -86,14 +90,18 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
     const loadImage = (url: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Failed to load mask: ${url}`));
+        img.addEventListener("load", () => {
+          resolve(img);
+        });
+        img.addEventListener("error", () => {
+          reject(new Error(`Failed to load mask: ${url}`));
+        });
         img.src = url;
       });
 
     (async () => {
       try {
-        const images = await Promise.all(masks.map((m) => loadImage(m.url)));
+        const images = await Promise.all(masks.map((mask) => loadImage(mask.url)));
         if (cancelled) return;
         const first = images[0]!;
         // Cap to a sensible canvas size — masks are typically

@@ -32,7 +32,7 @@ export interface SegmentationCategoryMetadataEntry {
 
 export interface SegmentationCategoryResponse {
   image?: SegmentationFalAsset | string | null;
-  masks?: Array<SegmentationFalAsset | string> | null;
+  masks?: (SegmentationFalAsset | string)[] | null;
   scores?: number[] | null;
   boxes?: number[][] | null;
   metadata?: SegmentationCategoryMetadataEntry[] | Record<string, unknown> | null;

@@ -19,8 +19,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
     const product = Array.isArray(json.data) ? json.data[0] : json.data;
 
     return successResponse(product);
-  } catch (err) {
-    console.error("[product detail] Error:", err);
+  } catch (error) {
+    console.error("[product detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch product details");
   }
 }

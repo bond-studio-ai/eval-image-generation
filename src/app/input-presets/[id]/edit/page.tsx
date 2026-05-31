@@ -36,7 +36,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
         <div className="border-warning-200 bg-warning-50 mt-6 rounded-lg border p-5">
           <p className="text-warning-800 text-body">
             This preset has been used in {generationCount} generation
-            {generationCount !== 1 ? "s" : ""}. To change it, clone the preset first, then edit the copy.
+            {generationCount === 1 ? "" : "s"}. To change it, clone the preset first, then edit the copy.
           </p>
           <div className="mt-4">
             <LinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</LinkButton>

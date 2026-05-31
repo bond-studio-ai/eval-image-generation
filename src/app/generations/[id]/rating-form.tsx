@@ -22,15 +22,17 @@ function RatingRow({ label, current, onRate, disabled }: { label: string; curren
     <div className="flex items-center gap-4">
       <span className="text-text-secondary text-body w-36 shrink-0 font-medium">{label}</span>
       <div className="flex flex-wrap gap-2">
-        {options.map((r) => (
+        {options.map((option) => (
           <button
-            key={r.value}
+            key={option.value}
             type="button"
-            onClick={() => onRate(r.value)}
+            onClick={() => {
+              onRate(option.value);
+            }}
             disabled={disabled}
-            className={`text-body rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50 ${current === r.value ? `${r.color} ring-2 ring-current ring-offset-1` : r.color}`}
+            className={`text-body rounded-lg px-4 py-2 font-medium transition-colors disabled:opacity-50 ${current === option.value ? `${option.color} ring-2 ring-current ring-offset-1` : option.color}`}
           >
-            {r.label}
+            {option.label}
           </button>
         ))}
       </div>
@@ -61,8 +63,8 @@ export function RatingForm({ generationId, currentSceneAccuracyRating, currentPr
 
   return (
     <div className="space-y-3">
-      <RatingRow label="Scene Accuracy" current={currentSceneAccuracyRating} onRate={(v) => handleRate({ sceneAccuracyRating: v })} disabled={loading} />
-      <RatingRow label="Product Accuracy" current={currentProductAccuracyRating} onRate={(v) => handleRate({ productAccuracyRating: v })} disabled={loading} />
+      <RatingRow label="Scene Accuracy" current={currentSceneAccuracyRating} onRate={(rating) => handleRate({ sceneAccuracyRating: rating })} disabled={loading} />
+      <RatingRow label="Product Accuracy" current={currentProductAccuracyRating} onRate={(rating) => handleRate({ productAccuracyRating: rating })} disabled={loading} />
     </div>
   );
 }

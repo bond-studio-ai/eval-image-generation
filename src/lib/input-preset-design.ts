@@ -139,11 +139,11 @@ export interface InputPresetStoredImage {
 }
 
 function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
+  return value.replaceAll(/_([a-z])/g, (_, char: string) => char.toUpperCase());
 }
 
 function camelToSnake(value: string): string {
-  return value.replace(/([A-Z])/g, "_$1").toLowerCase();
+  return value.replaceAll(/([A-Z])/g, "_$1").toLowerCase();
 }
 
 export function readInputPresetValue(data: Record<string, unknown>, key: string): unknown {

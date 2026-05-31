@@ -171,7 +171,7 @@ export class DollhouseRenderApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
@@ -289,7 +289,7 @@ export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | nul
   const rotation = asPoint3(raw.rotation);
   if (!position || !rotation) return null;
 
-  const products = Array.isArray(raw.products) ? raw.products.map(normalizeCameraFrameProduct).filter((p): p is DollhouseCameraFrameProduct => p !== null) : [];
+  const products = Array.isArray(raw.products) ? raw.products.map(normalizeCameraFrameProduct).filter((product): product is DollhouseCameraFrameProduct => product !== null) : [];
 
   return {
     aspect: numberOr(raw.aspect, 0),

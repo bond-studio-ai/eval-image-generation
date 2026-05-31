@@ -24,13 +24,22 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={`cursor-pointer ${wrapperClassName ?? ""}`} aria-label={`Expand ${alt}`}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+        className={`cursor-pointer ${wrapperClassName ?? ""}`}
+        aria-label={`Expand ${alt}`}
+      >
         <ImageWithSkeleton src={src} alt={alt} className={className} />
       </button>
 
       {open && (
         <Modal
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+          }}
           ariaLabel="Expanded image"
           backdropClassName="bg-overlay/70"
           containerClassName="sm:p-6"
@@ -39,7 +48,14 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
           {/* Header */}
           <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
             <span className="text-text-secondary text-body truncate font-medium">{alt}</span>
-            <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => {
+                setOpen(false);
+              }}
+              className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5"
+            >
               <XIcon className="size-5" />
             </button>
           </div>
@@ -54,7 +70,9 @@ export function ExpandableImage({ src, alt, wrapperClassName, className }: Expan
                 width={0}
                 height={0}
                 sizes="100vw"
-                onLoad={() => setLoaded(true)}
+                onLoad={() => {
+                  setLoaded(true);
+                }}
                 className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
               />
             </div>

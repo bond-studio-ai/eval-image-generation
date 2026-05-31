@@ -96,7 +96,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
           previewUrl: storedImage?.url ?? product?.featuredImage?.url ?? null,
           title: product?.name ?? (storedImage?.isArbitrary ? "Arbitrary image" : (productId ?? "Saved image")),
           subtitle: product ? `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}` : storedImage?.isArbitrary ? `URL-only attachment · ${imageTypeLabel}` : imageTypeLabel,
-          isLoadingPreview: !!productId && !product && !storedImage?.url && !loaded,
+          isLoadingPreview: Boolean(productId) && !product && !storedImage?.url && !loaded,
           url: storedImage?.url ?? null,
           isArbitrary: storedImage?.isArbitrary ?? false
         }
@@ -114,7 +114,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const json = (await res.json()) as { data?: LayoutPresetOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!layoutTypeId
+    enabled: Boolean(layoutTypeId)
   });
 
   const { data: designPackageOptions = [] } = useQuery({
@@ -127,7 +127,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const json = (await res.json()) as { data?: DesignPackageOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!pkgId
+    enabled: Boolean(pkgId)
   });
 
   const selectedLayoutPreset = useMemo(() => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null, [layoutPresetOptions, layoutTypeId]);
@@ -241,18 +241,18 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             label: "Mood Board",
             url: data.moodBoard ?? (typeof rawData.mood_board === "string" ? rawData.mood_board : null)
           }
-        ].filter((s): s is { label: string; url: string } => !!s.url);
+        ].filter((scene): scene is { label: string; url: string } => Boolean(scene.url));
         if (scenes.length === 0) return null;
         return (
           <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
             <h2 className="text-text-primary text-body mb-4 font-semibold uppercase">Scene Images</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {scenes.map((s) => (
-                <div key={s.label} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
+              {scenes.map((scene) => (
+                <div key={scene.label} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
                   <div className="border-border-subtle border-b px-2.5 py-1.5">
-                    <span className="text-text-secondary text-caption font-semibold">{s.label}</span>
+                    <span className="text-text-secondary text-caption font-semibold">{scene.label}</span>
                   </div>
-                  <ImageWithSkeleton src={s.url} alt={s.label} wrapperClassName="h-48 w-full bg-surface-muted p-1" />
+                  <ImageWithSkeleton src={scene.url} alt={scene.label} wrapperClassName="h-48 w-full bg-surface-muted p-1" />
                 </div>
               ))}
             </div>

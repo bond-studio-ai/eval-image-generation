@@ -7,11 +7,11 @@ import { StrategyTableHeader } from "./_strategy-performance/strategy-table-head
 import { StrategyTableRow } from "./_strategy-performance/strategy-table-row";
 import type { BreakdownData, SortDir, SortKey, StrategyRow } from "./_strategy-performance/types";
 
-type ExpansionState = {
+interface ExpansionState {
   expandedIds: Set<string>;
   breakdowns: Record<string, BreakdownData | null>;
   loadingIds: Set<string>;
-};
+}
 
 type ExpansionAction = { type: "toggle"; id: string } | { type: "loadStart"; id: string } | { type: "loadSuccess"; id: string; data: BreakdownData } | { type: "loadEmpty"; id: string } | { type: "loadSettled"; id: string };
 
@@ -29,28 +29,32 @@ function withoutId(ids: Set<string>, id: string): Set<string> {
 
 function expansionReducer(state: ExpansionState, action: ExpansionAction): ExpansionState {
   switch (action.type) {
+    case "loadEmpty": {
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: null },
+        loadingIds: withoutId(state.loadingIds, action.id)
+      };
+    }
+    case "loadSettled": {
+      return { ...state, loadingIds: withoutId(state.loadingIds, action.id) };
+    }
+    case "loadStart": {
+      return { ...state, loadingIds: new Set(state.loadingIds).add(action.id) };
+    }
+    case "loadSuccess": {
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: action.data },
+        loadingIds: withoutId(state.loadingIds, action.id)
+      };
+    }
     case "toggle": {
       const expandedIds = new Set(state.expandedIds);
       if (expandedIds.has(action.id)) expandedIds.delete(action.id);
       else expandedIds.add(action.id);
       return { ...state, expandedIds };
     }
-    case "loadStart":
-      return { ...state, loadingIds: new Set(state.loadingIds).add(action.id) };
-    case "loadSuccess":
-      return {
-        ...state,
-        breakdowns: { ...state.breakdowns, [action.id]: action.data },
-        loadingIds: withoutId(state.loadingIds, action.id)
-      };
-    case "loadEmpty":
-      return {
-        ...state,
-        breakdowns: { ...state.breakdowns, [action.id]: null },
-        loadingIds: withoutId(state.loadingIds, action.id)
-      };
-    case "loadSettled":
-      return { ...state, loadingIds: withoutId(state.loadingIds, action.id) };
   }
 }
 
@@ -142,7 +146,7 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
-        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
         return key;
       }
       setSortDir(key === "name" ? "asc" : "desc");
@@ -155,7 +159,7 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
     if (sortKey === "name") return dir * a.name.localeCompare(b.name);
     const av = a[sortKey] ?? -1;
     const bv = b[sortKey] ?? -1;
-    return dir * ((av as number) - (bv as number));
+    return dir * (av - bv);
   });
 
   if (loading) {

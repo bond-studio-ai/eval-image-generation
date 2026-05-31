@@ -4,9 +4,9 @@
  */
 
 function raw(): string {
-  const v = process.env.BASE_API_HOSTNAME;
-  if (!v) throw new Error("BASE_API_HOSTNAME is not set");
-  return v.replace(/\/$/, "");
+  const hostname = process.env.BASE_API_HOSTNAME;
+  if (!hostname) throw new Error("BASE_API_HOSTNAME is not set");
+  return hostname.replace(/\/$/, "");
 }
 
 /** Base URL for the image-generation service (e.g. "https://api.example.com/image-generation/v1"). */
@@ -50,9 +50,9 @@ export function s3UploadConfig(): S3UploadConfig {
   }
 
   return {
-    bucket: bucket as string,
+    bucket: bucket!,
     region,
-    accessKeyId: accessKeyId as string,
-    secretAccessKey: secretAccessKey as string
+    accessKeyId: accessKeyId!,
+    secretAccessKey: secretAccessKey!
   };
 }

@@ -43,7 +43,7 @@ function getDeps(step: DagStep): number[] {
   if (step.realPhotoFromStep != null) deps.push(step.realPhotoFromStep);
   if (step.moodBoardFromStep != null) deps.push(step.moodBoardFromStep);
   if (step.arbitraryImageFromStep != null) deps.push(step.arbitraryImageFromStep);
-  return [...new Set(deps)];
+  return Array.from(new Set(deps));
 }
 
 function getEdges(step: DagStep): Edge[] {
@@ -117,8 +117,7 @@ function computeLayout(steps: DagStep[]): {
     const totalHeight = group.length * NODE_HEIGHT + (group.length - 1) * NODE_GAP_Y;
     const startY = (maxHeight - totalHeight) / 2;
 
-    for (let i = 0; i < group.length; i++) {
-      const step = group[i];
+    for (const [i, step] of group.entries()) {
       if (!step) continue;
       positions.set(step.stepOrder, {
         x: PADDING + level * (NODE_WIDTH + LEVEL_GAP_X),
@@ -169,8 +168,8 @@ const STATUS_HEADER_TEXT: Record<string, string> = {
   default: "text-text-primary"
 };
 
-function truncate(s: string, max: number) {
-  return s.length > max ? s.slice(0, max - 1) + "\u2026" : s;
+function truncate(value: string, max: number) {
+  return value.length > max ? `${value.slice(0, max - 1)}\u2026` : value;
 }
 
 const MODEL_LABELS: Record<string, string> = {
@@ -213,7 +212,7 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
 
   if (hasJudge) {
     const maxLevel = Math.max(...computeLevels(steps).values(), 0);
-    const lastLevelSteps = steps.filter((s) => computeLevels(steps).get(s.stepOrder) === maxLevel);
+    const lastLevelSteps = steps.filter((step) => computeLevels(steps).get(step.stepOrder) === maxLevel);
 
     const judgeX = PADDING + (maxLevel + 1) * (NODE_WIDTH + LEVEL_GAP_X);
     const judgeY = PADDING + (height - 2 * PADDING - judgeNodeHeight) / 2;
@@ -266,11 +265,11 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           const pos = positions.get(step.stepOrder);
           if (!pos) return null;
 
-          const s = step.status ?? "default";
-          const border = STATUS_BORDER[s] ?? STATUS_BORDER["default"];
-          const bg = STATUS_BG[s] ?? STATUS_BG["default"];
-          const headerBg = STATUS_HEADER_BG[s] ?? STATUS_HEADER_BG["default"];
-          const headerText = STATUS_HEADER_TEXT[s] ?? STATUS_HEADER_TEXT["default"];
+          const status = step.status ?? "default";
+          const border = STATUS_BORDER[status] ?? STATUS_BORDER["default"];
+          const bg = STATUS_BG[status] ?? STATUS_BG["default"];
+          const headerBg = STATUS_HEADER_BG[status] ?? STATUS_HEADER_BG["default"];
+          const headerText = STATUS_HEADER_TEXT[status] ?? STATUS_HEADER_TEXT["default"];
           const modelLabel = step.model ? (MODEL_LABELS[step.model] ?? step.model) : "";
 
           return (
@@ -314,8 +313,8 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
             {judgeEdges.map((edge, i) => {
               const x1 = edge.fromPos.x + NODE_WIDTH;
               const y1 = edge.fromPos.y + NODE_HEIGHT / 2;
-              const x2 = judgePos!.x;
-              const y2 = judgePos!.y + judgeNodeHeight / 2;
+              const x2 = judgePos.x;
+              const y2 = judgePos.y + judgeNodeHeight / 2;
               const midX = (x1 + x2) / 2;
               const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
               return <path key={`judge-edge-${i}`} d={path} fill="none" className="stroke-warning-300" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />;

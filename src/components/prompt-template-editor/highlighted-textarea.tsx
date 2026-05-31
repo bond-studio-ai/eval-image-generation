@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, useRef, useSyncExternalStore, type ChangeEvent, type Ref, type TextareaHTMLAttributes, type UIEvent } from "react";
+import { type ChangeEvent, Fragment, type Ref, type TextareaHTMLAttributes, type UIEvent, useCallback, useMemo, useRef, useSyncExternalStore } from "react";
 import { renderHighlightedHandlebarsByLine } from "@/lib/highlight-handlebars";
 
 export type HighlightedTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> & {
@@ -23,12 +23,12 @@ function measureScrollbarWidth(): number {
   if (typeof document === "undefined") return 0;
   const outer = document.createElement("div");
   outer.style.cssText = "position:absolute;top:-9999px;left:-9999px;visibility:hidden;overflow:scroll;width:100px;height:100px;";
-  document.body.appendChild(outer);
+  document.body.append(outer);
   const inner = document.createElement("div");
   inner.style.cssText = "width:100%;height:200px;";
-  outer.appendChild(inner);
+  outer.append(inner);
   const sw = outer.offsetWidth - inner.offsetWidth;
-  document.body.removeChild(outer);
+  outer.remove();
   cachedScrollbarWidth = sw;
   return sw;
 }
@@ -36,7 +36,9 @@ function measureScrollbarWidth(): number {
 // The scrollbar width is a per-environment constant, so there is nothing to
 // subscribe to and the store never changes after the first measurement.
 function subscribeScrollbarWidth(): () => void {
-  return () => {};
+  return () => {
+    // No store to subscribe to; the measurement never changes.
+  };
 }
 
 // The server has no scrollbar to measure; it renders 0 and the client measures
@@ -79,8 +81,8 @@ export function HighlightedTextarea({ value, onChange, className, fillHeight = f
     (e: UIEvent<HTMLTextAreaElement>) => {
       const inner = overlayInnerRef.current;
       if (inner) {
-        const t = e.currentTarget;
-        inner.style.transform = `translate(${-t.scrollLeft}px, ${-t.scrollTop}px)`;
+        const target = e.currentTarget;
+        inner.style.transform = `translate(${-target.scrollLeft}px, ${-target.scrollTop}px)`;
       }
       onScroll?.(e);
     },

@@ -8,22 +8,22 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
 import { RunGroupRow } from "./run-group-row";
-import { PAGE_SIZE, SOURCE_FILTER_OPTIONS, type AuditRunGroup, type RunListItem, type SourceFilter } from "./run-picker-types";
+import { type AuditRunGroup, PAGE_SIZE, type RunListItem, SOURCE_FILTER_OPTIONS, type SourceFilter } from "./run-picker-types";
 
 function toIsoStart(date: string): string {
-  return new Date(date + "T00:00:00Z").toISOString();
+  return new Date(`${date}T00:00:00Z`).toISOString();
 }
 
 function toIsoEnd(date: string): string {
-  return new Date(date + "T23:59:59.999Z").toISOString();
+  return new Date(`${date}T23:59:59.999Z`).toISOString();
 }
 
-type FiltersState = {
+interface FiltersState {
   filterText: string;
   dateFrom: string;
   dateTo: string;
   sourceFilter: SourceFilter;
-};
+}
 
 type FiltersAction = { type: "setFilterText"; value: string } | { type: "setDateFrom"; value: string } | { type: "setDateTo"; value: string } | { type: "setSourceFilter"; value: SourceFilter } | { type: "clearDates" };
 
@@ -36,16 +36,21 @@ const INITIAL_FILTERS: FiltersState = {
 
 function filtersReducer(state: FiltersState, action: FiltersAction): FiltersState {
   switch (action.type) {
-    case "setFilterText":
-      return { ...state, filterText: action.value };
-    case "setDateFrom":
-      return { ...state, dateFrom: action.value };
-    case "setDateTo":
-      return { ...state, dateTo: action.value };
-    case "setSourceFilter":
-      return { ...state, sourceFilter: action.value };
-    case "clearDates":
+    case "clearDates": {
       return { ...state, dateFrom: "", dateTo: "" };
+    }
+    case "setDateFrom": {
+      return { ...state, dateFrom: action.value };
+    }
+    case "setDateTo": {
+      return { ...state, dateTo: action.value };
+    }
+    case "setFilterText": {
+      return { ...state, filterText: action.value };
+    }
+    case "setSourceFilter": {
+      return { ...state, sourceFilter: action.value };
+    }
   }
 }
 
@@ -108,8 +113,8 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
           setTotal(paginationTotal);
           pageRef.current = pageToFetch;
         }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_.message : "Unknown error");
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -139,16 +144,18 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
       { root, rootMargin: "200px", threshold: 0 }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+    };
   }, [hasMore, loadingMore, loadMore]);
 
   const filteredByText = filters.filterText
-    ? runs.filter((r) => {
-        const t = filters.filterText.toLowerCase();
-        return r.id.toLowerCase().includes(t) || (r.strategyName ?? "").toLowerCase().includes(t) || (r.inputPresetName ?? "").toLowerCase().includes(t) || (r.source ?? "").toLowerCase().includes(t);
+    ? runs.filter((run) => {
+        const query = filters.filterText.toLowerCase();
+        return run.id.toLowerCase().includes(query) || (run.strategyName ?? "").toLowerCase().includes(query) || (run.inputPresetName ?? "").toLowerCase().includes(query) || (run.source ?? "").toLowerCase().includes(query);
       })
     : runs;
-  const filtered = filteredByText.filter((run) => (filters.sourceFilter === "all" ? true : filters.sourceFilter === "preset" ? run.source === "preset" || !!run.inputPresetName : run.source === "raw_input"));
+  const filtered = filteredByText.filter((run) => (filters.sourceFilter === "all" ? true : filters.sourceFilter === "preset" ? run.source === "preset" || Boolean(run.inputPresetName) : run.source === "raw_input"));
   const runGroups = useMemo<AuditRunGroup[]>(() => {
     const groups = new Map<string, AuditRunGroup>();
     for (const run of filtered) {
@@ -169,12 +176,10 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
       });
     }
 
-    return Array.from(groups.values())
-      .map((group) => ({
-        ...group,
-        runs: group.runs.toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      }))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return Array.from(groups.values(), (group) => ({
+      ...group,
+      runs: group.runs.toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [filtered]);
 
   return (
@@ -211,12 +216,21 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
       <div className="p-4">
         <FilterBar className="items-end">
           <div className="min-w-0 flex-1">
-            <FilterSearch value={filters.filterText} onChange={(value) => dispatchFilters({ type: "setFilterText", value })} placeholder="Filter by strategy name, preset, source, or run ID..." width="w-full" />
+            <FilterSearch
+              value={filters.filterText}
+              onChange={(value) => {
+                dispatchFilters({ type: "setFilterText", value });
+              }}
+              placeholder="Filter by strategy name, preset, source, or run ID..."
+              width="w-full"
+            />
           </div>
           <SegmentedControl
-            options={SOURCE_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            options={SOURCE_FILTER_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
             value={filters.sourceFilter}
-            onChange={(v) => dispatchFilters({ type: "setSourceFilter", value: v })}
+            onChange={(value) => {
+              dispatchFilters({ type: "setSourceFilter", value });
+            }}
             size="sm"
             label="Source filter"
           />
@@ -226,7 +240,9 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
               <input
                 type="date"
                 value={filters.dateFrom}
-                onChange={(e) => dispatchFilters({ type: "setDateFrom", value: e.target.value })}
+                onChange={(e) => {
+                  dispatchFilters({ type: "setDateFrom", value: e.target.value });
+                }}
                 className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
               />
             </label>
@@ -235,12 +251,21 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
               <input
                 type="date"
                 value={filters.dateTo}
-                onChange={(e) => dispatchFilters({ type: "setDateTo", value: e.target.value })}
+                onChange={(e) => {
+                  dispatchFilters({ type: "setDateTo", value: e.target.value });
+                }}
                 className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 border px-2 py-1.5 focus:ring-1 focus:outline-none"
               />
             </label>
             {(filters.dateFrom || filters.dateTo) && (
-              <Button variant="ghost" size="sm" onClick={() => dispatchFilters({ type: "clearDates" })} className="mb-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  dispatchFilters({ type: "clearDates" });
+                }}
+                className="mb-0.5"
+              >
                 Clear dates
               </Button>
             )}
@@ -267,7 +292,9 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
                     key={group.id}
                     group={group}
                     isExpanded={expandedRuns[group.id] ?? false}
-                    onToggleExpanded={() => setExpandedRuns((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? false) }))}
+                    onToggleExpanded={() => {
+                      setExpandedRuns((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? false) }));
+                    }}
                     leftId={leftId}
                     rightId={rightId}
                     onToggleSelect={onToggle}

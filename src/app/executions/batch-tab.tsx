@@ -11,7 +11,7 @@ import { BatchErrorCard } from "./_components/batch-error-card";
 import { BatchList } from "./_components/batch-list";
 import { BatchLoadingSkeleton } from "./_components/batch-loading-skeleton";
 import { BatchToolbar } from "./_components/batch-toolbar";
-import { isAwaitingJudgeBatch, type BatchRow, type RunRow } from "./_components/batch-types";
+import { type BatchRow, isAwaitingJudgeBatch, type RunRow } from "./_components/batch-types";
 import { useBatchListMachinery } from "./_components/use-batch-list-machinery";
 
 const BATCH_PAGE_SIZE = 20;
@@ -53,12 +53,12 @@ interface RawBatchRun {
 function normalizeBatch(b: Record<string, unknown>): BatchRow {
   const raw = b as RawBatch;
   const runs = (Array.isArray(raw.runs) ? raw.runs : []).map((entry: Record<string, unknown>) => {
-    const r = entry as RawBatchRun;
+    const run = entry as RawBatchRun;
     return {
       ...entry,
-      batchRunId: (r.batchRunId as string) ?? null,
-      source: (r.source as string) ?? null,
-      inputPresetName: r.inputPresetName ?? (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null
+      batchRunId: (run.batchRunId as string) ?? null,
+      source: (run.source as string) ?? null,
+      inputPresetName: run.inputPresetName ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null
     };
   });
   return { ...b, runs } as BatchRow;
@@ -86,12 +86,15 @@ const initialPendingState: PendingState = {
 
 function pendingReducer(state: PendingState, action: PendingAction): PendingState {
   switch (action.type) {
-    case "retryingRun":
-      return { ...state, retryingRunId: action.id };
-    case "retryingBatch":
-      return { ...state, retryingBatchId: action.id };
-    case "deletingBatch":
+    case "deletingBatch": {
       return { ...state, deletingBatchId: action.id };
+    }
+    case "retryingBatch": {
+      return { ...state, retryingBatchId: action.id };
+    }
+    case "retryingRun": {
+      return { ...state, retryingRunId: action.id };
+    }
   }
 }
 
@@ -101,14 +104,19 @@ interface AppliedRangeState {
   to: string;
 }
 
-type AppliedRangeAction = { type: "set"; from: string; to: string };
+interface AppliedRangeAction {
+  type: "set";
+  from: string;
+  to: string;
+}
 
 const initialAppliedRangeState: AppliedRangeState = { from: "", to: "" };
 
 function appliedRangeReducer(_state: AppliedRangeState, action: AppliedRangeAction): AppliedRangeState {
   switch (action.type) {
-    case "set":
+    case "set": {
       return { from: action.from, to: action.to };
+    }
   }
 }
 
@@ -177,7 +185,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
     // old page-1-only poll; acceptable at this tool's scale.
     refetchInterval: (query) => {
       const pages = query.state.data?.pages ?? [];
-      const polling = pages.some((p) => p.batches.some((b) => b.status === "running" || isAwaitingJudgeBatch(b.runs, b.numberOfImages)));
+      const polling = pages.some((page) => page.batches.some((b) => b.status === "running" || isAwaitingJudgeBatch(b.runs, b.numberOfImages)));
       return polling ? POLL_INTERVAL : false;
     }
   });
@@ -186,8 +194,8 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
   const batches = useMemo(() => {
     const seen = new Set<string>();
     const out: BatchRow[] = [];
-    for (const p of data?.pages ?? []) {
-      for (const b of p.batches) {
+    for (const page of data?.pages ?? []) {
+      for (const b of page.batches) {
         if (!seen.has(b.id)) {
           seen.add(b.id);
           out.push(b);
@@ -277,8 +285,8 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
         setExpandedState((prev) => updateExpanded(prev, listKey, (ids) => ids.delete(batchId)));
         toast.success(`Deleted batch "${displayName}"`);
         await refetch();
-      } catch (e) {
-        toast.error("Failed to delete batch", e instanceof Error ? { description: e.message } : {});
+      } catch (error) {
+        toast.error("Failed to delete batch", error instanceof Error ? { description: error.message } : {});
       } finally {
         pendingDispatch({ type: "deletingBatch", id: null });
       }
@@ -350,7 +358,17 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
         onRated={refetchKeepScroll}
         onImageClick={handleImageClick}
       />
-      {lightbox && <GridLightbox src={lightbox.src} runHref={lightbox.runHref} generationId={lightbox.generationId} onRated={() => refetchKeepScroll()} onClose={() => setLightbox(null)} />}
+      {lightbox && (
+        <GridLightbox
+          src={lightbox.src}
+          runHref={lightbox.runHref}
+          generationId={lightbox.generationId}
+          onRated={() => refetchKeepScroll()}
+          onClose={() => {
+            setLightbox(null);
+          }}
+        />
+      )}
     </div>
   );
 }

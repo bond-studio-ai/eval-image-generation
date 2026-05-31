@@ -42,7 +42,7 @@ export function BatchListItem({
   onImageClick: (run: RunRow) => void;
 }) {
   const isBenchmark = source === "benchmark";
-  const projectKeys = new Set(batch.runs.map((r) => (isBenchmark && r.batchRunId ? r.batchRunId : (r.inputPresetName ?? "(no preset)"))));
+  const projectKeys = new Set(batch.runs.map((run) => (isBenchmark && run.batchRunId ? run.batchRunId : (run.inputPresetName ?? "(no preset)"))));
   const isMultiStrategy = batch.strategies.length > 1;
 
   return (
@@ -50,7 +50,9 @@ export function BatchListItem({
       <div className="flex w-full items-center justify-between px-5 py-3">
         <button
           type="button"
-          onClick={() => onToggle(batch.id, isExpanded)}
+          onClick={() => {
+            onToggle(batch.id, isExpanded);
+          }}
           className="hover:bg-surface-muted focus-visible:outline-primary-600 -my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <ChevronRightIcon className={cn("text-text-disabled size-4 transition-transform", isExpanded && "rotate-90")} aria-hidden="true" />
@@ -88,7 +90,15 @@ export function BatchListItem({
               Retry failed ({batch.failedRuns})
             </Button>
           )}
-          <IconButton label="Delete batch" icon={<TrashIcon className="size-4" />} variant="danger" loading={deletingBatchId === batch.id} onClick={() => onDeleteBatch(batch.id, batch.name ?? "Untitled batch")} />
+          <IconButton
+            label="Delete batch"
+            icon={<TrashIcon className="size-4" />}
+            variant="danger"
+            loading={deletingBatchId === batch.id}
+            onClick={() => {
+              onDeleteBatch(batch.id, batch.name ?? "Untitled batch");
+            }}
+          />
           <span className="text-caption text-text-muted">{new Date(batch.createdAt).toLocaleString()}</span>
         </div>
       </div>
@@ -113,16 +123,25 @@ function MultiStrategyLabel({ strategies }: { strategies: { id: string; name: st
   const ref = useRef<HTMLSpanElement>(null);
 
   return (
-    <span ref={ref} className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+    <span
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => {
+        setShowTooltip(true);
+      }}
+      onMouseLeave={() => {
+        setShowTooltip(false);
+      }}
+    >
       <Badge tone="accent" variant="soft" className="cursor-help">
         Multi-Strategy Run
       </Badge>
       {showTooltip && (
         <span className="rounded-card border-border bg-surface shadow-popover absolute top-full left-0 z-50 mt-1 w-56 border p-3">
           <span className="text-text-disabled mb-1.5 block text-[10px] font-medium tracking-wider uppercase">Strategies ({strategies.length})</span>
-          {strategies.map((s) => (
-            <span key={s.id} className="text-caption text-text-secondary block py-0.5">
-              {s.name}
+          {strategies.map((strategy) => (
+            <span key={strategy.id} className="text-caption text-text-secondary block py-0.5">
+              {strategy.name}
             </span>
           ))}
         </span>

@@ -27,7 +27,9 @@ interface RawRoom {
 }
 
 async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function readProjectIdFromCreateResponse(res: Response): Promise<string> {
@@ -61,7 +63,7 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
   while (Date.now() <= deadline) {
     const room = await fetchRoomByProjectId(projectId);
-    const cameraFrames = (room as RawRoom).cameraFrames;
+    const { cameraFrames } = room as RawRoom;
     const frameCount = Array.isArray(cameraFrames) ? cameraFrames.length : 0;
     lastRoom = room;
     if (frameCount > 0) {
@@ -123,8 +125,8 @@ export async function POST(request: Request) {
       project_id: projectId,
       room_data: roomData
     });
-  } catch (err) {
-    console.error("[layout bootstrap] Error:", err);
+  } catch (error) {
+    console.error("[layout bootstrap] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to bootstrap layout preset");
   }
 }

@@ -28,9 +28,7 @@ export function ProjectDataSection({ bootstrap, excludedFrameKeys, onToggleFrame
 
   return (
     <FormSection title="Project data" description="Review the project's camera frames and override design materials or room data if needed.">
-      {!bootstrap ? (
-        <EmptyState onPickProject={onScrollToProjectStep} />
-      ) : (
+      {bootstrap ? (
         <div className="space-y-6">
           <SummaryGrid bootstrap={bootstrap} includedCount={includedCount} />
 
@@ -44,9 +42,11 @@ export function ProjectDataSection({ bootstrap, excludedFrameKeys, onToggleFrame
 
           {bootstrap.cameraFrames.length > 0 && <CameraFramesList frames={bootstrap.cameraFrames} excludedFrameKeys={excludedFrameKeys} onToggleFrame={onToggleFrame} />}
         </div>
+      ) : (
+        <EmptyState onPickProject={onScrollToProjectStep} />
       )}
 
-      <OverridePanel overrides={overrides} hasBootstrap={!!bootstrap} />
+      <OverridePanel overrides={overrides} hasBootstrap={Boolean(bootstrap)} />
     </FormSection>
   );
 }
@@ -102,7 +102,9 @@ function CameraFramesList({ frames, excludedFrameKeys, onToggleFrame }: { frames
             <li key={key} className="flex items-center gap-3 px-4 py-2">
               <Checkbox
                 checked={!excluded}
-                onChange={() => onToggleFrame(key)}
+                onChange={() => {
+                  onToggleFrame(key);
+                }}
                 label={
                   <span className="min-w-0">
                     <span className="text-body text-text-primary block truncate font-medium">{frame.summary || `Frame ${index + 1}`}</span>
@@ -137,7 +139,14 @@ function OverridePanel({ overrides, hasBootstrap }: { overrides: DollhouseOverri
 
   return (
     <div className="border-border-subtle mt-6 border-t pt-6">
-      <button type="button" onClick={() => setForcedOpen(!isOpen)} className="hover:bg-surface-muted -mx-2 flex w-[calc(100%+1rem)] items-center justify-between rounded-md px-2 py-1 text-left transition-colors" aria-expanded={isOpen}>
+      <button
+        type="button"
+        onClick={() => {
+          setForcedOpen(!isOpen);
+        }}
+        className="hover:bg-surface-muted -mx-2 flex w-[calc(100%+1rem)] items-center justify-between rounded-md px-2 py-1 text-left transition-colors"
+        aria-expanded={isOpen}
+      >
         <div className="min-w-0">
           <h3 className="text-body text-text-primary font-semibold">Override project data (optional)</h3>
           <p className="text-caption text-text-muted mt-0.5">{summary}</p>
@@ -149,11 +158,33 @@ function OverridePanel({ overrides, hasBootstrap }: { overrides: DollhouseOverri
         <div className="mt-4 space-y-5">
           <Field label="Design materials (Unity-slim JSON)" optional hint={hasBootstrap && !designResult.provided ? "Empty — using the value loaded from the project." : undefined} error={designResult.error ?? undefined}>
             {(id) => (
-              <Textarea id={id} value={designMaterialsInput} onChange={(e) => setDesignMaterialsInput(e.target.value)} placeholder='{"id":"...","objects":{},"surfaces":{}}' rows={6} spellCheck={false} className="font-mono text-[13px]" />
+              <Textarea
+                id={id}
+                value={designMaterialsInput}
+                onChange={(e) => {
+                  setDesignMaterialsInput(e.target.value);
+                }}
+                placeholder='{"id":"...","objects":{},"surfaces":{}}'
+                rows={6}
+                spellCheck={false}
+                className="font-mono text-[13px]"
+              />
             )}
           </Field>
           <Field label="Room data (JSON)" optional hint={hasBootstrap && !roomResult.provided ? "Empty — using the value loaded from the project." : undefined} error={roomResult.error ?? undefined}>
-            {(id) => <Textarea id={id} value={roomDataInput} onChange={(e) => setRoomDataInput(e.target.value)} placeholder='{"roomId":"...","walls":[],"floor":{}}' rows={6} spellCheck={false} className="font-mono text-[13px]" />}
+            {(id) => (
+              <Textarea
+                id={id}
+                value={roomDataInput}
+                onChange={(e) => {
+                  setRoomDataInput(e.target.value);
+                }}
+                placeholder='{"roomId":"...","walls":[],"floor":{}}'
+                rows={6}
+                spellCheck={false}
+                className="font-mono text-[13px]"
+              />
+            )}
           </Field>
         </div>
       )}

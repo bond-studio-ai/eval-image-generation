@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore, type ComponentType, type SVGProps } from "react";
+import { type ComponentType, type SVGProps, useSyncExternalStore } from "react";
 import { cn } from "@/components/ui/cn";
 import { BarChartIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon, GitCompareIcon, ImageIcon, ImagePlusIcon, PlayIcon, ScrollTextIcon, SparklesIcon, WorkflowIcon } from "@/components/ui/icons";
 
@@ -82,7 +82,9 @@ export function Sidebar() {
   // value without a mount effect or a separate hydration flag.
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
 
-  const toggleCollapsed = () => writeCollapsed(!collapsed);
+  const toggleCollapsed = () => {
+    writeCollapsed(!collapsed);
+  };
 
   const isActive = (item: NavItem) => {
     const match = item.match ?? item.href;

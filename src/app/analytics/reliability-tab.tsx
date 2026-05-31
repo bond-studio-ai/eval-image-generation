@@ -67,7 +67,7 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
     );
   }
 
-  const maxRuns = Math.max(...trends.map((t) => t.totalRuns), 1);
+  const maxRuns = Math.max(...trends.map((trend) => trend.totalRuns), 1);
 
   return (
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
@@ -87,14 +87,18 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
         </span>
       </div>
       <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
-        {trends.map((t, i) => {
-          const totalH = (t.totalRuns / maxRuns) * 100;
-          const failedH = t.totalRuns > 0 ? (t.failedRuns / t.totalRuns) * totalH : 0;
-          const date = new Date(t.period);
+        {trends.map((trend, i) => {
+          const totalH = (trend.totalRuns / maxRuns) * 100;
+          const failedH = trend.totalRuns > 0 ? (trend.failedRuns / trend.totalRuns) * totalH : 0;
+          const date = new Date(trend.period);
           const label = `${date.getMonth() + 1}/${date.getDate()}`;
           return (
-            <div key={t.period} className="group relative flex flex-1 flex-col items-center" title={`${label}: ${t.totalRuns} runs, ${t.failedRuns} failed, ${t.timedOutSteps} timeouts, ${t.judgeFailures} judge failures`}>
-              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: t.totalRuns > 0 ? 4 : 0 }}>
+            <div
+              key={trend.period}
+              className="group relative flex flex-1 flex-col items-center"
+              title={`${label}: ${trend.totalRuns} runs, ${trend.failedRuns} failed, ${trend.timedOutSteps} timeouts, ${trend.judgeFailures} judge failures`}
+            >
+              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: trend.totalRuns > 0 ? 4 : 0 }}>
                 <div className="bg-border absolute bottom-0 w-full rounded-t" style={{ height: "100%" }} />
                 <div className="bg-danger-400 absolute bottom-0 w-full rounded-t" style={{ height: `${failedH}%` }} />
               </div>

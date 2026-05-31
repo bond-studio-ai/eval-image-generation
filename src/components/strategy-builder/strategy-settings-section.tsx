@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { FormSection } from "@/components/ui/form-section";
 import { SearchableSelect } from "./searchable-select";
-import { ASPECT_RATIOS, RESOLUTIONS, type ModelOption, type StrategySettings } from "./types";
+import { ASPECT_RATIOS, type ModelOption, RESOLUTIONS, type StrategySettings } from "./types";
 
 export function StrategySettingsSection({ strategySettings, setStrategySettings, generationModels }: { strategySettings: StrategySettings; setStrategySettings: Dispatch<SetStateAction<StrategySettings>>; generationModels: ModelOption[] }) {
   return (
@@ -13,7 +13,14 @@ export function StrategySettingsSection({ strategySettings, setStrategySettings,
           <label htmlFor="strategy-model" className="text-text-secondary text-caption mb-1 block font-medium">
             Model
           </label>
-          <SearchableSelect id="strategy-model" value={strategySettings.model} options={generationModels} onChange={(v) => setStrategySettings((s) => ({ ...s, model: v }))} />
+          <SearchableSelect
+            id="strategy-model"
+            value={strategySettings.model}
+            options={generationModels}
+            onChange={(value) => {
+              setStrategySettings((prev) => ({ ...prev, model: value }));
+            }}
+          />
         </div>
         <div>
           <label htmlFor="strategy-aspect-ratio" className="text-text-secondary text-caption mb-1 block font-medium">
@@ -22,7 +29,9 @@ export function StrategySettingsSection({ strategySettings, setStrategySettings,
           <select
             id="strategy-aspect-ratio"
             value={strategySettings.aspect_ratio}
-            onChange={(e) => setStrategySettings((s) => ({ ...s, aspect_ratio: e.target.value }))}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, aspect_ratio: e.target.value }));
+            }}
             className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
           >
             {ASPECT_RATIOS.map((ar) => (
@@ -39,12 +48,14 @@ export function StrategySettingsSection({ strategySettings, setStrategySettings,
           <select
             id="strategy-resolution"
             value={strategySettings.output_resolution}
-            onChange={(e) => setStrategySettings((s) => ({ ...s, output_resolution: e.target.value }))}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, output_resolution: e.target.value }));
+            }}
             className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
           >
-            {RESOLUTIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
+            {RESOLUTIONS.map((resolution) => (
+              <option key={resolution} value={resolution}>
+                {resolution}
               </option>
             ))}
           </select>
@@ -60,33 +71,70 @@ export function StrategySettingsSection({ strategySettings, setStrategySettings,
             max={2}
             step={0.1}
             value={strategySettings.temperature}
-            onChange={(e) => setStrategySettings((s) => ({ ...s, temperature: Number(e.target.value) || 1.0 }))}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, temperature: Number(e.target.value) || 1 }));
+            }}
             className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-lg border px-2 py-1.5 focus:ring-1 focus:outline-none"
           />
         </div>
       </div>
       <div className="mt-3 flex gap-6">
         <label className="text-text-secondary text-caption flex items-center gap-2">
-          <input type="checkbox" checked={strategySettings.tag_images} onChange={(e) => setStrategySettings((s) => ({ ...s, tag_images: e.target.checked }))} className="border-border-strong rounded" />
+          <input
+            type="checkbox"
+            checked={strategySettings.tag_images}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, tag_images: e.target.checked }));
+            }}
+            className="border-border-strong rounded"
+          />
           Tag images
         </label>
         <label className="text-text-secondary text-caption flex items-center gap-2">
-          <input type="checkbox" checked={strategySettings.use_google_search} onChange={(e) => setStrategySettings((s) => ({ ...s, use_google_search: e.target.checked }))} className="border-border-strong rounded" />
+          <input
+            type="checkbox"
+            checked={strategySettings.use_google_search}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, use_google_search: e.target.checked }));
+            }}
+            className="border-border-strong rounded"
+          />
           Google Search
         </label>
         <label className="text-text-secondary text-caption flex items-center gap-2">
-          <input type="checkbox" checked={strategySettings.group_product_images} onChange={(e) => setStrategySettings((s) => ({ ...s, group_product_images: e.target.checked }))} className="border-border-strong rounded" />
+          <input
+            type="checkbox"
+            checked={strategySettings.group_product_images}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, group_product_images: e.target.checked }));
+            }}
+            className="border-border-strong rounded"
+          />
           Group product images
         </label>
         <label className="text-text-secondary text-caption flex items-center gap-2">
-          <input type="checkbox" checked={strategySettings.check_scene_accuracy} onChange={(e) => setStrategySettings((s) => ({ ...s, check_scene_accuracy: e.target.checked }))} className="border-border-strong rounded" />
+          <input
+            type="checkbox"
+            checked={strategySettings.check_scene_accuracy}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, check_scene_accuracy: e.target.checked }));
+            }}
+            className="border-border-strong rounded"
+          />
           Check scene accuracy
         </label>
         <label
           className="text-text-secondary text-caption flex items-center gap-2"
           title="When enabled, every generation step inherits the prior step's chat history (Gemini multi-turn natively; OpenAI image / Fal flatten the chain into prompt + input images)."
         >
-          <input type="checkbox" checked={strategySettings.enable_multi_turn_context} onChange={(e) => setStrategySettings((s) => ({ ...s, enable_multi_turn_context: e.target.checked }))} className="border-border-strong rounded" />
+          <input
+            type="checkbox"
+            checked={strategySettings.enable_multi_turn_context}
+            onChange={(e) => {
+              setStrategySettings((prev) => ({ ...prev, enable_multi_turn_context: e.target.checked }));
+            }}
+            className="border-border-strong rounded"
+          />
           Multi-turn context
         </label>
       </div>
