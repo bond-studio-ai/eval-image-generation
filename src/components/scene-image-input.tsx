@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { UploadIcon, XIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
@@ -16,9 +17,7 @@ interface SceneImageInputProps {
 
 export function SceneImageInput({ label, value, onChange }: SceneImageInputProps) {
   const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -49,24 +48,15 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
     [onChange]
   );
 
-  const handleFiles = useCallback(
-    (files: FileList | File[]) => {
-      const [file] = Array.from(files);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (accepted) => {
+      const [file] = accepted;
       if (file) void uploadFile(file);
     },
-    [uploadFile]
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      if (e.dataTransfer.files.length > 0) {
-        handleFiles(e.dataTransfer.files);
-      }
-    },
-    [handleFiles]
-  );
+    accept: { "image/jpeg": [], "image/png": [], "image/webp": [], "image/gif": [] },
+    multiple: false,
+    disabled: uploading
+  });
 
   return (
     <div>
@@ -87,47 +77,27 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           </button>
         </div>
       ) : (
-        <>
-          <input
-            ref={inputRef}
-            type="file"
-            aria-label={label}
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) handleFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            aria-label={`Upload ${label}`}
-            className={`flex min-h-72 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-              dragOver ? "border-primary-500 bg-primary-50" : "border-border-strong hover:border-border-strong"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => {
-              setDragOver(false);
-            }}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-          >
-            {uploading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Spinner className="text-text-secondary size-5" />
-                <span className="text-text-secondary text-body">Uploading…</span>
-              </div>
-            ) : (
-              <div>
-                <UploadIcon className="text-text-disabled mx-auto size-8" strokeWidth={1.5} />
-                <p className="text-text-muted text-caption mt-2">Drop image or click to browse</p>
-              </div>
-            )}
-          </button>
-        </>
+        <div
+          {...getRootProps({
+            "aria-label": `Upload ${label}`,
+            className: `flex min-h-72 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+              isDragActive ? "border-primary-500 bg-primary-50" : "border-border-strong hover:border-border-strong"
+            }`
+          })}
+        >
+          <input {...getInputProps({ "aria-label": label })} />
+          {uploading ? (
+            <div className="flex items-center justify-center gap-2">
+              <Spinner className="text-text-secondary size-5" />
+              <span className="text-text-secondary text-body">Uploading…</span>
+            </div>
+          ) : (
+            <div>
+              <UploadIcon className="text-text-disabled mx-auto size-8" strokeWidth={1.5} />
+              <p className="text-text-muted text-caption mt-2">Drop image or click to browse</p>
+            </div>
+          )}
+        </div>
       )}
 
       {error && <p className="text-danger-600 text-caption mt-1">{error}</p>}
