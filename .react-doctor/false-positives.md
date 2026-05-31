@@ -71,6 +71,8 @@ exists.
 ## react-doctor/prefer-dynamic-import
 
 - `react-doctor/prefer-dynamic-import` — `src/app/analytics/accuracy-trend-chart-graph.tsx:3` — the parent (`accuracy-trend-chart.tsx`) already wraps this leaf in `dynamic(() => import('./accuracy-trend-chart-graph'))`; recharts is already code-split.
+- `react-doctor/prefer-dynamic-import` — `src/components/prompt-template-editor/template-code-editor.tsx:4` (`@codemirror/view`) — reached only through the `prompt-code-editor`/`json-code-editor` wrappers, which `prompt-template-editor.tsx` and `design-settings-editor.tsx` load via `dynamic(() => import(...), { ssr: false })`; CodeMirror is already code-split out of the initial bundle.
+- `react-doctor/prefer-dynamic-import` — `src/components/prompt-template-editor/editor-theme.ts:1` (`@codemirror/view`) — same: only imported by the dynamically-loaded CodeMirror editor wrappers, so CodeMirror stays out of the initial bundle.
 
 ## react-doctor/prefer-tag-over-role
 

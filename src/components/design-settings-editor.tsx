@@ -1,7 +1,6 @@
 "use client";
 
-import { json, jsonParseLinter } from "@codemirror/lang-json";
-import { linter } from "@codemirror/lint";
+import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { useCatalogProducts } from "@/components/design-settings-catalog";
 import { ProductImageDownloads } from "@/components/design-settings-downloads";
@@ -25,11 +24,17 @@ import {
 import { ProductSelectionModal } from "@/components/design-settings-product-modal";
 import { isNonEmpty } from "@/components/design-settings-values";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
-import { TemplateCodeEditor } from "@/components/prompt-template-editor/template-code-editor";
 import { Button } from "@/components/ui/button";
 
-// Stable extension list so the JSON editor is not reconfigured on every render.
-const JSON_EXTENSIONS = [json(), linter(jsonParseLinter())];
+// Lazy-load the CodeMirror JSON editor so its heavy dependencies stay out of the
+// initial bundle; it is browser-only and only renders in JSON mode.
+const JsonCodeEditor = dynamic(
+  async () => {
+    const mod = await import("@/components/prompt-template-editor/json-code-editor");
+    return mod.JsonCodeEditor;
+  },
+  { ssr: false }
+);
 
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
@@ -250,14 +255,13 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
       ) : (
         <div className="p-5">
           <p className="text-text-muted text-caption mb-2">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
-          <TemplateCodeEditor
+          <JsonCodeEditor
             ariaLabel="Design settings JSON"
             value={jsonText}
             onChange={(next) => {
               setJsonText(next);
               setJsonError(null);
             }}
-            extensions={JSON_EXTENSIONS}
             minRows={14}
             placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
           />

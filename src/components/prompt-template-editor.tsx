@@ -1,17 +1,25 @@
 "use client";
 
 import { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { localUrl } from "@/lib/api-base";
 import type { DOLLHOUSE_ATTRIBUTES } from "@/lib/prompt-template-constants";
 import { CONDITIONAL_OPTIONS, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
 import { ConditionalPopover } from "./prompt-template-editor/conditional-popover";
 import { DollhousePopover } from "./prompt-template-editor/dollhouse-popover";
-import { handlebarsHighlighting, handlebarsLanguage } from "./prompt-template-editor/handlebars-language";
-import { handlebarsLinter } from "./prompt-template-editor/handlebars-lint";
 import { ReferencePopover } from "./prompt-template-editor/reference-popover";
 import { attributesInitial, attributesReducer, conditionalInitial, conditionalReducer, dollhouseInitial, dollhouseReducer, referenceInitial, referenceReducer } from "./prompt-template-editor/state";
-import { TemplateCodeEditor } from "./prompt-template-editor/template-code-editor";
+
+// Lazy-load the CodeMirror editor (and its heavy dependencies) so they stay out
+// of the initial bundle; the editor is browser-only, so disable SSR.
+const PromptCodeEditor = dynamic(
+  async () => {
+    const mod = await import("./prompt-template-editor/prompt-code-editor");
+    return mod.PromptCodeEditor;
+  },
+  { ssr: false }
+);
 
 interface PromptTemplateEditorProps {
   value: string;
@@ -24,9 +32,6 @@ interface PromptTemplateEditorProps {
   /** If true, use flex-1 to fill available space. Default false. */
   fillHeight?: boolean;
 }
-
-// Stable extension list so the editor is not reconfigured on every render.
-const PROMPT_EXTENSIONS = [handlebarsLanguage, handlebarsHighlighting, handlebarsLinter];
 
 export function PromptTemplateEditor({ value, onChange, placeholder = "Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}", rows = 8, showPicker = true, fillHeight = false }: PromptTemplateEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
@@ -157,7 +162,7 @@ export function PromptTemplateEditor({ value, onChange, placeholder = "Handlebar
   if (!showPicker) {
     return (
       <div className={fillHeight ? "flex min-h-0 flex-1 flex-col" : ""}>
-        <TemplateCodeEditor ref={editorRef} value={value} onChange={onChange} extensions={PROMPT_EXTENSIONS} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
+        <PromptCodeEditor editorRef={editorRef} value={value} onChange={onChange} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
       </div>
     );
   }
@@ -210,7 +215,7 @@ export function PromptTemplateEditor({ value, onChange, placeholder = "Handlebar
         />
       </div>
 
-      <TemplateCodeEditor ref={editorRef} value={value} onChange={onChange} extensions={PROMPT_EXTENSIONS} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
+      <PromptCodeEditor editorRef={editorRef} value={value} onChange={onChange} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
     </div>
   );
 }
