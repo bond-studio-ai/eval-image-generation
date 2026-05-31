@@ -4,11 +4,8 @@ import { InputPresetDetail } from "@/components/input-preset-detail";
 import { catchToNull } from "@/lib/async-utils";
 import { parseOrFallback } from "@/lib/api/parse";
 import { generationSummaryArraySchema } from "@/lib/api/schemas";
-import { getInputPresetStoredImages, type InputPresetStats } from "@/lib/input-preset-design";
-import { fetchGenerations, fetchInputPresetById, type InputPresetDetailItem } from "@/lib/service-client";
-
-/** Loose view over the preset that allows dynamic/snake-case key reads without `any`. */
-type RawInputPreset = InputPresetDetailItem & { created_at?: string; deleted_at?: string; stats?: InputPresetStats; [key: string]: unknown };
+import { getInputPresetStoredImages } from "@/lib/input-preset-design";
+import { fetchGenerations, fetchInputPresetById, type InputPresetWithStats } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +26,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
-  const ipData = presetData as RawInputPreset;
+  const ipData = presetData as InputPresetWithStats;
 
   const genResult = await fetchGenerations({ inputPresetId: id, limit: "100" });
   const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "input-preset related generations");

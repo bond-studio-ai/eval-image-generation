@@ -5,13 +5,10 @@ import { useCallback, useMemo, useState } from "react";
 import { ChevronsUpDownIcon, XIcon } from "@/components/ui/icons";
 import { localUrl } from "@/lib/api-base";
 import type { DesignPackageOption } from "@/lib/design-package";
+import { errorMessageOr } from "@/lib/error-message";
 
 function optionLabel(option: DesignPackageOption): string {
   return option.title?.trim() || option.name?.trim() || option.id;
-}
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }
 
 function packageSelectLabel(selectedOption: DesignPackageOption | null, hasCurrentValue: boolean, value: string, loading: boolean): string {

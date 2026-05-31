@@ -7,7 +7,7 @@ import type { z } from "zod";
 import { parseOrThrow } from "./api/parse";
 import { generationDetailSchema, promptVersionDetailSchema } from "./api/schemas";
 import { imageGenerationBase, imageGenerationV2Base } from "./env";
-import type { InputPresetDesignFields } from "./input-preset-design";
+import type { InputPresetDesignFields, InputPresetStats } from "./input-preset-design";
 
 export { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "./strategy-run-judge-results";
 
@@ -16,35 +16,27 @@ const getV2Base = () => imageGenerationV2Base();
 
 const withLeadingSlash = (path: string): string => (path.startsWith("/") ? path : `/${path}`);
 
-async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getBase()}${withLeadingSlash(path)}`;
+/** Fetch `{ data }` from a service endpoint and return the unwrapped, still-unknown `data`. */
+async function fetchServiceData(base: string, path: string, init?: RequestInit): Promise<unknown> {
+  const url = `${base}${withLeadingSlash(path)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
-  const json = (await res.json()) as { data?: unknown };
-  return json.data as T;
+  return ((await res.json()) as { data?: unknown }).data;
+}
+
+async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
+  return (await fetchServiceData(getBase(), path, init)) as T;
 }
 
 /** Like `fetchService`, but validates `json.data` against a zod schema. */
 async function fetchServiceParsed<S extends z.ZodType>(path: string, schema: S, init?: RequestInit): Promise<z.infer<S>> {
-  const url = `${getBase()}${withLeadingSlash(path)}`;
-  const res = await fetch(url, { cache: "no-store", ...init });
-  if (!res.ok) {
-    throw new Error(`Service ${res.status}: ${url}`);
-  }
-  const json = (await res.json()) as { data?: unknown };
-  return parseOrThrow(schema, json.data, `service ${path}`);
+  return parseOrThrow(schema, await fetchServiceData(getBase(), path, init), `service ${path}`);
 }
 
 async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getV2Base()}${withLeadingSlash(path)}`;
-  const res = await fetch(url, { cache: "no-store", ...init });
-  if (!res.ok) {
-    throw new Error(`Service ${res.status}: ${url}`);
-  }
-  const json = (await res.json()) as { data?: unknown };
-  return json.data as T;
+  return (await fetchServiceData(getV2Base(), path, init)) as T;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -198,6 +190,17 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   deletedAt: string | null;
   createdAt: string;
 }
+
+/**
+ * Loose view over an input-preset payload that allows dynamic and snake_case
+ * key reads (usage stats, legacy date columns) without falling back to `any`.
+ */
+export type InputPresetWithStats = InputPresetDetailItem & {
+  created_at?: string;
+  deleted_at?: string;
+  stats?: InputPresetStats;
+  [key: string]: unknown;
+};
 
 export type ProviderModelUseCase = "IMAGE_GENERATION" | "PREVIEW_IMAGE_GENERATION" | "IMAGE_GENERATION_FALLBACK" | "JUDGING" | "SEGMENTATION" | "DEPTH_ANALYSIS";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { localUrl } from "./api-base";
+import { camelizeDeep } from "./casing";
 import { coerceString } from "./coerce-string";
 import type { CatalogProduct, Color, ObjectComponent, ObjectItem, RawDesignObject, ScanLike, SurfaceItem, TextureScale, UnitySlimDesignMaterials } from "./design-materials-types";
 import { logger } from "./logger";
@@ -59,16 +60,6 @@ const TILE_PATTERN_BY_ID_KEY: Record<string, string> = {
 };
 
 const TILE_PATTERN_VALUES = new Set(Object.values(TILE_PATTERN_BY_ID_KEY));
-
-function snakeToCamel(value: string): string {
-  return value.replaceAll(/_([a-z])/g, (_, char: string) => char.toUpperCase());
-}
-
-function toCamelCase(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map((entry) => toCamelCase(entry));
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), toCamelCase(entry)]));
-}
 
 function asRecord(value: unknown): RawDesignObject | null {
   return value != null && typeof value === "object" && !Array.isArray(value) ? (value as RawDesignObject) : null;
@@ -168,7 +159,7 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
     for (const candidate of candidates) {
       const rec = asRecord(candidate);
       if (!rec) continue;
-      const camel = toCamelCase(rec) as RawDesignObject;
+      const camel = camelizeDeep(rec) as RawDesignObject;
       const scan = asRecord(camel.scan);
       if (scan && isScanLike(scan)) return scan;
       if (isScanLike(camel)) return camel;
@@ -180,7 +171,7 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
 }
 
 async function resolveScan(params: { roomData?: RawDesignObject; projectId?: string }): Promise<ScanLike | null> {
-  const camelRoomData = params.roomData ? (toCamelCase(params.roomData) as RawDesignObject) : null;
+  const camelRoomData = params.roomData ? (camelizeDeep(params.roomData) as RawDesignObject) : null;
   if (camelRoomData) {
     const roomScan = asRecord(camelRoomData.scan);
     if (roomScan && isScanLike(roomScan)) return roomScan;

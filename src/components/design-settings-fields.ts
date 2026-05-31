@@ -1,6 +1,9 @@
 export type FieldType = "select" | "boolean" | "product";
 export type CatalogImageTag = "photo-image" | "tear-sheet" | "line-drawing";
 
+/** A design-settings blob: a flat map of field key -> value, or null when unset. */
+export type DesignSettingsValue = Record<string, unknown> | null;
+
 export interface BaseFieldDef {
   key: string;
   label: string;

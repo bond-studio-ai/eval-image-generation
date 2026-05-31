@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useReducer, useState } from "react";
 import { DesignPackageSelect } from "@/components/design-package-select";
-import { DesignSettingsEditor, type DesignSettingsValue } from "@/components/design-settings-editor";
+import { DesignSettingsEditor } from "@/components/design-settings-editor";
+import type { DesignSettingsValue } from "@/components/design-settings-fields";
 import { designSettingsHasValues } from "@/components/design-settings-values";
 import { LayoutPresetSelect, useLayoutPresets } from "@/components/layout-preset-select";
 import { PageHeader } from "@/components/page-header";
@@ -135,7 +136,8 @@ export function NewInputPresetForm() {
       }
 
       const newId = json.data?.id;
-      if (newId) router.push(`/input-presets/${newId}`);
+      if (!newId) throw new Error("Input preset was created, but the server response was unreadable. Refresh the list to find it.");
+      router.push(`/input-presets/${newId}`);
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setCreating(false);

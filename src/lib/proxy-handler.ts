@@ -133,12 +133,8 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
 
   const contentType = res.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
-  let rawBody = "";
-  try {
-    rawBody = await res.text();
-  } catch {
-    rawBody = "";
-  }
+  const rawBodyAttempt = await attemptAsync(() => res.text());
+  const rawBody = rawBodyAttempt.ok ? rawBodyAttempt.value : "";
 
   if (!res.ok) {
     logger.error(`${serviceName} proxy upstream error`, {

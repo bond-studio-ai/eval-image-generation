@@ -88,7 +88,8 @@ export function NewPromptVersionForm() {
       }
 
       const newId = json.data?.id;
-      if (newId) router.push(`/prompt-versions/${newId}`);
+      if (!newId) throw new Error("Prompt version was created, but the server response was unreadable. Refresh the list to find it.");
+      router.push(`/prompt-versions/${newId}`);
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setCreating(false);

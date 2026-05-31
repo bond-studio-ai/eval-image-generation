@@ -60,6 +60,31 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
   // kept during re-fetches); fall back to the prop on the first load.
   const displaySkeletonRows = loading ? data.length || skeletonRows : 0;
 
+  function tableBody() {
+    if (loading) {
+      return Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />);
+    }
+    if (data.length === 0) {
+      return (
+        <tr>
+          <td colSpan={colCount} className="text-body text-text-muted p-6">
+            {emptyMessage}
+          </td>
+        </tr>
+      );
+    }
+    return data.map((row) => (
+      <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
+        {columns.map((col, i) => (
+          // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
+          <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
+            {col.cell(row)}
+          </td>
+        ))}
+      </tr>
+    ));
+  }
+
   return (
     <div className={`rounded-card border-border bg-surface shadow-card overflow-clip border ${className}`}>
       {toolbar && <div className="border-border bg-surface sticky top-0 z-10 border-b px-6 py-3">{toolbar}</div>}
@@ -75,28 +100,7 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
               ))}
             </tr>
           </thead>
-          <tbody className="divide-border bg-surface divide-y">
-            {loading ? Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />) : null}
-            {!loading && data.length === 0 ? (
-              <tr>
-                <td colSpan={colCount} className="text-body text-text-muted p-6">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : null}
-            {!loading && data.length > 0
-              ? data.map((row) => (
-                  <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
-                    {columns.map((col, i) => (
-                      // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
-                      <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
-                        {col.cell(row)}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              : null}
-          </tbody>
+          <tbody className="divide-border bg-surface divide-y">{tableBody()}</tbody>
         </table>
       </div>
       {footer}

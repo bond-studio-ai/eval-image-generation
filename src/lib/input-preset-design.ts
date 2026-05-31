@@ -1,3 +1,5 @@
+import { snakeToCamel } from "./casing";
+
 /** Usage stats attached to an input-preset payload (snake_case or camelCase). */
 export interface InputPresetStats {
   generationCount?: number;
@@ -136,10 +138,6 @@ export interface InputPresetStoredImage {
   urlColumn: string;
   url: string;
   isArbitrary: boolean;
-}
-
-function snakeToCamel(value: string): string {
-  return value.replaceAll(/_([a-z])/g, (_, char: string) => char.toUpperCase());
 }
 
 function camelToSnake(value: string): string {

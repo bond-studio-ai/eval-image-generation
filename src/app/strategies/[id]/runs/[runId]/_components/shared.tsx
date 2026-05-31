@@ -1,18 +1,12 @@
 import { ChevronRightIcon } from "@/components/ui/icons";
 
+export { StatusBadge } from "../../../status-badge";
+
 const SOURCE_LABELS: Record<string, string> = {
   preset: "Preset Run",
   raw_input: "Real Input",
   batch: "Batch Run",
   retry: "Retry"
-};
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  pending: "bg-surface-sunken text-text-secondary",
-  running: "bg-primary-100 text-primary-700",
-  completed: "bg-success-100 text-success-700",
-  failed: "bg-danger-100 text-danger-700",
-  skipped: "bg-warning-100 text-warning-700"
 };
 
 const SOURCE_BADGE_COLORS: Record<string, string> = {
@@ -29,10 +23,6 @@ export const STEP_STATUS_DOT: Record<string, string> = {
   failed: "bg-danger-500",
   skipped: "bg-warning-400"
 };
-
-export function StatusBadge({ status }: { status: string }) {
-  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"] ?? ""}`}>{status}</span>;
-}
 
 export function SourceBadge({ source }: { source: string | null }) {
   if (!source) return null;

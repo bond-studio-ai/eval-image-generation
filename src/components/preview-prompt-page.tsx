@@ -10,6 +10,7 @@ import { serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
 import { parseOrFallback } from "@/lib/api/parse";
 import { dollhouseSourceResponseSchema, errorEnvelopeSchema, minimalListResponseSchema, previewResponseSchema } from "@/lib/api/schemas";
+import { errorMessageOr } from "@/lib/error-message";
 
 interface PromptVersionItem {
   id: string;
@@ -131,10 +132,6 @@ interface DropdownState {
 }
 
 type DropdownAction = { type: "select"; id: string | null } | { type: "setOpen"; open: boolean } | { type: "setSearch"; search: string };
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
 
 function dropdownReducer(state: DropdownState, action: DropdownAction): DropdownState {
   switch (action.type) {

@@ -9,6 +9,7 @@ import {
   type BooleanFieldDef,
   type CatalogProduct,
   DEFAULT_PRODUCT_IMAGE_TYPE,
+  type DesignSettingsValue,
   FIELDS,
   getProductImageTypeKey,
   PRODUCT_FIELDS,
@@ -23,11 +24,6 @@ import { ProductSelectionModal } from "@/components/design-settings-product-moda
 import { isNonEmpty } from "@/components/design-settings-values";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { Button } from "@/components/ui/button";
-
-export { useCatalogProducts };
-export { DesignSettingsDisplay } from "@/components/design-settings-display";
-
-export type DesignSettingsValue = Record<string, unknown> | null;
 
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;

@@ -5,9 +5,9 @@ import { type DagStep, StrategyFlowDag } from "@/components/strategy-flow-dag";
 import { LinkButton } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { fetchStrategyById, fetchStrategyRuns } from "@/lib/service-client";
-import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { ActiveToggleButton } from "./active-toggle-button";
 import { CloneButton } from "./clone-button";
+import { normalizeStrategyRuns } from "./runs-list-model";
 import { StrategyRunsSection } from "./runs-section";
 import { StrategyPerformance } from "./strategy-performance";
 import { StrategySettingsPrompts } from "./strategy-settings-prompts";
@@ -18,28 +18,6 @@ export const metadata: Metadata = { title: "Strategy" };
 
 interface PageProps {
   params: Promise<{ id: string }>;
-}
-
-interface RawStrategyRunSummary {
-  inputPresetName?: unknown;
-  inputPresets?: unknown;
-  id?: unknown;
-  status?: unknown;
-  createdAt?: unknown;
-  completedAt?: unknown;
-  lastOutputUrl?: unknown;
-  lastOutputGenerationId?: unknown;
-  batchRunId?: unknown;
-  groupId?: unknown;
-  judgeScore?: unknown;
-  isJudgeSelected?: unknown;
-  judgeReasoning?: unknown;
-  judgeOutput?: unknown;
-  judgeSystemPrompt?: unknown;
-  judgeUserPrompt?: unknown;
-  judgeTypeUsed?: unknown;
-  judgeResults?: unknown;
-  stepResults?: unknown;
 }
 
 export default async function StrategyDetailPage({ params }: PageProps) {
@@ -150,37 +128,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <StrategyPerformance strategyId={result.id} />
 
       {/* Runs section */}
-      <StrategyRunsSection
-        strategyId={result.id}
-        hasJudge={result.steps.some((step) => step.type === "judge")}
-        initialRuns={runsRaw.map((rawRun) => {
-          const run = rawRun as RawStrategyRunSummary;
-          const inputPresetName = (run.inputPresetName as string | null) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;
-          return {
-            id: run.id as string,
-            status: run.status as string,
-            createdAt: run.createdAt as string,
-            completedAt: (run.completedAt as string | null) ?? null,
-            inputPresetName,
-            lastOutputUrl: (run.lastOutputUrl as string | null) ?? null,
-            lastOutputGenerationId: (run.lastOutputGenerationId as string | null) ?? null,
-            batchRunId: (run.batchRunId as string | null) ?? null,
-            groupId: (run.groupId as string | null) ?? null,
-            judgeScore: (run.judgeScore as number | null) ?? null,
-            isJudgeSelected: (run.isJudgeSelected as boolean | null) ?? false,
-            judgeReasoning: (run.judgeReasoning as string | null) ?? null,
-            judgeOutput: (run.judgeOutput as string | null) ?? null,
-            judgeSystemPrompt: (run.judgeSystemPrompt as string | null) ?? null,
-            judgeUserPrompt: (run.judgeUserPrompt as string | null) ?? null,
-            judgeTypeUsed: (run.judgeTypeUsed as string | null) ?? null,
-            judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
-            stepResults: ((run.stepResults as { id: string; status: string }[] | null) ?? []).map((sr) => ({
-              id: sr.id,
-              status: sr.status
-            }))
-          };
-        })}
-      />
+      <StrategyRunsSection strategyId={result.id} hasJudge={result.steps.some((step) => step.type === "judge")} initialRuns={normalizeStrategyRuns(runsRaw)} />
     </div>
   );
 }

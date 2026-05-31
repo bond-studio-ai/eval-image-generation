@@ -3,12 +3,9 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
 import { catchToNull } from "@/lib/async-utils";
-import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, type InputPresetStats } from "@/lib/input-preset-design";
-import { fetchInputPresetById, type InputPresetDetailItem } from "@/lib/service-client";
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from "@/lib/input-preset-design";
+import { fetchInputPresetById, type InputPresetWithStats } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
-
-/** Loose view over the preset that allows dynamic/snake-case key reads without `any`. */
-type RawInputPreset = InputPresetDetailItem & { stats?: InputPresetStats; [key: string]: unknown };
 
 export const metadata: Metadata = {
   title: "Edit Input Preset",
@@ -29,7 +26,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
-  const preset = presetData as RawInputPreset;
+  const preset = presetData as InputPresetWithStats;
   const generationCount = preset.stats?.generationCount ?? preset.stats?.generation_count ?? 0;
 
   if (generationCount > 0 && !force) {

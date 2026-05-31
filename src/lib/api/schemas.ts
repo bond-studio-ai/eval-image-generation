@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { camelizeKeys } from "./casing";
+import { camelizeKeys } from "@/lib/casing";
 
 /**
  * Zod schemas for image-generation API responses.
@@ -317,6 +317,37 @@ export const strategyHoverSchema = z.looseObject({
     )
     .catch([])
 });
+
+// ─── Strategy run summaries (runs list/matrix) ───────────────────────────────
+
+/**
+ * Loose validation for the run summaries the strategy-runs endpoint returns.
+ * Fields stay lenient (`.catch`/`.nullish`); `judgeResults` stays `unknown`
+ * because the caller normalizes it through `parseStrategyRunJudgeResults`.
+ */
+const strategyRunSummarySchema = z.looseObject({
+  id: z.string().catch(""),
+  status: z.string().catch(""),
+  createdAt: z.string().catch(""),
+  completedAt: z.string().nullish(),
+  inputPresetName: z.string().nullish(),
+  inputPresets: z.array(z.looseObject({ inputPresetName: z.string().nullish() })).nullish(),
+  lastOutputUrl: z.string().nullish(),
+  lastOutputGenerationId: z.string().nullish(),
+  batchRunId: z.string().nullish(),
+  groupId: z.string().nullish(),
+  judgeScore: z.number().nullish(),
+  isJudgeSelected: z.boolean().nullish(),
+  judgeReasoning: z.string().nullish(),
+  judgeOutput: z.string().nullish(),
+  judgeSystemPrompt: z.string().nullish(),
+  judgeUserPrompt: z.string().nullish(),
+  judgeTypeUsed: z.string().nullish(),
+  judgeResults: z.unknown(),
+  stepResults: z.array(z.looseObject({ id: z.string().catch(""), status: z.string().catch("") })).nullish()
+});
+export type StrategyRunSummary = z.infer<typeof strategyRunSummarySchema>;
+export const strategyRunSummaryArraySchema = z.array(strategyRunSummarySchema).catch([]);
 
 // ─── Upload ──────────────────────────────────────────────────────────────────
 

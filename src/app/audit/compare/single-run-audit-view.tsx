@@ -9,16 +9,13 @@ import { RunJudgeEvaluationsSection } from "@/components/run-judge-evaluations-s
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
 import { coerceString } from "@/lib/coerce-string";
+import { errorMessageOr } from "@/lib/error-message";
 import { parseStrategyRunJudgeResults, type RawRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 function statusBadgeClass(status: string): string {
   if (status === "completed") return "bg-success-100 text-success-700";
   if (status === "failed") return "bg-danger-100 text-danger-700";
   return "bg-surface-sunken text-text-secondary";
-}
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }
 
 interface InputImage {

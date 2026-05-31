@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { DesignSettingsDisplay, useCatalogProducts } from "@/components/design-settings-editor";
+import { useCatalogProducts } from "@/components/design-settings-catalog";
+import { DesignSettingsDisplay } from "@/components/design-settings-display";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
@@ -17,6 +18,12 @@ import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESE
 import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
 import type { InputPresetDetailItem } from "@/lib/service-client";
 import { RatingBadge } from "./rating-badge";
+
+function ProductCardPreview({ previewUrl, isLoadingPreview, label }: { previewUrl: string | null; isLoadingPreview: boolean; label: string }) {
+  if (previewUrl) return <ImageWithSkeleton src={previewUrl} alt={label} wrapperClassName="h-32 w-full bg-surface-muted p-1" />;
+  if (isLoadingPreview) return <div className="bg-border h-32 w-full animate-pulse" aria-hidden />;
+  return <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div>;
+}
 
 interface SerializedGeneration {
   id: string;
@@ -274,9 +281,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {productCards.map((item) => (
                 <div key={item.slot} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
-                  {item.previewUrl ? <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-surface-muted p-1" /> : null}
-                  {!item.previewUrl && item.isLoadingPreview ? <div className="bg-border h-32 w-full animate-pulse" aria-hidden /> : null}
-                  {!item.previewUrl && !item.isLoadingPreview ? <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div> : null}
+                  <ProductCardPreview previewUrl={item.previewUrl} isLoadingPreview={item.isLoadingPreview} label={item.label} />
                   <div className="border-border-subtle border-t px-2 py-1.5">
                     <p className="text-text-secondary text-caption truncate font-medium" title={item.label}>
                       {item.label}

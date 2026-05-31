@@ -37,7 +37,9 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
         const json = parseOrFallback(uploadResponseSchema, await res.json(), {}, "scene image upload");
         if (!res.ok) throw new Error(json.error?.message || `Upload failed (${res.status})`);
 
-        if (json.data?.publicUrl) onChange(json.data.publicUrl);
+        const publicUrl = json.data?.publicUrl;
+        if (!publicUrl) throw new Error("Upload succeeded but no image URL was returned. Please try again.");
+        onChange(publicUrl);
       } catch (error_) {
         setError(error_ instanceof Error ? error_.message : "Failed to upload image");
       } finally {

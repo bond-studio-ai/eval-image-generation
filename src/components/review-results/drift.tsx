@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { snakeToCamel } from "@/lib/casing";
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
 import { NOT_APPLICABLE_CELL, SortableHeader } from "./drift-sorting";
 import { compareSortValues, getSortValue, type SortDir, type SortKey } from "./drift-sorting-utils";
@@ -8,10 +9,6 @@ import { formatInt, formatNumber, formatPercent, formatPixels } from "./format";
 import { ChevronIcon, WarningIcon } from "./icons";
 import { Tooltip } from "./tooltip";
 import type { CategoryLookup, DriftAbsenceReason, DriftAssessment, DriftRow, DriftStatus, LargeObjectDriftMetrics, OverallDriftMetrics, SmallObjectDriftMetrics, SurfaceDriftMetrics } from "./types";
-
-function snakeToCamel(value: string): string {
-  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
-}
 
 /**
  * Build a category-key → group-metadata lookup so the drift row
@@ -225,6 +222,25 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
   const boundaryCell = appliesBoundary ? formatPixels((metrics as SurfaceDriftMetrics).boundaryDriftPx) : null;
   const pixelClassCell = appliesPixelClass ? formatPercent((metrics as SurfaceDriftMetrics).pixelClassAccuracy, 1) : null;
 
+  function coverageContent() {
+    if (!coverageCell) return NOT_APPLICABLE_CELL;
+    if (!coverageHint) return coverageCell;
+    return (
+      <Tooltip hint={coverageHint} width={260} triggerClassName="inline-flex">
+        <span>{coverageCell}</span>
+      </Tooltip>
+    );
+  }
+
+  function presenceContent() {
+    if (!appliesPresence) return NOT_APPLICABLE_CELL;
+    return (metrics as SmallObjectDriftMetrics).presence === 1 ? (
+      <span className="bg-success-50 text-success-700 ring-success-200 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">1</span>
+    ) : (
+      <span className="bg-surface-muted text-text-muted ring-border rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">0</span>
+    );
+  }
+
   return (
     <tr className="align-top">
       <td className="px-3 py-1.5">
@@ -249,26 +265,14 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
           )}
         </div>
       </td>
-      <td className="px-3 py-1.5 text-right tabular-nums">
-        {coverageCell && coverageHint ? (
-          <Tooltip hint={coverageHint} width={260} triggerClassName="inline-flex">
-            <span>{coverageCell}</span>
-          </Tooltip>
-        ) : null}
-        {coverageCell && !coverageHint ? coverageCell : null}
-        {coverageCell ? null : NOT_APPLICABLE_CELL}
-      </td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{coverageContent()}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{iouCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{centroidCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{p95Cell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{areaRatioCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{boundaryCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{pixelClassCell ?? NOT_APPLICABLE_CELL}</td>
-      <td className="px-3 py-1.5 text-right">
-        {appliesPresence ? null : NOT_APPLICABLE_CELL}
-        {appliesPresence && (metrics as SmallObjectDriftMetrics).presence === 1 ? <span className="bg-success-50 text-success-700 ring-success-200 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">1</span> : null}
-        {appliesPresence && (metrics as SmallObjectDriftMetrics).presence !== 1 ? <span className="bg-surface-muted text-text-muted ring-border rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">0</span> : null}
-      </td>
+      <td className="px-3 py-1.5 text-right">{presenceContent()}</td>
       <td className="text-text-muted px-3 py-1.5 text-right tabular-nums">
         {formatInt(metrics.dollhousePixelCount)} / {formatInt(metrics.samPixelCount)}
       </td>

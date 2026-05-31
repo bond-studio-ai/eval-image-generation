@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/toaster";
 import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { parseJsonOrEmpty } from "@/lib/async-utils";
+import { errorMessageOr } from "@/lib/error-message";
 import { BatchErrorCard } from "./_components/batch-error-card";
 import { BatchList } from "./_components/batch-list";
 import { BatchLoadingSkeleton } from "./_components/batch-loading-skeleton";
@@ -120,10 +121,6 @@ const initialAppliedRangeState: AppliedRangeState = { from: "", to: "" };
 function appliedRangeReducer(_state: AppliedRangeState, action: AppliedRangeAction): AppliedRangeState {
   // Single action type ("set"), so no switch is needed.
   return { from: action.from, to: action.to };
-}
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }
 
 export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: number; source?: "default" | "benchmark" }) {

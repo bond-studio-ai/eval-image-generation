@@ -1,4 +1,5 @@
 import { serviceUrl } from "./api-base";
+import { snakeToCamel } from "./casing";
 
 /**
  * Canonical metadata for one SAM 3.1 segmentation category as returned by
@@ -54,18 +55,6 @@ export interface SegmentationCategoryMetadata {
 }
 
 let cache: Promise<SegmentationCategoryMetadata[]> | null = null;
-
-/**
- * Convert a snake_case key (the backend's canonical form) to the
- * camelCase form the case-converter middleware produces on JSON responses.
- * Used to build a lookup map that works regardless of which casing the
- * caller has on hand — `record.results` from the segmentation endpoint
- * uses camelCase keys, but the SAM prompt table on the backend is keyed
- * snake_case, so we register both.
- */
-function snakeToCamel(value: string): string {
-  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
-}
 
 async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
   const res = await fetch(serviceUrl("segmentation-categories"), {

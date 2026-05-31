@@ -5,10 +5,10 @@ import { GridLightbox } from "@/components/grid-lightbox";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
-import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { groupStrategyRuns } from "@/lib/strategy-runs-view";
-import { BatchMatrix, StatusBadge } from "./runs-list-matrix";
-import type { ListItem, Run } from "./runs-list-types";
+import { BatchMatrix } from "./runs-list-matrix";
+import { type ListItem, normalizeStrategyRuns, type Run } from "./runs-list-model";
+import { StatusBadge } from "./status-badge";
 
 const POLL_INTERVAL = 3000;
 
@@ -32,13 +32,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
       const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), { cache: "no-store" });
       if (!res.ok) return;
       const json = (await res.json()) as { data?: unknown };
-      const raw = (json.data ?? []) as Record<string, unknown>[];
-      setRuns(
-        raw.map((row) => ({
-          ...(row as unknown as Run),
-          judgeResults: parseStrategyRunJudgeResults((row as { judgeResults?: unknown }).judgeResults)
-        }))
-      );
+      setRuns(normalizeStrategyRuns(json.data));
     } catch {
       /* ignore */
     }
@@ -77,6 +71,19 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
     await fetchRuns();
   }, [fetchRuns]);
 
+  const openLightbox = useCallback(
+    (run: Run) => {
+      setLightbox({
+        src: run.lastOutputUrl!,
+        runHref: `/strategies/${strategyId}/runs/${run.id}`,
+        generationId: run.lastOutputGenerationId ?? null
+      });
+    },
+    [strategyId]
+  );
+
+  const BatchCard = viewMode === "list" ? BatchRunCard : CollapsibleBatchCard;
+
   return (
     <div ref={containerRef}>
       <div className="flex items-center justify-between">
@@ -105,45 +112,15 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
         </div>
       </div>
 
-      {items.length === 0 ? <p className="text-text-secondary text-body mt-4">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p> : null}
-      {items.length > 0 && viewMode === "list" ? (
+      {items.length === 0 ? (
+        <p className="text-text-secondary text-body mt-4">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
+      ) : (
         <div className="mt-4 space-y-4">
           {items.map((item) => (
-            <BatchRunCard
-              key={`batch-${item.id}`}
-              batch={item}
-              strategyId={strategyId}
-              onRated={fetchRunsKeepScroll}
-              onImageClick={(run) => {
-                setLightbox({
-                  src: run.lastOutputUrl!,
-                  runHref: `/strategies/${strategyId}/runs/${run.id}`,
-                  generationId: run.lastOutputGenerationId ?? null
-                });
-              }}
-            />
+            <BatchCard key={`batch-${item.id}`} batch={item} strategyId={strategyId} onRated={fetchRunsKeepScroll} onImageClick={openLightbox} />
           ))}
         </div>
-      ) : null}
-      {items.length > 0 && viewMode !== "list" ? (
-        <div className="mt-4 space-y-4">
-          {items.map((item) => (
-            <CollapsibleBatchCard
-              key={`batch-matrix-${item.id}`}
-              batch={item}
-              strategyId={strategyId}
-              onRated={fetchRunsKeepScroll}
-              onImageClick={(run) => {
-                setLightbox({
-                  src: run.lastOutputUrl!,
-                  runHref: `/strategies/${strategyId}/runs/${run.id}`,
-                  generationId: run.lastOutputGenerationId ?? null
-                });
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
+      )}
       {lightbox && (
         <GridLightbox
           src={lightbox.src}

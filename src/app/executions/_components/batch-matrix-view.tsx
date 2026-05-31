@@ -19,9 +19,68 @@ function getMatrixCellColumns(count: number): number {
   return 3;
 }
 
+/** Benchmark runs group by batch; everything else groups by preset name. */
+function matrixRowKey(run: RunRow): string {
+  return run.source === "benchmark" && run.batchRunId ? run.batchRunId : (run.inputPresetName ?? "(no preset)");
+}
+
+interface MatrixModel {
+  strategyNames: string[];
+  strategyIds: string[];
+  sortedPresets: string[];
+  matrixRowLabels: Map<string, string>;
+  grid: Map<string, RunRow[]>;
+  matrixRowGenerationIds: Map<string, string[]>;
+}
+
+/**
+ * Derive the matrix layout (strategy columns × preset rows, the per-cell run
+ * grid, and the per-row segmentation generation ids) from a flat run list.
+ * Pulled out of `MatrixView` so the component stays a thin renderer.
+ *
+ * `matrixRowGenerationIds` powers the inline "Run segmentation" pill under each
+ * preset row label: it collects *every* generation id across every strategy
+ * column for that row so the pill can fan out a parallel POST per id.
+ */
+function buildMatrixModel(runs: RunRow[]): MatrixModel {
+  const strategyNames: string[] = [];
+  const strategyIds: string[] = [];
+  const seen = new Set<string>();
+  for (const run of runs) {
+    if (!seen.has(run.strategyId)) {
+      seen.add(run.strategyId);
+      strategyNames.push(run.strategyName ?? run.strategyId);
+      strategyIds.push(run.strategyId);
+    }
+  }
+
+  const rowKeys = new Set<string>();
+  const matrixRowLabels = new Map<string, string>();
+  const grid = new Map<string, RunRow[]>();
+  for (const run of runs) {
+    const rowKey = matrixRowKey(run);
+    rowKeys.add(rowKey);
+    matrixRowLabels.set(rowKey, run.inputPresetName ?? "(no preset)");
+    const key = `${rowKey}\0${run.strategyId}`;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key)!.push(run);
+  }
+  for (const arr of grid.values()) {
+    arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  const sortedPresets = Array.from(rowKeys).sort();
+
+  const matrixRowGenerationIds = new Map<string, string[]>();
+  for (const rowKey of sortedPresets) {
+    const ids = strategyIds.flatMap((stratId) => (grid.get(`${rowKey}\0${stratId}`) ?? []).map((run) => run.lastOutputGenerationId).filter((id): id is string => Boolean(id)));
+    if (ids.length > 0) matrixRowGenerationIds.set(rowKey, ids);
+  }
+
+  return { strategyNames, strategyIds, sortedPresets, matrixRowLabels, grid, matrixRowGenerationIds };
+}
+
 /* ─── Matrix view: preset rows × strategy columns, first image only, click to expand ─── */
 
-// eslint-disable-next-line sonarjs/cognitive-complexity -- per-cell matrix rendering has irreducible image/status/empty-state branching across the run grid
 export function MatrixView({
   runs,
   numberOfImages,
@@ -40,54 +99,10 @@ export function MatrixView({
   expanded?: boolean;
 }) {
   const awaitingJudge = isAwaitingJudgeBatch(runs, numberOfImages);
-  const strategyNames: string[] = [];
-  const strategyIds: string[] = [];
-  const seen = new Set<string>();
-  for (const run of runs) {
-    if (!seen.has(run.strategyId)) {
-      seen.add(run.strategyId);
-      strategyNames.push(run.strategyName ?? run.strategyId);
-      strategyIds.push(run.strategyId);
-    }
-  }
-
-  const rowKeys = new Set<string>();
-  const matrixRowLabels = new Map<string, string>();
-  for (const run of runs) {
-    const rowKey = run.source === "benchmark" && run.batchRunId ? run.batchRunId : (run.inputPresetName ?? "(no preset)");
-    rowKeys.add(rowKey);
-    matrixRowLabels.set(rowKey, run.inputPresetName ?? "(no preset)");
-  }
-  const sortedPresets = Array.from(rowKeys).sort();
-
-  const grid = new Map<string, RunRow[]>();
-  for (const run of runs) {
-    const rowKey = run.source === "benchmark" && run.batchRunId ? run.batchRunId : (run.inputPresetName ?? "(no preset)");
-    const key = `${rowKey}\0${run.strategyId}`;
-    if (!grid.has(key)) grid.set(key, []);
-    grid.get(key)!.push(run);
-  }
-  for (const arr of grid.values()) {
-    arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
+  const { strategyNames, strategyIds, sortedPresets, matrixRowLabels, grid, matrixRowGenerationIds } = buildMatrixModel(runs);
 
   const CELL = 240;
 
-  // For the inline "Run segmentation" pill under each preset row label,
-  // collect *every* generation id across every strategy column for that
-  // row. Clicking the pill fans out a parallel POST per id so every cell
-  // ends up with its own masks instead of just the leftmost one.
-  const matrixRowGenerationIds = new Map<string, string[]>();
-  for (const rowKey of sortedPresets) {
-    const ids: string[] = [];
-    for (const stratId of strategyIds) {
-      const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
-      for (const run of cellRuns) {
-        if (run.lastOutputGenerationId) ids.push(run.lastOutputGenerationId);
-      }
-    }
-    if (ids.length > 0) matrixRowGenerationIds.set(rowKey, ids);
-  }
   // Hydrate status for *every* run's generation id so each cell's masks
   // badge can reflect that specific run, while the inline pill still uses
   // the canonical row id above.
@@ -120,121 +135,167 @@ export function MatrixView({
                 <span className="block break-words">{matrixRowLabels.get(rowKey) ?? rowKey}</span>
                 <MatrixRowSegmentationBadge generationIds={matrixRowGenerationIds.get(rowKey) ?? []} statuses={segmentationStatuses} setStatus={setSegmentationStatus} />
               </td>
-              {strategyIds.map((stratId) => {
-                const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
-                const [firstRun] = cellRuns;
-                const outputRuns = cellRuns.filter((run): run is RunRow & { lastOutputUrl: string } => Boolean(run.lastOutputUrl));
-                return (
-                  <td key={stratId} className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                      {firstRun ? null : <span className="text-text-disabled">&mdash;</span>}
-                      {firstRun && outputRuns.length > 1 ? (
-                        <div
-                          className="grid gap-1"
-                          style={{
-                            width: CELL - 20,
-                            gridTemplateColumns: `repeat(${getMatrixCellColumns(outputRuns.length)}, minmax(0, 1fr))`
-                          }}
-                        >
-                          {outputRuns.map((run) => (
-                            <button
-                              key={run.id}
-                              type="button"
-                              onClick={() => {
-                                onImageClick(run);
-                              }}
-                              className="group relative block aspect-square cursor-pointer"
-                            >
-                              <CdnImage
-                                src={run.lastOutputUrl}
-                                alt=""
-                                fill
-                                sizes="(max-width:768px) 25vw, 150px"
-                                className={`rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
-                              />
-                              <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-md transition-colors">
-                                <MaximizeIcon className="text-text-inverse size-5 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
-                              </div>
-                              <JudgeScoreBadge
-                                runId={run.id}
-                                judgeScore={run.judgeScore}
-                                isJudgeSelected={run.isJudgeSelected}
-                                judgeReasoning={run.judgeReasoning}
-                                judgeOutput={run.judgeOutput}
-                                judgeSystemPrompt={run.judgeSystemPrompt}
-                                judgeUserPrompt={run.judgeUserPrompt}
-                                judgeTypeUsed={run.judgeTypeUsed}
-                                awaitingJudge={awaitingJudge}
-                              />
-                              <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
-                              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                      {firstRun && outputRuns.length <= 1 && firstRun.lastOutputUrl ? (
-                        <div className="group relative block">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onImageClick(firstRun);
-                            }}
-                            className="relative block cursor-pointer"
-                          >
-                            <CdnImage
-                              src={firstRun.lastOutputUrl}
-                              alt=""
-                              width={CELL - 20}
-                              height={CELL - 20}
-                              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
-                            />
-                            <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
-                              <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
-                            </div>
-                          </button>
-                          <JudgeScoreBadge
-                            runId={firstRun.id}
-                            judgeScore={firstRun.judgeScore}
-                            isJudgeSelected={firstRun.isJudgeSelected}
-                            judgeReasoning={firstRun.judgeReasoning}
-                            judgeOutput={firstRun.judgeOutput}
-                            judgeSystemPrompt={firstRun.judgeSystemPrompt}
-                            judgeUserPrompt={firstRun.judgeUserPrompt}
-                            judgeTypeUsed={firstRun.judgeTypeUsed}
-                            awaitingJudge={awaitingJudge}
-                          />
-                          <ReviewResultsBadge generationId={firstRun.lastOutputGenerationId ?? null} state={firstRun.lastOutputGenerationId ? segmentationStatuses.get(firstRun.lastOutputGenerationId) : undefined} />
-                          {firstRun.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
-                        </div>
-                      ) : null}
-                      {firstRun && outputRuns.length <= 1 && !firstRun.lastOutputUrl ? (
-                        <>
-                          <Link href={firstRun.runHref ?? `/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
-                            <ReviewStatusBadge status={deriveRunReviewStatus(firstRun)} />
-                          </Link>
-                          {(firstRun.status === "failed" || firstRun.status === "skipped") && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onRetry(firstRun.id);
-                              }}
-                              disabled={retryingRunId === firstRun.id}
-                              className="text-caption text-warning-700 hover:text-warning-600 font-medium disabled:opacity-50"
-                            >
-                              {retryingRunId === firstRun.id ? "Retrying…" : "Retry"}
-                            </button>
-                          )}
-                        </>
-                      ) : null}
-                    </div>
-                  </td>
-                );
-              })}
+              {strategyIds.map((stratId) => (
+                <MatrixCell
+                  key={stratId}
+                  cellRuns={grid.get(`${rowKey}\0${stratId}`) ?? []}
+                  cellSize={CELL}
+                  awaitingJudge={awaitingJudge}
+                  retryingRunId={retryingRunId}
+                  onRetry={onRetry}
+                  onImageClick={onImageClick}
+                  segmentationStatuses={segmentationStatuses}
+                  {...(onRated ? { onRated } : {})}
+                />
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * One matrix cell (a preset row × strategy column). Renders exactly one of:
+ * empty placeholder, a multi-image grid, a single hero image, or a status/retry
+ * badge — selected by early returns so the branches stay mutually exclusive.
+ */
+function MatrixCell({
+  cellRuns,
+  cellSize,
+  awaitingJudge,
+  retryingRunId,
+  onRetry,
+  onRated,
+  onImageClick,
+  segmentationStatuses
+}: {
+  cellRuns: RunRow[];
+  cellSize: number;
+  awaitingJudge: boolean;
+  retryingRunId: string | null;
+  onRetry: (runId: string) => void;
+  onRated?: () => void;
+  onImageClick: (run: RunRow) => void;
+  segmentationStatuses: Map<string, ReviewState>;
+}) {
+  const [firstRun] = cellRuns;
+  const outputRuns = cellRuns.filter((run): run is RunRow & { lastOutputUrl: string } => Boolean(run.lastOutputUrl));
+
+  function content() {
+    if (!firstRun) return <span className="text-text-disabled">&mdash;</span>;
+
+    if (outputRuns.length > 1) {
+      return (
+        <div
+          className="grid gap-1"
+          style={{
+            width: cellSize - 20,
+            gridTemplateColumns: `repeat(${getMatrixCellColumns(outputRuns.length)}, minmax(0, 1fr))`
+          }}
+        >
+          {outputRuns.map((run) => (
+            <button
+              key={run.id}
+              type="button"
+              onClick={() => {
+                onImageClick(run);
+              }}
+              className="group relative block aspect-square cursor-pointer"
+            >
+              <CdnImage
+                src={run.lastOutputUrl}
+                alt=""
+                fill
+                sizes="(max-width:768px) 25vw, 150px"
+                className={`rounded-md object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
+              />
+              <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-md transition-colors">
+                <MaximizeIcon className="text-text-inverse size-5 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
+              </div>
+              <JudgeScoreBadge
+                runId={run.id}
+                judgeScore={run.judgeScore}
+                isJudgeSelected={run.isJudgeSelected}
+                judgeReasoning={run.judgeReasoning}
+                judgeOutput={run.judgeOutput}
+                judgeSystemPrompt={run.judgeSystemPrompt}
+                judgeUserPrompt={run.judgeUserPrompt}
+                judgeTypeUsed={run.judgeTypeUsed}
+                awaitingJudge={awaitingJudge}
+              />
+              <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
+              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (firstRun.lastOutputUrl) {
+      return (
+        <div className="group relative block">
+          <button
+            type="button"
+            onClick={() => {
+              onImageClick(firstRun);
+            }}
+            className="relative block cursor-pointer"
+          >
+            <CdnImage
+              src={firstRun.lastOutputUrl}
+              alt=""
+              width={cellSize - 20}
+              height={cellSize - 20}
+              className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${firstRun.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
+            />
+            <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
+              <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
+            </div>
+          </button>
+          <JudgeScoreBadge
+            runId={firstRun.id}
+            judgeScore={firstRun.judgeScore}
+            isJudgeSelected={firstRun.isJudgeSelected}
+            judgeReasoning={firstRun.judgeReasoning}
+            judgeOutput={firstRun.judgeOutput}
+            judgeSystemPrompt={firstRun.judgeSystemPrompt}
+            judgeUserPrompt={firstRun.judgeUserPrompt}
+            judgeTypeUsed={firstRun.judgeTypeUsed}
+            awaitingJudge={awaitingJudge}
+          />
+          <ReviewResultsBadge generationId={firstRun.lastOutputGenerationId ?? null} state={firstRun.lastOutputGenerationId ? segmentationStatuses.get(firstRun.lastOutputGenerationId) : undefined} />
+          {firstRun.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <Link href={firstRun.runHref ?? `/strategies/${firstRun.strategyId}/runs/${firstRun.id}`}>
+          <ReviewStatusBadge status={deriveRunReviewStatus(firstRun)} />
+        </Link>
+        {(firstRun.status === "failed" || firstRun.status === "skipped") && (
+          <button
+            type="button"
+            onClick={() => {
+              onRetry(firstRun.id);
+            }}
+            disabled={retryingRunId === firstRun.id}
+            className="text-caption text-warning-700 hover:text-warning-600 font-medium disabled:opacity-50"
+          >
+            {retryingRunId === firstRun.id ? "Retrying…" : "Retry"}
+          </button>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <td className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: cellSize, height: cellSize, minWidth: cellSize }}>
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1">{content()}</div>
+    </td>
   );
 }
 

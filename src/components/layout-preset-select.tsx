@@ -4,15 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { ChevronsUpDownIcon, XIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { errorMessageOr } from "@/lib/error-message";
 
 export interface LayoutPresetOption {
   id: string;
   name: string;
   rawName?: string;
-}
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }
 
 function layoutSelectLabel(selectedOption: LayoutPresetOption | null, hasCurrentValue: boolean, value: string, loading: boolean): string {

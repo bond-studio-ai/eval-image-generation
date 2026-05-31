@@ -1,3 +1,4 @@
+import { snakeToCamel } from "@/lib/casing";
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
 import type { CategoryLookup, CategoryMask, CategoryRow, ReviewRecord, SegmentationCategoryResponse, SegmentationFalAsset } from "./types";
 
@@ -39,10 +40,6 @@ function assetUrl(asset: SegmentationFalAsset | string | null | undefined): stri
   if (!asset) return null;
   if (typeof asset === "string") return asset.length > 0 ? asset : null;
   return typeof asset.url === "string" && asset.url.length > 0 ? asset.url : null;
-}
-
-function snakeToCamel(value: string): string {
-  return value.replaceAll(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
 }
 
 /**

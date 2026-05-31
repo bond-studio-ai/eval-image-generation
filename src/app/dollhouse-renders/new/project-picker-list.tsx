@@ -81,7 +81,6 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
     });
   }, [clientFilter, items]);
 
-  const isEmptyAfterLoad = !loading && filteredItems.length === 0;
   const emptyMessage = clientFilter || statusFilter !== "all" ? "No projects on this page match your filter." : "No projects found.";
 
   const toolbar = (
@@ -100,17 +99,25 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
     return <TableView items={filteredItems} loading={loading} emptyMessage={emptyMessage} toolbar={toolbar} footer={pagination} selectedProjectId={selectedProjectId} onSelect={onSelect} />;
   }
 
-  return (
-    <div className="border-border rounded-card bg-surface shadow-card border">
-      <div className="border-border-subtle border-b px-4 py-3">{toolbar}</div>
-      {loading ? (
+  function gridBody() {
+    if (loading) {
+      return (
         <div className="flex items-center justify-center gap-3 px-6 py-12">
           <Spinner size="sm" />
           <span className="text-body text-text-secondary">Loading projects…</span>
         </div>
-      ) : null}
-      {!loading && isEmptyAfterLoad ? <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p> : null}
-      {!loading && !isEmptyAfterLoad ? <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} /> : null}
+      );
+    }
+    if (filteredItems.length === 0) {
+      return <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p>;
+    }
+    return <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} />;
+  }
+
+  return (
+    <div className="border-border rounded-card bg-surface shadow-card border">
+      <div className="border-border-subtle border-b px-4 py-3">{toolbar}</div>
+      {gridBody()}
       <div className="border-border-subtle border-t px-4 py-3">{pagination}</div>
     </div>
   );

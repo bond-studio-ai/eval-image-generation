@@ -4,15 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { errorMessageOr } from "@/lib/error-message";
 import { parseStrategyRunJudgeResults, type RawRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { JudgeComparison } from "./_components/judge-comparison";
 import { RunHeader } from "./_components/run-header";
 import { StepComparison } from "./_components/step-comparison";
 import type { RunData } from "./_components/types";
-
-function errorMessageOr(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
 
 export function CompareView({ leftId, rightId }: { leftId: string; rightId: string }) {
   const {
