@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
 import { DataTable, type DataTableColumn, SelectAllCheckbox } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
@@ -37,7 +38,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
   const [loading, setLoading] = useState(false);
   const pageRef = useRef(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { ref: sentinelRef, inView } = useInView({ rootMargin: "200px" });
 
   const hasMore = generations.length < total;
 
@@ -105,23 +106,8 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
   }, [loading, hasMore, pageSize, filters]);
 
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          void loadMore();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    observer.observe(sentinel);
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadMore]);
+    if (inView) void loadMore();
+  }, [inView, loadMore]);
 
   const columns = useMemo<DataTableColumn<GenerationRow>[]>(
     () => [
