@@ -111,7 +111,8 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
   const qs = new URLSearchParams();
   qs.append("format[]", "design:unity-slim");
   qs.append("include[]", "camera_frames");
-  const url = `${localUrl(`projects/${encodeURIComponent(trimmed)}`)}?${qs.toString()}`;
+  const projectPath = localUrl(`projects/${encodeURIComponent(trimmed)}`);
+  const url = `${projectPath}?${qs.toString()}`;
 
   const res = await fetch(url, init);
   if (!res.ok) {

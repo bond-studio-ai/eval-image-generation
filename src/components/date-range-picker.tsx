@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/components/ui/icons";
+import { assertNever } from "@/lib/assert-never";
 
 interface Preset {
   label: string;
@@ -82,7 +83,7 @@ function CalendarMonth({
   onDateHover: (iso: string | null) => void;
 }) {
   const days = useMemo(() => getDaysInMonth(year, month), [year, month]);
-  const firstDay = days[0];
+  const [firstDay] = days;
   const leadingBlanks = firstDay ? startOfWeek(firstDay) : 0;
   const today = fmtISO(new Date());
 
@@ -216,6 +217,9 @@ function calReducer(state: CalState, action: CalAction): CalState {
     case "syncRange": {
       return { ...state, rangeStart: action.from || null, rangeEnd: action.to || null };
     }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -245,7 +249,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
   };
 
   useEffect(() => {
-    if (!showCustom) return;
+    if (!showCustom) return undefined;
     const handler = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
         setShowCustom(false);

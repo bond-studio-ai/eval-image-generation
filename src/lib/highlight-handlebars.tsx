@@ -79,14 +79,15 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
 
   const re = mustacheRegex();
   let cursor = 0;
-  let match: RegExpExecArray | null;
+  let match = re.exec(source);
 
-  while ((match = re.exec(source)) !== null) {
+  while (match !== null) {
     const [token] = match;
     if (match.index > cursor) push(source.slice(cursor, match.index));
     push(token, CLASS_BY_KIND[classify(token)]);
     cursor = match.index + token.length;
     if (match.index === re.lastIndex) re.lastIndex++;
+    match = re.exec(source);
   }
 
   if (cursor < source.length) push(source.slice(cursor));

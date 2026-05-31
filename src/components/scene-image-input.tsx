@@ -49,7 +49,7 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
-      const file = Array.from(files)[0];
+      const [file] = Array.from(files);
       if (file) void uploadFile(file);
     },
     [uploadFile]

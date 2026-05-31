@@ -96,7 +96,8 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
     const tab = searchParams.get("tab");
     const next = new URLSearchParams();
     if (tab) next.set("tab", tab);
-    router.replace(`/${next.toString() ? `?${next}` : ""}`);
+    const suffix = next.toString() ? `?${next.toString()}` : "";
+    router.replace(`/${suffix}`);
   }, [router, searchParams]);
 
   const hasDateFilter = Boolean(from || to);

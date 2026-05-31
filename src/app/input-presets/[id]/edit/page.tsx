@@ -29,8 +29,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   if (!presetData) notFound();
 
   const preset = presetData as RawInputPreset;
-  const { stats } = preset;
-  const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
+  const generationCount = preset.stats?.generationCount ?? preset.stats?.generation_count ?? 0;
 
   if (generationCount > 0 && !force) {
     return (

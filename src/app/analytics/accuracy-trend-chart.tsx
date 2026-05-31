@@ -40,7 +40,8 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const json = await fetchJson(serviceUrl(`analytics/accuracy-trends${qs ? `?${qs}` : ""}`), accuracyTrendsResponseSchema, { cache: "no-store" });
+      const suffix = qs ? `?${qs}` : "";
+      const json = await fetchJson(serviceUrl(`analytics/accuracy-trends${suffix}`), accuracyTrendsResponseSchema, { cache: "no-store" });
       setData(json.data?.trends ?? []);
     } catch {
       setError(true);

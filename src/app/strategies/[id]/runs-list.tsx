@@ -254,13 +254,13 @@ function BatchRunCard({
       });
       if (res.ok) {
         const body: unknown = await res.json().catch(() => null);
-        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } } | null)?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
       } else {
         const body: unknown = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        const msg = (body as { error?: { message?: string } } | null)?.error?.message ?? `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       }
       onRated?.();
@@ -408,13 +408,13 @@ function CollapsibleBatchCard({
       });
       if (res.ok) {
         const body: unknown = await res.json().catch(() => null);
-        const data = (body as { data?: { failedGroups?: number; errors?: string[] } })?.data;
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } } | null)?.data;
         if (data?.failedGroups && data.failedGroups > 0) {
           setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
         }
       } else {
         const body: unknown = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } })?.error?.message ?? `Retry failed (${res.status})`;
+        const msg = (body as { error?: { message?: string } } | null)?.error?.message ?? `Retry failed (${res.status})`;
         setJudgeRetryError(msg);
       }
       onRated?.();
@@ -547,7 +547,7 @@ function BatchMatrix({
         <tbody className="divide-border bg-surface divide-y">
           {presetNames.map((presetName) => {
             const presetRuns = byPreset.get(presetName)!;
-            const canonicalRun = presetRuns[0];
+            const [canonicalRun] = presetRuns;
             const canonicalGenerationId = canonicalRun?.lastOutputGenerationId ?? null;
             return (
               <tr key={presetName} className="hover:bg-surface-muted/50">

@@ -119,19 +119,19 @@ export function StepGroupCard({
   onViewPrompt: (id: string, name: string | null, processedSystemPrompt: string | null, processedUserPrompt: string | null) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const isMulti = group.results.length > 1;
-  const { step } = group;
-  const representative = group.results[0];
+  const { step, results } = group;
+  const isMulti = results.length > 1;
+  const [representative] = results;
 
-  const completedCount = group.results.filter((run) => run.status === "completed").length;
-  const failedCount = group.results.filter((run) => run.status === "failed").length;
-  const runningCount = group.results.filter((run) => run.status === "running").length;
+  const completedCount = results.filter((run) => run.status === "completed").length;
+  const failedCount = results.filter((run) => run.status === "failed").length;
+  const runningCount = results.filter((run) => run.status === "running").length;
 
-  const groupStatus = runningCount > 0 ? "running" : failedCount === group.results.length ? "failed" : completedCount > 0 ? "completed" : (group.results[0]?.status ?? "pending");
+  const groupStatus = runningCount > 0 ? "running" : failedCount === results.length ? "failed" : completedCount > 0 ? "completed" : (results[0]?.status ?? "pending");
 
   // Candidates run in parallel within a generation step, so the step's
   // wall-clock is the slowest candidate, not the sum of all candidates.
-  const stepWallClockMs = group.results.reduce((longest, run) => Math.max(longest, run.executionTime ?? 0), 0);
+  const stepWallClockMs = results.reduce((longest, run) => Math.max(longest, run.executionTime ?? 0), 0);
 
   return (
     <div className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
@@ -145,7 +145,7 @@ export function StepGroupCard({
         <ChevronIcon open={open} />
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STEP_STATUS_DOT[groupStatus] ?? STEP_STATUS_DOT["pending"] ?? ""}`} />
         <span className="text-text-primary text-body font-semibold">{group.name}</span>
-        {isMulti && <span className="bg-primary-50 text-primary-700 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">&times;{group.results.length}</span>}
+        {isMulti && <span className="bg-primary-50 text-primary-700 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">&times;{results.length}</span>}
         <span className="text-text-muted text-caption">{group.model}</span>
         {step?.promptVersion && <span className="text-text-disabled text-caption hidden sm:inline">· {step.promptVersion.name || "Untitled prompt"}</span>}
         <span className="ml-auto flex items-center gap-2">
@@ -162,7 +162,7 @@ export function StepGroupCard({
         <div className="border-border border-t">
           <div className="p-4">
             {/* Step-from badges */}
-            {(step?.dollhouseViewFromStep || step?.realPhotoFromStep || step?.moodBoardFromStep) && (
+            {(step?.dollhouseViewFromStep != null || step?.realPhotoFromStep != null || step?.moodBoardFromStep != null) && (
               <div className="mb-3 flex flex-wrap gap-2">
                 {step.dollhouseViewFromStep && (
                   <span className="bg-warning-50 text-warning-700 ring-warning-600/20 text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ring-1 ring-inset">
@@ -201,10 +201,10 @@ export function StepGroupCard({
             {/* Multiple executions of the same step */}
             {isMulti ? (
               <div>
-                <p className="text-text-disabled mb-2 text-[11px] font-semibold tracking-wider uppercase">{group.results.length} generations from this step</p>
-                <div className={`grid gap-3 ${group.results.length === 2 ? "grid-cols-2" : group.results.length === 3 ? "grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
-                  {group.results.map((sr, i) => (
-                    <GenerationTile key={sr.id} sr={sr} index={i} total={group.results.length} isSelected={sr.isJudgeSelected} />
+                <p className="text-text-disabled mb-2 text-[11px] font-semibold tracking-wider uppercase">{results.length} generations from this step</p>
+                <div className={`grid gap-3 ${results.length === 2 ? "grid-cols-2" : results.length === 3 ? "grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
+                  {results.map((sr, i) => (
+                    <GenerationTile key={sr.id} sr={sr} index={i} total={results.length} isSelected={sr.isJudgeSelected} />
                   ))}
                 </div>
               </div>

@@ -121,7 +121,7 @@ export function MatrixView({
               </td>
               {strategyIds.map((stratId) => {
                 const cellRuns = grid.get(`${rowKey}\0${stratId}`) ?? [];
-                const firstRun = cellRuns[0];
+                const [firstRun] = cellRuns;
                 const outputRuns = cellRuns.filter((run): run is RunRow & { lastOutputUrl: string } => Boolean(run.lastOutputUrl));
                 return (
                   <td key={stratId} className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>

@@ -184,7 +184,7 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   // Auto-save whenever evaluation data changes (debounced 800ms for notes,
   // but the effect fires on every change).
   useEffect(() => {
-    if (!loadedRef.current) return;
+    if (!loadedRef.current) return undefined;
     const timer = setTimeout(() => {
       void onSave(data);
     }, 800);

@@ -16,7 +16,7 @@ export function useBatchListMachinery({ hasMore, loadingMore, loadMore, refetch 
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !hasMore || loadingMore) return;
+    if (!el || !hasMore || loadingMore) return undefined;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) loadMore();

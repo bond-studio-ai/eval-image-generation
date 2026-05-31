@@ -1,3 +1,5 @@
+import { assertNever } from "@/lib/assert-never";
+
 export interface SelectionState {
   selectedStrategyIds: string[];
   selectedPresetIds: string[];
@@ -89,6 +91,9 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
     }
     case "toggleStrategy": {
       return { ...state, selectedStrategyIds: toggleId(state.selectedStrategyIds, action.id) };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

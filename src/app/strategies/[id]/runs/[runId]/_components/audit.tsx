@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CdnImage } from "@/components/cdn-image";
 import { ExpandableImage } from "@/components/expandable-image";
+import { coerceString } from "@/lib/coerce-string";
 import { ChevronIcon } from "./shared";
 import type { InputImage, StepResult } from "./types";
 
@@ -111,7 +112,7 @@ export function StepAudit({ sr }: { sr: StepResult }) {
               {Object.entries(sr.requestConfig).map(([key, val]) => (
                 <span key={key} className="bg-surface-sunken text-text-secondary inline-flex items-center rounded px-2 py-0.5 text-[11px]">
                   <span className="text-text-muted font-medium">{CONFIG_LABELS[key] ?? key}:</span>
-                  &nbsp;{String(val ?? "null")}
+                  &nbsp;{coerceString(val) ?? "null"}
                 </span>
               ))}
             </div>

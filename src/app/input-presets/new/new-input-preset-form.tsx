@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
 import { SceneImageInput } from "@/components/scene-image-input";
 import { Button } from "@/components/ui/button";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { parseOrFallback } from "@/lib/api/parse";
 import { mutationResponseSchema } from "@/lib/api/schemas";
@@ -42,6 +43,9 @@ function formReducer(state: FormState, action: FormAction): FormState {
     }
     case "setField": {
       return { ...state, [action.field]: action.value };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

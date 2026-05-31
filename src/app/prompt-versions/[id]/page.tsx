@@ -22,8 +22,6 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   const pvData = await fetchPromptVersionById(id).catch(() => null);
   if (!pvData) notFound();
 
-  const { stats } = pvData;
-
   const genResult = await fetchGenerations({ promptVersionId: id, limit: "100" });
   const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "prompt-version related generations");
 
@@ -45,9 +43,9 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
     outputImageCount: generation.resultCount ?? 0
   }));
 
-  const generationCount = stats?.generationCount ?? generations.length;
-  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((generation) => generation.sceneAccuracyRating !== null).length;
-  const avgRating = stats?.avgRatingScore ?? null;
+  const generationCount = pvData.stats?.generationCount ?? generations.length;
+  const ratedCount = pvData.stats?.ratedCount ?? serializedGenerations.filter((generation) => generation.sceneAccuracyRating !== null).length;
+  const avgRating = pvData.stats?.avgRatingScore ?? null;
 
   return (
     <PromptVersionDetail

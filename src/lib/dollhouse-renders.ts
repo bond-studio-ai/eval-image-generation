@@ -349,7 +349,7 @@ export async function createDollhouseRender(body: CreateDollhouseRenderBody, ini
   });
   if (!res.ok) throw await parseError(res);
   const json = (await res.json()) as V2ListResponse<DollhouseRender>;
-  const created = json.data[0];
+  const [created] = json.data;
   if (!created) {
     throw new DollhouseRenderUnexpectedResponseError("Create render succeeded but the server returned no render object.");
   }

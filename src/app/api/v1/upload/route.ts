@@ -3,6 +3,7 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { s3UploadConfig } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
 
     return successResponse({ publicUrl, key });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    logger.error("Error uploading file:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to upload file");
   }
 }

@@ -128,7 +128,8 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const json = await fetchJson(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ""}`), reliabilityResponseSchema, { cache: "no-store" });
+      const suffix = qs ? `?${qs}` : "";
+      const json = await fetchJson(serviceUrl(`analytics/reliability${suffix}`), reliabilityResponseSchema, { cache: "no-store" });
       setData(json.data ?? null);
     } catch {
       /* ignore */

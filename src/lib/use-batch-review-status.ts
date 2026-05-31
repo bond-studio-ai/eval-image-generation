@@ -73,9 +73,9 @@ export function useBatchReviewStatus(
   }, [ids, resolved, enabled]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
     const targets = ids.filter((id) => !cache.has(id));
-    if (targets.length === 0) return;
+    if (targets.length === 0) return undefined;
 
     let cancelled = false;
     void (async () => {

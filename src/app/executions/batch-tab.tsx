@@ -6,6 +6,7 @@ import { GridLightbox } from "@/components/grid-lightbox";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toaster";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { BatchErrorCard } from "./_components/batch-error-card";
 import { BatchList } from "./_components/batch-list";
@@ -56,8 +57,8 @@ function normalizeBatch(b: Record<string, unknown>): BatchRow {
     const run = entry as RawBatchRun;
     return {
       ...entry,
-      batchRunId: (run.batchRunId as string) ?? null,
-      source: (run.source as string) ?? null,
+      batchRunId: (run.batchRunId as string | null) ?? null,
+      source: (run.source as string | null) ?? null,
       inputPresetName: run.inputPresetName ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null
     };
   });
@@ -95,6 +96,9 @@ function pendingReducer(state: PendingState, action: PendingAction): PendingStat
     case "retryingRun": {
       return { ...state, retryingRunId: action.id };
     }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -113,11 +117,8 @@ interface AppliedRangeAction {
 const initialAppliedRangeState: AppliedRangeState = { from: "", to: "" };
 
 function appliedRangeReducer(_state: AppliedRangeState, action: AppliedRangeAction): AppliedRangeState {
-  switch (action.type) {
-    case "set": {
-      return { from: action.from, to: action.to };
-    }
-  }
+  // Single action type ("set"), so no switch is needed.
+  return { from: action.from, to: action.to };
 }
 
 export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: number; source?: "default" | "benchmark" }) {
@@ -166,7 +167,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
       });
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
-        const msg = (err as { error?: { message?: string } })?.error?.message;
+        const msg = (err as { error?: { message?: string } }).error?.message;
         throw new Error(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
       }
       const json = (await res.json()) as { data?: unknown; hasMore?: unknown };

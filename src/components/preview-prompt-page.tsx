@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ErrorCard } from "@/components/resource-form-header";
 import { ChevronDownIcon } from "@/components/ui/icons";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
 import { parseOrFallback } from "@/lib/api/parse";
@@ -141,6 +142,9 @@ function dropdownReducer(state: DropdownState, action: DropdownAction): Dropdown
     }
     case "setSearch": {
       return { ...state, search: action.search };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

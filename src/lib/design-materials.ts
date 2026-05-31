@@ -1,6 +1,8 @@
 "use client";
 
 import { localUrl } from "./api-base";
+import { coerceString } from "./coerce-string";
+import { logger } from "./logger";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
@@ -321,7 +323,7 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
       if (isScanLike(camel)) return camel;
     }
   } catch (error) {
-    console.error("[design-materials] Failed to fetch project scan", error);
+    logger.error("[design-materials] Failed to fetch project scan", error);
   }
   return null;
 }
@@ -346,7 +348,7 @@ async function fetchCatalogProduct(category: string, productId: string): Promise
     const json = (await res.json()) as { data?: CatalogProduct };
     return json.data ?? null;
   } catch (error) {
-    console.error("[design-materials] Failed to fetch catalog product", {
+    logger.error("[design-materials] Failed to fetch catalog product", {
       category,
       productId,
       err: error
@@ -501,9 +503,9 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
     productId: asString(material.id) ?? undefined,
     asset,
     size: {
-      length: String(material.length ?? ""),
-      width: String(material.width ?? ""),
-      height: String(material.height ?? "")
+      length: coerceString(material.length) ?? "",
+      width: coerceString(material.width) ?? "",
+      height: coerceString(material.height) ?? ""
     },
     styling: getStylingState(material)
   };
@@ -511,8 +513,8 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   if (slot === "vanity") {
     const numberOfSinks = asNumber(material.numberOfSinks);
     if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight == null ? null : String(material.counterHeight));
-    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset == null ? null : String(material.sinkOffset));
+    const counterHeight = coerceString(material.counterHeight) ?? null;
+    const sinkOffset = coerceString(material.sinkOffset) ?? null;
     if (counterHeight) out.counterHeight = counterHeight;
     if (sinkOffset) out.sinkOffset = sinkOffset;
   }

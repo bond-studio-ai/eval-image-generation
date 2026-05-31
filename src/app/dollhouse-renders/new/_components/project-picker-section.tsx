@@ -79,7 +79,7 @@ function SelectedProjectBanner({ bootstrap, onClear }: { bootstrap: ProjectRende
       tone="success"
       icon={<CheckCircleIcon className="size-5" aria-hidden />}
       title={`Selected project ${project.id}`}
-      description={`${project.name ? `${project.name} · ` : ""}${summary}`}
+      description={project.name ? `${project.name} · ${summary}` : summary}
       actions={
         <Button type="button" variant="ghost" size="sm" onClick={onClear}>
           Change project

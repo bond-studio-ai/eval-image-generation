@@ -1,5 +1,6 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const RETAILER_ID_QUERY_KEY = "retailerId";
 
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
     const json = (await res.json()) as { data?: unknown };
     return successResponse(Array.isArray(json.data) ? json.data : (json.data ?? json));
   } catch (error) {
-    console.error("Error fetching design packages:", error);
+    logger.error("Error fetching design packages:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch design packages");
   }
 }

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useReducer, useState } from "react";
+import { assertNever } from "@/lib/assert-never";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
 import { strategyErrorsResponseSchema, strategyPerformanceResponseSchema } from "@/lib/api/schemas";
@@ -57,6 +58,9 @@ function expansionReducer(state: ExpansionState, action: ExpansionAction): Expan
       else expandedIds.add(action.id);
       return { ...state, expandedIds };
     }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -98,11 +102,11 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
           dispatchExpansion({ type: "loadEmpty", id: strategyId });
           return;
         }
-        const { ratingSummary } = raw;
+        const { ratingSummary, executionErrors, sceneIssues, productIssues } = raw;
         const normalized: BreakdownData = {
-          execution_errors: raw.executionErrors,
-          scene_issues: raw.sceneIssues,
-          product_issues: raw.productIssues,
+          execution_errors: executionErrors,
+          scene_issues: sceneIssues,
+          product_issues: productIssues,
           rating_summary: ratingSummary
             ? {
                 total: ratingSummary.total,

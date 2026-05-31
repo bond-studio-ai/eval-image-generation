@@ -7,6 +7,7 @@ import { AlertTriangleIcon, InfoIcon, StarIcon, XIcon } from "@/components/ui/ic
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { coerceString } from "@/lib/coerce-string";
 import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 interface JudgeScoreBadgeProps {
@@ -257,11 +258,11 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       setFetchedDetail({
         judgeScore: raw.judgeScore == null ? null : Number(raw.judgeScore),
         isJudgeSelected: Boolean(raw.isJudgeSelected),
-        judgeReasoning: raw.judgeReasoning == null ? null : String(raw.judgeReasoning),
-        judgeOutput: raw.judgeOutput == null ? null : String(raw.judgeOutput),
-        judgeSystemPrompt: raw.judgeSystemPrompt == null ? null : String(raw.judgeSystemPrompt),
-        judgeUserPrompt: raw.judgeUserPrompt == null ? null : String(raw.judgeUserPrompt),
-        judgeTypeUsed: raw.judgeTypeUsed == null ? null : String(raw.judgeTypeUsed),
+        judgeReasoning: coerceString(raw.judgeReasoning) ?? null,
+        judgeOutput: coerceString(raw.judgeOutput) ?? null,
+        judgeSystemPrompt: coerceString(raw.judgeSystemPrompt) ?? null,
+        judgeUserPrompt: coerceString(raw.judgeUserPrompt) ?? null,
+        judgeTypeUsed: coerceString(raw.judgeTypeUsed) ?? null,
         judgeResults: filteredResults
       });
     } catch {

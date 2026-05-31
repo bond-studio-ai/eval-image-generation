@@ -155,26 +155,26 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         hasJudge={result.steps.some((step) => step.type === "judge")}
         initialRuns={runsRaw.map((rawRun) => {
           const run = rawRun as RawStrategyRunSummary;
-          const inputPresetName = (run.inputPresetName as string) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;
+          const inputPresetName = (run.inputPresetName as string | null) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;
           return {
             id: run.id as string,
             status: run.status as string,
             createdAt: run.createdAt as string,
-            completedAt: (run.completedAt as string) ?? null,
+            completedAt: (run.completedAt as string | null) ?? null,
             inputPresetName,
-            lastOutputUrl: (run.lastOutputUrl as string) ?? null,
-            lastOutputGenerationId: (run.lastOutputGenerationId as string) ?? null,
-            batchRunId: (run.batchRunId as string) ?? null,
-            groupId: (run.groupId as string) ?? null,
-            judgeScore: (run.judgeScore as number) ?? null,
-            isJudgeSelected: (run.isJudgeSelected as boolean) ?? false,
-            judgeReasoning: (run.judgeReasoning as string) ?? null,
-            judgeOutput: (run.judgeOutput as string) ?? null,
-            judgeSystemPrompt: (run.judgeSystemPrompt as string) ?? null,
-            judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
-            judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
+            lastOutputUrl: (run.lastOutputUrl as string | null) ?? null,
+            lastOutputGenerationId: (run.lastOutputGenerationId as string | null) ?? null,
+            batchRunId: (run.batchRunId as string | null) ?? null,
+            groupId: (run.groupId as string | null) ?? null,
+            judgeScore: (run.judgeScore as number | null) ?? null,
+            isJudgeSelected: (run.isJudgeSelected as boolean | null) ?? false,
+            judgeReasoning: (run.judgeReasoning as string | null) ?? null,
+            judgeOutput: (run.judgeOutput as string | null) ?? null,
+            judgeSystemPrompt: (run.judgeSystemPrompt as string | null) ?? null,
+            judgeUserPrompt: (run.judgeUserPrompt as string | null) ?? null,
+            judgeTypeUsed: (run.judgeTypeUsed as string | null) ?? null,
             judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
-            stepResults: ((run.stepResults as { id: string; status: string }[]) ?? []).map((sr) => ({
+            stepResults: ((run.stepResults as { id: string; status: string }[] | null) ?? []).map((sr) => ({
               id: sr.id,
               status: sr.status
             }))

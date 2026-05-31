@@ -18,7 +18,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
       const el = document.getElementById(section.id);
       return el ? [el] : [];
     });
-    if (els.length === 0) return;
+    if (els.length === 0) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {

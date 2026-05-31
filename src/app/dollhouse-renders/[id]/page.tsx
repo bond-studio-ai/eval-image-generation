@@ -49,7 +49,9 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
 
   const frames = render.frames ?? [];
 
-  const imageConfigSummary = `${render.imageConfig.width}×${render.imageConfig.height} ${render.imageConfig.format}${render.imageConfig.superSamplingMultiplier ? ` (SSM ×${render.imageConfig.superSamplingMultiplier})` : ""}`;
+  const { width, height, format, superSamplingMultiplier } = render.imageConfig;
+  const ssmSuffix = superSamplingMultiplier ? ` (SSM ×${superSamplingMultiplier})` : "";
+  const imageConfigSummary = `${width}×${height} ${format}${ssmSuffix}`;
 
   const renderConfigEntries: { label: string; value: React.ReactNode }[] = [];
   if (render.renderConfig?.renderMode) {

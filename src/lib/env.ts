@@ -37,22 +37,21 @@ export function s3UploadConfig(): S3UploadConfig {
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   const region = process.env.AWS_S3_REGION || "us-west-2";
 
-  const missing = [
-    ["AWS_S3_BUCKET", bucket],
-    ["AWS_ACCESS_KEY_ID", accessKeyId],
-    ["AWS_SECRET_ACCESS_KEY", secretAccessKey]
-  ]
-    .filter(([, value]) => !value)
-    .map(([key]) => key);
-
-  if (missing.length > 0) {
+  if (!bucket || !accessKeyId || !secretAccessKey) {
+    const missing = [
+      ["AWS_S3_BUCKET", bucket],
+      ["AWS_ACCESS_KEY_ID", accessKeyId],
+      ["AWS_SECRET_ACCESS_KEY", secretAccessKey]
+    ]
+      .filter(([, value]) => !value)
+      .map(([key]) => key);
     throw new Error(`Missing S3 upload configuration: ${missing.join(", ")}`);
   }
 
   return {
-    bucket: bucket!,
+    bucket,
     region,
-    accessKeyId: accessKeyId!,
-    secretAccessKey: secretAccessKey!
+    accessKeyId,
+    secretAccessKey
   };
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { serviceUrl } from "@/lib/api-base";
+import { assertNever } from "@/lib/assert-never";
 import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { ExecutionFlowSection } from "./_components/execution-flow-section";
 import { JudgeEvaluationSection } from "./_components/judge-evaluation-section";
@@ -36,6 +37,9 @@ function viewingPromptReducer(_state: ViewingPromptState, action: ViewingPromptA
         processedSystemPrompt: action.processedSystemPrompt,
         processedUserPrompt: action.processedUserPrompt
       };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

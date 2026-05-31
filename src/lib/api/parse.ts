@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { logger } from "@/lib/logger";
 
 /**
  * Validate `data` against `schema`. On failure, log the zod issues (so real API
@@ -9,7 +10,7 @@ export function parseOrThrow<S extends z.ZodType>(schema: S, data: unknown, cont
   const result = schema.safeParse(data);
   if (result.success) return result.data;
   if (process.env.NODE_ENV !== "production") {
-    console.error(`[api] Response validation failed for ${context}`, result.error.issues);
+    logger.error(`[api] Response validation failed for ${context}`, result.error.issues);
   }
   throw new Error(`Malformed response for ${context}`);
 }
@@ -22,7 +23,7 @@ export function parseOrFallback<S extends z.ZodType>(schema: S, data: unknown, f
   const result = schema.safeParse(data);
   if (result.success) return result.data;
   if (process.env.NODE_ENV !== "production") {
-    console.warn(`[api] Response validation failed for ${context}; using fallback`, result.error.issues);
+    logger.warn(`[api] Response validation failed for ${context}; using fallback`, result.error.issues);
   }
   return fallback;
 }

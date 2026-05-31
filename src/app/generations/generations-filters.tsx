@@ -18,12 +18,11 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
   const link = useCallback(
     (overrides: Partial<Record<keyof FilterParams, string | undefined>>) => {
-      const merged: FilterParams = { ...params };
-      for (const [key, value] of Object.entries(overrides)) {
-        if (value === undefined) delete merged[key as keyof FilterParams];
-        else merged[key as keyof FilterParams] = value;
-      }
-      return buildGenerationsQuery(merged);
+      // Apply overrides, then drop keys whose value is undefined (an override of
+      // `undefined` clears that filter) — equivalent to the previous delete loop.
+      const merged = { ...params, ...overrides };
+      const cleaned = Object.fromEntries(Object.entries(merged).filter(([, value]) => value !== undefined)) as FilterParams;
+      return buildGenerationsQuery(cleaned);
     },
     [params]
   );

@@ -1,3 +1,4 @@
+import { assertNever } from "@/lib/assert-never";
 import { type DollhouseProductType } from "@/lib/prompt-template-constants";
 
 // --- Conditional popover state ---
@@ -20,6 +21,9 @@ export function conditionalReducer(state: ConditionalState, action: ConditionalA
     }
     case "toggle": {
       return { ...state, open: !state.open };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }
@@ -53,6 +57,9 @@ export function referenceReducer(state: ReferenceState, action: ReferenceAction)
       // Opening the picker resets the drill-down category; closing preserves it.
       return state.open ? { ...state, open: false } : { ...state, open: true, category: null };
     }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -85,6 +92,9 @@ export function dollhouseReducer(state: DollhouseState, action: DollhouseAction)
       // Opening the picker clears any selected product and search query.
       return state.open ? { ...state, open: false } : { ...state, open: true, product: null, search: "" };
     }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -115,6 +125,9 @@ export function attributesReducer(state: AttributesState, action: AttributesActi
     }
     case "fetchSuccess": {
       return { ...state, list: action.list };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

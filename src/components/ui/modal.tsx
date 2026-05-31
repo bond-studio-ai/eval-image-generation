@@ -89,7 +89,7 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
         root.focus();
         return;
       }
-      const first = focusables[0];
+      const [first] = focusables;
       const last = focusables.at(-1);
       const active = document.activeElement as HTMLElement | null;
       const insideDialog = Boolean(active) && root.contains(active);

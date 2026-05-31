@@ -14,8 +14,10 @@ export { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "
 const getBase = () => imageGenerationBase();
 const getV2Base = () => imageGenerationV2Base();
 
+const withLeadingSlash = (path: string): string => (path.startsWith("/") ? path : `/${path}`);
+
 async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getBase()}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = `${getBase()}${withLeadingSlash(path)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
@@ -26,7 +28,7 @@ async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** Like `fetchService`, but validates `json.data` against a zod schema. */
 async function fetchServiceParsed<S extends z.ZodType>(path: string, schema: S, init?: RequestInit): Promise<z.infer<S>> {
-  const url = `${getBase()}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = `${getBase()}${withLeadingSlash(path)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
@@ -36,7 +38,7 @@ async function fetchServiceParsed<S extends z.ZodType>(path: string, schema: S, 
 }
 
 async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getV2Base()}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = `${getV2Base()}${withLeadingSlash(path)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
@@ -244,7 +246,8 @@ async function fetchProviderModelsV2(
   if (params.useCase) query.set("useCase", params.useCase);
   query.set("perPage", "200");
   const suffix = query.toString();
-  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${suffix ? `?${suffix}` : ""}`);
+  const queryString = suffix ? `?${suffix}` : "";
+  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${queryString}`);
 }
 
 export async function fetchStrategyModelCatalog(): Promise<StrategyModelCatalog> {
@@ -320,7 +323,8 @@ export async function fetchGenerationById(id: string) {
 
 export async function fetchGenerations(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  const url = `/generations${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  const url = `/generations${suffix}`;
   const base = getBase();
   const res = await fetch(`${base}${url}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Service ${res.status}`);
@@ -332,16 +336,18 @@ export async function fetchGenerations(params: Record<string, string>) {
 
 export async function fetchAnalyticsRatings(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
+  const suffix = qs ? `?${qs}` : "";
   return fetchService<{
     totalGenerations: number;
     ratedGenerations: number;
     distribution: { rating: string; count: number; percentage: number }[];
-  }>(`/analytics/ratings${qs ? `?${qs}` : ""}`);
+  }>(`/analytics/ratings${suffix}`);
 }
 
 export async function fetchAnalyticsStrategyPerformance(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(`/analytics/strategy-performance${qs ? `?${qs}` : ""}`);
+  const suffix = qs ? `?${qs}` : "";
+  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(`/analytics/strategy-performance${suffix}`);
 }
 
 export interface ReliabilityData {

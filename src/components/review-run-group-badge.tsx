@@ -97,15 +97,24 @@ function aggregate(generationIds: string[], statuses: Map<string, ReviewState>):
     }
   }
 
-  let kind: AggregateState["kind"];
-  if (running > 0) kind = "running";
-  else if (checking > 0 && done === 0 && errors === 0 && idle === 0) kind = "checking";
-  else if (done === total) kind = "done";
-  else if (errors === total) kind = "error";
-  else if (done > 0) kind = "mixed";
-  else kind = "idle";
+  const kind = ((): AggregateState["kind"] => {
+    if (running > 0) return "running";
+    if (checking > 0 && done === 0 && errors === 0 && idle === 0) return "checking";
+    if (done === total) return "done";
+    if (errors === total) return "error";
+    if (done > 0) return "mixed";
+    return "idle";
+  })();
 
   return { kind, total, running, done, errors, idle };
+}
+
+async function runReviewSafely(id: string, force: boolean): Promise<ReviewState> {
+  try {
+    return await runReviewPost(id, force);
+  } catch (error) {
+    return { kind: "error", message: error instanceof Error ? error.message : "Unexpected error" };
+  }
 }
 
 export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: ReviewRunGroupBadgeProps) {
@@ -138,15 +147,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
     // `error`, so the only way `await` rejects is a programming bug we'd
     // rather surface as a per-cell error than as an unhandled rejection.
     for (const { id, force } of targets) {
-      let next: ReviewState;
-      try {
-        next = await runReviewPost(id, force);
-      } catch (error) {
-        next = {
-          kind: "error",
-          message: error instanceof Error ? error.message : "Unexpected error"
-        };
-      }
+      const next = await runReviewSafely(id, force);
       setStatus(id, next);
     }
   }, [generationIds, statuses, setStatus]);

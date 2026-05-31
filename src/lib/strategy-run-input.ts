@@ -130,7 +130,7 @@ async function bootstrapLayoutPreset(layoutTypeId: string, pkgId: string): Promi
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to bootstrap layout preset");
   }
-  return (json as { data?: LayoutBootstrapResponse }).data!;
+  return (json as { data: LayoutBootstrapResponse }).data;
 }
 
 async function upsertProjectDesign(projectId: string, design: Record<string, unknown>): Promise<UpsertProjectDesignResponse> {
@@ -143,31 +143,33 @@ async function upsertProjectDesign(projectId: string, design: Record<string, unk
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to persist project design");
   }
-  return (json as { data?: UpsertProjectDesignResponse }).data!;
+  return (json as { data: UpsertProjectDesignResponse }).data;
+}
+
+async function buildPresetDollhouseCapture(input: StrategyRunInputPayload, presetId: string): Promise<StrategyRunDollhouseCapturePayload | undefined> {
+  if (input.scene_images.dollhouse_view || !input.layout_type_id) return undefined;
+  if (!input.pkg_id) {
+    throw new Error(`Preset ${presetId} has layout_type_id but no pkg_id`);
+  }
+  const bootstrap = await bootstrapLayoutPreset(input.layout_type_id, input.pkg_id);
+  const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
+  const designMaterials = await buildDesignMaterials({
+    design: input.design,
+    roomData: persisted.room_data,
+    projectId: bootstrap.project_id
+  });
+  if (!designMaterials) {
+    throw new Error("Failed to build design materials from preset layout");
+  }
+  return {
+    project_id: bootstrap.project_id,
+    room_data: persisted.room_data,
+    design_materials: designMaterials
+  };
 }
 
 async function buildPresetRunRequest(input: StrategyRunInputPayload, options: { preset_id: string; batch?: boolean; group_id?: string; number_of_images?: number }): Promise<CreateStrategyRunRequest> {
-  let dollhouseCapture: StrategyRunDollhouseCapturePayload | undefined;
-  if (!input.scene_images.dollhouse_view && input.layout_type_id) {
-    if (!input.pkg_id) {
-      throw new Error(`Preset ${options.preset_id} has layout_type_id but no pkg_id`);
-    }
-    const bootstrap = await bootstrapLayoutPreset(input.layout_type_id, input.pkg_id);
-    const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
-    const designMaterials = await buildDesignMaterials({
-      design: input.design,
-      roomData: persisted.room_data,
-      projectId: bootstrap.project_id
-    });
-    if (!designMaterials) {
-      throw new Error("Failed to build design materials from preset layout");
-    }
-    dollhouseCapture = {
-      project_id: bootstrap.project_id,
-      room_data: persisted.room_data,
-      design_materials: designMaterials
-    };
-  }
+  const dollhouseCapture = await buildPresetDollhouseCapture(input, options.preset_id);
 
   return {
     ...(input.layout_type_id === undefined ? {} : { layout_type_id: input.layout_type_id }),

@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
 
@@ -20,7 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
 
     return successResponse(product);
   } catch (error) {
-    console.error("[product detail] Error:", error);
+    logger.error("[product detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch product details");
   }
 }

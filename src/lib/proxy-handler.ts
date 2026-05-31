@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { logger } from "./logger";
 
 type ProxyErrorCode = "INTERNAL_ERROR" | "PROXY_CONFIG_ERROR" | "UPSTREAM_NETWORK_ERROR" | "UPSTREAM_BAD_JSON";
 
@@ -41,6 +42,30 @@ function errorJson(code: ProxyErrorCode, message: string, status: number, detail
   );
 }
 
+type Attempt<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
+function attempt<T>(fn: () => T): Attempt<T> {
+  try {
+    return { ok: true, value: fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+async function attemptAsync<T>(fn: () => Promise<T>): Promise<Attempt<T>> {
+  try {
+    return { ok: true, value: await fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+async function readRequestBody(request: NextRequest): Promise<string | undefined> {
+  // GET/HEAD and some platform requests do not expose a body.
+  const result = await attemptAsync(() => request.text());
+  return result.ok ? result.value : undefined;
+}
+
 function forwardedRequestHeaders(request: NextRequest, extraHeaders?: HeadersInit): Headers {
   const headers = new Headers();
   request.headers.forEach((value, key) => {
@@ -74,27 +99,22 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
   const path = pathSegments.length > 0 ? pathSegments.join("/") : "";
   const outboundParams = rewriteQuery ? rewriteQuery(request.nextUrl.searchParams) : request.nextUrl.searchParams;
   const search = outboundParams.toString();
-  const url = `${baseUrl}${path ? `/${path}` : ""}${search ? `?${search}` : ""}`;
+  const pathPart = path ? `/${path}` : "";
+  const queryPart = search ? `?${search}` : "";
+  const url = `${baseUrl}${pathPart}${queryPart}`;
   const headers = forwardedRequestHeaders(request, extraHeaders);
 
-  let body: string | undefined;
-  try {
-    body = await request.text();
-  } catch {
-    // GET/HEAD and some platform requests do not expose a body.
-  }
+  const body = await readRequestBody(request);
 
-  let res: Response;
-  try {
-    const fetchInit: RequestInit = {
-      method: request.method,
-      headers
-    };
-    if (body && body.length > 0) fetchInit.body = body;
-    res = await fetch(url, fetchInit);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`${serviceName} proxy network error`, {
+  const fetchInit: RequestInit = {
+    method: request.method,
+    headers
+  };
+  if (body && body.length > 0) fetchInit.body = body;
+  const resAttempt = await attemptAsync(() => fetch(url, fetchInit));
+  if (!resAttempt.ok) {
+    const message = resAttempt.error instanceof Error ? resAttempt.error.message : String(resAttempt.error);
+    logger.error(`${serviceName} proxy network error`, {
       method: request.method,
       url,
       error: message,
@@ -102,13 +122,14 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
     });
     return errorJson("UPSTREAM_NETWORK_ERROR", message, 502, { url });
   }
+  const { value: res } = resAttempt;
 
   const contentType = res.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
   const rawBody = await res.text().catch(() => "");
 
   if (!res.ok) {
-    console.error(`${serviceName} proxy upstream error`, {
+    logger.error(`${serviceName} proxy upstream error`, {
       method: request.method,
       url,
       status: res.status,
@@ -121,11 +142,10 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
     if (rawBody.length === 0) {
       return NextResponse.json({}, { status: res.status });
     }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(rawBody);
-    } catch (error) {
-      console.error(`${serviceName} proxy JSON parse failed`, {
+    const parsedAttempt = attempt<unknown>(() => JSON.parse(rawBody) as unknown);
+    if (!parsedAttempt.ok) {
+      const { error } = parsedAttempt;
+      logger.error(`${serviceName} proxy JSON parse failed`, {
         url,
         upstreamStatus: res.status,
         error: error instanceof Error ? error.message : String(error),
@@ -136,6 +156,7 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
         bodySnippet: rawBody.slice(0, 300)
       });
     }
+    const { value: parsed } = parsedAttempt;
     const transformed = transformJson && res.ok ? transformJson(parsed) : parsed;
     return NextResponse.json(transformed, { status: res.status });
   }
@@ -192,16 +213,15 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
       }
     }
 
-    let baseUrl: string;
-    try {
-      baseUrl = getBaseUrl();
-    } catch (error) {
-      console.error(`${serviceName} proxy base-url error`, error);
+    const baseUrlAttempt = attempt(getBaseUrl);
+    if (!baseUrlAttempt.ok) {
+      logger.error(`${serviceName} proxy base-url error`, baseUrlAttempt.error);
       // 500 (not 502): the proxy itself is misconfigured; we never even tried
       // to reach upstream. `PROXY_CONFIG_ERROR` distinguishes this from
       // `UPSTREAM_NETWORK_ERROR` in logs and from any consumer trying to react.
       return errorJson("PROXY_CONFIG_ERROR", "Backend BASE_API_HOSTNAME is not configured", 500);
     }
+    const { value: baseUrl } = baseUrlAttempt;
 
     const { path = [] } = await params;
     return proxyUpstream({

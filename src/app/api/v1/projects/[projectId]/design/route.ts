@@ -1,5 +1,6 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const API_BASE = platformApiBase();
 const STUDIO_API_BASE = `${API_BASE}/studio/v1`;
@@ -163,7 +164,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
       design: persistedDesign
     });
   } catch (error) {
-    console.error("[project design upsert] Error:", error);
+    logger.error("[project design upsert] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to persist project design");
   }
 }

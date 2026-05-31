@@ -195,7 +195,7 @@ export function PromptTemplateEditor({
   const customDollhouseProduct = useMemo(() => toDollhousePathKey(dollhouse.search), [dollhouse.search]);
 
   useEffect(() => {
-    if (!conditional.open && !reference.open && !dollhouse.open) return;
+    if (!conditional.open && !reference.open && !dollhouse.open) return undefined;
     const handler = (e: MouseEvent) => {
       if (containerRef.current?.contains(e.target as Node)) return;
       closeAll();

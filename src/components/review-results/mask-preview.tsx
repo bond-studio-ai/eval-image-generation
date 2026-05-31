@@ -81,10 +81,10 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
   useEffect(() => {
     if (masks.length === 0) {
       setPainted({ key: maskKey, status: "error" });
-      return;
+      return undefined;
     }
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return undefined;
     let cancelled = false;
 
     const loadImage = (url: string) =>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FilterBar, FilterSearch } from "@/components/ui/filter-bar";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Spinner } from "@/components/ui/spinner";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { RunGroupRow } from "./run-group-row";
 import { type AuditRunGroup, PAGE_SIZE, type RunListItem, SOURCE_FILTER_OPTIONS, type SourceFilter } from "./run-picker-types";
@@ -50,6 +51,9 @@ function filtersReducer(state: FiltersState, action: FiltersAction): FiltersStat
     }
     case "setSourceFilter": {
       return { ...state, sourceFilter: action.value };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }
@@ -136,7 +140,7 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
   useEffect(() => {
     const el = sentinelRef.current;
     const root = scrollRef.current;
-    if (!el || !root || !hasMore || loadingMore) return;
+    if (!el || !root || !hasMore || loadingMore) return undefined;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) loadMore();

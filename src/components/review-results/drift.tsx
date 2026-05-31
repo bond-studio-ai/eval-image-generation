@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { assertNever } from "@/lib/assert-never";
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
 import { formatInt, formatNumber, formatPercent, formatPixels } from "./format";
 import { ChevronIcon, WarningIcon } from "./icons";
@@ -242,6 +243,9 @@ function getSortValue(row: DriftRow, key: SortKey, lookup: CategoryLookup): numb
       if (kind === "smallObject") return (metrics as SmallObjectDriftMetrics).presence;
       return null;
     }
+    default: {
+      return assertNever(key);
+    }
   }
 }
 
@@ -326,7 +330,8 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
   const label = lookup.label(key);
   const swatch = lookup.color(key);
   const entry = groupMetadata.get(key) ?? null;
-  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${entry.group === key ? "" : ` (group ${entry.group})`}` : null;
+  const groupSuffix = entry && entry.group !== key ? ` (group ${entry.group})` : "";
+  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${groupSuffix}` : null;
 
   // Each `applies*` flag controls whether this column renders a value
   // for the current row's bucket. Inapplicable cells render the muted

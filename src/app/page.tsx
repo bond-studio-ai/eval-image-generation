@@ -69,10 +69,10 @@ type TabName = "strategies" | "products" | "reliability" | "compare";
 function buildTabHref(tab: TabName, searchParams: Record<string, string | string[] | undefined>): string {
   const params = new URLSearchParams();
   if (tab !== "strategies") params.set("tab", tab);
-  const from = getParamValues(searchParams, "from")[0];
-  const to = getParamValues(searchParams, "to")[0];
-  const model = getParamValues(searchParams, "model")[0];
-  const source = getParamValues(searchParams, "source")[0];
+  const [from] = getParamValues(searchParams, "from");
+  const [to] = getParamValues(searchParams, "to");
+  const [model] = getParamValues(searchParams, "model");
+  const [source] = getParamValues(searchParams, "source");
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (model) params.set("model", model);
@@ -81,22 +81,23 @@ function buildTabHref(tab: TabName, searchParams: Record<string, string | string
     for (const value of getParamValues(searchParams, "compareColumn")) params.append("compareColumn", value);
   }
   const qs = params.toString();
-  return `/${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  return `/${suffix}`;
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const tabRaw = getParamValues(params, "tab")[0];
+  const [tabRaw] = getParamValues(params, "tab");
   const activeTab: TabName = tabRaw === "products" ? "products" : tabRaw === "reliability" ? "reliability" : tabRaw === "compare" ? "compare" : "strategies";
-  const from = getParamValues(params, "from")[0];
-  const to = getParamValues(params, "to")[0];
-  const model = getParamValues(params, "model")[0];
-  const source = getParamValues(params, "source")[0];
+  const [from] = getParamValues(params, "from");
+  const [to] = getParamValues(params, "to");
+  const [model] = getParamValues(params, "model");
+  const [source] = getParamValues(params, "source");
 
   const isCompare = activeTab === "compare";
   const comparison = isCompare ? parseComparisonState({ ...params, compare: "1" }) : { enabled: false, columns: [] };
 
-  const tz = getParamValues(params, "tz")[0];
+  const [tz] = getParamValues(params, "tz");
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams["from"] = from;
   if (to) ratingParams["to"] = to;

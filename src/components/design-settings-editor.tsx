@@ -489,9 +489,8 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
 
   const setField = useCallback(
     (key: string, nextValue: unknown) => {
-      const next = { ...data };
-      if (nextValue == null || nextValue === "") delete next[key];
-      else next[key] = nextValue;
+      const { [key]: _omitted, ...rest } = data;
+      const next = nextValue == null || nextValue === "" ? rest : { ...rest, [key]: nextValue };
       onChange(Object.keys(next).length === 0 ? null : next);
     },
     [data, onChange]
@@ -643,13 +642,10 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
                     arbitraryImagesBySlot={arbitraryImagesBySlot}
                     savedImageUrl={savedImageUrlsBySlot?.[field.key] ?? null}
                     onApplySelection={({ productId, imageType, arbitraryUrl }) => {
-                      const next = { ...data };
-                      if (productId == null || productId === "") delete next[field.key];
-                      else next[field.key] = productId;
-
                       const imageTypeKey = getProductImageTypeKey(field.key);
-                      if (imageType == null) delete next[imageTypeKey];
-                      else next[imageTypeKey] = imageType;
+                      const { [field.key]: _omitProduct, [imageTypeKey]: _omitImageType, ...rest } = data;
+                      const withProduct = productId == null || productId === "" ? rest : { ...rest, [field.key]: productId };
+                      const next = imageType == null ? withProduct : { ...withProduct, [imageTypeKey]: imageType };
 
                       if (imageType === "arbitrary") {
                         onArbitraryImagesBySlotChange({
@@ -657,20 +653,16 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
                           [field.key]: arbitraryUrl
                         });
                       } else if (arbitraryImagesBySlot[field.key]) {
-                        const nextImages = { ...arbitraryImagesBySlot };
-                        delete nextImages[field.key];
+                        const { [field.key]: _omitArbitrary, ...nextImages } = arbitraryImagesBySlot;
                         onArbitraryImagesBySlotChange(nextImages);
                       }
 
                       onChange(Object.keys(next).length === 0 ? null : next);
                     }}
                     onClearSelection={() => {
-                      const next = { ...data };
-                      delete next[field.key];
-                      delete next[getProductImageTypeKey(field.key)];
+                      const { [field.key]: _omitKey, [getProductImageTypeKey(field.key)]: _omitType, ...next } = data;
                       if (arbitraryImagesBySlot[field.key]) {
-                        const nextImages = { ...arbitraryImagesBySlot };
-                        delete nextImages[field.key];
+                        const { [field.key]: _omitArbitrary, ...nextImages } = arbitraryImagesBySlot;
                         onArbitraryImagesBySlotChange(nextImages);
                       }
                       onChange(Object.keys(next).length === 0 ? null : next);

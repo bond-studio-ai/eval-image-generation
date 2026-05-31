@@ -1,3 +1,5 @@
+import { coerceString } from "@/lib/coerce-string";
+
 const CONFIG_LABELS: Record<string, string> = {
   model: "Model",
   aspect_ratio: "Aspect Ratio",
@@ -14,8 +16,8 @@ export function ConfigDiff({ left, right }: { left: Record<string, unknown> | nu
   return (
     <div className="space-y-1">
       {allKeys.map((key) => {
-        const lv = String((left ?? {})[key] ?? "");
-        const rv = String((right ?? {})[key] ?? "");
+        const lv = coerceString((left ?? {})[key]) ?? "";
+        const rv = coerceString((right ?? {})[key]) ?? "";
         const changed = lv !== rv;
         return (
           <div key={key} className={`flex items-center gap-2 rounded px-2 py-0.5 text-[11px] ${changed ? "bg-warning-50 ring-warning-200 ring-1" : "bg-surface-muted"}`}>

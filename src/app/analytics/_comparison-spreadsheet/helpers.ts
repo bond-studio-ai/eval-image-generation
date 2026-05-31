@@ -1,3 +1,4 @@
+import { coerceString } from "@/lib/coerce-string";
 import type { CategoryRate, IssueItem, StepPerformanceRow, SummaryData } from "./types";
 
 export const SLICE_BG_COLORS = [
@@ -37,7 +38,7 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   return raw.map((entry) => {
     const row = entry as RawCategoryRow;
     return {
-      name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
+      name: coerceString(row.name) ?? "",
       total: Number(row.total) || 0,
       success: Number(row.success) || 0,
       failure: Number(row.failure) || 0,
@@ -47,7 +48,7 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
         ? row.issues.flatMap((issue) => {
             const rawIssue = issue as RawIssueItem;
             const mapped = {
-              issue: String(rawIssue.issue ?? ""),
+              issue: coerceString(rawIssue.issue) ?? "",
               count: Number(rawIssue.count ?? 0)
             };
             return mapped.issue ? [mapped] : [];
@@ -62,7 +63,7 @@ export function normalizeIssueItems(raw: unknown): IssueItem[] {
   return raw.flatMap((entry) => {
     const row = entry as RawIssueItem;
     const mapped = {
-      issue: String(row.issue ?? ""),
+      issue: coerceString(row.issue) ?? "",
       count: Number(row.count ?? 0)
     };
     return mapped.issue ? [mapped] : [];
@@ -88,7 +89,7 @@ export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[]
       const row = entry as RawStepPerformanceRow;
       const numberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
       const mapped = {
-        stepId: String(row.stepId ?? ""),
+        stepId: coerceString(row.stepId) ?? "",
         stepOrder: Number(row.stepOrder ?? 0),
         name: typeof row.name === "string" ? row.name : null,
         type: typeof row.type === "string" ? row.type : "generation",

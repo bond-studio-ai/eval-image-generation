@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { cn } from "./cn";
 import { AlertCircleIcon, CheckIcon } from "./icons";
+import { assertNever } from "@/lib/assert-never";
 
 export type StepperStepState = "complete" | "current" | "pending" | "error";
 
@@ -87,34 +88,29 @@ function StepButton({ step, index, onClick }: { step: StepperStep; index: number
   );
 }
 
-function StepCircle({ state, index }: { state: StepperStepState; index: number }) {
-  const baseClass = "flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-caption font-semibold";
-
-  let icon: ReactNode;
-  let cls: string;
+function stepCircleVisual(state: StepperStepState, index: number): { icon: ReactNode; cls: string } {
   switch (state) {
     case "complete": {
-      icon = <CheckIcon className="size-4" aria-hidden />;
-      cls = "bg-success-600 border-success-600 text-text-inverse";
-      break;
+      return { icon: <CheckIcon className="size-4" aria-hidden />, cls: "bg-success-600 border-success-600 text-text-inverse" };
     }
     case "current": {
-      icon = index + 1;
-      cls = "bg-surface border-primary-600 text-primary-700";
-      break;
+      return { icon: index + 1, cls: "bg-surface border-primary-600 text-primary-700" };
     }
     case "error": {
-      icon = <AlertCircleIcon className="size-4" aria-hidden />;
-      cls = "bg-danger-50 border-danger-600 text-danger-700";
-      break;
+      return { icon: <AlertCircleIcon className="size-4" aria-hidden />, cls: "bg-danger-50 border-danger-600 text-danger-700" };
     }
     case "pending": {
-      icon = index + 1;
-      cls = "bg-surface border-border-strong text-text-muted";
-      break;
+      return { icon: index + 1, cls: "bg-surface border-border-strong text-text-muted" };
+    }
+    default: {
+      return assertNever(state);
     }
   }
+}
 
+function StepCircle({ state, index }: { state: StepperStepState; index: number }) {
+  const baseClass = "flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-caption font-semibold";
+  const { icon, cls } = stepCircleVisual(state, index);
   return <span className={cn(baseClass, cls)}>{icon}</span>;
 }
 

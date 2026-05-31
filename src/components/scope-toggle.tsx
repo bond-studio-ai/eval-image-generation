@@ -27,7 +27,8 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
       const next = new URLSearchParams(searchParams.toString());
       if (nextScope === "benchmark") next.set("source", "benchmark");
       else next.delete("source");
-      router.push(`${pathname}${next.toString() ? `?${next}` : ""}`);
+      const suffix = next.toString() ? `?${next.toString()}` : "";
+      router.push(`${pathname}${suffix}`);
     },
     [pathname, router, searchParams]
   );

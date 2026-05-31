@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Fragment, useCallback, useState } from "react";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { coerceString } from "@/lib/coerce-string";
 import { fetchJson } from "@/lib/api/client";
 import { productCategoryRatesResponseSchema } from "@/lib/api/schemas";
 
@@ -88,7 +89,7 @@ function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   return raw.map((entry) => {
     const row = entry as RawCategoryRow;
     return {
-      name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
+      name: coerceString(row.name) ?? "",
       total: Number(row.total) || 0,
       success: Number(row.success) || 0,
       failure: Number(row.failure) || 0,

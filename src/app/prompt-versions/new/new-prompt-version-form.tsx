@@ -7,6 +7,7 @@ import { PromptTemplateEditor } from "@/components/prompt-template-editor";
 import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
 import { TwoPaneSplit } from "@/components/two-pane-split";
 import { Button } from "@/components/ui/button";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
 import { parseOrFallback } from "@/lib/api/parse";
 import { mutationResponseSchema } from "@/lib/api/schemas";
@@ -31,6 +32,9 @@ function formReducer(state: FormState, action: FormAction): FormState {
     }
     case "setField": {
       return { ...state, [action.field]: action.value };
+    }
+    default: {
+      return assertNever(action);
     }
   }
 }

@@ -95,7 +95,10 @@ const eslintConfig = [
       "no-caller": ERROR,
       "no-case-declarations": ERROR,
       "no-class-assign": ERROR,
-      "no-console": WARN,
+      // Application code logs via the `logger` wrapper (src/lib/logger.ts),
+      // which holds the single intentional console sink. Keep this an error so
+      // stray console.* calls don't creep back in.
+      "no-console": ERROR,
       "no-const-assign": ERROR,
       "no-constant-condition": ERROR,
       "no-continue": OFF, // pure-style; `continue` is idiomatic in our loops
@@ -161,7 +164,7 @@ const eslintConfig = [
       camelcase: [ERROR, { properties: "never", ignoreDestructuring: true, ignoreImports: true }],
       "consistent-this": ERROR,
       "constructor-super": ERROR,
-      "default-case": WARN,
+      "default-case": ERROR,
       "dot-notation": ERROR,
       // Allow `== null` / `!= null` (null-or-undefined) while requiring `===` elsewhere.
       eqeqeq: [ERROR, "always", { null: "ignore" }],
@@ -242,8 +245,8 @@ const eslintConfig = [
       "no-promise-executor-return": ERROR,
       "no-unreachable-loop": ERROR,
       "no-nonoctal-decimal-escape": ERROR,
-      "init-declarations": WARN,
-      "consistent-return": WARN,
+      "init-declarations": ERROR,
+      "consistent-return": ERROR,
       "no-unused-private-class-members": ERROR,
       "no-constant-binary-expression": ERROR,
       "no-empty-static-block": ERROR,
@@ -374,7 +377,7 @@ const eslintConfig = [
       "unicorn/no-new-array": ERROR,
       "unicorn/prefer-array-index-of": ERROR,
       "unicorn/prefer-regexp-test": ERROR,
-      "unicorn/consistent-destructuring": WARN,
+      "unicorn/consistent-destructuring": ERROR,
       "unicorn/no-array-push-push": ERROR,
       "unicorn/no-this-assignment": ERROR,
       "unicorn/no-static-only-class": ERROR,
@@ -454,7 +457,7 @@ const eslintConfig = [
       "sonarjs/no-gratuitous-expressions": ERROR,
       "sonarjs/no-nested-switch": WARN,
       "sonarjs/no-empty-collection": ERROR,
-      "sonarjs/no-nested-template-literals": WARN,
+      "sonarjs/no-nested-template-literals": ERROR,
       "sonarjs/cognitive-complexity": [WARN, 15],
       "sonarjs/no-nested-functions": OFF,
       "sonarjs/todo-tag": OFF,
@@ -635,7 +638,11 @@ const eslintConfig = [
       // hardcore forbids all type assertions (`never`); we use `as` pragmatically.
       "@typescript-eslint/consistent-type-assertions": [ERROR, { assertionStyle: "as", objectLiteralTypeAssertions: "allow" }],
       "@typescript-eslint/switch-exhaustiveness-check": [WARN, { requireDefaultForNonUnion: true }],
-      "@typescript-eslint/prefer-destructuring": [WARN, { array: true, object: true }, { enforceForRenamedProperties: true, enforceForDeclarationWithTypeAnnotation: true }],
+      // Default options only: the `enforceForRenamedProperties` /
+      // `enforceForDeclarationWithTypeAnnotation` flags forced readability-neutral
+      // rewrites (e.g. `const id = result.id` -> `const { id } = result`) and were
+      // pure noise. Keep the high-value object/array destructuring nudge.
+      "@typescript-eslint/prefer-destructuring": [ERROR, { array: true, object: true }],
       "@typescript-eslint/consistent-type-definitions": [ERROR, "interface"],
       "@typescript-eslint/consistent-type-imports": ERROR,
       // etc/no-enum substitute: discourage enums in favor of unions/const objects.
@@ -648,7 +655,12 @@ const eslintConfig = [
       ],
 
       // Noisy type-aware rules: keep as signal, not blockers ---------------
-      "@typescript-eslint/no-unnecessary-condition": WARN,
+      // Off: the remaining violations are either false positives (effect
+      // `let cancelled = false` cleanup flags the rule can't see mutated across
+      // the async boundary) or defensive `?? default` reads on zod-validated
+      // data. It can't be driven to zero / enforced as an error, so leaving it
+      // as a warning would just be ignorable lint spam.
+      "@typescript-eslint/no-unnecessary-condition": OFF,
       "@typescript-eslint/strict-boolean-expressions": OFF, // truthy checks are idiomatic here
       // Errors: the API layer is now zod-validated at every fetch boundary
       // (see src/lib/api/), so `any` should no longer leak into the app. Keep
@@ -665,14 +677,25 @@ const eslintConfig = [
       // for allowAny/allowNullish don't silently apply).
       "@typescript-eslint/restrict-template-expressions": [WARN, { allowNumber: true, allowBoolean: true, allowAny: false, allowNullish: false, allowRegExp: true, allowArray: false }],
       "@typescript-eslint/no-confusing-void-expression": WARN,
-      "@typescript-eslint/prefer-nullish-coalescing": WARN,
+      // `||` is the intended operator for string/boolean fallbacks here (display
+      // defaults like `name || "Untitled"` and existence guards like `(a || b) &&`),
+      // where an empty string / `false` should still fall back. Keep the rule
+      // active for number/object/nullish operands, where `||` can silently
+      // swallow a valid `0` or mishandle nullishness.
+      "@typescript-eslint/prefer-nullish-coalescing": [ERROR, { ignorePrimitives: { string: true, boolean: true } }],
       "@typescript-eslint/prefer-optional-chain": WARN,
-      "@typescript-eslint/no-base-to-string": WARN,
-      "@typescript-eslint/no-non-null-assertion": WARN,
+      "@typescript-eslint/no-base-to-string": ERROR,
+      // Off: the remaining assertions are provably-safe idioms TS can't model
+      // under `noUncheckedIndexedAccess` (`Map.get` after `.has()`/`.set()`,
+      // modulo-bounded `arr[i % len]`, `arr[0]` after a length check, values
+      // captured in event-handler closures behind a render guard). Rewriting
+      // them adds verbose guards without removing risk, so the rule can't be
+      // enforced as an error — turn it off rather than leave ignorable warnings.
+      "@typescript-eslint/no-non-null-assertion": OFF,
       "@typescript-eslint/no-floating-promises": WARN,
       "@typescript-eslint/no-unnecessary-type-conversion": WARN,
       "@typescript-eslint/no-explicit-any": WARN,
-      "@typescript-eslint/no-dynamic-delete": WARN,
+      "@typescript-eslint/no-dynamic-delete": ERROR,
       "@typescript-eslint/no-redundant-type-constituents": WARN,
       "@typescript-eslint/no-unnecessary-type-parameters": WARN,
       "@typescript-eslint/no-misused-promises": [WARN, { checksVoidReturn: { attributes: false } }],

@@ -1,5 +1,6 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const API_BASE = platformApiBase();
 const PROJECTS_BASE = `${API_BASE}/v2/projects`;
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
       room_data: roomData
     });
   } catch (error) {
-    console.error("[layout bootstrap] Error:", error);
+    logger.error("[layout bootstrap] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to bootstrap layout preset");
   }
 }

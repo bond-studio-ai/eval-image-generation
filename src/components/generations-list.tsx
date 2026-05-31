@@ -11,6 +11,7 @@ import { RatingBadge } from "@/components/rating-badge";
 import { serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
 import { generationListResponseSchema } from "@/lib/api/schemas";
+import { logger } from "@/lib/logger";
 import { type GenerationRow, normalizeGenerationRow } from "@/lib/generation-row";
 
 interface GenerationsListProps {
@@ -97,7 +98,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
         setTotal(newTotal);
       }
     } catch (error) {
-      console.error("Failed to load more generations:", error);
+      logger.error("Failed to load more generations:", error);
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {

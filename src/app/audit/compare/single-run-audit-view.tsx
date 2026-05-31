@@ -8,6 +8,7 @@ import { ExpandableImage } from "@/components/expandable-image";
 import { RunJudgeEvaluationsSection } from "@/components/run-judge-evaluations-section";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { coerceString } from "@/lib/coerce-string";
 import { parseStrategyRunJudgeResults, type RawRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 interface InputImage {
@@ -247,7 +248,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
                       {Object.entries(sr.requestConfig).map(([key, val]) => (
                         <span key={key} className="bg-surface-sunken text-text-secondary inline-flex items-center rounded px-2 py-0.5 text-[11px]">
                           <span className="text-text-muted font-medium">{CONFIG_LABELS[key] ?? key}:</span>
-                          &nbsp;{String(val ?? "null")}
+                          &nbsp;{coerceString(val) ?? "null"}
                         </span>
                       ))}
                     </div>

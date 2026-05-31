@@ -90,14 +90,16 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       const rect = node.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let { top, left } = pos;
+      const { top: origTop, left: origLeft } = pos;
+      let top = origTop;
+      let left = origLeft;
       if (left + rect.width > vw - 16) left = vw - rect.width - 16;
       if (left < 16) left = 16;
       if (top + rect.height > vh - 16) {
         const triggerRect = triggerRef.current?.getBoundingClientRect();
         if (triggerRect) top = triggerRect.top - rect.height - 8;
       }
-      if (top !== pos.top || left !== pos.left) setPos({ top, left });
+      if (top !== origTop || left !== origLeft) setPos({ top, left });
     },
     [pos]
   );

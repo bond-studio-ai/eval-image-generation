@@ -72,8 +72,7 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
 }
 
 function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
-  const { metrics } = depth;
-  const { alignment } = depth;
+  const { metrics, alignment, validPixels, width, height } = depth;
   return (
     <div className="border-border bg-surface rounded-md border px-3 py-2.5">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
@@ -83,10 +82,10 @@ function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
         <Metric label="Spearman" value={formatNumber(metrics?.spearman, 3)} hint="Rank correlation; alignment-free." />
       </dl>
       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
-        <Metric label="Valid pixels" value={formatInt(depth.validPixels)} hint="Pixels valid in both depth maps." />
+        <Metric label="Valid pixels" value={formatInt(validPixels)} hint="Pixels valid in both depth maps." />
         <Metric label="Scale" value={formatNumber(alignment?.scale, 3)} hint="Affine fit scale (predicted → truth)." />
         <Metric label="Shift" value={formatNumber(alignment?.shift, 3)} hint="Affine fit shift (predicted → truth)." />
-        <Metric label="Resolution" value={`${depth.width}×${depth.height}`} hint="Dollhouse EXR resolution; metrics computed in this grid." />
+        <Metric label="Resolution" value={`${width}×${height}`} hint="Dollhouse EXR resolution; metrics computed in this grid." />
       </dl>
     </div>
   );

@@ -40,8 +40,8 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const data = await fetchGenerationById(id).catch(() => null);
   if (!data) notFound();
 
-  const { promptVersion } = data;
-  const inputData = data.input ?? null;
+  const { promptVersion, input } = data;
+  const inputData = input ?? null;
   const results: ResultImage[] = data.results;
 
   const { activeProductCategories, productImages } = deriveProductImages(inputData);

@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import { PRODUCT_CATEGORIES } from "@/lib/prompt-template-constants";
 
 const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
@@ -90,7 +91,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cat
 
     const json: unknown = await res.json();
     const products = extractProductRecords(json);
-    const product = products[0];
+    const [product] = products;
 
     if (!product) {
       return successResponse({ attributes: [] as string[] });
@@ -99,7 +100,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cat
     const attributes = getAttributePaths(product);
     return successResponse({ attributes });
   } catch (error) {
-    console.error("[catalog attributes] Error:", error);
+    logger.error("[catalog attributes] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch product attributes");
   }
 }

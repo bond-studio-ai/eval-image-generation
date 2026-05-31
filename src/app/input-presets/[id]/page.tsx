@@ -29,7 +29,6 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   if (!presetData) notFound();
 
   const ipData = presetData as RawInputPreset;
-  const { stats } = ipData;
 
   const genResult = await fetchGenerations({ inputPresetId: id, limit: "100" });
   const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "input-preset related generations");
@@ -57,7 +56,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     promptVersionName: generation.promptName ?? null
   }));
 
-  const generationCount = stats?.generationCount ?? stats?.generation_count ?? generations.length;
+  const generationCount = ipData.stats?.generationCount ?? ipData.stats?.generation_count ?? generations.length;
 
   return (
     <InputPresetDetail

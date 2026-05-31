@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
 
@@ -23,7 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
       }
     }
     const qs = forwarded.toString();
-    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}${qs ? `?${qs}` : ""}`;
+    const suffix = qs ? `?${qs}` : "";
+    const upstreamUrl = `${PROJECTS_BASE}/${encodeURIComponent(projectId)}${suffix}`;
 
     const res = await fetch(upstreamUrl, {
       headers: { Accept: "application/json" },
@@ -40,7 +42,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
     const json: unknown = await res.json();
     return NextResponse.json(json, { status: 200 });
   } catch (error) {
-    console.error("[project detail] Error:", error);
+    logger.error("[project detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch project details");
   }
 }
