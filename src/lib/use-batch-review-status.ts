@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReviewState } from "@/components/review-badge";
 import { serviceUrl } from "@/lib/api-base";
-
-const HTTP_NOT_FOUND = 404;
+import { HTTP_NOT_FOUND } from "@/lib/http-status";
 
 /**
  * Module-level cache of *resolved* review states only (`idle` /

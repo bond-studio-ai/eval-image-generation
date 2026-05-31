@@ -1,12 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { HTTP_BAD_GATEWAY, HTTP_INTERNAL_SERVER_ERROR, HTTP_UNAUTHORIZED } from "./http-status";
 import { logger } from "./logger";
 
 type ProxyErrorCode = "INTERNAL_ERROR" | "PROXY_CONFIG_ERROR" | "UPSTREAM_NETWORK_ERROR" | "UPSTREAM_BAD_JSON";
 
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-const HTTP_BAD_GATEWAY = 502;
 /** Max chars of an upstream error body to log (full snippet for error responses). */
 const ERROR_BODY_SNIPPET_LEN = 600;
 /** Max chars of a malformed-JSON body to log/return in the error detail. */
@@ -216,7 +215,7 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
               message: `Sign in is required to access the ${serviceName} API.`
             }
           },
-          { status: 401 }
+          { status: HTTP_UNAUTHORIZED }
         );
       }
     }

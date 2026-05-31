@@ -1,5 +1,6 @@
 "use client";
 
+import { HTTP_UNAUTHORIZED } from "@/lib/http-status";
 import { useRouter } from "next/navigation";
 import { useReducer, useState } from "react";
 import { DesignPackageSelect } from "@/components/design-package-select";
@@ -133,7 +134,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
 
       const ct = res.headers.get("content-type") ?? "";
       if (!ct.includes("application/json")) {
-        throw new Error(res.redirected || res.status === 401 ? "Session expired. Please refresh the page." : `Unexpected response from server (${res.status}). Please try again.`);
+        throw new Error(res.redirected || res.status === HTTP_UNAUTHORIZED ? "Session expired. Please refresh the page." : `Unexpected response from server (${res.status}). Please try again.`);
       }
 
       const json = parseOrFallback(errorEnvelopeSchema, await res.json(), {}, "input preset update");
