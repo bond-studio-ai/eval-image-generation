@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "@/components/ui/toaster";
-import { cameraFrameKey, createDollhouseRender, DollhouseRenderApiError, DollhouseRenderUnexpectedResponseError } from "@/lib/dollhouse-renders";
+import { assertNever } from "@/lib/assert-never";
+import { cameraFrameKey, createDollhouseRender } from "@/lib/dollhouse-renders";
 import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from "@/lib/projects";
 import { AdvancedSection } from "./_components/advanced-section";
 import { buildCreateRenderBody, DEFAULT_IMAGE_CONFIG, DEFAULT_RENDER_CONFIG, DEFAULT_SSM_PARAMS, type ImageConfigState, type RenderConfigState } from "./_components/build-request";
@@ -22,12 +23,12 @@ import type { StyleOverrideRow } from "./_components/style-overrides-editor";
 import { useDollhouseOverrides } from "./_components/use-dollhouse-overrides";
 import { buildWizardModel, WIZARD_SECTION_IDS } from "./_components/wizard-model";
 
-type ProjectState = {
+interface ProjectState {
   projectIdInput: string;
   bootstrap: ProjectRenderBootstrap | null;
   loadingProject: boolean;
   projectError: string | null;
-};
+}
 
 type ProjectAction =
   | { type: "setInput"; value: string }
@@ -46,9 +47,16 @@ const INITIAL_PROJECT: ProjectState = {
 
 function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
   switch (action.type) {
-    case "setInput":
-      return { ...state, projectIdInput: action.value };
-    case "loadStart":
+    case "clear": {
+      return { ...state, bootstrap: null, projectError: null, projectIdInput: "" };
+    }
+    case "loadError": {
+      return { ...state, projectError: action.message };
+    }
+    case "loadSettled": {
+      return { ...state, loadingProject: false };
+    }
+    case "loadStart": {
       return {
         ...state,
         projectIdInput: action.projectId,
@@ -56,14 +64,16 @@ function projectReducer(state: ProjectState, action: ProjectAction): ProjectStat
         projectError: null,
         bootstrap: null
       };
-    case "loadSuccess":
+    }
+    case "loadSuccess": {
       return { ...state, bootstrap: action.bootstrap };
-    case "loadError":
-      return { ...state, projectError: action.message };
-    case "loadSettled":
-      return { ...state, loadingProject: false };
-    case "clear":
-      return { ...state, bootstrap: null, projectError: null, projectIdInput: "" };
+    }
+    case "setInput": {
+      return { ...state, projectIdInput: action.value };
+    }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -81,7 +91,7 @@ export function NewRenderForm() {
   // Destructure the stable `reset` callback so the load/clear callbacks
   // below have stable identity across renders — without this the whole
   // `overrides` object dep would invalidate them every render.
-  const { reset: resetOverrides } = overrides;
+  const { reset: resetOverrides, designResult, roomResult } = overrides;
 
   const [imageConfig, setImageConfig] = useState<ImageConfigState>(DEFAULT_IMAGE_CONFIG);
   const [renderConfig, setRenderConfig] = useState<RenderConfigState>(DEFAULT_RENDER_CONFIG);
@@ -124,13 +134,13 @@ export function NewRenderForm() {
         });
         if (controller.signal.aborted) return;
         dispatchProject({ type: "loadSuccess", bootstrap: result });
-      } catch (err) {
+      } catch (error) {
         // Aborts come through as either a DOMException with `name === 'AbortError'`
         // or a TypeError depending on runtime; check the controller as the source of truth.
         if (controller.signal.aborted) return;
         dispatchProject({
           type: "loadError",
-          message: err instanceof Error ? err.message : "Failed to fetch project"
+          message: error instanceof Error ? error.message : "Failed to fetch project"
         });
       } finally {
         if (loadAbortRef.current === controller) {
@@ -169,16 +179,16 @@ export function NewRenderForm() {
       buildWizardModel({
         bootstrap: project.bootstrap,
         projectError: project.projectError,
-        designOverride: overrides.designResult,
-        roomOverride: overrides.roomResult,
+        designOverride: designResult,
+        roomOverride: roomResult,
         excludedFrameKeys,
         imageConfig
       }),
-    [project.bootstrap, project.projectError, overrides.designResult, overrides.roomResult, excludedFrameKeys, imageConfig]
+    [project.bootstrap, project.projectError, designResult, roomResult, excludedFrameKeys, imageConfig]
   );
 
   const scrollToStep = useCallback((id: string) => {
-    const el = document.getElementById(id);
+    const el = document.querySelector(`#${id}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -215,28 +225,34 @@ export function NewRenderForm() {
       const created = await createDollhouseRender(body);
       toast.success(`Render ${created.id.slice(0, 8)} created.`);
       router.push(`/dollhouse-renders/${created.id}`);
-    } catch (err) {
-      const message = err instanceof DollhouseRenderApiError ? err.message : err instanceof DollhouseRenderUnexpectedResponseError ? err.message : err instanceof Error ? err.message : "Failed to create render";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create render";
       setSubmitError(message);
       setSubmitting(false);
     }
   }, [project.bootstrap, cameraFrames, effectiveDesignMaterials, effectiveRoomData, excludedFrameKeys, imageConfig, renderConfig, router, ssmParams, styleOverrides]);
+
+  const { steps, dataIssues, summary, canSubmit, allIssues } = model;
 
   return (
     <div>
       <PageHeader backHref="/dollhouse-renders" backLabel="Back to Dollhouse Renders" title="New Dollhouse Render" subtitle="Step through the wizard: pick a project, review the project data, then configure the render." />
 
       <div className="bg-bg-app sticky top-0 z-10 -mx-4 mt-6 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <Stepper steps={model.steps} onStepClick={scrollToStep} label="Render wizard progress" />
+        <Stepper steps={steps} onStepClick={scrollToStep} label="Render wizard progress" />
       </div>
 
       <div className="mt-6 space-y-6">
         <section id={WIZARD_SECTION_IDS.project} className="scroll-mt-32">
           <ProjectPickerSection
             projectIdInput={project.projectIdInput}
-            onProjectIdInputChange={(value) => dispatchProject({ type: "setInput", value })}
+            onProjectIdInputChange={(value) => {
+              dispatchProject({ type: "setInput", value });
+            }}
             onLoadManualInput={handleManualLoad}
-            onSelectFromTable={(id) => void loadProject(id)}
+            onSelectFromTable={(id) => {
+              void loadProject(id);
+            }}
             loadingProject={project.loadingProject}
             projectError={project.projectError}
             selectedBootstrap={project.bootstrap}
@@ -257,8 +273,10 @@ export function NewRenderForm() {
             excludedFrameKeys={excludedFrameKeys}
             onToggleFrame={toggleFrame}
             overrides={overrides}
-            issues={model.dataIssues}
-            onScrollToProjectStep={() => scrollToStep(WIZARD_SECTION_IDS.project)}
+            issues={dataIssues}
+            onScrollToProjectStep={() => {
+              scrollToStep(WIZARD_SECTION_IDS.project);
+            }}
           />
         </section>
 
@@ -275,16 +293,16 @@ export function NewRenderForm() {
           <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-h3 text-text-primary font-semibold">Ready to render</h2>
-              <p className="text-body text-text-secondary mt-1">{model.summary}</p>
-              {!model.canSubmit && model.allIssues.length > 0 && (
+              <p className="text-body text-text-secondary mt-1">{summary}</p>
+              {!canSubmit && allIssues.length > 0 && (
                 <ul className="text-caption text-text-muted mt-2 list-inside list-disc">
-                  {model.allIssues.map((issue) => (
+                  {allIssues.map((issue) => (
                     <li key={issue}>{issue}</li>
                   ))}
                 </ul>
               )}
             </div>
-            <Button onClick={handleSubmit} disabled={!model.canSubmit || submitting} loading={submitting}>
+            <Button onClick={handleSubmit} disabled={!canSubmit || submitting} loading={submitting}>
               Create Render
             </Button>
           </Card>

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { RenderStatusBadge } from "@/components/render-status-badge";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { getDollhouseRender, type DollhouseRender } from "@/lib/dollhouse-renders";
+import { type DollhouseRender, getDollhouseRender } from "@/lib/dollhouse-renders";
 import { imageGenerationV2Base } from "@/lib/env";
 import { RenderAutoRefresh } from "./render-auto-refresh";
 
@@ -49,7 +49,9 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
 
   const frames = render.frames ?? [];
 
-  const imageConfigSummary = `${render.imageConfig.width}×${render.imageConfig.height} ${render.imageConfig.format}${render.imageConfig.superSamplingMultiplier ? ` (SSM ×${render.imageConfig.superSamplingMultiplier})` : ""}`;
+  const { width, height, format, superSamplingMultiplier } = render.imageConfig;
+  const ssmSuffix = superSamplingMultiplier ? ` (SSM ×${superSamplingMultiplier})` : "";
+  const imageConfigSummary = `${width}×${height} ${format}${ssmSuffix}`;
 
   const renderConfigEntries: { label: string; value: React.ReactNode }[] = [];
   if (render.renderConfig?.renderMode) {

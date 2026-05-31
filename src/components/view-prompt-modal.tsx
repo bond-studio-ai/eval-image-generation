@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { XIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { dataEnvelope, promptVersionDetailSchema } from "@/lib/api/schemas";
 
 interface ViewPromptModalProps {
   promptVersionId: string;
@@ -21,16 +23,10 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(serviceUrl(`prompt-versions/${promptVersionId}`));
-      if (!res.ok) {
-        setError("Failed to load prompt");
-        return;
-      }
-      const json = await res.json();
-      const d = json.data ?? json;
+      const json = await fetchJson(serviceUrl(`prompt-versions/${promptVersionId}`), dataEnvelope(promptVersionDetailSchema));
       setData({
-        systemPrompt: d.systemPrompt ?? "",
-        userPrompt: d.userPrompt ?? ""
+        systemPrompt: json.data.systemPrompt,
+        userPrompt: json.data.userPrompt
       });
     } catch {
       setError("Failed to load prompt");
@@ -40,7 +36,7 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
   }, [promptVersionId]);
 
   useEffect(() => {
-    fetchPrompt();
+    void fetchPrompt();
   }, [fetchPrompt]);
 
   useEffect(() => {
@@ -48,7 +44,9 @@ export function ViewPromptModal({ promptVersionId, promptVersionName, processedS
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
   }, [onClose]);
 
   return (

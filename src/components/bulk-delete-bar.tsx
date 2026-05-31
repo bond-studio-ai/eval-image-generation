@@ -42,7 +42,14 @@ export function BulkDeleteBar({ selectedCount, onDelete, onClearSelection, entit
               <span className="text-danger-600 text-body">
                 Delete {selectedCount} {entityName}?
               </span>
-              <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                }}
+                disabled={deleting}
+              >
                 Cancel
               </Button>
               <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting} loading={deleting}>
@@ -50,7 +57,14 @@ export function BulkDeleteBar({ selectedCount, onDelete, onClearSelection, entit
               </Button>
             </>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirming(true)} iconLeft={<TrashIcon className="size-4" />}>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                setConfirming(true);
+              }}
+              iconLeft={<TrashIcon className="size-4" />}
+            >
               Delete Selected
             </Button>
           )}

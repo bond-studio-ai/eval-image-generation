@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { parseOrFallback } from "@/lib/api/parse";
+import { dataEnvelope, generationRatingSchema } from "@/lib/api/schemas";
 
 type Rating = "GOOD" | "FAILED" | null;
 
@@ -28,19 +31,13 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
   const { data } = useQuery({
     queryKey: ratingKey,
     queryFn: async ({ signal }): Promise<GenerationRating> => {
-      const res = await fetch(serviceUrl(`generations/${generationId}`), {
-        cache: "no-store",
-        signal
-      });
-      if (!res.ok) throw new Error(`Failed to load generation (${res.status})`);
-      const json = await res.json();
-      const d = json.data ?? json;
+      const { data: payload } = await fetchJson(serviceUrl(`generations/${generationId}`), dataEnvelope(generationRatingSchema), { cache: "no-store", signal });
       return {
-        scene: (d.sceneAccuracyRating ?? null) as Rating,
-        product: (d.productAccuracyRating ?? null) as Rating
+        scene: (payload.sceneAccuracyRating ?? null) as Rating,
+        product: (payload.productAccuracyRating ?? null) as Rating
       };
     },
-    enabled: !!generationId,
+    enabled: Boolean(generationId),
     // Match the prior module-level cache: fetch a generation's rating once and
     // keep it; the optimistic `setQueryData` in `rate` handles in-session updates.
     staleTime: Infinity
@@ -58,8 +55,8 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
       };
 
       // Optimistic update: write straight to the query cache.
-      const nextScene = scene !== undefined ? scene : prev.scene;
-      const nextProduct = product !== undefined ? product : prev.product;
+      const nextScene = scene ?? prev.scene;
+      const nextProduct = product ?? prev.product;
       queryClient.setQueryData<GenerationRating>(key, { scene: nextScene, product: nextProduct });
       onRated?.();
 
@@ -73,11 +70,11 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
           body: JSON.stringify(body)
         });
         if (res.ok) {
-          const json = await res.json();
-          const d = json.data ?? json;
+          const json: unknown = await res.json();
+          const payload = parseOrFallback(dataEnvelope(generationRatingSchema), json, { data: {} }, "generation rating patch").data;
           queryClient.setQueryData<GenerationRating>(key, {
-            scene: (d.sceneAccuracyRating ?? nextScene) as Rating,
-            product: (d.productAccuracyRating ?? nextProduct) as Rating
+            scene: (payload.sceneAccuracyRating ?? nextScene) as Rating,
+            product: (payload.productAccuracyRating ?? nextProduct) as Rating
           });
         } else {
           queryClient.setQueryData<GenerationRating>(key, prev);
@@ -101,7 +98,9 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
   return (
     <div
       className={`from-overlay/70 absolute inset-x-0 bottom-0 flex items-end justify-center rounded-b-lg bg-gradient-to-t to-transparent px-2 pt-8 pb-2 opacity-0 transition-opacity group-hover:opacity-100 ${className}`}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
     >
       <div className="text-text-inverse flex gap-4">
         <div className="flex flex-col items-center gap-0.5">

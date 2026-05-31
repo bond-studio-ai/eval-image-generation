@@ -1,15 +1,18 @@
-export type SummaryData = {
+export interface SummaryData {
   sceneRatedCount: number;
   sceneGoodPct: number;
   sceneFailedPct: number;
   productRatedCount: number;
   productGoodPct: number;
   productFailedPct: number;
-};
+}
 
-export type IssueItem = { issue: string; count: number };
+export interface IssueItem {
+  issue: string;
+  count: number;
+}
 
-export type CategoryRate = {
+export interface CategoryRate {
   name: string;
   total: number;
   success: number;
@@ -17,9 +20,9 @@ export type CategoryRate = {
   successPct: number;
   failurePct: number;
   issues: IssueItem[];
-};
+}
 
-export type StepPerformanceRow = {
+export interface StepPerformanceRow {
   stepId: string;
   stepOrder: number;
   name: string | null;
@@ -29,17 +32,21 @@ export type StepPerformanceRow = {
   avgExecTimeMs: number | null;
   minExecTimeMs: number | null;
   maxExecTimeMs: number | null;
-};
+}
 
-export type SliceData = {
+export interface SliceData {
   summary: SummaryData | null;
   sceneIssues: IssueItem[];
   categories: CategoryRate[];
   steps: StepPerformanceRow[];
-};
+}
 
 export type SortField = "successPct" | "failurePct";
 
-export type SortCol = { sliceKey: string; field: SortField; dir: "asc" | "desc" };
+export interface SortCol {
+  sliceKey: string;
+  field: SortField;
+  dir: "asc" | "desc";
+}
 
 export type CategoryRow = { type: "category"; categoryName: string } | { type: "issue"; categoryName: string; issueName: string };

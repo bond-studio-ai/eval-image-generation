@@ -1,4 +1,4 @@
-import type { DesignSettingsValue } from "./design-settings-editor";
+import type { DesignSettingsValue } from "./design-settings-fields";
 
 export function isNonEmpty(value: unknown): boolean {
   if (value == null) return false;

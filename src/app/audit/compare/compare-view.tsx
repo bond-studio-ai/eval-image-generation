@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { errorMessageOr } from "@/lib/error-message";
 import { parseStrategyRunJudgeResults, type RawRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { JudgeComparison } from "./_components/judge-comparison";
 import { RunHeader } from "./_components/run-header";
@@ -26,7 +27,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
       if (!res.ok) {
         throw new Error(`Failed to load: ${res.status}`);
       }
-      const json = await res.json();
+      const json = (await res.json()) as { data: { left?: unknown; right?: unknown } };
       const rawL = json.data.left as RawRunJudgeResults;
       const rawR = json.data.right as RawRunJudgeResults;
       return {
@@ -45,7 +46,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
 
   const left = data?.left ?? null;
   const right = data?.right ?? null;
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Unknown error") : null;
+  const error = isError ? errorMessageOr(queryError, "Unknown error") : null;
 
   if (loading) {
     return (

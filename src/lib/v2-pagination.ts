@@ -24,18 +24,18 @@ export const rewriteV1PaginationToV2: ProxyQueryRewriter = (params) => {
   const next = new URLSearchParams();
   params.forEach((value, key) => {
     const mapped = V1_TO_V2_KEY[key];
-    if (mapped !== undefined) {
+    if (mapped === undefined) {
+      next.append(key, value);
+    } else {
       next.append(mapped, value);
       touched = true;
-    } else {
-      next.append(key, value);
     }
   });
   return touched ? next : params;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
@@ -72,10 +72,10 @@ export const normalizeV2PaginationResponse: ProxyJsonTransformer = (json) => {
     ...json,
     pagination: {
       ...pag,
-      ...(currentPage !== undefined ? { page: currentPage } : {}),
-      ...(perPage !== undefined ? { limit: perPage } : {}),
-      ...(lastPage !== undefined ? { totalPages: lastPage } : {}),
-      ...(total !== undefined ? { total } : {})
+      ...(currentPage === undefined ? {} : { page: currentPage }),
+      ...(perPage === undefined ? {} : { limit: perPage }),
+      ...(lastPage === undefined ? {} : { totalPages: lastPage }),
+      ...(total === undefined ? {} : { total })
     }
   };
 };

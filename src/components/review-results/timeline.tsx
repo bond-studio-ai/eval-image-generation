@@ -43,7 +43,7 @@ const TIMELINE_STEP_COLORS: Record<string, string> = {
 };
 
 function timelineStepLabel(name: string): string {
-  return TIMELINE_STEP_LABELS[name] ?? name.replace(/_/g, " ");
+  return TIMELINE_STEP_LABELS[name] ?? name.replaceAll("_", " ");
 }
 
 function timelineStepColor(name: string): string {
@@ -106,6 +106,7 @@ function SegmentationTimelineSection({ timings, lookup }: { timings: Segmentatio
             const leftPct = Math.min((step.startMs / inferredTotal) * 100, 99.5);
             const sharePct = (step.durationMs / inferredTotal) * 100;
             return (
+              // eslint-disable-next-line react/no-array-index-key -- stateless timeline rows, positionally stable, step names can repeat across retries
               <div key={`${step.name}-${idx}`} className="text-text-secondary flex items-center gap-2 text-[11px]">
                 <span className="w-36 shrink-0 truncate" title={timelineStepLabel(step.name)}>
                   {timelineStepLabel(step.name)}
@@ -173,7 +174,9 @@ export function CollapsibleTimeline({ timings, lookup }: { timings: Segmentation
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >

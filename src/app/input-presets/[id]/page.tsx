@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { InputPresetDetail } from "@/components/input-preset-detail";
-import { getInputPresetStoredImages, type InputPresetStats } from "@/lib/input-preset-design";
-import { fetchGenerations, fetchInputPresetById } from "@/lib/service-client";
+import { catchToNull } from "@/lib/async-utils";
+import { parseOrFallback } from "@/lib/api/parse";
+import { generationSummaryArraySchema } from "@/lib/api/schemas";
+import { getInputPresetStoredImages } from "@/lib/input-preset-design";
+import { fetchGenerations, fetchInputPresetById, type InputPresetWithStats } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +23,13 @@ interface PageProps {
 export default async function InputPresetDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const presetData = await fetchInputPresetById(id).catch(() => null);
+  const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
-  const ipData = presetData as any;
-  const stats = ipData.stats as InputPresetStats | undefined;
+  const ipData = presetData as InputPresetWithStats;
 
   const genResult = await fetchGenerations({ inputPresetId: id, limit: "100" });
-  const generations = (genResult.data ?? []) as any[];
+  const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "input-preset related generations");
 
   // Count populated image columns
   let keyedImageCount = 0;
@@ -35,7 +37,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     const val = ipData[col];
     if (val != null && val !== "" && !(Array.isArray(val) && val.length === 0)) keyedImageCount++;
   }
-  const imageCount = keyedImageCount + getInputPresetStoredImages(ipData as Record<string, unknown>).length;
+  const imageCount = keyedImageCount + getInputPresetStoredImages(ipData).length;
 
   const serializedData = {
     ...ipData,
@@ -43,16 +45,16 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
     deletedAt: ipData.deletedAt ?? ipData.deleted_at ?? null
   };
 
-  const serializedGenerations = generations.map((g: any) => ({
-    id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating ?? null,
-    productAccuracyRating: g.productAccuracyRating ?? null,
-    createdAt: g.createdAt,
-    outputImageCount: g.resultCount ?? 0,
-    promptVersionName: g.promptName ?? null
+  const serializedGenerations = generations.map((generation) => ({
+    id: generation.id,
+    sceneAccuracyRating: generation.sceneAccuracyRating ?? null,
+    productAccuracyRating: generation.productAccuracyRating ?? null,
+    createdAt: generation.createdAt,
+    outputImageCount: generation.resultCount ?? 0,
+    promptVersionName: generation.promptName ?? null
   }));
 
-  const generationCount = stats?.generationCount ?? stats?.generation_count ?? generations.length;
+  const generationCount = ipData.stats?.generationCount ?? ipData.stats?.generation_count ?? generations.length;
 
   return (
     <InputPresetDetail

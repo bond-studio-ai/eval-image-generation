@@ -2,16 +2,19 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useReducer, useState } from "react";
+import { assertNever } from "@/lib/assert-never";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { strategyErrorsResponseSchema, strategyPerformanceResponseSchema } from "@/lib/api/schemas";
 import { StrategyTableHeader } from "./_strategy-performance/strategy-table-header";
 import { StrategyTableRow } from "./_strategy-performance/strategy-table-row";
-import type { BreakdownData, SortDir, SortKey, StrategyRow } from "./_strategy-performance/types";
+import type { BreakdownData, SortDir, SortKey } from "./_strategy-performance/types";
 
-type ExpansionState = {
+interface ExpansionState {
   expandedIds: Set<string>;
   breakdowns: Record<string, BreakdownData | null>;
   loadingIds: Set<string>;
-};
+}
 
 type ExpansionAction = { type: "toggle"; id: string } | { type: "loadStart"; id: string } | { type: "loadSuccess"; id: string; data: BreakdownData } | { type: "loadEmpty"; id: string } | { type: "loadSettled"; id: string };
 
@@ -29,28 +32,35 @@ function withoutId(ids: Set<string>, id: string): Set<string> {
 
 function expansionReducer(state: ExpansionState, action: ExpansionAction): ExpansionState {
   switch (action.type) {
+    case "loadEmpty": {
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: null },
+        loadingIds: withoutId(state.loadingIds, action.id)
+      };
+    }
+    case "loadSettled": {
+      return { ...state, loadingIds: withoutId(state.loadingIds, action.id) };
+    }
+    case "loadStart": {
+      return { ...state, loadingIds: new Set(state.loadingIds).add(action.id) };
+    }
+    case "loadSuccess": {
+      return {
+        ...state,
+        breakdowns: { ...state.breakdowns, [action.id]: action.data },
+        loadingIds: withoutId(state.loadingIds, action.id)
+      };
+    }
     case "toggle": {
       const expandedIds = new Set(state.expandedIds);
       if (expandedIds.has(action.id)) expandedIds.delete(action.id);
       else expandedIds.add(action.id);
       return { ...state, expandedIds };
     }
-    case "loadStart":
-      return { ...state, loadingIds: new Set(state.loadingIds).add(action.id) };
-    case "loadSuccess":
-      return {
-        ...state,
-        breakdowns: { ...state.breakdowns, [action.id]: action.data },
-        loadingIds: withoutId(state.loadingIds, action.id)
-      };
-    case "loadEmpty":
-      return {
-        ...state,
-        breakdowns: { ...state.breakdowns, [action.id]: null },
-        loadingIds: withoutId(state.loadingIds, action.id)
-      };
-    case "loadSettled":
-      return { ...state, loadingIds: withoutId(state.loadingIds, action.id) };
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -69,13 +79,9 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
       if (source && source !== "all") params.set("source", source);
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
-      const res = await fetch(serviceUrl(`analytics/strategy-performance?${params}`), {
-        cache: "no-store",
-        signal
-      });
-      if (!res.ok) throw new Error("Failed to load strategy performance");
-      const json = await res.json();
-      return (json.data ? (json.data.rows ?? json.data) : []) as StrategyRow[];
+      const json = await fetchJson(serviceUrl(`analytics/strategy-performance?${params}`), strategyPerformanceResponseSchema, { cache: "no-store", signal });
+      if (!json.data) return [];
+      return Array.isArray(json.data) ? json.data : json.data.rows;
     }
   });
 
@@ -90,36 +96,26 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
         if (source && source !== "all") params.set("source", source);
         const tz = browserTimezone();
         if (tz) params.set("tz", tz);
-        const res = await fetch(serviceUrl(`analytics/strategy-errors?${params}`), {
-          cache: "no-store"
-        });
-        if (!res.ok) {
-          dispatchExpansion({ type: "loadSettled", id: strategyId });
-          return;
-        }
-        const json = await res.json();
+        const json = await fetchJson(serviceUrl(`analytics/strategy-errors?${params}`), strategyErrorsResponseSchema, { cache: "no-store" });
         const raw = json.data;
         if (!raw) {
           dispatchExpansion({ type: "loadEmpty", id: strategyId });
           return;
         }
-        const executionErrors = raw.executionErrors ?? raw.execution_errors;
-        const sceneIssues = raw.sceneIssues ?? raw.scene_issues;
-        const productIssues = raw.productIssues ?? raw.product_issues;
-        const ratingSummary = raw.ratingSummary ?? raw.rating_summary;
+        const { ratingSummary, executionErrors, sceneIssues, productIssues } = raw;
         const normalized: BreakdownData = {
-          execution_errors: Array.isArray(executionErrors) ? executionErrors : [],
-          scene_issues: Array.isArray(sceneIssues) ? sceneIssues : [],
-          product_issues: Array.isArray(productIssues) ? productIssues : [],
+          execution_errors: executionErrors,
+          scene_issues: sceneIssues,
+          product_issues: productIssues,
           rating_summary: ratingSummary
             ? {
-                total: ratingSummary.total ?? 0,
-                scene_good: ratingSummary.sceneGood ?? ratingSummary.scene_good ?? 0,
-                scene_failed: ratingSummary.sceneFailed ?? ratingSummary.scene_failed ?? 0,
-                scene_unset: ratingSummary.sceneUnset ?? ratingSummary.scene_unset ?? 0,
-                product_good: ratingSummary.productGood ?? ratingSummary.product_good ?? 0,
-                product_failed: ratingSummary.productFailed ?? ratingSummary.product_failed ?? 0,
-                product_unset: ratingSummary.productUnset ?? ratingSummary.product_unset ?? 0
+                total: ratingSummary.total,
+                scene_good: ratingSummary.sceneGood,
+                scene_failed: ratingSummary.sceneFailed,
+                scene_unset: ratingSummary.sceneUnset,
+                product_good: ratingSummary.productGood,
+                product_failed: ratingSummary.productFailed,
+                product_unset: ratingSummary.productUnset
               }
             : null
         };
@@ -134,7 +130,7 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
   const toggleExpand = useCallback(
     (id: string) => {
       dispatchExpansion({ type: "toggle", id });
-      if (!breakdowns[id]) fetchBreakdown(id);
+      if (!breakdowns[id]) void fetchBreakdown(id);
     },
     [fetchBreakdown, breakdowns]
   );
@@ -142,7 +138,7 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
-        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
         return key;
       }
       setSortDir(key === "name" ? "asc" : "desc");
@@ -155,7 +151,7 @@ export function StrategyPerformanceSection({ from, to, model, source }: { from?:
     if (sortKey === "name") return dir * a.name.localeCompare(b.name);
     const av = a[sortKey] ?? -1;
     const bv = b[sortKey] ?? -1;
-    return dir * ((av as number) - (bv as number));
+    return dir * (av - bv);
   });
 
   if (loading) {

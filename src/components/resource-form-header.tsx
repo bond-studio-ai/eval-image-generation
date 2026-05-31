@@ -22,7 +22,9 @@ export function ResourceFormHeader({ name, onNameChange, namePlaceholder = "Unti
             id="resource-form-name"
             type="text"
             value={name}
-            onChange={(e) => onNameChange(e.target.value)}
+            onChange={(e) => {
+              onNameChange(e.target.value);
+            }}
             placeholder={namePlaceholder}
             className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none"
           />
@@ -35,7 +37,9 @@ export function ResourceFormHeader({ name, onNameChange, namePlaceholder = "Unti
             id="resource-form-description"
             rows={2}
             value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
+            onChange={(e) => {
+              onDescriptionChange(e.target.value);
+            }}
             placeholder={descriptionPlaceholder}
             className="rounded-input border-border-strong bg-surface text-body focus:border-primary-500 focus:ring-primary-500 w-full border px-3 py-2 focus:ring-1 focus:outline-none"
           />

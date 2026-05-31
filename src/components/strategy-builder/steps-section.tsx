@@ -50,7 +50,7 @@ export function StepsSection({
         <button
           type="button"
           onClick={addJudgeStep}
-          disabled={steps.length === 0 || steps[steps.length - 1]?.type === "judge"}
+          disabled={steps.length === 0 || steps.at(-1)?.type === "judge"}
           className="border-warning-300 text-warning-700 hover:border-warning-400 hover:text-warning-800 text-body flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ScaleIcon className="size-4" />

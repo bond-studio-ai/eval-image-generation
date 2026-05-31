@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { cn } from "./cn";
 import { AlertCircleIcon, CheckIcon } from "./icons";
+import { assertNever } from "@/lib/assert-never";
 
 export type StepperStepState = "complete" | "current" | "pending" | "error";
 
@@ -34,7 +35,17 @@ export function Stepper({ steps, onStepClick, className, label }: StepperProps) 
           const isLast = index === steps.length - 1;
           return (
             <li key={step.id} className={cn("flex min-w-0 items-start", !isLast && "flex-1")}>
-              <StepButton step={step} index={index} onClick={onStepClick ? () => onStepClick(step.id) : undefined} />
+              <StepButton
+                step={step}
+                index={index}
+                onClick={
+                  onStepClick
+                    ? () => {
+                        onStepClick(step.id);
+                      }
+                    : undefined
+                }
+              />
               {!isLast && <Connector state={step.state} />}
             </li>
           );
@@ -44,16 +55,19 @@ export function Stepper({ steps, onStepClick, className, label }: StepperProps) 
   );
 }
 
+const STEP_LABEL_COLOR: Record<StepperStepState, string> = {
+  current: "text-primary-700",
+  complete: "text-text-primary",
+  error: "text-danger-700",
+  pending: "text-text-muted"
+};
+
 function StepButton({ step, index, onClick }: { step: StepperStep; index: number; onClick?: (() => void) | undefined }) {
   const content = (
     <>
       <StepCircle state={step.state} index={index} />
       <span className="ml-3 flex min-w-0 flex-col text-left">
-        <span
-          className={cn("text-caption font-semibold tracking-wide uppercase", step.state === "current" ? "text-primary-700" : step.state === "complete" ? "text-text-primary" : step.state === "error" ? "text-danger-700" : "text-text-muted")}
-        >
-          Step {index + 1}
-        </span>
+        <span className={cn("text-caption font-semibold tracking-wide uppercase", STEP_LABEL_COLOR[step.state])}>Step {index + 1}</span>
         <span className={cn("text-body truncate font-medium", step.state === "pending" ? "text-text-muted" : "text-text-primary")}>{step.label}</span>
         {step.description && <span className="text-caption text-text-muted truncate">{step.description}</span>}
       </span>
@@ -77,30 +91,29 @@ function StepButton({ step, index, onClick }: { step: StepperStep; index: number
   );
 }
 
+function stepCircleVisual(state: StepperStepState, index: number): { icon: ReactNode; cls: string } {
+  switch (state) {
+    case "complete": {
+      return { icon: <CheckIcon className="size-4" aria-hidden />, cls: "bg-success-600 border-success-600 text-text-inverse" };
+    }
+    case "current": {
+      return { icon: index + 1, cls: "bg-surface border-primary-600 text-primary-700" };
+    }
+    case "error": {
+      return { icon: <AlertCircleIcon className="size-4" aria-hidden />, cls: "bg-danger-50 border-danger-600 text-danger-700" };
+    }
+    case "pending": {
+      return { icon: index + 1, cls: "bg-surface border-border-strong text-text-muted" };
+    }
+    default: {
+      return assertNever(state);
+    }
+  }
+}
+
 function StepCircle({ state, index }: { state: StepperStepState; index: number }) {
   const baseClass = "flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-caption font-semibold";
-
-  let icon: ReactNode;
-  let cls: string;
-  switch (state) {
-    case "complete":
-      icon = <CheckIcon className="size-4" aria-hidden />;
-      cls = "bg-success-600 border-success-600 text-text-inverse";
-      break;
-    case "current":
-      icon = index + 1;
-      cls = "bg-surface border-primary-600 text-primary-700";
-      break;
-    case "error":
-      icon = <AlertCircleIcon className="size-4" aria-hidden />;
-      cls = "bg-danger-50 border-danger-600 text-danger-700";
-      break;
-    case "pending":
-      icon = index + 1;
-      cls = "bg-surface border-border-strong text-text-muted";
-      break;
-  }
-
+  const { icon, cls } = stepCircleVisual(state, index);
   return <span className={cn(baseClass, cls)}>{icon}</span>;
 }
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useRef } from "react";
-import { COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState, type AnalyticsComparisonColumn, type AnalyticsComparisonSource } from "@/app/analytics/comparison-utils";
+import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { type AnalyticsComparisonColumn, type AnalyticsComparisonSource, COMPARE_COLUMN_QUERY_KEY, createEmptyComparisonColumn, encodeComparisonColumn, parseComparisonState } from "@/app/analytics/comparison-utils";
 import { browserTimezone } from "@/lib/api-base";
 import type { StrategyListItem } from "@/lib/service-client";
 import { ComparisonColumnsEditor } from "./_analytics-filters/comparison-columns-editor";
@@ -13,6 +13,11 @@ interface AnalyticsFiltersProps {
   strategies: StrategyListItem[];
   activeTab: string;
 }
+
+const COMPARISON_SOURCE_BY_KEY: Record<string, AnalyticsComparisonSource> = {
+  raw_input: "raw_input",
+  benchmark: "benchmark"
+};
 
 function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFiltersProps) {
   const router = useRouter();
@@ -28,7 +33,7 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   // render would hand the editor unstable React keys. Same params → same ids.
   const comparison = useMemo(() => parseComparisonState(searchParams), [searchParams]);
 
-  const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
+  const defaultSource: AnalyticsComparisonSource = COMPARISON_SOURCE_BY_KEY[source] ?? "preset";
 
   // Show a starter column when entering compare mode with none yet. It lives in
   // memory (not the URL) until the user edits it, which avoids a redirect-in-
@@ -37,8 +42,13 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const defaultColumn = useMemo(() => createEmptyComparisonColumn({ from, to, source: defaultSource }), [from, to, defaultSource]);
   const columns = isCompare && comparison.columns.length === 0 ? [defaultColumn] : comparison.columns;
 
+  // `addComparisonColumn` reads the latest columns from a ref (it's an event
+  // handler, not render-path), so keep the ref in sync via an effect rather
+  // than writing it during render.
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
+  useEffect(() => {
+    columnsRef.current = columns;
+  });
 
   const buildUrl = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
@@ -67,11 +77,11 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   );
 
   const updateComparisonColumns = useCallback(
-    (columns: AnalyticsComparisonColumn[]) => {
+    (nextColumns: AnalyticsComparisonColumn[]) => {
       router.replace(
         buildUrl((next) => {
           next.delete(COMPARE_COLUMN_QUERY_KEY);
-          for (const column of columns) {
+          for (const column of nextColumns) {
             next.append(COMPARE_COLUMN_QUERY_KEY, encodeComparisonColumn(column));
           }
         })
@@ -83,19 +93,20 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const addComparisonColumn = useCallback(() => {
     const cols = columnsRef.current;
     const lastColumn = cols.at(-1);
-    const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
-    updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: defaultSource })]);
+    const nextDefaultSource: AnalyticsComparisonSource = COMPARISON_SOURCE_BY_KEY[source] ?? "preset";
+    updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: nextDefaultSource })]);
   }, [from, source, to, updateComparisonColumns]);
 
   const clearAll = useCallback(() => {
     const tab = searchParams.get("tab");
     const next = new URLSearchParams();
     if (tab) next.set("tab", tab);
-    router.replace(`/${next.toString() ? `?${next}` : ""}`);
+    const suffix = next.toString() ? `?${next.toString()}` : "";
+    router.replace(`/${suffix}`);
   }, [router, searchParams]);
 
-  const hasDateFilter = !!(from || to);
-  const hasAnyFilter = hasDateFilter || !!model || source !== "all";
+  const hasDateFilter = Boolean(from || to);
+  const hasAnyFilter = hasDateFilter || Boolean(model) || source !== "all";
 
   return (
     <div className="mt-4 flex flex-col gap-3">

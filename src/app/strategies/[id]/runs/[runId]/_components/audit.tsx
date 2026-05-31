@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CdnImage } from "@/components/cdn-image";
 import { ExpandableImage } from "@/components/expandable-image";
+import { coerceString } from "@/lib/coerce-string";
 import { ChevronIcon } from "./shared";
 import type { InputImage, StepResult } from "./types";
 
@@ -27,7 +28,9 @@ export function AuditImageGrid({ images }: { images: InputImage[] }) {
               <button
                 type="button"
                 className="border-accent-400 bg-surface-muted ring-accent-200 relative block aspect-square w-full cursor-pointer overflow-hidden rounded-md border ring-1"
-                onClick={() => setExpandedGroup(expandedGroup === i ? null : i)}
+                onClick={() => {
+                  setExpandedGroup(expandedGroup === i ? null : i);
+                }}
               >
                 <CdnImage src={img.url} alt={img.label} fill sizes="(max-width:768px) 25vw, 200px" className="object-cover" />
               </button>
@@ -48,14 +51,20 @@ export function AuditImageGrid({ images }: { images: InputImage[] }) {
         <div className="border-accent-200 bg-accent-50 rounded-lg border p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-accent-800 text-caption font-semibold">
-              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length} source images
+              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages.length} source images
             </p>
-            <button type="button" onClick={() => setExpandedGroup(null)} className="text-accent-600 hover:text-accent-800 text-caption">
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedGroup(null);
+              }}
+              className="text-accent-600 hover:text-accent-800 text-caption"
+            >
               Close
             </button>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-            {images[expandedGroup].sourceImages!.map((src) => (
+            {images[expandedGroup].sourceImages.map((src) => (
               <div key={src.url}>
                 <ExpandableImage src={src.url} alt={src.label} wrapperClassName="relative block aspect-square w-full overflow-hidden rounded-md border border-accent-200 bg-surface" className="h-full w-full object-cover" />
                 <p className="text-accent-700 mt-1 truncate text-[10px] leading-tight" title={src.label}>
@@ -74,7 +83,13 @@ export function AuditCollapsible({ title, children }: { title: string; children:
   const [open, setOpen] = useState(false);
   return (
     <div className="border-border-subtle border-t">
-      <button type="button" onClick={() => setOpen(!open)} className="text-text-muted hover:bg-surface-muted text-caption flex w-full items-center gap-2 px-4 py-2 text-left font-medium">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="text-text-muted hover:bg-surface-muted text-caption flex w-full items-center gap-2 px-4 py-2 text-left font-medium"
+      >
         <ChevronIcon open={open} className="size-3" />
         {title}
       </button>
@@ -97,7 +112,7 @@ export function StepAudit({ sr }: { sr: StepResult }) {
               {Object.entries(sr.requestConfig).map(([key, val]) => (
                 <span key={key} className="bg-surface-sunken text-text-secondary inline-flex items-center rounded px-2 py-0.5 text-[11px]">
                   <span className="text-text-muted font-medium">{CONFIG_LABELS[key] ?? key}:</span>
-                  &nbsp;{String(val ?? "null")}
+                  &nbsp;{coerceString(val) ?? "null"}
                 </span>
               ))}
             </div>

@@ -28,7 +28,9 @@ export function BatchToolbar({
           { value: "matrix", label: "Matrix" }
         ]}
         value={viewMode}
-        onChange={(v) => onViewModeChange(v)}
+        onChange={(mode) => {
+          onViewModeChange(mode);
+        }}
         size="sm"
         label="View mode"
       />

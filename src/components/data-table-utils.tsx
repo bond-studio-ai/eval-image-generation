@@ -16,7 +16,17 @@ export function checkboxColumn<T>({ selected, onToggle, rowId, isSelectable }: {
     cell: (row) => {
       if (isSelectable && !isSelectable(row)) return null;
       const id = rowId(row);
-      return <input type="checkbox" aria-label="Select row" checked={selected.has(id)} onChange={() => onToggle(id)} className={CHECKBOX_CLASS} />;
+      return (
+        <input
+          type="checkbox"
+          aria-label="Select row"
+          checked={selected.has(id)}
+          onChange={() => {
+            onToggle(id);
+          }}
+          className={CHECKBOX_CLASS}
+        />
+      );
     },
     cellClassName: "w-10 p-3"
   };
@@ -47,11 +57,23 @@ export function actionsColumn<T>(actions: RowAction<T>[]): DataTableColumn<T> {
       <div className="flex justify-end gap-1">
         {actions.map((action, i) => {
           if ("render" in action) {
+            // eslint-disable-next-line react/no-array-index-key -- actions is a static config array (render hatch has no id), never reordered
             return <Fragment key={i}>{action.render(row)}</Fragment>;
           }
           if (action.hidden?.(row)) return null;
           const isLoading = action.loading?.(row) ?? false;
-          return <IconButton key={action.label} label={action.label} icon={ACTION_ICONS[action.icon]} variant={action.variant === "danger" ? "danger" : "default"} loading={isLoading} onClick={() => action.onClick(row)} />;
+          return (
+            <IconButton
+              key={action.label}
+              label={action.label}
+              icon={ACTION_ICONS[action.icon]}
+              variant={action.variant === "danger" ? "danger" : "default"}
+              loading={isLoading}
+              onClick={() => {
+                action.onClick(row);
+              }}
+            />
+          );
         })}
       </div>
     ),

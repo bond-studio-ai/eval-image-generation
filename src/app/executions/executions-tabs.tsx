@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ScopeToggle } from "@/components/scope-toggle";
-import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { type TabItem, Tabs } from "@/components/ui/tabs";
 import { BatchRunsTab } from "./batch-tab";
 import { ExecutionsRunButton } from "./executions-run-button";
 

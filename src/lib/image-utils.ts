@@ -18,7 +18,7 @@ export function withImageParams(url: string, width = 256): string {
  * (array) column types gracefully.
  */
 export function toUrlArray(val: unknown): string[] {
-  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string" && !!v);
+  if (Array.isArray(val)) return val.filter((item): item is string => typeof item === "string" && Boolean(item));
   if (typeof val === "string" && val) return [val];
   return [];
 }

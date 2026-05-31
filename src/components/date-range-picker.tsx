@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/components/ui/icons";
+import { assertNever } from "@/lib/assert-never";
 
-type Preset = { label: string; days: number };
+interface Preset {
+  label: string;
+  days: number;
+}
 
 const DATE_PRESETS: Preset[] = [
   { label: "Today", days: 1 },
@@ -15,16 +19,16 @@ const DATE_PRESETS: Preset[] = [
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
-function fmtISO(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function fmtISO(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function formatDisplay(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const date = new Date(`${iso}T00:00:00`);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getPresetRange(days: number): { from: string; to: string } {
@@ -48,10 +52,10 @@ function isBetween(date: string, start: string, end: string) {
 
 function getDaysInMonth(year: number, month: number): Date[] {
   const days: Date[] = [];
-  const d = new Date(year, month, 1);
-  while (d.getMonth() === month) {
-    days.push(new Date(d));
-    d.setDate(d.getDate() + 1);
+  const cursor = new Date(year, month, 1);
+  while (cursor.getMonth() === month) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
   }
   return days;
 }
@@ -59,6 +63,11 @@ function getDaysInMonth(year: number, month: number): Date[] {
 function startOfWeek(date: Date): number {
   const day = date.getDay();
   return day === 0 ? 6 : day - 1;
+}
+
+function orderedRange(start: string | null, end: string | null): [string, string] | [null, null] {
+  if (!start || !end) return [null, null];
+  return start <= end ? [start, end] : [end, start];
 }
 
 function CalendarMonth({
@@ -79,12 +88,12 @@ function CalendarMonth({
   onDateHover: (iso: string | null) => void;
 }) {
   const days = useMemo(() => getDaysInMonth(year, month), [year, month]);
-  const firstDay = days[0];
+  const [firstDay] = days;
   const leadingBlanks = firstDay ? startOfWeek(firstDay) : 0;
   const today = fmtISO(new Date());
 
   const effectiveEnd = rangeEnd ?? hoverDate;
-  const [lo, hi] = rangeStart && effectiveEnd ? (rangeStart <= effectiveEnd ? [rangeStart, effectiveEnd] : [effectiveEnd, rangeStart]) : [null, null];
+  const [lo, hi] = orderedRange(rangeStart, effectiveEnd);
 
   const monthLabel = new Date(year, month).toLocaleDateString("en-US", {
     month: "long",
@@ -100,11 +109,11 @@ function CalendarMonth({
             {wd}
           </div>
         ))}
-        {Array.from({ length: leadingBlanks }).map((_, i) => (
+        {Array.from({ length: leadingBlanks }, (_, i) => (
           <div key={`blank-${i}`} className="h-8" />
         ))}
-        {days.map((d) => {
-          const iso = fmtISO(d);
+        {days.map((day) => {
+          const iso = fmtISO(day);
           const isStart = lo != null && isSame(iso, lo);
           const isEnd = hi != null && isSame(iso, hi);
           const isInRange = lo != null && hi != null && isBetween(iso, lo, hi);
@@ -128,8 +137,20 @@ function CalendarMonth({
 
           return (
             <div key={iso} className={`flex items-center justify-center ${cellBg}`}>
-              <button type="button" className={dayClass} onClick={() => onDateClick(iso)} onMouseEnter={() => onDateHover(iso)} onMouseLeave={() => onDateHover(null)}>
-                {d.getDate()}
+              <button
+                type="button"
+                className={dayClass}
+                onClick={() => {
+                  onDateClick(iso);
+                }}
+                onMouseEnter={() => {
+                  onDateHover(iso);
+                }}
+                onMouseLeave={() => {
+                  onDateHover(null);
+                }}
+              >
+                {day.getDate()}
               </button>
             </div>
           );
@@ -139,14 +160,14 @@ function CalendarMonth({
   );
 }
 
-type CalState = {
+interface CalState {
   picking: "start" | "end";
   rangeStart: string | null;
   rangeEnd: string | null;
   hoverDate: string | null;
   viewMonth: number;
   viewYear: number;
-};
+}
 
 type CalAction =
   | { type: "syncRange"; from: string; to: string }
@@ -170,9 +191,10 @@ function initCal({ from, to }: { from: string; to: string }): CalState {
 
 function calReducer(state: CalState, action: CalAction): CalState {
   switch (action.type) {
-    case "syncRange":
-      return { ...state, rangeStart: action.from || null, rangeEnd: action.to || null };
-    case "open":
+    case "nextMonth": {
+      return state.viewMonth === 11 ? { ...state, viewMonth: 0, viewYear: state.viewYear + 1 } : { ...state, viewMonth: state.viewMonth + 1 };
+    }
+    case "open": {
       return {
         ...state,
         picking: "start",
@@ -181,6 +203,7 @@ function calReducer(state: CalState, action: CalAction): CalState {
         viewYear: action.viewYear,
         viewMonth: action.viewMonth
       };
+    }
     case "pickDate": {
       if (state.picking === "start") {
         return { ...state, rangeStart: action.iso, rangeEnd: null, picking: "end" };
@@ -190,12 +213,18 @@ function calReducer(state: CalState, action: CalAction): CalState {
       }
       return { ...state, rangeEnd: action.iso, picking: "start" };
     }
-    case "setHover":
-      return { ...state, hoverDate: action.value };
-    case "prevMonth":
+    case "prevMonth": {
       return state.viewMonth === 0 ? { ...state, viewMonth: 11, viewYear: state.viewYear - 1 } : { ...state, viewMonth: state.viewMonth - 1 };
-    case "nextMonth":
-      return state.viewMonth === 11 ? { ...state, viewMonth: 0, viewYear: state.viewYear + 1 } : { ...state, viewMonth: state.viewMonth + 1 };
+    }
+    case "setHover": {
+      return { ...state, hoverDate: action.value };
+    }
+    case "syncRange": {
+      return { ...state, rangeStart: action.from || null, rangeEnd: action.to || null };
+    }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -212,27 +241,29 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
 
   const toggleCustom = () => {
     if (!showCustom) {
-      const d = from ? new Date(from + "T00:00:00") : now;
+      const initialDate = from ? new Date(`${from}T00:00:00`) : now;
       dispatchCal({
         type: "open",
         from,
         to,
-        viewYear: d.getFullYear(),
-        viewMonth: d.getMonth()
+        viewYear: initialDate.getFullYear(),
+        viewMonth: initialDate.getMonth()
       });
     }
     setShowCustom((prev) => !prev);
   };
 
   useEffect(() => {
-    if (!showCustom) return;
+    if (!showCustom) return undefined;
     const handler = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
         setShowCustom(false);
       }
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
   }, [showCustom]);
 
   const handleDateClick = useCallback((iso: string) => {
@@ -258,9 +289,9 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
     }
   }, [cal.rangeStart, cal.rangeEnd, onChange]);
 
-  const activePreset = from && to ? DATE_PRESETS.find((p) => matchesPreset(from, to, p.days)) : null;
+  const activePreset = from && to ? DATE_PRESETS.find((preset) => matchesPreset(from, to, preset.days)) : null;
   const hasCustomRange = from && to && !activePreset;
-  const hasDateFilter = !!(from || to);
+  const hasDateFilter = Boolean(from || to);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -284,7 +315,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
             type="button"
             onClick={toggleCustom}
             className={`text-caption flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
-              hasCustomRange ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : showCustom ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"
+              hasCustomRange || showCustom ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"
             }`}
           >
             <CalendarIcon className="size-3.5" />
@@ -313,7 +344,9 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
                   rangeEnd={cal.rangeEnd}
                   hoverDate={cal.picking === "end" ? cal.hoverDate : null}
                   onDateClick={handleDateClick}
-                  onDateHover={(value) => dispatchCal({ type: "setHover", value })}
+                  onDateHover={(value) => {
+                    dispatchCal({ type: "setHover", value });
+                  }}
                 />
                 <div className="bg-surface-sunken w-px" />
                 <CalendarMonth
@@ -323,7 +356,9 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
                   rangeEnd={cal.rangeEnd}
                   hoverDate={cal.picking === "end" ? cal.hoverDate : null}
                   onDateClick={handleDateClick}
-                  onDateHover={(value) => dispatchCal({ type: "setHover", value })}
+                  onDateHover={(value) => {
+                    dispatchCal({ type: "setHover", value });
+                  }}
                 />
               </div>
 
@@ -336,7 +371,13 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
                   {!cal.rangeStart && !cal.rangeEnd && <span className="text-text-disabled">Pick a start date</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setShowCustom(false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowCustom(false);
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleApply} disabled={!cal.rangeStart || !cal.rangeEnd}>

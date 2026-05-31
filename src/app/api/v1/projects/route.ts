@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { normalizeV2PaginationResponse, rewriteV1PaginationToV2 } from "@/lib/v2-pagination";
 
 const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
@@ -33,7 +34,8 @@ export async function GET(request: Request) {
     }
     const upstreamParams = rewriteV1PaginationToV2(allowed);
     const qs = upstreamParams.toString();
-    const upstreamUrl = `${PROJECTS_BASE}${qs ? `?${qs}` : ""}`;
+    const suffix = qs ? `?${qs}` : "";
+    const upstreamUrl = `${PROJECTS_BASE}${suffix}`;
 
     const res = await fetch(upstreamUrl, {
       headers: { Accept: "application/json" },
@@ -46,8 +48,8 @@ export async function GET(request: Request) {
 
     const json: unknown = await res.json();
     return NextResponse.json(normalizeV2PaginationResponse(json), { status: 200 });
-  } catch (err) {
-    console.error("[projects list] Error:", err);
+  } catch (error) {
+    logger.error("[projects list] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch projects");
   }
 }

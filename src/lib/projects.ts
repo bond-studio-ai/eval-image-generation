@@ -1,5 +1,5 @@
 import { localUrl } from "./api-base";
-import { normalizeCameraFrame, validateUnitySlimDesign, type DollhouseCameraFrame, type UnitySlimDesignMaterials } from "./dollhouse-renders";
+import { type DollhouseCameraFrame, normalizeCameraFrame, type UnitySlimDesignMaterials, validateUnitySlimDesign } from "./dollhouse-renders";
 
 export interface ProjectSummary {
   id: string;
@@ -32,7 +32,7 @@ export interface ProjectsListParams {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 interface RawProjectSummary {
@@ -101,7 +101,7 @@ function parseCameraFrames(raw: unknown): DollhouseCameraFrame[] {
   // products). Passing the raw upstream object through unchanged was
   // tempting but trips the strict v2 validator on real-world data; see
   // `normalizeCameraFrame` for the per-field rules.
-  return array.map(normalizeCameraFrame).filter((f): f is DollhouseCameraFrame => f !== null);
+  return array.map(normalizeCameraFrame).filter((frame): frame is DollhouseCameraFrame => frame !== null);
 }
 
 export async function fetchProjectWithRenderBootstrap(projectId: string, init?: RequestInit): Promise<ProjectRenderBootstrap> {
@@ -111,7 +111,8 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
   const qs = new URLSearchParams();
   qs.append("format[]", "design:unity-slim");
   qs.append("include[]", "camera_frames");
-  const url = `${localUrl(`projects/${encodeURIComponent(trimmed)}`)}?${qs.toString()}`;
+  const projectPath = localUrl(`projects/${encodeURIComponent(trimmed)}`);
+  const url = `${projectPath}?${qs.toString()}`;
 
   const res = await fetch(url, init);
   if (!res.ok) {
@@ -120,7 +121,7 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
   // BFF is pass-through; upstream wraps the project in `{ data: [project] }`.
   const wrapper = (await res.json()) as { data?: unknown };
   const projectArray = wrapper.data;
-  const project = Array.isArray(projectArray) ? projectArray[0] : null;
+  const project: unknown = Array.isArray(projectArray) ? projectArray[0] : null;
   if (!project || !isRecord(project)) {
     throw new Error(`Project ${trimmed} not found`);
   }
@@ -138,7 +139,7 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
     // outside the old v2 strict whitelist (e.g. tub/shower-specific metadata).
     // service-image-generation#137 updates the v2 create endpoint to preserve
     // raw `roomData`, matching the proven strategy dollhouse-capture path.
-    roomData: isRecord(projectRecord.scan) ? (projectRecord.scan as Record<string, unknown>) : null,
+    roomData: isRecord(projectRecord.scan) ? projectRecord.scan : null,
     cameraFrames: parseCameraFrames(projectRecord.cameraFrames)
   };
 }

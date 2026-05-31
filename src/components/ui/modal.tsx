@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef } from "react";
 import { cn } from "./cn";
 
 /**
@@ -71,7 +71,7 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
 
     const token = Symbol("modal");
     modalStack.push(token);
-    const isTopmost = () => modalStack[modalStack.length - 1] === token;
+    const isTopmost = () => modalStack.at(-1) === token;
 
     const onKey = (e: KeyboardEvent) => {
       // Nested modals all listen on window; only the top layer handles keys.
@@ -89,10 +89,10 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
         root.focus();
         return;
       }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
+      const [first] = focusables;
+      const last = focusables.at(-1);
       const active = document.activeElement as HTMLElement | null;
-      const insideDialog = !!active && root.contains(active);
+      const insideDialog = Boolean(active) && root.contains(active);
 
       if (e.shiftKey) {
         if (!insideDialog || active === first) {
@@ -119,7 +119,7 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
       const idx = modalStack.indexOf(token);
       if (idx !== -1) modalStack.splice(idx, 1);
       const active = document.activeElement;
-      const focusEscaped = active && active !== document.body && (!root || !root.contains(active));
+      const focusEscaped = active && active !== document.body && !root?.contains(active);
       if (!focusEscaped && previouslyFocused && document.contains(previouslyFocused)) {
         previouslyFocused.focus();
       }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { SearchIcon } from "@/components/ui/icons";
 
@@ -46,7 +46,7 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
     <tr>
       {Array.from({ length: colCount }, (_, i) => (
         <td key={i} aria-hidden="true" tabIndex={-1} className="px-6 py-4">
-          <div className={`bg-surface-sunken h-4 animate-pulse rounded ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length]}`} />
+          <div className={`bg-surface-sunken h-4 animate-pulse rounded ${SKELETON_WIDTHS[(rowIndex + i) % SKELETON_WIDTHS.length] ?? ""}`} />
         </td>
       ))}
     </tr>
@@ -56,9 +56,34 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
 export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage = "No items found.", loading = false, skeletonRows = 5, toolbar, footer, className = "mt-8" }: DataTableProps<T>) {
   const colCount = columns.length;
 
-  const lastRowCount = useRef(skeletonRows);
-  if (data.length > 0) lastRowCount.current = data.length;
-  const displaySkeletonRows = loading ? lastRowCount.current : 0;
+  // While loading, size the skeleton to the page already on screen (data is
+  // kept during re-fetches); fall back to the prop on the first load.
+  const displaySkeletonRows = loading ? data.length || skeletonRows : 0;
+
+  function tableBody() {
+    if (loading) {
+      return Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />);
+    }
+    if (data.length === 0) {
+      return (
+        <tr>
+          <td colSpan={colCount} className="text-body text-text-muted p-6">
+            {emptyMessage}
+          </td>
+        </tr>
+      );
+    }
+    return data.map((row) => (
+      <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
+        {columns.map((col, i) => (
+          // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
+          <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
+            {col.cell(row)}
+          </td>
+        ))}
+      </tr>
+    ));
+  }
 
   return (
     <div className={`rounded-card border-border bg-surface shadow-card overflow-clip border ${className}`}>
@@ -68,33 +93,14 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
           <thead className="bg-surface-muted">
             <tr>
               {columns.map((col, i) => (
+                // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
                 <th key={i} className={col.headerClassName ?? TH_DEFAULT}>
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-border bg-surface divide-y">
-            {loading ? (
-              Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />)
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={colCount} className="text-body text-text-muted p-6">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              data.map((row) => (
-                <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
-                  {columns.map((col, i) => (
-                    <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
-                      {col.cell(row)}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
+          <tbody className="divide-border bg-surface divide-y">{tableBody()}</tbody>
         </table>
       </div>
       {footer}
@@ -152,7 +158,9 @@ export function SearchBar({ value, onChange, placeholder = "Search..." }: { valu
         type="text"
         aria-label={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         className="rounded-input border-border-strong bg-surface text-body text-text-primary placeholder:text-text-disabled focus:border-primary-500 focus:ring-primary-500 w-full border py-1.5 pr-3 pl-9 focus:ring-1 focus:outline-none"
       />
@@ -186,7 +194,9 @@ export function FilterPills<V extends string>({ options, value, onChange }: { op
         <button
           key={opt.value}
           type="button"
-          onClick={() => onChange(opt.value)}
+          onClick={() => {
+            onChange(opt.value);
+          }}
           className={`rounded-pill px-3 py-1 text-[11px] font-medium transition-colors ${
             value === opt.value ? "bg-primary-100 text-primary-700 ring-primary-600/20 ring-1 ring-inset" : "bg-surface-sunken text-text-muted hover:bg-surface-muted"
           }`}
@@ -206,7 +216,9 @@ export function ToggleFilter({ label, checked, onChange }: { label: string; chec
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
+        onClick={() => {
+          onChange(!checked);
+        }}
         className={`rounded-pill focus-visible:ring-primary-500 relative inline-flex h-5 w-9 shrink-0 items-center transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
           checked ? "bg-primary-600" : "bg-border-strong"
         }`}

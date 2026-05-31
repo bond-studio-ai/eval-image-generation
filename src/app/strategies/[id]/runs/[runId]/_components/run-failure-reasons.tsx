@@ -2,7 +2,7 @@ import type { StepResult } from "./types";
 
 export function RunFailureReasons({ status, sorted }: { status: string; sorted: StepResult[] }) {
   if (status === "skipped") {
-    const reasons = sorted.flatMap((sr) => (sr.status === "skipped" && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }] : []));
+    const reasons = sorted.flatMap((sr) => (sr.status === "skipped" && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder ?? "?"}`, reason: sr.error }] : []));
     if (reasons.length === 0) return null;
     return (
       <div className="border-warning-200 bg-warning-50 mt-4 rounded-lg border p-4">
@@ -19,7 +19,7 @@ export function RunFailureReasons({ status, sorted }: { status: string; sorted: 
   }
 
   if (status === "failed") {
-    const reasons = sorted.flatMap((sr) => ((sr.status === "failed" || sr.status === "skipped") && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder}`, reason: sr.error }] : []));
+    const reasons = sorted.flatMap((sr) => ((sr.status === "failed" || sr.status === "skipped") && sr.error ? [{ step: sr.step?.name ?? `Step ${sr.step?.stepOrder ?? "?"}`, reason: sr.error }] : []));
     if (reasons.length === 0) return null;
     return (
       <div className="border-danger-200 bg-danger-50 mt-4 rounded-lg border p-4">

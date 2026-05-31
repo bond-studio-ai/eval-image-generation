@@ -3,32 +3,40 @@
  * Used by SSR pages to fetch data.
  */
 
+import type { z } from "zod";
+import { parseOrThrow } from "./api/parse";
+import { generationDetailSchema, promptVersionDetailSchema } from "./api/schemas";
 import { imageGenerationBase, imageGenerationV2Base } from "./env";
-import type { InputPresetDesignFields } from "./input-preset-design";
+import type { InputPresetDesignFields, InputPresetStats } from "./input-preset-design";
 
 export { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "./strategy-run-judge-results";
 
 const getBase = () => imageGenerationBase();
 const getV2Base = () => imageGenerationV2Base();
 
-async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getBase()}${path.startsWith("/") ? path : `/${path}`}`;
+const withLeadingSlash = (path: string): string => (path.startsWith("/") ? path : `/${path}`);
+
+/** Fetch `{ data }` from a service endpoint and return the unwrapped, still-unknown `data`. */
+async function fetchServiceData(base: string, path: string, init?: RequestInit): Promise<unknown> {
+  const url = `${base}${withLeadingSlash(path)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     throw new Error(`Service ${res.status}: ${url}`);
   }
-  const json = await res.json();
-  return json.data as T;
+  return ((await res.json()) as { data?: unknown }).data;
+}
+
+async function fetchService<T>(path: string, init?: RequestInit): Promise<T> {
+  return (await fetchServiceData(getBase(), path, init)) as T;
+}
+
+/** Like `fetchService`, but validates `json.data` against a zod schema. */
+async function fetchServiceParsed<S extends z.ZodType>(path: string, schema: S, init?: RequestInit): Promise<z.infer<S>> {
+  return parseOrThrow(schema, await fetchServiceData(getBase(), path, init), `service ${path}`);
 }
 
 async function fetchServiceV2<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${getV2Base()}${path.startsWith("/") ? path : `/${path}`}`;
-  const res = await fetch(url, { cache: "no-store", ...init });
-  if (!res.ok) {
-    throw new Error(`Service ${res.status}: ${url}`);
-  }
-  const json = await res.json();
-  return json.data as T;
+  return (await fetchServiceData(getV2Base(), path, init)) as T;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -183,6 +191,17 @@ export interface InputPresetDetailItem extends InputPresetDesignFields {
   createdAt: string;
 }
 
+/**
+ * Loose view over an input-preset payload that allows dynamic and snake_case
+ * key reads (usage stats, legacy date columns) without falling back to `any`.
+ */
+export type InputPresetWithStats = InputPresetDetailItem & {
+  created_at?: string;
+  deleted_at?: string;
+  stats?: InputPresetStats;
+  [key: string]: unknown;
+};
+
 export type ProviderModelUseCase = "IMAGE_GENERATION" | "PREVIEW_IMAGE_GENERATION" | "IMAGE_GENERATION_FALLBACK" | "JUDGING" | "SEGMENTATION" | "DEPTH_ANALYSIS";
 
 export interface ProviderModelCapability {
@@ -230,7 +249,8 @@ async function fetchProviderModelsV2(
   if (params.useCase) query.set("useCase", params.useCase);
   query.set("perPage", "200");
   const suffix = query.toString();
-  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${suffix ? `?${suffix}` : ""}`);
+  const queryString = suffix ? `?${suffix}` : "";
+  return fetchServiceV2<ProviderModelV2[]>(`/providers/models${queryString}`);
 }
 
 export async function fetchStrategyModelCatalog(): Promise<StrategyModelCatalog> {
@@ -257,7 +277,7 @@ export async function fetchPromptPreviewDollhouseSource(): Promise<PromptPreview
 }
 
 export async function fetchPromptVersionById(id: string) {
-  return fetchService<Record<string, unknown>>(`/prompt-versions/${id}`);
+  return fetchServiceParsed(`/prompt-versions/${id}`, promptVersionDetailSchema);
 }
 
 // ─── Strategies ──────────────────────────────────────────────────────────────
@@ -301,16 +321,17 @@ export async function fetchInputPresetById(id: string): Promise<InputPresetDetai
 // ─── Generations ─────────────────────────────────────────────────────────────
 
 export async function fetchGenerationById(id: string) {
-  return fetchService<Record<string, unknown>>(`/generations/${id}`);
+  return fetchServiceParsed(`/generations/${id}`, generationDetailSchema);
 }
 
 export async function fetchGenerations(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  const url = `/generations${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  const url = `/generations${suffix}`;
   const base = getBase();
   const res = await fetch(`${base}${url}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Service ${res.status}`);
-  const json = await res.json();
+  const json: unknown = await res.json();
   return json as { data: Record<string, unknown>[]; pagination: Record<string, unknown> };
 }
 
@@ -318,16 +339,18 @@ export async function fetchGenerations(params: Record<string, string>) {
 
 export async function fetchAnalyticsRatings(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
+  const suffix = qs ? `?${qs}` : "";
   return fetchService<{
     totalGenerations: number;
     ratedGenerations: number;
     distribution: { rating: string; count: number; percentage: number }[];
-  }>(`/analytics/ratings${qs ? `?${qs}` : ""}`);
+  }>(`/analytics/ratings${suffix}`);
 }
 
 export async function fetchAnalyticsStrategyPerformance(params: Record<string, string>) {
   const qs = new URLSearchParams(params).toString();
-  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(`/analytics/strategy-performance${qs ? `?${qs}` : ""}`);
+  const suffix = qs ? `?${qs}` : "";
+  return fetchService<{ rows: Record<string, unknown>[]; models: string[] }>(`/analytics/strategy-performance${suffix}`);
 }
 
 export interface ReliabilityData {

@@ -13,9 +13,9 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
   const selectedName = useMemo(() => promptVersions.find((pv) => pv.id === value)?.name || null, [promptVersions, value]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return promptVersions;
-    return promptVersions.filter((pv) => (pv.name ?? "").toLowerCase().includes(q) || (pv.systemPrompt ?? "").toLowerCase().includes(q) || (pv.userPrompt ?? "").toLowerCase().includes(q));
+    const query = search.toLowerCase().trim();
+    if (!query) return promptVersions;
+    return promptVersions.filter((pv) => (pv.name ?? "").toLowerCase().includes(query) || (pv.systemPrompt ?? "").toLowerCase().includes(query) || (pv.userPrompt ?? "").toLowerCase().includes(query));
   }, [promptVersions, search]);
 
   return (
@@ -23,7 +23,9 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
       <button
         type="button"
         id={id}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+        }}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
         <span className={selectedName ? "text-text-primary" : "text-text-disabled"}>{selectedName || "-- Select --"}</span>
@@ -47,7 +49,9 @@ export function PromptVersionSelector({ value, id, promptVersions, onChange }: {
                 ref={focusOnMount}
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
                 placeholder="Filter prompts..."
                 aria-label="Filter prompts"
                 className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded border px-2.5 py-1.5 focus:ring-1 focus:outline-none"

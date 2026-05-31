@@ -23,7 +23,16 @@ export function ImageWithSkeleton({ src, alt, className = "", wrapperClassName, 
   const content = (
     <>
       {!loaded && <div className="bg-border absolute inset-0 animate-pulse rounded-[inherit]" aria-hidden />}
-      <CdnImage src={src} alt={alt ?? ""} fill sizes={sizes} onLoad={() => setLoaded(true)} className={`object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"} ${className}`} />
+      <CdnImage
+        src={src}
+        alt={alt ?? ""}
+        fill
+        sizes={sizes}
+        onLoad={() => {
+          setLoaded(true);
+        }}
+        className={`object-contain transition-opacity ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
+      />
     </>
   );
 

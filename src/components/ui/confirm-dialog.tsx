@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, use, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./button";
 import { Modal } from "./modal";
 
@@ -16,6 +16,7 @@ export interface ConfirmOptions {
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 
 const ConfirmContext = createContext<ConfirmFn | null>(null);
+ConfirmContext.displayName = "ConfirmContext";
 
 interface ConfirmState extends ConfirmOptions {
   open: boolean;
@@ -71,12 +72,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const close = useCallback(
     (value: boolean) => {
       settlePending(value);
-      setState((s) => ({ ...s, open: false }));
+      setState((prev) => ({ ...prev, open: false }));
     },
     [settlePending]
   );
 
-  const cancel = useCallback(() => close(false), [close]);
+  const cancel = useCallback(() => {
+    close(false);
+  }, [close]);
 
   // Settle any still-pending resolver if the provider unmounts so callers
   // don't hang past the lifetime of the component tree.
@@ -96,10 +99,22 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           </h2>
           {state.description && <div className="text-body text-text-secondary mt-2">{state.description}</div>}
           <div className="mt-6 flex justify-end gap-2">
-            <Button ref={cancelButtonRef} variant="secondary" onClick={() => close(false)}>
+            <Button
+              ref={cancelButtonRef}
+              variant="secondary"
+              onClick={() => {
+                close(false);
+              }}
+            >
               {state.cancelLabel ?? "Cancel"}
             </Button>
-            <Button ref={confirmButtonRef} variant={state.tone === "danger" ? "danger" : "primary"} onClick={() => close(true)}>
+            <Button
+              ref={confirmButtonRef}
+              variant={state.tone === "danger" ? "danger" : "primary"}
+              onClick={() => {
+                close(true);
+              }}
+            >
               {state.confirmLabel ?? "Confirm"}
             </Button>
           </div>

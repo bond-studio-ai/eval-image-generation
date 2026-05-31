@@ -2,10 +2,16 @@ import { CdnImage } from "@/components/cdn-image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/components/ui/cn";
 import { CheckCircleIcon } from "@/components/ui/icons";
-import { SOURCE_LABELS, THUMB, type RunListItem } from "./run-picker-types";
+import { type RunListItem, SOURCE_LABELS, THUMB } from "./run-picker-types";
+
+function statusToTone(status: string) {
+  if (status === "completed") return "success" as const;
+  if (status === "failed") return "danger" as const;
+  return "neutral" as const;
+}
 
 export function RunPickerCard({ run, isSelected, onSelect }: { run: RunListItem; isSelected: boolean; onSelect: () => void }) {
-  const statusTone = run.status === "completed" ? "success" : run.status === "failed" ? "danger" : "neutral";
+  const statusTone = statusToTone(run.status);
   return (
     <button
       type="button"

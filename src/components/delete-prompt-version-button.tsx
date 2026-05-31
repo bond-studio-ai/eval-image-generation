@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon, TrashIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { errorEnvelopeSchema } from "@/lib/api/schemas";
 
 interface DeletePromptVersionButtonProps {
   id: string;
@@ -33,13 +35,13 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
       }
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error?.message || "Failed to delete");
+        const data: unknown = await res.json();
+        throw new Error(parseOrFallback(errorEnvelopeSchema, data, {}, "prompt version delete").error?.message || "Failed to delete");
       }
 
       router.push("/prompt-versions");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setDeleting(false);
     }
   }
@@ -48,7 +50,9 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
     <>
       <button
         type="button"
-        onClick={() => setShowConfirm(true)}
+        onClick={() => {
+          setShowConfirm(true);
+        }}
         className="border-danger-300 bg-surface text-danger-700 hover:bg-danger-50 text-body inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium shadow-xs transition-colors"
       >
         <TrashIcon className="size-4" />
@@ -57,7 +61,14 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <Modal onClose={() => !deleting && setShowConfirm(false)} labelledById="delete-prompt-version-title" backdropClassName="bg-overlay/50" className="bg-surface w-full max-w-md rounded-xl p-6 shadow-xl">
+        <Modal
+          onClose={() => {
+            if (!deleting) setShowConfirm(false);
+          }}
+          labelledById="delete-prompt-version-title"
+          backdropClassName="bg-overlay/50"
+          className="bg-surface w-full max-w-md rounded-xl p-6 shadow-xl"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-danger-100 flex size-10 shrink-0 items-center justify-center rounded-full">
               <AlertTriangleIcon className="text-danger-600 size-5" />
@@ -75,7 +86,13 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
           {error && <div className="bg-danger-50 text-danger-700 text-body mt-4 rounded-lg p-3">{error}</div>}
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowConfirm(false)} disabled={deleting}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowConfirm(false);
+              }}
+              disabled={deleting}
+            >
               Cancel
             </Button>
             <Button variant="danger" onClick={handleDelete} disabled={deleting} loading={deleting}>

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
-import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, type InputPresetStats } from "@/lib/input-preset-design";
-import { fetchInputPresetById } from "@/lib/service-client";
+import { catchToNull } from "@/lib/async-utils";
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from "@/lib/input-preset-design";
+import { fetchInputPresetById, type InputPresetWithStats } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
 
 export const metadata: Metadata = {
@@ -22,12 +23,11 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const force = query["force"] === "true";
 
-  const presetData = await fetchInputPresetById(id).catch(() => null);
+  const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
-  const preset = presetData as any;
-  const stats = preset.stats as InputPresetStats | undefined;
-  const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
+  const preset = presetData as InputPresetWithStats;
+  const generationCount = preset.stats?.generationCount ?? preset.stats?.generation_count ?? 0;
 
   if (generationCount > 0 && !force) {
     return (
@@ -36,7 +36,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
         <div className="border-warning-200 bg-warning-50 mt-6 rounded-lg border p-5">
           <p className="text-warning-800 text-body">
             This preset has been used in {generationCount} generation
-            {generationCount !== 1 ? "s" : ""}. To change it, clone the preset first, then edit the copy.
+            {generationCount === 1 ? "" : "s"}. To change it, clone the preset first, then edit the copy.
           </p>
           <div className="mt-4">
             <LinkButton href={`/input-presets/${id}`}>Back to preset (use Clone there)</LinkButton>
@@ -51,7 +51,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
     return value === undefined || value === null || value === "" ? [] : [[key, value] as const];
   });
   const designSettings = designSettingsEntries.length > 0 ? Object.fromEntries(designSettingsEntries) : null;
-  const storedImages = getInputPresetStoredImages(preset as Record<string, unknown>);
+  const storedImages = getInputPresetStoredImages(preset);
   const arbitraryImagesBySlot = Object.fromEntries(storedImages.flatMap((image) => (image.isArbitrary ? [[image.slot, image.url]] : [])));
   const savedImageUrlsBySlot = Object.fromEntries(storedImages.map((image) => [image.slot, image.url]));
 

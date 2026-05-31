@@ -5,7 +5,7 @@ import type { PromptVersionListItem } from "@/lib/types";
 import { CandidatePicker } from "./candidate-picker";
 import { PromptVersionSelector } from "./prompt-version-selector";
 import { SearchableSelect } from "./searchable-select";
-import { JUDGE_TYPES, nextUid, type ModelOption, type StepData } from "./types";
+import { JUDGE_TYPES, type ModelOption, nextUid, type StepData } from "./types";
 
 export function JudgeStepCard({
   step,
@@ -29,9 +29,21 @@ export function JudgeStepCard({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="bg-warning-100 text-warning-700 text-caption inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 font-semibold">Step {idx + 1} &mdash; Judge</span>
-          <CandidatePicker value={step.number_of_images ?? 4} onChange={(n) => updateStep(idx, { number_of_images: n })} />
+          <CandidatePicker
+            value={step.number_of_images ?? 4}
+            onChange={(n) => {
+              updateStep(idx, { number_of_images: n });
+            }}
+          />
         </div>
-        <button type="button" onClick={() => removeStep(idx)} aria-label="Remove step" className="text-text-muted hover:bg-danger-50 hover:text-danger-600 rounded p-1">
+        <button
+          type="button"
+          onClick={() => {
+            removeStep(idx);
+          }}
+          aria-label="Remove step"
+          className="text-text-muted hover:bg-danger-50 hover:text-danger-600 rounded p-1"
+        >
           <TrashIcon className="size-4" />
         </button>
       </div>
@@ -55,7 +67,7 @@ export function JudgeStepCard({
                       value={jt.value}
                       checked={judge.judge_type === jt.value}
                       onChange={() => {
-                        const newJudges = [...(step.judges ?? [])];
+                        const newJudges = Array.from(step.judges ?? []);
                         const existing = newJudges[jIdx];
                         if (!existing) return;
                         newJudges[jIdx] = { ...existing, judge_type: jt.value };
@@ -91,7 +103,7 @@ export function JudgeStepCard({
                 aria-label="Judge name"
                 value={judge.name ?? ""}
                 onChange={(e) => {
-                  const newJudges = [...(step.judges ?? [])];
+                  const newJudges = Array.from(step.judges ?? []);
                   const existing = newJudges[jIdx];
                   if (!existing) return;
                   newJudges[jIdx] = { ...existing, name: e.target.value };
@@ -110,11 +122,11 @@ export function JudgeStepCard({
                   id={`judge-model-${idx}-${jIdx}`}
                   value={judge.judge_model}
                   options={judgeModels}
-                  onChange={(v) => {
-                    const newJudges = [...(step.judges ?? [])];
+                  onChange={(value) => {
+                    const newJudges = Array.from(step.judges ?? []);
                     const existing = newJudges[jIdx];
                     if (!existing) return;
-                    newJudges[jIdx] = { ...existing, judge_model: v };
+                    newJudges[jIdx] = { ...existing, judge_model: value };
                     updateStep(idx, { judges: newJudges });
                   }}
                 />
@@ -128,7 +140,7 @@ export function JudgeStepCard({
                   value={judge.judge_prompt_version_id}
                   promptVersions={promptVersions}
                   onChange={(id) => {
-                    const newJudges = [...(step.judges ?? [])];
+                    const newJudges = Array.from(step.judges ?? []);
                     const existing = newJudges[jIdx];
                     if (!existing) return;
                     newJudges[jIdx] = { ...existing, judge_prompt_version_id: id };
@@ -153,7 +165,7 @@ export function JudgeStepCard({
                 max={100}
                 value={judge.tolerance_threshold}
                 onChange={(e) => {
-                  const newJudges = [...(step.judges ?? [])];
+                  const newJudges = Array.from(step.judges ?? []);
                   const existing = newJudges[jIdx];
                   if (!existing) return;
                   newJudges[jIdx] = {

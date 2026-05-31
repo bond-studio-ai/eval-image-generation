@@ -4,11 +4,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { ChevronsUpDownIcon, XIcon } from "@/components/ui/icons";
 import { serviceUrl } from "@/lib/api-base";
+import { errorMessageOr } from "@/lib/error-message";
 
 export interface LayoutPresetOption {
   id: string;
   name: string;
   rawName?: string;
+}
+
+function layoutSelectLabel(selectedOption: LayoutPresetOption | null, hasCurrentValue: boolean, value: string, loading: boolean): string {
+  const name = selectedOption?.name;
+  if (name != null) return name;
+  if (!hasCurrentValue && value) return `Unknown layout (${value})`;
+  if (loading) return "Loading layouts...";
+  return "Select a layout";
 }
 
 /**
@@ -33,7 +42,7 @@ export function useLayoutPresets() {
     }
   });
 
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Failed to fetch layout presets") : null;
+  const error = isError ? errorMessageOr(queryError, "Failed to fetch layout presets") : null;
 
   return { options, loading, error };
 }
@@ -61,13 +70,13 @@ export function LayoutPresetSelect({ value, onChange }: { value: string; onChang
       <span className="text-text-secondary text-caption mb-2 block font-medium tracking-wide uppercase">Layout</span>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+        }}
         disabled={loading}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface disabled:bg-surface-muted disabled:text-text-disabled hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>
-          {selectedOption?.name ?? (!hasCurrentValue && value ? `Unknown layout (${value})` : loading ? "Loading layouts..." : "Select a layout")}
-        </span>
+        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>{layoutSelectLabel(selectedOption, hasCurrentValue, value, loading)}</span>
         <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
       <p className="text-text-muted text-caption mt-2">Saved instead of a dollhouse upload. Runtime will resolve the room from this preset.</p>
@@ -107,7 +116,9 @@ export function LayoutPresetSelect({ value, onChange }: { value: string; onChang
                 type="text"
                 aria-label="Search layouts"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
                 placeholder="Search layouts..."
                 className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded-md border px-3 py-2 focus:ring-1 focus:outline-none"
               />

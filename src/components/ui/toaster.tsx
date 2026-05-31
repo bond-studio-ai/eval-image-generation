@@ -46,5 +46,6 @@ export const toast = {
   warning: (message: string, opts?: { description?: string }) => sonnerToast.warning(message, opts),
   info: (message: string, opts?: { description?: string }) => sonnerToast.info(message, opts),
   message: (message: string, opts?: { description?: string }) => sonnerToast.message(message, opts),
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- keeps the exported type nameable (avoids TS4023 on declaration emit)
   promise: sonnerToast.promise.bind(sonnerToast) as typeof sonnerToast.promise
 };

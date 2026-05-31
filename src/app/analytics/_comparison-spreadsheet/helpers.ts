@@ -1,3 +1,4 @@
+import { coerceString } from "@/lib/coerce-string";
 import type { CategoryRate, IssueItem, StepPerformanceRow, SummaryData } from "./types";
 
 export const SLICE_BG_COLORS = [
@@ -11,9 +12,9 @@ export const SLICE_BG_COLORS = [
 
 export function formatCategoryName(name: string): string {
   return name
-    .replace(/([A-Z])/g, " $1")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replaceAll(/([A-Z])/g, " $1")
+    .replaceAll("_", " ")
+    .replaceAll(/\b\w/g, (char) => char.toUpperCase())
     .trim();
 }
 
@@ -37,7 +38,7 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   return raw.map((entry) => {
     const row = entry as RawCategoryRow;
     return {
-      name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
+      name: coerceString(row.name) ?? "",
       total: Number(row.total) || 0,
       success: Number(row.success) || 0,
       failure: Number(row.failure) || 0,
@@ -47,7 +48,7 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
         ? row.issues.flatMap((issue) => {
             const rawIssue = issue as RawIssueItem;
             const mapped = {
-              issue: String(rawIssue.issue ?? ""),
+              issue: coerceString(rawIssue.issue) ?? "",
               count: Number(rawIssue.count ?? 0)
             };
             return mapped.issue ? [mapped] : [];
@@ -62,7 +63,7 @@ export function normalizeIssueItems(raw: unknown): IssueItem[] {
   return raw.flatMap((entry) => {
     const row = entry as RawIssueItem;
     const mapped = {
-      issue: String(row.issue ?? ""),
+      issue: coerceString(row.issue) ?? "",
       count: Number(row.count ?? 0)
     };
     return mapped.issue ? [mapped] : [];
@@ -86,9 +87,9 @@ export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[]
   return raw
     .flatMap((entry) => {
       const row = entry as RawStepPerformanceRow;
-      const numberOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+      const numberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
       const mapped = {
-        stepId: String(row.stepId ?? ""),
+        stepId: coerceString(row.stepId) ?? "",
         stepOrder: Number(row.stepOrder ?? 0),
         name: typeof row.name === "string" ? row.name : null,
         type: typeof row.type === "string" ? row.type : "generation",
@@ -103,18 +104,24 @@ export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[]
     .sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+/** Below this many seconds we show extra decimal precision. */
+const FULL_PRECISION_BELOW = 10;
+const PRECISE_DECIMALS = 2;
+
 export function formatExecMs(ms: number | null): string {
   if (ms === null || Number.isNaN(ms)) return "-";
-  if (ms < 1000) return `${ms} ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 2 : 1)} s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds - minutes * 60;
-  return `${minutes}m ${remainder.toFixed(remainder < 10 ? 1 : 0)}s`;
+  if (ms < MS_PER_SECOND) return `${ms} ms`;
+  const seconds = ms / MS_PER_SECOND;
+  if (seconds < SECONDS_PER_MINUTE) return `${seconds.toFixed(seconds < FULL_PRECISION_BELOW ? PRECISE_DECIMALS : 1)} s`;
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  const remainder = seconds - minutes * SECONDS_PER_MINUTE;
+  return `${minutes}m ${remainder.toFixed(remainder < FULL_PRECISION_BELOW ? 1 : 0)}s`;
 }
 
 export function defaultStepLabel(row: StepPerformanceRow): string {
-  if (row.name && row.name.trim()) return row.name;
+  if (row.name?.trim()) return row.name;
   if (row.type === "judge") return "Judge";
   return `Step ${row.stepOrder}`;
 }
@@ -130,13 +137,13 @@ interface RawSummary {
 
 export function normalizeSummary(raw: unknown): SummaryData | null {
   if (!raw || typeof raw !== "object") return null;
-  const s = raw as RawSummary;
+  const summary = raw as RawSummary;
   return {
-    sceneRatedCount: Number(s.sceneRatedCount) || 0,
-    sceneGoodPct: Number(s.sceneGoodPct) || 0,
-    sceneFailedPct: Number(s.sceneFailedPct) || 0,
-    productRatedCount: Number(s.productRatedCount) || 0,
-    productGoodPct: Number(s.productGoodPct) || 0,
-    productFailedPct: Number(s.productFailedPct) || 0
+    sceneRatedCount: Number(summary.sceneRatedCount) || 0,
+    sceneGoodPct: Number(summary.sceneGoodPct) || 0,
+    sceneFailedPct: Number(summary.sceneFailedPct) || 0,
+    productRatedCount: Number(summary.productRatedCount) || 0,
+    productGoodPct: Number(summary.productGoodPct) || 0,
+    productFailedPct: Number(summary.productFailedPct) || 0
   };
 }

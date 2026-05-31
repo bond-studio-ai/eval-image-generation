@@ -59,9 +59,9 @@ const PLUGIN_RENDERERS: readonly PluginRenderer[] = [
  * gracefully (the shipped `SegmentationDriftRenderer` and
  * `DepthDriftRenderer` both render an unavailable card in that case).
  */
-export function pluginEntriesFor(reviewAssessment: ReviewAssessment | null | undefined): Array<{ renderer: PluginRenderer; assessment: unknown }> {
+export function pluginEntriesFor(reviewAssessment: ReviewAssessment | null | undefined): { renderer: PluginRenderer; assessment: unknown }[] {
   if (!reviewAssessment?.plugins) return [];
-  const entries: Array<{ renderer: PluginRenderer; assessment: unknown }> = [];
+  const entries: { renderer: PluginRenderer; assessment: unknown }[] = [];
   for (const renderer of PLUGIN_RENDERERS) {
     if (!(renderer.id in reviewAssessment.plugins)) continue;
     const assessment = reviewAssessment.plugins[renderer.id];

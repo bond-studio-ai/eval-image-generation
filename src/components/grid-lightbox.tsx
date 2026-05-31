@@ -1,7 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RatingForm } from "@/app/generations/[id]/rating-form";
 import { CdnImage } from "@/components/cdn-image";
 import { ComparisonSlider } from "@/components/comparison-slider";
@@ -9,6 +10,8 @@ import { ImageEvaluationForm } from "@/components/image-evaluation-form";
 import { XIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { dataEnvelope, generationDetailSchema } from "@/lib/api/schemas";
 import { getActiveProductCategories, getProductImagesFromInput } from "@/lib/generation-utils";
 
 interface GridLightboxProps {
@@ -35,10 +38,21 @@ interface GenerationData {
 }
 
 export function GridLightbox({ src, runHref, generationId, onRated, onClose }: GridLightboxProps) {
-  // Tag fetched data with the id it belongs to so a `generationId` change
-  // makes stale data disappear by derivation — no effect needed to clear it.
-  const [fetched, setFetched] = useState<{ id: string; data: GenerationData } | null>(null);
-  const generation = generationId && fetched?.id === generationId ? fetched.data : null;
+  // Keyed on `generationId` so switching results loads fresh data and a stale
+  // payload disappears by derivation — no effect needed to clear it.
+  const { data: generation = null, refetch } = useQuery({
+    queryKey: ["generation", generationId],
+    queryFn: async ({ signal }): Promise<GenerationData> => {
+      const { data } = await fetchJson(serviceUrl(`generations/${generationId ?? ""}`), dataEnvelope(generationDetailSchema), { signal });
+      return {
+        sceneAccuracyRating: data.sceneAccuracyRating ?? null,
+        productAccuracyRating: data.productAccuracyRating ?? null,
+        results: data.results,
+        input: data.input ?? null
+      };
+    },
+    enabled: Boolean(generationId)
+  });
   /** Which scene to compare (0/1/2 = Dollhouse/Real Photo/Mood Board). null = output only. */
   const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
   /** 0–100: position of the comparison bar (left % shows scene, right % shows output). */
@@ -46,38 +60,10 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   /** When set, show a simple overlay with the full image. */
   const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
 
-  const fetchGeneration = useCallback(async (id: string) => {
-    try {
-      const res = await fetch(serviceUrl(`generations/${id}`));
-      if (!res.ok) return;
-      const json = await res.json();
-      const data = json.data ?? json;
-      const results = Array.isArray(data.results) ? data.results : [];
-      setFetched({
-        id,
-        data: {
-          sceneAccuracyRating: data.sceneAccuracyRating ?? null,
-          productAccuracyRating: data.productAccuracyRating ?? null,
-          results: results.map((r: { id: string; url?: string }) => ({
-            id: r.id,
-            url: r.url ?? ""
-          })),
-          input: data.input ?? null
-        }
-      });
-    } catch {
-      setFetched(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (generationId) fetchGeneration(generationId);
-  }, [generationId, fetchGeneration]);
-
   const handleRated = useCallback(() => {
-    if (generationId) fetchGeneration(generationId);
+    void refetch();
     onRated?.();
-  }, [generationId, fetchGeneration, onRated]);
+  }, [refetch, onRated]);
 
   const productCategories = useMemo(() => getActiveProductCategories(generation?.input ?? null), [generation?.input]);
 
@@ -97,16 +83,16 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   const outputUrl = useMemo(() => {
     const list = generation?.results ?? [];
     if (list.length === 0) return src;
-    const idx = list.findIndex((r) => r.url === src);
-    return idx >= 0 ? (list[idx]?.url ?? src) : (list[0]?.url ?? src);
+    const idx = list.findIndex((result) => result.url === src);
+    return idx === -1 ? (list[0]?.url ?? src) : (list[idx]?.url ?? src);
   }, [generation?.results, src]);
 
   /** Result ID for the evaluation form: always the output that was opened (matches src). */
   const initialResultId = useMemo(() => {
     if (!generation?.results?.length) return null;
-    const idx = generation.results.findIndex((r) => r.url === src);
-    const r = idx >= 0 ? generation.results[idx] : generation.results[0];
-    return r?.id ?? null;
+    const idx = generation.results.findIndex((result) => result.url === src);
+    const result = idx === -1 ? generation.results[0] : generation.results[idx];
+    return result?.id ?? null;
   }, [generation?.results, src]);
 
   return (
@@ -250,7 +236,9 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
 
       {expandedImage && (
         <Modal
-          onClose={() => setExpandedImage(null)}
+          onClose={() => {
+            setExpandedImage(null);
+          }}
           ariaLabel="Expanded image"
           backdropClassName="bg-overlay/80"
           containerClassName="z-[10000] p-6"
@@ -260,7 +248,14 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           <div className="from-overlay/60 absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b to-transparent px-3 py-2">
             <span className="text-text-inverse text-body font-medium">{expandedImage.alt}</span>
           </div>
-          <button type="button" onClick={() => setExpandedImage(null)} className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5" aria-label="Close">
+          <button
+            type="button"
+            onClick={() => {
+              setExpandedImage(null);
+            }}
+            className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5"
+            aria-label="Close"
+          >
             <XIcon className="size-5" />
           </button>
         </Modal>

@@ -31,7 +31,9 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >
@@ -70,8 +72,7 @@ export function DepthDriftRenderer({ assessment }: PluginRendererProps) {
 }
 
 function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
-  const metrics = depth.metrics;
-  const alignment = depth.alignment;
+  const { metrics, alignment, validPixels, width, height } = depth;
   return (
     <div className="border-border bg-surface rounded-md border px-3 py-2.5">
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
@@ -81,10 +82,10 @@ function DepthMetricsCard({ depth }: { depth: DepthAssessment }) {
         <Metric label="Spearman" value={formatNumber(metrics?.spearman, 3)} hint="Rank correlation; alignment-free." />
       </dl>
       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] sm:grid-cols-4">
-        <Metric label="Valid pixels" value={formatInt(depth.validPixels)} hint="Pixels valid in both depth maps." />
+        <Metric label="Valid pixels" value={formatInt(validPixels)} hint="Pixels valid in both depth maps." />
         <Metric label="Scale" value={formatNumber(alignment?.scale, 3)} hint="Affine fit scale (predicted → truth)." />
         <Metric label="Shift" value={formatNumber(alignment?.shift, 3)} hint="Affine fit shift (predicted → truth)." />
-        <Metric label="Resolution" value={`${depth.width}×${depth.height}`} hint="Dollhouse EXR resolution; metrics computed in this grid." />
+        <Metric label="Resolution" value={`${width}×${height}`} hint="Dollhouse EXR resolution; metrics computed in this grid." />
       </dl>
     </div>
   );
@@ -111,26 +112,28 @@ function DepthThumbnails({ predictedUrl, dollhouseUrl }: { predictedUrl?: string
 }
 
 function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
+  // EXR thumbnails are .exr files which the browser can't render directly —
+  // only the predicted PNG actually loads. When the URL points at an EXR we
+  // show an external link instead. Either way the URL is a stable link
+  // reviewers can copy.
+  const isExr = !!url && /\.exr(?:\?|$)/i.test(url);
+
+  function preview() {
+    if (!url) return <span className="text-text-disabled text-[11px]">No preview</span>;
+    if (isExr) {
+      return (
+        <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
+          EXR (open externally)
+        </a>
+      );
+    }
+    return <CdnImage src={url} alt={label} fill sizes="(max-width:768px) 50vw, 320px" className="object-contain" />;
+  }
+
   return (
     <figure className="border-border bg-surface-muted overflow-hidden rounded-md border">
       <figcaption className="border-border bg-surface-sunken text-text-secondary border-b px-2 py-1 text-[10px] font-medium tracking-wide uppercase">{label}</figcaption>
-      <div className="bg-surface-muted relative flex aspect-[4/3] items-center justify-center">
-        {url ? (
-          // EXR thumbnails are .exr files which the browser can't render
-          // directly — only the predicted PNG actually loads. The dollhouse
-          // tile falls back to a "no preview" hint when the URL points at
-          // an EXR. Either way the URL is a stable link reviewers can copy.
-          /\.exr(\?|$)/i.test(url) ? (
-            <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
-              EXR (open externally)
-            </a>
-          ) : (
-            <CdnImage src={url} alt={label} fill sizes="(max-width:768px) 50vw, 320px" className="object-contain" />
-          )
-        ) : (
-          <span className="text-text-disabled text-[11px]">No preview</span>
-        )}
-      </div>
+      <div className="bg-surface-muted relative flex aspect-[4/3] items-center justify-center">{preview()}</div>
     </figure>
   );
 }

@@ -1,12 +1,12 @@
 import {
-  validateUnitySlimDesign,
   type CreateDollhouseRenderBody,
   type DollhouseCameraFrame,
   type DollhouseImageConfig,
   type DollhouseRenderConfig,
   type DollhouseRenderMode,
   type DollhouseSsmParams,
-  type UnitySlimDesignMaterials
+  type UnitySlimDesignMaterials,
+  validateUnitySlimDesign
 } from "@/lib/dollhouse-renders";
 import type { SsmParamsState } from "./ssm-params-editor";
 import type { StyleOverrideRow } from "./style-overrides-editor";
@@ -62,14 +62,17 @@ export const DEFAULT_SSM_PARAMS: SsmParamsState = {
   uploadBucket: ""
 };
 
+const DEFAULT_RENDER_WIDTH = 1920;
+const DEFAULT_RENDER_HEIGHT = 1440;
+
 export function buildImageConfig(state: ImageConfigState): DollhouseImageConfig {
   const width = Number.parseInt(state.width, 10);
   const height = Number.parseInt(state.height, 10);
   const ssm = state.superSamplingMultiplier ? Number.parseInt(state.superSamplingMultiplier, 10) : null;
   return {
     format: state.format,
-    width: Number.isFinite(width) && width > 0 ? width : 1920,
-    height: Number.isFinite(height) && height > 0 ? height : 1440,
+    width: Number.isFinite(width) && width > 0 ? width : DEFAULT_RENDER_WIDTH,
+    height: Number.isFinite(height) && height > 0 ? height : DEFAULT_RENDER_HEIGHT,
     ...(ssm !== null && Number.isFinite(ssm) && ssm > 0 ? { superSamplingMultiplier: ssm } : {})
   };
 }
@@ -83,8 +86,8 @@ function buildRenderConfig(state: RenderConfigState): DollhouseRenderConfig | un
     config.advancedSegmentation = true;
   }
   if (state.overrideCameraHeight) {
-    const v = Number.parseFloat(state.overrideCameraHeight);
-    if (Number.isFinite(v)) config.overrideCameraHeight = v;
+    const value = Number.parseFloat(state.overrideCameraHeight);
+    if (Number.isFinite(value)) config.overrideCameraHeight = value;
   }
   return Object.keys(config).length > 0 ? config : undefined;
 }
@@ -127,8 +130,8 @@ function parseJsonObject(raw: string): {
       return { value: null, error: "Expected a JSON object." };
     }
     return { value: parsed as Record<string, unknown>, error: null };
-  } catch (err) {
-    return { value: null, error: err instanceof Error ? err.message : "Invalid JSON." };
+  } catch (error) {
+    return { value: null, error: error instanceof Error ? error.message : "Invalid JSON." };
   }
 }
 

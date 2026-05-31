@@ -35,7 +35,7 @@ function EllipsisJump({ totalPages, onPageChange, className }: { totalPages: num
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
   const submit = () => {
-    const target = parseInt(value, 10);
+    const target = Number.parseInt(value, 10);
     if (target >= 1 && target <= totalPages) onPageChange(target);
     setEditing(false);
     setValue("");
@@ -47,7 +47,9 @@ function EllipsisJump({ totalPages, onPageChange, className }: { totalPages: num
         ref={focusOnMount}
         aria-label="Jump to page"
         value={value}
-        onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
+        onChange={(e) => {
+          setValue(e.target.value.replaceAll(/\D/g, ""));
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter") submit();
           if (e.key === "Escape") {
@@ -66,7 +68,14 @@ function EllipsisJump({ totalPages, onPageChange, className }: { totalPages: num
   }
 
   return (
-    <button type="button" onClick={() => setEditing(true)} title="Jump to page" className={`${className} text-text-disabled hover:text-text-secondary`}>
+    <button
+      type="button"
+      onClick={() => {
+        setEditing(true);
+      }}
+      title="Jump to page"
+      className={`${className} text-text-disabled hover:text-text-secondary`}
+    >
       &hellip;
     </button>
   );
@@ -91,25 +100,29 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
         <button
           type="button"
           aria-label="Previous page"
-          onClick={() => onPageChange(page - 1)}
+          onClick={() => {
+            onPageChange(page - 1);
+          }}
           disabled={page <= 1}
           className={`${BASE_BTN} text-text-secondary hover:bg-surface-muted rounded-l-md disabled:cursor-not-allowed disabled:opacity-50`}
         >
           <ChevronLeftIcon className="size-5" />
         </button>
 
-        {pages.map((p) =>
-          typeof p === "string" ? (
-            <EllipsisJump key={p} totalPages={totalPages} onPageChange={onPageChange} className={`${BASE_BTN} min-w-[2.25rem] justify-center`} />
+        {pages.map((pageNum) =>
+          typeof pageNum === "string" ? (
+            <EllipsisJump key={pageNum} totalPages={totalPages} onPageChange={onPageChange} className={`${BASE_BTN} min-w-[2.25rem] justify-center`} />
           ) : (
             <button
-              key={p}
+              key={pageNum}
               type="button"
-              onClick={() => onPageChange(p)}
-              disabled={p === page}
-              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${p === page ? "bg-primary-50 text-primary-600 ring-primary-500 z-10" : "text-text-secondary hover:bg-surface-muted"}`}
+              onClick={() => {
+                onPageChange(pageNum);
+              }}
+              disabled={pageNum === page}
+              className={`${BASE_BTN} min-w-[2.25rem] justify-center ${pageNum === page ? "bg-primary-50 text-primary-600 ring-primary-500 z-10" : "text-text-secondary hover:bg-surface-muted"}`}
             >
-              {p}
+              {pageNum}
             </button>
           )
         )}
@@ -117,7 +130,9 @@ export function Pagination({ page, totalPages, total, onPageChange, loading }: P
         <button
           type="button"
           aria-label="Next page"
-          onClick={() => onPageChange(page + 1)}
+          onClick={() => {
+            onPageChange(page + 1);
+          }}
           disabled={page >= totalPages}
           className={`${BASE_BTN} text-text-secondary hover:bg-surface-muted rounded-r-md disabled:cursor-not-allowed disabled:opacity-50`}
         >

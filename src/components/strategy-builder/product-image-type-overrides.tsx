@@ -33,7 +33,13 @@ export function ProductImageTypeOverrides({ value, onChange }: { value: Record<s
 
   return (
     <div className="border-border bg-surface-muted mt-3 rounded-lg border p-4">
-      <button type="button" onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between text-left">
+      <button
+        type="button"
+        onClick={() => {
+          setExpanded(!expanded);
+        }}
+        className="flex w-full items-center justify-between text-left"
+      >
         <span className="text-text-secondary text-caption font-medium">
           Product Image Types
           {nonDefaultCount > 0 && <span className="bg-primary-50 text-primary-700 ring-primary-200 ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset">{nonDefaultCount} non-default</span>}
@@ -44,14 +50,16 @@ export function ProductImageTypeOverrides({ value, onChange }: { value: Record<s
         <div className="mt-3">
           <div className="mb-3 flex items-center gap-2">
             <span className="text-text-muted text-[11px] font-medium">Set all:</span>
-            {IMAGE_TYPE_OPTIONS.map((o) => (
+            {IMAGE_TYPE_OPTIONS.map((option) => (
               <button
-                key={o.value}
+                key={option.value}
                 type="button"
-                onClick={() => setAll(o.value)}
+                onClick={() => {
+                  setAll(option.value);
+                }}
                 className="border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-muted rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
               >
-                {o.label}
+                {option.label}
               </button>
             ))}
           </div>
@@ -65,8 +73,15 @@ export function ProductImageTypeOverrides({ value, onChange }: { value: Record<s
                     {categoryLabel(cat)}
                   </span>
                   <div className="flex shrink-0 gap-1">
-                    {IMAGE_TYPE_OPTIONS.map((o) => (
-                      <ImageTypePill key={o.value} active={current === o.value} label={o.label} onClick={() => setCategory(cat, o.value)} />
+                    {IMAGE_TYPE_OPTIONS.map((option) => (
+                      <ImageTypePill
+                        key={option.value}
+                        active={current === option.value}
+                        label={option.label}
+                        onClick={() => {
+                          setCategory(cat, option.value);
+                        }}
+                      />
                     ))}
                   </div>
                 </div>

@@ -12,7 +12,7 @@ export interface RunListItem {
   judgeScore: number | null;
 }
 
-export type AuditRunGroup = {
+export interface AuditRunGroup {
   id: string;
   batchRunId: string | null;
   groupId: string | null;
@@ -20,7 +20,7 @@ export type AuditRunGroup = {
   createdAt: string;
   strategyName: string | null;
   source: string | null;
-};
+}
 
 export const SOURCE_LABELS: Record<string, string> = {
   preset: "Preset",

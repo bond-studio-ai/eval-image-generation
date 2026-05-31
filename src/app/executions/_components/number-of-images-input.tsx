@@ -43,7 +43,7 @@ export function NumberOfImagesInput({ value, onChange }: { value: number | null;
           type="button"
           onClick={() => {
             setCustomImages(true);
-            if (isDefault || [1, 2, 4, 8].includes(value!)) onChange(3);
+            if (isDefault || [1, 2, 4, 8].includes(value)) onChange(3);
           }}
           className={`text-body flex h-8 items-center justify-center rounded-lg border px-2.5 font-medium transition-all ${customImages ? activeCls : inactiveCls}`}
         >
@@ -53,7 +53,9 @@ export function NumberOfImagesInput({ value, onChange }: { value: number | null;
           <div className="border-border-strong bg-surface inline-flex h-8 items-center rounded-lg border shadow-sm">
             <button
               type="button"
-              onClick={() => onChange(Math.max(1, (value ?? 1) - 1))}
+              onClick={() => {
+                onChange(Math.max(1, (value ?? 1) - 1));
+              }}
               disabled={(value ?? 1) <= 1}
               aria-label="Decrease image count"
               className="border-border-strong text-text-muted hover:bg-surface-sunken disabled:hover:bg-surface flex size-8 items-center justify-center rounded-l-lg border-r disabled:opacity-30"
@@ -67,12 +69,16 @@ export function NumberOfImagesInput({ value, onChange }: { value: number | null;
               max={100}
               aria-label="Image count"
               value={value ?? 1}
-              onChange={(e) => onChange(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
+              onChange={(e) => {
+                onChange(Math.max(1, Math.min(100, Number.parseInt(e.target.value, 10) || 1)));
+              }}
               className="text-text-primary text-body h-8 w-12 [appearance:textfield] border-none bg-transparent text-center font-semibold focus:ring-0 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
             <button
               type="button"
-              onClick={() => onChange(Math.min(100, (value ?? 1) + 1))}
+              onClick={() => {
+                onChange(Math.min(100, (value ?? 1) + 1));
+              }}
               disabled={(value ?? 1) >= 100}
               aria-label="Increase image count"
               className="border-border-strong text-text-muted hover:bg-surface-sunken disabled:hover:bg-surface flex size-8 items-center justify-center rounded-r-lg border-l disabled:opacity-30"

@@ -1,5 +1,6 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const RETAILER_ID_QUERY_KEY = "retailerId";
 
@@ -44,16 +45,16 @@ export async function GET(request: Request) {
     });
 
     if (!res.ok) {
-      console.error(`Catalog API returned ${res.status}`);
+      logger.error(`Catalog API returned ${res.status}`);
       return errorResponse("INTERNAL_ERROR", `Catalog API returned ${res.status}`);
     }
 
-    const json = await res.json();
-    const products: Product[] = json.data ?? json;
+    const json = (await res.json()) as { data?: Product[] } | Product[];
+    const products: Product[] = Array.isArray(json) ? json : (json.data ?? []);
 
     return successResponse(products);
   } catch (error) {
-    console.error("Error fetching products:", error);
+    logger.error("Error fetching products:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch products from catalog");
   }
 }

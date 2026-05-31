@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { AccuracyTrendChart } from "@/app/analytics/accuracy-trend-chart";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { reliabilityResponseSchema } from "@/lib/api/schemas";
 import { definedProps } from "@/lib/defined-props";
 import type { ReliabilityData } from "@/lib/service-client";
 
@@ -39,8 +41,8 @@ function ErrorTable({ title, errors }: { title: string; errors: { reason: string
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
       <h3 className="text-text-primary text-body font-semibold">{title}</h3>
       <div className="mt-4 space-y-3">
-        {errors.map((err, index) => (
-          <div key={`${index}-${err.reason}`}>
+        {errors.map((err) => (
+          <div key={err.reason}>
             <div className="text-body flex items-center justify-between">
               <span className="text-text-secondary max-w-md truncate" title={err.reason}>
                 {err.reason}
@@ -67,7 +69,7 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
     );
   }
 
-  const maxRuns = Math.max(...trends.map((t) => t.totalRuns), 1);
+  const maxRuns = Math.max(...trends.map((trend) => trend.totalRuns), 1);
 
   return (
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
@@ -87,14 +89,18 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
         </span>
       </div>
       <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
-        {trends.map((t, i) => {
-          const totalH = (t.totalRuns / maxRuns) * 100;
-          const failedH = t.totalRuns > 0 ? (t.failedRuns / t.totalRuns) * totalH : 0;
-          const date = new Date(t.period);
+        {trends.map((trend, i) => {
+          const totalH = (trend.totalRuns / maxRuns) * 100;
+          const failedH = trend.totalRuns > 0 ? (trend.failedRuns / trend.totalRuns) * totalH : 0;
+          const date = new Date(trend.period);
           const label = `${date.getMonth() + 1}/${date.getDate()}`;
           return (
-            <div key={t.period} className="group relative flex flex-1 flex-col items-center" title={`${label}: ${t.totalRuns} runs, ${t.failedRuns} failed, ${t.timedOutSteps} timeouts, ${t.judgeFailures} judge failures`}>
-              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: t.totalRuns > 0 ? 4 : 0 }}>
+            <div
+              key={trend.period}
+              className="group relative flex flex-1 flex-col items-center"
+              title={`${label}: ${trend.totalRuns} runs, ${trend.failedRuns} failed, ${trend.timedOutSteps} timeouts, ${trend.judgeFailures} judge failures`}
+            >
+              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: trend.totalRuns > 0 ? 4 : 0 }}>
                 <div className="bg-border absolute bottom-0 w-full rounded-t" style={{ height: "100%" }} />
                 <div className="bg-danger-400 absolute bottom-0 w-full rounded-t" style={{ height: `${failedH}%` }} />
               </div>
@@ -122,11 +128,8 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const res = await fetch(serviceUrl(`analytics/reliability${qs ? `?${qs}` : ""}`), {
-        cache: "no-store"
-      });
-      if (!res.ok) return;
-      const json = await res.json();
+      const suffix = qs ? `?${qs}` : "";
+      const json = await fetchJson(serviceUrl(`analytics/reliability${suffix}`), reliabilityResponseSchema, { cache: "no-store" });
       setData(json.data ?? null);
     } catch {
       /* ignore */
@@ -136,7 +139,7 @@ export function ReliabilityTab({ from, to, model, source }: ReliabilityTabProps)
   }, [from, to, model, source]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   if (loading) {

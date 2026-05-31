@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PreviewPromptPage } from "@/components/preview-prompt-page";
+import { catchToNull } from "@/lib/async-utils";
 import { fetchInputPresetsMinimal, fetchPromptPreviewDollhouseSource, fetchPromptVersionsMinimal } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ interface PageProps {
 }
 
 export default async function PreviewPromptRoute({ searchParams }: PageProps) {
-  const [params, promptVersions, presets, dollhouseSource] = await Promise.all([searchParams, fetchPromptVersionsMinimal(100), fetchInputPresetsMinimal(100), fetchPromptPreviewDollhouseSource().catch(() => null)]);
+  const [params, promptVersions, presets, dollhouseSource] = await Promise.all([searchParams, fetchPromptVersionsMinimal(100), fetchInputPresetsMinimal(100), catchToNull(fetchPromptPreviewDollhouseSource())]);
   return (
     <PreviewPromptPage
       initialPromptVersionId={params.prompt_version_id ?? null}

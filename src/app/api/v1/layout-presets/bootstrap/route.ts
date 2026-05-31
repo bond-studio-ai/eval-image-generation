@@ -1,5 +1,7 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { parseJsonOrEmpty } from "@/lib/async-utils";
 import { platformApiBase } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const API_BASE = platformApiBase();
 const PROJECTS_BASE = `${API_BASE}/v2/projects`;
@@ -27,7 +29,9 @@ interface RawRoom {
 }
 
 async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function readProjectIdFromCreateResponse(res: Response): Promise<string> {
@@ -61,7 +65,7 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
   while (Date.now() <= deadline) {
     const room = await fetchRoomByProjectId(projectId);
-    const cameraFrames = (room as RawRoom).cameraFrames;
+    const { cameraFrames } = room as RawRoom;
     const frameCount = Array.isArray(cameraFrames) ? cameraFrames.length : 0;
     lastRoom = room;
     if (frameCount > 0) {
@@ -79,7 +83,7 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => ({}))) as {
+    const body = (await parseJsonOrEmpty(request)) as {
       layout_type_id?: unknown;
       pkg_id?: unknown;
     };
@@ -123,8 +127,8 @@ export async function POST(request: Request) {
       project_id: projectId,
       room_data: roomData
     });
-  } catch (err) {
-    console.error("[layout bootstrap] Error:", err);
+  } catch (error) {
+    logger.error("[layout bootstrap] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to bootstrap layout preset");
   }
 }

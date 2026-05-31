@@ -74,22 +74,47 @@ function aggregate(generationIds: string[], statuses: Map<string, ReviewState>):
   let idle = 0;
   for (const id of generationIds) {
     const state = statuses.get(id) ?? { kind: "idle" as const };
-    if (state.kind === "running") running++;
-    else if (state.kind === "done") done++;
-    else if (state.kind === "error") errors++;
-    else if (state.kind === "checking") checking++;
-    else idle++;
+    switch (state.kind) {
+      case "checking": {
+        checking++;
+        break;
+      }
+      case "done": {
+        done++;
+        break;
+      }
+      case "error": {
+        errors++;
+        break;
+      }
+      case "running": {
+        running++;
+        break;
+      }
+      default: {
+        idle++;
+      }
+    }
   }
 
-  let kind: AggregateState["kind"];
-  if (running > 0) kind = "running";
-  else if (checking > 0 && done === 0 && errors === 0 && idle === 0) kind = "checking";
-  else if (done === total) kind = "done";
-  else if (errors === total) kind = "error";
-  else if (done > 0) kind = "mixed";
-  else kind = "idle";
+  const kind = ((): AggregateState["kind"] => {
+    if (running > 0) return "running";
+    if (checking > 0 && done === 0 && errors === 0 && idle === 0) return "checking";
+    if (done === total) return "done";
+    if (errors === total) return "error";
+    if (done > 0) return "mixed";
+    return "idle";
+  })();
 
   return { kind, total, running, done, errors, idle };
+}
+
+async function runReviewSafely(id: string, force: boolean): Promise<ReviewState> {
+  try {
+    return await runReviewPost(id, force);
+  } catch (error) {
+    return { kind: "error", message: error instanceof Error ? error.message : "Unexpected error" };
+  }
 }
 
 export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: ReviewRunGroupBadgeProps) {
@@ -99,7 +124,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
     // Capture targets at click time so a state-change race (e.g. a
     // per-cell click landing between `aggregate` and here) can't make
     // us double-fire on an id that is already running.
-    const targets: Array<{ id: string; force: boolean }> = [];
+    const targets: { id: string; force: boolean }[] = [];
     for (const id of generationIds) {
       const state = statuses.get(id) ?? { kind: "idle" as const };
       if (state.kind === "running" || state.kind === "checking") continue;
@@ -122,15 +147,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
     // `error`, so the only way `await` rejects is a programming bug we'd
     // rather surface as a per-cell error than as an unhandled rejection.
     for (const { id, force } of targets) {
-      let next: ReviewState;
-      try {
-        next = await runReviewPost(id, force);
-      } catch (err) {
-        next = {
-          kind: "error",
-          message: err instanceof Error ? err.message : "Unexpected error"
-        };
-      }
+      const next = await runReviewSafely(id, force);
       setStatus(id, next);
     }
   }, [generationIds, statuses, setStatus]);
@@ -164,7 +181,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runForAll();
+          void runForAll();
         }}
         title="All reviews complete. Click to re-run all with force=true."
         className="text-text-inverse bg-text-secondary/80 hover:bg-text-secondary mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
@@ -183,7 +200,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runForAll();
+          void runForAll();
         }}
         title={`${summary.done}/${summary.total} reviewed. Click to finish the rest.`}
         className="text-text-inverse bg-text-secondary/80 hover:bg-text-secondary mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
@@ -200,7 +217,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          runForAll();
+          void runForAll();
         }}
         title="All reviews failed. Click to retry."
         className="bg-danger-500/90 text-text-inverse hover:bg-danger-500 mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm transition-colors"
@@ -216,7 +233,7 @@ export function ReviewRunGroupBadge({ generationIds, statuses, setStatus }: Revi
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        runForAll();
+        void runForAll();
       }}
       title={`Automate QA (review) for all ${summary.total} generations in this row.`}
       className="border-border-strong bg-surface text-text-secondary hover:bg-surface-muted hover:border-border-strong mt-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium transition-colors"

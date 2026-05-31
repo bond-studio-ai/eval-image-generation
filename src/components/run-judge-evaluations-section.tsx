@@ -27,27 +27,27 @@ interface JudgeGroup {
 
 function groupByJudge(results: StrategyRunJudgeResultEntry[]): JudgeGroup[] {
   const map = new Map<string, JudgeGroup>();
-  for (const r of results) {
-    if (!map.has(r.strategyJudgeId)) {
-      map.set(r.strategyJudgeId, {
-        judgeId: r.strategyJudgeId,
-        judgeName: r.judgeName,
-        judgeModel: r.judgeModel,
-        judgeType: r.judgeType,
-        judgePromptVersionId: r.judgePromptVersionId,
-        judgePromptVersionName: r.judgePromptVersionName,
-        position: r.position,
+  for (const result of results) {
+    if (!map.has(result.strategyJudgeId)) {
+      map.set(result.strategyJudgeId, {
+        judgeId: result.strategyJudgeId,
+        judgeName: result.judgeName,
+        judgeModel: result.judgeModel,
+        judgeType: result.judgeType,
+        judgePromptVersionId: result.judgePromptVersionId,
+        judgePromptVersionName: result.judgePromptVersionName,
+        position: result.position,
         executionTimeMs: null,
         entries: []
       });
     }
-    const group = map.get(r.strategyJudgeId)!;
-    group.entries.push(r);
-    if (r.executionTimeMs != null) {
-      group.executionTimeMs = Math.max(group.executionTimeMs ?? 0, r.executionTimeMs);
+    const group = map.get(result.strategyJudgeId)!;
+    group.entries.push(result);
+    if (result.executionTimeMs != null) {
+      group.executionTimeMs = Math.max(group.executionTimeMs ?? 0, result.executionTimeMs);
     }
   }
-  return [...map.values()].toSorted((a, b) => a.position - b.position);
+  return Array.from(map.values()).toSorted((a, b) => a.position - b.position);
 }
 
 function formatSeconds(ms: number | null | undefined): string | null {
@@ -65,7 +65,13 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
 
   return (
     <div className="border-border bg-surface-muted/50 rounded-lg border">
-      <button type="button" onClick={() => setOpen(!open)} className="hover:bg-surface-muted flex w-full items-center gap-2 px-4 py-3 text-left transition-colors">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="hover:bg-surface-muted flex w-full items-center gap-2 px-4 py-3 text-left transition-colors"
+      >
         <ChevronRightIcon className={`text-text-disabled h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {group.judgeName && <span className="text-text-primary text-caption font-semibold">{group.judgeName}</span>}
@@ -73,7 +79,13 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
           <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${group.judgeType === "batch" ? "bg-primary-100 text-primary-700" : "bg-surface-sunken text-text-secondary"}`}>{group.judgeType}</span>
           {!isSingle && <span className="bg-primary-50 text-primary-700 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">&times;{group.entries.length} evaluations</span>}
           {group.judgePromptVersionId && (
-            <Link href={`/prompt-versions/${group.judgePromptVersionId}`} className="text-primary-600 hover:text-primary-500 text-[11px]" onClick={(e) => e.stopPropagation()}>
+            <Link
+              href={`/prompt-versions/${group.judgePromptVersionId}`}
+              className="text-primary-600 hover:text-primary-500 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
               {group.judgePromptVersionName || "Prompt version"}
             </Link>
           )}
@@ -113,7 +125,7 @@ function JudgeEntryRow({ j, index, total, showIndex }: { j: StrategyRunJudgeResu
   const hasPrompts = j.judgeSystemPrompt || j.judgeUserPrompt || (j.judgeInputImages && j.judgeInputImages.length > 0);
 
   return (
-    <div className={`${index > 0 ? "border-border-subtle border-t" : ""}`}>
+    <div className={index > 0 ? "border-border-subtle border-t" : ""}>
       <div className="px-4 py-3">
         <div className="flex items-start gap-3">
           {showIndex && <span className="text-text-secondary bg-border mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">{index + 1}</span>}
@@ -131,7 +143,13 @@ function JudgeEntryRow({ j, index, total, showIndex }: { j: StrategyRunJudgeResu
             {j.judgeReasoning && <p className="text-text-secondary text-body mt-1 leading-relaxed">{j.judgeReasoning}</p>}
             {j.judgeOutput && <pre className="border-border bg-surface text-text-secondary text-caption mt-2 max-h-32 overflow-auto rounded-md border p-2 leading-relaxed whitespace-pre-wrap">{j.judgeOutput}</pre>}
             {hasPrompts && (
-              <button type="button" onClick={() => setDetailsOpen(!detailsOpen)} className="text-text-muted hover:text-text-secondary mt-2 text-[11px] underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setDetailsOpen(!detailsOpen);
+                }}
+                className="text-text-muted hover:text-text-secondary mt-2 text-[11px] underline"
+              >
                 {detailsOpen ? "Hide prompts & inputs" : "Show prompts & inputs"}
               </button>
             )}
@@ -176,7 +194,13 @@ function JudgeInputImageGrid({ images }: { images: NonNullable<StrategyRunJudgeR
           <div key={img.url}>
             <div
               className={`bg-surface-muted relative aspect-square overflow-hidden rounded-md border ${img.isComposite ? "border-accent-400 ring-accent-200 cursor-pointer ring-1" : "border-border"}`}
-              {...(img.isComposite ? { onClick: () => setExpandedGroup(expandedGroup === i ? null : i) } : {})}
+              {...(img.isComposite
+                ? {
+                    onClick: () => {
+                      setExpandedGroup(expandedGroup === i ? null : i);
+                    }
+                  }
+                : {})}
             >
               <CdnImage src={img.url} alt={img.label} fill sizes="(max-width:768px) 25vw, 200px" className="object-cover" />
             </div>
@@ -194,14 +218,20 @@ function JudgeInputImageGrid({ images }: { images: NonNullable<StrategyRunJudgeR
         <div className="border-accent-200 bg-accent-50 rounded-lg border p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-accent-800 text-caption font-semibold">
-              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages!.length} source images
+              {images[expandedGroup].label} &mdash; {images[expandedGroup].sourceImages.length} source images
             </p>
-            <button type="button" onClick={() => setExpandedGroup(null)} className="text-accent-600 hover:text-accent-800 text-caption">
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedGroup(null);
+              }}
+              className="text-accent-600 hover:text-accent-800 text-caption"
+            >
               Close
             </button>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-            {images[expandedGroup].sourceImages!.map((src) => (
+            {images[expandedGroup].sourceImages.map((src) => (
               <div key={src.url}>
                 <div className="border-accent-200 bg-surface relative aspect-square overflow-hidden rounded-md border">
                   <CdnImage src={src.url} alt={src.label} fill sizes="(max-width:768px) 25vw, 200px" className="object-cover" />
@@ -220,7 +250,7 @@ function JudgeInputImageGrid({ images }: { images: NonNullable<StrategyRunJudgeR
 
 export function RunJudgeEvaluationsSection({ judgeResults, title = "Judge evaluations" }: { judgeResults: StrategyRunJudgeResultEntry[]; title?: string }) {
   const groups = useMemo(() => groupByJudge(judgeResults), [judgeResults]);
-  const slowestMs = useMemo(() => groups.reduce((m, g) => Math.max(m, g.executionTimeMs ?? 0), 0), [groups]);
+  const slowestMs = useMemo(() => groups.reduce((longest, group) => Math.max(longest, group.executionTimeMs ?? 0), 0), [groups]);
   const slowestLabel = formatSeconds(slowestMs);
 
   if (judgeResults.length === 0) return null;
@@ -241,8 +271,8 @@ export function RunJudgeEvaluationsSection({ judgeResults, title = "Judge evalua
         )}
       </div>
       <div className="space-y-3 p-4">
-        {groups.map((g) => (
-          <JudgeGroupCard key={g.judgeId} group={g} />
+        {groups.map((group) => (
+          <JudgeGroupCard key={group.judgeId} group={group} />
         ))}
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { DataTable, DateCell, FilterPills, type DataTableColumn } from "@/components/data-table";
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DataTable, type DataTableColumn, DateCell, FilterPills } from "@/components/data-table";
 import { actionsColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
@@ -81,7 +81,6 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
     });
   }, [clientFilter, items]);
 
-  const isEmptyAfterLoad = !loading && filteredItems.length === 0;
   const emptyMessage = clientFilter || statusFilter !== "all" ? "No projects on this page match your filter." : "No projects found.";
 
   const toolbar = (
@@ -100,19 +99,25 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
     return <TableView items={filteredItems} loading={loading} emptyMessage={emptyMessage} toolbar={toolbar} footer={pagination} selectedProjectId={selectedProjectId} onSelect={onSelect} />;
   }
 
-  return (
-    <div className="border-border rounded-card bg-surface shadow-card border">
-      <div className="border-border-subtle border-b px-4 py-3">{toolbar}</div>
-      {loading ? (
+  function gridBody() {
+    if (loading) {
+      return (
         <div className="flex items-center justify-center gap-3 px-6 py-12">
           <Spinner size="sm" />
           <span className="text-body text-text-secondary">Loading projects…</span>
         </div>
-      ) : isEmptyAfterLoad ? (
-        <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p>
-      ) : (
-        <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} />
-      )}
+      );
+    }
+    if (filteredItems.length === 0) {
+      return <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p>;
+    }
+    return <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} />;
+  }
+
+  return (
+    <div className="border-border rounded-card bg-surface shadow-card border">
+      <div className="border-border-subtle border-b px-4 py-3">{toolbar}</div>
+      {gridBody()}
       <div className="border-border-subtle border-t px-4 py-3">{pagination}</div>
     </div>
   );
@@ -126,7 +131,7 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
  * button behavior.
  */
 function ProjectGridRadioGroup({ projects, selectedProjectId, onSelect }: { projects: ProjectSummary[]; selectedProjectId: string | null; onSelect: (id: string) => void }) {
-  const buttonsRef = useRef<Array<HTMLButtonElement | null>>([]);
+  const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Pin refs to the current length so a row shrinking doesn't keep stale
   // entries we'd then try to `.focus()` on a removed DOM node. Done in
@@ -139,8 +144,8 @@ function ProjectGridRadioGroup({ projects, selectedProjectId, onSelect }: { proj
     }
   }, [projects.length]);
 
-  const selectedIndex = projects.findIndex((p) => p.id === selectedProjectId);
-  const tabStopIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const selectedIndex = projects.findIndex((project) => project.id === selectedProjectId);
+  const tabStopIndex = Math.max(selectedIndex, 0);
 
   const moveTo = useCallback(
     (nextIndex: number) => {
@@ -156,8 +161,8 @@ function ProjectGridRadioGroup({ projects, selectedProjectId, onSelect }: { proj
     (e: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
       if (projects.length === 0) return;
       switch (e.key) {
-        case "ArrowRight":
-        case "ArrowDown": {
+        case "ArrowDown":
+        case "ArrowRight": {
           e.preventDefault();
           moveTo((currentIndex + 1) % projects.length);
           break;
@@ -168,18 +173,19 @@ function ProjectGridRadioGroup({ projects, selectedProjectId, onSelect }: { proj
           moveTo((currentIndex - 1 + projects.length) % projects.length);
           break;
         }
-        case "Home": {
-          e.preventDefault();
-          moveTo(0);
-          break;
-        }
         case "End": {
           e.preventDefault();
           moveTo(projects.length - 1);
           break;
         }
-        default:
+        case "Home": {
+          e.preventDefault();
+          moveTo(0);
           break;
+        }
+        default: {
+          break;
+        }
       }
     },
     [projects.length, moveTo]
@@ -197,7 +203,9 @@ function ProjectGridRadioGroup({ projects, selectedProjectId, onSelect }: { proj
           selected={selectedProjectId === project.id}
           tabIndex={index === tabStopIndex ? 0 : -1}
           onSelect={onSelect}
-          onKeyDown={(e) => handleKeyDown(e, index)}
+          onKeyDown={(e) => {
+            handleKeyDown(e, index);
+          }}
         />
       ))}
     </div>
@@ -227,7 +235,12 @@ function TableView({
         header: "Project",
         cell: (row) => (
           <div>
-            <Button variant="link" onClick={() => onSelect(row.id)}>
+            <Button
+              variant="link"
+              onClick={() => {
+                onSelect(row.id);
+              }}
+            >
               {row.id}
             </Button>
             {row.name && <p className="text-caption text-text-muted mt-0.5 max-w-xs truncate">{row.name}</p>}
@@ -243,19 +256,27 @@ function TableView({
               {row.appStatus}
             </Badge>
           ) : (
-            <span className="text-text-muted">{"—"}</span>
+            <span className="text-text-muted">&mdash;</span>
           )
       },
       {
         header: "Created",
-        cell: (row) => (row.created ? <DateCell date={row.created} /> : <span className="text-text-muted">{"—"}</span>)
+        cell: (row) => (row.created ? <DateCell date={row.created} /> : <span className="text-text-muted">&mdash;</span>)
       },
       actionsColumn<ProjectSummary>([
         {
           render: (row) => {
             const isSelected = selectedProjectId === row.id;
             return (
-              <Button type="button" size="sm" variant={isSelected ? "primary" : "secondary"} onClick={() => onSelect(row.id)} iconLeft={isSelected ? <CheckIcon className="size-3.5" /> : undefined}>
+              <Button
+                type="button"
+                size="sm"
+                variant={isSelected ? "primary" : "secondary"}
+                onClick={() => {
+                  onSelect(row.id);
+                }}
+                iconLeft={isSelected ? <CheckIcon className="size-3.5" /> : undefined}
+              >
                 {isSelected ? "Selected" : "Select"}
               </Button>
             );
@@ -298,11 +319,13 @@ function ProjectGridCard({ project, selected, tabIndex, onSelect, onKeyDown, ref
       role="radio"
       aria-checked={selected}
       tabIndex={tabIndex}
-      onClick={() => onSelect(project.id)}
+      onClick={() => {
+        onSelect(project.id);
+      }}
       onKeyDown={onKeyDown}
       className={cn(
         "group rounded-card bg-surface shadow-card relative flex flex-col gap-2 border p-4 text-left transition-all",
-        "focus-visible:outline-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        "focus-visible:outline-primary-600 focus-visible:outline-2 focus-visible:outline-offset-2",
         selected ? "border-primary-600 ring-primary-500 bg-primary-50 ring-2" : "border-border hover:border-border-strong hover:shadow-card-hover"
       )}
     >
@@ -322,7 +345,7 @@ function ProjectGridCard({ project, selected, tabIndex, onSelect, onKeyDown, ref
             {project.appStatus}
           </Badge>
         ) : (
-          <span className="text-caption text-text-muted">{"—"}</span>
+          <span className="text-caption text-text-muted">&mdash;</span>
         )}
         {project.created && (
           <span className="text-caption text-text-muted">

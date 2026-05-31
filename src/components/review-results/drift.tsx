@@ -1,15 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { snakeToCamel } from "@/lib/casing";
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
+import { NOT_APPLICABLE_CELL, SortableHeader } from "./drift-sorting";
+import { compareSortValues, getSortValue, type SortDir, type SortKey } from "./drift-sorting-utils";
 import { formatInt, formatNumber, formatPercent, formatPixels } from "./format";
 import { ChevronIcon, WarningIcon } from "./icons";
-import { Tooltip, useTooltip } from "./tooltip";
+import { Tooltip } from "./tooltip";
 import type { CategoryLookup, DriftAbsenceReason, DriftAssessment, DriftRow, DriftStatus, LargeObjectDriftMetrics, OverallDriftMetrics, SmallObjectDriftMetrics, SurfaceDriftMetrics } from "./types";
-
-function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
-}
 
 /**
  * Build a category-key → group-metadata lookup so the drift row
@@ -35,17 +34,17 @@ function indexGroupMetadata(entries: SegmentationCategoryMetadata[] | null): Map
  * tooltip stays in sync with the backend even when the rules change.
  */
 function resolutionLabel(entry: SegmentationCategoryMetadata): string {
-  const promptByName = new Map(entry.groupPrompts.map((p) => [p.slug, p.prompt]));
+  const promptByName = new Map(entry.groupPrompts.map((groupPrompt) => [groupPrompt.slug, groupPrompt.prompt]));
   const promptNames = entry.resolvedPromptSlugs.map((slug) => promptByName.get(slug) ?? slug);
   // Multiple group members can fire the same SAM prompt string
   // (paints + wallpapers both send `Wall`); collapse adjacent
   // duplicates so the tooltip reads cleanly.
   const deduped: string[] = [];
   for (const name of promptNames) {
-    if (deduped[deduped.length - 1] !== name) deduped.push(name);
+    if (deduped.at(-1) !== name) deduped.push(name);
   }
   if (entry.resolutionKind === "union") {
-    return deduped.length === 1 ? deduped[0]! : `${deduped.join(" + ")}`;
+    return deduped.length === 1 ? deduped[0]! : deduped.join(" + ");
   }
   return deduped.join(" fallback ");
 }
@@ -159,8 +158,12 @@ function DriftOverallCard({ overall }: { overall: OverallDriftMetrics }) {
  *   only to keep the bucket schema dense, and showing them just
  *   dilutes the actually-interesting drift.
  */
+function hasDriftPixels(metrics: { dollhousePixelCount: number; samPixelCount: number }): boolean {
+  return metrics.dollhousePixelCount > 0 || metrics.samPixelCount > 0;
+}
+
 function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
-  const include = (m: { dollhousePixelCount: number; samPixelCount: number }) => m.dollhousePixelCount > 0 || m.samPixelCount > 0;
+  const include = hasDriftPixels;
   const rows: DriftRow[] = [];
   for (const [key, metrics] of Object.entries(assessment.surfaces)) {
     if (include(metrics)) rows.push({ key, kind: "surface", metrics });
@@ -177,144 +180,13 @@ function buildDriftRows(assessment: DriftAssessment): DriftRow[] {
 /** Faded dash for "this metric doesn't apply to this category".
  *  Visually distinct from the regular formatter dash (which means
  *  "metric applies but the value was null"). */
-const NOT_APPLICABLE_CELL = <span className="text-text-disabled">{"—"}</span>;
-
-/**
- * Stable identifiers for every sortable column. Decoupled from the
- * underlying metric property names because two columns share the
- * "p95 distance" concept across different metric shapes
- * (`p95SymmetricDistancePx` for large objects, `p95DistancePx` for
- * small objects) and we want one sort key per column, not per shape.
- */
-type SortKey = "category" | "coverage" | "iou" | "centroid" | "p95" | "areaRatio" | "boundary" | "pixelAccuracy" | "presence" | "pixels";
-
-type SortDir = "asc" | "desc";
-
-/**
- * Extract the sortable value for `(row, key)`. Returns `null` when
- * the column doesn't apply to the row's bucket (e.g. IoU on a small
- * object) — those rows sink to the bottom regardless of sort
- * direction.
- *
- * For `pixels`, we sort by dollhouse pixel count so the "biggest
- * ground-truth region" rises to the top — that's the column most
- * worth scanning when triaging which products are dominating the
- * scene.
- */
-function getSortValue(row: DriftRow, key: SortKey, lookup: CategoryLookup): number | string | null {
-  const { kind, metrics } = row;
-  switch (key) {
-    case "category":
-      return lookup.label(row.key).toLowerCase();
-    case "coverage":
-      return metrics.productMaskCoverage?.recall ?? null;
-    case "iou":
-      if (kind === "largeObject" || kind === "surface") return (metrics as LargeObjectDriftMetrics | SurfaceDriftMetrics).iou;
-      return null;
-    case "centroid":
-      if (kind === "largeObject" || kind === "smallObject") return (metrics as LargeObjectDriftMetrics | SmallObjectDriftMetrics).centroidDriftPx;
-      return null;
-    case "p95":
-      if (kind === "largeObject") return (metrics as LargeObjectDriftMetrics).p95SymmetricDistancePx;
-      if (kind === "smallObject") return (metrics as SmallObjectDriftMetrics).p95DistancePx;
-      return null;
-    case "areaRatio":
-      if (kind === "largeObject") return (metrics as LargeObjectDriftMetrics).areaRatio;
-      return null;
-    case "boundary":
-      if (kind === "surface") return (metrics as SurfaceDriftMetrics).boundaryDriftPx;
-      return null;
-    case "pixelAccuracy":
-      if (kind === "surface") return (metrics as SurfaceDriftMetrics).pixelClassAccuracy;
-      return null;
-    case "presence":
-      if (kind === "smallObject") return (metrics as SmallObjectDriftMetrics).presence;
-      return null;
-    case "pixels":
-      return metrics.dollhousePixelCount;
-  }
-}
-
-function compareSortValues(a: number | string | null, b: number | string | null, dir: SortDir): number {
-  // `null` (column doesn't apply to this row) always lands at the end,
-  // independent of asc/desc — sorting on a column the row doesn't have
-  // a value for is never useful information.
-  if (a === null && b === null) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  const raw = typeof a === "string" && typeof b === "string" ? a.localeCompare(b) : (a as number) - (b as number);
-  return dir === "desc" ? -raw : raw;
-}
-
-/**
- * Sort indicator next to a sortable header. Renders as a faint
- * pair-of-arrows glyph when the column is inactive (signalling that
- * sorting is available without screaming for attention), and as the
- * directional arrow once the column becomes the active sort key.
- */
-function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
-  return (
-    <span aria-hidden="true" className={`text-[9px] ${active ? "text-text-secondary" : "text-text-disabled"}`}>
-      {active ? (dir === "asc" ? "▲" : "▼") : "⇅"}
-    </span>
-  );
-}
-
-/**
- * Sortable column header. The whole `<th>` content is a `<button>`
- * so it's the single focusable element (no nested `tabIndex` with
- * the tooltip). The hover tooltip is driven by `useTooltip`,
- * which attaches the same mouseenter/leave + focus/blur handlers
- * directly to the button instead of wrapping a nested span.
- */
-function SortableHeader({
-  sortKey,
-  label,
-  hint,
-  currentKey,
-  currentDir,
-  onSort,
-  align = "right"
-}: {
-  sortKey: SortKey;
-  label: string;
-  hint: string;
-  currentKey: SortKey | null;
-  currentDir: SortDir;
-  onSort: (key: SortKey) => void;
-  align?: "left" | "right";
-}) {
-  const active = currentKey === sortKey;
-  const { ref, onMouseEnter, onMouseLeave, onFocus, onBlur, portal } = useTooltip(hint, {
-    align: align === "right" ? "end" : "start"
-  });
-
-  return (
-    <th scope="col" className={`px-3 py-1.5 ${align === "right" ? "text-right" : "text-left"} tabular-nums`}>
-      <button
-        ref={ref}
-        type="button"
-        onClick={() => onSort(sortKey)}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        className={`inline-flex w-full items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"} hover:text-text-secondary focus-visible:text-text-secondary cursor-pointer outline-none`}
-      >
-        <span className="decoration-text-disabled decoration-dotted underline-offset-2">{label}</span>
-        <SortIndicator active={active} dir={currentDir} />
-      </button>
-      {portal}
-    </th>
-  );
-}
-
 function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup: CategoryLookup; groupMetadata: Map<string, SegmentationCategoryMetadata> }) {
   const { kind, metrics, key } = row;
   const label = lookup.label(key);
   const swatch = lookup.color(key);
   const entry = groupMetadata.get(key) ?? null;
-  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${entry.group !== key ? ` (group ${entry.group})` : ""}` : null;
+  const groupSuffix = entry && entry.group !== key ? ` (group ${entry.group})` : "";
+  const groupHint = entry ? `${key} → ${resolutionLabel(entry)}${groupSuffix}` : null;
 
   // Each `applies*` flag controls whether this column renders a value
   // for the current row's bucket. Inapplicable cells render the muted
@@ -342,11 +214,32 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
   // The two p95 fields use different property names (`p95SymmetricDistancePx`
   // for large objects, `p95DistancePx` for small) but represent the same
   // symmetric Chamfer distance — collapse them into one column.
-  const p95Pixels = kind === "largeObject" ? (metrics as LargeObjectDriftMetrics).p95SymmetricDistancePx : kind === "smallObject" ? (metrics as SmallObjectDriftMetrics).p95DistancePx : null;
+  let p95Pixels: number | null = null;
+  if (kind === "largeObject") p95Pixels = (metrics as LargeObjectDriftMetrics).p95SymmetricDistancePx;
+  else if (kind === "smallObject") p95Pixels = (metrics as SmallObjectDriftMetrics).p95DistancePx;
   const p95Cell = appliesP95 ? formatPixels(p95Pixels) : null;
   const areaRatioCell = appliesAreaRatio ? formatNumber((metrics as LargeObjectDriftMetrics).areaRatio, 2) : null;
   const boundaryCell = appliesBoundary ? formatPixels((metrics as SurfaceDriftMetrics).boundaryDriftPx) : null;
   const pixelClassCell = appliesPixelClass ? formatPercent((metrics as SurfaceDriftMetrics).pixelClassAccuracy, 1) : null;
+
+  function coverageContent() {
+    if (!coverageCell) return NOT_APPLICABLE_CELL;
+    if (!coverageHint) return coverageCell;
+    return (
+      <Tooltip hint={coverageHint} width={260} triggerClassName="inline-flex">
+        <span>{coverageCell}</span>
+      </Tooltip>
+    );
+  }
+
+  function presenceContent() {
+    if (!appliesPresence) return NOT_APPLICABLE_CELL;
+    return (metrics as SmallObjectDriftMetrics).presence === 1 ? (
+      <span className="bg-success-50 text-success-700 ring-success-200 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">1</span>
+    ) : (
+      <span className="bg-surface-muted text-text-muted ring-border rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">0</span>
+    );
+  }
 
   return (
     <tr className="align-top">
@@ -372,36 +265,14 @@ function DriftUnifiedRow({ row, lookup, groupMetadata }: { row: DriftRow; lookup
           )}
         </div>
       </td>
-      <td className="px-3 py-1.5 text-right tabular-nums">
-        {coverageCell ? (
-          coverageHint ? (
-            <Tooltip hint={coverageHint} width={260} triggerClassName="inline-flex">
-              <span>{coverageCell}</span>
-            </Tooltip>
-          ) : (
-            coverageCell
-          )
-        ) : (
-          NOT_APPLICABLE_CELL
-        )}
-      </td>
+      <td className="px-3 py-1.5 text-right tabular-nums">{coverageContent()}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{iouCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{centroidCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{p95Cell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{areaRatioCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{boundaryCell ?? NOT_APPLICABLE_CELL}</td>
       <td className="px-3 py-1.5 text-right tabular-nums">{pixelClassCell ?? NOT_APPLICABLE_CELL}</td>
-      <td className="px-3 py-1.5 text-right">
-        {appliesPresence ? (
-          (metrics as SmallObjectDriftMetrics).presence === 1 ? (
-            <span className="bg-success-50 text-success-700 ring-success-200 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">1</span>
-          ) : (
-            <span className="bg-surface-muted text-text-muted ring-border rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1">0</span>
-          )
-        ) : (
-          NOT_APPLICABLE_CELL
-        )}
-      </td>
+      <td className="px-3 py-1.5 text-right">{presenceContent()}</td>
       <td className="text-text-muted px-3 py-1.5 text-right tabular-nums">
         {formatInt(metrics.dollhousePixelCount)} / {formatInt(metrics.samPixelCount)}
       </td>
@@ -457,10 +328,10 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
   }
 
   const visibleRows = useMemo(() => {
-    const q = filter.trim().toLowerCase();
+    const query = filter.trim().toLowerCase();
     let filtered = rows;
-    if (q.length > 0) {
-      filtered = rows.filter((row) => lookup.label(row.key).toLowerCase().includes(q) || row.key.toLowerCase().includes(q));
+    if (query.length > 0) {
+      filtered = rows.filter((row) => lookup.label(row.key).toLowerCase().includes(query) || row.key.toLowerCase().includes(query));
     }
     if (sortKey !== null) {
       const key = sortKey;
@@ -480,7 +351,9 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
           <input
             type="text"
             value={filter}
-            onChange={(event) => setFilter(event.target.value)}
+            onChange={(event) => {
+              setFilter(event.target.value);
+            }}
             placeholder="Filter categories…"
             className="border-border bg-surface text-text-secondary placeholder:text-text-disabled focus:border-border-strong w-40 rounded border px-2 py-0.5 text-[11px] focus:outline-none"
             aria-label="Filter drift rows by category"
@@ -534,13 +407,15 @@ function DriftUnifiedTable({ assessment, lookup, categories }: { assessment: Dri
 export function CollapsibleDrift({ assessment, status, lookup, categories }: { assessment: DriftAssessment | null; status: DriftStatus | null; lookup: CategoryLookup; categories: SegmentationCategoryMetadata[] | null }) {
   const [open, setOpen] = useState(false);
   const overall = assessment?.overall ?? null;
-  const computed = !!assessment && (status === null || status === "computed");
+  const computed = Boolean(assessment) && (status === null || status === "computed");
 
   return (
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >

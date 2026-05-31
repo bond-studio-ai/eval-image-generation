@@ -132,5 +132,5 @@ export function groupStepResults(sorted: StepResult[]): StepGroup[] {
     }
     map.get(order)!.results.push(sr);
   }
-  return [...map.values()].toSorted((a, b) => a.stepOrder - b.stepOrder);
+  return Array.from(map.values()).toSorted((a, b) => a.stepOrder - b.stepOrder);
 }

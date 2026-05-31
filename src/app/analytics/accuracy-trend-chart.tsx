@@ -3,9 +3,17 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { accuracyTrendsResponseSchema } from "@/lib/api/schemas";
 import type { AccuracyTrendPoint } from "@/lib/service-client";
 
-const AccuracyTrendChartGraph = dynamic(() => import("./accuracy-trend-chart-graph").then((m) => m.AccuracyTrendChartGraph), { ssr: false });
+const AccuracyTrendChartGraph = dynamic(
+  async () => {
+    const graphModule = await import("./accuracy-trend-chart-graph");
+    return graphModule.AccuracyTrendChartGraph;
+  },
+  { ssr: false }
+);
 
 interface AccuracyTrendChartProps {
   from?: string;
@@ -17,8 +25,8 @@ interface AccuracyTrendChartProps {
 function formatDate(dateStr: string): string {
   const parts = dateStr.split("-");
   if (parts.length === 3) return `${Number(parts[1])}/${Number(parts[2])}`;
-  const d = new Date(dateStr);
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+  const date = new Date(dateStr);
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
 }
 
 export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendChartProps) {
@@ -38,16 +46,9 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
       const tz = browserTimezone();
       if (tz) params.set("tz", tz);
       const qs = params.toString();
-      const res = await fetch(serviceUrl(`analytics/accuracy-trends${qs ? `?${qs}` : ""}`), {
-        cache: "no-store"
-      });
-      if (!res.ok) {
-        setError(true);
-        return;
-      }
-      const json = await res.json();
-      const trends = json.data?.trends;
-      setData(Array.isArray(trends) ? trends : []);
+      const suffix = qs ? `?${qs}` : "";
+      const json = await fetchJson(serviceUrl(`analytics/accuracy-trends${suffix}`), accuracyTrendsResponseSchema, { cache: "no-store" });
+      setData(json.data?.trends ?? []);
     } catch {
       setError(true);
     } finally {
@@ -56,7 +57,7 @@ export function AccuracyTrendChart({ from, to, model, source }: AccuracyTrendCha
   }, [from, to, model, source]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   if (loading) {

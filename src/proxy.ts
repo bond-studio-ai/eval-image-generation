@@ -1,6 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextFetchEvent } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/", "/analytics(.*)", "/audit(.*)", "/dollhouse-renders(.*)", "/executions(.*)", "/generations(.*)", "/strategies(.*)", "/input-presets(.*)", "/prompt-versions(.*)", "/prompt-preview(.*)"]);
 

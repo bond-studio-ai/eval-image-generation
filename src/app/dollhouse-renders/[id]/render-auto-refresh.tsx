@@ -10,8 +10,8 @@ interface RenderAutoRefreshProps {
   status: string;
 }
 
-const REFRESH_INTERVAL_MS = 5_000;
-const TICK_MS = 1_000;
+const REFRESH_INTERVAL_MS = 5000;
+const TICK_MS = 1000;
 const FLASH_MS = 400;
 
 /**
@@ -32,7 +32,7 @@ export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (!isPolling) return;
+    if (!isPolling) return undefined;
 
     // We have to track every timer the effect spawns so cleanup can clear
     // them all. The flash `setTimeout` in particular previously leaked past
@@ -41,7 +41,7 @@ export function RenderAutoRefresh({ status }: RenderAutoRefreshProps) {
     const flashTimeouts = new Set<number>();
 
     const tick = window.setInterval(() => {
-      setSecondsLeft((s) => Math.max(0, s - TICK_MS / 1000));
+      setSecondsLeft((prev) => Math.max(0, prev - TICK_MS / 1000));
     }, TICK_MS);
 
     const refresh = window.setInterval(() => {

@@ -74,7 +74,9 @@ export function RunSummaryCard({
           {data.status !== "failed" && data.status !== "skipped" && (
             <button
               type="button"
-              onClick={() => onMarkStatus("failed")}
+              onClick={() => {
+                onMarkStatus("failed");
+              }}
               disabled={markingStatus !== "idle"}
               className="border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
             >
@@ -86,7 +88,9 @@ export function RunSummaryCard({
             <>
               <button
                 type="button"
-                onClick={() => onMarkStatus("completed")}
+                onClick={() => {
+                  onMarkStatus("completed");
+                }}
                 disabled={markingStatus !== "idle"}
                 className="border-border bg-surface-muted text-text-secondary hover:bg-surface-sunken text-caption inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-medium transition-colors disabled:opacity-50"
               >
@@ -112,7 +116,7 @@ export function RunSummaryCard({
           {data.strategy.model != null && <ConfigTag label="Model" value={data.strategy.model} />}
           {data.strategy.aspectRatio != null && <ConfigTag label="Aspect" value={data.strategy.aspectRatio} />}
           {data.strategy.outputResolution != null && <ConfigTag label="Resolution" value={data.strategy.outputResolution} />}
-          {data.strategy.temperature != null && <ConfigTag label="Temp" value={String(data.strategy.temperature)} />}
+          {data.strategy.temperature != null && <ConfigTag label="Temp" value={data.strategy.temperature} />}
           {data.strategy.tagImages != null && <ConfigTag label="Tag images" value={data.strategy.tagImages ? "Yes" : "No"} />}
           {data.strategy.useGoogleSearch != null && <ConfigTag label="Google Search" value={data.strategy.useGoogleSearch ? "Yes" : "No"} />}
         </div>

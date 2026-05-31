@@ -75,11 +75,11 @@ function CategoryCard({ row }: { row: CategoryRow }) {
           <div className="grid grid-cols-3 gap-1.5">
             {row.masks.map((mask, idx) => (
               <a
-                key={`${mask.url}-${idx}`}
+                key={mask.url}
                 href={mask.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={mask.score !== null ? `Mask ${idx + 1} · score ${mask.score.toFixed(3)}` : `Mask ${idx + 1}`}
+                title={mask.score === null ? `Mask ${idx + 1}` : `Mask ${idx + 1} · score ${mask.score.toFixed(3)}`}
                 className="group border-border bg-surface relative block aspect-square overflow-hidden rounded border"
               >
                 <SkeletonImage src={mask.url} alt={`${row.label} mask ${idx + 1}`} containerClassName="h-full w-full" imgClassName="h-full w-full object-contain" />
@@ -156,7 +156,9 @@ export function CollapsibleCategoryGrid({ rows }: { rows: CategoryRow[] }) {
     <div className="mb-5">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
         aria-expanded={open}
         className="border-border bg-surface-muted hover:border-border-strong hover:bg-surface-sunken flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors"
       >

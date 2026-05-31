@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ViewPromptModal } from "@/components/view-prompt-modal";
 import { serviceUrl } from "@/lib/api-base";
+import { fetchJson } from "@/lib/api/client";
+import { dataEnvelope, strategyHoverSchema } from "@/lib/api/schemas";
 import { STRATEGY_PROPERTY_COLORS } from "@/lib/strategy-property-colors";
 
 interface StrategyData {
@@ -33,7 +35,6 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -42,12 +43,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       return;
     }
     try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}`));
-      if (!res.ok) return;
-      const json = await res.json();
-      const d = json.data ?? json;
-      cache.set(strategyId, d);
-      setData(d);
+      const json = await fetchJson(serviceUrl(`strategies/${strategyId}`), dataEnvelope(strategyHoverSchema));
+      cache.set(strategyId, json.data);
+      setData(json.data);
     } catch {
       /* ignore */
     }
@@ -57,7 +55,7 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setOpen(true);
-      fetchData();
+      void fetchData();
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         setPos({ top: rect.bottom + 8, left: rect.left });
@@ -67,7 +65,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
 
   const hide = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setOpen(false), 200);
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 200);
   }, []);
 
   const keepOpen = useCallback(() => {
@@ -80,21 +80,29 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
     };
   }, []);
 
-  useEffect(() => {
-    if (!open || !cardRef.current || !pos) return;
-    const card = cardRef.current;
-    const rect = card.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let { top, left } = pos;
-    if (left + rect.width > vw - 16) left = vw - rect.width - 16;
-    if (left < 16) left = 16;
-    if (top + rect.height > vh - 16) {
-      const triggerRect = triggerRef.current?.getBoundingClientRect();
-      if (triggerRect) top = triggerRect.top - rect.height - 8;
-    }
-    if (top !== pos.top || left !== pos.left) setPos({ top, left });
-  }, [open, pos]);
+  // Clamp the card into the viewport once it mounts. Measuring needs the
+  // rendered dimensions, so we do it in a callback ref (not an effect): the
+  // ref re-fires whenever `pos` changes, and the clamp converges in one pass
+  // because a second measure of the already-clamped position is a no-op.
+  const measureCard = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || !pos) return;
+      const rect = node.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const { top: origTop, left: origLeft } = pos;
+      let top = origTop;
+      let left = origLeft;
+      if (left + rect.width > vw - 16) left = vw - rect.width - 16;
+      if (left < 16) left = 16;
+      if (top + rect.height > vh - 16) {
+        const triggerRect = triggerRef.current?.getBoundingClientRect();
+        if (triggerRect) top = triggerRect.top - rect.height - 8;
+      }
+      if (top !== origTop || left !== origLeft) setPos({ top, left });
+    },
+    [pos]
+  );
 
   return (
     <>
@@ -104,10 +112,8 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
       {open &&
         pos &&
         createPortal(
-          <div ref={cardRef} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
-            {!data ? (
-              <p className="text-text-muted text-caption">Loading…</p>
-            ) : (
+          <div ref={measureCard} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
+            {data ? (
               <div className="space-y-3">
                 <div>
                   <Link href={`/strategies/${data.id}`} className="text-primary-600 hover:text-primary-500 text-body font-semibold">
@@ -136,12 +142,12 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
                               <span className="text-text-disabled">: </span>
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
                                   setViewingPrompt({
                                     id: step.promptVersion!.id,
                                     name: step.promptVersion!.name
-                                  })
-                                }
+                                  });
+                                }}
                                 className="text-primary-600 hover:text-primary-500 hover:underline"
                               >
                                 {step.promptVersion.name || "Untitled prompt"}
@@ -154,16 +160,26 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
                   </div>
                 )}
               </div>
+            ) : (
+              <p className="text-text-muted text-caption">Loading…</p>
             )}
           </div>,
           document.body
         )}
-      {viewingPrompt && <ViewPromptModal promptVersionId={viewingPrompt.id} promptVersionName={viewingPrompt.name} onClose={() => setViewingPrompt(null)} />}
+      {viewingPrompt && (
+        <ViewPromptModal
+          promptVersionId={viewingPrompt.id}
+          promptVersionName={viewingPrompt.name}
+          onClose={() => {
+            setViewingPrompt(null);
+          }}
+        />
+      )}
     </>
   );
 }
 
 function Badge({ children, color }: { children: React.ReactNode; color: keyof typeof STRATEGY_PROPERTY_COLORS }) {
-  const c = STRATEGY_PROPERTY_COLORS[color];
-  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${c.bg} ${c.text}`}>{children}</span>;
+  const colors = STRATEGY_PROPERTY_COLORS[color];
+  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text}`}>{children}</span>;
 }

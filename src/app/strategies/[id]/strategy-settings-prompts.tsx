@@ -60,10 +60,14 @@ export function StrategySettingsPrompts({
   preview
 }: StrategySettingsPromptsProps) {
   const [viewingPromptId, setViewingPromptId] = useState<string | null>(null);
-  const viewingStep = viewingPromptId ? steps.find((s) => s.promptVersionId && s.promptVersionId === viewingPromptId) : null;
+  const viewingStep = viewingPromptId ? steps.find((step) => step.promptVersionId && step.promptVersionId === viewingPromptId) : null;
 
-  const openPrompt = useCallback((promptVersionId: string) => setViewingPromptId(promptVersionId), []);
-  const closePrompt = useCallback(() => setViewingPromptId(null), []);
+  const openPrompt = useCallback((promptVersionId: string) => {
+    setViewingPromptId(promptVersionId);
+  }, []);
+  const closePrompt = useCallback(() => {
+    setViewingPromptId(null);
+  }, []);
 
   return (
     <>
@@ -140,7 +144,13 @@ export function StrategySettingsPrompts({
                       <Link href={`/prompt-versions/${step.promptVersionId}`} className="text-primary-600 hover:text-primary-500">
                         {step.promptVersionName || "Untitled"}
                       </Link>
-                      <button type="button" onClick={() => openPrompt(step.promptVersionId!)} className="text-text-muted hover:text-text-secondary underline">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openPrompt(step.promptVersionId!);
+                        }}
+                        className="text-text-muted hover:text-text-secondary underline"
+                      >
                         View prompt
                       </button>
                     </>

@@ -114,8 +114,8 @@ export function StrategyBreakdownPanel({
         <div className="lg:col-span-2">
           <p className="text-text-muted text-caption mb-1.5 font-medium tracking-wider uppercase">Execution errors</p>
           <ul className="max-h-40 space-y-1 overflow-y-auto">
-            {breakdown.execution_errors.map((item, index) => (
-              <li key={`${index}-${item.reason}`} className="text-body flex items-center justify-between gap-3">
+            {breakdown.execution_errors.map((item) => (
+              <li key={item.reason} className="text-body flex items-center justify-between gap-3">
                 <span className="text-text-secondary min-w-0 truncate" title={item.reason}>
                   {item.reason}
                 </span>

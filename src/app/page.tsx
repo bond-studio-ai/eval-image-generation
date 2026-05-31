@@ -7,7 +7,7 @@ import { ReliabilityTab } from "@/app/analytics/reliability-tab";
 import { StrategyPerformanceSection } from "@/app/analytics/strategy-performance-section";
 import { PageHeader } from "@/components/page-header";
 import { Card, StatCard } from "@/components/ui/card";
-import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { type TabItem, Tabs } from "@/components/ui/tabs";
 import { definedProps } from "@/lib/defined-props";
 import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance, fetchStrategies } from "@/lib/service-client";
 
@@ -29,7 +29,11 @@ interface PageProps {
   }>;
 }
 
-type DistEntry = { rating: string; count: number; percentage: number };
+interface DistEntry {
+  rating: string;
+  count: number;
+  percentage: number;
+}
 
 const RATING_BAR_COLOR: Record<string, string> = {
   GOOD: "bg-success-500",
@@ -37,22 +41,22 @@ const RATING_BAR_COLOR: Record<string, string> = {
 };
 
 function DistributionChart({ data, title }: { data: DistEntry[]; title: string }) {
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const maxCount = Math.max(...data.map((entry) => entry.count), 1);
 
   return (
     <Card>
       <h2 className="text-h3 text-text-primary font-semibold">{title}</h2>
       <div className="mt-6 space-y-4">
-        {data.map((d) => (
-          <div key={d.rating} className="flex items-center gap-4">
-            <span className="text-body text-text-secondary w-20 font-medium">{d.rating}</span>
+        {data.map((entry) => (
+          <div key={entry.rating} className="flex items-center gap-4">
+            <span className="text-body text-text-secondary w-20 font-medium">{entry.rating}</span>
             <div className="flex-1">
               <div className="rounded-pill bg-surface-sunken h-8 w-full">
-                <div className={`rounded-pill h-8 ${RATING_BAR_COLOR[d.rating] ?? "bg-text-disabled"} transition-all duration-500`} style={{ width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%` }} />
+                <div className={`rounded-pill h-8 ${RATING_BAR_COLOR[entry.rating] ?? "bg-text-disabled"} transition-all duration-500`} style={{ width: `${maxCount > 0 ? (entry.count / maxCount) * 100 : 0}%` }} />
               </div>
             </div>
-            <span className="text-body text-text-primary w-12 text-right font-medium">{d.count}</span>
-            <span className="text-body text-text-secondary w-14 text-right">{d.percentage}%</span>
+            <span className="text-body text-text-primary w-12 text-right font-medium">{entry.count}</span>
+            <span className="text-body text-text-secondary w-14 text-right">{entry.percentage}%</span>
           </div>
         ))}
       </div>
@@ -62,13 +66,19 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
 
 type TabName = "strategies" | "products" | "reliability" | "compare";
 
+const TAB_BY_KEY: Record<string, TabName> = {
+  products: "products",
+  reliability: "reliability",
+  compare: "compare"
+};
+
 function buildTabHref(tab: TabName, searchParams: Record<string, string | string[] | undefined>): string {
   const params = new URLSearchParams();
   if (tab !== "strategies") params.set("tab", tab);
-  const from = getParamValues(searchParams, "from")[0];
-  const to = getParamValues(searchParams, "to")[0];
-  const model = getParamValues(searchParams, "model")[0];
-  const source = getParamValues(searchParams, "source")[0];
+  const [from] = getParamValues(searchParams, "from");
+  const [to] = getParamValues(searchParams, "to");
+  const [model] = getParamValues(searchParams, "model");
+  const [source] = getParamValues(searchParams, "source");
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (model) params.set("model", model);
@@ -77,22 +87,23 @@ function buildTabHref(tab: TabName, searchParams: Record<string, string | string
     for (const value of getParamValues(searchParams, "compareColumn")) params.append("compareColumn", value);
   }
   const qs = params.toString();
-  return `/${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  return `/${suffix}`;
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const tabRaw = getParamValues(params, "tab")[0];
-  const activeTab: TabName = tabRaw === "products" ? "products" : tabRaw === "reliability" ? "reliability" : tabRaw === "compare" ? "compare" : "strategies";
-  const from = getParamValues(params, "from")[0];
-  const to = getParamValues(params, "to")[0];
-  const model = getParamValues(params, "model")[0];
-  const source = getParamValues(params, "source")[0];
+  const [tabRaw] = getParamValues(params, "tab");
+  const activeTab: TabName = TAB_BY_KEY[tabRaw ?? ""] ?? "strategies";
+  const [from] = getParamValues(params, "from");
+  const [to] = getParamValues(params, "to");
+  const [model] = getParamValues(params, "model");
+  const [source] = getParamValues(params, "source");
 
   const isCompare = activeTab === "compare";
   const comparison = isCompare ? parseComparisonState({ ...params, compare: "1" }) : { enabled: false, columns: [] };
 
-  const tz = getParamValues(params, "tz")[0];
+  const [tz] = getParamValues(params, "tz");
   const ratingParams: Record<string, string> = {};
   if (from) ratingParams["from"] = from;
   if (to) ratingParams["to"] = to;
@@ -113,7 +124,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     totalGenerations: sceneRatings?.totalGenerations ?? 0,
     ratedGenerations: sceneRatings?.ratedGenerations ?? 0
   };
-  const models = perfData.models;
+  const { models } = perfData;
   const comparisonSlices = buildComparisonSlices(comparison, strategies);
 
   const filterProps = definedProps({ from, to, model, source });

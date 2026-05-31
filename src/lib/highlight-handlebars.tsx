@@ -33,7 +33,13 @@ const CLASS_BY_KIND: Record<HandlebarsKind, string> = {
 //   4. `{{ ... }}`       — regular mustache
 // Regex is re-created per call so `lastIndex` is never shared across renders.
 function mustacheRegex(): RegExp {
-  return /\{\{!--[\s\S]*?--\}\}|\{\{![\s\S]*?\}\}|\{\{\{[\s\S]*?\}\}\}|\{\{[\s\S]*?\}\}/g;
+  // The alternatives use tempered bodies (`(?:[^}]|\}(?!\}))*`) so there is no
+  // catastrophic backtracking. `no-super-linear-move` still flags the shared
+  // `{{` start because a long `{{{{…` run with no close makes the global scan
+  // re-attempt at each brace — but this only highlights the user's own short
+  // template inside a client-side editor overlay, so it is not a DoS surface.
+  // eslint-disable-next-line regexp/no-super-linear-move -- client-side highlighter over short, self-authored templates; not a server input
+  return /\{\{!--(?:[^-]|-(?!-\}\}))*--\}\}|\{\{!(?:[^}]|\}(?!\}))*\}\}|\{\{\{(?:[^}]|\}(?!\}\}))*\}\}\}|\{\{(?:[^}]|\}(?!\}))*\}\}/g;
 }
 
 function classify(match: string): HandlebarsKind {
@@ -71,7 +77,7 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
         ) : (
           <span key={k}>{part}</span>
         );
-        lines[lines.length - 1]!.push(node);
+        lines.at(-1)!.push(node);
       }
       if (i < parts.length - 1) lines.push([]);
     });
@@ -79,14 +85,15 @@ export function renderHighlightedHandlebarsByLine(source: string): ReactNode[][]
 
   const re = mustacheRegex();
   let cursor = 0;
-  let match: RegExpExecArray | null;
+  let match = re.exec(source);
 
-  while ((match = re.exec(source)) !== null) {
+  while (match !== null) {
     const [token] = match;
     if (match.index > cursor) push(source.slice(cursor, match.index));
     push(token, CLASS_BY_KIND[classify(token)]);
     cursor = match.index + token.length;
     if (match.index === re.lastIndex) re.lastIndex++;
+    match = re.exec(source);
   }
 
   if (cursor < source.length) push(source.slice(cursor));

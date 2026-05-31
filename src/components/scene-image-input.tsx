@@ -5,6 +5,8 @@ import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { UploadIcon, XIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { localUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { uploadResponseSchema } from "@/lib/api/schemas";
 
 interface SceneImageInputProps {
   label: string;
@@ -32,12 +34,14 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
           body: formData
         });
 
-        const json = await res.json();
-        if (!res.ok) throw new Error(json?.error?.message || `Upload failed (${res.status})`);
+        const json = parseOrFallback(uploadResponseSchema, await res.json(), {}, "scene image upload");
+        if (!res.ok) throw new Error(json.error?.message || `Upload failed (${res.status})`);
 
-        onChange(json.data.publicUrl);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to upload image");
+        const publicUrl = json.data?.publicUrl;
+        if (!publicUrl) throw new Error("Upload succeeded but no image URL was returned. Please try again.");
+        onChange(publicUrl);
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_.message : "Failed to upload image");
       } finally {
         setUploading(false);
       }
@@ -47,8 +51,8 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
 
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
-      const file = Array.from(files)[0];
-      if (file) uploadFile(file);
+      const [file] = Array.from(files);
+      if (file) void uploadFile(file);
     },
     [uploadFile]
   );
@@ -71,7 +75,14 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       {value ? (
         <div className="group relative">
           <ImageWithSkeleton src={value} alt={label} wrapperClassName="min-h-96 h-96 w-full rounded-lg border border-border bg-surface-muted" />
-          <button type="button" aria-label="Remove image" onClick={() => onChange(null)} className="bg-danger-500 text-text-inverse absolute -top-2 -right-2 rounded-full p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            aria-label="Remove image"
+            onClick={() => {
+              onChange(null);
+            }}
+            className="bg-danger-500 text-text-inverse absolute -top-2 -right-2 rounded-full p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+          >
             <XIcon className="size-3" />
           </button>
         </div>
@@ -98,7 +109,9 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
               e.preventDefault();
               setDragOver(true);
             }}
-            onDragLeave={() => setDragOver(false)}
+            onDragLeave={() => {
+              setDragOver(false);
+            }}
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
           >

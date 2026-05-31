@@ -1,22 +1,23 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
 const CATALOG_INCLUDE_PARAMS = "include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=components&images.tags=photo-image,tear-sheet,line-drawing";
 
-const TILE_SEGMENTS = new Set(["floor-tiles", "wall-tiles", "shower-wall-tiles", "shower-floor-tiles", "shower-curb-tiles"]);
+const TILE_SEGMENTS = new Set(["floor-tiles", "shower-curb-tiles", "shower-floor-tiles", "shower-wall-tiles", "wall-tiles"]);
 
 function catalogSegment(segment: string): string {
   return TILE_SEGMENTS.has(segment) ? "tiles" : segment;
 }
 
-function firstCatalogProduct(json: unknown): unknown | null {
+function firstCatalogProduct(json: unknown): unknown {
   const payload = json && typeof json === "object" ? (json as { data?: unknown }) : null;
   const raw = payload && "data" in payload ? payload.data : json;
   if (Array.isArray(raw)) return raw[0] ?? null;
   return raw ?? null;
 }
 
-async function fetchCatalogProduct(segment: string, productId: string): Promise<unknown | null> {
+async function fetchCatalogProduct(segment: string, productId: string): Promise<unknown> {
   const url = `${CATALOG_BASE}/${segment}/${encodeURIComponent(productId)}?${CATALOG_INCLUDE_PARAMS}`;
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
@@ -33,7 +34,7 @@ async function fetchCatalogProduct(segment: string, productId: string): Promise<
 export async function GET(_request: Request, { params }: { params: Promise<{ category: string; productId: string }> }) {
   try {
     const { category, productId } = await params;
-    const requestedSegment = decodeURIComponent(category).replace(/_/g, "-");
+    const requestedSegment = decodeURIComponent(category).replaceAll("_", "-");
     const segment = catalogSegment(requestedSegment);
     let product = await fetchCatalogProduct(segment, productId);
 
@@ -42,8 +43,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cat
     }
 
     return successResponse(product);
-  } catch (err) {
-    console.error("[catalog product detail] Error:", err);
+  } catch (error) {
+    logger.error("[catalog product detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch product details");
   }
 }

@@ -10,12 +10,12 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
   const wrapperRef = useRef<HTMLDivElement>(null);
   const focusOnMount = useCallback((node: HTMLInputElement | null) => node?.focus(), []);
 
-  const selectedLabel = useMemo(() => options.find((o) => o.value === value)?.label ?? null, [options, value]);
+  const selectedLabel = useMemo(() => options.find((option) => option.value === value)?.label ?? null, [options, value]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return options;
-    return options.filter((o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q));
+    const query = search.toLowerCase().trim();
+    if (!query) return options;
+    return options.filter((option) => option.label.toLowerCase().includes(query) || option.value.toLowerCase().includes(query));
   }, [options, search]);
 
   return (
@@ -23,7 +23,9 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
       <button
         type="button"
         id={id}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+        }}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
         <span className={selectedLabel ? "text-text-primary truncate" : "text-text-disabled"}>{selectedLabel || placeholder}</span>
@@ -47,7 +49,9 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
                 ref={focusOnMount}
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
                 placeholder="Search models..."
                 aria-label="Search models"
                 className="focus:border-primary-500 focus:ring-primary-500 border-border-strong text-body w-full rounded border px-2.5 py-1.5 focus:ring-1 focus:outline-none"
@@ -55,19 +59,19 @@ export function SearchableSelect({ id, value, options, onChange, placeholder = "
             </div>
             <div className="border-border-subtle max-h-56 overflow-y-auto border-t">
               {filtered.length === 0 && <div className="text-text-disabled text-body p-3 text-center">No matches</div>}
-              {filtered.map((o) => (
+              {filtered.map((option) => (
                 <button
-                  key={o.value}
+                  key={option.value}
                   type="button"
                   onClick={() => {
-                    onChange(o.value);
+                    onChange(option.value);
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`hover:bg-surface-muted flex w-full flex-col px-3 py-2 text-left transition-colors ${o.value === value ? "bg-primary-50 text-primary-700" : "text-text-secondary"}`}
+                  className={`hover:bg-surface-muted flex w-full flex-col px-3 py-2 text-left transition-colors ${option.value === value ? "bg-primary-50 text-primary-700" : "text-text-secondary"}`}
                 >
-                  <span className={`text-body ${o.value === value ? "font-medium" : ""}`}>{o.label}</span>
-                  <span className="text-text-disabled text-caption font-mono">{o.meta ?? o.value}</span>
+                  <span className={`text-body ${option.value === value ? "font-medium" : ""}`}>{option.label}</span>
+                  <span className="text-text-disabled text-caption font-mono">{option.meta ?? option.value}</span>
                 </button>
               ))}
             </div>

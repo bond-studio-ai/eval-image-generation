@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { UnitySlimDesignMaterials } from "@/lib/dollhouse-renders";
-import { parseDesignMaterialsOverride, parseRoomDataOverride, type OverrideParseResult } from "./build-request";
+import { type OverrideParseResult, parseDesignMaterialsOverride, parseRoomDataOverride } from "./build-request";
 
 export interface DollhouseOverridesController {
   designMaterialsInput: string;

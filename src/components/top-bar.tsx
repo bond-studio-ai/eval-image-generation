@@ -38,7 +38,7 @@ function isLikelyId(segment: string): boolean {
 function titleCase(segment: string): string {
   return segment
     .split("-")
-    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
 
@@ -74,6 +74,7 @@ export function TopBar({ className }: TopBarProps) {
           {crumbs.map((crumb, i) => {
             const isLast = i === crumbs.length - 1;
             return (
+              // eslint-disable-next-line react/no-array-index-key -- breadcrumbs are a positionally-stable trail, never reordered, labels can repeat
               <li key={`${crumb.label}-${i}`} className="flex shrink-0 items-center gap-1">
                 {i > 0 && <ChevronRightIcon className="text-text-disabled size-3" aria-hidden="true" />}
                 {crumb.href && !isLast ? (

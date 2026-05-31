@@ -1,10 +1,12 @@
+/* eslint-disable camelcase -- this module mirrors the snake_case strategy-run API payload shape */
 "use client";
 
 import { localUrl, serviceUrl } from "./api-base";
+import { parseJsonOrEmpty } from "./async-utils";
 import { buildDesignMaterials, type UnitySlimDesignMaterials } from "./design-materials";
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY, readInputPresetValue } from "./input-preset-design";
 
-export type StrategyRunInputPayload = {
+export interface StrategyRunInputPayload {
   layout_type_id?: string | null;
   pkg_id?: string | null;
   scene_images: {
@@ -13,11 +15,11 @@ export type StrategyRunInputPayload = {
     mood_board?: string;
   };
   product_images: Record<string, string[]>;
-  arbitrary_images: Array<{ url: string; slot?: string; tag?: string }>;
+  arbitrary_images: { url: string; slot?: string; tag?: string }[];
   design: Record<string, unknown>;
-};
+}
 
-export type StrategyRunDollhouseCapturePayload = {
+export interface StrategyRunDollhouseCapturePayload {
   project_id: string;
   room_data: Record<string, unknown>;
   design_materials: UnitySlimDesignMaterials;
@@ -26,7 +28,7 @@ export type StrategyRunDollhouseCapturePayload = {
     height?: number;
     format?: string;
   };
-};
+}
 
 export type CreateStrategyRunRequest = Omit<StrategyRunInputPayload, "pkg_id"> & {
   preset_id?: string;
@@ -37,15 +39,15 @@ export type CreateStrategyRunRequest = Omit<StrategyRunInputPayload, "pkg_id"> &
   number_of_images?: number;
 };
 
-type LayoutBootstrapResponse = {
+interface LayoutBootstrapResponse {
   project_id: string;
   room_data: Record<string, unknown>;
-};
+}
 
-type UpsertProjectDesignResponse = {
+interface UpsertProjectDesignResponse {
   room_data: Record<string, unknown>;
   design?: Record<string, unknown>;
-};
+}
 
 function readUrl(value: unknown): string | null {
   if (typeof value === "string" && value.length > 0) return value;
@@ -110,8 +112,8 @@ export function buildStrategyRunInputFromPreset(data: Record<string, unknown>): 
   const layoutTypeId = readInputPresetValue(data, "layoutTypeId");
   const pkgId = readInputPresetValue(data, "pkgId");
   return {
-    ...(typeof layoutTypeId === "string" || layoutTypeId === null ? { layout_type_id: layoutTypeId as string | null } : {}),
-    ...(typeof pkgId === "string" || pkgId === null ? { pkg_id: pkgId as string | null } : {}),
+    ...(typeof layoutTypeId === "string" || layoutTypeId === null ? { layout_type_id: layoutTypeId } : {}),
+    ...(typeof pkgId === "string" || pkgId === null ? { pkg_id: pkgId } : {}),
     scene_images,
     product_images,
     arbitrary_images,
@@ -125,11 +127,11 @@ async function bootstrapLayoutPreset(layoutTypeId: string, pkgId: string): Promi
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ layout_type_id: layoutTypeId, pkg_id: pkgId })
   });
-  const json = await res.json().catch(() => ({}));
+  const json = await parseJsonOrEmpty(res);
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to bootstrap layout preset");
   }
-  return (json as { data?: LayoutBootstrapResponse }).data as LayoutBootstrapResponse;
+  return (json as { data: LayoutBootstrapResponse }).data;
 }
 
 async function upsertProjectDesign(projectId: string, design: Record<string, unknown>): Promise<UpsertProjectDesignResponse> {
@@ -138,44 +140,46 @@ async function upsertProjectDesign(projectId: string, design: Record<string, unk
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ design })
   });
-  const json = await res.json().catch(() => ({}));
+  const json = await parseJsonOrEmpty(res);
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to persist project design");
   }
-  return (json as { data?: UpsertProjectDesignResponse }).data as UpsertProjectDesignResponse;
+  return (json as { data: UpsertProjectDesignResponse }).data;
+}
+
+async function buildPresetDollhouseCapture(input: StrategyRunInputPayload, presetId: string): Promise<StrategyRunDollhouseCapturePayload | undefined> {
+  if (input.scene_images.dollhouse_view || !input.layout_type_id) return undefined;
+  if (!input.pkg_id) {
+    throw new Error(`Preset ${presetId} has layout_type_id but no pkg_id`);
+  }
+  const bootstrap = await bootstrapLayoutPreset(input.layout_type_id, input.pkg_id);
+  const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
+  const designMaterials = await buildDesignMaterials({
+    design: input.design,
+    roomData: persisted.room_data,
+    projectId: bootstrap.project_id
+  });
+  if (!designMaterials) {
+    throw new Error("Failed to build design materials from preset layout");
+  }
+  return {
+    project_id: bootstrap.project_id,
+    room_data: persisted.room_data,
+    design_materials: designMaterials
+  };
 }
 
 async function buildPresetRunRequest(input: StrategyRunInputPayload, options: { preset_id: string; batch?: boolean; group_id?: string; number_of_images?: number }): Promise<CreateStrategyRunRequest> {
-  let dollhouseCapture: StrategyRunDollhouseCapturePayload | undefined;
-  if (!input.scene_images.dollhouse_view && input.layout_type_id) {
-    if (!input.pkg_id) {
-      throw new Error(`Preset ${options.preset_id} has layout_type_id but no pkg_id`);
-    }
-    const bootstrap = await bootstrapLayoutPreset(input.layout_type_id, input.pkg_id);
-    const persisted = await upsertProjectDesign(bootstrap.project_id, input.design);
-    const designMaterials = await buildDesignMaterials({
-      design: input.design,
-      roomData: persisted.room_data,
-      projectId: bootstrap.project_id
-    });
-    if (!designMaterials) {
-      throw new Error("Failed to build design materials from preset layout");
-    }
-    dollhouseCapture = {
-      project_id: bootstrap.project_id,
-      room_data: persisted.room_data,
-      design_materials: designMaterials
-    };
-  }
+  const dollhouseCapture = await buildPresetDollhouseCapture(input, options.preset_id);
 
   return {
-    ...(input.layout_type_id !== undefined ? { layout_type_id: input.layout_type_id } : {}),
+    ...(input.layout_type_id === undefined ? {} : { layout_type_id: input.layout_type_id }),
     scene_images: input.scene_images,
     product_images: input.product_images,
     arbitrary_images: input.arbitrary_images,
     design: input.design,
     preset_id: options.preset_id,
-    ...(options.batch !== undefined ? { batch: options.batch } : {}),
+    ...(options.batch === undefined ? {} : { batch: options.batch }),
     ...(options.group_id ? { group_id: options.group_id } : {}),
     ...(dollhouseCapture ? { dollhouse_capture: dollhouseCapture } : {}),
     ...(options.number_of_images ? { number_of_images: options.number_of_images } : {})
@@ -186,7 +190,7 @@ export async function fetchPresetRunRequests(presetIds: string[], options: { bat
   const presetDetails = await Promise.all(
     presetIds.map(async (presetId) => {
       const res = await fetch(serviceUrl(`input-presets/${presetId}`), { cache: "no-store" });
-      const json = await res.json().catch(() => ({}));
+      const json = await parseJsonOrEmpty(res);
       if (!res.ok) {
         throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to load preset details");
       }

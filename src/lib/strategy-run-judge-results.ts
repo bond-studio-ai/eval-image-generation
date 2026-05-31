@@ -1,3 +1,12 @@
+import { coerceString } from "@/lib/coerce-string";
+
+/** Coerce an unknown field to a number, preserving `null`/`undefined` as `null`. */
+function coerceNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (value == null) return null;
+  return Number(value);
+}
+
 /** Per-judge evaluation row for a strategy run (from strategy_run_judge_result + judge config). */
 export interface StrategyRunJudgeResultEntry {
   id: string;
@@ -61,29 +70,29 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
   const out: StrategyRunJudgeResultEntry[] = [];
   for (const row of value) {
     if (row == null || typeof row !== "object") continue;
-    const r = row as RawJudgeResult;
-    const id = r.id != null ? String(r.id) : "";
+    const result = row as RawJudgeResult;
+    const id = coerceString(result.id) ?? "";
     if (!id) continue;
-    const imgs = r.judgeInputImages;
+    const imgs = result.judgeInputImages;
     out.push({
       id,
-      strategyRunId: r.strategyRunId != null ? String(r.strategyRunId) : "",
-      strategyJudgeId: r.strategyJudgeId != null ? String(r.strategyJudgeId) : "",
-      judgeModel: r.judgeModel != null ? String(r.judgeModel) : "",
-      judgeName: r.judgeName != null ? String(r.judgeName) : null,
-      judgePromptVersionId: r.judgePromptVersionId != null ? String(r.judgePromptVersionId) : "",
-      judgePromptVersionName: r.judgePromptVersionName != null ? String(r.judgePromptVersionName) : null,
-      position: typeof r.position === "number" ? r.position : Number(r.position) || 0,
-      judgeType: r.judgeType === "individual" ? "individual" : "batch",
-      judgeScore: typeof r.judgeScore === "number" ? r.judgeScore : r.judgeScore != null ? Number(r.judgeScore) : null,
-      judgeReasoning: r.judgeReasoning != null ? String(r.judgeReasoning) : null,
-      judgeOutput: r.judgeOutput != null ? String(r.judgeOutput) : null,
-      judgeSystemPrompt: r.judgeSystemPrompt != null ? String(r.judgeSystemPrompt) : null,
-      judgeUserPrompt: r.judgeUserPrompt != null ? String(r.judgeUserPrompt) : null,
+      strategyRunId: coerceString(result.strategyRunId) ?? "",
+      strategyJudgeId: coerceString(result.strategyJudgeId) ?? "",
+      judgeModel: coerceString(result.judgeModel) ?? "",
+      judgeName: coerceString(result.judgeName) ?? null,
+      judgePromptVersionId: coerceString(result.judgePromptVersionId) ?? "",
+      judgePromptVersionName: coerceString(result.judgePromptVersionName) ?? null,
+      position: typeof result.position === "number" ? result.position : Number(result.position) || 0,
+      judgeType: result.judgeType === "individual" ? "individual" : "batch",
+      judgeScore: coerceNumberOrNull(result.judgeScore),
+      judgeReasoning: coerceString(result.judgeReasoning) ?? null,
+      judgeOutput: coerceString(result.judgeOutput) ?? null,
+      judgeSystemPrompt: coerceString(result.judgeSystemPrompt) ?? null,
+      judgeUserPrompt: coerceString(result.judgeUserPrompt) ?? null,
       judgeInputImages: Array.isArray(imgs) ? (imgs as StrategyRunJudgeResultEntry["judgeInputImages"]) : null,
-      judgeTypeUsed: r.judgeTypeUsed != null ? String(r.judgeTypeUsed) : null,
-      candidateIndex: typeof r.candidateIndex === "number" ? r.candidateIndex : r.candidateIndex != null ? Number(r.candidateIndex) : null,
-      executionTimeMs: typeof r.executionTimeMs === "number" ? r.executionTimeMs : r.executionTimeMs != null ? Number(r.executionTimeMs) : null
+      judgeTypeUsed: coerceString(result.judgeTypeUsed) ?? null,
+      candidateIndex: coerceNumberOrNull(result.candidateIndex),
+      executionTimeMs: coerceNumberOrNull(result.executionTimeMs)
     });
   }
   return out;

@@ -1,5 +1,7 @@
 import { serviceV2Url } from "./api-base";
 
+const HTTP_NOT_FOUND = 404;
+
 export type DollhouseRenderStatus = "pending" | "posted" | "completed" | "failed";
 
 export interface DollhouseImageConfig {
@@ -171,7 +173,7 @@ export class DollhouseRenderApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
@@ -195,7 +197,7 @@ function summarizeZodIssues(details: unknown): string | null {
 }
 
 /** Server returned 2xx but the body wasn't the expected `{ data: [...] }` shape. */
-export class DollhouseRenderUnexpectedResponseError extends Error {
+class DollhouseRenderUnexpectedResponseError extends Error {
   constructor(message = "Server returned an unexpected response shape") {
     super(message);
     this.name = "DollhouseRenderUnexpectedResponseError";
@@ -289,7 +291,7 @@ export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | nul
   const rotation = asPoint3(raw.rotation);
   if (!position || !rotation) return null;
 
-  const products = Array.isArray(raw.products) ? raw.products.map(normalizeCameraFrameProduct).filter((p): p is DollhouseCameraFrameProduct => p !== null) : [];
+  const products = Array.isArray(raw.products) ? raw.products.map(normalizeCameraFrameProduct).filter((product): product is DollhouseCameraFrameProduct => product !== null) : [];
 
   return {
     aspect: numberOr(raw.aspect, 0),
@@ -334,7 +336,7 @@ export async function getDollhouseRender(id: string, options: { includeFrames?: 
     ...(options.baseUrl ? { cache: "no-store" as RequestCache } : {}),
     ...init
   });
-  if (res.status === 404) return null;
+  if (res.status === HTTP_NOT_FOUND) return null;
   if (!res.ok) throw await parseError(res);
   const json = (await res.json()) as V2ListResponse<DollhouseRender>;
   return json.data[0] ?? null;
@@ -349,7 +351,7 @@ export async function createDollhouseRender(body: CreateDollhouseRenderBody, ini
   });
   if (!res.ok) throw await parseError(res);
   const json = (await res.json()) as V2ListResponse<DollhouseRender>;
-  const created = json.data[0];
+  const [created] = json.data;
   if (!created) {
     throw new DollhouseRenderUnexpectedResponseError("Create render succeeded but the server returned no render object.");
   }

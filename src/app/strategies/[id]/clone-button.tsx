@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { CopyIcon } from "@/components/ui/icons";
 import { toast } from "@/components/ui/toaster";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 
 export function CloneButton({ strategyId }: { strategyId: string }) {
   const router = useRouter();
@@ -21,14 +23,14 @@ export function CloneButton({ strategyId }: { strategyId: string }) {
         });
         return;
       }
-      const json = await res.json();
-      const newId = json.data?.id;
+      const json: unknown = await res.json();
+      const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "strategy clone").data.id;
       if (newId) {
         toast.success("Strategy cloned");
         router.push(`/strategies/${newId}`);
       }
-    } catch (e) {
-      toast.error("Failed to clone strategy", e instanceof Error ? { description: e.message } : {});
+    } catch (error) {
+      toast.error("Failed to clone strategy", error instanceof Error ? { description: error.message } : {});
     } finally {
       setLoading(false);
     }

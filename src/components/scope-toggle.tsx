@@ -27,7 +27,8 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
       const next = new URLSearchParams(searchParams.toString());
       if (nextScope === "benchmark") next.set("source", "benchmark");
       else next.delete("source");
-      router.push(`${pathname}${next.toString() ? `?${next}` : ""}`);
+      const suffix = next.toString() ? `?${next.toString()}` : "";
+      router.push(`${pathname}${suffix}`);
     },
     [pathname, router, searchParams]
   );
@@ -36,7 +37,9 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
     <div className="border-border bg-surface-muted flex items-center gap-1 rounded-lg border p-0.5">
       <button
         type="button"
-        onClick={() => setScope("default")}
+        onClick={() => {
+          setScope("default");
+        }}
         aria-pressed={source === "default"}
         className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "default" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
       >
@@ -44,7 +47,9 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
       </button>
       <button
         type="button"
-        onClick={() => setScope("benchmark")}
+        onClick={() => {
+          setScope("benchmark");
+        }}
         aria-pressed={source === "benchmark"}
         className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "benchmark" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
       >

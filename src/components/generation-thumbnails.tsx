@@ -15,7 +15,16 @@ function ThumbnailImage({ url, alt }: { url: string; alt: string }) {
   return (
     <div className="border-border relative size-12 shrink-0 overflow-hidden rounded border">
       {!loaded && <div className="bg-border absolute inset-0 animate-pulse" />}
-      <CdnImage src={url} alt={alt} width={48} height={48} onLoad={() => setLoaded(true)} className={`object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`} />
+      <CdnImage
+        src={url}
+        alt={alt}
+        width={48}
+        height={48}
+        onLoad={() => {
+          setLoaded(true);
+        }}
+        className={`object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
     </div>
   );
 }
@@ -27,7 +36,17 @@ function LightboxImage({ url, alt }: { url: string; alt: string }) {
     <div className="bg-surface-sunken relative w-full overflow-hidden rounded-lg">
       {/* Skeleton placeholder — maintains a 4:3 aspect ratio until image loads */}
       {!loaded && <div className="bg-border aspect-[4/3] w-full animate-pulse" />}
-      <CdnImage src={url} alt={alt} width={0} height={0} sizes="100vw" onLoad={() => setLoaded(true)} className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`} />
+      <CdnImage
+        src={url}
+        alt={alt}
+        width={0}
+        height={0}
+        sizes="100vw"
+        onLoad={() => {
+          setLoaded(true);
+        }}
+        className={`h-auto w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "absolute inset-0 opacity-0"}`}
+      />
     </div>
   );
 }
@@ -64,7 +83,9 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
       {/* Lightbox — full-width modal with skeleton loading */}
       {expanded && (
         <Modal
-          onClose={() => setExpanded(false)}
+          onClose={() => {
+            setExpanded(false);
+          }}
           ariaLabel="Expanded results"
           backdropClassName="bg-overlay/70"
           containerClassName="sm:p-6"
@@ -73,9 +94,16 @@ export function GenerationThumbnails({ urls }: GenerationThumbnailsProps) {
           {/* Header */}
           <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
             <span className="text-text-secondary text-body font-medium">
-              {urls.length} result{urls.length !== 1 ? "s" : ""}
+              {urls.length} result{urls.length === 1 ? "" : "s"}
             </span>
-            <button type="button" aria-label="Close" onClick={() => setExpanded(false)} className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => {
+                setExpanded(false);
+              }}
+              className="bg-surface-sunken text-text-secondary hover:bg-border rounded-full p-1.5"
+            >
               <XIcon className="size-5" />
             </button>
           </div>

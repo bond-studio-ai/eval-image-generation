@@ -10,7 +10,7 @@ import { buildRows } from "./category-rows";
 import { OverlayComparison } from "./overlay-comparison";
 import { pluginEntriesFor } from "./plugin-renderers";
 import { CollapsibleTimeline } from "./timeline";
-import type { DriftAssessment, ReviewRecord } from "./types";
+import type { ReviewRecord } from "./types";
 
 /**
  * Modal layout for the review results view. Composes the timeline,
@@ -20,13 +20,22 @@ import type { DriftAssessment, ReviewRecord } from "./types";
  * parent `ReviewResultsBadge` so the modal stays a pure presentational
  * component over `record`.
  */
+function reviewSummaryLabel(rowCount: number, totalMasks: number, loading: boolean): string {
+  if (rowCount > 0) {
+    const categoryWord = rowCount === 1 ? "category" : "categories";
+    const maskWord = totalMasks === 1 ? "mask" : "masks";
+    return `${rowCount} ${categoryWord} · ${totalMasks} ${maskWord}`;
+  }
+  return loading ? "Loading…" : "No categories";
+}
+
 export function ReviewModal({ generationId, record, loading, error, onClose }: { generationId: string; record: ReviewRecord | null; loading: boolean; error: string | null; onClose: () => void }) {
   const categories = useSegmentationCategories();
   const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
   const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
   const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
   const pluginEntries = useMemo(() => pluginEntriesFor(record?.reviewAssessment ?? null), [record]);
-  const segmentationDrift = (record?.reviewAssessment?.plugins?.segmentationDrift ?? null) as DriftAssessment | null;
+  const segmentationDrift = record?.reviewAssessment?.plugins?.segmentationDrift ?? null;
 
   return (
     <Modal onClose={onClose} labelledById="review-modal-title" backdropClassName="bg-overlay/60" className="bg-surface flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl">
@@ -36,7 +45,7 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
             Review
           </h3>
           <p className="text-text-muted text-caption mt-0.5">
-            {rows.length > 0 ? `${rows.length} ${rows.length === 1 ? "category" : "categories"} · ${totalMasks} ${totalMasks === 1 ? "mask" : "masks"}` : loading ? "Loading…" : "No categories"}
+            {reviewSummaryLabel(rows.length, totalMasks, loading)}
             {record?.createdAt && (
               <>
                 {" · "}

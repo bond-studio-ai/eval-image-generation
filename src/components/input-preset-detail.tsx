@@ -4,17 +4,26 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { DesignSettingsDisplay, useCatalogProducts } from "@/components/design-settings-editor";
+import { useCatalogProducts } from "@/components/design-settings-catalog";
+import { DesignSettingsDisplay } from "@/components/design-settings-display";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
 import { CopyIcon, PencilIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { localUrl, serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_LABELS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY, readInputPresetValue } from "@/lib/input-preset-design";
 import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
 import type { InputPresetDetailItem } from "@/lib/service-client";
 import { RatingBadge } from "./rating-badge";
+
+function ProductCardPreview({ previewUrl, isLoadingPreview, label }: { previewUrl: string | null; isLoadingPreview: boolean; label: string }) {
+  if (previewUrl) return <ImageWithSkeleton src={previewUrl} alt={label} wrapperClassName="h-32 w-full bg-surface-muted p-1" />;
+  if (isLoadingPreview) return <div className="bg-border h-32 w-full animate-pulse" aria-hidden />;
+  return <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div>;
+}
 
 interface SerializedGeneration {
   id: string;
@@ -89,14 +98,18 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const imageTypeValue = readInputPresetValue(rawData, `${slot}ImageType`);
       const imageTypeLabel = typeof imageTypeValue === "string" && imageTypeLabels[imageTypeValue] ? imageTypeLabels[imageTypeValue] : "Tear Sheet";
 
+      let subtitle = imageTypeLabel;
+      if (product) subtitle = `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}`;
+      else if (storedImage?.isArbitrary) subtitle = `URL-only attachment · ${imageTypeLabel}`;
+
       return [
         {
           slot,
           label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
           previewUrl: storedImage?.url ?? product?.featuredImage?.url ?? null,
           title: product?.name ?? (storedImage?.isArbitrary ? "Arbitrary image" : (productId ?? "Saved image")),
-          subtitle: product ? `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}` : storedImage?.isArbitrary ? `URL-only attachment · ${imageTypeLabel}` : imageTypeLabel,
-          isLoadingPreview: !!productId && !product && !storedImage?.url && !loaded,
+          subtitle,
+          isLoadingPreview: Boolean(productId) && !product && !storedImage?.url && !loaded,
           url: storedImage?.url ?? null,
           isArbitrary: storedImage?.isArbitrary ?? false
         }
@@ -114,7 +127,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const json = (await res.json()) as { data?: LayoutPresetOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!layoutTypeId
+    enabled: Boolean(layoutTypeId)
   });
 
   const { data: designPackageOptions = [] } = useQuery({
@@ -127,7 +140,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const json = (await res.json()) as { data?: DesignPackageOption[] };
       return Array.isArray(json.data) ? json.data : [];
     },
-    enabled: !!pkgId
+    enabled: Boolean(pkgId)
   });
 
   const selectedLayoutPreset = useMemo(() => layoutPresetOptions.find((option) => option.id === layoutTypeId) ?? null, [layoutPresetOptions, layoutTypeId]);
@@ -161,8 +174,8 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
                       method: "POST"
                     });
                     if (!res.ok) throw new Error("Clone failed");
-                    const json = await res.json();
-                    const newId = json.data?.id;
+                    const json: unknown = await res.json();
+                    const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "input preset clone").data.id;
                     if (newId) {
                       router.refresh();
                       router.push(`/input-presets/${newId}/edit`);
@@ -241,18 +254,18 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             label: "Mood Board",
             url: data.moodBoard ?? (typeof rawData.mood_board === "string" ? rawData.mood_board : null)
           }
-        ].filter((s): s is { label: string; url: string } => !!s.url);
+        ].filter((scene): scene is { label: string; url: string } => Boolean(scene.url));
         if (scenes.length === 0) return null;
         return (
           <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
             <h2 className="text-text-primary text-body mb-4 font-semibold uppercase">Scene Images</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {scenes.map((s) => (
-                <div key={s.label} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
+              {scenes.map((scene) => (
+                <div key={scene.label} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
                   <div className="border-border-subtle border-b px-2.5 py-1.5">
-                    <span className="text-text-secondary text-caption font-semibold">{s.label}</span>
+                    <span className="text-text-secondary text-caption font-semibold">{scene.label}</span>
                   </div>
-                  <ImageWithSkeleton src={s.url} alt={s.label} wrapperClassName="h-48 w-full bg-surface-muted p-1" />
+                  <ImageWithSkeleton src={scene.url} alt={scene.label} wrapperClassName="h-48 w-full bg-surface-muted p-1" />
                 </div>
               ))}
             </div>
@@ -268,13 +281,7 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {productCards.map((item) => (
                 <div key={item.slot} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
-                  {item.previewUrl ? (
-                    <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-surface-muted p-1" />
-                  ) : item.isLoadingPreview ? (
-                    <div className="bg-border h-32 w-full animate-pulse" aria-hidden />
-                  ) : (
-                    <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div>
-                  )}
+                  <ProductCardPreview previewUrl={item.previewUrl} isLoadingPreview={item.isLoadingPreview} label={item.label} />
                   <div className="border-border-subtle border-t px-2 py-1.5">
                     <p className="text-text-secondary text-caption truncate font-medium" title={item.label}>
                       {item.label}

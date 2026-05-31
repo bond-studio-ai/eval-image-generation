@@ -1,36 +1,40 @@
-import { StrategyFlowDag, type DagStep } from "@/components/strategy-flow-dag";
+import { type DagStep, StrategyFlowDag } from "@/components/strategy-flow-dag";
 import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 import { SectionToggle } from "./shared";
 import type { StepGroup } from "./types";
 
+function deriveDagStatus(results: StepGroup["results"]): NonNullable<DagStep["status"]> {
+  if (results.some((result) => result.status === "running")) return "running";
+  if (results.some((result) => result.status === "completed")) return "completed";
+  if (results.some((result) => result.status === "failed")) return "failed";
+  return (results[0]?.status as DagStep["status"]) ?? "pending";
+}
+
 export function ExecutionFlowSection({ stepGroups, judgeResults, open, onToggle }: { stepGroups: StepGroup[]; judgeResults: StrategyRunJudgeResultEntry[]; open: boolean; onToggle: () => void }) {
-  const dagSteps: DagStep[] = stepGroups.flatMap((g) => {
-    if (!g.step) return [];
-    const anyCompleted = g.results.some((r) => r.status === "completed");
-    const anyRunning = g.results.some((r) => r.status === "running");
-    const anyFailed = g.results.some((r) => r.status === "failed");
-    const status = anyRunning ? "running" : anyCompleted ? "completed" : anyFailed ? "failed" : ((g.results[0]?.status as DagStep["status"]) ?? "pending");
+  const dagSteps: DagStep[] = stepGroups.flatMap((group) => {
+    if (!group.step) return [];
+    const status = deriveDagStatus(group.results);
     return [
       {
-        stepOrder: g.stepOrder,
-        label: g.name,
-        model: g.step.model,
-        aspectRatio: g.step.aspectRatio,
-        outputResolution: g.step.outputResolution,
-        temperature: g.step.temperature,
-        promptName: g.step.promptVersion?.name ?? null,
-        dollhouseViewFromStep: g.step.dollhouseViewFromStep,
-        realPhotoFromStep: g.step.realPhotoFromStep,
-        moodBoardFromStep: g.step.moodBoardFromStep,
+        stepOrder: group.stepOrder,
+        label: group.name,
+        model: group.step.model,
+        aspectRatio: group.step.aspectRatio,
+        outputResolution: group.step.outputResolution,
+        temperature: group.step.temperature,
+        promptName: group.step.promptVersion?.name ?? null,
+        dollhouseViewFromStep: group.step.dollhouseViewFromStep,
+        realPhotoFromStep: group.step.realPhotoFromStep,
+        moodBoardFromStep: group.step.moodBoardFromStep,
         status,
-        error: g.results.find((r) => r.error)?.error ?? null
+        error: group.results.find((result) => result.error)?.error ?? null
       }
     ];
   });
 
   if (dagSteps.length === 0) return null;
 
-  const dagJudges = [...new Map(judgeResults.map((j) => [j.strategyJudgeId, j])).values()]
+  const dagJudges = Array.from(new Map(judgeResults.map((j) => [j.strategyJudgeId, j])).values())
     .toSorted((a, b) => a.position - b.position)
     .map((j) => ({
       name: j.judgeName,

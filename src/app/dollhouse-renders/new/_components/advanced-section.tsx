@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormSection } from "@/components/ui/form-section";
 import { SsmParamsEditor, type SsmParamsState } from "./ssm-params-editor";
-import { StyleOverridesEditor, type StyleOverrideRow } from "./style-overrides-editor";
+import { type StyleOverrideRow, StyleOverridesEditor } from "./style-overrides-editor";
 
 export function AdvancedSection({
   styleOverrides,
@@ -23,7 +23,14 @@ export function AdvancedSection({
       title="Advanced"
       description="Optional style overrides and SSM parameters."
       actions={
-        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setOpen((prev) => !prev);
+          }}
+        >
           {open ? "Hide" : "Show"}
         </Button>
       }

@@ -3,19 +3,23 @@
 import { useRouter } from "next/navigation";
 import { useReducer, useState } from "react";
 import { DesignPackageSelect } from "@/components/design-package-select";
-import { DesignSettingsEditor, type DesignSettingsValue } from "@/components/design-settings-editor";
+import { DesignSettingsEditor } from "@/components/design-settings-editor";
+import type { DesignSettingsValue } from "@/components/design-settings-fields";
 import { designSettingsHasValues } from "@/components/design-settings-values";
 import { LayoutPresetSelect, useLayoutPresets } from "@/components/layout-preset-select";
 import { PageHeader } from "@/components/page-header";
 import { ErrorCard, ResourceFormHeader } from "@/components/resource-form-header";
 import { SceneImageInput } from "@/components/scene-image-input";
 import { Button } from "@/components/ui/button";
+import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
-import { designSettingsFromPackage, isPowderRoomLayoutName, type DesignPackageOption } from "@/lib/design-package";
+import { parseOrFallback } from "@/lib/api/parse";
+import { errorEnvelopeSchema } from "@/lib/api/schemas";
+import { type DesignPackageOption, designSettingsFromPackage, isPowderRoomLayoutName } from "@/lib/design-package";
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY } from "@/lib/input-preset-design";
 import { INPUT_PRESET_RETAILER_ID } from "@/lib/input-preset-retailer";
 
-type FormState = {
+interface FormState {
   name: string;
   description: string;
   layoutTypeId: string;
@@ -25,7 +29,7 @@ type FormState = {
   moodBoard: string | null;
   arbitraryImagesBySlot: Record<string, string | null>;
   designSettings: DesignSettingsValue;
-};
+}
 
 type FormAction =
   | {
@@ -35,10 +39,15 @@ type FormAction =
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
-    case "setField":
-      return { ...state, [action.field]: action.value };
-    case "reset":
+    case "reset": {
       return action.value;
+    }
+    case "setField": {
+      return { ...state, [action.field]: action.value };
+    }
+    default: {
+      return assertNever(action);
+    }
   }
 }
 
@@ -70,7 +79,9 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
     arbitraryImagesBySlot: initialData.arbitraryImagesBySlot,
     designSettings: initialData.designSettings
   });
-  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => dispatch({ type: "setField", field, value } as FormAction);
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+    dispatch({ type: "setField", field, value } as FormAction);
+  };
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +89,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
   const { options: layoutPresets } = useLayoutPresets();
   const layoutTypeName = layoutPresets.find((option) => option.id === form.layoutTypeId)?.name ?? null;
 
-  const hasAnyImage = Object.values(form.arbitraryImagesBySlot).some((url) => !!url) || !!form.dollhouseView || !!form.realPhoto || !!form.moodBoard;
+  const hasAnyImage = Object.values(form.arbitraryImagesBySlot).some(Boolean) || Boolean(form.dollhouseView) || Boolean(form.realPhoto) || Boolean(form.moodBoard);
   const layoutRequiresPackage = form.layoutTypeId.trim().length > 0;
   const hasValidLayoutConfig = !layoutRequiresPackage || form.pkgId.trim().length > 0;
 
@@ -110,11 +121,7 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         payload[key] = form.designSettings?.[key] ?? null;
       }
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
-        if (form.designSettings?.[`${slot}ImageType`] === "arbitrary") {
-          payload[urlColumn] = form.arbitraryImagesBySlot[slot] ?? null;
-        } else {
-          payload[urlColumn] = null;
-        }
+        payload[urlColumn] = form.designSettings?.[`${slot}ImageType`] === "arbitrary" ? (form.arbitraryImagesBySlot[slot] ?? null) : null;
       }
 
       const url = serviceUrl(`input-presets/${initialData.id}`) + (force ? "?force=true" : "");
@@ -129,15 +136,15 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         throw new Error(res.redirected || res.status === 401 ? "Session expired. Please refresh the page." : `Unexpected response from server (${res.status}). Please try again.`);
       }
 
-      const json = await res.json();
+      const json = parseOrFallback(errorEnvelopeSchema, await res.json(), {}, "input preset update");
 
       if (!res.ok) {
         throw new Error(json.error?.message || "Failed to update");
       }
 
       router.push(`/input-presets/${initialData.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Something went wrong");
       setSaving(false);
     }
   }
@@ -158,10 +165,14 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       <div className="mt-6">
         <ResourceFormHeader
           name={form.name}
-          onNameChange={(value) => setField("name", value)}
+          onNameChange={(value) => {
+            setField("name", value);
+          }}
           namePlaceholder="e.g. Master bathroom with marble tiles"
           description={form.description}
-          onDescriptionChange={(value) => setField("description", value)}
+          onDescriptionChange={(value) => {
+            setField("description", value);
+          }}
         />
       </div>
 
@@ -173,7 +184,12 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
 
       <div className="border-border bg-surface mt-6 rounded-lg border p-6 shadow-xs">
         <h2 className="text-text-primary text-body mb-4 font-semibold uppercase">Room Preset</h2>
-        <LayoutPresetSelect value={form.layoutTypeId} onChange={(value) => setField("layoutTypeId", value)} />
+        <LayoutPresetSelect
+          value={form.layoutTypeId}
+          onChange={(value) => {
+            setField("layoutTypeId", value);
+          }}
+        />
         <div className="mt-4">
           <DesignPackageSelect value={form.pkgId} onChange={handlePackageChange} retailerId={INPUT_PRESET_RETAILER_ID} />
         </div>
@@ -192,9 +208,27 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
         </summary>
         <div className="border-border-subtle border-t p-6">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <SceneImageInput label="Dollhouse View" value={form.dollhouseView} onChange={(value) => setField("dollhouseView", value)} />
-            <SceneImageInput label="Real Photo" value={form.realPhoto} onChange={(value) => setField("realPhoto", value)} />
-            <SceneImageInput label="Mood Board" value={form.moodBoard} onChange={(value) => setField("moodBoard", value)} />
+            <SceneImageInput
+              label="Dollhouse View"
+              value={form.dollhouseView}
+              onChange={(value) => {
+                setField("dollhouseView", value);
+              }}
+            />
+            <SceneImageInput
+              label="Real Photo"
+              value={form.realPhoto}
+              onChange={(value) => {
+                setField("realPhoto", value);
+              }}
+            />
+            <SceneImageInput
+              label="Mood Board"
+              value={form.moodBoard}
+              onChange={(value) => {
+                setField("moodBoard", value);
+              }}
+            />
           </div>
         </div>
       </details>
@@ -202,9 +236,13 @@ export function InputPresetEditForm({ initialData, force }: { initialData: Initi
       <div className="mt-6">
         <DesignSettingsEditor
           value={form.designSettings}
-          onChange={(value) => setField("designSettings", value)}
+          onChange={(value) => {
+            setField("designSettings", value);
+          }}
           arbitraryImagesBySlot={form.arbitraryImagesBySlot}
-          onArbitraryImagesBySlotChange={(value) => setField("arbitraryImagesBySlot", value)}
+          onArbitraryImagesBySlotChange={(value) => {
+            setField("arbitraryImagesBySlot", value);
+          }}
           savedImageUrlsBySlot={initialData.savedImageUrlsBySlot}
           retailerId={INPUT_PRESET_RETAILER_ID}
         />

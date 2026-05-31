@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { localUrl } from "@/lib/api-base";
-import { CONDITIONAL_OPTIONS, DOLLHOUSE_ATTRIBUTES, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
+import type { DOLLHOUSE_ATTRIBUTES } from "@/lib/prompt-template-constants";
+import { CONDITIONAL_OPTIONS, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
 import { validateHandlebarsTemplate } from "@/lib/validate-handlebars";
 import { ConditionalPopover } from "./prompt-template-editor/conditional-popover";
 import { DollhousePopover } from "./prompt-template-editor/dollhouse-popover";
@@ -42,6 +43,7 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
   // the native undo stack intact. Route the call through a local,
   // non-deprecated signature to avoid the editor warning at the call
   // site without suppressing unrelated deprecations.
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(document, …), so `this` is bound correctly
   const exec = (
     document as unknown as {
       execCommand(command: string, showUi?: boolean, value?: string): boolean;
@@ -49,6 +51,7 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
   ).execCommand;
   const ok = exec.call(document, "insertText", false, text);
   if (ok) return;
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(el, …), so `this` is bound correctly
   const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
   setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
   el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -106,19 +109,21 @@ export function PromptTemplateEditor({
     // inside the wrapper (matches the previous behaviour).
     if (!selected) {
       const caret = start + prefix.length + 1;
-      requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+      requestAnimationFrame(() => {
+        el.setSelectionRange(caret, caret);
+      });
     }
   }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
     dispatchAttributes({ type: "fetchStart" });
     try {
-      const segment = category.replace(/_/g, "-");
+      const segment = category.replaceAll("_", "-");
       const res = await fetch(localUrl(`catalog/products/${segment}/attributes`));
-      const json: {
+      const json = (await res.json()) as {
         data?: { attributes?: unknown };
         error?: { message?: string };
-      } = await res.json();
+      };
       if (!res.ok) {
         dispatchAttributes({
           type: "fetchError",
@@ -139,7 +144,7 @@ export function PromptTemplateEditor({
   const handleReferenceCategorySelect = useCallback(
     (cat: (typeof REFERENCE_OPTIONS)[number]) => {
       dispatchReference({ type: "setCategory", value: cat.value });
-      fetchAttributes(cat.value);
+      void fetchAttributes(cat.value);
     },
     [fetchAttributes]
   );
@@ -172,33 +177,35 @@ export function PromptTemplateEditor({
   }, []);
 
   const filteredConditionalOptions = useMemo(() => {
-    const q = conditional.search.trim().toLowerCase();
-    if (!q) return CONDITIONAL_OPTIONS;
-    return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q));
+    const query = conditional.search.trim().toLowerCase();
+    if (!query) return CONDITIONAL_OPTIONS;
+    return CONDITIONAL_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(query));
   }, [conditional.search]);
 
   const filteredReferenceOptions = useMemo(() => {
-    const q = reference.search.trim().toLowerCase();
-    if (!q) return REFERENCE_OPTIONS;
-    return REFERENCE_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q));
+    const query = reference.search.trim().toLowerCase();
+    if (!query) return REFERENCE_OPTIONS;
+    return REFERENCE_OPTIONS.filter((opt) => opt.label.toLowerCase().includes(query) || opt.value.toLowerCase().includes(query));
   }, [reference.search]);
 
   const filteredDollhouseProducts = useMemo(() => {
-    const q = dollhouse.search.trim().toLowerCase();
-    if (!q) return DOLLHOUSE_PRODUCT_TYPES;
-    return DOLLHOUSE_PRODUCT_TYPES.filter((p) => p.toLowerCase().includes(q));
+    const query = dollhouse.search.trim().toLowerCase();
+    if (!query) return DOLLHOUSE_PRODUCT_TYPES;
+    return DOLLHOUSE_PRODUCT_TYPES.filter((product) => product.toLowerCase().includes(query));
   }, [dollhouse.search]);
 
   const customDollhouseProduct = useMemo(() => toDollhousePathKey(dollhouse.search), [dollhouse.search]);
 
   useEffect(() => {
-    if (!conditional.open && !reference.open && !dollhouse.open) return;
+    if (!conditional.open && !reference.open && !dollhouse.open) return undefined;
     const handler = (e: MouseEvent) => {
       if (containerRef.current?.contains(e.target as Node)) return;
       closeAll();
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
   }, [conditional.open, reference.open, dollhouse.open, closeAll]);
 
   if (!showPicker) {
@@ -207,7 +214,9 @@ export function PromptTemplateEditor({
         <HighlightedTextarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           placeholder={placeholder}
           rows={rows}
           className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
@@ -269,7 +278,9 @@ export function PromptTemplateEditor({
       <HighlightedTextarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         rows={rows}
         className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}

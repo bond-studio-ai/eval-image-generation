@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GenerationsFilters } from "@/app/generations/generations-filters";
 import { EmptyState } from "@/components/empty-state";
 import { GenerationsList } from "@/components/generations-list";
-import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { type TabItem, Tabs } from "@/components/ui/tabs";
 import { type GenerationRow, normalizeGenerationRow } from "@/lib/generation-row";
 import { fetchGenerations, fetchPromptVersions } from "@/lib/service-client";
 import { ExecutionsPageHeader } from "./executions-page-header";
@@ -91,13 +91,13 @@ async function GenerationsTab({ params }: { params: ExecutionsSearchParams }) {
   const filters = {
     sort: params.sort ?? "created_at",
     order: params.order ?? "desc",
-    ...(params.scene_accuracy_rating !== undefined ? { sceneAccuracyRating: params.scene_accuracy_rating } : {}),
-    ...(params.product_accuracy_rating !== undefined ? { productAccuracyRating: params.product_accuracy_rating } : {}),
-    ...(params.unrated !== undefined ? { unrated: params.unrated } : {}),
-    ...(params.prompt_version_id !== undefined ? { promptVersionId: params.prompt_version_id } : {}),
-    ...(params.from !== undefined ? { from: params.from } : {}),
-    ...(params.to !== undefined ? { to: params.to } : {}),
-    ...(params.source !== undefined ? { source: params.source } : {})
+    ...(params.scene_accuracy_rating === undefined ? {} : { sceneAccuracyRating: params.scene_accuracy_rating }),
+    ...(params.product_accuracy_rating === undefined ? {} : { productAccuracyRating: params.product_accuracy_rating }),
+    ...(params.unrated === undefined ? {} : { unrated: params.unrated }),
+    ...(params.prompt_version_id === undefined ? {} : { promptVersionId: params.prompt_version_id }),
+    ...(params.from === undefined ? {} : { from: params.from }),
+    ...(params.to === undefined ? {} : { to: params.to }),
+    ...(params.source === undefined ? {} : { source: params.source })
   };
 
   return (

@@ -11,6 +11,10 @@ import { NumberOfImagesInput } from "./_components/number-of-images-input";
 import { BENCHMARK_PROJECT_IDS, DEFAULT_BENCHMARK_PROJECT_IDS, executeRuns, fetchRunOptions } from "./_components/run-options";
 import { INITIAL_SELECTION, selectionReducer } from "./_components/selection-state";
 
+function runActionLabel(benchmarkMode: boolean): string {
+  return benchmarkMode ? "Run benchmarks" : "Run (1 batch)";
+}
+
 export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
   return (
     <Suspense fallback={null}>
@@ -37,21 +41,21 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
   const [numberOfImages, setNumberOfImages] = useState<number | null>(null);
 
   const filteredStrategies = useMemo(() => {
-    const q = strategySearch.toLowerCase().trim();
-    if (!q) return strategies;
-    return strategies.filter((s) => s.name.toLowerCase().includes(q));
+    const query = strategySearch.toLowerCase().trim();
+    if (!query) return strategies;
+    return strategies.filter((strategy) => strategy.name.toLowerCase().includes(query));
   }, [strategies, strategySearch]);
 
   const filteredPresets = useMemo(() => {
-    const q = presetSearch.toLowerCase().trim();
-    if (!q) return presets;
-    return presets.filter((p) => (p.name ?? "").toLowerCase().includes(q));
+    const query = presetSearch.toLowerCase().trim();
+    if (!query) return presets;
+    return presets.filter((preset) => (preset.name ?? "").toLowerCase().includes(query));
   }, [presets, presetSearch]);
 
   const filteredBenchmarkProjects = useMemo(() => {
-    const q = presetSearch.toLowerCase().trim();
-    if (!q) return [...BENCHMARK_PROJECT_IDS];
-    return BENCHMARK_PROJECT_IDS.filter((projectId) => projectId.toLowerCase().includes(q));
+    const query = presetSearch.toLowerCase().trim();
+    if (!query) return Array.from(BENCHMARK_PROJECT_IDS);
+    return BENCHMARK_PROJECT_IDS.filter((projectId) => projectId.toLowerCase().includes(query));
   }, [presetSearch]);
 
   const toggleStrategy = useCallback((id: string) => {
@@ -162,12 +166,16 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
               <MultiSelectColumn
                 title="Strategies"
                 selectedCount={selectedStrategyIds.length}
-                onClear={() => dispatchSelection({ type: "clearStrategies" })}
+                onClear={() => {
+                  dispatchSelection({ type: "clearStrategies" });
+                }}
                 searchValue={strategySearch}
-                onSearchChange={(value) => dispatchSelection({ type: "setStrategySearch", value })}
+                onSearchChange={(value) => {
+                  dispatchSelection({ type: "setStrategySearch", value });
+                }}
                 searchPlaceholder="Search strategies…"
                 searchAriaLabel="Search strategies"
-                items={filteredStrategies.map((s) => ({ id: s.id, label: s.name || "Unnamed" }))}
+                items={filteredStrategies.map((strategy) => ({ id: strategy.id, label: strategy.name || "Unnamed" }))}
                 selectedIds={selectedStrategyIds}
                 onToggle={toggleStrategy}
                 emptyMessage={strategies.length === 0 ? "No strategies available" : "No matches"}
@@ -176,13 +184,15 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
               <MultiSelectColumn
                 title={benchmarkMode ? "Benchmark projects" : "Input presets"}
                 selectedCount={secondaryCount}
-                onClear={() =>
+                onClear={() => {
                   dispatchSelection({
                     type: benchmarkMode ? "clearBenchmarkProjects" : "clearPresets"
-                  })
-                }
+                  });
+                }}
                 searchValue={presetSearch}
-                onSearchChange={(value) => dispatchSelection({ type: "setPresetSearch", value })}
+                onSearchChange={(value) => {
+                  dispatchSelection({ type: "setPresetSearch", value });
+                }}
                 searchPlaceholder={benchmarkMode ? "Search project IDs…" : "Search presets…"}
                 searchAriaLabel={benchmarkMode ? "Search project IDs" : "Search presets"}
                 items={(benchmarkMode ? filteredBenchmarkProjects : filteredPresets).map((entry) => {
@@ -192,7 +202,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                 })}
                 selectedIds={benchmarkMode ? selectedBenchmarkProjectIds : selectedPresetIds}
                 onToggle={benchmarkMode ? toggleBenchmarkProject : togglePreset}
-                emptyMessage={benchmarkMode ? "No matches" : presets.length === 0 ? "No presets available" : "No matches"}
+                emptyMessage={!benchmarkMode && presets.length === 0 ? "No presets available" : "No matches"}
               />
             </div>
           )}
@@ -204,11 +214,16 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
           </div>
 
           <div className="border-border flex shrink-0 items-center justify-end gap-2 border-t px-5 py-3">
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowModal(false);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleRun} disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)} loading={submitting}>
-              {submitting ? "Starting…" : benchmarkMode ? "Run benchmarks" : "Run (1 batch)"}
+              {submitting ? "Starting…" : runActionLabel(benchmarkMode)}
             </Button>
           </div>
         </Modal>

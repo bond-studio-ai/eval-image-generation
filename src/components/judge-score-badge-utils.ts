@@ -1,6 +1,6 @@
 import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
-export type DetailPanel = {
+export interface DetailPanel {
   key: string;
   shortLabel: string;
   judgeName: string | null;
@@ -14,7 +14,7 @@ export type DetailPanel = {
   output: string | null;
   systemPrompt: string | null;
   userPrompt: string | null;
-};
+}
 
 export function buildPanels(
   judgeResults: StrategyRunJudgeResultEntry[] | null | undefined,

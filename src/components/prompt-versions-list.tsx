@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, type DataTableColumn } from "@/components/data-table";
+import { DataTable, type DataTableColumn, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { serviceUrl } from "@/lib/api-base";
+import { parseOrFallback } from "@/lib/api/parse";
+import { createdEntitySchema } from "@/lib/api/schemas";
 
 export interface PromptVersionRow {
   id: string;
@@ -46,7 +48,7 @@ export function PromptVersionsList() {
   }, [activeItems]);
 
   const handleBulkDelete = useCallback(async () => {
-    const ids = [...selected];
+    const ids = Array.from(selected);
     const res = await fetch(serviceUrl("prompt-versions/bulk-delete"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,8 +75,8 @@ export function PromptVersionsList() {
           })
         });
         if (!res.ok) return;
-        const json = await res.json();
-        const newId = json.data?.id;
+        const json: unknown = await res.json();
+        const newId = parseOrFallback(createdEntitySchema, json, { data: { id: "" } }, "prompt version clone").data.id;
         if (newId) router.push(`/prompt-versions/${newId}`);
       } catch {
         /* ignore */
@@ -114,7 +116,9 @@ export function PromptVersionsList() {
         {
           icon: "clone",
           label: "Clone prompt version",
-          onClick: (pv) => handleClone(pv),
+          onClick: (pv) => {
+            void handleClone(pv);
+          },
           loading: (pv) => cloningId === pv.id
         }
       ])
@@ -146,7 +150,14 @@ export function PromptVersionsList() {
         footer={<Pagination page={page} totalPages={totalPages} total={total} onPageChange={goToPage} loading={paginating} />}
       />
 
-      <BulkDeleteBar selectedCount={selected.size} onDelete={handleBulkDelete} onClearSelection={() => setSelected(new Set())} entityName="prompt versions" />
+      <BulkDeleteBar
+        selectedCount={selected.size}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => {
+          setSelected(new Set());
+        }}
+        entityName="prompt versions"
+      />
     </>
   );
 }

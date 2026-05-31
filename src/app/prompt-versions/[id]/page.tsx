@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PromptVersionDetail } from "@/components/prompt-version-detail";
+import { catchToNull } from "@/lib/async-utils";
+import { parseOrFallback } from "@/lib/api/parse";
+import { generationSummaryArraySchema } from "@/lib/api/schemas";
 import { fetchGenerations, fetchPromptVersionById } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
@@ -14,45 +17,36 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-interface PromptVersionStats {
-  generationCount?: number;
-  ratedCount?: number;
-  avgRatingScore?: number;
-}
-
 export default async function PromptVersionDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const pvData = await fetchPromptVersionById(id).catch(() => null);
+  const pvData = await catchToNull(fetchPromptVersionById(id));
   if (!pvData) notFound();
 
-  const pv = pvData as any;
-  const stats = pv.stats as PromptVersionStats | undefined;
-
   const genResult = await fetchGenerations({ promptVersionId: id, limit: "100" });
-  const generations = (genResult.data ?? []) as any[];
+  const generations = parseOrFallback(generationSummaryArraySchema, genResult.data, [], "prompt-version related generations");
 
   const serializedData = {
-    id: pv.id,
-    name: pv.name ?? null,
-    description: pv.description ?? null,
-    systemPrompt: pv.systemPrompt,
-    userPrompt: pv.userPrompt,
-    deletedAt: pv.deletedAt ?? null
+    id: pvData.id,
+    name: pvData.name ?? null,
+    description: pvData.description ?? null,
+    systemPrompt: pvData.systemPrompt,
+    userPrompt: pvData.userPrompt,
+    deletedAt: pvData.deletedAt ?? null
   };
 
-  const serializedGenerations = generations.map((g: any) => ({
-    id: g.id,
-    sceneAccuracyRating: g.sceneAccuracyRating ?? null,
-    productAccuracyRating: g.productAccuracyRating ?? null,
-    createdAt: g.createdAt,
+  const serializedGenerations = generations.map((generation) => ({
+    id: generation.id,
+    sceneAccuracyRating: generation.sceneAccuracyRating ?? null,
+    productAccuracyRating: generation.productAccuracyRating ?? null,
+    createdAt: generation.createdAt,
     inputImageCount: 0,
-    outputImageCount: g.resultCount ?? 0
+    outputImageCount: generation.resultCount ?? 0
   }));
 
-  const generationCount = stats?.generationCount ?? generations.length;
-  const ratedCount = stats?.ratedCount ?? serializedGenerations.filter((g: { sceneAccuracyRating: string | null }) => g.sceneAccuracyRating !== null).length;
-  const avgRating = stats?.avgRatingScore ?? null;
+  const generationCount = pvData.stats?.generationCount ?? generations.length;
+  const ratedCount = pvData.stats?.ratedCount ?? serializedGenerations.filter((generation) => generation.sceneAccuracyRating !== null).length;
+  const avgRating = pvData.stats?.avgRatingScore ?? null;
 
   return (
     <PromptVersionDetail
@@ -61,7 +55,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
       stats={{
         generationCount,
         ratedCount,
-        avgRating: avgRating !== null ? String(avgRating) : null,
+        avgRating: avgRating === null ? null : String(avgRating),
         unratedCount: generationCount - ratedCount
       }}
     />

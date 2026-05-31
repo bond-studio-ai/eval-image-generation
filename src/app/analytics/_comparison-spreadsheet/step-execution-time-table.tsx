@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { formatComparisonRange, formatComparisonSource, type AnalyticsComparisonSlice } from "@/app/analytics/comparison-utils";
+import { type AnalyticsComparisonSlice, formatComparisonRange, formatComparisonSource } from "@/app/analytics/comparison-utils";
 import { defaultStepLabel, formatExecMs, SLICE_BG_COLORS } from "./helpers";
 import type { SliceData } from "./types";
 
@@ -88,7 +88,7 @@ export function StepExecutionTimeTable({ slices, dataBySlice, loading }: { slice
             </tr>
           )}
           {!loading &&
-            Array.from({ length: maxStepCount }).map((_, idx) => {
+            Array.from({ length: maxStepCount }, (_, idx) => {
               const stepIndex = idx;
               return (
                 <tr key={stepIndex} className="bg-surface">

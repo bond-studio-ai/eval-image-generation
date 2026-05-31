@@ -1,4 +1,4 @@
-export type StrategyRow = {
+export interface StrategyRow {
   id: string;
   name: string;
   model: string;
@@ -12,12 +12,18 @@ export type StrategyRow = {
   notRatedCount: number;
   notRatedPct: number;
   avgExecTimeMs: number | null;
-};
+}
 
-export type IssueItem = { issue: string; count: number };
-export type ErrorItem = { reason: string; count: number };
+export interface IssueItem {
+  issue: string;
+  count: number;
+}
+export interface ErrorItem {
+  reason: string;
+  count: number;
+}
 
-export type BreakdownData = {
+export interface BreakdownData {
   execution_errors: ErrorItem[];
   scene_issues: IssueItem[];
   product_issues: IssueItem[];
@@ -30,7 +36,7 @@ export type BreakdownData = {
     product_failed: number;
     product_unset: number;
   } | null;
-};
+}
 
 export type SortKey = "name" | "generationCount" | "sceneGoodPct" | "sceneFailedPct" | "productGoodPct" | "productFailedPct" | "notRatedCount" | "avgExecTimeMs";
 export type SortDir = "asc" | "desc";

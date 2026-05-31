@@ -96,7 +96,7 @@ export const CONDITIONAL_OPTIONS: { value: string; label: string; isProduct: boo
   })),
   ...SCENE_KEYS.map((k) => ({
     value: SCENE_TO_CAMEL[k],
-    label: toTitleCase(SCENE_TO_CAMEL[k].replace(/([A-Z])/g, " $1").trim()),
+    label: toTitleCase(SCENE_TO_CAMEL[k].replaceAll(/([A-Z])/g, " $1").trim()),
     isProduct: false
   })),
   ...DESIGN_PROMPT_PATHS.map((path) => {
@@ -170,42 +170,42 @@ export const DOLLHOUSE_PRODUCT_TYPES = [
  *                  service; falls back to lowercased `facing` when absent.
  *   - `visible`  — percentage in `[0, 100]`.
  */
-export type DollhouseAttribute = {
+export interface DollhouseAttribute {
   readonly value: string;
   readonly helper: string;
   readonly build: (pathPrefix: string) => string;
-};
+}
 
 export const DOLLHOUSE_ATTRIBUTES: readonly DollhouseAttribute[] = [
   {
     value: "quantity",
     helper: "How many instances of this product are anchored in the area",
-    build: (p) => `{{${p}.quantity}}`
+    build: (path) => `{{${path}.quantity}}`
   },
   {
     value: "#each visibility → visible",
     helper: "Iterate every framing and print its visibility percentage (0–100)",
-    build: (p) => `{{#each ${p}.visibility}}{{visible}}{{/each}}`
+    build: (path) => `{{#each ${path}.visibility}}{{visible}}{{/each}}`
   },
   {
     value: "#each visibility → location",
     helper: "Iterate every framing and print its layout location",
-    build: (p) => `{{#each ${p}.visibility}}{{location}}{{/each}}`
+    build: (path) => `{{#each ${path}.visibility}}{{location}}{{/each}}`
   },
   {
     value: "#each visibility → facing",
     helper: "Iterate every framing and print its facing direction",
-    build: (p) => `{{#each ${p}.visibility}}{{facing}}{{/each}}`
+    build: (path) => `{{#each ${path}.visibility}}{{facing}}{{/each}}`
   },
   {
     value: "#each visibility → location (visible%)",
     helper: 'Iterate every framing and print "location (visible%)" for each',
-    build: (p) => `{{#each ${p}.visibility}}{{location}} ({{visible}}%){{/each}}`
+    build: (path) => `{{#each ${path}.visibility}}{{location}} ({{visible}}%){{/each}}`
   },
   {
     value: "#each visibility → facing (visible%)",
     helper: 'Iterate every framing and print "facing (visible%)" for each',
-    build: (p) => `{{#each ${p}.visibility}}{{facing}} ({{visible}}%){{/each}}`
+    build: (path) => `{{#each ${path}.visibility}}{{facing}} ({{visible}}%){{/each}}`
   }
 ] as const;
 
@@ -224,7 +224,7 @@ export function toDollhousePathKey(input: string): string {
     return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
   }
 
-  const words = trimmed.split(/[^a-zA-Z0-9]+/).filter(Boolean);
+  const words = trimmed.split(/[^a-z0-9]+/i).filter(Boolean);
   if (words.length === 0) return "";
 
   return words
@@ -235,9 +235,9 @@ export function toDollhousePathKey(input: string): string {
     .join("");
 }
 
-function toTitleCase(s: string): string {
-  return s
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (c) => c.toUpperCase())
+function toTitleCase(value: string): string {
+  return value
+    .replaceAll(/([A-Z])/g, " $1")
+    .replace(/^./, (char) => char.toUpperCase())
     .trim();
 }

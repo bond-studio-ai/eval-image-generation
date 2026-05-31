@@ -59,7 +59,7 @@ const FALLBACK_COLORS: Record<string, string> = {
 const NEUTRAL_SWATCH = "#9CA3AF";
 
 function fallbackLabel(category: string): string {
-  return category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return category.replaceAll("_", " ").replaceAll(/\b\w/g, (char) => char.toUpperCase());
 }
 
 /**
@@ -95,13 +95,14 @@ export function useSegmentationCategories(): SegmentationCategoryMetadata[] | nu
 
   useEffect(() => {
     let cancelled = false;
-    getSegmentationCategories()
-      .then((data) => {
+    void (async () => {
+      try {
+        const data = await getSegmentationCategories();
         if (!cancelled) setEntries(data);
-      })
-      .catch(() => {
+      } catch {
         /* swallowed: fallback palette is in place */
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };

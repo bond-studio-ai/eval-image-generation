@@ -7,6 +7,7 @@ import { AlertTriangleIcon, InfoIcon, StarIcon, XIcon } from "@/components/ui/ic
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
+import { coerceString } from "@/lib/coerce-string";
 import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 interface JudgeScoreBadgeProps {
@@ -42,8 +43,8 @@ interface RawStepResult {
   candidateIndex?: unknown;
 }
 
-function panelHasContent(p: DetailPanel): boolean {
-  return !!(p.reasoning?.trim() || p.output?.trim() || p.systemPrompt?.trim() || p.userPrompt?.trim());
+function panelHasContent(panel: DetailPanel): boolean {
+  return Boolean(panel.reasoning?.trim() || panel.output?.trim() || panel.systemPrompt?.trim() || panel.userPrompt?.trim());
 }
 
 function getAvailableTabs(panel: DetailPanel): ModalTabId[] {
@@ -64,7 +65,7 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
   const systemPrompt = panel.systemPrompt?.trim() || null;
   const userPrompt = panel.userPrompt?.trim() || null;
 
-  const hasExtra = !!output || !!systemPrompt || !!userPrompt;
+  const hasExtra = Boolean(output) || Boolean(systemPrompt) || Boolean(userPrompt);
 
   const tabs = [
     { id: "reasoning" as const, label: "Reasoning" },
@@ -106,9 +107,9 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
         <div className="border-border bg-surface-muted/80 border-b px-4 py-3">
           <p className="text-text-muted mb-2 text-[11px] font-medium tracking-wider uppercase">Judges</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {panels.map((p, i) => (
+            {panels.map((panelOption, i) => (
               <button
-                key={p.key}
+                key={panelOption.key}
                 type="button"
                 onClick={() => {
                   const nextPanel = panels[i] ?? panels[0];
@@ -121,10 +122,12 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={`text-caption truncate font-semibold ${judgeIdx === i ? "text-primary-700" : "text-text-secondary"}`}>{p.shortLabel}</p>
-                    <p className="text-text-muted truncate font-mono text-[10px]">{p.judgeModel}</p>
+                    <p className={`text-caption truncate font-semibold ${judgeIdx === i ? "text-primary-700" : "text-text-secondary"}`}>{panelOption.shortLabel}</p>
+                    <p className="text-text-muted truncate font-mono text-[10px]">{panelOption.judgeModel}</p>
                   </div>
-                  {p.rawScore != null && <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${judgeIdx === i ? "bg-primary-50 text-primary-700" : "bg-primary-50 text-primary-600"}`}>{p.rawScore}</span>}
+                  {panelOption.rawScore != null && (
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${judgeIdx === i ? "bg-primary-50 text-primary-700" : "bg-primary-50 text-primary-600"}`}>{panelOption.rawScore}</span>
+                  )}
                 </div>
               </button>
             ))}
@@ -171,7 +174,9 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+              }}
               className={`text-caption -mb-px border-b-2 px-3 py-2.5 font-medium transition-colors ${activeTab === tab.id ? "border-primary-500 text-primary-600" : "text-text-muted hover:border-border-strong hover:text-text-secondary border-transparent"}`}
             >
               {tab.label}
@@ -231,7 +236,7 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       isLoadingDetail.current = true;
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
       if (!res.ok) return;
-      const json = await res.json();
+      const json = (await res.json()) as { data?: unknown };
       const raw = (json.data ?? {}) as RawJudgeDetail;
       const allJudgeResults = parseStrategyRunJudgeResults(raw.judgeResults);
 
@@ -239,9 +244,9 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       const stepResults = Array.isArray(raw.stepResults) ? raw.stepResults : [];
       for (const sr of stepResults) {
         if (sr && typeof sr === "object") {
-          const s = sr as RawStepResult;
-          if (s.isJudgeSelected && s.candidateIndex != null) {
-            winnerCandidateIndex = Number(s.candidateIndex);
+          const stepResult = sr as RawStepResult;
+          if (stepResult.isJudgeSelected && stepResult.candidateIndex != null) {
+            winnerCandidateIndex = Number(stepResult.candidateIndex);
             break;
           }
         }
@@ -251,13 +256,13 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       const filteredResults = winnerCandidateIndex != null && hasTaggedResults ? allJudgeResults.filter((j) => j.candidateIndex === winnerCandidateIndex) : allJudgeResults;
 
       setFetchedDetail({
-        judgeScore: raw.judgeScore != null ? Number(raw.judgeScore) : null,
+        judgeScore: raw.judgeScore == null ? null : Number(raw.judgeScore),
         isJudgeSelected: Boolean(raw.isJudgeSelected),
-        judgeReasoning: raw.judgeReasoning != null ? String(raw.judgeReasoning) : null,
-        judgeOutput: raw.judgeOutput != null ? String(raw.judgeOutput) : null,
-        judgeSystemPrompt: raw.judgeSystemPrompt != null ? String(raw.judgeSystemPrompt) : null,
-        judgeUserPrompt: raw.judgeUserPrompt != null ? String(raw.judgeUserPrompt) : null,
-        judgeTypeUsed: raw.judgeTypeUsed != null ? String(raw.judgeTypeUsed) : null,
+        judgeReasoning: coerceString(raw.judgeReasoning) ?? null,
+        judgeOutput: coerceString(raw.judgeOutput) ?? null,
+        judgeSystemPrompt: coerceString(raw.judgeSystemPrompt) ?? null,
+        judgeUserPrompt: coerceString(raw.judgeUserPrompt) ?? null,
+        judgeTypeUsed: coerceString(raw.judgeTypeUsed) ?? null,
         judgeResults: filteredResults
       });
     } catch {
@@ -276,13 +281,21 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
           className={`absolute top-1 left-1 z-10 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""} ${isJudgeSelected ? "bg-warning-400 text-warning-900" : "text-text-inverse bg-text-secondary/70"}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") openDetailModal(e);
+            if (e.key === "Enter" || e.key === " ") void openDetailModal(e);
           }}
         >
           {judgeScore}
         </span>
         {showModal && hasDetail && (
-          <ReasoningModal aggregateScore={fetchedDetail?.judgeScore ?? judgeScore} panels={panels} isSelected={fetchedDetail?.isJudgeSelected ?? isJudgeSelected} isFailed={false} onClose={() => setShowModal(false)} />
+          <ReasoningModal
+            aggregateScore={fetchedDetail?.judgeScore ?? judgeScore}
+            panels={panels}
+            isSelected={fetchedDetail?.isJudgeSelected ?? isJudgeSelected}
+            isFailed={false}
+            onClose={() => {
+              setShowModal(false);
+            }}
+          />
         )}
       </>
     );
@@ -297,13 +310,22 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
           className={`bg-danger-500/90 text-text-inverse absolute top-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm ${hasDetail ? "cursor-help" : ""}`}
           onClick={openDetailModal}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") openDetailModal(e);
+            if (e.key === "Enter" || e.key === " ") void openDetailModal(e);
           }}
         >
           <InfoIcon className="size-2.5" />
           Judge failed
         </span>
-        {showModal && <ReasoningModal aggregateScore={0} panels={panels} isFailed onClose={() => setShowModal(false)} />}
+        {showModal && (
+          <ReasoningModal
+            aggregateScore={0}
+            panels={panels}
+            isFailed
+            onClose={() => {
+              setShowModal(false);
+            }}
+          />
+        )}
       </>
     );
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useRef, type KeyboardEvent } from "react";
+import { type KeyboardEvent, Suspense, useCallback, useRef } from "react";
 import { XIcon } from "@/components/ui/icons";
 import type { PromptVersionListItem } from "@/lib/types";
 import { buildGenerationsQuery, type FilterParams } from "./query-utils";
@@ -18,12 +18,11 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
   const link = useCallback(
     (overrides: Partial<Record<keyof FilterParams, string | undefined>>) => {
-      const merged: FilterParams = { ...params };
-      for (const [key, value] of Object.entries(overrides)) {
-        if (value === undefined) delete merged[key as keyof FilterParams];
-        else merged[key as keyof FilterParams] = value;
-      }
-      return buildGenerationsQuery(merged);
+      // Apply overrides, then drop keys whose value is undefined (an override of
+      // `undefined` clears that filter) — equivalent to the previous delete loop.
+      const merged = { ...params, ...overrides };
+      const cleaned = Object.fromEntries(Object.entries(merged).filter(([, value]) => value !== undefined)) as FilterParams;
+      return buildGenerationsQuery(cleaned);
     },
     [params]
   );
@@ -48,33 +47,33 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
       <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
         {/* Rating filters */}
         <FilterGroup label="Scene">
-          {["GOOD", "FAILED"].map((r) => (
+          {["GOOD", "FAILED"].map((rating) => (
             <FilterChip
-              key={`scene-${r}`}
+              key={`scene-${rating}`}
               href={link({
-                scene_accuracy_rating: params.scene_accuracy_rating === r ? undefined : r,
+                scene_accuracy_rating: params.scene_accuracy_rating === rating ? undefined : rating,
                 unrated: undefined
               })}
-              active={params.scene_accuracy_rating === r}
-              variant={r === "GOOD" ? "green" : "red"}
+              active={params.scene_accuracy_rating === rating}
+              variant={rating === "GOOD" ? "green" : "red"}
             >
-              {r === "GOOD" ? "Good" : "Failed"}
+              {rating === "GOOD" ? "Good" : "Failed"}
             </FilterChip>
           ))}
         </FilterGroup>
 
         <FilterGroup label="Product">
-          {["GOOD", "FAILED"].map((r) => (
+          {["GOOD", "FAILED"].map((rating) => (
             <FilterChip
-              key={`product-${r}`}
+              key={`product-${rating}`}
               href={link({
-                product_accuracy_rating: params.product_accuracy_rating === r ? undefined : r,
+                product_accuracy_rating: params.product_accuracy_rating === rating ? undefined : rating,
                 unrated: undefined
               })}
-              active={params.product_accuracy_rating === r}
-              variant={r === "GOOD" ? "green" : "red"}
+              active={params.product_accuracy_rating === rating}
+              variant={rating === "GOOD" ? "green" : "red"}
             >
-              {r === "GOOD" ? "Good" : "Failed"}
+              {rating === "GOOD" ? "Good" : "Failed"}
             </FilterChip>
           ))}
         </FilterGroup>
@@ -130,7 +129,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
       {hasAny && (
         <div className="border-border-subtle mt-3 border-t pt-3">
-          <Link href={buildGenerationsQuery(params.source !== undefined ? { source: params.source } : {})} className="text-danger-600 hover:text-danger-700 text-caption inline-flex items-center gap-1 font-medium">
+          <Link href={buildGenerationsQuery(params.source === undefined ? {} : { source: params.source })} className="text-danger-600 hover:text-danger-700 text-caption inline-flex items-center gap-1 font-medium">
             <XIcon className="size-3.5" />
             Clear all filters
           </Link>
@@ -177,9 +176,9 @@ const chipVariants = {
 };
 
 function FilterChip({ href, active, variant, children }: { href: string; active: boolean; variant: keyof typeof chipVariants; children: React.ReactNode }) {
-  const v = chipVariants[variant];
+  const styles = chipVariants[variant];
   return (
-    <Link href={href} className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${active ? v.active : v.inactive}`}>
+    <Link href={href} className={`text-caption rounded-md px-2.5 py-1 font-medium transition-colors ${active ? styles.active : styles.inactive}`}>
       {children}
     </Link>
   );

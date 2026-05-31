@@ -1,4 +1,5 @@
 import { serviceUrl } from "./api-base";
+import { snakeToCamel } from "./casing";
 
 /**
  * Canonical metadata for one SAM 3.1 segmentation category as returned by
@@ -41,7 +42,7 @@ export interface SegmentationCategoryMetadata {
    * eval modal can use this to render a per-member legend hint
    * without a second round-trip.
    */
-  groupPrompts: ReadonlyArray<{ slug: string; prompt: string }>;
+  groupPrompts: readonly { slug: string; prompt: string }[];
   /**
    * Member categories whose own SAM masks this category considers
    * during drift comparison. Order is meaningful for
@@ -55,18 +56,6 @@ export interface SegmentationCategoryMetadata {
 
 let cache: Promise<SegmentationCategoryMetadata[]> | null = null;
 
-/**
- * Convert a snake_case key (the backend's canonical form) to the
- * camelCase form the case-converter middleware produces on JSON responses.
- * Used to build a lookup map that works regardless of which casing the
- * caller has on hand — `record.results` from the segmentation endpoint
- * uses camelCase keys, but the SAM prompt table on the backend is keyed
- * snake_case, so we register both.
- */
-function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, character: string) => character.toUpperCase());
-}
-
 async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
   const res = await fetch(serviceUrl("segmentation-categories"), {
     cache: "no-store"
@@ -77,7 +66,7 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
   const json = (await res.json()) as { data?: SegmentationCategoryMetadata[] | null } | null;
   const data = json?.data;
   if (!Array.isArray(data)) {
-    throw new Error("Malformed segmentation categories response");
+    throw new TypeError("Malformed segmentation categories response");
   }
   return data;
 }
@@ -90,11 +79,18 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
  * On failure the cache is cleared so the next call retries (e.g. if the
  * service was temporarily down during the first open).
  */
-export function getSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
-  cache ??= fetchOnce().catch((err: unknown) => {
+async function loadSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
+  try {
+    return await fetchOnce();
+  } catch (error) {
+    // Clear the cache so the next call retries instead of replaying the rejection.
     cache = null;
-    throw err;
-  });
+    throw error;
+  }
+}
+
+export function getSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
+  cache ??= loadSegmentationCategories();
   return cache;
 }
 

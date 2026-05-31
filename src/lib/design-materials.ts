@@ -1,6 +1,12 @@
 "use client";
 
 import { localUrl } from "./api-base";
+import { camelizeDeep } from "./casing";
+import { coerceString } from "./coerce-string";
+import type { CatalogProduct, Color, ObjectComponent, ObjectItem, RawDesignObject, ScanLike, SurfaceItem, TextureScale, UnitySlimDesignMaterials } from "./design-materials-types";
+import { logger } from "./logger";
+
+export type { UnitySlimDesignMaterials } from "./design-materials-types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
@@ -30,147 +36,6 @@ const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
   wallTile: "wall_tiles"
 };
 
-type TextureScale = { x: number | null; y: number | null };
-
-/**
- * Loose shape of the upstream JSON blobs (project scans, catalog products,
- * design selections) this module normalizes. Every key is optional `unknown`
- * because the payloads are unvalidated; the `as*` helpers narrow at runtime.
- * Declaring the keys explicitly lets us read them with dot access under
- * `noPropertyAccessFromIndexSignature` (an explicitly-declared key is never
- * served by the index signature), while the index signature still permits the
- * handful of genuinely dynamic, computed-key reads
- * (e.g. `product[patternId]`, `design[`${slot}Pattern`]`).
- */
-interface RawDesignObject {
-  [key: string]: unknown;
-  id?: unknown;
-  renderAttributes?: unknown;
-  textureScale?: unknown;
-  textureScaleX?: unknown;
-  textureScaleY?: unknown;
-  x?: unknown;
-  y?: unknown;
-  length?: unknown;
-  width?: unknown;
-  height?: unknown;
-  numberOfSinks?: unknown;
-  counterHeight?: unknown;
-  sinkOffset?: unknown;
-  abovePlacementDefaultRotation?: unknown;
-  sidePlacementDefaultRotation?: unknown;
-  mountingPosition?: unknown;
-  colorPalette?: unknown;
-  color_palette?: unknown;
-  color?: unknown;
-  components?: unknown;
-  categoryComponent?: unknown;
-  materialType?: unknown;
-  code?: unknown;
-  hue?: unknown;
-  chroma?: unknown;
-  luminance?: unknown;
-  shape?: unknown;
-  pieceLength?: unknown;
-  pieceWidth?: unknown;
-  isRemoved?: unknown;
-  patternInfo?: unknown;
-  assetId?: unknown;
-  "3DAssetId"?: unknown;
-  horizontalPatternId?: unknown;
-  verticalPatternId?: unknown;
-  thirdOffsetPatternId?: unknown;
-  halfOffsetPatternId?: unknown;
-  herringbonePatternId?: unknown;
-  hexagonPatternId?: unknown;
-  rhomboidCubePatternId?: unknown;
-  triangularPatternId?: unknown;
-  horizontalPicketPatternId?: unknown;
-  verticalPicketPatternId?: unknown;
-  fishScalePatternId?: unknown;
-  stackedPatternId?: unknown;
-  offsetPatternId?: unknown;
-  straightPatternId?: unknown;
-  scan?: unknown;
-  data?: unknown;
-  project?: unknown;
-  areas?: unknown;
-  showers?: unknown;
-  tubs?: unknown;
-  niches?: unknown;
-  type?: unknown;
-  curbHeight?: unknown;
-  curbThickness?: unknown;
-  wallpaperPlacement?: unknown;
-  wallTilePlacement?: unknown;
-  mirrorPlacement?: unknown;
-  lightingPlacement?: unknown;
-  isShowerGlassVisible?: unknown;
-  isTubDoorVisible?: unknown;
-}
-
-type ScanLike = RawDesignObject;
-type CatalogProduct = RawDesignObject;
-type Color = { hue: number; chroma: number; luminance: number };
-type ObjectComponent = { categoryComponent: string; color: Color; materialType: string };
-
-type SurfaceItem = {
-  productId?: string | undefined;
-  texture: string;
-  scale: { x: string; y: string };
-  placement?: string;
-  colorPalette?: Color[];
-  shape?: string;
-  pattern?: string;
-  pieceLength?: string;
-  pieceWidth?: string;
-};
-
-type ObjectItem = {
-  productId?: string | undefined;
-  asset?: string | null;
-  size?: { length: string; width: string; height: string };
-  styling: "Default" | "Hidden" | "Removed";
-  placement?: string;
-  rotation?: number;
-  numberOfSinks?: number;
-  counterHeight?: string;
-  sinkOffset?: string;
-  components?: ObjectComponent[];
-};
-
-export type UnitySlimDesignMaterials = {
-  id: string;
-  surfaces: {
-    floorTile?: SurfaceItem;
-    showerWallTile?: SurfaceItem;
-    showerFloorTile?: SurfaceItem;
-    showerShortWallTile?: SurfaceItem;
-    curbTile?: SurfaceItem;
-    nicheTile?: SurfaceItem;
-    paint?: SurfaceItem;
-    wallpaper?: SurfaceItem;
-    wallTile?: SurfaceItem;
-  };
-  objects: {
-    toilet?: ObjectItem;
-    tub?: ObjectItem;
-    tubDoor?: ObjectItem;
-    tubFiller?: ObjectItem;
-    vanity?: ObjectItem;
-    faucet?: ObjectItem;
-    mirror?: ObjectItem;
-    lighting?: ObjectItem;
-    shelves?: ObjectItem;
-    robeHook?: ObjectItem;
-    toiletPaperHolder?: ObjectItem;
-    towelBar?: ObjectItem;
-    towelRing?: ObjectItem;
-    showerGlass?: ObjectItem;
-    showerSystem?: ObjectItem;
-  };
-};
-
 const SURFACE_SLOTS = ["floorTile", "showerWallTile", "showerFloorTile", "showerShortWallTile", "curbTile", "nicheTile", "paint", "wallpaper", "wallTile"] as const;
 
 const OBJECT_SLOTS = ["toilet", "tub", "tubDoor", "tubFiller", "vanity", "faucet", "mirror", "lighting", "shelves", "robeHook", "toiletPaperHolder", "towelBar", "towelRing", "showerGlass", "showerSystem"] as const;
@@ -195,16 +60,6 @@ const TILE_PATTERN_BY_ID_KEY: Record<string, string> = {
 };
 
 const TILE_PATTERN_VALUES = new Set(Object.values(TILE_PATTERN_BY_ID_KEY));
-
-function snakeToCamel(value: string): string {
-  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
-}
-
-function toCamelCase(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map((entry) => toCamelCase(entry));
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), toCamelCase(entry)]));
-}
 
 function asRecord(value: unknown): RawDesignObject | null {
   return value != null && typeof value === "object" && !Array.isArray(value) ? (value as RawDesignObject) : null;
@@ -273,8 +128,8 @@ function projectTileExtras(product: CatalogProduct): Pick<SurfaceItem, "shape" |
   const pieceWidth = asNumber(product.pieceWidth);
   return {
     ...(shape ? { shape } : {}),
-    ...(pieceLength != null ? { pieceLength: String(pieceLength) } : {}),
-    ...(pieceWidth != null ? { pieceWidth: String(pieceWidth) } : {})
+    ...(pieceLength == null ? {} : { pieceLength: String(pieceLength) }),
+    ...(pieceWidth == null ? {} : { pieceWidth: String(pieceWidth) })
   };
 }
 
@@ -304,19 +159,19 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
     for (const candidate of candidates) {
       const rec = asRecord(candidate);
       if (!rec) continue;
-      const camel = toCamelCase(rec) as RawDesignObject;
+      const camel = camelizeDeep(rec) as RawDesignObject;
       const scan = asRecord(camel.scan);
       if (scan && isScanLike(scan)) return scan;
       if (isScanLike(camel)) return camel;
     }
-  } catch (err) {
-    console.error("[design-materials] Failed to fetch project scan", err);
+  } catch (error) {
+    logger.error("[design-materials] Failed to fetch project scan", error);
   }
   return null;
 }
 
 async function resolveScan(params: { roomData?: RawDesignObject; projectId?: string }): Promise<ScanLike | null> {
-  const camelRoomData = params.roomData ? (toCamelCase(params.roomData) as RawDesignObject) : null;
+  const camelRoomData = params.roomData ? (camelizeDeep(params.roomData) as RawDesignObject) : null;
   if (camelRoomData) {
     const roomScan = asRecord(camelRoomData.scan);
     if (roomScan && isScanLike(roomScan)) return roomScan;
@@ -334,11 +189,11 @@ async function fetchCatalogProduct(category: string, productId: string): Promise
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: CatalogProduct };
     return json.data ?? null;
-  } catch (err) {
-    console.error("[design-materials] Failed to fetch catalog product", {
+  } catch (error) {
+    logger.error("[design-materials] Failed to fetch catalog product", {
       category,
       productId,
-      err
+      err: error
     });
     return null;
   }
@@ -428,8 +283,8 @@ function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOT
     productId: asString(material.id) ?? undefined,
     texture,
     scale: {
-      x: scale.x != null ? String(scale.x) : "1",
-      y: scale.y != null ? String(scale.y) : "1"
+      x: scale.x == null ? "1" : String(scale.x),
+      y: scale.y == null ? "1" : String(scale.y)
     }
   };
   if (slot === "wallpaper") out.placement = asString(design.wallpaperPlacement) ?? "VanityWall";
@@ -461,6 +316,7 @@ function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTu
   };
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- maps the wide, optional upstream object shape (placement, sizing, styling, scan context) into the Unity object; the per-field branching is irreducible domain logic
 function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)[number], design: RawDesignObject, scan: ScanLike): ObjectItem | null {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
 
@@ -490,9 +346,9 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
     productId: asString(material.id) ?? undefined,
     asset,
     size: {
-      length: String(material.length ?? ""),
-      width: String(material.width ?? ""),
-      height: String(material.height ?? "")
+      length: coerceString(material.length) ?? "",
+      width: coerceString(material.width) ?? "",
+      height: coerceString(material.height) ?? ""
     },
     styling: getStylingState(material)
   };
@@ -500,8 +356,8 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   if (slot === "vanity") {
     const numberOfSinks = asNumber(material.numberOfSinks);
     if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight = asString(material.counterHeight) ?? (material.counterHeight != null ? String(material.counterHeight) : null);
-    const sinkOffset = asString(material.sinkOffset) ?? (material.sinkOffset != null ? String(material.sinkOffset) : null);
+    const counterHeight = coerceString(material.counterHeight) ?? null;
+    const sinkOffset = coerceString(material.sinkOffset) ?? null;
     if (counterHeight) out.counterHeight = counterHeight;
     if (sinkOffset) out.sinkOffset = sinkOffset;
   }
@@ -537,10 +393,11 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   return out;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- orchestrates the full design build (scan resolution + per-slot surface/object mapping loops); the branching mirrors the irreducible material domain
 export async function buildDesignMaterials(params: { design: RawDesignObject; roomData?: RawDesignObject; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
   const scan = await resolveScan({
-    ...(params.roomData !== undefined ? { roomData: params.roomData } : {}),
-    ...(params.projectId !== undefined ? { projectId: params.projectId } : {})
+    ...(params.roomData === undefined ? {} : { roomData: params.roomData }),
+    ...(params.projectId === undefined ? {} : { projectId: params.projectId })
   });
   if (!scan) return null;
 
@@ -569,8 +426,8 @@ export async function buildDesignMaterials(params: { design: RawDesignObject; ro
     if (slot === "curbTile") {
       const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
       const hasCurbInScan = showers.some((shower) => {
-        const s = asRecord(shower);
-        return (asNumber(s?.curbHeight) ?? 0) > 0 && (asNumber(s?.curbThickness) ?? 0) > 0;
+        const record = asRecord(shower);
+        return (asNumber(record?.curbHeight) ?? 0) > 0 && (asNumber(record?.curbThickness) ?? 0) > 0;
       });
       if (!product && hasCurbInScan) product = productBySlot.get("showerFloorTile") ?? null;
     }
