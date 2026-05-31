@@ -1,5 +1,6 @@
 "use client";
 
+import { orderBy, sortBy } from "es-toolkit";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -189,10 +190,11 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
       });
     }
 
-    return Array.from(groups.values(), (group) => ({
+    const withSortedRuns = Array.from(groups.values(), (group) => ({
       ...group,
-      runs: group.runs.toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      runs: sortBy(group.runs, [(run) => new Date(run.createdAt).getTime()])
+    }));
+    return orderBy(withSortedRuns, [(group) => new Date(group.createdAt).getTime()], ["desc"]);
   }, [filtered]);
 
   return (

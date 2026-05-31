@@ -1,5 +1,6 @@
 "use client";
 
+import { sortBy } from "es-toolkit";
 import Link from "next/link";
 import { CdnImage } from "@/components/cdn-image";
 import { JudgeScoreBadge } from "@/components/judge-score-badge";
@@ -56,8 +57,8 @@ export function ListView({
     byPreset.get(rowKey)!.push(run);
   }
   for (const byPreset of grouped.values()) {
-    for (const arr of byPreset.values()) {
-      arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    for (const [key, arr] of byPreset) {
+      byPreset.set(key, sortBy(arr, [(run) => new Date(run.createdAt).getTime()]));
     }
   }
 

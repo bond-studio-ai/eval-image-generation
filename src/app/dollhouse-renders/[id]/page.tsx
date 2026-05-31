@@ -1,3 +1,4 @@
+import { orderBy } from "es-toolkit";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DateTimeCell } from "@/components/date-cells";
@@ -149,22 +150,19 @@ export default async function DollhouseRenderDetailPage({ params }: PageProps) {
           </Card>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {frames
-              .slice()
-              .sort((a, b) => a.priority - b.priority || a.frameIndex - b.frameIndex)
-              .map((frame) => (
-                <Card key={frame.id} padding="none" className="overflow-hidden">
-                  <div className="bg-surface-sunken">
-                    <ExpandableImage src={frame.prettyUrl || frame.imageUrl} alt={frame.summary || `Frame ${frame.frameIndex + 1}`} wrapperClassName="relative block aspect-[4/3] w-full" />
-                  </div>
-                  <div className="border-border-subtle border-t px-4 py-3">
-                    <p className="text-body text-text-primary truncate font-medium">{frame.summary || `Frame ${frame.frameIndex + 1}`}</p>
-                    <p className="text-caption text-text-muted mt-0.5">
-                      Priority {frame.priority} · Index {frame.frameIndex}
-                    </p>
-                  </div>
-                </Card>
-              ))}
+            {orderBy(frames, [(frame) => frame.priority, (frame) => frame.frameIndex], ["asc", "asc"]).map((frame) => (
+              <Card key={frame.id} padding="none" className="overflow-hidden">
+                <div className="bg-surface-sunken">
+                  <ExpandableImage src={frame.prettyUrl || frame.imageUrl} alt={frame.summary || `Frame ${frame.frameIndex + 1}`} wrapperClassName="relative block aspect-[4/3] w-full" />
+                </div>
+                <div className="border-border-subtle border-t px-4 py-3">
+                  <p className="text-body text-text-primary truncate font-medium">{frame.summary || `Frame ${frame.frameIndex + 1}`}</p>
+                  <p className="text-caption text-text-muted mt-0.5">
+                    Priority {frame.priority} · Index {frame.frameIndex}
+                  </p>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </div>

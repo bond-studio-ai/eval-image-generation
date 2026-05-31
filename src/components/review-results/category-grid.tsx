@@ -1,5 +1,6 @@
 "use client";
 
+import { sumBy } from "es-toolkit";
 import { useState } from "react";
 import { ChevronIcon } from "./icons";
 import { CompositeMaskCanvas, SkeletonImage } from "./mask-preview";
@@ -150,7 +151,7 @@ export function SegmentationLegend({ rows }: { rows: CategoryRow[] }) {
  */
 export function CollapsibleCategoryGrid({ rows }: { rows: CategoryRow[] }) {
   const [open, setOpen] = useState(false);
-  const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
+  const totalMasks = sumBy(rows, (row) => row.masks.length);
 
   return (
     <div className="mb-5">

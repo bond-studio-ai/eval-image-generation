@@ -1,5 +1,6 @@
 "use client";
 
+import { sortBy } from "es-toolkit";
 import Link from "next/link";
 import { CdnImage } from "@/components/cdn-image";
 import { JudgeScoreBadge } from "@/components/judge-score-badge";
@@ -65,8 +66,8 @@ function buildMatrixModel(runs: RunRow[]): MatrixModel {
     if (!grid.has(key)) grid.set(key, []);
     grid.get(key)!.push(run);
   }
-  for (const arr of grid.values()) {
-    arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  for (const [key, arr] of grid) {
+    grid.set(key, sortBy(arr, [(run) => new Date(run.createdAt).getTime()]));
   }
   const sortedPresets = Array.from(rowKeys).sort();
 

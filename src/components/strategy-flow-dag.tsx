@@ -1,5 +1,6 @@
 "use client";
 
+import { uniq } from "es-toolkit";
 import { CheckIcon, MessageSquareIcon, PlayIcon, StarIcon, XIcon } from "@/components/ui/icons";
 
 export interface DagStep {
@@ -43,7 +44,7 @@ function getDeps(step: DagStep): number[] {
   if (step.realPhotoFromStep != null) deps.push(step.realPhotoFromStep);
   if (step.moodBoardFromStep != null) deps.push(step.moodBoardFromStep);
   if (step.arbitraryImageFromStep != null) deps.push(step.arbitraryImageFromStep);
-  return Array.from(new Set(deps));
+  return uniq(deps);
 }
 
 function getEdges(step: DagStep): Edge[] {

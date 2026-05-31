@@ -1,5 +1,6 @@
 "use client";
 
+import { uniq } from "es-toolkit";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReviewState } from "@/components/review-badge";
 import { serviceUrl } from "@/lib/api-base";
@@ -49,7 +50,9 @@ export function useBatchReviewStatus(
   // Stable string key derived from the (possibly fresh-ref each render)
   // `generationIds` array. The effect should only re-run when the *set*
   // of ids changes, not when the parent re-renders.
-  const idsKey = uniqueIds(generationIds).sort().join("|");
+  const idsKey = uniq(generationIds.filter((id): id is string => Boolean(id)))
+    .sort()
+    .join("|");
   const ids = useMemo(() => (idsKey ? idsKey.split("|") : []), [idsKey]);
 
   // Derive the badge map: our own resolved/user states win, then the module
@@ -124,17 +127,6 @@ export function useBatchReviewStatus(
   }, []);
 
   return { statuses, setStatus };
-}
-
-function uniqueIds(ids: readonly (string | null | undefined)[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const id of ids) {
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
-    out.push(id);
-  }
-  return out;
 }
 
 /**

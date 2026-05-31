@@ -1,3 +1,4 @@
+import { uniq } from "es-toolkit";
 import { useState } from "react";
 import { CdnImage } from "@/components/cdn-image";
 import type { InputImage } from "./types";
@@ -12,7 +13,7 @@ export function ImageCompare({ left, right }: { left: InputImage[] | null; right
 
   const leftByLabel = new Map(leftImgs.map((img) => [img.label, img]));
   const rightByLabel = new Map(rightImgs.map((img) => [img.label, img]));
-  const allLabels = Array.from(new Set([...leftImgs.map((i) => i.label), ...rightImgs.map((i) => i.label)]));
+  const allLabels = uniq([...leftImgs.map((i) => i.label), ...rightImgs.map((i) => i.label)]);
 
   return (
     <div className="space-y-2">

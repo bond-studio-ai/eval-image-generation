@@ -1,5 +1,6 @@
 "use client";
 
+import { sumBy } from "es-toolkit";
 import { useMemo } from "react";
 import { XIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
@@ -33,7 +34,7 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
   const categories = useSegmentationCategories();
   const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
   const rows = useMemo(() => buildRows(record, lookup, categories), [record, lookup, categories]);
-  const totalMasks = rows.reduce((sum, row) => sum + row.masks.length, 0);
+  const totalMasks = sumBy(rows, (row) => row.masks.length);
   const pluginEntries = useMemo(() => pluginEntriesFor(record?.reviewAssessment ?? null), [record]);
   const segmentationDrift = record?.reviewAssessment?.plugins?.segmentationDrift ?? null;
 

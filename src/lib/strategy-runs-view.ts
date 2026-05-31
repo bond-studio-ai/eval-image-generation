@@ -1,3 +1,5 @@
+import { orderBy, sortBy } from "es-toolkit";
+
 export interface StrategyRunViewInput {
   id: string;
   status: string;
@@ -51,7 +53,7 @@ export function groupStrategyRuns<T extends StrategyRunViewInput>(runs: T[], has
 
   const items: StrategyRunBatchGroup<T>[] = [];
   for (const [batchId, batchRuns] of batchGroups) {
-    const sorted = batchRuns.toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const sorted = sortBy(batchRuns, [(run) => new Date(run.createdAt).getTime()]);
     items.push({
       kind: "batch",
       id: batchId,
@@ -63,5 +65,5 @@ export function groupStrategyRuns<T extends StrategyRunViewInput>(runs: T[], has
     });
   }
 
-  return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return orderBy(items, [(item) => new Date(item.createdAt).getTime()], ["desc"]);
 }

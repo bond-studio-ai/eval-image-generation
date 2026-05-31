@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { sumBy } from "es-toolkit";
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
@@ -194,7 +195,7 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   }, [data]);
 
   // Count total issues
-  const totalProductIssues = Object.values(data.productAccuracy).reduce((sum, cat) => sum + cat.issues.length, 0);
+  const totalProductIssues = sumBy(Object.values(data.productAccuracy), (cat) => cat.issues.length);
   const totalSceneIssues = data.sceneAccuracyIssues.length;
 
   // Collect all active issue labels for the tag strip
