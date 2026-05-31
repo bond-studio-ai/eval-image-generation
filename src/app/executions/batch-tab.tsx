@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toaster";
 import { assertNever } from "@/lib/assert-never";
 import { serviceUrl } from "@/lib/api-base";
+import { parseJsonOrEmpty } from "@/lib/async-utils";
 import { BatchErrorCard } from "./_components/batch-error-card";
 import { BatchList } from "./_components/batch-list";
 import { BatchLoadingSkeleton } from "./_components/batch-loading-skeleton";
@@ -121,6 +122,10 @@ function appliedRangeReducer(_state: AppliedRangeState, action: AppliedRangeActi
   return { from: action.from, to: action.to };
 }
 
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: number; source?: "default" | "benchmark" }) {
   const [pending, pendingDispatch] = useReducer(pendingReducer, initialPendingState);
   const [appliedRange, appliedRangeDispatch] = useReducer(appliedRangeReducer, initialAppliedRangeState);
@@ -166,7 +171,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
         signal
       });
       if (!res.ok) {
-        const err: unknown = await res.json().catch(() => ({}));
+        const err = await parseJsonOrEmpty(res);
         const msg = (err as { error?: { message?: string } }).error?.message;
         throw new Error(msg || `Failed to load (${res.status}). Check that the backend is reachable.`);
       }
@@ -208,7 +213,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
 
   const loading = isPending;
   const refreshing = isPlaceholderData;
-  const fetchError = isError ? (queryError instanceof Error ? queryError.message : "Network error. Check backend and try again.") : null;
+  const fetchError = isError ? errorMessageOr(queryError, "Network error. Check backend and try again.") : null;
 
   const loadMore = useCallback(() => {
     if (isFetchingNextPage || !hasNextPage) return;

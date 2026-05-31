@@ -5,6 +5,7 @@ import { DeleteGenerationButton } from "@/components/delete-generation-button";
 import { PageHeader } from "@/components/page-header";
 import { RatingBadge } from "@/components/rating-badge";
 import { ExternalLinkIcon } from "@/components/ui/icons";
+import { catchToNull } from "@/lib/async-utils";
 import { fetchGenerationById } from "@/lib/service-client";
 import { deriveProductImages } from "./_components/generation-data";
 import { MetadataSection } from "./_components/metadata-section";
@@ -37,7 +38,7 @@ interface GenerationSceneInput {
 export default async function GenerationDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const data = await fetchGenerationById(id).catch(() => null);
+  const data = await catchToNull(fetchGenerationById(id));
   if (!data) notFound();
 
   const { promptVersion, input } = data;

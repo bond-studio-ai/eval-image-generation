@@ -11,6 +11,18 @@ export interface LayoutPresetOption {
   rawName?: string;
 }
 
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function layoutSelectLabel(selectedOption: LayoutPresetOption | null, hasCurrentValue: boolean, value: string, loading: boolean): string {
+  const name = selectedOption?.name;
+  if (name != null) return name;
+  if (!hasCurrentValue && value) return `Unknown layout (${value})`;
+  if (loading) return "Loading layouts...";
+  return "Select a layout";
+}
+
 /**
  * Shared layout-presets fetch. Both this select and its parent forms read from
  * it (react-query dedupes by `queryKey`), so the parent can resolve a preset
@@ -33,7 +45,7 @@ export function useLayoutPresets() {
     }
   });
 
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Failed to fetch layout presets") : null;
+  const error = isError ? errorMessageOr(queryError, "Failed to fetch layout presets") : null;
 
   return { options, loading, error };
 }
@@ -67,9 +79,7 @@ export function LayoutPresetSelect({ value, onChange }: { value: string; onChang
         disabled={loading}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface disabled:bg-surface-muted disabled:text-text-disabled hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>
-          {selectedOption?.name ?? (!hasCurrentValue && value ? `Unknown layout (${value})` : loading ? "Loading layouts..." : "Select a layout")}
-        </span>
+        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>{layoutSelectLabel(selectedOption, hasCurrentValue, value, loading)}</span>
         <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
       <p className="text-text-muted text-caption mt-2">Saved instead of a dollhouse upload. Runtime will resolve the room from this preset.</p>

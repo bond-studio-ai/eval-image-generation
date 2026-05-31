@@ -40,7 +40,8 @@ export function Button({ variant = "primary", size = "md", loading = false, icon
   const linkSizing = variant === "link" ? "" : SIZE[size];
   return (
     <button ref={ref} type={type} disabled={isDisabled} className={cn(BASE, VARIANT[variant], linkSizing, fullWidth && "w-full", className)} {...rest}>
-      {loading ? <Spinner size={size === "sm" ? "xs" : "sm"} /> : iconLeft ? <span className="-ml-0.5 flex shrink-0 items-center">{iconLeft}</span> : null}
+      {loading && <Spinner size={size === "sm" ? "xs" : "sm"} />}
+      {!loading && iconLeft ? <span className="-ml-0.5 flex shrink-0 items-center">{iconLeft}</span> : null}
       {children}
       {!loading && iconRight && <span className="-mr-0.5 flex shrink-0 items-center">{iconRight}</span>}
     </button>

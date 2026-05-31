@@ -57,6 +57,7 @@ export function actionsColumn<T>(actions: RowAction<T>[]): DataTableColumn<T> {
       <div className="flex justify-end gap-1">
         {actions.map((action, i) => {
           if ("render" in action) {
+            // eslint-disable-next-line react/no-array-index-key -- actions is a static config array (render hatch has no id), never reordered
             return <Fragment key={i}>{action.render(row)}</Fragment>;
           }
           if (action.hidden?.(row)) return null;

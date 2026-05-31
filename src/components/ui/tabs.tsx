@@ -22,7 +22,7 @@ interface TabsProps<T extends string> {
 function classesFor(isActive: boolean, disabled: boolean | undefined) {
   return cn(
     "border-b-2 px-4 py-2.5 text-body font-medium transition-colors",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600",
     isActive ? "border-primary-600 text-primary-700" : "border-transparent text-text-muted hover:border-border-strong hover:text-text-secondary",
     disabled && "cursor-not-allowed opacity-50"
   );

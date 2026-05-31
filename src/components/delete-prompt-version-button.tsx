@@ -61,7 +61,14 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
 
       {/* Confirmation modal */}
       {showConfirm && (
-        <Modal onClose={() => !deleting && setShowConfirm(false)} labelledById="delete-prompt-version-title" backdropClassName="bg-overlay/50" className="bg-surface w-full max-w-md rounded-xl p-6 shadow-xl">
+        <Modal
+          onClose={() => {
+            if (!deleting) setShowConfirm(false);
+          }}
+          labelledById="delete-prompt-version-title"
+          backdropClassName="bg-overlay/50"
+          className="bg-surface w-full max-w-md rounded-xl p-6 shadow-xl"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-danger-100 flex size-10 shrink-0 items-center justify-center rounded-full">
               <AlertTriangleIcon className="text-danger-600 size-5" />

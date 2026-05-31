@@ -137,6 +137,19 @@ function readResponse(value: unknown): {
  * — useful when debugging scene-shell extras (`doors`, `windows`,
  * `ceilings`) that often miss in tight bathroom frames.
  */
+function dedupeConsumerLabels(groupMembers: { key: string }[], lookup: CategoryLookup): string[] {
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const entry of groupMembers) {
+    const value = lookup.label(entry.key);
+    if (!seen.has(value)) {
+      seen.add(value);
+      labels.push(value);
+    }
+  }
+  return labels;
+}
+
 export function buildRows(record: ReviewRecord | null, lookup: CategoryLookup, metadata: SegmentationCategoryMetadata[] | null = null): CategoryRow[] {
   if (!record || typeof record !== "object") return [];
 
@@ -170,15 +183,7 @@ export function buildRows(record: ReviewRecord | null, lookup: CategoryLookup, m
             .replaceAll(/(?<=[a-z])(?=[A-Z])/g, " ")
             .replaceAll("_", " ")
             .replaceAll(/\b\w/g, (char) => char.toUpperCase());
-        const seenLabels = new Set<string>();
-        const consumerLabels: string[] = [];
-        for (const entry of groupMembers) {
-          const value = lookup.label(entry.key);
-          if (!seenLabels.has(value)) {
-            seenLabels.add(value);
-            consumerLabels.push(value);
-          }
-        }
+        const consumerLabels = dedupeConsumerLabels(groupMembers, lookup);
         rows.push({
           category: categoryKey,
           label: baseLabel,

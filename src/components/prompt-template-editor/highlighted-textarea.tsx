@@ -33,12 +33,15 @@ function measureScrollbarWidth(): number {
   return sw;
 }
 
+// No store to subscribe to; the measurement never changes after first mount.
+function noopUnsubscribe(): void {
+  // intentionally empty
+}
+
 // The scrollbar width is a per-environment constant, so there is nothing to
 // subscribe to and the store never changes after the first measurement.
 function subscribeScrollbarWidth(): () => void {
-  return () => {
-    // No store to subscribe to; the measurement never changes.
-  };
+  return noopUnsubscribe;
 }
 
 // The server has no scrollbar to measure; it renders 0 and the client measures
@@ -111,6 +114,7 @@ export function HighlightedTextarea({ value, onChange, className, fillHeight = f
           }}
         >
           {lines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key -- line N is always line N; index is the stable identity here
             <Fragment key={i}>
               <div className="text-text-disabled text-body self-start pr-2 text-right font-mono leading-5 tabular-nums select-none">{i + 1}</div>
               <div className="text-text-primary text-body pr-3 font-mono leading-5 break-words whitespace-pre-wrap">{line}</div>

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReviewState } from "@/components/review-badge";
 import { serviceUrl } from "@/lib/api-base";
 
+const HTTP_NOT_FOUND = 404;
+
 /**
  * Module-level cache of *resolved* review states only (`idle` /
  * `done` / `error` — never the transient `checking`). Keyed by the
@@ -168,7 +170,7 @@ async function probe(generationId: string): Promise<ReviewState> {
   const res = await fetch(serviceUrl(`generations/${generationId}/review`), {
     cache: "no-store"
   });
-  if (res.status === 404) return { kind: "idle" };
+  if (res.status === HTTP_NOT_FOUND) return { kind: "idle" };
   if (!res.ok) return { kind: "error", message: `HTTP ${res.status}` };
   // Successful GET means a record exists. We don't have prompt counts here
   // (those only come back from POST), so the badge falls back to "Reviewed".

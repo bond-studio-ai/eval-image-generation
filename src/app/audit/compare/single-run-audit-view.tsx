@@ -11,6 +11,16 @@ import { serviceUrl } from "@/lib/api-base";
 import { coerceString } from "@/lib/coerce-string";
 import { parseStrategyRunJudgeResults, type RawRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
+function statusBadgeClass(status: string): string {
+  if (status === "completed") return "bg-success-100 text-success-700";
+  if (status === "failed") return "bg-danger-100 text-danger-700";
+  return "bg-surface-sunken text-text-secondary";
+}
+
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 interface InputImage {
   url: string;
   label: string;
@@ -165,7 +175,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
     enabled: Boolean(runId)
   });
 
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Unknown error") : null;
+  const error = isError ? errorMessageOr(queryError, "Unknown error") : null;
 
   if (loading) {
     return (
@@ -204,11 +214,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
             <p className="text-text-disabled mt-0.5 font-mono text-[10px]">{run.id}</p>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${run.status === "completed" ? "bg-success-100 text-success-700" : run.status === "failed" ? "bg-danger-100 text-danger-700" : "bg-surface-sunken text-text-secondary"}`}
-            >
-              {run.status}
-            </span>
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeClass(run.status)}`}>{run.status}</span>
             {run.source && <span className="bg-primary-100 text-primary-700 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">{SOURCE_LABELS[run.source] ?? run.source}</span>}
             {run.judgeScore != null && (
               <span className="bg-primary-100 text-primary-700 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
@@ -232,11 +238,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
                 <span className="text-text-secondary text-body font-semibold">{stepName}</span>
                 <div className="flex items-center gap-2">
                   {sr.executionTime != null && <span className="text-text-muted text-[10px]">{(sr.executionTime / 1000).toFixed(1)}s</span>}
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${sr.status === "completed" ? "bg-success-100 text-success-700" : sr.status === "failed" ? "bg-danger-100 text-danger-700" : "bg-surface-sunken text-text-secondary"}`}
-                  >
-                    {sr.status}
-                  </span>
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeClass(sr.status)}`}>{sr.status}</span>
                 </div>
               </div>
 

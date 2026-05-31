@@ -65,6 +65,11 @@ function startOfWeek(date: Date): number {
   return day === 0 ? 6 : day - 1;
 }
 
+function orderedRange(start: string | null, end: string | null): [string, string] | [null, null] {
+  if (!start || !end) return [null, null];
+  return start <= end ? [start, end] : [end, start];
+}
+
 function CalendarMonth({
   year,
   month,
@@ -88,7 +93,7 @@ function CalendarMonth({
   const today = fmtISO(new Date());
 
   const effectiveEnd = rangeEnd ?? hoverDate;
-  const [lo, hi] = rangeStart && effectiveEnd ? (rangeStart <= effectiveEnd ? [rangeStart, effectiveEnd] : [effectiveEnd, rangeStart]) : [null, null];
+  const [lo, hi] = orderedRange(rangeStart, effectiveEnd);
 
   const monthLabel = new Date(year, month).toLocaleDateString("en-US", {
     month: "long",
@@ -310,7 +315,7 @@ export function DateRangePicker({ from, to, onChange, onClear }: { from: string;
             type="button"
             onClick={toggleCustom}
             className={`text-caption flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
-              hasCustomRange ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : showCustom ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"
+              hasCustomRange || showCustom ? "bg-surface text-text-primary ring-border shadow-sm ring-1" : "text-text-muted hover:text-text-secondary"
             }`}
           >
             <CalendarIcon className="size-3.5" />

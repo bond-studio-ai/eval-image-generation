@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { catchToNull, parseJsonOrEmpty } from "@/lib/async-utils";
 import { platformApiBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -115,7 +116,7 @@ async function fetchRoomByProjectId(projectId: string): Promise<Record<string, u
 export async function POST(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
   try {
     const { projectId } = await params;
-    const body = (await request.json().catch(() => ({}))) as { design?: unknown };
+    const body = (await parseJsonOrEmpty(request)) as { design?: unknown };
     const design = body.design && typeof body.design === "object" && !Array.isArray(body.design) ? (body.design as Record<string, unknown>) : null;
     if (!design) {
       return errorResponse("VALIDATION_ERROR", "design is required");
@@ -126,7 +127,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
       return errorResponse("VALIDATION_ERROR", "design payload is empty");
     }
 
-    const existingRoom = await fetchRoomByProjectId(projectId).catch(() => null);
+    const existingRoom = await catchToNull(fetchRoomByProjectId(projectId));
     const existingDesign = extractRoomDesign(existingRoom);
 
     if (existingDesign) {

@@ -3,13 +3,17 @@ import type { StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-resul
 import { SectionToggle } from "./shared";
 import type { StepGroup } from "./types";
 
+function deriveDagStatus(results: StepGroup["results"]): NonNullable<DagStep["status"]> {
+  if (results.some((result) => result.status === "running")) return "running";
+  if (results.some((result) => result.status === "completed")) return "completed";
+  if (results.some((result) => result.status === "failed")) return "failed";
+  return (results[0]?.status as DagStep["status"]) ?? "pending";
+}
+
 export function ExecutionFlowSection({ stepGroups, judgeResults, open, onToggle }: { stepGroups: StepGroup[]; judgeResults: StrategyRunJudgeResultEntry[]; open: boolean; onToggle: () => void }) {
   const dagSteps: DagStep[] = stepGroups.flatMap((group) => {
     if (!group.step) return [];
-    const anyCompleted = group.results.some((result) => result.status === "completed");
-    const anyRunning = group.results.some((result) => result.status === "running");
-    const anyFailed = group.results.some((result) => result.status === "failed");
-    const status = anyRunning ? "running" : anyCompleted ? "completed" : anyFailed ? "failed" : ((group.results[0]?.status as DagStep["status"]) ?? "pending");
+    const status = deriveDagStatus(group.results);
     return [
       {
         stepOrder: group.stepOrder,

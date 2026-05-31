@@ -33,7 +33,13 @@ const CLASS_BY_KIND: Record<HandlebarsKind, string> = {
 //   4. `{{ ... }}`       — regular mustache
 // Regex is re-created per call so `lastIndex` is never shared across renders.
 function mustacheRegex(): RegExp {
-  return /\{\{!--[\s\S]*?--\}\}|\{\{![\s\S]*?\}\}|\{\{\{[\s\S]*?\}\}\}|\{\{[\s\S]*?\}\}/g;
+  // The alternatives use tempered bodies (`(?:[^}]|\}(?!\}))*`) so there is no
+  // catastrophic backtracking. `no-super-linear-move` still flags the shared
+  // `{{` start because a long `{{{{…` run with no close makes the global scan
+  // re-attempt at each brace — but this only highlights the user's own short
+  // template inside a client-side editor overlay, so it is not a DoS surface.
+  // eslint-disable-next-line regexp/no-super-linear-move -- client-side highlighter over short, self-authored templates; not a server input
+  return /\{\{!--(?:[^-]|-(?!-\}\}))*--\}\}|\{\{!(?:[^}]|\}(?!\}))*\}\}|\{\{\{(?:[^}]|\}(?!\}\}))*\}\}\}|\{\{(?:[^}]|\}(?!\}))*\}\}/g;
 }
 
 function classify(match: string): HandlebarsKind {

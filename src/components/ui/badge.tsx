@@ -46,6 +46,12 @@ const SIZE: Record<BadgeSize, string> = {
   md: "px-2 py-0.5 text-caption font-medium"
 };
 
+const PALETTE_BY_VARIANT: Record<BadgeVariant, Record<BadgeTone, string>> = {
+  solid: SOLID,
+  outline: OUTLINE,
+  soft: SOFT
+};
+
 interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, "children"> {
   tone?: BadgeTone;
   variant?: BadgeVariant;
@@ -56,7 +62,7 @@ interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, "children"> {
 }
 
 export function Badge({ tone = "neutral", variant = "soft", size = "md", iconLeft, className, children, ref, ...rest }: BadgeProps) {
-  const palette = variant === "solid" ? SOLID : variant === "outline" ? OUTLINE : SOFT;
+  const palette = PALETTE_BY_VARIANT[variant];
   return (
     <span ref={ref} className={cn("rounded-pill inline-flex items-center gap-1 whitespace-nowrap", palette[tone], SIZE[size], className)} {...rest}>
       {iconLeft && <span className="flex shrink-0 items-center">{iconLeft}</span>}

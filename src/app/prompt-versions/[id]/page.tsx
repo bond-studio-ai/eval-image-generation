@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PromptVersionDetail } from "@/components/prompt-version-detail";
+import { catchToNull } from "@/lib/async-utils";
 import { parseOrFallback } from "@/lib/api/parse";
 import { generationSummaryArraySchema } from "@/lib/api/schemas";
 import { fetchGenerations, fetchPromptVersionById } from "@/lib/service-client";
@@ -19,7 +20,7 @@ interface PageProps {
 export default async function PromptVersionDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const pvData = await fetchPromptVersionById(id).catch(() => null);
+  const pvData = await catchToNull(fetchPromptVersionById(id));
   if (!pvData) notFound();
 
   const genResult = await fetchGenerations({ promptVersionId: id, limit: "100" });

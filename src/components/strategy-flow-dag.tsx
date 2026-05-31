@@ -192,10 +192,16 @@ export interface DagJudge {
   position?: number | null;
 }
 
+function resolveJudges(judges: DagJudge[] | undefined, judge: DagJudge | null | undefined): DagJudge[] {
+  if (judges && judges.length > 0) return judges;
+  if (judge) return [judge];
+  return [];
+}
+
 export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; judge?: DagJudge | null; judges?: DagJudge[] }) {
   if (steps.length === 0) return null;
 
-  const effectiveJudges = judges && judges.length > 0 ? judges : judge ? [judge] : [];
+  const effectiveJudges = resolveJudges(judges, judge);
   const hasJudge = effectiveJudges.length > 0;
   const judgeNodeHeight = Math.max(NODE_HEIGHT, JUDGE_HEADER_HEIGHT + effectiveJudges.length * JUDGE_ROW_HEIGHT + 16);
   const { positions, width: baseWidth, height: baseHeight } = computeLayout(steps);
@@ -310,14 +316,14 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
 
         {judgePos && hasJudge && (
           <>
-            {judgeEdges.map((edge, i) => {
+            {judgeEdges.map((edge) => {
               const x1 = edge.fromPos.x + NODE_WIDTH;
               const y1 = edge.fromPos.y + NODE_HEIGHT / 2;
               const x2 = judgePos.x;
               const y2 = judgePos.y + judgeNodeHeight / 2;
               const midX = (x1 + x2) / 2;
               const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-              return <path key={`judge-edge-${i}`} d={path} fill="none" className="stroke-warning-300" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />;
+              return <path key={`judge-edge-${edge.fromPos.x}-${edge.fromPos.y}`} d={path} fill="none" className="stroke-warning-300" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />;
             })}
             <foreignObject x={judgePos.x} y={judgePos.y} width={NODE_WIDTH} height={judgeNodeHeight}>
               <div className="border-warning-400 bg-warning-50 flex h-full flex-col overflow-hidden rounded-lg border-2 shadow-sm">

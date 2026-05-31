@@ -11,6 +11,10 @@ import { NumberOfImagesInput } from "./_components/number-of-images-input";
 import { BENCHMARK_PROJECT_IDS, DEFAULT_BENCHMARK_PROJECT_IDS, executeRuns, fetchRunOptions } from "./_components/run-options";
 import { INITIAL_SELECTION, selectionReducer } from "./_components/selection-state";
 
+function runActionLabel(benchmarkMode: boolean): string {
+  return benchmarkMode ? "Run benchmarks" : "Run (1 batch)";
+}
+
 export function ExecutionsRunButton(props: { onRunCreated?: () => void }) {
   return (
     <Suspense fallback={null}>
@@ -198,7 +202,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
                 })}
                 selectedIds={benchmarkMode ? selectedBenchmarkProjectIds : selectedPresetIds}
                 onToggle={benchmarkMode ? toggleBenchmarkProject : togglePreset}
-                emptyMessage={benchmarkMode ? "No matches" : presets.length === 0 ? "No presets available" : "No matches"}
+                emptyMessage={!benchmarkMode && presets.length === 0 ? "No presets available" : "No matches"}
               />
             </div>
           )}
@@ -219,7 +223,7 @@ function ExecutionsRunButtonInner({ onRunCreated }: { onRunCreated?: () => void 
               Cancel
             </Button>
             <Button onClick={handleRun} disabled={submitting || selectedStrategyIds.length === 0 || (benchmarkMode ? selectedBenchmarkProjectIds.length === 0 : selectedPresetIds.length === 0)} loading={submitting}>
-              {submitting ? "Starting…" : benchmarkMode ? "Run benchmarks" : "Run (1 batch)"}
+              {submitting ? "Starting…" : runActionLabel(benchmarkMode)}
             </Button>
           </div>
         </Modal>

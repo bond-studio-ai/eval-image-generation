@@ -12,6 +12,18 @@ interface TooltipOptions {
   align?: TooltipAlign;
 }
 
+function anchorLeft(align: TooltipAlign, rect: DOMRect): number {
+  if (align === "start") return rect.left;
+  if (align === "end") return rect.right;
+  return rect.left + rect.width / 2;
+}
+
+function anchorTransform(align: TooltipAlign): string {
+  if (align === "start") return "translateX(0)";
+  if (align === "end") return "translateX(-100%)";
+  return "translateX(-50%)";
+}
+
 /**
  * Hook that returns a callback `ref`, event handlers, and a `portal`
  * React node for a hover/focus tooltip mounted into `document.body`.
@@ -52,7 +64,7 @@ export function useTooltip(hint: ReactNode, options: TooltipOptions = {}) {
     // Right-aligned headers point the bubble at their right edge so
     // it doesn't overflow past the table; left-aligned text points
     // at the start; everything else centers.
-    const left = align === "start" ? rect.left : align === "end" ? rect.right : rect.left + rect.width / 2;
+    const left = anchorLeft(align, rect);
     setPos({ left, top: rect.bottom + 6 });
   }, [align]);
 
@@ -79,7 +91,7 @@ export function useTooltip(hint: ReactNode, options: TooltipOptions = {}) {
               left: pos.left,
               top: pos.top,
               maxWidth: width,
-              transform: align === "start" ? "translateX(0)" : align === "end" ? "translateX(-100%)" : "translateX(-50%)",
+              transform: anchorTransform(align),
               zIndex: 50
             }}
             className="text-text-inverse bg-text-primary pointer-events-none rounded px-2 py-1.5 text-[11px] leading-snug font-normal tracking-normal whitespace-normal normal-case shadow-lg"

@@ -7,7 +7,13 @@ import { fetchJson } from "@/lib/api/client";
 import { accuracyTrendsResponseSchema } from "@/lib/api/schemas";
 import type { AccuracyTrendPoint } from "@/lib/service-client";
 
-const AccuracyTrendChartGraph = dynamic(() => import("./accuracy-trend-chart-graph").then((module) => module.AccuracyTrendChartGraph), { ssr: false });
+const AccuracyTrendChartGraph = dynamic(
+  async () => {
+    const graphModule = await import("./accuracy-trend-chart-graph");
+    return graphModule.AccuracyTrendChartGraph;
+  },
+  { ssr: false }
+);
 
 interface AccuracyTrendChartProps {
   from?: string;

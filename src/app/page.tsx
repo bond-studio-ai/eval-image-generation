@@ -66,6 +66,12 @@ function DistributionChart({ data, title }: { data: DistEntry[]; title: string }
 
 type TabName = "strategies" | "products" | "reliability" | "compare";
 
+const TAB_BY_KEY: Record<string, TabName> = {
+  products: "products",
+  reliability: "reliability",
+  compare: "compare"
+};
+
 function buildTabHref(tab: TabName, searchParams: Record<string, string | string[] | undefined>): string {
   const params = new URLSearchParams();
   if (tab !== "strategies") params.set("tab", tab);
@@ -88,7 +94,7 @@ function buildTabHref(tab: TabName, searchParams: Record<string, string | string
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const [tabRaw] = getParamValues(params, "tab");
-  const activeTab: TabName = tabRaw === "products" ? "products" : tabRaw === "reliability" ? "reliability" : tabRaw === "compare" ? "compare" : "strategies";
+  const activeTab: TabName = TAB_BY_KEY[tabRaw ?? ""] ?? "strategies";
   const [from] = getParamValues(params, "from");
   const [to] = getParamValues(params, "to");
   const [model] = getParamValues(params, "model");

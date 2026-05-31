@@ -15,7 +15,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
 
   useEffect(() => {
     const els = sections.flatMap((section) => {
-      const el = document.getElementById(section.id);
+      const el = document.querySelector(`#${section.id}`);
       return el ? [el] : [];
     });
     if (els.length === 0) return undefined;
@@ -40,7 +40,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
   }, [sections]);
 
   const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
+    const el = document.querySelector(`#${id}`);
     if (!el) return;
     setActiveId(id);
     clickScrolling.current = true;

@@ -19,6 +19,12 @@ function toIsoEnd(date: string): string {
   return new Date(`${date}T23:59:59.999Z`).toISOString();
 }
 
+function matchesSourceFilter(run: RunListItem, sourceFilter: SourceFilter): boolean {
+  if (sourceFilter === "all") return true;
+  if (sourceFilter === "preset") return run.source === "preset" || Boolean(run.inputPresetName);
+  return run.source === "raw_input";
+}
+
 interface FiltersState {
   filterText: string;
   dateFrom: string;
@@ -159,7 +165,7 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
         return run.id.toLowerCase().includes(query) || (run.strategyName ?? "").toLowerCase().includes(query) || (run.inputPresetName ?? "").toLowerCase().includes(query) || (run.source ?? "").toLowerCase().includes(query);
       })
     : runs;
-  const filtered = filteredByText.filter((run) => (filters.sourceFilter === "all" ? true : filters.sourceFilter === "preset" ? run.source === "preset" || Boolean(run.inputPresetName) : run.source === "raw_input"));
+  const filtered = filteredByText.filter((run) => matchesSourceFilter(run, filters.sourceFilter));
   const runGroups = useMemo<AuditRunGroup[]>(() => {
     const groups = new Map<string, AuditRunGroup>();
     for (const run of filtered) {
@@ -280,9 +286,9 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
           <div className="flex items-center justify-center py-8">
             <Spinner size="md" className="text-text-disabled" />
           </div>
-        ) : error ? (
-          <p className="text-body text-danger-600 py-4 text-center">{error}</p>
-        ) : (
+        ) : null}
+        {!loading && error ? <p className="text-body text-danger-600 py-4 text-center">{error}</p> : null}
+        {!loading && !error ? (
           <>
             <p className="text-text-disabled mt-2 text-[11px]">
               Showing {filtered.length} of {total} runs
@@ -312,7 +318,7 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
               )}
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

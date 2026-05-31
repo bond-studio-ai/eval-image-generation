@@ -5,6 +5,13 @@ import { logger } from "./logger";
 
 type ProxyErrorCode = "INTERNAL_ERROR" | "PROXY_CONFIG_ERROR" | "UPSTREAM_NETWORK_ERROR" | "UPSTREAM_BAD_JSON";
 
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+const HTTP_BAD_GATEWAY = 502;
+/** Max chars of an upstream error body to log (full snippet for error responses). */
+const ERROR_BODY_SNIPPET_LEN = 600;
+/** Max chars of a malformed-JSON body to log/return in the error detail. */
+const JSON_ERROR_SNIPPET_LEN = 300;
+
 /**
  * Optional rewrite of inbound query params before the upstream call (e.g.
  * translating the v1 `page`/`limit` convention into v2's `currentPage`/`perPage`).
@@ -120,13 +127,18 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
       error: message,
       bodyLen: body?.length ?? 0
     });
-    return errorJson("UPSTREAM_NETWORK_ERROR", message, 502, { url });
+    return errorJson("UPSTREAM_NETWORK_ERROR", message, HTTP_BAD_GATEWAY, { url });
   }
   const { value: res } = resAttempt;
 
   const contentType = res.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
-  const rawBody = await res.text().catch(() => "");
+  let rawBody = "";
+  try {
+    rawBody = await res.text();
+  } catch {
+    rawBody = "";
+  }
 
   if (!res.ok) {
     logger.error(`${serviceName} proxy upstream error`, {
@@ -134,7 +146,7 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
       url,
       status: res.status,
       contentType,
-      bodySnippet: rawBody.slice(0, 600)
+      bodySnippet: rawBody.slice(0, ERROR_BODY_SNIPPET_LEN)
     });
   }
 
@@ -149,11 +161,11 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
         url,
         upstreamStatus: res.status,
         error: error instanceof Error ? error.message : String(error),
-        bodySnippet: rawBody.slice(0, 300)
+        bodySnippet: rawBody.slice(0, JSON_ERROR_SNIPPET_LEN)
       });
-      return errorJson("UPSTREAM_BAD_JSON", "Upstream returned malformed JSON", 502, {
+      return errorJson("UPSTREAM_BAD_JSON", "Upstream returned malformed JSON", HTTP_BAD_GATEWAY, {
         upstreamStatus: res.status,
-        bodySnippet: rawBody.slice(0, 300)
+        bodySnippet: rawBody.slice(0, JSON_ERROR_SNIPPET_LEN)
       });
     }
     const { value: parsed } = parsedAttempt;
@@ -219,7 +231,7 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
       // 500 (not 502): the proxy itself is misconfigured; we never even tried
       // to reach upstream. `PROXY_CONFIG_ERROR` distinguishes this from
       // `UPSTREAM_NETWORK_ERROR` in logs and from any consumer trying to react.
-      return errorJson("PROXY_CONFIG_ERROR", "Backend BASE_API_HOSTNAME is not configured", 500);
+      return errorJson("PROXY_CONFIG_ERROR", "Backend BASE_API_HOSTNAME is not configured", HTTP_INTERNAL_SERVER_ERROR);
     }
     const { value: baseUrl } = baseUrlAttempt;
 

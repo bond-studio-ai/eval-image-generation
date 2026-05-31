@@ -10,14 +10,14 @@ function catalogSegment(segment: string): string {
   return TILE_SEGMENTS.has(segment) ? "tiles" : segment;
 }
 
-function firstCatalogProduct(json: unknown): unknown | null {
+function firstCatalogProduct(json: unknown): unknown {
   const payload = json && typeof json === "object" ? (json as { data?: unknown }) : null;
   const raw = payload && "data" in payload ? payload.data : json;
   if (Array.isArray(raw)) return raw[0] ?? null;
   return raw ?? null;
 }
 
-async function fetchCatalogProduct(segment: string, productId: string): Promise<unknown | null> {
+async function fetchCatalogProduct(segment: string, productId: string): Promise<unknown> {
   const url = `${CATALOG_BASE}/${segment}/${encodeURIComponent(productId)}?${CATALOG_INCLUDE_PARAMS}`;
   const res = await fetch(url, {
     headers: { Accept: "application/json" },

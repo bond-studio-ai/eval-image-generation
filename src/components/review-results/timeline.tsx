@@ -106,6 +106,7 @@ function SegmentationTimelineSection({ timings, lookup }: { timings: Segmentatio
             const leftPct = Math.min((step.startMs / inferredTotal) * 100, 99.5);
             const sharePct = (step.durationMs / inferredTotal) * 100;
             return (
+              // eslint-disable-next-line react/no-array-index-key -- stateless timeline rows, positionally stable, step names can repeat across retries
               <div key={`${step.name}-${idx}`} className="text-text-secondary flex items-center gap-2 text-[11px]">
                 <span className="w-36 shrink-0 truncate" title={timelineStepLabel(step.name)}>
                   {timelineStepLabel(step.name)}

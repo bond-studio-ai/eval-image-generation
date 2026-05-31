@@ -20,6 +20,15 @@ import type { ReviewRecord } from "./types";
  * parent `ReviewResultsBadge` so the modal stays a pure presentational
  * component over `record`.
  */
+function reviewSummaryLabel(rowCount: number, totalMasks: number, loading: boolean): string {
+  if (rowCount > 0) {
+    const categoryWord = rowCount === 1 ? "category" : "categories";
+    const maskWord = totalMasks === 1 ? "mask" : "masks";
+    return `${rowCount} ${categoryWord} · ${totalMasks} ${maskWord}`;
+  }
+  return loading ? "Loading…" : "No categories";
+}
+
 export function ReviewModal({ generationId, record, loading, error, onClose }: { generationId: string; record: ReviewRecord | null; loading: boolean; error: string | null; onClose: () => void }) {
   const categories = useSegmentationCategories();
   const lookup = useMemo(() => buildCategoryLookup(categories), [categories]);
@@ -36,7 +45,7 @@ export function ReviewModal({ generationId, record, loading, error, onClose }: {
             Review
           </h3>
           <p className="text-text-muted text-caption mt-0.5">
-            {rows.length > 0 ? `${rows.length} ${rows.length === 1 ? "category" : "categories"} · ${totalMasks} ${totalMasks === 1 ? "mask" : "masks"}` : loading ? "Loading…" : "No categories"}
+            {reviewSummaryLabel(rows.length, totalMasks, loading)}
             {record?.createdAt && (
               <>
                 {" · "}

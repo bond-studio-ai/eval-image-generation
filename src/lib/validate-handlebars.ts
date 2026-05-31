@@ -3,6 +3,14 @@ export interface TemplateError {
   message: string;
 }
 
+// Handlebars delimiter lengths, used to advance the scan cursor past a token.
+const MUSTACHE_DELIM_LEN = 2; // `{{` / `}}`
+const TRIPLE_DELIM_LEN = 3; // `{{{` / `}}}` / `{{!`
+const RAW_DELIM_LEN = 4; // `{{{{` / `}}}}` / `--}}`
+const LONG_COMMENT_OPEN_LEN = 5; // `{{!--`
+/** A backslash escape inside a string literal consumes the backslash + next char. */
+const ESCAPE_SEQUENCE_LEN = 2;
+
 /**
  * Handlebars template validator.
  *
@@ -25,6 +33,7 @@ export interface TemplateError {
  *   - Subexpressions and string literals inside expressions
  *     (strings can contain `}}` without prematurely terminating the token).
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- single-purpose handlebars tokenizer; the linear delimiter-by-delimiter scan is clearer as one function than fragmented across helpers
 export function validateHandlebarsTemplate(template: string): TemplateError[] {
   const errors: TemplateError[] = [];
   if (!template.trim()) return errors;
@@ -39,7 +48,8 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
     let lo = 0;
     let hi = lineStarts.length - 1;
     while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- binary-search midpoint halving
+      const mid = Math.floor((lo + hi + 1) / 2);
       if (lineStarts[mid]! <= pos) lo = mid;
       else hi = mid - 1;
     }
@@ -98,7 +108,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         const quote = char;
         j++;
         while (j < template.length && template[j] !== quote) {
-          if (template[j] === "\\") j += 2;
+          if (template[j] === "\\") j += ESCAPE_SEQUENCE_LEN;
           else j++;
         }
         j++;
@@ -114,7 +124,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
     // Quad-stash raw block: `{{{{name}}}}...{{{{/name}}}}`
     if (template.startsWith("{{{{", i)) {
       const start = i;
-      const closeOpen = template.indexOf("}}}}", i + 4);
+      const closeOpen = template.indexOf("}}}}", i + RAW_DELIM_LEN);
       if (closeOpen === -1) {
         errors.push({
           line: getLine(start),
@@ -122,21 +132,21 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         });
         return errors;
       }
-      const raw = template.slice(i + 4, closeOpen).trim();
+      const raw = template.slice(i + RAW_DELIM_LEN, closeOpen).trim();
       const line = getLine(start);
       if (raw.startsWith("/")) {
         tokens.push({ kind: "rawClose", name: raw.slice(1).trim(), line });
       } else {
         tokens.push({ kind: "rawOpen", name: raw, line });
       }
-      i = closeOpen + 4;
+      i = closeOpen + RAW_DELIM_LEN;
       continue;
     }
 
     // Long-form comment `{{!-- ... --}}` — may contain `}}`.
     if (template.startsWith("{{!--", i)) {
       const start = i;
-      const close = template.indexOf("--}}", i + 5);
+      const close = template.indexOf("--}}", i + LONG_COMMENT_OPEN_LEN);
       if (close === -1) {
         errors.push({
           line: getLine(start),
@@ -145,14 +155,14 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         return errors;
       }
       tokens.push({ kind: "comment", line: getLine(start) });
-      i = close + 4;
+      i = close + RAW_DELIM_LEN;
       continue;
     }
 
     // Short-form comment `{{! ... }}`.
     if (template.startsWith("{{!", i)) {
       const start = i;
-      const close = findClose(i + 3, "}}");
+      const close = findClose(i + TRIPLE_DELIM_LEN, "}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
@@ -161,14 +171,14 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         return errors;
       }
       tokens.push({ kind: "comment", line: getLine(start) });
-      i = close + 2;
+      i = close + MUSTACHE_DELIM_LEN;
       continue;
     }
 
     // Triple-stash `{{{ expr }}}`.
     if (template.startsWith("{{{", i)) {
       const start = i;
-      const close = findClose(i + 3, "}}}");
+      const close = findClose(i + TRIPLE_DELIM_LEN, "}}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
@@ -176,16 +186,16 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         });
         return errors;
       }
-      const content = stripTildes(template.slice(i + 3, close).trim());
+      const content = stripTildes(template.slice(i + TRIPLE_DELIM_LEN, close).trim());
       tokens.push({ kind: "expr", content, line: getLine(start) });
-      i = close + 3;
+      i = close + TRIPLE_DELIM_LEN;
       continue;
     }
 
     // Regular mustache `{{ expr }}`.
     if (template.startsWith("{{", i)) {
       const start = i;
-      const close = findClose(i + 2, "}}");
+      const close = findClose(i + MUSTACHE_DELIM_LEN, "}}");
       if (close === -1) {
         errors.push({
           line: getLine(start),
@@ -193,26 +203,26 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         });
         return errors;
       }
-      const rawContent = template.slice(i + 2, close);
+      const rawContent = template.slice(i + MUSTACHE_DELIM_LEN, close);
       const content = stripTildes(rawContent.trim());
       const line = getLine(start);
 
       if (!content) {
         errors.push({ line, message: 'Empty expression "{{}}"' });
-        i = close + 2;
+        i = close + MUSTACHE_DELIM_LEN;
         continue;
       }
 
       if (content === "else" || /^else\s+if\b/.test(content)) {
         tokens.push({ kind: "else", line });
-        i = close + 2;
+        i = close + MUSTACHE_DELIM_LEN;
         continue;
       }
 
       const first = content.charAt(0);
       if (first === ">") {
         tokens.push({ kind: "partial", line });
-        i = close + 2;
+        i = close + MUSTACHE_DELIM_LEN;
         continue;
       }
 
@@ -228,7 +238,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         } else {
           errors.push({ line, message: 'Invalid "{{/}}" — missing block name' });
         }
-        i = close + 2;
+        i = close + MUSTACHE_DELIM_LEN;
         continue;
       }
 
@@ -252,12 +262,12 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
             message: `Invalid "{{${first}}}" — missing block name`
           });
         }
-        i = close + 2;
+        i = close + MUSTACHE_DELIM_LEN;
         continue;
       }
 
       tokens.push({ kind: "expr", content, line });
-      i = close + 2;
+      i = close + MUSTACHE_DELIM_LEN;
       continue;
     }
 
@@ -312,13 +322,9 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         if (matchIdx === -1) {
           // No same-name indent-compatible open — try a looser
           // last-resort search that ignores indent. If even that
-          // misses, it's an orphan close.
-          for (let j = blockStack.length - 1; j >= 0; j--) {
-            if (blockStack[j]!.name === token.name) {
-              matchIdx = j;
-              break;
-            }
-          }
+          // misses, it's an orphan close. `findLastIndex` returns the
+          // topmost (highest-index) same-name open, or -1.
+          matchIdx = blockStack.findLastIndex((entry) => entry.name === token.name);
         }
 
         if (matchIdx === -1) {

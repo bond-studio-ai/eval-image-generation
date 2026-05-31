@@ -104,18 +104,24 @@ export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[]
     .sort((a, b) => a.stepOrder - b.stepOrder);
 }
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+/** Below this many seconds we show extra decimal precision. */
+const FULL_PRECISION_BELOW = 10;
+const PRECISE_DECIMALS = 2;
+
 export function formatExecMs(ms: number | null): string {
   if (ms === null || Number.isNaN(ms)) return "-";
-  if (ms < 1000) return `${ms} ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 2 : 1)} s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds - minutes * 60;
-  return `${minutes}m ${remainder.toFixed(remainder < 10 ? 1 : 0)}s`;
+  if (ms < MS_PER_SECOND) return `${ms} ms`;
+  const seconds = ms / MS_PER_SECOND;
+  if (seconds < SECONDS_PER_MINUTE) return `${seconds.toFixed(seconds < FULL_PRECISION_BELOW ? PRECISE_DECIMALS : 1)} s`;
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  const remainder = seconds - minutes * SECONDS_PER_MINUTE;
+  return `${minutes}m ${remainder.toFixed(remainder < FULL_PRECISION_BELOW ? 1 : 0)}s`;
 }
 
 export function defaultStepLabel(row: StepPerformanceRow): string {
-  if (row.name && row.name.trim()) return row.name;
+  if (row.name?.trim()) return row.name;
   if (row.type === "judge") return "Judge";
   return `Step ${row.stepOrder}`;
 }

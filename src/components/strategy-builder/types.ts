@@ -235,4 +235,5 @@ export function normalizeProductImageTypes(value: Record<string, unknown> | null
   return Object.fromEntries(Object.entries(value).map(([category, imageType]) => [category, normalizeProductImageType(imageType)]));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers -- curated list of selectable candidate counts, not computed values
 export const CANDIDATE_PRESETS = [1, 2, 4, 8] as const;

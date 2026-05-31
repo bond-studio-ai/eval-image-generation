@@ -47,13 +47,10 @@ export function ReferencePopover({ state, dispatch, attrState, dispatchAttribute
               <p className="border-border-subtle text-text-muted border-b px-3 py-1.5 text-[11px]">
                 Pick a field to insert <code className="bg-surface-sunken rounded px-0.5">{`{{products.${REFERENCE_OPTIONS.find((option) => option.value === state.category)?.singular ?? state.category}.…}}`}</code>
               </p>
-              {attrState.loading ? (
-                <p className="text-text-muted text-body px-3 py-4">Loading…</p>
-              ) : attrState.error ? (
-                <p className="text-danger-600 text-body px-3 py-4">{attrState.error}</p>
-              ) : attrState.list.length === 0 ? (
-                <p className="text-text-muted text-body px-3 py-4">No attributes</p>
-              ) : (
+              {attrState.loading ? <p className="text-text-muted text-body px-3 py-4">Loading…</p> : null}
+              {!attrState.loading && attrState.error ? <p className="text-danger-600 text-body px-3 py-4">{attrState.error}</p> : null}
+              {!attrState.loading && !attrState.error && attrState.list.length === 0 ? <p className="text-text-muted text-body px-3 py-4">No attributes</p> : null}
+              {!attrState.loading && !attrState.error && attrState.list.length > 0 ? (
                 <div className="max-h-60 overflow-auto py-1">
                   {attrState.list.map((attr) => {
                     const opt = REFERENCE_OPTIONS.find((option) => option.value === state.category);
@@ -72,7 +69,7 @@ export function ReferencePopover({ state, dispatch, attrState, dispatchAttribute
                     );
                   })}
                 </div>
-              )}
+              ) : null}
             </>
           ) : (
             <>

@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { parseJsonOrEmpty } from "@/lib/async-utils";
 import { platformApiBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -82,7 +83,7 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => ({}))) as {
+    const body = (await parseJsonOrEmpty(request)) as {
       layout_type_id?: unknown;
       pkg_id?: unknown;
     };

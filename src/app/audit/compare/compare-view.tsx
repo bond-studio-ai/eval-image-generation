@@ -10,6 +10,10 @@ import { RunHeader } from "./_components/run-header";
 import { StepComparison } from "./_components/step-comparison";
 import type { RunData } from "./_components/types";
 
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function CompareView({ leftId, rightId }: { leftId: string; rightId: string }) {
   const {
     data,
@@ -45,7 +49,7 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
 
   const left = data?.left ?? null;
   const right = data?.right ?? null;
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Unknown error") : null;
+  const error = isError ? errorMessageOr(queryError, "Unknown error") : null;
 
   if (loading) {
     return (

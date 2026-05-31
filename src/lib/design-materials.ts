@@ -2,7 +2,10 @@
 
 import { localUrl } from "./api-base";
 import { coerceString } from "./coerce-string";
+import type { CatalogProduct, Color, ObjectComponent, ObjectItem, RawDesignObject, ScanLike, SurfaceItem, TextureScale, UnitySlimDesignMaterials } from "./design-materials-types";
 import { logger } from "./logger";
+
+export type { UnitySlimDesignMaterials } from "./design-materials-types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
@@ -31,158 +34,6 @@ const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
   wallpaper: "wallpapers",
   wallTile: "wall_tiles"
 };
-
-interface TextureScale {
-  x: number | null;
-  y: number | null;
-}
-
-/**
- * Loose shape of the upstream JSON blobs (project scans, catalog products,
- * design selections) this module normalizes. Every key is optional `unknown`
- * because the payloads are unvalidated; the `as*` helpers narrow at runtime.
- * Declaring the keys explicitly lets us read them with dot access under
- * `noPropertyAccessFromIndexSignature` (an explicitly-declared key is never
- * served by the index signature), while the index signature still permits the
- * handful of genuinely dynamic, computed-key reads
- * (e.g. `product[patternId]`, `design[`${slot}Pattern`]`).
- */
-interface RawDesignObject {
-  [key: string]: unknown;
-  id?: unknown;
-  renderAttributes?: unknown;
-  textureScale?: unknown;
-  textureScaleX?: unknown;
-  textureScaleY?: unknown;
-  x?: unknown;
-  y?: unknown;
-  length?: unknown;
-  width?: unknown;
-  height?: unknown;
-  numberOfSinks?: unknown;
-  counterHeight?: unknown;
-  sinkOffset?: unknown;
-  abovePlacementDefaultRotation?: unknown;
-  sidePlacementDefaultRotation?: unknown;
-  mountingPosition?: unknown;
-  colorPalette?: unknown;
-  color_palette?: unknown;
-  color?: unknown;
-  components?: unknown;
-  categoryComponent?: unknown;
-  materialType?: unknown;
-  code?: unknown;
-  hue?: unknown;
-  chroma?: unknown;
-  luminance?: unknown;
-  shape?: unknown;
-  pieceLength?: unknown;
-  pieceWidth?: unknown;
-  isRemoved?: unknown;
-  patternInfo?: unknown;
-  assetId?: unknown;
-  "3DAssetId"?: unknown;
-  horizontalPatternId?: unknown;
-  verticalPatternId?: unknown;
-  thirdOffsetPatternId?: unknown;
-  halfOffsetPatternId?: unknown;
-  herringbonePatternId?: unknown;
-  hexagonPatternId?: unknown;
-  rhomboidCubePatternId?: unknown;
-  triangularPatternId?: unknown;
-  horizontalPicketPatternId?: unknown;
-  verticalPicketPatternId?: unknown;
-  fishScalePatternId?: unknown;
-  stackedPatternId?: unknown;
-  offsetPatternId?: unknown;
-  straightPatternId?: unknown;
-  scan?: unknown;
-  data?: unknown;
-  project?: unknown;
-  areas?: unknown;
-  showers?: unknown;
-  tubs?: unknown;
-  niches?: unknown;
-  type?: unknown;
-  curbHeight?: unknown;
-  curbThickness?: unknown;
-  wallpaperPlacement?: unknown;
-  wallTilePlacement?: unknown;
-  mirrorPlacement?: unknown;
-  lightingPlacement?: unknown;
-  isShowerGlassVisible?: unknown;
-  isTubDoorVisible?: unknown;
-}
-
-type ScanLike = RawDesignObject;
-type CatalogProduct = RawDesignObject;
-interface Color {
-  hue: number;
-  chroma: number;
-  luminance: number;
-}
-interface ObjectComponent {
-  categoryComponent: string;
-  color: Color;
-  materialType: string;
-}
-
-interface SurfaceItem {
-  productId?: string | undefined;
-  texture: string;
-  scale: { x: string; y: string };
-  placement?: string;
-  colorPalette?: Color[];
-  shape?: string;
-  pattern?: string;
-  pieceLength?: string;
-  pieceWidth?: string;
-}
-
-interface ObjectItem {
-  productId?: string | undefined;
-  asset?: string | null;
-  size?: { length: string; width: string; height: string };
-  styling: "Default" | "Hidden" | "Removed";
-  placement?: string;
-  rotation?: number;
-  numberOfSinks?: number;
-  counterHeight?: string;
-  sinkOffset?: string;
-  components?: ObjectComponent[];
-}
-
-export interface UnitySlimDesignMaterials {
-  id: string;
-  surfaces: {
-    floorTile?: SurfaceItem;
-    showerWallTile?: SurfaceItem;
-    showerFloorTile?: SurfaceItem;
-    showerShortWallTile?: SurfaceItem;
-    curbTile?: SurfaceItem;
-    nicheTile?: SurfaceItem;
-    paint?: SurfaceItem;
-    wallpaper?: SurfaceItem;
-    wallTile?: SurfaceItem;
-  };
-  objects: {
-    toilet?: ObjectItem;
-    tub?: ObjectItem;
-    tubDoor?: ObjectItem;
-    tubFiller?: ObjectItem;
-    vanity?: ObjectItem;
-    faucet?: ObjectItem;
-    mirror?: ObjectItem;
-    lighting?: ObjectItem;
-    shelves?: ObjectItem;
-    robeHook?: ObjectItem;
-    toiletPaperHolder?: ObjectItem;
-    towelBar?: ObjectItem;
-    towelRing?: ObjectItem;
-    showerGlass?: ObjectItem;
-    showerSystem?: ObjectItem;
-  };
-}
 
 const SURFACE_SLOTS = ["floorTile", "showerWallTile", "showerFloorTile", "showerShortWallTile", "curbTile", "nicheTile", "paint", "wallpaper", "wallTile"] as const;
 
@@ -474,6 +325,7 @@ function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTu
   };
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- maps the wide, optional upstream object shape (placement, sizing, styling, scan context) into the Unity object; the per-field branching is irreducible domain logic
 function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)[number], design: RawDesignObject, scan: ScanLike): ObjectItem | null {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
 
@@ -550,6 +402,7 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   return out;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- orchestrates the full design build (scan resolution + per-slot surface/object mapping loops); the branching mirrors the irreducible material domain
 export async function buildDesignMaterials(params: { design: RawDesignObject; roomData?: RawDesignObject; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
   const scan = await resolveScan({
     ...(params.roomData === undefined ? {} : { roomData: params.roomData }),

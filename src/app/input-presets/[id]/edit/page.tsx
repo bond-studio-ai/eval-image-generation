@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
+import { catchToNull } from "@/lib/async-utils";
 import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, type InputPresetStats } from "@/lib/input-preset-design";
 import { fetchInputPresetById, type InputPresetDetailItem } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
@@ -25,7 +26,7 @@ export default async function InputPresetEditPage({ params, searchParams }: Page
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const force = query["force"] === "true";
 
-  const presetData = await fetchInputPresetById(id).catch(() => null);
+  const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
   const preset = presetData as RawInputPreset;

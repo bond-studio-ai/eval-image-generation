@@ -230,6 +230,7 @@ function CategoryNoteBreakdownRows({ items, failureCount, notesTruncated }: { it
         const rowPy = isLast ? ISSUE_ROW_LAST_PY : ISSUE_ROW_PY;
         const preview = item.text.length > NOTE_PREVIEW_CHARS ? `${item.text.slice(0, NOTE_PREVIEW_CHARS)}…` : item.text;
         return (
+          // eslint-disable-next-line react/no-array-index-key -- stateless display rows over a derived array whose note text can repeat; never reordered
           <tr key={`note-${index}-${item.text}`} className={ISSUE_BREAKDOWN_TR}>
             <td className={cn(rowPy, "pr-0", isLast && ISSUE_ROW_LAST_TD)} aria-hidden tabIndex={-1} />
             <td className={cn("min-w-0", rowPy, "text-text-secondary text-caption pr-4 leading-tight", isLast && ISSUE_ROW_LAST_TD)} title={item.text}>
@@ -393,6 +394,7 @@ export function ProductCategoryRates({ from, to, model, source, strategyId, comp
       <table className="divide-border min-w-full table-fixed divide-y">
         <colgroup>
           {PRODUCT_CATEGORY_TABLE_COL_CLASSES.map((colClass, i) => (
+            // eslint-disable-next-line react/no-array-index-key -- static <colgroup> definition, fixed length, never reordered
             <col key={i} className={colClass || undefined} />
           ))}
         </colgroup>

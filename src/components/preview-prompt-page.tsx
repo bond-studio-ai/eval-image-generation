@@ -132,6 +132,10 @@ interface DropdownState {
 
 type DropdownAction = { type: "select"; id: string | null } | { type: "setOpen"; open: boolean } | { type: "setSearch"; search: string };
 
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function dropdownReducer(state: DropdownState, action: DropdownAction): DropdownState {
   switch (action.type) {
     case "select": {
@@ -242,12 +246,12 @@ export function PreviewPromptPage({ initialPromptVersionId = null, initialPreset
   });
 
   const loadingOptions = !hasInitialOptions && optionsQuery.isLoading;
-  const optionsErrorMessage = optionsQuery.isError ? (optionsQuery.error instanceof Error ? optionsQuery.error.message : "Failed to load options") : null;
+  const optionsErrorMessage = optionsQuery.isError ? errorMessageOr(optionsQuery.error, "Failed to load options") : null;
   const loadError = optionsErrorMessage || (!hasInitialOptions && optionsQuery.isSuccess && dollhouseQuery.isError ? DOLLHOUSE_UNAVAILABLE_MESSAGE : null);
 
   const previews = previewEnabled ? (previewQuery.data ?? []) : [];
   const loading = previewEnabled && previewQuery.isLoading;
-  const error = previewEnabled && previewQuery.isError ? (previewQuery.error instanceof Error ? previewQuery.error.message : "Preview failed") : null;
+  const error = previewEnabled && previewQuery.isError ? errorMessageOr(previewQuery.error, "Preview failed") : null;
 
   const filteredPrompts = useMemo(() => {
     const query = promptDropdown.search.trim().toLowerCase();

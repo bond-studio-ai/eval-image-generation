@@ -68,6 +68,7 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
           <thead className="bg-surface-muted">
             <tr>
               {columns.map((col, i) => (
+                // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
                 <th key={i} className={col.headerClassName ?? TH_DEFAULT}>
                   {col.header}
                 </th>
@@ -75,25 +76,26 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
             </tr>
           </thead>
           <tbody className="divide-border bg-surface divide-y">
-            {loading ? (
-              Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />)
-            ) : data.length === 0 ? (
+            {loading ? Array.from({ length: displaySkeletonRows }, (_, i) => <SkeletonRow key={i} colCount={colCount} rowIndex={i} />) : null}
+            {!loading && data.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="text-body text-text-muted p-6">
                   {emptyMessage}
                 </td>
               </tr>
-            ) : (
-              data.map((row) => (
-                <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
-                  {columns.map((col, i) => (
-                    <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
-                      {col.cell(row)}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
+            ) : null}
+            {!loading && data.length > 0
+              ? data.map((row) => (
+                  <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
+                    {columns.map((col, i) => (
+                      // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
+                      <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
+                        {col.cell(row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              : null}
           </tbody>
         </table>
       </div>

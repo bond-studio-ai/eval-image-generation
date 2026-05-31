@@ -91,13 +91,17 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
       const imageTypeValue = readInputPresetValue(rawData, `${slot}ImageType`);
       const imageTypeLabel = typeof imageTypeValue === "string" && imageTypeLabels[imageTypeValue] ? imageTypeLabels[imageTypeValue] : "Tear Sheet";
 
+      let subtitle = imageTypeLabel;
+      if (product) subtitle = `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}`;
+      else if (storedImage?.isArbitrary) subtitle = `URL-only attachment · ${imageTypeLabel}`;
+
       return [
         {
           slot,
           label: INPUT_PRESET_SLOT_LABELS[slot] ?? slot,
           previewUrl: storedImage?.url ?? product?.featuredImage?.url ?? null,
           title: product?.name ?? (storedImage?.isArbitrary ? "Arbitrary image" : (productId ?? "Saved image")),
-          subtitle: product ? `${product.category?.name ?? "Selected product"} · ${imageTypeLabel}` : storedImage?.isArbitrary ? `URL-only attachment · ${imageTypeLabel}` : imageTypeLabel,
+          subtitle,
           isLoadingPreview: Boolean(productId) && !product && !storedImage?.url && !loaded,
           url: storedImage?.url ?? null,
           isArbitrary: storedImage?.isArbitrary ?? false
@@ -270,13 +274,9 @@ export function InputPresetDetail({ data, generations, stats }: InputPresetDetai
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {productCards.map((item) => (
                 <div key={item.slot} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
-                  {item.previewUrl ? (
-                    <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-surface-muted p-1" />
-                  ) : item.isLoadingPreview ? (
-                    <div className="bg-border h-32 w-full animate-pulse" aria-hidden />
-                  ) : (
-                    <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div>
-                  )}
+                  {item.previewUrl ? <ImageWithSkeleton src={item.previewUrl} alt={item.label} wrapperClassName="h-32 w-full bg-surface-muted p-1" /> : null}
+                  {!item.previewUrl && item.isLoadingPreview ? <div className="bg-border h-32 w-full animate-pulse" aria-hidden /> : null}
+                  {!item.previewUrl && !item.isLoadingPreview ? <div className="bg-surface-muted text-text-disabled text-caption flex h-32 items-center justify-center">No preview</div> : null}
                   <div className="border-border-subtle border-t px-2 py-1.5">
                     <p className="text-text-secondary text-caption truncate font-medium" title={item.label}>
                       {item.label}

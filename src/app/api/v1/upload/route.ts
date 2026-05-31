@@ -6,7 +6,9 @@ import { s3UploadConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const BYTES_PER_KB = 1024;
+const MAX_SIZE_MB = 10;
+const MAX_SIZE = MAX_SIZE_MB * BYTES_PER_KB * BYTES_PER_KB;
 
 export async function POST(request: Request) {
   try {

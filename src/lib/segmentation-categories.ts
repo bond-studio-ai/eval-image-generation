@@ -90,11 +90,18 @@ async function fetchOnce(): Promise<SegmentationCategoryMetadata[]> {
  * On failure the cache is cleared so the next call retries (e.g. if the
  * service was temporarily down during the first open).
  */
-export function getSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
-  cache ??= fetchOnce().catch((error: unknown) => {
+async function loadSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
+  try {
+    return await fetchOnce();
+  } catch (error) {
+    // Clear the cache so the next call retries instead of replaying the rejection.
     cache = null;
     throw error;
-  });
+  }
+}
+
+export function getSegmentationCategories(): Promise<SegmentationCategoryMetadata[]> {
+  cache ??= loadSegmentationCategories();
   return cache;
 }
 

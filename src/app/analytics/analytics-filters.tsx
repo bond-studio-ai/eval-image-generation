@@ -14,6 +14,11 @@ interface AnalyticsFiltersProps {
   activeTab: string;
 }
 
+const COMPARISON_SOURCE_BY_KEY: Record<string, AnalyticsComparisonSource> = {
+  raw_input: "raw_input",
+  benchmark: "benchmark"
+};
+
 function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,7 +33,7 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   // render would hand the editor unstable React keys. Same params → same ids.
   const comparison = useMemo(() => parseComparisonState(searchParams), [searchParams]);
 
-  const defaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
+  const defaultSource: AnalyticsComparisonSource = COMPARISON_SOURCE_BY_KEY[source] ?? "preset";
 
   // Show a starter column when entering compare mode with none yet. It lives in
   // memory (not the URL) until the user edits it, which avoids a redirect-in-
@@ -88,7 +93,7 @@ function AnalyticsFiltersInner({ models, strategies, activeTab }: AnalyticsFilte
   const addComparisonColumn = useCallback(() => {
     const cols = columnsRef.current;
     const lastColumn = cols.at(-1);
-    const nextDefaultSource: AnalyticsComparisonSource = source === "raw_input" ? "raw_input" : source === "benchmark" ? "benchmark" : "preset";
+    const nextDefaultSource: AnalyticsComparisonSource = COMPARISON_SOURCE_BY_KEY[source] ?? "preset";
     updateComparisonColumns([...cols, createEmptyComparisonColumn(lastColumn ?? { from, to, source: nextDefaultSource })]);
   }, [from, source, to, updateComparisonColumns]);
 

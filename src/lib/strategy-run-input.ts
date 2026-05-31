@@ -2,6 +2,7 @@
 "use client";
 
 import { localUrl, serviceUrl } from "./api-base";
+import { parseJsonOrEmpty } from "./async-utils";
 import { buildDesignMaterials, type UnitySlimDesignMaterials } from "./design-materials";
 import { INPUT_PRESET_DESIGN_FIELD_KEYS, INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY, readInputPresetValue } from "./input-preset-design";
 
@@ -126,7 +127,7 @@ async function bootstrapLayoutPreset(layoutTypeId: string, pkgId: string): Promi
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ layout_type_id: layoutTypeId, pkg_id: pkgId })
   });
-  const json: unknown = await res.json().catch(() => ({}));
+  const json = await parseJsonOrEmpty(res);
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to bootstrap layout preset");
   }
@@ -139,7 +140,7 @@ async function upsertProjectDesign(projectId: string, design: Record<string, unk
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ design })
   });
-  const json: unknown = await res.json().catch(() => ({}));
+  const json = await parseJsonOrEmpty(res);
   if (!res.ok) {
     throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to persist project design");
   }
@@ -189,7 +190,7 @@ export async function fetchPresetRunRequests(presetIds: string[], options: { bat
   const presetDetails = await Promise.all(
     presetIds.map(async (presetId) => {
       const res = await fetch(serviceUrl(`input-presets/${presetId}`), { cache: "no-store" });
-      const json: unknown = await res.json().catch(() => ({}));
+      const json = await parseJsonOrEmpty(res);
       if (!res.ok) {
         throw new Error((json as { error?: { message?: string } }).error?.message || "Failed to load preset details");
       }

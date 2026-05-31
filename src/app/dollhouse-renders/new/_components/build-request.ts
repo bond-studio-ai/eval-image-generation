@@ -62,14 +62,17 @@ export const DEFAULT_SSM_PARAMS: SsmParamsState = {
   uploadBucket: ""
 };
 
+const DEFAULT_RENDER_WIDTH = 1920;
+const DEFAULT_RENDER_HEIGHT = 1440;
+
 export function buildImageConfig(state: ImageConfigState): DollhouseImageConfig {
   const width = Number.parseInt(state.width, 10);
   const height = Number.parseInt(state.height, 10);
   const ssm = state.superSamplingMultiplier ? Number.parseInt(state.superSamplingMultiplier, 10) : null;
   return {
     format: state.format,
-    width: Number.isFinite(width) && width > 0 ? width : 1920,
-    height: Number.isFinite(height) && height > 0 ? height : 1440,
+    width: Number.isFinite(width) && width > 0 ? width : DEFAULT_RENDER_WIDTH,
+    height: Number.isFinite(height) && height > 0 ? height : DEFAULT_RENDER_HEIGHT,
     ...(ssm !== null && Number.isFinite(ssm) && ssm > 0 ? { superSamplingMultiplier: ssm } : {})
   };
 }

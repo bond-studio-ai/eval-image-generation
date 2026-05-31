@@ -121,7 +121,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, s
             }}
             className={cn(
               "rounded-md font-medium transition-colors",
-              "focus-visible:outline-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1",
+              "focus-visible:outline-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1",
               isActive ? "bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary",
               opt.disabled && "opacity-50"
             )}

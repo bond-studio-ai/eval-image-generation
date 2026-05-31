@@ -116,7 +116,7 @@ export function RunSummaryCard({
           {data.strategy.model != null && <ConfigTag label="Model" value={data.strategy.model} />}
           {data.strategy.aspectRatio != null && <ConfigTag label="Aspect" value={data.strategy.aspectRatio} />}
           {data.strategy.outputResolution != null && <ConfigTag label="Resolution" value={data.strategy.outputResolution} />}
-          {data.strategy.temperature != null && <ConfigTag label="Temp" value={String(data.strategy.temperature)} />}
+          {data.strategy.temperature != null && <ConfigTag label="Temp" value={data.strategy.temperature} />}
           {data.strategy.tagImages != null && <ConfigTag label="Tag images" value={data.strategy.tagImages ? "Yes" : "No"} />}
           {data.strategy.useGoogleSearch != null && <ConfigTag label="Google Search" value={data.strategy.useGoogleSearch ? "Yes" : "No"} />}
         </div>

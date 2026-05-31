@@ -47,13 +47,16 @@ export function getParamValues(params: URLSearchParams | AnalyticsSearchParams, 
   return typeof value === "string" ? [value] : [];
 }
 
+const RANGE_FIELD_COUNT = 2;
+const COLUMN_FIELD_COUNT = 5;
+
 function parseRange(value: string): AnalyticsComparisonRange {
-  const [from = "", to = ""] = value.split(":", 2);
+  const [from = "", to = ""] = value.split(":", RANGE_FIELD_COUNT);
   return { from, to };
 }
 
 function parseColumn(value: string): AnalyticsComparisonColumn | null {
-  const [from = "", to = "", strategyId = "", source = "preset", id = ""] = value.split("|", 5);
+  const [from = "", to = "", strategyId = "", source = "preset", id = ""] = value.split("|", COLUMN_FIELD_COUNT);
   if (!isComparisonSource(source)) return null;
   return {
     // Legacy URLs (encoded before columns carried an id) fall back to a fresh

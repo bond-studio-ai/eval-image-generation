@@ -53,14 +53,13 @@ export function BatchListItem({
           onClick={() => {
             onToggle(batch.id, isExpanded);
           }}
-          className="hover:bg-surface-muted focus-visible:outline-primary-600 -my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="hover:bg-surface-muted focus-visible:outline-primary-600 -my-1 -ml-2 flex flex-1 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <ChevronRightIcon className={cn("text-text-disabled size-4 transition-transform", isExpanded && "rotate-90")} aria-hidden="true" />
           <ReviewStatusBadge status={batch.status} />
           <span className="text-body text-text-primary font-semibold">{batch.name ?? "Untitled batch"}</span>
-          {isMultiStrategy ? (
-            <MultiStrategyLabel strategies={batch.strategies} />
-          ) : batch.strategies.length === 1 ? (
+          {isMultiStrategy ? <MultiStrategyLabel strategies={batch.strategies} /> : null}
+          {!isMultiStrategy && batch.strategies.length === 1 ? (
             <StrategyHoverCard strategyId={batch.strategies[0]!.id}>
               <span className="text-caption text-text-muted cursor-help font-medium">{batch.strategies[0]!.name}</span>
             </StrategyHoverCard>

@@ -45,14 +45,19 @@ export function deriveRunReviewStatus(run: RunRow): string {
   return "in_progress";
 }
 
-const JUDGE_TIMEOUT_MS = 5 * 60 * 1000;
+const JUDGE_TIMEOUT_MINUTES = 5;
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+const JUDGE_TIMEOUT_MS = JUDGE_TIMEOUT_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** A judged batch needs at least two candidate outputs to compare. */
+const MIN_JUDGED_BATCH_SIZE = 2;
 
 export function isAwaitingJudgeBatch(runs: RunRow[], numberOfImages: number): boolean {
-  if (numberOfImages <= 1 || runs.length < 2) return false;
+  if (numberOfImages <= 1 || runs.length < MIN_JUDGED_BATCH_SIZE) return false;
   const allDone = runs.every((run) => run.status === "completed" || run.status === "failed");
   if (!allDone) return false;
   const withOutput = runs.filter((run) => run.lastOutputUrl);
-  if (withOutput.length < 2 || !runs.every((run) => run.judgeScore == null)) return false;
+  if (withOutput.length < MIN_JUDGED_BATCH_SIZE || !runs.every((run) => run.judgeScore == null)) return false;
 
   const completedTimes = runs.flatMap((run) => (run.completedAt ? [new Date(run.completedAt).getTime()] : []));
   if (completedTimes.length === 0) return false;

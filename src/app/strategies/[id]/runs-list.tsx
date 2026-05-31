@@ -1,47 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CdnImage } from "@/components/cdn-image";
 import { GridLightbox } from "@/components/grid-lightbox";
-import { JudgeScoreBadge } from "@/components/judge-score-badge";
-import { MatrixCellRatingOverlay } from "@/components/matrix-cell-rating-overlay";
-import { ReviewBadge } from "@/components/review-badge";
-import { ReviewResultsBadge } from "@/components/review-results";
-import { ChevronDownIcon, ChevronRightIcon, MaximizeIcon, RefreshIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
-import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
-import { groupStrategyRuns, type StrategyRunBatchGroup } from "@/lib/strategy-runs-view";
-import { useBatchReviewStatus } from "@/lib/use-batch-review-status";
-
-interface StepResult {
-  id: string;
-  status: string;
-}
-
-interface Run {
-  id: string;
-  status: string;
-  createdAt: string;
-  completedAt: string | null;
-  inputPresetName: string | null;
-  lastOutputUrl?: string | null;
-  lastOutputGenerationId?: string | null;
-  batchRunId?: string | null;
-  groupId?: string | null;
-  stepResults: StepResult[];
-  judgeScore?: number | null;
-  isJudgeSelected?: boolean;
-  judgeReasoning?: string | null;
-  judgeOutput?: string | null;
-  judgeSystemPrompt?: string | null;
-  judgeUserPrompt?: string | null;
-  judgeTypeUsed?: string | null;
-  judgeResults?: StrategyRunJudgeResultEntry[] | null;
-}
-
-type ListItem = StrategyRunBatchGroup<Run>;
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { groupStrategyRuns } from "@/lib/strategy-runs-view";
+import { BatchMatrix, StatusBadge } from "./runs-list-matrix";
+import type { ListItem, Run } from "./runs-list-types";
 
 const POLL_INTERVAL = 3000;
 
@@ -138,9 +105,8 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <p className="text-text-secondary text-body mt-4">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p>
-      ) : viewMode === "list" ? (
+      {items.length === 0 ? <p className="text-text-secondary text-body mt-4">No runs yet. Click &ldquo;Run Batch&rdquo; to execute.</p> : null}
+      {items.length > 0 && viewMode === "list" ? (
         <div className="mt-4 space-y-4">
           {items.map((item) => (
             <BatchRunCard
@@ -158,7 +124,8 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
             />
           ))}
         </div>
-      ) : (
+      ) : null}
+      {items.length > 0 && viewMode !== "list" ? (
         <div className="mt-4 space-y-4">
           {items.map((item) => (
             <CollapsibleBatchCard
@@ -176,7 +143,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
             />
           ))}
         </div>
-      )}
+      ) : null}
       {lightbox && (
         <GridLightbox
           src={lightbox.src}
@@ -193,6 +160,76 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
 }
 
 /* ─────────── Batch Run Card with embedded matrix ─────────── */
+
+async function readJsonSafe(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function shouldShowRetryJudge(runs: Run[]): boolean {
+  const completed = runs.filter((run) => run.status === "completed" && run.lastOutputUrl);
+  if (completed.length < 2) return false;
+  const hasFailedOrMissing = completed.some((run) => run.judgeScore === 0) || completed.every((run) => run.judgeScore == null);
+  if (hasFailedOrMissing) return true;
+  return completed.some((run) => !run.judgeResults || run.judgeResults.length === 0);
+}
+
+function useBatchRetry(batchId: string, onRated?: () => void) {
+  const [retrying, setRetrying] = useState(false);
+  const [retryingJudge, setRetryingJudge] = useState(false);
+  const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
+
+  const handleRetryFailed = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRetrying(true);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-failed`), {
+        method: "POST"
+      });
+      if (res.ok) onRated?.();
+    } catch {
+      /* ignore */
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleRetryJudge = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRetryingJudge(true);
+    setJudgeRetryError(null);
+    try {
+      const res = await fetch(serviceUrl(`strategy-batch-runs/${batchId}/retry-judge`), {
+        method: "POST"
+      });
+      const body = await readJsonSafe(res);
+      if (res.ok) {
+        const data = (body as { data?: { failedGroups?: number; errors?: string[] } } | null)?.data;
+        if (data?.failedGroups && data.failedGroups > 0) {
+          setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
+        }
+      } else {
+        const msg = (body as { error?: { message?: string } } | null)?.error?.message ?? `Retry failed (${res.status})`;
+        setJudgeRetryError(msg);
+      }
+      onRated?.();
+    } catch (error) {
+      setJudgeRetryError(error instanceof Error ? error.message : "Network error");
+      onRated?.();
+    } finally {
+      setRetryingJudge(false);
+    }
+  };
+
+  const clearJudgeRetryError = () => {
+    setJudgeRetryError(null);
+  };
+
+  return { retrying, retryingJudge, judgeRetryError, clearJudgeRetryError, handleRetryFailed, handleRetryJudge };
+}
 
 function BatchRunCard({
   batch,
@@ -213,64 +250,12 @@ function BatchRunCard({
   onImageClick: (run: Run) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [retryingJudge, setRetryingJudge] = useState(false);
-  const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
+  const { retrying, retryingJudge, judgeRetryError, clearJudgeRetryError, handleRetryFailed, handleRetryJudge } = useBatchRetry(batch.id, onRated);
   const presetNames = new Set(batch.runs.map((run) => run.inputPresetName ?? "(no preset)"));
   const completedRuns = batch.runs.filter((run) => run.status === "completed").length;
   const failedRuns = batch.runs.filter((run) => run.status === "failed" || run.status === "skipped").length;
 
-  const showRetryJudge = (() => {
-    const completed = batch.runs.filter((run) => run.status === "completed" && run.lastOutputUrl);
-    if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((run) => run.judgeScore === 0) || completed.every((run) => run.judgeScore == null);
-    if (hasFailedOrMissing) return true;
-    const missingPerJudge = completed.some((run) => !run.judgeResults || run.judgeResults.length === 0);
-    return missingPerJudge;
-  })();
-
-  const handleRetryFailed = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRetrying(true);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), {
-        method: "POST"
-      });
-      if (res.ok) onRated?.();
-    } catch {
-      /* ignore */
-    } finally {
-      setRetrying(false);
-    }
-  };
-
-  const handleRetryJudge = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRetryingJudge(true);
-    setJudgeRetryError(null);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
-        method: "POST"
-      });
-      if (res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const data = (body as { data?: { failedGroups?: number; errors?: string[] } } | null)?.data;
-        if (data?.failedGroups && data.failedGroups > 0) {
-          setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
-        }
-      } else {
-        const body: unknown = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } } | null)?.error?.message ?? `Retry failed (${res.status})`;
-        setJudgeRetryError(msg);
-      }
-      onRated?.();
-    } catch (error) {
-      setJudgeRetryError(error instanceof Error ? error.message : "Network error");
-      onRated?.();
-    } finally {
-      setRetryingJudge(false);
-    }
-  };
+  const showRetryJudge = shouldShowRetryJudge(batch.runs);
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">
@@ -332,7 +317,7 @@ function BatchRunCard({
           <button
             type="button"
             onClick={() => {
-              setJudgeRetryError(null);
+              clearJudgeRetryError();
             }}
             className="text-danger-400 hover:text-danger-600 text-caption"
           >
@@ -369,62 +354,10 @@ function CollapsibleBatchCard({
   onImageClick: (run: Run) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [retryingJudge, setRetryingJudge] = useState(false);
-  const [judgeRetryError, setJudgeRetryError] = useState<string | null>(null);
+  const { retrying, retryingJudge, judgeRetryError, clearJudgeRetryError, handleRetryFailed, handleRetryJudge } = useBatchRetry(batch.id, onRated);
   const failedRuns = batch.runs.filter((run) => run.status === "failed" || run.status === "skipped").length;
 
-  const showRetryJudge = (() => {
-    const completed = batch.runs.filter((run) => run.status === "completed" && run.lastOutputUrl);
-    if (completed.length < 2) return false;
-    const hasFailedOrMissing = completed.some((run) => run.judgeScore === 0) || completed.every((run) => run.judgeScore == null);
-    if (hasFailedOrMissing) return true;
-    const missingPerJudge = completed.some((run) => !run.judgeResults || run.judgeResults.length === 0);
-    return missingPerJudge;
-  })();
-
-  const handleRetryFailed = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRetrying(true);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-failed`), {
-        method: "POST"
-      });
-      if (res.ok) onRated?.();
-    } catch {
-      /* ignore */
-    } finally {
-      setRetrying(false);
-    }
-  };
-
-  const handleRetryJudge = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRetryingJudge(true);
-    setJudgeRetryError(null);
-    try {
-      const res = await fetch(serviceUrl(`strategy-batch-runs/${batch.id}/retry-judge`), {
-        method: "POST"
-      });
-      if (res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const data = (body as { data?: { failedGroups?: number; errors?: string[] } } | null)?.data;
-        if (data?.failedGroups && data.failedGroups > 0) {
-          setJudgeRetryError(data.errors?.[0] ?? "Judge failed during retry");
-        }
-      } else {
-        const body: unknown = await res.json().catch(() => null);
-        const msg = (body as { error?: { message?: string } } | null)?.error?.message ?? `Retry failed (${res.status})`;
-        setJudgeRetryError(msg);
-      }
-      onRated?.();
-    } catch (error) {
-      setJudgeRetryError(error instanceof Error ? error.message : "Network error");
-      onRated?.();
-    } finally {
-      setRetryingJudge(false);
-    }
-  };
+  const showRetryJudge = shouldShowRetryJudge(batch.runs);
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">
@@ -475,7 +408,7 @@ function CollapsibleBatchCard({
           <button
             type="button"
             onClick={() => {
-              setJudgeRetryError(null);
+              clearJudgeRetryError();
             }}
             className="text-danger-400 hover:text-danger-600 text-caption"
           >
@@ -493,151 +426,3 @@ function CollapsibleBatchCard({
 }
 
 /* ─────────── Batch Matrix ─────────── */
-
-function BatchMatrix({
-  runs,
-  strategyId,
-  awaitingJudge,
-  onRated,
-  onImageClick,
-  expanded
-}: {
-  runs: Run[];
-  strategyId: string;
-  awaitingJudge?: boolean;
-  onRated?: (() => void) | undefined;
-  onImageClick: (run: Run) => void;
-  expanded?: boolean;
-}) {
-  const byPreset = new Map<string, Run[]>();
-  for (const run of runs) {
-    const key = run.inputPresetName ?? "(no preset)";
-    if (!byPreset.has(key)) byPreset.set(key, []);
-    byPreset.get(key)!.push(run);
-  }
-  for (const arr of byPreset.values()) {
-    arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
-  const presetNames = Array.from(byPreset.keys()).sort();
-  const maxExecutions = Math.max(0, ...Array.from(byPreset.values(), (a) => a.length));
-
-  // Hydrate per-run segmentation status when the parent accordion opens.
-  // We track *every* run's generation id (not just the canonical-per-row one)
-  // so the per-cell masks badge can reflect that specific run's status.
-  const segmentationGenerationIds = runs.map((run) => run.lastOutputGenerationId ?? null);
-  const { statuses: segmentationStatuses, setStatus: setSegmentationStatus } = useBatchReviewStatus(segmentationGenerationIds, Boolean(expanded));
-
-  const CELL = 240;
-
-  return (
-    <div className="border-border overflow-x-auto overflow-y-hidden rounded-lg border">
-      <table className="divide-border divide-y" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
-        <thead className="bg-surface-muted">
-          <tr>
-            <th className="border-border bg-surface-muted text-text-secondary text-caption sticky left-0 z-20 border-r px-4 py-2.5 text-left font-medium tracking-wider uppercase" style={{ minWidth: 200, maxWidth: 200 }}>
-              Input preset
-            </th>
-            {Array.from({ length: maxExecutions }, (_, i) => (
-              <th key={i} className="text-text-secondary text-caption px-2 py-2.5 text-center font-medium tracking-wider uppercase" style={{ width: CELL, minWidth: CELL }}>
-                #{i + 1}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-border bg-surface divide-y">
-          {presetNames.map((presetName) => {
-            const presetRuns = byPreset.get(presetName)!;
-            const [canonicalRun] = presetRuns;
-            const canonicalGenerationId = canonicalRun?.lastOutputGenerationId ?? null;
-            return (
-              <tr key={presetName} className="hover:bg-surface-muted/50">
-                <td className="border-border bg-surface text-text-primary text-body sticky left-0 z-20 border-r px-4 py-2 font-medium" style={{ minWidth: 200, maxWidth: 200 }}>
-                  <span className="block break-words">{presetName}</span>
-                  {canonicalGenerationId &&
-                    (() => {
-                      const state = segmentationStatuses.get(canonicalGenerationId);
-                      return (
-                        <ReviewBadge
-                          generationId={canonicalGenerationId}
-                          {...(state === undefined ? {} : { state })}
-                          onStateChange={(next) => {
-                            setSegmentationStatus(canonicalGenerationId, next);
-                          }}
-                        />
-                      );
-                    })()}
-                </td>
-                {Array.from({ length: maxExecutions }, (_, i) => {
-                  const run = presetRuns[i];
-                  return (
-                    <td key={i} className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: CELL, height: CELL, minWidth: CELL }}>
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                        {run ? (
-                          run.lastOutputUrl ? (
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => {
-                                onImageClick(run);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") onImageClick(run);
-                              }}
-                              className="group relative block cursor-pointer"
-                            >
-                              <CdnImage
-                                src={run.lastOutputUrl}
-                                alt=""
-                                width={CELL - 20}
-                                height={CELL - 20}
-                                className={`rounded-lg object-cover shadow-sm transition-shadow hover:shadow-md ${run.isJudgeSelected ? "border-warning-400 ring-warning-200 border-2 ring-2" : "border-border border"}`}
-                              />
-                              <div className="bg-overlay/0 group-hover:bg-overlay/20 absolute inset-0 flex items-center justify-center rounded-lg transition-colors">
-                                <MaximizeIcon className="text-text-inverse size-8 opacity-0 drop-shadow transition-opacity group-hover:opacity-100" strokeWidth={1.5} />
-                              </div>
-                              <JudgeScoreBadge
-                                runId={run.id}
-                                judgeScore={run.judgeScore}
-                                isJudgeSelected={run.isJudgeSelected ?? false}
-                                judgeReasoning={run.judgeReasoning ?? null}
-                                judgeOutput={run.judgeOutput ?? null}
-                                judgeSystemPrompt={run.judgeSystemPrompt ?? null}
-                                judgeUserPrompt={run.judgeUserPrompt ?? null}
-                                judgeTypeUsed={run.judgeTypeUsed ?? null}
-                                judgeResults={run.judgeResults ?? null}
-                                awaitingJudge={awaitingJudge ?? false}
-                              />
-                              <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
-                              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
-                            </div>
-                          ) : (
-                            <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
-                              <StatusBadge status={run.status} />
-                            </Link>
-                          )
-                        ) : (
-                          <span className="text-text-disabled">&mdash;</span>
-                        )}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  pending: "bg-surface-sunken text-text-secondary",
-  running: "bg-primary-100 text-primary-700",
-  completed: "bg-success-100 text-success-700",
-  failed: "bg-danger-100 text-danger-700"
-};
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"] ?? ""}`}>{status}</span>;
-}

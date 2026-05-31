@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "@/components/ui/toaster";
 import { assertNever } from "@/lib/assert-never";
-import { cameraFrameKey, createDollhouseRender, DollhouseRenderApiError, DollhouseRenderUnexpectedResponseError } from "@/lib/dollhouse-renders";
+import { cameraFrameKey, createDollhouseRender } from "@/lib/dollhouse-renders";
 import { fetchProjectWithRenderBootstrap, type ProjectRenderBootstrap } from "@/lib/projects";
 import { AdvancedSection } from "./_components/advanced-section";
 import { buildCreateRenderBody, DEFAULT_IMAGE_CONFIG, DEFAULT_RENDER_CONFIG, DEFAULT_SSM_PARAMS, type ImageConfigState, type RenderConfigState } from "./_components/build-request";
@@ -188,7 +188,7 @@ export function NewRenderForm() {
   );
 
   const scrollToStep = useCallback((id: string) => {
-    const el = document.getElementById(id);
+    const el = document.querySelector(`#${id}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -226,7 +226,7 @@ export function NewRenderForm() {
       toast.success(`Render ${created.id.slice(0, 8)} created.`);
       router.push(`/dollhouse-renders/${created.id}`);
     } catch (error) {
-      const message = error instanceof DollhouseRenderApiError ? error.message : error instanceof DollhouseRenderUnexpectedResponseError ? error.message : error instanceof Error ? error.message : "Failed to create render";
+      const message = error instanceof Error ? error.message : "Failed to create render";
       setSubmitError(message);
       setSubmitting(false);
     }

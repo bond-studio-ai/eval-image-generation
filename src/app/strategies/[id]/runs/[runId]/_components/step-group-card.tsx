@@ -109,6 +109,19 @@ function GenerationTile({ sr, index, total, isSelected }: { sr: StepResult; inde
   );
 }
 
+function deriveGroupStatus(results: StepGroup["results"]): string {
+  if (results.some((run) => run.status === "running")) return "running";
+  if (results.every((run) => run.status === "failed")) return "failed";
+  if (results.some((run) => run.status === "completed")) return "completed";
+  return results[0]?.status ?? "pending";
+}
+
+function multiGridColsClass(count: number): string {
+  if (count === 2) return "grid-cols-2";
+  if (count === 3) return "grid-cols-3";
+  return "grid-cols-2 lg:grid-cols-4";
+}
+
 export function StepGroupCard({
   group,
   defaultOpen,
@@ -123,11 +136,7 @@ export function StepGroupCard({
   const isMulti = results.length > 1;
   const [representative] = results;
 
-  const completedCount = results.filter((run) => run.status === "completed").length;
-  const failedCount = results.filter((run) => run.status === "failed").length;
-  const runningCount = results.filter((run) => run.status === "running").length;
-
-  const groupStatus = runningCount > 0 ? "running" : failedCount === results.length ? "failed" : completedCount > 0 ? "completed" : (results[0]?.status ?? "pending");
+  const groupStatus = deriveGroupStatus(results);
 
   // Candidates run in parallel within a generation step, so the step's
   // wall-clock is the slowest candidate, not the sum of all candidates.
@@ -202,7 +211,7 @@ export function StepGroupCard({
             {isMulti ? (
               <div>
                 <p className="text-text-disabled mb-2 text-[11px] font-semibold tracking-wider uppercase">{results.length} generations from this step</p>
-                <div className={`grid gap-3 ${results.length === 2 ? "grid-cols-2" : results.length === 3 ? "grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
+                <div className={`grid gap-3 ${multiGridColsClass(results.length)}`}>
                   {results.map((sr, i) => (
                     <GenerationTile key={sr.id} sr={sr} index={i} total={results.length} isSelected={sr.isJudgeSelected} />
                   ))}

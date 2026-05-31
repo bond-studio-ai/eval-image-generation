@@ -43,6 +43,7 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
   // the native undo stack intact. Route the call through a local,
   // non-deprecated signature to avoid the editor warning at the call
   // site without suppressing unrelated deprecations.
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(document, …), so `this` is bound correctly
   const exec = (
     document as unknown as {
       execCommand(command: string, showUi?: boolean, value?: string): boolean;
@@ -50,6 +51,7 @@ function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, tex
   ).execCommand;
   const ok = exec.call(document, "insertText", false, text);
   if (ok) return;
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(el, …), so `this` is bound correctly
   const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
   setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
   el.dispatchEvent(new Event("input", { bubbles: true }));

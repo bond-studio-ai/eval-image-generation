@@ -112,25 +112,22 @@ function DepthThumbnails({ predictedUrl, dollhouseUrl }: { predictedUrl?: string
 }
 
 function DepthThumbnail({ label, url }: { label: string; url: string | null }) {
+  // EXR thumbnails are .exr files which the browser can't render directly —
+  // only the predicted PNG actually loads. When the URL points at an EXR we
+  // show an external link instead. Either way the URL is a stable link
+  // reviewers can copy.
+  const isExr = !!url && /\.exr(?:\?|$)/i.test(url);
   return (
     <figure className="border-border bg-surface-muted overflow-hidden rounded-md border">
       <figcaption className="border-border bg-surface-sunken text-text-secondary border-b px-2 py-1 text-[10px] font-medium tracking-wide uppercase">{label}</figcaption>
       <div className="bg-surface-muted relative flex aspect-[4/3] items-center justify-center">
-        {url ? (
-          // EXR thumbnails are .exr files which the browser can't render
-          // directly — only the predicted PNG actually loads. The dollhouse
-          // tile falls back to a "no preview" hint when the URL points at
-          // an EXR. Either way the URL is a stable link reviewers can copy.
-          /\.exr(?:\?|$)/i.test(url) ? (
-            <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
-              EXR (open externally)
-            </a>
-          ) : (
-            <CdnImage src={url} alt={label} fill sizes="(max-width:768px) 50vw, 320px" className="object-contain" />
-          )
-        ) : (
-          <span className="text-text-disabled text-[11px]">No preview</span>
-        )}
+        {url ? null : <span className="text-text-disabled text-[11px]">No preview</span>}
+        {url && isExr ? (
+          <a href={url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-text-secondary px-3 py-2 text-[11px] underline">
+            EXR (open externally)
+          </a>
+        ) : null}
+        {url && !isExr ? <CdnImage src={url} alt={label} fill sizes="(max-width:768px) 50vw, 320px" className="object-contain" /> : null}
       </div>
     </figure>
   );

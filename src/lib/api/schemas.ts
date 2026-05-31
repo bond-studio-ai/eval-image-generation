@@ -271,9 +271,7 @@ export const dollhouseSourceSchema = z.looseObject({
   projectId: z.string().catch(""),
   projectLabel: z.string().catch(""),
   defaultAreaSummary: z.string().nullable().catch(null),
-  areas: z
-    .array(z.looseObject({ summary: z.string().catch(""), imageUrl: z.string().catch(""), priority: z.number().catch(0) }))
-    .catch([])
+  areas: z.array(z.looseObject({ summary: z.string().catch(""), imageUrl: z.string().catch(""), priority: z.number().catch(0) })).catch([])
 });
 
 export const dollhouseSourceResponseSchema = z.object({ data: dollhouseSourceSchema.nullish() });
@@ -311,7 +309,10 @@ export const strategyHoverSchema = z.looseObject({
       z.looseObject({
         stepOrder: z.number().catch(0),
         name: z.string().nullable().catch(null),
-        promptVersion: z.looseObject({ id: z.string().catch(""), name: z.string().nullable().catch(null) }).nullable().catch(null)
+        promptVersion: z
+          .looseObject({ id: z.string().catch(""), name: z.string().nullable().catch(null) })
+          .nullable()
+          .catch(null)
       })
     )
     .catch([])

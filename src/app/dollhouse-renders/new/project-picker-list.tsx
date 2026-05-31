@@ -108,11 +108,9 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
           <Spinner size="sm" />
           <span className="text-body text-text-secondary">Loading projects…</span>
         </div>
-      ) : isEmptyAfterLoad ? (
-        <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p>
-      ) : (
-        <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} />
-      )}
+      ) : null}
+      {!loading && isEmptyAfterLoad ? <p className="text-body text-text-muted px-6 py-12 text-center">{emptyMessage}</p> : null}
+      {!loading && !isEmptyAfterLoad ? <ProjectGridRadioGroup projects={filteredItems} selectedProjectId={selectedProjectId} onSelect={onSelect} /> : null}
       <div className="border-border-subtle border-t px-4 py-3">{pagination}</div>
     </div>
   );
@@ -320,7 +318,7 @@ function ProjectGridCard({ project, selected, tabIndex, onSelect, onKeyDown, ref
       onKeyDown={onKeyDown}
       className={cn(
         "group rounded-card bg-surface shadow-card relative flex flex-col gap-2 border p-4 text-left transition-all",
-        "focus-visible:outline-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        "focus-visible:outline-primary-600 focus-visible:outline-2 focus-visible:outline-offset-2",
         selected ? "border-primary-600 ring-primary-500 bg-primary-50 ring-2" : "border-border hover:border-border-strong hover:shadow-card-hover"
       )}
     >

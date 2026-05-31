@@ -1,8 +1,11 @@
 import { serviceUrl } from "@/lib/api-base";
+import { parseJsonOrEmpty } from "@/lib/async-utils";
 import type { ReviewState } from "./review-badge";
 
 /** ~3 minutes is enough for the synchronous SAM fan-out + plugin loop on the slowest projects. */
 const REVIEW_POST_TIMEOUT_MS = 180_000;
+
+const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /**
  * Single-generation `POST /generations/:id/review` call that resolves
@@ -18,13 +21,13 @@ export async function runReviewPost(generationId: string, force: boolean): Promi
       method: "POST",
       signal: AbortSignal.timeout(REVIEW_POST_TIMEOUT_MS)
     });
-    const json = (await res.json().catch(() => null)) as {
+    const json = (await parseJsonOrEmpty(res)) as {
       data?: { cached?: boolean; succeeded?: number; promptCount?: number };
       error?: { message?: string };
-    } | null;
+    };
 
     if (!res.ok) {
-      const message = json?.error?.message ?? (res.status === 422 ? "Nothing to review" : `Review failed (${res.status})`);
+      const message = json?.error?.message ?? (res.status === HTTP_UNPROCESSABLE_ENTITY ? "Nothing to review" : `Review failed (${res.status})`);
       return { kind: "error", message };
     }
 

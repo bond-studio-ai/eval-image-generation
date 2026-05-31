@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { InputPresetDetail } from "@/components/input-preset-detail";
+import { catchToNull } from "@/lib/async-utils";
 import { parseOrFallback } from "@/lib/api/parse";
 import { generationSummaryArraySchema } from "@/lib/api/schemas";
 import { getInputPresetStoredImages, type InputPresetStats } from "@/lib/input-preset-design";
@@ -25,7 +26,7 @@ interface PageProps {
 export default async function InputPresetDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const presetData = await fetchInputPresetById(id).catch(() => null);
+  const presetData = await catchToNull(fetchInputPresetById(id));
   if (!presetData) notFound();
 
   const ipData = presetData as RawInputPreset;

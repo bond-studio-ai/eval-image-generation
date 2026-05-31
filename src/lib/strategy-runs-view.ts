@@ -18,15 +18,18 @@ export interface StrategyRunBatchGroup<T extends StrategyRunViewInput> {
   isStandalone: boolean;
 }
 
-export function isAwaitingJudge<T extends StrategyRunViewInput>(batchRuns: T[], hasJudge?: boolean): boolean {
-  if (!hasJudge || batchRuns.length < 2) return false;
+/** A judged batch needs at least two candidate outputs to compare. */
+const MIN_JUDGED_BATCH_SIZE = 2;
+
+export function isAwaitingJudge(batchRuns: StrategyRunViewInput[], hasJudge?: boolean): boolean {
+  if (!hasJudge || batchRuns.length < MIN_JUDGED_BATCH_SIZE) return false;
   const allDone = batchRuns.every((run) => run.status === "completed" || run.status === "failed");
   if (!allDone) return false;
-  const hasOutputs = batchRuns.filter((run) => run.lastOutputUrl).length >= 2;
+  const hasOutputs = batchRuns.filter((run) => run.lastOutputUrl).length >= MIN_JUDGED_BATCH_SIZE;
   return hasOutputs && batchRuns.every((run) => run.judgeScore == null);
 }
 
-export function deriveBatchStatus<T extends StrategyRunViewInput>(runs: T[]): string {
+export function deriveBatchStatus(runs: StrategyRunViewInput[]): string {
   const statuses = runs.map((run) => run.status);
   if (statuses.every((status) => status === "completed")) return "completed";
   if (statuses.some((status) => status === "running" || status === "pending")) return "running";

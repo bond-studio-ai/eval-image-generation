@@ -55,16 +55,19 @@ export function Stepper({ steps, onStepClick, className, label }: StepperProps) 
   );
 }
 
+const STEP_LABEL_COLOR: Record<StepperStepState, string> = {
+  current: "text-primary-700",
+  complete: "text-text-primary",
+  error: "text-danger-700",
+  pending: "text-text-muted"
+};
+
 function StepButton({ step, index, onClick }: { step: StepperStep; index: number; onClick?: (() => void) | undefined }) {
   const content = (
     <>
       <StepCircle state={step.state} index={index} />
       <span className="ml-3 flex min-w-0 flex-col text-left">
-        <span
-          className={cn("text-caption font-semibold tracking-wide uppercase", step.state === "current" ? "text-primary-700" : step.state === "complete" ? "text-text-primary" : step.state === "error" ? "text-danger-700" : "text-text-muted")}
-        >
-          Step {index + 1}
-        </span>
+        <span className={cn("text-caption font-semibold tracking-wide uppercase", STEP_LABEL_COLOR[step.state])}>Step {index + 1}</span>
         <span className={cn("text-body truncate font-medium", step.state === "pending" ? "text-text-muted" : "text-text-primary")}>{step.label}</span>
         {step.description && <span className="text-caption text-text-muted truncate">{step.description}</span>}
       </span>

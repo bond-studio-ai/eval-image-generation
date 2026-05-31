@@ -16,6 +16,12 @@ function formatDisplay(iso: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function dateFilterLabel(from: string, to: string): string {
+  if (from && to) return `${formatDisplay(from)} – ${formatDisplay(to)}`;
+  if (from) return `From ${formatDisplay(from)}`;
+  return `Until ${formatDisplay(to)}`;
+}
+
 interface PrimaryFiltersProps {
   models: string[];
   isCompare: boolean;
@@ -110,7 +116,7 @@ export function PrimaryFilters({ models, isCompare, from, to, model, source, has
           {hasDateFilter && (
             <span className="bg-primary-50 text-primary-700 ring-primary-200/60 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1">
               <CalendarIcon className="size-3" />
-              {from && to ? `${formatDisplay(from)} – ${formatDisplay(to)}` : from ? `From ${formatDisplay(from)}` : `Until ${formatDisplay(to)}`}
+              {dateFilterLabel(from, to)}
               <button
                 type="button"
                 aria-label="Remove date filter"

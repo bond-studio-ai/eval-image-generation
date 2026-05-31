@@ -1,5 +1,7 @@
 import { normalizeProductImageTypes, type PreviewSettings, type StepData, type StrategySettings } from "./types";
 
+const DEFAULT_JUDGE_IMAGE_COUNT = 4;
+
 /**
  * Builds the API request payload (camelCase) from the builder's local state.
  * Pure transformation — keeps the parent's save handler thin without changing
@@ -37,7 +39,7 @@ export function buildStrategyPayload({
     steps: steps.map((step, i) => ({
       id: step.id ?? undefined,
       type: step.type ?? "generation",
-      numberOfImages: step.type === "judge" ? (step.number_of_images ?? 4) : undefined,
+      numberOfImages: step.type === "judge" ? (step.number_of_images ?? DEFAULT_JUDGE_IMAGE_COUNT) : undefined,
       name: step.name.trim() || null,
       stepOrder: i + 1,
       promptVersionId: step.type === "judge" ? null : step.prompt_version_id,

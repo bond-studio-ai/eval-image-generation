@@ -10,6 +10,17 @@ function optionLabel(option: DesignPackageOption): string {
   return option.title?.trim() || option.name?.trim() || option.id;
 }
 
+function errorMessageOr(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function packageSelectLabel(selectedOption: DesignPackageOption | null, hasCurrentValue: boolean, value: string, loading: boolean): string {
+  if (selectedOption) return optionLabel(selectedOption);
+  if (!hasCurrentValue && value) return `Unknown package (${value})`;
+  if (loading) return "Loading packages...";
+  return "Select a design package";
+}
+
 export function DesignPackageSelect({ value, onChange, retailerId }: { value: string; onChange: (value: string, option?: DesignPackageOption | null) => void; retailerId?: string }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -34,7 +45,7 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
     }
   });
 
-  const error = isError ? (queryError instanceof Error ? queryError.message : "Failed to fetch design packages") : null;
+  const error = isError ? errorMessageOr(queryError, "Failed to fetch design packages") : null;
 
   const hasCurrentValue = useMemo(() => !value || options.some((option) => option.id === value), [options, value]);
   const selectedOption = useMemo(() => options.find((option) => option.id === value) ?? null, [options, value]);
@@ -64,9 +75,7 @@ export function DesignPackageSelect({ value, onChange, retailerId }: { value: st
         disabled={loading}
         className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface disabled:bg-surface-muted disabled:text-text-disabled hover:border-border-strong text-body flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors focus:ring-1 focus:outline-none"
       >
-        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>
-          {selectedOption ? optionLabel(selectedOption) : !hasCurrentValue && value ? `Unknown package (${value})` : loading ? "Loading packages..." : "Select a design package"}
-        </span>
+        <span className={selectedOption || (!hasCurrentValue && value) ? "text-text-primary truncate" : "text-text-disabled"}>{packageSelectLabel(selectedOption, hasCurrentValue, value, loading)}</span>
         <ChevronsUpDownIcon className="text-text-disabled size-4 shrink-0" />
       </button>
       <p className="text-text-muted text-caption mt-2">Required whenever a room preset layout is selected.</p>

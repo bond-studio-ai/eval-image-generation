@@ -192,8 +192,14 @@ function OverridePanel({ overrides, hasBootstrap }: { overrides: DollhouseOverri
   );
 }
 
+const SUMMARY_STAT_VALUE_CLASS: Record<"neutral" | "success" | "danger", string> = {
+  success: "text-success-700",
+  danger: "text-danger-700",
+  neutral: "text-text-primary"
+};
+
 function SummaryStat({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "success" | "danger" }) {
-  const valueClass = tone === "success" ? "text-success-700" : tone === "danger" ? "text-danger-700" : "text-text-primary";
+  const valueClass = SUMMARY_STAT_VALUE_CLASS[tone];
   return (
     <div className="bg-surface-sunken rounded-md p-3">
       <p className="text-caption text-text-muted tracking-wide uppercase">{label}</p>

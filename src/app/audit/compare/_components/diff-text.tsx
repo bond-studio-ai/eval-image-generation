@@ -12,6 +12,7 @@ export function DiffText({ left, right }: { left: string; right: string }) {
       <pre className="text-text-primary border-danger-200 bg-danger-50/30 text-caption max-h-64 overflow-auto rounded-md border p-2 leading-relaxed whitespace-pre-wrap">
         {changes.map((change, i) =>
           change.added ? null : (
+            // eslint-disable-next-line react/no-array-index-key -- diffWords segments are a stateless, positionally-stable text split with repeatable values
             <span key={i} className={change.removed ? "bg-danger-200 text-danger-900" : ""}>
               {change.value}
             </span>
@@ -21,6 +22,7 @@ export function DiffText({ left, right }: { left: string; right: string }) {
       <pre className="text-text-primary border-success-200 bg-success-50/30 text-caption max-h-64 overflow-auto rounded-md border p-2 leading-relaxed whitespace-pre-wrap">
         {changes.map((change, i) =>
           change.removed ? null : (
+            // eslint-disable-next-line react/no-array-index-key -- diffWords segments are a stateless, positionally-stable text split with repeatable values
             <span key={i} className={change.added ? "bg-success-200 text-success-900" : ""}>
               {change.value}
             </span>

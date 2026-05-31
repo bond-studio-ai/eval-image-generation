@@ -1,5 +1,12 @@
 import { coerceString } from "@/lib/coerce-string";
 
+/** Coerce an unknown field to a number, preserving `null`/`undefined` as `null`. */
+function coerceNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (value == null) return null;
+  return Number(value);
+}
+
 /** Per-judge evaluation row for a strategy run (from strategy_run_judge_result + judge config). */
 export interface StrategyRunJudgeResultEntry {
   id: string;
@@ -77,15 +84,15 @@ export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeRe
       judgePromptVersionName: coerceString(result.judgePromptVersionName) ?? null,
       position: typeof result.position === "number" ? result.position : Number(result.position) || 0,
       judgeType: result.judgeType === "individual" ? "individual" : "batch",
-      judgeScore: typeof result.judgeScore === "number" ? result.judgeScore : result.judgeScore == null ? null : Number(result.judgeScore),
+      judgeScore: coerceNumberOrNull(result.judgeScore),
       judgeReasoning: coerceString(result.judgeReasoning) ?? null,
       judgeOutput: coerceString(result.judgeOutput) ?? null,
       judgeSystemPrompt: coerceString(result.judgeSystemPrompt) ?? null,
       judgeUserPrompt: coerceString(result.judgeUserPrompt) ?? null,
       judgeInputImages: Array.isArray(imgs) ? (imgs as StrategyRunJudgeResultEntry["judgeInputImages"]) : null,
       judgeTypeUsed: coerceString(result.judgeTypeUsed) ?? null,
-      candidateIndex: typeof result.candidateIndex === "number" ? result.candidateIndex : result.candidateIndex == null ? null : Number(result.candidateIndex),
-      executionTimeMs: typeof result.executionTimeMs === "number" ? result.executionTimeMs : result.executionTimeMs == null ? null : Number(result.executionTimeMs)
+      candidateIndex: coerceNumberOrNull(result.candidateIndex),
+      executionTimeMs: coerceNumberOrNull(result.executionTimeMs)
     });
   }
   return out;

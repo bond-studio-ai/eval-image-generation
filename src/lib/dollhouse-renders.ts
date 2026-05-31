@@ -1,5 +1,7 @@
 import { serviceV2Url } from "./api-base";
 
+const HTTP_NOT_FOUND = 404;
+
 export type DollhouseRenderStatus = "pending" | "posted" | "completed" | "failed";
 
 export interface DollhouseImageConfig {
@@ -334,7 +336,7 @@ export async function getDollhouseRender(id: string, options: { includeFrames?: 
     ...(options.baseUrl ? { cache: "no-store" as RequestCache } : {}),
     ...init
   });
-  if (res.status === 404) return null;
+  if (res.status === HTTP_NOT_FOUND) return null;
   if (!res.ok) throw await parseError(res);
   const json = (await res.json()) as V2ListResponse<DollhouseRender>;
   return json.data[0] ?? null;

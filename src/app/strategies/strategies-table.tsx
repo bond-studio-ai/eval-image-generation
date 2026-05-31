@@ -15,6 +15,11 @@ import { parseOrFallback } from "@/lib/api/parse";
 import { createdEntitySchema } from "@/lib/api/schemas";
 import type { StrategyListItem } from "@/lib/types";
 
+const ACTIVE_SOURCE_LABEL: Record<string, string> = {
+  photo: "Photo",
+  pdp: "PDP"
+};
+
 export function StrategiesTable() {
   const router = useRouter();
   const confirm = useConfirm();
@@ -189,7 +194,7 @@ export function StrategiesTable() {
               </Link>
             );
           }
-          const sourceLabel = strategy.activeForSource === "photo" ? "Photo" : strategy.activeForSource === "pdp" ? "PDP" : "Dollhouse";
+          const sourceLabel = ACTIVE_SOURCE_LABEL[strategy.activeForSource ?? ""] ?? "Dollhouse";
           return (
             <button type="button" onClick={() => handleDeactivate(strategy.id)} disabled={togglingId === strategy.id} className="disabled:opacity-50" title={`Deactivate (currently active for ${sourceLabel.toLowerCase()})`}>
               <StatusBadge status="active" label={`Active · ${sourceLabel}`} />
