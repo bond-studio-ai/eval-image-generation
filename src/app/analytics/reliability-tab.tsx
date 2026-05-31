@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AccuracyTrendChart } from "@/app/analytics/accuracy-trend-chart";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
@@ -59,6 +60,36 @@ function ErrorTable({ title, errors }: { title: string; errors: { reason: string
   );
 }
 
+interface TrendRow {
+  totalRuns: number;
+  failedRuns: number;
+  timedOutSteps: number;
+  judgeFailures: number;
+}
+
+interface TrendTooltipProps {
+  active?: boolean;
+  label?: string | number;
+  payload?: { payload: TrendRow }[];
+}
+
+function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  return (
+    <div className="border-border bg-surface text-caption shadow-popover rounded-md border px-3 py-2">
+      <p className="text-text-primary font-medium">{label}</p>
+      <p className="text-text-secondary mt-1">
+        {row.totalRuns} runs · {row.failedRuns} failed
+      </p>
+      <p className="text-text-muted">
+        {row.timedOutSteps} timeouts · {row.judgeFailures} judge failures
+      </p>
+    </div>
+  );
+}
+
 function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
   if (trends.length === 0) {
     return (
@@ -69,45 +100,33 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
     );
   }
 
-  const maxRuns = Math.max(...trends.map((trend) => trend.totalRuns), 1);
+  const chartData = trends.map((trend) => {
+    const date = new Date(trend.period);
+    return {
+      label: `${date.getMonth() + 1}/${date.getDate()}`,
+      failedRuns: trend.failedRuns,
+      otherRuns: Math.max(0, trend.totalRuns - trend.failedRuns),
+      totalRuns: trend.totalRuns,
+      timedOutSteps: trend.timedOutSteps,
+      judgeFailures: trend.judgeFailures
+    };
+  });
 
   return (
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
       <h3 className="text-text-primary text-body font-semibold">Daily Failure Trends</h3>
-      <div className="text-text-muted text-caption mt-2 flex items-center gap-4">
-        <span className="flex items-center gap-1.5">
-          <span className="bg-border-strong inline-block size-2.5 rounded-full" /> Total runs
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-danger-400 inline-block size-2.5 rounded-full" /> Failed runs
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-warning-400 inline-block size-2.5 rounded-full" /> Timeouts
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-accent-400 inline-block size-2.5 rounded-full" /> Judge failures
-        </span>
-      </div>
-      <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
-        {trends.map((trend, i) => {
-          const totalH = (trend.totalRuns / maxRuns) * 100;
-          const failedH = trend.totalRuns > 0 ? (trend.failedRuns / trend.totalRuns) * totalH : 0;
-          const date = new Date(trend.period);
-          const label = `${date.getMonth() + 1}/${date.getDate()}`;
-          return (
-            <div
-              key={trend.period}
-              className="group relative flex flex-1 flex-col items-center"
-              title={`${label}: ${trend.totalRuns} runs, ${trend.failedRuns} failed, ${trend.timedOutSteps} timeouts, ${trend.judgeFailures} judge failures`}
-            >
-              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: trend.totalRuns > 0 ? 4 : 0 }}>
-                <div className="bg-border absolute bottom-0 w-full rounded-t" style={{ height: "100%" }} />
-                <div className="bg-danger-400 absolute bottom-0 w-full rounded-t" style={{ height: `${failedH}%` }} />
-              </div>
-              {i % Math.max(1, Math.floor(trends.length / 10)) === 0 && <span className="text-text-disabled mt-1 text-[9px]">{label}</span>}
-            </div>
-          );
-        })}
+      <div className="mt-4" style={{ height: 200 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
+            <CartesianGrid stroke="var(--color-border)" vertical={false} />
+            <XAxis dataKey="label" interval="preserveStartEnd" tick={{ fontSize: 11 }} stroke="var(--color-text-disabled)" tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--color-text-disabled)" tickLine={false} />
+            <Tooltip content={<TrendTooltip />} cursor={{ fill: "var(--color-surface-sunken)" }} />
+            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+            <Bar dataKey="failedRuns" stackId="runs" name="Failed runs" fill="var(--color-danger-400)" />
+            <Bar dataKey="otherRuns" stackId="runs" name="Other runs" fill="var(--color-border-strong)" radius={[2, 2, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
