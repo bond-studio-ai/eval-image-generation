@@ -58,14 +58,14 @@ export function ProjectPickerList({ selectedProjectId, onSelect }: ProjectPicker
   // against a `?search=` param the BFF doesn't forward.
   const [clientFilter, setClientFilter] = useState("");
 
-  const statusFilter = readStatusFilter(filters.status);
+  const statusFilter = readStatusFilter(filters["status"]);
   const setStatus = useCallback(
     (next: StatusFilter) => {
       const merged = { ...filters };
       if (next === "all") {
-        delete merged.status;
+        delete merged["status"];
       } else {
-        merged.status = next;
+        merged["status"] = next;
       }
       setFilters(merged);
     },

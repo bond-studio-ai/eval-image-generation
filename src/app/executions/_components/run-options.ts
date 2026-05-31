@@ -15,7 +15,7 @@ async function fetchAllInputPresets(signal?: AbortSignal): Promise<PresetItem[]>
       limit: String(INPUT_PRESET_PAGE_SIZE),
       minimal: "true"
     });
-    const res = await fetch(`${serviceUrl("input-presets")}?${qs}`, { cache: "no-store", signal });
+    const res = await fetch(`${serviceUrl("input-presets")}?${qs}`, { cache: "no-store", ...(signal ? { signal } : {}) });
     if (!res.ok) throw new Error(`Failed to load input presets (${res.status})`);
 
     const json = (await res.json()) as ListResponse<{ id: string; name: string | null }>;
@@ -34,7 +34,7 @@ export async function fetchRunOptions(signal?: AbortSignal): Promise<{ strategie
     (async (): Promise<StrategyItem[]> => {
       const res = await fetch(serviceUrl("strategies?limit=100"), {
         cache: "no-store",
-        signal
+        ...(signal ? { signal } : {})
       });
       if (!res.ok) throw new Error(`Failed to load strategies (${res.status})`);
       const stratRes = (await res.json()) as ListResponse<{ id: string; name: string }>;

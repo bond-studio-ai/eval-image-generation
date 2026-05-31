@@ -25,12 +25,34 @@ type CategoryRate = {
   notesTruncated: boolean; // True when the API omitted some note buckets (e.g. cap exceeded)
 };
 
+interface RawIssueItem {
+  issue?: unknown;
+  count?: unknown;
+}
+
+interface RawNoteItem {
+  text?: unknown;
+  count?: unknown;
+}
+
+interface RawCategoryRow {
+  name?: unknown;
+  total?: unknown;
+  success?: unknown;
+  failure?: unknown;
+  successPct?: unknown;
+  failurePct?: unknown;
+  issues?: unknown;
+  notes?: unknown;
+  notesTruncated?: unknown;
+}
+
 function normalizeIssueItems(raw: unknown): CategoryIssueCount[] {
   if (!Array.isArray(raw)) return [];
   const out: CategoryIssueCount[] = [];
   for (const x of raw) {
     if (!x || typeof x !== "object") continue;
-    const o = x as Record<string, unknown>;
+    const o = x as RawIssueItem;
     if (typeof o.issue !== "string") continue;
     const count = Number(o.count);
     if (!Number.isFinite(count)) continue;
@@ -44,7 +66,7 @@ function normalizeNoteItems(raw: unknown): CategoryNoteCount[] {
   const out: CategoryNoteCount[] = [];
   for (const x of raw) {
     if (!x || typeof x !== "object") continue;
-    const o = x as Record<string, unknown>;
+    const o = x as RawNoteItem;
     if (typeof o.text !== "string") continue;
     const count = Number(o.count);
     if (!Number.isFinite(count)) continue;
@@ -56,7 +78,7 @@ function normalizeNoteItems(raw: unknown): CategoryNoteCount[] {
 function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((c) => {
-    const row = c as Record<string, unknown>;
+    const row = c as RawCategoryRow;
     return {
       name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
       total: Number(row.total) || 0,

@@ -1,4 +1,5 @@
 import { ProductCategoryRates } from "@/app/analytics/product-category-rates";
+import { definedProps } from "@/lib/defined-props";
 import type { BreakdownData, IssueItem } from "./types";
 
 function RatingSummaryBar({ good, failed, unset, label }: { good: number; failed: number; unset: number; label: string }) {
@@ -73,10 +74,10 @@ export function StrategyBreakdownPanel({
   strategyId: string;
   breakdown: BreakdownData | null | undefined;
   isLoading: boolean;
-  from?: string;
-  to?: string;
-  model?: string;
-  source?: string;
+  from?: string | undefined;
+  to?: string | undefined;
+  model?: string | undefined;
+  source?: string | undefined;
 }) {
   if (isLoading) {
     return <p className="text-text-muted text-body">Loading breakdown…</p>;
@@ -99,7 +100,7 @@ export function StrategyBreakdownPanel({
 
       {/* Per-strategy product category rates */}
       <div className="lg:col-span-2">
-        <ProductCategoryRates strategyId={strategyId} from={from} to={to} model={model} source={source} compact />
+        <ProductCategoryRates strategyId={strategyId} {...definedProps({ from, to, model, source })} compact />
       </div>
 
       {/* Scene evaluation issues */}

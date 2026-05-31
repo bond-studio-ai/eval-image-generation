@@ -65,23 +65,30 @@ export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: s
  * failed). Keep new validation in one place — having two copies caused drift
  * the last time the v2 schema tightened.
  */
+interface RawUnitySlimDesign {
+  id?: unknown;
+  objects?: unknown;
+  surfaces?: unknown;
+}
+
 export function validateUnitySlimDesign(value: unknown): ValidationResult<UnitySlimDesignMaterials> {
   if (!isRecord(value)) return { ok: false, error: "Expected a JSON object." };
-  if (typeof value.id !== "string" || value.id.length === 0) {
+  const raw = value as RawUnitySlimDesign;
+  if (typeof raw.id !== "string" || raw.id.length === 0) {
     return { ok: false, error: "designMaterials.id is required." };
   }
-  if (!isRecord(value.objects)) {
+  if (!isRecord(raw.objects)) {
     return { ok: false, error: "designMaterials.objects must be an object." };
   }
-  if (!isRecord(value.surfaces)) {
+  if (!isRecord(raw.surfaces)) {
     return { ok: false, error: "designMaterials.surfaces must be an object." };
   }
   return {
     ok: true,
     value: {
-      id: value.id,
-      objects: value.objects,
-      surfaces: value.surfaces
+      id: raw.id,
+      objects: raw.objects,
+      surfaces: raw.surfaces
     }
   };
 }
@@ -152,7 +159,7 @@ interface RequestErrorJson {
 
 export class DollhouseRenderApiError extends Error {
   status: number;
-  code?: string;
+  code?: string | undefined;
   details?: unknown;
   constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message);
@@ -175,7 +182,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function summarizeZodIssues(details: unknown): string | null {
   if (!isRecord(details)) return null;
-  const issues = isRecord(details.issues) ? details.issues : null;
+  const raw = details as { issues?: unknown };
+  const issues = isRecord(raw.issues) ? raw.issues : null;
   if (!issues) return null;
   const lines: string[] = [];
   for (const [field, messages] of Object.entries(issues)) {
@@ -222,13 +230,26 @@ function trimmedString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+interface RawPoint3 {
+  x?: unknown;
+  y?: unknown;
+  z?: unknown;
+}
+
 function asPoint3(value: unknown): DollhousePoint3 | null {
   if (!isRecord(value)) return null;
+  const raw = value as RawPoint3;
   return {
-    x: numberOr(value.x, 0),
-    y: numberOr(value.y, 0),
-    z: numberOr(value.z, 0)
+    x: numberOr(raw.x, 0),
+    y: numberOr(raw.y, 0),
+    z: numberOr(raw.z, 0)
   };
+}
+
+interface RawCameraFrameProduct {
+  id?: unknown;
+  category?: unknown;
+  view?: unknown;
 }
 
 function normalizeCameraFrameProduct(value: unknown): DollhouseCameraFrameProduct | null {
@@ -236,9 +257,10 @@ function normalizeCameraFrameProduct(value: unknown): DollhouseCameraFrameProduc
   // those can't satisfy the upstream `category.min(1)` / `view.min(1)` rules,
   // so we drop them. Object entries with empty fields are also dropped.
   if (!isRecord(value)) return null;
-  const id = trimmedString(value.id);
-  const category = trimmedString(value.category);
-  const view = trimmedString(value.view);
+  const raw = value as RawCameraFrameProduct;
+  const id = trimmedString(raw.id);
+  const category = trimmedString(raw.category);
+  const view = trimmedString(raw.view);
   if (!id || !category || !view) return null;
   return { id, category, view };
 }
@@ -250,21 +272,32 @@ function normalizeCameraFrameProduct(value: unknown): DollhouseCameraFrameProduc
  * silently dropping frames over individual missing fields, mirroring the
  * normalization the image-generation service applies internally.
  */
+interface RawCameraFrame {
+  position?: unknown;
+  rotation?: unknown;
+  products?: unknown;
+  aspect?: unknown;
+  fov?: unknown;
+  priority?: unknown;
+  summary?: unknown;
+}
+
 export function normalizeCameraFrame(value: unknown): DollhouseCameraFrame | null {
   if (!isRecord(value)) return null;
-  const position = asPoint3(value.position);
-  const rotation = asPoint3(value.rotation);
+  const raw = value as RawCameraFrame;
+  const position = asPoint3(raw.position);
+  const rotation = asPoint3(raw.rotation);
   if (!position || !rotation) return null;
 
-  const products = Array.isArray(value.products) ? value.products.map(normalizeCameraFrameProduct).filter((p): p is DollhouseCameraFrameProduct => p !== null) : [];
+  const products = Array.isArray(raw.products) ? raw.products.map(normalizeCameraFrameProduct).filter((p): p is DollhouseCameraFrameProduct => p !== null) : [];
 
   return {
-    aspect: numberOr(value.aspect, 0),
-    fov: numberOr(value.fov, 0),
+    aspect: numberOr(raw.aspect, 0),
+    fov: numberOr(raw.fov, 0),
     position,
     rotation,
-    priority: numberOr(value.priority, 0),
-    summary: typeof value.summary === "string" ? value.summary : "",
+    priority: numberOr(raw.priority, 0),
+    summary: typeof raw.summary === "string" ? raw.summary : "",
     products
   };
 }

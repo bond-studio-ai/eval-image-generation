@@ -52,7 +52,7 @@ export function StepExecutionTimeTable({ slices, dataBySlice, loading }: { slice
           <tr>
             <th aria-label="Step" className="border-border-strong bg-surface w-48 min-w-[180px] border-r border-b px-3 py-2" />
             {slices.map((slice, i) => {
-              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <th key={slice.key} className={`border-border-strong border-r border-b px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 200 }}>
                   <div className="text-text-primary text-caption font-bold">{slice.strategyName}</div>

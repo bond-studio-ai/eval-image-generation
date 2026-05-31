@@ -56,7 +56,9 @@ export function JudgeStepCard({
                       checked={judge.judge_type === jt.value}
                       onChange={() => {
                         const newJudges = [...(step.judges ?? [])];
-                        newJudges[jIdx] = { ...newJudges[jIdx], judge_type: jt.value };
+                        const existing = newJudges[jIdx];
+                        if (!existing) return;
+                        newJudges[jIdx] = { ...existing, judge_type: jt.value };
                         updateStep(idx, { judges: newJudges });
                       }}
                       className="sr-only"
@@ -90,7 +92,9 @@ export function JudgeStepCard({
                 value={judge.name ?? ""}
                 onChange={(e) => {
                   const newJudges = [...(step.judges ?? [])];
-                  newJudges[jIdx] = { ...newJudges[jIdx], name: e.target.value };
+                  const existing = newJudges[jIdx];
+                  if (!existing) return;
+                  newJudges[jIdx] = { ...existing, name: e.target.value };
                   updateStep(idx, { judges: newJudges });
                 }}
                 placeholder="e.g. Scene Accuracy"
@@ -108,7 +112,9 @@ export function JudgeStepCard({
                   options={judgeModels}
                   onChange={(v) => {
                     const newJudges = [...(step.judges ?? [])];
-                    newJudges[jIdx] = { ...newJudges[jIdx], judge_model: v };
+                    const existing = newJudges[jIdx];
+                    if (!existing) return;
+                    newJudges[jIdx] = { ...existing, judge_model: v };
                     updateStep(idx, { judges: newJudges });
                   }}
                 />
@@ -123,7 +129,9 @@ export function JudgeStepCard({
                   promptVersions={promptVersions}
                   onChange={(id) => {
                     const newJudges = [...(step.judges ?? [])];
-                    newJudges[jIdx] = { ...newJudges[jIdx], judge_prompt_version_id: id };
+                    const existing = newJudges[jIdx];
+                    if (!existing) return;
+                    newJudges[jIdx] = { ...existing, judge_prompt_version_id: id };
                     updateStep(idx, { judges: newJudges });
                   }}
                 />
@@ -146,8 +154,10 @@ export function JudgeStepCard({
                 value={judge.tolerance_threshold}
                 onChange={(e) => {
                   const newJudges = [...(step.judges ?? [])];
+                  const existing = newJudges[jIdx];
+                  if (!existing) return;
                   newJudges[jIdx] = {
-                    ...newJudges[jIdx],
+                    ...existing,
                     tolerance_threshold: Number(e.target.value)
                   };
                   updateStep(idx, { judges: newJudges });

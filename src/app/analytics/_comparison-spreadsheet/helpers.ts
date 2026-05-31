@@ -17,10 +17,25 @@ export function formatCategoryName(name: string): string {
     .trim();
 }
 
+interface RawCategoryRow {
+  name?: unknown;
+  total?: unknown;
+  success?: unknown;
+  failure?: unknown;
+  successPct?: unknown;
+  failurePct?: unknown;
+  issues?: unknown;
+}
+
+interface RawIssueItem {
+  issue?: unknown;
+  count?: unknown;
+}
+
 export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((entry) => {
-    const row = entry as Record<string, unknown>;
+    const row = entry as RawCategoryRow;
     return {
       name: typeof row.name === "string" ? row.name : String(row.name ?? ""),
       total: Number(row.total) || 0,
@@ -30,9 +45,10 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
       failurePct: Number(row.failurePct) || 0,
       issues: Array.isArray(row.issues)
         ? row.issues.flatMap((issue) => {
+            const rawIssue = issue as RawIssueItem;
             const mapped = {
-              issue: String((issue as Record<string, unknown>).issue ?? ""),
-              count: Number((issue as Record<string, unknown>).count ?? 0)
+              issue: String(rawIssue.issue ?? ""),
+              count: Number(rawIssue.count ?? 0)
             };
             return mapped.issue ? [mapped] : [];
           })
@@ -44,7 +60,7 @@ export function normalizeCategoryRows(raw: unknown): CategoryRate[] {
 export function normalizeIssueItems(raw: unknown): IssueItem[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((entry) => {
-    const row = entry as Record<string, unknown>;
+    const row = entry as RawIssueItem;
     const mapped = {
       issue: String(row.issue ?? ""),
       count: Number(row.count ?? 0)
@@ -53,11 +69,23 @@ export function normalizeIssueItems(raw: unknown): IssueItem[] {
   });
 }
 
+interface RawStepPerformanceRow {
+  stepId?: unknown;
+  stepOrder?: unknown;
+  name?: unknown;
+  type?: unknown;
+  model?: unknown;
+  sampleCount?: unknown;
+  avgExecTimeMs?: unknown;
+  minExecTimeMs?: unknown;
+  maxExecTimeMs?: unknown;
+}
+
 export function normalizeStepPerformanceRows(raw: unknown): StepPerformanceRow[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .flatMap((entry) => {
-      const row = entry as Record<string, unknown>;
+      const row = entry as RawStepPerformanceRow;
       const numberOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
       const mapped = {
         stepId: String(row.stepId ?? ""),
@@ -91,9 +119,18 @@ export function defaultStepLabel(row: StepPerformanceRow): string {
   return `Step ${row.stepOrder}`;
 }
 
+interface RawSummary {
+  sceneRatedCount?: unknown;
+  sceneGoodPct?: unknown;
+  sceneFailedPct?: unknown;
+  productRatedCount?: unknown;
+  productGoodPct?: unknown;
+  productFailedPct?: unknown;
+}
+
 export function normalizeSummary(raw: unknown): SummaryData | null {
   if (!raw || typeof raw !== "object") return null;
-  const s = raw as Record<string, unknown>;
+  const s = raw as RawSummary;
   return {
     sceneRatedCount: Number(s.sceneRatedCount) || 0,
     sceneGoodPct: Number(s.sceneGoodPct) || 0,

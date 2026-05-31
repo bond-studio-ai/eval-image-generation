@@ -23,8 +23,8 @@ interface ProxyUpstreamOptions {
   baseUrl: string;
   serviceName: string;
   extraHeaders?: HeadersInit;
-  rewriteQuery?: ProxyQueryRewriter;
-  transformJson?: ProxyJsonTransformer;
+  rewriteQuery?: ProxyQueryRewriter | undefined;
+  transformJson?: ProxyJsonTransformer | undefined;
 }
 
 function errorJson(code: ProxyErrorCode, message: string, status: number, details?: Record<string, unknown>) {
@@ -83,11 +83,12 @@ async function proxyUpstream({ request, pathSegments, baseUrl, serviceName, extr
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    const fetchInit: RequestInit = {
       method: request.method,
-      headers,
-      body: body && body.length > 0 ? body : undefined
-    });
+      headers
+    };
+    if (body && body.length > 0) fetchInit.body = body;
+    res = await fetch(url, fetchInit);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`${serviceName} proxy network error`, {

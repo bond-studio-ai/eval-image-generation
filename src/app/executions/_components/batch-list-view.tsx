@@ -160,12 +160,12 @@ function RunCell({
 }: {
   run: RunRow | undefined;
   cellSize: number;
-  awaitingJudge?: boolean;
+  awaitingJudge?: boolean | undefined;
   retryingRunId: string | null;
   onRetry: (runId: string) => void;
-  onRated?: () => void;
+  onRated?: (() => void) | undefined;
   onImageClick: (run: RunRow) => void;
-  segmentationState?: ReviewState;
+  segmentationState?: ReviewState | undefined;
 }) {
   return (
     <td className="border-border-subtle border-l p-1.5 text-center align-middle" style={{ width: cellSize, height: cellSize, minWidth: cellSize }}>
@@ -195,10 +195,10 @@ function RunCell({
               judgeSystemPrompt={run.judgeSystemPrompt}
               judgeUserPrompt={run.judgeUserPrompt}
               judgeTypeUsed={run.judgeTypeUsed}
-              awaitingJudge={awaitingJudge}
+              {...(awaitingJudge !== undefined ? { awaitingJudge } : {})}
             />
             <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={segmentationState} />
-            {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />}
+            {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
           </div>
         ) : (
           <>

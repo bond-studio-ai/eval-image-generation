@@ -79,7 +79,8 @@ function CalendarMonth({
   onDateHover: (iso: string | null) => void;
 }) {
   const days = useMemo(() => getDaysInMonth(year, month), [year, month]);
-  const leadingBlanks = startOfWeek(days[0]);
+  const firstDay = days[0];
+  const leadingBlanks = firstDay ? startOfWeek(firstDay) : 0;
   const today = fmtISO(new Date());
 
   const effectiveEnd = rangeEnd ?? hoverDate;

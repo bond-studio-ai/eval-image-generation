@@ -59,8 +59,8 @@ export function BatchListItem({
           {isMultiStrategy ? (
             <MultiStrategyLabel strategies={batch.strategies} />
           ) : batch.strategies.length === 1 ? (
-            <StrategyHoverCard strategyId={batch.strategies[0].id}>
-              <span className="text-caption text-text-muted cursor-help font-medium">{batch.strategies[0].name}</span>
+            <StrategyHoverCard strategyId={batch.strategies[0]!.id}>
+              <span className="text-caption text-text-muted cursor-help font-medium">{batch.strategies[0]!.name}</span>
             </StrategyHoverCard>
           ) : null}
           <span className="text-body text-text-secondary">

@@ -17,12 +17,17 @@ function catalogSegment(segment: string): string {
   return TILE_SEGMENTS.has(segment) ? "tiles" : segment;
 }
 
+interface RawCatalogNode {
+  [key: string]: unknown;
+  data?: unknown;
+}
+
 /**
  * Normalize catalog JSON to a list of product objects (handles paginator / wrapper shapes).
  */
 function extractProductRecords(json: unknown): Record<string, unknown>[] {
   if (!json || typeof json !== "object") return [];
-  const root = json as Record<string, unknown>;
+  const root = json as RawCatalogNode;
   let node: unknown = root.data ?? root;
 
   if (Array.isArray(node)) {
@@ -30,7 +35,7 @@ function extractProductRecords(json: unknown): Record<string, unknown>[] {
   }
 
   if (node && typeof node === "object" && !Array.isArray(node)) {
-    const o = node as Record<string, unknown>;
+    const o = node as RawCatalogNode;
     if (Array.isArray(o.data)) {
       return o.data.filter((p): p is Record<string, unknown> => !!p && typeof p === "object");
     }

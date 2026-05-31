@@ -57,7 +57,8 @@ export function ComparisonSlider({
 
   useEffect(() => {
     const onTouchMove = (e: TouchEvent) => {
-      if (isDragging.current && e.touches.length === 1) handleMove(e.touches[0].clientX);
+      const touch = e.touches.length === 1 ? e.touches[0] : undefined;
+      if (isDragging.current && touch) handleMove(touch.clientX);
     };
     const onTouchEnd = () => {
       isDragging.current = false;
@@ -86,9 +87,10 @@ export function ComparisonSlider({
         handleMove(e.clientX);
       }}
       onTouchStart={(e) => {
-        if (e.touches.length === 1) {
+        const touch = e.touches.length === 1 ? e.touches[0] : undefined;
+        if (touch) {
           isDragging.current = true;
-          handleMove(e.touches[0].clientX);
+          handleMove(touch.clientX);
         }
       }}
       onMouseUp={() => {

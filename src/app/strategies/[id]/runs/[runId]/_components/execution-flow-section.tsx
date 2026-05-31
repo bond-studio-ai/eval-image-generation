@@ -18,7 +18,7 @@ export function ExecutionFlowSection({ stepGroups, judgeResults, open, onToggle 
         aspectRatio: g.step.aspectRatio,
         outputResolution: g.step.outputResolution,
         temperature: g.step.temperature,
-        promptName: g.step.promptVersion?.name,
+        promptName: g.step.promptVersion?.name ?? null,
         dollhouseViewFromStep: g.step.dollhouseViewFromStep,
         realPhotoFromStep: g.step.realPhotoFromStep,
         moodBoardFromStep: g.step.moodBoardFromStep,

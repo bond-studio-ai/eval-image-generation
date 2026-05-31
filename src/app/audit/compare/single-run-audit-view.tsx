@@ -8,7 +8,7 @@ import { ExpandableImage } from "@/components/expandable-image";
 import { RunJudgeEvaluationsSection } from "@/components/run-judge-evaluations-section";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
-import { parseStrategyRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
+import { parseStrategyRunJudgeResults, type RawRunJudgeResults, type StrategyRunJudgeResultEntry } from "@/lib/strategy-run-judge-results";
 
 interface InputImage {
   url: string;
@@ -143,7 +143,7 @@ export function SingleRunAuditView({ runId }: { runId: string }) {
         throw new Error(`Failed to load: ${res.status}`);
       }
       const json = await res.json();
-      const raw = json.data as Record<string, unknown>;
+      const raw = json.data as RawRunJudgeResults;
       return {
         ...(json.data as RunData),
         judgeResults: parseStrategyRunJudgeResults(raw.judgeResults)

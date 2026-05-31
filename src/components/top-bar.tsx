@@ -49,6 +49,7 @@ function buildCrumbs(pathname: string): Crumb[] {
   let path = "";
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
+    if (seg === undefined) continue;
     path += `/${seg}`;
     const label = SEGMENT_LABELS[seg] ?? (isLikelyId(seg) ? seg.slice(0, 8) : titleCase(seg));
     const isLast = i === segments.length - 1;

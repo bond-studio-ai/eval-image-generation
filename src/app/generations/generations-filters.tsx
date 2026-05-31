@@ -16,7 +16,17 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const link = useCallback((overrides: Partial<FilterParams>) => buildGenerationsQuery({ ...params, ...overrides }), [params]);
+  const link = useCallback(
+    (overrides: Partial<Record<keyof FilterParams, string | undefined>>) => {
+      const merged: FilterParams = { ...params };
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value === undefined) delete merged[key as keyof FilterParams];
+        else merged[key as keyof FilterParams] = value;
+      }
+      return buildGenerationsQuery(merged);
+    },
+    [params]
+  );
 
   const handleDateApply = useCallback(
     (from: string, to: string) => {
@@ -89,7 +99,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
             value={params.prompt_version_id ?? ""}
             onChange={(e) => {
               const id = e.target.value || undefined;
-              router.push(buildGenerationsQuery({ ...params, prompt_version_id: id }));
+              router.push(link({ prompt_version_id: id }));
             }}
             className="focus:border-primary-500 focus:ring-primary-500 border-border-strong bg-surface text-text-secondary text-caption rounded-md border px-2.5 py-1.5 focus:ring-1 focus:outline-none"
           >
@@ -120,7 +130,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
 
       {hasAny && (
         <div className="border-border-subtle mt-3 border-t pt-3">
-          <Link href={buildGenerationsQuery({ source: params.source })} className="text-danger-600 hover:text-danger-700 text-caption inline-flex items-center gap-1 font-medium">
+          <Link href={buildGenerationsQuery(params.source !== undefined ? { source: params.source } : {})} className="text-danger-600 hover:text-danger-700 text-caption inline-flex items-center gap-1 font-medium">
             <XIcon className="size-3.5" />
             Clear all filters
           </Link>
@@ -175,7 +185,7 @@ function FilterChip({ href, active, variant, children }: { href: string; active:
   );
 }
 
-function DateRangeForm({ from, to, onApply }: { from?: string; to?: string; onApply: (from: string, to: string) => void }) {
+function DateRangeForm({ from, to, onApply }: { from?: string | undefined; to?: string | undefined; onApply: (from: string, to: string) => void }) {
   const fromRef = useRef<HTMLInputElement>(null);
   const toRef = useRef<HTMLInputElement>(null);
   const apply = () => {

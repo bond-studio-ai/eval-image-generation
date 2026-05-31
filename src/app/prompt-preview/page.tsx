@@ -26,7 +26,7 @@ export default async function PreviewPromptRoute({ searchParams }: PageProps) {
       initialAreaSummary={params.area_summary ?? dollhouseSource?.defaultAreaSummary ?? null}
       initialPromptVersions={promptVersions}
       initialPresets={presets}
-      initialDollhouseSource={dollhouseSource ?? undefined}
+      {...(dollhouseSource ? { initialDollhouseSource: dollhouseSource } : {})}
     />
   );
 }

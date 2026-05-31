@@ -46,5 +46,5 @@ export const toast = {
   warning: (message: string, opts?: { description?: string }) => sonnerToast.warning(message, opts),
   info: (message: string, opts?: { description?: string }) => sonnerToast.info(message, opts),
   message: (message: string, opts?: { description?: string }) => sonnerToast.message(message, opts),
-  promise: sonnerToast.promise.bind(sonnerToast)
+  promise: sonnerToast.promise.bind(sonnerToast) as typeof sonnerToast.promise
 };

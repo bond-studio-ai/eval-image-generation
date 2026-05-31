@@ -65,8 +65,8 @@ export function MatrixCellRatingOverlay({ generationId, onRated, className = "" 
 
       try {
         const body: Record<string, string> = {};
-        if (scene !== undefined) body.sceneAccuracyRating = scene;
-        if (product !== undefined) body.productAccuracyRating = product;
+        if (scene !== undefined) body["sceneAccuracyRating"] = scene;
+        if (product !== undefined) body["productAccuracyRating"] = product;
         const res = await fetch(serviceUrl(`generations/${generationId}/rating`), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

@@ -28,13 +28,40 @@ export interface StrategyRunJudgeResultEntry {
   executionTimeMs: number | null;
 }
 
+/** Raw, unvalidated shape of a judge-result row as it arrives from the API. */
+interface RawJudgeResult {
+  id?: unknown;
+  strategyRunId?: unknown;
+  strategyJudgeId?: unknown;
+  judgeModel?: unknown;
+  judgeName?: unknown;
+  judgePromptVersionId?: unknown;
+  judgePromptVersionName?: unknown;
+  position?: unknown;
+  judgeType?: unknown;
+  judgeScore?: unknown;
+  judgeReasoning?: unknown;
+  judgeOutput?: unknown;
+  judgeSystemPrompt?: unknown;
+  judgeUserPrompt?: unknown;
+  judgeInputImages?: unknown;
+  judgeTypeUsed?: unknown;
+  candidateIndex?: unknown;
+  executionTimeMs?: unknown;
+}
+
+/** Raw payload wrapper exposing the unvalidated `judgeResults` field of a run. */
+export interface RawRunJudgeResults {
+  judgeResults?: unknown;
+}
+
 /** Normalize `judgeResults` from a strategy run API payload. */
 export function parseStrategyRunJudgeResults(value: unknown): StrategyRunJudgeResultEntry[] {
   if (!Array.isArray(value)) return [];
   const out: StrategyRunJudgeResultEntry[] = [];
   for (const row of value) {
     if (row == null || typeof row !== "object") continue;
-    const r = row as Record<string, unknown>;
+    const r = row as RawJudgeResult;
     const id = r.id != null ? String(r.id) : "";
     if (!id) continue;
     const imgs = r.judgeInputImages;

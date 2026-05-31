@@ -5,7 +5,7 @@ import { formatComparisonRange, formatComparisonSource, type AnalyticsComparison
 import { formatCategoryName, SLICE_BG_COLORS } from "./helpers";
 import type { CategoryRow, SliceData, SortCol, SortField } from "./types";
 
-function SortArrow({ active, dir }: { active?: boolean; dir?: "asc" | "desc" }) {
+function SortArrow({ active, dir }: { active?: boolean; dir?: "asc" | "desc" | undefined }) {
   if (!active) return <span className="text-text-disabled">{"\u2195"}</span>;
   return <span>{dir === "asc" ? "\u2191" : "\u2193"}</span>;
 }
@@ -42,7 +42,7 @@ export function CategoryRatesTable({
           <tr>
             <th aria-label="Category" className="border-border-strong bg-surface w-48 min-w-[180px] border-r border-b px-3 py-2" />
             {slices.map((slice, i) => {
-              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               const s = dataBySlice[slice.key]?.summary;
               const ratedCount = s?.productRatedCount ?? 0;
               return (
@@ -62,7 +62,7 @@ export function CategoryRatesTable({
             <th className="border-border-strong text-text-secondary border-r border-b px-3 py-1.5 text-left text-[11px] font-semibold">Product Accuracy (Overall)</th>
             {slices.map((slice, i) => {
               const s = dataBySlice[slice.key]?.summary;
-              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <Fragment key={slice.key}>
                   <td className={`border-border-strong text-text-muted border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>{s?.productRatedCount ?? ""}</td>

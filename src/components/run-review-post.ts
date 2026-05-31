@@ -32,8 +32,8 @@ export async function runReviewPost(generationId: string, force: boolean): Promi
     return {
       kind: "done",
       cached: data.cached === true,
-      succeeded: typeof data.succeeded === "number" ? data.succeeded : undefined,
-      total: typeof data.promptCount === "number" ? data.promptCount : undefined
+      ...(typeof data.succeeded === "number" ? { succeeded: data.succeeded } : {}),
+      ...(typeof data.promptCount === "number" ? { total: data.promptCount } : {})
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";

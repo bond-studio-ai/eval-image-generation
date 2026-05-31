@@ -119,6 +119,7 @@ function computeLayout(steps: DagStep[]): {
 
     for (let i = 0; i < group.length; i++) {
       const step = group[i];
+      if (!step) continue;
       positions.set(step.stepOrder, {
         x: PADDING + level * (NODE_WIDTH + LEVEL_GAP_X),
         y: PADDING + startY + i * (NODE_HEIGHT + NODE_GAP_Y)
@@ -266,10 +267,10 @@ export function StrategyFlowDag({ steps, judge, judges }: { steps: DagStep[]; ju
           if (!pos) return null;
 
           const s = step.status ?? "default";
-          const border = STATUS_BORDER[s] ?? STATUS_BORDER.default;
-          const bg = STATUS_BG[s] ?? STATUS_BG.default;
-          const headerBg = STATUS_HEADER_BG[s] ?? STATUS_HEADER_BG.default;
-          const headerText = STATUS_HEADER_TEXT[s] ?? STATUS_HEADER_TEXT.default;
+          const border = STATUS_BORDER[s] ?? STATUS_BORDER["default"];
+          const bg = STATUS_BG[s] ?? STATUS_BG["default"];
+          const headerBg = STATUS_HEADER_BG[s] ?? STATUS_HEADER_BG["default"];
+          const headerText = STATUS_HEADER_TEXT[s] ?? STATUS_HEADER_TEXT["default"];
           const modelLabel = step.model ? (MODEL_LABELS[step.model] ?? step.model) : "";
 
           return (

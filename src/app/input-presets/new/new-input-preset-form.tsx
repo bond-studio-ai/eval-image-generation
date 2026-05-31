@@ -96,11 +96,11 @@ export function NewInputPresetForm() {
           if (value !== undefined) payload[key] = value;
         }
       }
-      if (form.layoutTypeId.trim()) payload.layout_type_id = form.layoutTypeId.trim();
-      if (form.pkgId.trim()) payload.pkg_id = form.pkgId.trim();
-      if (form.dollhouseView) payload.dollhouse_view = form.dollhouseView;
-      if (form.realPhoto) payload.real_photo = form.realPhoto;
-      if (form.moodBoard) payload.mood_board = form.moodBoard;
+      if (form.layoutTypeId.trim()) payload["layout_type_id"] = form.layoutTypeId.trim();
+      if (form.pkgId.trim()) payload["pkg_id"] = form.pkgId.trim();
+      if (form.dollhouseView) payload["dollhouse_view"] = form.dollhouseView;
+      if (form.realPhoto) payload["real_photo"] = form.realPhoto;
+      if (form.moodBoard) payload["mood_board"] = form.moodBoard;
       for (const [slot, urlColumn] of Object.entries(INPUT_PRESET_SLOT_TO_LEGACY_URL_KEY)) {
         if (form.designSettings?.[`${slot}ImageType`] === "arbitrary") {
           payload[urlColumn] = form.arbitraryImagesBySlot[slot] ?? null;

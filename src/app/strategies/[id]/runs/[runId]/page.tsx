@@ -15,10 +15,30 @@ interface PageProps {
   params: Promise<{ id: string; runId: string }>;
 }
 
+interface RawStrategyRun {
+  strategy?: unknown;
+  stepResults?: unknown;
+  id?: unknown;
+  status?: unknown;
+  createdAt?: unknown;
+  startedAt?: unknown;
+  completedAt?: unknown;
+  judgeScore?: unknown;
+  isJudgeSelected?: unknown;
+  judgeReasoning?: unknown;
+  judgeOutput?: unknown;
+  source?: unknown;
+  judgeSystemPrompt?: unknown;
+  judgeUserPrompt?: unknown;
+  judgeInputImages?: unknown;
+  judgeTypeUsed?: unknown;
+  judgeResults?: unknown;
+}
+
 export default async function StrategyRunPage({ params }: PageProps) {
   const { id, runId } = await params;
 
-  const run = await fetchStrategyRunById(runId);
+  const run = (await fetchStrategyRunById(runId)) as RawStrategyRun;
 
   if (!run || (run.strategy as { id: string } | undefined)?.id !== id) {
     notFound();
@@ -81,7 +101,7 @@ export default async function StrategyRunPage({ params }: PageProps) {
     judgeUserPrompt: (run.judgeUserPrompt as string) ?? null,
     judgeInputImages: (run.judgeInputImages as { url: string; label: string }[]) ?? null,
     judgeTypeUsed: (run.judgeTypeUsed as string) ?? null,
-    judgeResults: parseStrategyRunJudgeResults((run as Record<string, unknown>).judgeResults),
+    judgeResults: parseStrategyRunJudgeResults(run.judgeResults),
     strategy: {
       id: strategy.id,
       name: strategy.name,

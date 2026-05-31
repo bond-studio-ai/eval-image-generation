@@ -47,7 +47,7 @@ export default async function EditStrategyPage({ params }: PageProps) {
           initialSteps={strat.steps.map((s) => ({
             id: s.id,
             type: s.type ?? "generation",
-            number_of_images: s.numberOfImages ?? undefined,
+            ...(s.numberOfImages != null ? { number_of_images: s.numberOfImages } : {}),
             name: s.name ?? "",
             prompt_version_id: s.promptVersionId ?? "",
             model: s.model,
@@ -66,9 +66,9 @@ export default async function EditStrategyPage({ params }: PageProps) {
             include_product_categories: s.includeProductCategories ?? [],
             product_image_types: (s.productImageTypes ?? {}) as Record<string, "featured-image" | "photo-image" | "line-drawing" | "tear-sheet">,
             arbitrary_image_from_step: s.arbitraryImageFromStep,
-            judges:
-              s.type === "judge"
-                ? (s.judges ?? []).map((j) => ({
+            ...(s.type === "judge"
+              ? {
+                  judges: (s.judges ?? []).map((j) => ({
                     id: j.id,
                     name: j.name ?? "",
                     judge_model: j.judgeModel,
@@ -76,7 +76,8 @@ export default async function EditStrategyPage({ params }: PageProps) {
                     judge_prompt_version_id: j.judgePromptVersionId,
                     tolerance_threshold: j.toleranceThreshold
                   }))
-                : undefined
+                }
+              : {})
           }))}
           promptVersions={promptVersions}
           inputPresets={inputPresets}

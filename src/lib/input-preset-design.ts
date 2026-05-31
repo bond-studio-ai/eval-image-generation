@@ -1,3 +1,9 @@
+/** Usage stats attached to an input-preset payload (snake_case or camelCase). */
+export interface InputPresetStats {
+  generationCount?: number;
+  generation_count?: number;
+}
+
 export const INPUT_PRESET_DESIGN_FIELD_KEYS = [
   "vanity",
   "faucet",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { LinkButton } from "@/components/ui/button";
-import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS } from "@/lib/input-preset-design";
+import { getInputPresetStoredImages, INPUT_PRESET_DESIGN_FIELD_KEYS, type InputPresetStats } from "@/lib/input-preset-design";
 import { fetchInputPresetById } from "@/lib/service-client";
 import { InputPresetEditForm } from "./edit-form";
 
@@ -20,13 +20,13 @@ interface PageProps {
 
 export default async function InputPresetEditPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const force = query.force === "true";
+  const force = query["force"] === "true";
 
   const presetData = await fetchInputPresetById(id).catch(() => null);
   if (!presetData) notFound();
 
   const preset = presetData as any;
-  const stats = preset.stats as Record<string, any> | undefined;
+  const stats = preset.stats as InputPresetStats | undefined;
   const generationCount = stats?.generationCount ?? stats?.generation_count ?? 0;
 
   if (generationCount > 0 && !force) {

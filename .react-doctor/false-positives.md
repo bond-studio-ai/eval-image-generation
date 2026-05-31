@@ -12,9 +12,9 @@ state), not a synchronous derivation of props/state — so it genuinely must
 live in state and cannot be computed during render.
 
 - `react-doctor/no-derived-state` — `src/app/analytics/accuracy-trend-chart.tsx:59` (`loading`) — async fetch status set in `finally`.
-- `react-doctor/no-derived-state` — `src/app/analytics/reliability-tab.tsx:138` (`loading`) — async fetch status set in `finally`.
+- `react-doctor/no-derived-state` — `src/app/analytics/reliability-tab.tsx:139` (`loading`) — async fetch status set in `finally`.
 - `react-doctor/no-derived-state` — `src/app/strategies/[id]/strategy-performance.tsx:43` (`data`) — async fetch result.
-- `react-doctor/no-derived-state` — `src/components/grid-lightbox.tsx:67` (`fetched`) — async fetch result.
+- `react-doctor/no-derived-state` — `src/components/grid-lightbox.tsx:74` (`fetched`) — async fetch result.
 - `react-doctor/no-derived-state` — `src/components/view-prompt-modal.tsx:43` (`loading`) — async fetch status.
 - `react-doctor/no-derived-state` — `src/hooks/use-infinite-list.ts:215` (`paginating`) — async fetch status.
 - `react-doctor/no-derived-state` — `src/components/strategy-hover-card.tsx:96` (`pos`) — post-layout `getBoundingClientRect` viewport clamp; needs the rendered node.
@@ -27,7 +27,6 @@ pattern across the codebase. Splitting them into separate files would
 over-fragment without improving clarity.
 
 - `react-doctor/no-multi-comp` — `src/app/strategies/[id]/runs/[runId]/_components/audit.tsx` (`AuditCollapsible`, `StepAudit`) — three tightly-coupled audit sub-components co-located in one file.
-- `react-doctor/no-multi-comp` — `src/components/page-header.tsx` (`PrimaryLinkButton`, `PrimaryButton`) — deprecated header-button wrappers co-located with `PageHeader`.
 - `react-doctor/no-multi-comp` — `src/components/review-results/icons.tsx` (`ChevronIcon`, `WarningIcon`) — tiny presentational icon helpers for the review-results surface.
 
 ## react-doctor/query-no-usequery-for-mutation
@@ -40,7 +39,7 @@ Each loop awaits sequentially on purpose — either the iterations are
 loop-carried (page N+1 needs page N's result) or already fanned out with
 `Promise.allSettled`, or sequential execution is a deliberate rate-limit guard.
 
-- `react-doctor/async-await-in-loop` — `src/app/api/v1/layout-presets/bootstrap/route.ts:48` — polling loop with `sleep` + a loop-carried counter; sequential is required.
+- `react-doctor/async-await-in-loop` — `src/app/api/v1/layout-presets/bootstrap/route.ts:63` — polling loop with `sleep` + a loop-carried counter; sequential is required.
 - `react-doctor/async-await-in-loop` — `src/app/executions/_components/run-options.ts:18` — `do/while` pagination; page N+1 depends on `totalPages` from page N.
 - `react-doctor/async-await-in-loop` — `src/app/executions/_components/run-options.ts:88` — awaits are inside a `.map(async …)` already passed to `Promise.allSettled`; already concurrent.
 - `react-doctor/async-await-in-loop` — `src/app/executions/_components/run-options.ts:115` — same: `.map(async …)` inside `Promise.allSettled`.
@@ -76,11 +75,11 @@ exists.
 
 ## react-doctor/no-derived-useState
 
-- `react-doctor/no-derived-useState` — `src/components/design-settings-editor.tsx:889`, `:890`, `:891` — intentional uncontrolled "draft" modal: captures the initial prop values once into editable draft state before Accept, and deliberately does **not** stay in sync with the props.
+- `react-doctor/no-derived-useState` — `src/components/design-settings-editor.tsx:890`, `:891`, `:892` — intentional uncontrolled "draft" modal: captures the initial prop values once into editable draft state before Accept, and deliberately does **not** stay in sync with the props.
 
 ## react-doctor/no-event-handler
 
-- `react-doctor/no-event-handler` — `src/components/grid-lightbox.tsx:67` — effect fetches generation data from the server when the `generationId` prop changes; genuine async/external-data sync, not an event-handler side effect.
+- `react-doctor/no-event-handler` — `src/components/grid-lightbox.tsx:74` — effect fetches generation data from the server when the `generationId` prop changes; genuine async/external-data sync, not an event-handler side effect.
 - `react-doctor/no-event-handler` — `src/components/strategy-hover-card.tsx:89` — post-render layout-sync effect measuring the portal card via `getBoundingClientRect`; the card only exists once open, so it can't move into the hover handler.
 
 ## react-doctor/no-pass-live-state-to-parent
@@ -98,10 +97,10 @@ sits on an element nested inside a real `<button>` (button-in-button is invalid
 HTML), maps to a void element that can't host the existing children/interactivity,
 or maps to a semantically-wrong tag.
 
-- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:276`, `:290`, `:406`, `:420` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
-- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:511` — `role="button"` div wraps interactive descendants (a `JudgeScoreBadge` button + rating overlay), illegal inside a native `<button>`.
-- `react-doctor/prefer-tag-over-role` — `src/components/judge-score-badge.tsx:255`, `:276` — this shared badge also renders inside a real `<button>` in `batch-matrix-view.tsx`; a native `<button>` would nest button-in-button there.
-- `react-doctor/prefer-tag-over-role` — `src/components/comparison-slider.tsx:76` — `role="slider"` maps to void `<input>`, which can't host the slider's image/label/bar children or its drag + keyboard handlers.
+- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:278`, `:292`, `:408`, `:422` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
+- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:531` — `role="button"` div wraps interactive descendants (a `JudgeScoreBadge` button + rating overlay), illegal inside a native `<button>`.
+- `react-doctor/prefer-tag-over-role` — `src/components/judge-score-badge.tsx:274`, `:295` — this shared badge also renders inside a real `<button>` in `batch-matrix-view.tsx`; a native `<button>` would nest button-in-button there.
+- `react-doctor/prefer-tag-over-role` — `src/components/comparison-slider.tsx:77` — `role="slider"` maps to void `<input>`, which can't host the slider's image/label/bar children or its drag + keyboard handlers.
 - `react-doctor/prefer-tag-over-role` — `src/components/two-pane-split.tsx:111` — `role="separator"` maps to void `<hr>`, which can't carry the focusable/draggable resizer (`tabIndex`, pointer + key handlers, `aria-valuenow`).
 - `react-doctor/prefer-tag-over-role` — `src/components/ui/tabs.tsx:111` — `role="group"`'s only native mapping the rule offers is `<address>`, which is semantically wrong for a view-switch tab strip.
 

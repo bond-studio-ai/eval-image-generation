@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
 import { serviceUrl } from "@/lib/api-base";
-import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
+import { parseStrategyRunJudgeResults, type RawRunJudgeResults } from "@/lib/strategy-run-judge-results";
 import { JudgeComparison } from "./_components/judge-comparison";
 import { RunHeader } from "./_components/run-header";
 import { StepComparison } from "./_components/step-comparison";
@@ -27,8 +27,8 @@ export function CompareView({ leftId, rightId }: { leftId: string; rightId: stri
         throw new Error(`Failed to load: ${res.status}`);
       }
       const json = await res.json();
-      const rawL = json.data.left as Record<string, unknown>;
-      const rawR = json.data.right as Record<string, unknown>;
+      const rawL = json.data.left as RawRunJudgeResults;
+      const rawR = json.data.right as RawRunJudgeResults;
       return {
         left: {
           ...(json.data.left as RunData),

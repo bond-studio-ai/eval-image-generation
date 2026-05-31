@@ -50,9 +50,7 @@ export function StrategiesTable() {
           router.push(`/strategies/${newId}/edit`);
         }
       } catch (e) {
-        toast.error("Failed to clone strategy", {
-          description: e instanceof Error ? e.message : undefined
-        });
+        toast.error("Failed to clone strategy", e instanceof Error ? { description: e.message } : {});
       } finally {
         setCloningId(null);
       }
@@ -81,9 +79,7 @@ export function StrategiesTable() {
         toast.success(`Deleted strategy "${name}"`);
         refresh();
       } catch (e) {
-        toast.error("Failed to delete strategy", {
-          description: e instanceof Error ? e.message : undefined
-        });
+        toast.error("Failed to delete strategy", e instanceof Error ? { description: e.message } : {});
       } finally {
         setDeletingId(null);
       }
@@ -105,9 +101,7 @@ export function StrategiesTable() {
         toast.success("Strategy deactivated");
         refresh();
       } catch (e) {
-        toast.error("Failed to deactivate strategy", {
-          description: e instanceof Error ? e.message : undefined
-        });
+        toast.error("Failed to deactivate strategy", e instanceof Error ? { description: e.message } : {});
       } finally {
         setTogglingId(null);
       }

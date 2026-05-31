@@ -5,10 +5,10 @@ export interface ProjectSummary {
   id: string;
   name: string;
   appStatus: string;
-  crmStatus?: string;
-  address?: string;
-  created?: string;
-  updated?: string;
+  crmStatus?: string | undefined;
+  address?: string | undefined;
+  created?: string | undefined;
+  updated?: string | undefined;
 }
 
 export interface ProjectsListResponse {
@@ -35,8 +35,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+interface RawProjectSummary {
+  id?: unknown;
+  name?: unknown;
+  appStatus?: unknown;
+  crmStatus?: unknown;
+  address?: unknown;
+  created?: unknown;
+  updated?: unknown;
+}
+
 function normalizeProjectSummary(raw: unknown): ProjectSummary | null {
-  const rec = isRecord(raw) ? raw : null;
+  const rec = isRecord(raw) ? (raw as RawProjectSummary) : null;
   if (!rec || typeof rec.id !== "string") return null;
   return {
     id: rec.id,
@@ -56,6 +66,12 @@ export interface ProjectRenderBootstrap {
   /** `null` if the project has no scan / room layout. */
   roomData: Record<string, unknown> | null;
   cameraFrames: DollhouseCameraFrame[];
+}
+
+interface RawProjectRecord {
+  designs?: unknown;
+  scan?: unknown;
+  cameraFrames?: unknown;
 }
 
 function pickFirstDesign(value: unknown): unknown {
@@ -114,14 +130,15 @@ export async function fetchProjectWithRenderBootstrap(projectId: string, init?: 
     throw new Error(`Project ${trimmed} response missing required fields`);
   }
 
+  const projectRecord = project as RawProjectRecord;
   return {
     project: summary,
-    designMaterials: asUnitySlimDesign(pickFirstDesign(project.designs)),
+    designMaterials: asUnitySlimDesign(pickFirstDesign(projectRecord.designs)),
     // Pass the raw project scan through. The renderer needs fields that are
     // outside the old v2 strict whitelist (e.g. tub/shower-specific metadata).
     // service-image-generation#137 updates the v2 create endpoint to preserve
     // raw `roomData`, matching the proven strategy dollhouse-capture path.
-    roomData: isRecord(project.scan) ? (project.scan as Record<string, unknown>) : null,
-    cameraFrames: parseCameraFrames(project.cameraFrames)
+    roomData: isRecord(projectRecord.scan) ? (projectRecord.scan as Record<string, unknown>) : null,
+    cameraFrames: parseCameraFrames(projectRecord.cameraFrames)
   };
 }

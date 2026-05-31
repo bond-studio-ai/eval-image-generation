@@ -22,7 +22,7 @@ describe("buildStrategyRunInputFromPreset", () => {
     });
     expect(payload.layout_type_id).toBe("layout-1");
     expect(payload.pkg_id).toBe("pkg-1");
-    expect(payload.product_images.faucets).toEqual(["https://example.com/faucet.png"]);
+    expect(payload.product_images["faucets"]).toEqual(["https://example.com/faucet.png"]);
     expect(payload.design).toEqual(expect.objectContaining({ mirrorPlacement: "centered" }));
   });
 
@@ -33,7 +33,7 @@ describe("buildStrategyRunInputFromPreset", () => {
     });
 
     expect(payload.arbitrary_images).toEqual([{ url: "https://example.com/custom.png", slot: "faucet", tag: "faucet" }]);
-    expect(payload.product_images.faucets).toEqual(["https://example.com/custom.png"]);
+    expect(payload.product_images["faucets"]).toEqual(["https://example.com/custom.png"]);
   });
 
   it("does not include selected catalog slots as product image urls", () => {
@@ -43,6 +43,6 @@ describe("buildStrategyRunInputFromPreset", () => {
       faucetImageType: "featured-image"
     });
 
-    expect(payload.product_images.faucets).toBeUndefined();
+    expect(payload.product_images["faucets"]).toBeUndefined();
   });
 });

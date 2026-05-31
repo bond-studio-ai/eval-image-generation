@@ -28,9 +28,7 @@ export function CloneButton({ strategyId }: { strategyId: string }) {
         router.push(`/strategies/${newId}`);
       }
     } catch (e) {
-      toast.error("Failed to clone strategy", {
-        description: e instanceof Error ? e.message : undefined
-      });
+      toast.error("Failed to clone strategy", e instanceof Error ? { description: e.message } : {});
     } finally {
       setLoading(false);
     }

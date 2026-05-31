@@ -49,7 +49,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, s
   const tabStopIndex = activeIndex >= 0 ? activeIndex : (enabledIndices[0] ?? -1);
 
   const moveTo = useCallback(
-    (nextIndex: number) => {
+    (nextIndex: number | undefined) => {
+      if (nextIndex === undefined) return;
       const opt = options[nextIndex];
       if (!opt || opt.disabled) return;
       onChange(opt.value);

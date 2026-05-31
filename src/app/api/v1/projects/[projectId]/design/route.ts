@@ -74,16 +74,24 @@ function sanitizeStudioDesign(design: Record<string, unknown>): Record<string, u
   return out;
 }
 
+interface RawRoom {
+  layout?: unknown;
+}
+
+interface RawRoomLayout {
+  design?: unknown;
+}
+
 function extractRoomLayout(room: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
-  return asRecord(room?.layout);
+  return asRecord((room as RawRoom | null | undefined)?.layout);
 }
 
 function extractRoomDesign(room: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
-  return asRecord(extractRoomLayout(room)?.design);
+  return asRecord((extractRoomLayout(room) as RawRoomLayout | null)?.design);
 }
 
 function extractDesignId(value: unknown): string | null {
-  const rec = asRecord(value);
+  const rec = asRecord(value) as { id?: unknown } | null;
   return rec && typeof rec.id === "string" && rec.id.trim() ? rec.id : null;
 }
 

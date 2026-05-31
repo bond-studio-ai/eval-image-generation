@@ -137,7 +137,7 @@ export function StepGroupCard({
     <div className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
       <button type="button" onClick={() => setOpen(!open)} className="hover:bg-surface-muted flex w-full items-center gap-3 px-4 py-3 text-left transition-colors">
         <ChevronIcon open={open} />
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STEP_STATUS_DOT[groupStatus] ?? STEP_STATUS_DOT.pending}`} />
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STEP_STATUS_DOT[groupStatus] ?? STEP_STATUS_DOT["pending"]}`} />
         <span className="text-text-primary text-body font-semibold">{group.name}</span>
         {isMulti && <span className="bg-primary-50 text-primary-700 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">&times;{group.results.length}</span>}
         <span className="text-text-muted text-caption">{group.model}</span>

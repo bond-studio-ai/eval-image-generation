@@ -69,6 +69,7 @@ export function useBatchReviewStatus(
         const next = new Map(prev);
         results.forEach((result, i) => {
           const id = targets[i];
+          if (id === undefined) return;
           const resolved: ReviewState =
             result.status === "fulfilled"
               ? result.value
