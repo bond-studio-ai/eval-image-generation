@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback } from "react";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 interface ScopeToggleProps {
   benchmarkLabel?: string;
@@ -34,27 +35,14 @@ function ScopeToggleInner({ benchmarkLabel = "Benchmark", defaultLabel = "Standa
   );
 
   return (
-    <div className="border-border bg-surface-muted flex items-center gap-1 rounded-lg border p-0.5">
-      <button
-        type="button"
-        onClick={() => {
-          setScope("default");
-        }}
-        aria-pressed={source === "default"}
-        className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "default" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
-      >
-        {defaultLabel}
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setScope("benchmark");
-        }}
-        aria-pressed={source === "benchmark"}
-        className={`text-caption rounded-md px-3 py-1.5 font-medium transition-colors ${source === "benchmark" ? "bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
-      >
-        {benchmarkLabel}
-      </button>
-    </div>
+    <SegmentedControl<"default" | "benchmark">
+      label="Data scope"
+      value={source}
+      onChange={setScope}
+      options={[
+        { value: "default", label: defaultLabel },
+        { value: "benchmark", label: benchmarkLabel }
+      ]}
+    />
   );
 }
