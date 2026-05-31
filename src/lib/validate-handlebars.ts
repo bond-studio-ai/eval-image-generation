@@ -39,7 +39,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
     let hi = lineStarts.length - 1;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
-      if (lineStarts[mid] <= pos) lo = mid;
+      if (lineStarts[mid]! <= pos) lo = mid;
       else hi = mid - 1;
     }
     return lo + 1;
@@ -318,7 +318,8 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         // with no useful indentation.
         let matchIdx = -1;
         for (let j = blockStack.length - 1; j >= 0; j--) {
-          if (blockStack[j].name === t.name && blockStack[j].indent <= t.indent) {
+          const open = blockStack[j]!;
+          if (open.name === t.name && open.indent <= t.indent) {
             matchIdx = j;
             break;
           }
@@ -329,7 +330,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           // last-resort search that ignores indent. If even that
           // misses, it's an orphan close.
           for (let j = blockStack.length - 1; j >= 0; j--) {
-            if (blockStack[j].name === t.name) {
+            if (blockStack[j]!.name === t.name) {
               matchIdx = j;
               break;
             }
@@ -340,7 +341,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
           // Name isn't on the stack at all. Report as mismatch
           // against whatever is on top of the stack, which preserves
           // the original "did you mean {{/x}}?" messaging.
-          const last = blockStack[blockStack.length - 1];
+          const last = blockStack[blockStack.length - 1]!;
           errors.push({
             line: t.line,
             message: `Mismatched {{/${t.name}}} — expected {{/${last.name}}} to close block opened on line ${last.line}`
@@ -354,7 +355,7 @@ export function validateHandlebarsTemplate(template: string): TemplateError[] {
         // ancestor. Flag each of them once here so the error lands on
         // the block whose close is actually missing.
         for (let j = blockStack.length - 1; j > matchIdx; j--) {
-          const unclosed = blockStack[j];
+          const unclosed = blockStack[j]!;
           errors.push({
             line: unclosed.line,
             message: `Unclosed ${unclosed.display} — missing {{/${unclosed.name}}} before the {{/${t.name}}} on line ${t.line}`

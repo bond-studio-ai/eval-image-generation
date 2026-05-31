@@ -14,6 +14,12 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+interface PromptVersionStats {
+  generationCount?: number;
+  ratedCount?: number;
+  avgRatingScore?: number;
+}
+
 export default async function PromptVersionDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -21,7 +27,7 @@ export default async function PromptVersionDetailPage({ params }: PageProps) {
   if (!pvData) notFound();
 
   const pv = pvData as any;
-  const stats = pv.stats as Record<string, any> | undefined;
+  const stats = pv.stats as PromptVersionStats | undefined;
 
   const genResult = await fetchGenerations({ promptVersionId: id, limit: "100" });
   const generations = (genResult.data ?? []) as any[];

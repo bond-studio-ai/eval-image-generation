@@ -28,6 +28,12 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+interface GenerationSceneInput {
+  dollhouseView?: unknown;
+  realPhoto?: unknown;
+  moodBoard?: unknown;
+}
+
 export default async function GenerationDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -48,9 +54,10 @@ export default async function GenerationDetailPage({ params }: PageProps) {
   const createdAt = result.createdAt;
   const notes = result.notes ?? null;
 
-  const dollhouseView = inputData?.dollhouseView as string | undefined;
-  const realPhoto = inputData?.realPhoto as string | undefined;
-  const moodBoard = inputData?.moodBoard as string | undefined;
+  const sceneInput = inputData as GenerationSceneInput | null;
+  const dollhouseView = sceneInput?.dollhouseView as string | undefined;
+  const realPhoto = sceneInput?.realPhoto as string | undefined;
+  const moodBoard = sceneInput?.moodBoard as string | undefined;
 
   const hasNotes = !!notes;
   const hasSceneImages = !!(dollhouseView || realPhoto || moodBoard);

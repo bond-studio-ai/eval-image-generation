@@ -18,7 +18,7 @@ interface Run {
 export function StrategyRunsSection({ strategyId, hasJudge, initialRuns }: { strategyId: string; hasJudge?: boolean; initialRuns: Run[] }) {
   return (
     <div className="border-border bg-surface mt-8 rounded-lg border p-6 shadow-xs">
-      <StrategyRunsList strategyId={strategyId} hasJudge={hasJudge} initialRuns={initialRuns} />
+      <StrategyRunsList strategyId={strategyId} hasJudge={hasJudge ?? false} initialRuns={initialRuns} />
     </div>
   );
 }

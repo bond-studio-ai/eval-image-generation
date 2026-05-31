@@ -14,9 +14,15 @@ export function isPowderRoomLayoutName(value: string | null | undefined): boolea
   return typeof value === "string" && value.toLowerCase().includes("powder room");
 }
 
+interface RawDesignSource {
+  [key: string]: unknown;
+  vanityDict?: unknown;
+  faucetDict?: unknown;
+}
+
 export function designSettingsFromPackage(pkg: DesignPackageOption | null | undefined, options?: { isPowderRoom?: boolean }): Record<string, unknown> | null {
-  const root = pkg && typeof pkg === "object" && !Array.isArray(pkg) ? (pkg as unknown as Record<string, unknown>) : null;
-  const materials = pkg?.materials && typeof pkg.materials === "object" && !Array.isArray(pkg.materials) ? (pkg.materials as Record<string, unknown>) : null;
+  const root = pkg && typeof pkg === "object" && !Array.isArray(pkg) ? (pkg as unknown as RawDesignSource) : null;
+  const materials = pkg?.materials && typeof pkg.materials === "object" && !Array.isArray(pkg.materials) ? (pkg.materials as RawDesignSource) : null;
   const source = materials ?? root;
 
   if (!source) return null;
@@ -57,8 +63,8 @@ export function designSettingsFromPackage(pkg: DesignPackageOption | null | unde
     const sizeKey = String(selectedSize);
     const vanityId = vanityDict?.[sizeKey];
     const faucetId = faucetDict?.[sizeKey];
-    if (vanityId) out.vanity = vanityId;
-    if (faucetId) out.faucet = faucetId;
+    if (vanityId) out["vanity"] = vanityId;
+    if (faucetId) out["faucet"] = faucetId;
   }
 
   return Object.keys(out).length > 0 ? out : null;

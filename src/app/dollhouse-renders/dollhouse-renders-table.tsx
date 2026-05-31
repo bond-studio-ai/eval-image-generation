@@ -58,15 +58,15 @@ export function DollhouseRendersTable() {
     staticParams: { "include[]": "frames" }
   });
 
-  const statusFilter: StatusFilter = readStatusFilter(filters.status);
+  const statusFilter: StatusFilter = readStatusFilter(filters["status"]);
 
   const setStatus = useCallback(
     (next: StatusFilter) => {
       const merged: Record<string, string> = { ...filters };
       if (next === "all") {
-        delete merged.status;
+        delete merged["status"];
       } else {
-        merged.status = next;
+        merged["status"] = next;
       }
       setFilters(merged);
     },
@@ -79,9 +79,9 @@ export function DollhouseRendersTable() {
       const merged: Record<string, string> = { ...filters };
       const trimmed = next.trim();
       if (trimmed) {
-        merged.projectId = trimmed;
+        merged["projectId"] = trimmed;
       } else {
-        delete merged.projectId;
+        delete merged["projectId"];
       }
       setFilters(merged);
     },

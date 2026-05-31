@@ -36,7 +36,7 @@ export function NumberInput({ label, value, onChange, hint, min, optional, allow
   };
 
   return (
-    <Field label={label} hint={hint} optional={optional}>
+    <Field label={label} hint={hint} optional={optional ?? false}>
       {(id) => <TextInput id={id} inputMode={allowDecimal ? "decimal" : "numeric"} value={value} onChange={handle} min={min} />}
     </Field>
   );

@@ -54,10 +54,19 @@ function getDesignPackageLabel(option: DesignPackageOption | null, pkgId: string
   return option.title?.trim() || option.name?.trim() || pkgId;
 }
 
+interface RawInputPresetData {
+  layout_type_id?: unknown;
+  pkg_id?: unknown;
+  dollhouse_view?: unknown;
+  real_photo?: unknown;
+  mood_board?: unknown;
+  [key: string]: unknown;
+}
+
 export function InputPresetDetail({ data, generations, stats }: InputPresetDetailProps) {
   const router = useRouter();
   const [cloning, setCloning] = useState(false);
-  const rawData = data as unknown as Record<string, unknown>;
+  const rawData = data as unknown as RawInputPresetData;
   const { byId, loaded } = useCatalogProducts(INPUT_PRESET_RETAILER_ID);
   const storedImages = useMemo(() => getInputPresetStoredImages(rawData), [rawData]);
   const storedImagesBySlot = useMemo(() => new Map(storedImages.map((image) => [image.slot, image])), [storedImages]);

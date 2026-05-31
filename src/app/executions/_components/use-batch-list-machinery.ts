@@ -34,7 +34,7 @@ export function useBatchListMachinery({ hasMore, loadingMore, loadMore, refetch 
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>(".overflow-x-auto");
     if (!scrollers) return;
     scrollers.forEach((el, i) => {
-      if (i < saved.length) el.scrollLeft = saved[i];
+      if (i < saved.length) el.scrollLeft = saved[i]!;
     });
   });
 

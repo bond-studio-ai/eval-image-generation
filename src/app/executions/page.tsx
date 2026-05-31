@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { GenerationsFilters } from "@/app/generations/generations-filters";
 import { EmptyState } from "@/components/empty-state";
-import { GenerationsList, type GenerationRow } from "@/components/generations-list";
+import { GenerationsList } from "@/components/generations-list";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { type GenerationRow, normalizeGenerationRow } from "@/lib/generation-row";
 import { fetchGenerations, fetchPromptVersions } from "@/lib/service-client";
 import { ExecutionsPageHeader } from "./executions-page-header";
 import { ExecutionsTabs } from "./executions-tabs";
@@ -16,20 +17,22 @@ export const metadata: Metadata = {
 
 const PAGE_SIZE = 20;
 
+interface ExecutionsSearchParams {
+  tab?: string;
+  page?: string;
+  prompt_version_id?: string;
+  scene_accuracy_rating?: string;
+  product_accuracy_rating?: string;
+  unrated?: string;
+  from?: string;
+  to?: string;
+  sort?: string;
+  order?: string;
+  source?: string;
+}
+
 interface PageProps {
-  searchParams: Promise<{
-    tab?: string;
-    page?: string;
-    prompt_version_id?: string;
-    scene_accuracy_rating?: string;
-    product_accuracy_rating?: string;
-    unrated?: string;
-    from?: string;
-    to?: string;
-    sort?: string;
-    order?: string;
-    source?: string;
-  }>;
+  searchParams: Promise<ExecutionsSearchParams>;
 }
 
 export default async function ExecutionsPage({ searchParams }: PageProps) {
@@ -49,7 +52,7 @@ export default async function ExecutionsPage({ searchParams }: PageProps) {
 
 type ExecTab = "batches" | "generations";
 
-function ExecutionsTabNav({ active, source }: { active: ExecTab; source?: string }) {
+function ExecutionsTabNav({ active, source }: { active: ExecTab; source?: string | undefined }) {
   const sourceQs = source === "benchmark" ? "?source=benchmark" : "";
   const items: TabItem<ExecTab>[] = [
     { key: "batches", label: "Batches", href: `/executions${sourceQs}` },
@@ -66,46 +69,35 @@ function ExecutionsTabNav({ active, source }: { active: ExecTab; source?: string
   );
 }
 
-async function GenerationsTab({ params }: { params: Record<string, string | undefined> }) {
+async function GenerationsTab({ params }: { params: ExecutionsSearchParams }) {
   const queryParams: Record<string, string> = {};
-  if (params.prompt_version_id) queryParams.promptVersionId = params.prompt_version_id;
-  if (params.scene_accuracy_rating) queryParams.sceneAccuracyRating = params.scene_accuracy_rating;
-  if (params.product_accuracy_rating) queryParams.productAccuracyRating = params.product_accuracy_rating;
-  if (params.unrated) queryParams.unrated = params.unrated;
-  if (params.from) queryParams.from = params.from;
-  if (params.to) queryParams.to = params.to;
-  if (params.source === "benchmark") queryParams.source = "benchmark";
-  queryParams.order = params.order === "asc" ? "asc" : "desc";
-  queryParams.limit = String(PAGE_SIZE);
-  if (params.page) queryParams.page = params.page;
+  if (params.prompt_version_id) queryParams["promptVersionId"] = params.prompt_version_id;
+  if (params.scene_accuracy_rating) queryParams["sceneAccuracyRating"] = params.scene_accuracy_rating;
+  if (params.product_accuracy_rating) queryParams["productAccuracyRating"] = params.product_accuracy_rating;
+  if (params.unrated) queryParams["unrated"] = params.unrated;
+  if (params.from) queryParams["from"] = params.from;
+  if (params.to) queryParams["to"] = params.to;
+  if (params.source === "benchmark") queryParams["source"] = "benchmark";
+  queryParams["order"] = params.order === "asc" ? "asc" : "desc";
+  queryParams["limit"] = String(PAGE_SIZE);
+  if (params.page) queryParams["page"] = params.page;
 
   const [json, promptVersions] = await Promise.all([fetchGenerations(queryParams), fetchPromptVersions(200)]);
 
-  const total = Number(json.pagination?.total ?? 0);
+  const total = Number((json.pagination as { total?: unknown } | undefined)?.total ?? 0);
 
-  const initialData: GenerationRow[] = (json.data ?? []).map((row: Record<string, unknown>) => ({
-    id: row.id as string,
-    promptVersionId: row.promptVersionId as string,
-    promptName: (row.promptName ?? null) as string | null,
-    sceneAccuracyRating: (row.sceneAccuracyRating ?? null) as string | null,
-    productAccuracyRating: (row.productAccuracyRating ?? null) as string | null,
-    notes: (row.notes ?? null) as string | null,
-    executionTime: (row.executionTime ?? null) as number | null,
-    createdAt: row.createdAt as string,
-    resultUrls: (row.resultUrls ?? []) as string[],
-    resultCount: (row.resultCount ?? 0) as number
-  }));
+  const initialData: GenerationRow[] = (json.data ?? []).map(normalizeGenerationRow);
 
   const filters = {
-    sceneAccuracyRating: params.scene_accuracy_rating,
-    productAccuracyRating: params.product_accuracy_rating,
-    unrated: params.unrated,
-    promptVersionId: params.prompt_version_id,
-    from: params.from,
-    to: params.to,
     sort: params.sort ?? "created_at",
     order: params.order ?? "desc",
-    source: params.source
+    ...(params.scene_accuracy_rating !== undefined ? { sceneAccuracyRating: params.scene_accuracy_rating } : {}),
+    ...(params.product_accuracy_rating !== undefined ? { productAccuracyRating: params.product_accuracy_rating } : {}),
+    ...(params.unrated !== undefined ? { unrated: params.unrated } : {}),
+    ...(params.prompt_version_id !== undefined ? { promptVersionId: params.prompt_version_id } : {}),
+    ...(params.from !== undefined ? { from: params.from } : {}),
+    ...(params.to !== undefined ? { to: params.to } : {}),
+    ...(params.source !== undefined ? { source: params.source } : {})
   };
 
   return (

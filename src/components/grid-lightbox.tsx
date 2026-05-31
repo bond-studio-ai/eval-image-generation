@@ -20,11 +20,18 @@ interface GridLightboxProps {
   onClose: () => void;
 }
 
+interface GenerationInput {
+  dollhouseView?: unknown;
+  realPhoto?: unknown;
+  moodBoard?: unknown;
+  [key: string]: unknown;
+}
+
 interface GenerationData {
   sceneAccuracyRating: string | null;
   productAccuracyRating: string | null;
   results: { id: string; url: string }[];
-  input: Record<string, unknown> | null;
+  input: GenerationInput | null;
 }
 
 export function GridLightbox({ src, runHref, generationId, onRated, onClose }: GridLightboxProps) {
@@ -91,7 +98,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
     const list = generation?.results ?? [];
     if (list.length === 0) return src;
     const idx = list.findIndex((r) => r.url === src);
-    return idx >= 0 ? list[idx].url : (list[0]?.url ?? src);
+    return idx >= 0 ? (list[idx]?.url ?? src) : (list[0]?.url ?? src);
   }, [generation?.results, src]);
 
   /** Result ID for the evaluation form: always the output that was opened (matches src). */
@@ -188,11 +195,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setExpandedImage({ src: img.urls[0], alt: img.label });
+                              setExpandedImage({ src: img.urls[0]!, alt: img.label });
                             }}
                             className="relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
                           >
-                            <CdnImage src={img.urls[0]} alt={img.label} fill sizes="48px" className="object-cover" />
+                            <CdnImage src={img.urls[0]!} alt={img.label} fill sizes="48px" className="object-cover" />
                           </button>
                         ) : (
                           <div className="flex gap-0.5">

@@ -19,7 +19,7 @@ export function SceneIssuesTable({ slices, dataBySlice, loading, sceneIssueRows 
           <tr>
             <th aria-label="Issue" className="border-border-strong bg-surface w-48 min-w-[180px] border-r border-b px-3 py-2" />
             {slices.map((slice, i) => {
-              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <th key={slice.key} className={`border-border-strong border-r border-b px-3 py-2.5 text-center ${color.header}`} style={{ minWidth: 160 }}>
                   <div className="text-text-primary text-caption font-bold">{slice.strategyName}</div>
@@ -35,7 +35,7 @@ export function SceneIssuesTable({ slices, dataBySlice, loading, sceneIssueRows 
             <th className="border-border text-text-secondary border-r border-b px-3 py-1.5 text-left text-[11px] font-semibold">Overall</th>
             {slices.map((slice, i) => {
               const s = dataBySlice[slice.key]?.summary;
-              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length];
+              const color = SLICE_BG_COLORS[i % SLICE_BG_COLORS.length]!;
               return (
                 <td key={slice.key} className={`border-border border-r border-b px-2 py-1.5 text-center text-[11px] ${color.header}`}>
                   {s ? (

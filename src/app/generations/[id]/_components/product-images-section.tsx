@@ -11,7 +11,7 @@ export function ProductImagesSection({ productImages }: { productImages: Product
         {productImages.map((img) => (
           <div key={img.key} className="border-border bg-surface overflow-hidden rounded-lg border shadow-xs">
             {img.urls.length === 1 ? (
-              <ImageWithSkeleton src={img.urls[0]} alt={img.label} wrapperClassName="h-44 w-full bg-surface-muted" />
+              <ImageWithSkeleton src={img.urls[0]!} alt={img.label} wrapperClassName="h-44 w-full bg-surface-muted" />
             ) : (
               <div className="grid grid-cols-2 gap-0.5 p-1">
                 {img.urls.map((url, i) => (

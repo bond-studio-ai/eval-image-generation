@@ -39,13 +39,28 @@ function updateExpanded(prev: ExpandedState, listKey: string, mutate: (ids: Set<
   return { key: listKey, ids };
 }
 
+interface RawBatch {
+  runs?: unknown;
+}
+
+interface RawBatchRun {
+  batchRunId?: unknown;
+  source?: unknown;
+  inputPresetName?: unknown;
+  inputPresets?: unknown;
+}
+
 function normalizeBatch(b: Record<string, unknown>): BatchRow {
-  const runs = (Array.isArray(b.runs) ? b.runs : []).map((r: Record<string, unknown>) => ({
-    ...r,
-    batchRunId: (r.batchRunId as string) ?? null,
-    source: (r.source as string) ?? null,
-    inputPresetName: r.inputPresetName ?? (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null
-  }));
+  const raw = b as RawBatch;
+  const runs = (Array.isArray(raw.runs) ? raw.runs : []).map((entry: Record<string, unknown>) => {
+    const r = entry as RawBatchRun;
+    return {
+      ...entry,
+      batchRunId: (r.batchRunId as string) ?? null,
+      source: (r.source as string) ?? null,
+      inputPresetName: r.inputPresetName ?? (r.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null
+    };
+  });
   return { ...b, runs } as BatchRow;
 }
 
@@ -90,7 +105,7 @@ type AppliedRangeAction = { type: "set"; from: string; to: string };
 
 const initialAppliedRangeState: AppliedRangeState = { from: "", to: "" };
 
-function appliedRangeReducer(state: AppliedRangeState, action: AppliedRangeAction): AppliedRangeState {
+function appliedRangeReducer(_state: AppliedRangeState, action: AppliedRangeAction): AppliedRangeState {
   switch (action.type) {
     case "set":
       return { from: action.from, to: action.to };
@@ -263,9 +278,7 @@ export function BatchRunsTab({ refreshKey, source = "default" }: { refreshKey?: 
         toast.success(`Deleted batch "${displayName}"`);
         await refetch();
       } catch (e) {
-        toast.error("Failed to delete batch", {
-          description: e instanceof Error ? e.message : undefined
-        });
+        toast.error("Failed to delete batch", e instanceof Error ? { description: e.message } : {});
       } finally {
         pendingDispatch({ type: "deletingBatch", id: null });
       }

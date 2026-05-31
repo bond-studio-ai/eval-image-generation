@@ -23,7 +23,7 @@ import {
 import { useModelCatalog } from "@/components/strategy-builder/use-model-catalog";
 import { serviceUrl } from "@/lib/api-base";
 
-export function StrategyBuilder({ strategyId, initialName = "", initialDescription = "", initialStrategySettings, initialPreviewSettings, initialSteps, initialJudges, promptVersions, inputPresets, modelCatalog }: StrategyBuilderProps) {
+export function StrategyBuilder({ strategyId, initialName = "", initialDescription = "", initialStrategySettings, initialPreviewSettings, initialSteps, promptVersions, modelCatalog }: StrategyBuilderProps) {
   const { providerModelIdForSelection, catalogSelectionForProviderModelId, defaultGenerationModel, defaultPreviewModel, defaultJudgeModel, generationModels, previewModels, judgeModels } = useModelCatalog(
     modelCatalog,
     initialStrategySettings?.model,
@@ -55,11 +55,15 @@ export function StrategyBuilder({ strategyId, initialName = "", initialDescripti
           ...step,
           _uid: step._uid ?? nextUid(),
           model: catalogSelectionForProviderModelId(step.model, defaultGenerationModel),
-          judges: step.judges?.map((judge) => ({
-            ...judge,
-            _uid: judge._uid ?? nextUid(),
-            judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel)
-          })),
+          ...(step.judges
+            ? {
+                judges: step.judges.map((judge) => ({
+                  ...judge,
+                  _uid: judge._uid ?? nextUid(),
+                  judge_model: catalogSelectionForProviderModelId(judge.judge_model, defaultJudgeModel)
+                }))
+              }
+            : {}),
           product_image_types: normalizeProductImageTypes(step.product_image_types)
         }))
       : [defaultStep(promptVersions[0]?.id ?? "", defaultGenerationModel)]

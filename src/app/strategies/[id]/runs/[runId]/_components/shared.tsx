@@ -31,7 +31,7 @@ export const STEP_STATUS_DOT: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending}`}>{status}</span>;
+  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"]}`}>{status}</span>;
 }
 
 export function SourceBadge({ source }: { source: string | null }) {

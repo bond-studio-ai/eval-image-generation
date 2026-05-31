@@ -131,16 +131,12 @@ export function ImageEvaluationForm({ resultId, productCategories = EMPTY_CATEGO
   }, [loadedData]);
 
   const updateCategoryEval = useCallback((category: string, field: "issues" | "notes", value: string[] | string) => {
-    setData((prev) => ({
-      ...prev,
-      productAccuracy: {
-        ...prev.productAccuracy,
-        [category]: {
-          ...prev.productAccuracy[category],
-          [field]: value
-        }
-      }
-    }));
+    setData((prev) => {
+      const existing = prev.productAccuracy[category] ?? { issues: [], notes: "" };
+      const updatedCategory: CategoryEval = { ...existing, [field]: value };
+      const productAccuracy: Record<string, CategoryEval> = { ...prev.productAccuracy, [category]: updatedCategory };
+      return { ...prev, productAccuracy };
+    });
   }, []);
 
   // Persist evaluation to the server.

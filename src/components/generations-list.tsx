@@ -9,19 +9,7 @@ import { DeleteGenerationButton } from "@/components/delete-generation-button";
 import { GenerationThumbnails } from "@/components/generation-thumbnails";
 import { RatingBadge } from "@/components/rating-badge";
 import { serviceUrl } from "@/lib/api-base";
-
-export interface GenerationRow {
-  id: string;
-  promptVersionId: string;
-  promptName: string | null;
-  sceneAccuracyRating: string | null;
-  productAccuracyRating: string | null;
-  notes: string | null;
-  executionTime: number | null;
-  createdAt: string;
-  resultUrls: string[];
-  resultCount: number;
-}
+import { type GenerationRow, normalizeGenerationRow } from "@/lib/generation-row";
 
 interface GenerationsListProps {
   initialData: GenerationRow[];
@@ -101,18 +89,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       const json = await res.json();
 
       if (json.data) {
-        const newRows: GenerationRow[] = json.data.map((row: Record<string, unknown>) => ({
-          id: row.id as string,
-          promptVersionId: row.promptVersionId as string,
-          promptName: row.promptName as string | null,
-          sceneAccuracyRating: row.sceneAccuracyRating as string | null,
-          productAccuracyRating: row.productAccuracyRating as string | null,
-          notes: row.notes as string | null,
-          executionTime: row.executionTime as number | null,
-          createdAt: row.createdAt as string,
-          resultUrls: (row.resultUrls ?? []) as string[],
-          resultCount: (row.resultCount ?? 0) as number
-        }));
+        const newRows: GenerationRow[] = json.data.map(normalizeGenerationRow);
         setGenerations((prev) => [...prev, ...newRows]);
         pageRef.current = nextPage;
         if (json.pagination?.total !== undefined) {

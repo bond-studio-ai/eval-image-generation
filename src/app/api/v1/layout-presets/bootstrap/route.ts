@@ -12,15 +12,30 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value != null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
+interface RawCreateResponse {
+  data?: unknown;
+}
+
+interface RawCreateData {
+  project?: unknown;
+  data?: unknown;
+}
+
+interface RawRoom {
+  cameraFrames?: unknown;
+  layout?: unknown;
+}
+
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function readProjectIdFromCreateResponse(res: Response): Promise<string> {
-  const json = (await res.json()) as Record<string, unknown>;
-  const candidates: unknown[] = [json, json.data, asRecord(json.data)?.project, asRecord(json.data)?.data];
+  const json = (await res.json()) as RawCreateResponse;
+  const dataRec = asRecord(json.data) as RawCreateData | null;
+  const candidates: unknown[] = [json, json.data, dataRec?.project, dataRec?.data];
   for (const candidate of candidates) {
-    const rec = asRecord(candidate);
+    const rec = asRecord(candidate) as { id?: unknown } | null;
     if (rec && typeof rec.id === "string" && rec.id) return rec.id;
   }
   throw new Error("Project ID not found in project creation response");
@@ -46,7 +61,8 @@ async function waitForSettledRoomByProjectId(projectId: string): Promise<Record<
 
   while (Date.now() <= deadline) {
     const room = await fetchRoomByProjectId(projectId);
-    const frameCount = Array.isArray(room.cameraFrames) ? room.cameraFrames.length : 0;
+    const cameraFrames = (room as RawRoom).cameraFrames;
+    const frameCount = Array.isArray(cameraFrames) ? cameraFrames.length : 0;
     lastRoom = room;
     if (frameCount > 0) {
       stableReads = frameCount === lastCount ? stableReads + 1 : 1;
@@ -98,7 +114,7 @@ export async function POST(request: Request) {
     }
 
     const room = await waitForSettledRoomByProjectId(projectId);
-    const roomData = asRecord(room.layout);
+    const roomData = asRecord((room as RawRoom).layout);
     if (!roomData) {
       return errorResponse("INTERNAL_ERROR", `Room layout not found for project ${projectId}`);
     }

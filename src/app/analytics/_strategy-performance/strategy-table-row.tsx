@@ -23,10 +23,10 @@ export function StrategyTableRow({
   isLoadingBreakdown: boolean;
   colSpan: number;
   onToggleExpand: (id: string) => void;
-  from?: string;
-  to?: string;
-  model?: string;
-  source?: string;
+  from?: string | undefined;
+  to?: string | undefined;
+  model?: string | undefined;
+  source?: string | undefined;
 }) {
   return (
     <Fragment>

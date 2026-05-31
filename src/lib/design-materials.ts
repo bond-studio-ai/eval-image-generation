@@ -31,13 +31,91 @@ const DESIGN_SLOT_TO_CATEGORY: Record<string, string> = {
 };
 
 type TextureScale = { x: number | null; y: number | null };
-type ScanLike = Record<string, unknown>;
-type CatalogProduct = Record<string, unknown>;
+
+/**
+ * Loose shape of the upstream JSON blobs (project scans, catalog products,
+ * design selections) this module normalizes. Every key is optional `unknown`
+ * because the payloads are unvalidated; the `as*` helpers narrow at runtime.
+ * Declaring the keys explicitly lets us read them with dot access under
+ * `noPropertyAccessFromIndexSignature` (an explicitly-declared key is never
+ * served by the index signature), while the index signature still permits the
+ * handful of genuinely dynamic, computed-key reads
+ * (e.g. `product[patternId]`, `design[`${slot}Pattern`]`).
+ */
+interface RawDesignObject {
+  [key: string]: unknown;
+  id?: unknown;
+  renderAttributes?: unknown;
+  textureScale?: unknown;
+  textureScaleX?: unknown;
+  textureScaleY?: unknown;
+  x?: unknown;
+  y?: unknown;
+  length?: unknown;
+  width?: unknown;
+  height?: unknown;
+  numberOfSinks?: unknown;
+  counterHeight?: unknown;
+  sinkOffset?: unknown;
+  abovePlacementDefaultRotation?: unknown;
+  sidePlacementDefaultRotation?: unknown;
+  mountingPosition?: unknown;
+  colorPalette?: unknown;
+  color_palette?: unknown;
+  color?: unknown;
+  components?: unknown;
+  categoryComponent?: unknown;
+  materialType?: unknown;
+  code?: unknown;
+  hue?: unknown;
+  chroma?: unknown;
+  luminance?: unknown;
+  shape?: unknown;
+  pieceLength?: unknown;
+  pieceWidth?: unknown;
+  isRemoved?: unknown;
+  patternInfo?: unknown;
+  assetId?: unknown;
+  "3DAssetId"?: unknown;
+  horizontalPatternId?: unknown;
+  verticalPatternId?: unknown;
+  thirdOffsetPatternId?: unknown;
+  halfOffsetPatternId?: unknown;
+  herringbonePatternId?: unknown;
+  hexagonPatternId?: unknown;
+  rhomboidCubePatternId?: unknown;
+  triangularPatternId?: unknown;
+  horizontalPicketPatternId?: unknown;
+  verticalPicketPatternId?: unknown;
+  fishScalePatternId?: unknown;
+  stackedPatternId?: unknown;
+  offsetPatternId?: unknown;
+  straightPatternId?: unknown;
+  scan?: unknown;
+  data?: unknown;
+  project?: unknown;
+  areas?: unknown;
+  showers?: unknown;
+  tubs?: unknown;
+  niches?: unknown;
+  type?: unknown;
+  curbHeight?: unknown;
+  curbThickness?: unknown;
+  wallpaperPlacement?: unknown;
+  wallTilePlacement?: unknown;
+  mirrorPlacement?: unknown;
+  lightingPlacement?: unknown;
+  isShowerGlassVisible?: unknown;
+  isTubDoorVisible?: unknown;
+}
+
+type ScanLike = RawDesignObject;
+type CatalogProduct = RawDesignObject;
 type Color = { hue: number; chroma: number; luminance: number };
 type ObjectComponent = { categoryComponent: string; color: Color; materialType: string };
 
 type SurfaceItem = {
-  productId?: string;
+  productId?: string | undefined;
   texture: string;
   scale: { x: string; y: string };
   placement?: string;
@@ -49,7 +127,7 @@ type SurfaceItem = {
 };
 
 type ObjectItem = {
-  productId?: string;
+  productId?: string | undefined;
   asset?: string | null;
   size?: { length: string; width: string; height: string };
   styling: "Default" | "Hidden" | "Removed";
@@ -128,8 +206,8 @@ function toCamelCase(value: unknown): unknown {
   return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [snakeToCamel(key), toCamelCase(entry)]));
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value != null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+function asRecord(value: unknown): RawDesignObject | null {
+  return value != null && typeof value === "object" && !Array.isArray(value) ? (value as RawDesignObject) : null;
 }
 
 function asNumber(value: unknown): number | null {
@@ -200,7 +278,7 @@ function projectTileExtras(product: CatalogProduct): Pick<SurfaceItem, "shape" |
   };
 }
 
-function resolveTilePattern(product: CatalogProduct, slot: string, texture: string, design: Record<string, unknown>): string | undefined {
+function resolveTilePattern(product: CatalogProduct, slot: string, texture: string, design: RawDesignObject): string | undefined {
   for (const [key, pattern] of Object.entries(TILE_PATTERN_BY_ID_KEY)) {
     if (product[key] === texture) return pattern;
   }
@@ -218,7 +296,7 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
   try {
     const res = await fetch(localUrl(`projects/${projectId}`), { cache: "no-store" });
     if (!res.ok) return null;
-    const json = (await res.json()) as Record<string, unknown>;
+    const json = (await res.json()) as RawDesignObject;
     // The BFF passes the upstream body through, which is `{ data: [project] }`.
     // We also accept the upstream-unwrapped shape and a few legacy variants so
     // this helper keeps working if it's ever called against a different proxy.
@@ -226,7 +304,7 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
     for (const candidate of candidates) {
       const rec = asRecord(candidate);
       if (!rec) continue;
-      const camel = toCamelCase(rec) as Record<string, unknown>;
+      const camel = toCamelCase(rec) as RawDesignObject;
       const scan = asRecord(camel.scan);
       if (scan && isScanLike(scan)) return scan;
       if (isScanLike(camel)) return camel;
@@ -237,8 +315,8 @@ async function fetchProjectScan(projectId: string): Promise<ScanLike | null> {
   return null;
 }
 
-async function resolveScan(params: { roomData?: Record<string, unknown>; projectId?: string }): Promise<ScanLike | null> {
-  const camelRoomData = params.roomData ? (toCamelCase(params.roomData) as Record<string, unknown>) : null;
+async function resolveScan(params: { roomData?: RawDesignObject; projectId?: string }): Promise<ScanLike | null> {
+  const camelRoomData = params.roomData ? (toCamelCase(params.roomData) as RawDesignObject) : null;
   if (camelRoomData) {
     const roomScan = asRecord(camelRoomData.scan);
     if (roomScan && isScanLike(roomScan)) return roomScan;
@@ -339,7 +417,7 @@ function buildMaterialLike(product: CatalogProduct, productId: string): CatalogP
   };
 }
 
-function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOTS)[number], design: Record<string, unknown>): SurfaceItem | null {
+function buildSurface(product: CatalogProduct | null, slot: (typeof SURFACE_SLOTS)[number], design: RawDesignObject): SurfaceItem | null {
   if (!product) return null;
   const material = buildMaterialLike(product, asString(product.id) ?? "");
   const pattern = readPatternTexture(material, design[`${slot}Pattern`]);
@@ -383,7 +461,7 @@ function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTu
   };
 }
 
-function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)[number], design: Record<string, unknown>, scan: ScanLike): ObjectItem | null {
+function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)[number], design: RawDesignObject, scan: ScanLike): ObjectItem | null {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
 
   if (!product) {
@@ -459,8 +537,11 @@ function buildObject(product: CatalogProduct | null, slot: (typeof OBJECT_SLOTS)
   return out;
 }
 
-export async function buildDesignMaterials(params: { design: Record<string, unknown>; roomData?: Record<string, unknown>; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
-  const scan = await resolveScan({ roomData: params.roomData, projectId: params.projectId });
+export async function buildDesignMaterials(params: { design: RawDesignObject; roomData?: RawDesignObject; projectId?: string }): Promise<UnitySlimDesignMaterials | null> {
+  const scan = await resolveScan({
+    ...(params.roomData !== undefined ? { roomData: params.roomData } : {}),
+    ...(params.projectId !== undefined ? { projectId: params.projectId } : {})
+  });
   if (!scan) return null;
 
   const productBySlot = new Map<string, CatalogProduct | null>();

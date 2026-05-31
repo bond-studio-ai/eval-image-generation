@@ -8,6 +8,7 @@ import { StrategyPerformanceSection } from "@/app/analytics/strategy-performance
 import { PageHeader } from "@/components/page-header";
 import { Card, StatCard } from "@/components/ui/card";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { definedProps } from "@/lib/defined-props";
 import { fetchAnalyticsRatings, fetchAnalyticsStrategyPerformance, fetchStrategies } from "@/lib/service-client";
 
 export const metadata: Metadata = {
@@ -93,11 +94,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const tz = getParamValues(params, "tz")[0];
   const ratingParams: Record<string, string> = {};
-  if (from) ratingParams.from = from;
-  if (to) ratingParams.to = to;
-  if (model) ratingParams.model = model;
-  if (source && source !== "all") ratingParams.source = source;
-  if (tz) ratingParams.tz = tz;
+  if (from) ratingParams["from"] = from;
+  if (to) ratingParams["to"] = to;
+  if (model) ratingParams["model"] = model;
+  if (source && source !== "all") ratingParams["source"] = source;
+  if (tz) ratingParams["tz"] = tz;
 
   const [perfData, strategies, sceneRatings, productRatings] = await Promise.all([
     fetchAnalyticsStrategyPerformance(ratingParams),
@@ -114,6 +115,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   };
   const models = perfData.models;
   const comparisonSlices = buildComparisonSlices(comparison, strategies);
+
+  const filterProps = definedProps({ from, to, model, source });
 
   const tabItems: TabItem<TabName>[] = [
     { key: "strategies", label: "Strategies", href: buildTabHref("strategies", params) },
@@ -140,7 +143,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       )}
 
       {isCompare ? (
-        <ComparisonSpreadsheet slices={comparisonSlices} model={model} />
+        <ComparisonSpreadsheet slices={comparisonSlices} {...definedProps({ model })} />
       ) : (
         <>
           {activeTab === "strategies" && (
@@ -149,7 +152,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               <DistributionChart data={productDist} title="Product Accuracy" />
             </div>
           )}
-          {activeTab === "strategies" && <StrategyPerformanceSection from={from} to={to} model={model} source={source} />}
+          {activeTab === "strategies" && <StrategyPerformanceSection {...filterProps} />}
           {activeTab === "products" && (
             <Card className="mt-8">
               <h2 className="text-h3 text-text-primary font-semibold">Product Category Rates</h2>
@@ -157,11 +160,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 Success and failure rates for each product category based on evaluation data. Expand a row to see checklist issue counts and freeform notes from failing evaluations; one eval can add to several issue counts.
               </p>
               <div className="mt-4">
-                <ProductCategoryRates from={from} to={to} model={model} source={source} />
+                <ProductCategoryRates {...filterProps} />
               </div>
             </Card>
           )}
-          {activeTab === "reliability" && <ReliabilityTab from={from} to={to} model={model} source={source} />}
+          {activeTab === "reliability" && <ReliabilityTab {...filterProps} />}
         </>
       )}
     </div>

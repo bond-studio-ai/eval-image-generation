@@ -169,7 +169,7 @@ async function buildPresetRunRequest(input: StrategyRunInputPayload, options: { 
   }
 
   return {
-    layout_type_id: input.layout_type_id,
+    ...(input.layout_type_id !== undefined ? { layout_type_id: input.layout_type_id } : {}),
     scene_images: input.scene_images,
     product_images: input.product_images,
     arbitrary_images: input.arbitrary_images,

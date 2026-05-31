@@ -44,9 +44,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * unrelated keys alone. Returns the original input if it doesn't look like a
  * paginated response.
  */
+interface RawPaginatedResponse {
+  pagination?: unknown;
+}
+
+interface RawV2Pagination {
+  [key: string]: unknown;
+  currentPage?: unknown;
+  perPage?: unknown;
+  lastPage?: unknown;
+  total?: unknown;
+}
+
 export const normalizeV2PaginationResponse: ProxyJsonTransformer = (json) => {
   if (!isPlainObject(json)) return json;
-  const pag = isPlainObject(json.pagination) ? (json.pagination as Record<string, unknown>) : null;
+  const root = json as RawPaginatedResponse;
+  const pag = isPlainObject(root.pagination) ? (root.pagination as RawV2Pagination) : null;
   if (!pag) return json;
   const currentPage = typeof pag.currentPage === "number" ? pag.currentPage : undefined;
   const perPage = typeof pag.perPage === "number" ? pag.perPage : undefined;

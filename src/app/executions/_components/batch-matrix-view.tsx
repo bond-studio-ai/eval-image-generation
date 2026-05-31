@@ -103,7 +103,7 @@ export function MatrixView({
             </th>
             {strategyNames.map((name, i) => (
               <th key={strategyIds[i]} className="text-caption text-text-secondary px-2 py-2.5 text-center font-medium tracking-wider" style={{ minWidth: CELL }}>
-                <StrategyHoverCard strategyId={strategyIds[i]}>
+                <StrategyHoverCard strategyId={strategyIds[i]!}>
                   <Link href={`/strategies/${strategyIds[i]}`} className="text-primary-600 hover:text-primary-500">
                     {name}
                   </Link>
@@ -160,7 +160,7 @@ export function MatrixView({
                                 awaitingJudge={awaitingJudge}
                               />
                               <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
-                              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />}
+                              {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
                             </button>
                           ))}
                         </div>
@@ -190,7 +190,7 @@ export function MatrixView({
                             awaitingJudge={awaitingJudge}
                           />
                           <ReviewResultsBadge generationId={firstRun.lastOutputGenerationId ?? null} state={firstRun.lastOutputGenerationId ? segmentationStatuses.get(firstRun.lastOutputGenerationId) : undefined} />
-                          {firstRun.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} onRated={onRated} />}
+                          {firstRun.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={firstRun.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
                         </div>
                       ) : (
                         <>

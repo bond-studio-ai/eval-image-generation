@@ -97,11 +97,11 @@ export function Modal({ onClose, children, labelledById, ariaLabel, className, c
       if (e.shiftKey) {
         if (!insideDialog || active === first) {
           e.preventDefault();
-          last.focus();
+          last?.focus();
         }
       } else if (!insideDialog || active === last) {
         e.preventDefault();
-        first.focus();
+        first?.focus();
       }
     };
 

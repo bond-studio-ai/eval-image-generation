@@ -152,7 +152,7 @@ export function buildComparisonSlices(state: AnalyticsComparisonState, strategie
 
   for (let i = 0; i < state.columns.length; i++) {
     const column = state.columns[i];
-    if (!isComparisonColumnComplete(column)) continue;
+    if (!column || !isComparisonColumnComplete(column)) continue;
     const strategyName = strategyMap.get(column.strategyId);
     if (!strategyName) continue;
 

@@ -13,11 +13,11 @@ export function JudgeEvaluationSection({ data, open, onToggle }: { data: RunData
       title="Judge Evaluation"
       open={open}
       onToggle={onToggle}
-      count={data.judgeResults.length || undefined}
+      {...(data.judgeResults.length > 0 ? { count: data.judgeResults.length } : {})}
       badge={
         data.judgeScore != null && data.judgeScore > 0 ? (
           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${data.isJudgeSelected ? "bg-warning-100 text-warning-700" : "bg-surface-sunken text-text-secondary"}`}>Score: {data.judgeScore}</span>
-        ) : undefined
+        ) : null
       }
     >
       <div className="space-y-4 p-4">

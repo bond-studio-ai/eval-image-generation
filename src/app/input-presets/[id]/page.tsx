@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { InputPresetDetail } from "@/components/input-preset-detail";
-import { getInputPresetStoredImages } from "@/lib/input-preset-design";
+import { getInputPresetStoredImages, type InputPresetStats } from "@/lib/input-preset-design";
 import { fetchGenerations, fetchInputPresetById } from "@/lib/service-client";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function InputPresetDetailPage({ params }: PageProps) {
   if (!presetData) notFound();
 
   const ipData = presetData as any;
-  const stats = ipData.stats as Record<string, any> | undefined;
+  const stats = ipData.stats as InputPresetStats | undefined;
 
   const genResult = await fetchGenerations({ inputPresetId: id, limit: "100" });
   const generations = (genResult.data ?? []) as any[];

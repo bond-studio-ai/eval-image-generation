@@ -20,6 +20,28 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+interface RawStrategyRunSummary {
+  inputPresetName?: unknown;
+  inputPresets?: unknown;
+  id?: unknown;
+  status?: unknown;
+  createdAt?: unknown;
+  completedAt?: unknown;
+  lastOutputUrl?: unknown;
+  lastOutputGenerationId?: unknown;
+  batchRunId?: unknown;
+  groupId?: unknown;
+  judgeScore?: unknown;
+  isJudgeSelected?: unknown;
+  judgeReasoning?: unknown;
+  judgeOutput?: unknown;
+  judgeSystemPrompt?: unknown;
+  judgeUserPrompt?: unknown;
+  judgeTypeUsed?: unknown;
+  judgeResults?: unknown;
+  stepResults?: unknown;
+}
+
 export default async function StrategyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -131,7 +153,8 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <StrategyRunsSection
         strategyId={result.id}
         hasJudge={result.steps.some((s) => s.type === "judge")}
-        initialRuns={runsRaw.map((run) => {
+        initialRuns={runsRaw.map((rawRun) => {
+          const run = rawRun as RawStrategyRunSummary;
           const inputPresetName = (run.inputPresetName as string) ?? (run.inputPresets as { inputPresetName?: string }[] | undefined)?.[0]?.inputPresetName ?? null;
           return {
             id: run.id as string,

@@ -40,9 +40,7 @@ export function ActiveToggleButton({ strategyId, activeForSource }: { strategyId
         toast.success(`Activated for ${SOURCES.find((s) => s.value === source)?.label ?? source}`);
         router.refresh();
       } catch (e) {
-        toast.error("Failed to activate strategy", {
-          description: e instanceof Error ? e.message : undefined
-        });
+        toast.error("Failed to activate strategy", e instanceof Error ? { description: e.message } : {});
       } finally {
         setPendingSource(null);
       }
@@ -65,9 +63,7 @@ export function ActiveToggleButton({ strategyId, activeForSource }: { strategyId
       toast.success("Strategy deactivated");
       router.refresh();
     } catch (e) {
-      toast.error("Failed to deactivate strategy", {
-        description: e instanceof Error ? e.message : undefined
-      });
+      toast.error("Failed to deactivate strategy", e instanceof Error ? { description: e.message } : {});
     } finally {
       setPendingSource(null);
     }

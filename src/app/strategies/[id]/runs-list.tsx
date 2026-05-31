@@ -69,7 +69,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
       setRuns(
         raw.map((row) => ({
           ...(row as unknown as Run),
-          judgeResults: parseStrategyRunJudgeResults(row.judgeResults)
+          judgeResults: parseStrategyRunJudgeResults((row as { judgeResults?: unknown }).judgeResults)
         }))
       );
     } catch {
@@ -98,7 +98,7 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>(".overflow-x-auto");
     if (!scrollers) return;
     scrollers.forEach((el, i) => {
-      if (i < saved.length) el.scrollLeft = saved[i];
+      if (i < saved.length) el.scrollLeft = saved[i]!;
     });
   });
 
@@ -454,7 +454,21 @@ function CollapsibleBatchCard({
 
 /* ─────────── Batch Matrix ─────────── */
 
-function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, expanded }: { runs: Run[]; strategyId: string; awaitingJudge?: boolean; onRated?: () => void; onImageClick: (run: Run) => void; expanded?: boolean }) {
+function BatchMatrix({
+  runs,
+  strategyId,
+  awaitingJudge,
+  onRated,
+  onImageClick,
+  expanded
+}: {
+  runs: Run[];
+  strategyId: string;
+  awaitingJudge?: boolean;
+  onRated?: (() => void) | undefined;
+  onImageClick: (run: Run) => void;
+  expanded?: boolean;
+}) {
   const byPreset = new Map<string, Run[]>();
   for (const run of runs) {
     const key = run.inputPresetName ?? "(no preset)";
@@ -499,7 +513,11 @@ function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, e
               <tr key={presetName} className="hover:bg-surface-muted/50">
                 <td className="border-border bg-surface text-text-primary text-body sticky left-0 z-20 border-r px-4 py-2 font-medium" style={{ minWidth: 200, maxWidth: 200 }}>
                   <span className="block break-words">{presetName}</span>
-                  {canonicalGenerationId && <ReviewBadge generationId={canonicalGenerationId} state={segmentationStatuses.get(canonicalGenerationId)} onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)} />}
+                  {canonicalGenerationId &&
+                    (() => {
+                      const state = segmentationStatuses.get(canonicalGenerationId);
+                      return <ReviewBadge generationId={canonicalGenerationId} {...(state !== undefined ? { state } : {})} onStateChange={(next) => setSegmentationStatus(canonicalGenerationId, next)} />;
+                    })()}
                 </td>
                 {Array.from({ length: maxExecutions }, (_, i) => {
                   const run = presetRuns[i];
@@ -531,17 +549,17 @@ function BatchMatrix({ runs, strategyId, awaitingJudge, onRated, onImageClick, e
                             <JudgeScoreBadge
                               runId={run.id}
                               judgeScore={run.judgeScore}
-                              isJudgeSelected={run.isJudgeSelected}
-                              judgeReasoning={run.judgeReasoning}
-                              judgeOutput={run.judgeOutput}
-                              judgeSystemPrompt={run.judgeSystemPrompt}
-                              judgeUserPrompt={run.judgeUserPrompt}
-                              judgeTypeUsed={run.judgeTypeUsed}
+                              isJudgeSelected={run.isJudgeSelected ?? false}
+                              judgeReasoning={run.judgeReasoning ?? null}
+                              judgeOutput={run.judgeOutput ?? null}
+                              judgeSystemPrompt={run.judgeSystemPrompt ?? null}
+                              judgeUserPrompt={run.judgeUserPrompt ?? null}
+                              judgeTypeUsed={run.judgeTypeUsed ?? null}
                               judgeResults={run.judgeResults ?? null}
-                              awaitingJudge={awaitingJudge}
+                              awaitingJudge={awaitingJudge ?? false}
                             />
                             <ReviewResultsBadge generationId={run.lastOutputGenerationId ?? null} state={run.lastOutputGenerationId ? segmentationStatuses.get(run.lastOutputGenerationId) : undefined} />
-                            {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} onRated={onRated} />}
+                            {run.lastOutputGenerationId && <MatrixCellRatingOverlay generationId={run.lastOutputGenerationId} {...(onRated ? { onRated } : {})} />}
                           </div>
                         ) : (
                           <Link href={`/strategies/${strategyId}/runs/${run.id}`}>
@@ -569,5 +587,5 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending}`}>{status}</span>;
+  return <span className={`text-caption inline-flex items-center rounded-full px-2.5 py-0.5 font-medium ${STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES["pending"]}`}>{status}</span>;
 }

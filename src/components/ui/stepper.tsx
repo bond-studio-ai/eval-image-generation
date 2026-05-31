@@ -44,7 +44,7 @@ export function Stepper({ steps, onStepClick, className, label }: StepperProps) 
   );
 }
 
-function StepButton({ step, index, onClick }: { step: StepperStep; index: number; onClick?: () => void }) {
+function StepButton({ step, index, onClick }: { step: StepperStep; index: number; onClick?: (() => void) | undefined }) {
   const content = (
     <>
       <StepCircle state={step.state} index={index} />

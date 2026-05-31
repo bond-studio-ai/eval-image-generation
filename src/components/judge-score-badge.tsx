@@ -25,6 +25,23 @@ interface JudgeScoreBadgeProps {
 
 type ModalTabId = "reasoning" | "output" | "system" | "user";
 
+interface RawJudgeDetail {
+  judgeResults?: unknown;
+  stepResults?: unknown;
+  judgeScore?: unknown;
+  isJudgeSelected?: unknown;
+  judgeReasoning?: unknown;
+  judgeOutput?: unknown;
+  judgeSystemPrompt?: unknown;
+  judgeUserPrompt?: unknown;
+  judgeTypeUsed?: unknown;
+}
+
+interface RawStepResult {
+  isJudgeSelected?: unknown;
+  candidateIndex?: unknown;
+}
+
 function panelHasContent(p: DetailPanel): boolean {
   return !!(p.reasoning?.trim() || p.output?.trim() || p.systemPrompt?.trim() || p.userPrompt?.trim());
 }
@@ -33,12 +50,14 @@ function getAvailableTabs(panel: DetailPanel): ModalTabId[] {
   return ["reasoning", ...(panel.output?.trim() ? ["output" as const] : []), ...(panel.systemPrompt?.trim() ? ["system" as const] : []), ...(panel.userPrompt?.trim() ? ["user" as const] : [])];
 }
 
-export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, onClose }: { aggregateScore: number; panels: DetailPanel[]; isSelected?: boolean; isFailed: boolean; onClose: () => void }) {
+export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, onClose }: { aggregateScore: number; panels: DetailPanel[]; isSelected?: boolean | undefined; isFailed: boolean; onClose: () => void }) {
   const [judgeIdx, setJudgeIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<ModalTabId>("reasoning");
 
   const panel = panels[judgeIdx] ?? panels[0];
   const multiJudge = panels.length > 1;
+
+  if (!panel) return null;
 
   const reasoning = panel.reasoning?.trim() || "No reasoning provided";
   const output = panel.output?.trim() || null;
@@ -94,7 +113,7 @@ export function ReasoningModal({ aggregateScore, panels, isSelected, isFailed, o
                 onClick={() => {
                   const nextPanel = panels[i] ?? panels[0];
                   setJudgeIdx(i);
-                  setActiveTab((currentTab) => (getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : "reasoning"));
+                  if (nextPanel) setActiveTab((currentTab) => (getAvailableTabs(nextPanel).includes(currentTab) ? currentTab : "reasoning"));
                 }}
                 className={`rounded-xl border px-3 py-2 text-left transition-all ${
                   judgeIdx === i ? "border-primary-200 text-primary-700 ring-primary-100 bg-surface shadow-sm ring-1" : "bg-surface/70 text-text-secondary hover:border-border hover:bg-surface border-transparent"
@@ -188,11 +207,11 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
   const panels = useMemo(
     () =>
       buildPanels(fetchedDetail?.judgeResults ?? judgeResults ?? null, {
-        judgeReasoning: fetchedDetail?.judgeReasoning ?? judgeReasoning,
-        judgeOutput: fetchedDetail?.judgeOutput ?? judgeOutput,
-        judgeSystemPrompt: fetchedDetail?.judgeSystemPrompt ?? judgeSystemPrompt,
-        judgeUserPrompt: fetchedDetail?.judgeUserPrompt ?? judgeUserPrompt,
-        judgeTypeUsed: fetchedDetail?.judgeTypeUsed ?? judgeTypeUsed,
+        judgeReasoning: fetchedDetail?.judgeReasoning ?? judgeReasoning ?? null,
+        judgeOutput: fetchedDetail?.judgeOutput ?? judgeOutput ?? null,
+        judgeSystemPrompt: fetchedDetail?.judgeSystemPrompt ?? judgeSystemPrompt ?? null,
+        judgeUserPrompt: fetchedDetail?.judgeUserPrompt ?? judgeUserPrompt ?? null,
+        judgeTypeUsed: fetchedDetail?.judgeTypeUsed ?? judgeTypeUsed ?? null,
         judgeScore: fetchedDetail?.judgeScore ?? judgeScore ?? null
       }),
     [fetchedDetail, judgeResults, judgeReasoning, judgeOutput, judgeSystemPrompt, judgeUserPrompt, judgeTypeUsed, judgeScore]
@@ -213,14 +232,14 @@ export function JudgeScoreBadge({ runId, judgeScore, isJudgeSelected, judgeReaso
       const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
       if (!res.ok) return;
       const json = await res.json();
-      const raw = (json.data ?? {}) as Record<string, unknown>;
+      const raw = (json.data ?? {}) as RawJudgeDetail;
       const allJudgeResults = parseStrategyRunJudgeResults(raw.judgeResults);
 
       let winnerCandidateIndex: number | null = null;
       const stepResults = Array.isArray(raw.stepResults) ? raw.stepResults : [];
       for (const sr of stepResults) {
         if (sr && typeof sr === "object") {
-          const s = sr as Record<string, unknown>;
+          const s = sr as RawStepResult;
           if (s.isJudgeSelected && s.candidateIndex != null) {
             winnerCandidateIndex = Number(s.candidateIndex);
             break;

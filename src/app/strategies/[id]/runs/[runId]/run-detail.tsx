@@ -24,7 +24,7 @@ const INITIAL_VIEWING_PROMPT: ViewingPromptState = {
   processedUserPrompt: null
 };
 
-function viewingPromptReducer(state: ViewingPromptState, action: ViewingPromptAction): ViewingPromptState {
+function viewingPromptReducer(_state: ViewingPromptState, action: ViewingPromptAction): ViewingPromptState {
   switch (action.type) {
     case "open":
       return {
@@ -61,7 +61,7 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       if (!res.ok) return;
       const json = await res.json();
       if (json.data) {
-        const raw = json.data as Record<string, unknown>;
+        const raw = json.data as { judgeResults?: unknown };
         setData({
           ...(json.data as RunData),
           judgeResults: parseStrategyRunJudgeResults(raw.judgeResults)
