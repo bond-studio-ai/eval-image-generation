@@ -47,7 +47,10 @@ export const generationDetailSchema = z.looseObject({
   executionTime: z.number().nullish(),
   createdAt: z.string().catch(""),
   notes: z.string().nullish(),
-  results: z.array(generationResultSchema).default([]),
+  results: z
+    .array(generationResultSchema)
+    .nullish()
+    .transform((value) => value ?? []),
   input: looseRecord.nullish()
 });
 export type GenerationDetail = z.infer<typeof generationDetailSchema>;
@@ -60,7 +63,10 @@ export const generationRatingSchema = z.looseObject({
 
 /** Paginated generations list response. Rows stay unknown — callers normalize. */
 export const generationListResponseSchema = z.object({
-  data: z.array(z.unknown()).default([]),
+  data: z
+    .array(z.unknown())
+    .nullish()
+    .transform((value) => value ?? []),
   pagination: z.looseObject({ total: z.number().optional() }).nullish()
 });
 
