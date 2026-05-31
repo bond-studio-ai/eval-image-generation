@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { localUrl } from "./api-base";
 import { type DollhouseCameraFrame, normalizeCameraFrame, type UnitySlimDesignMaterials, validateUnitySlimDesign } from "./dollhouse-renders";
 
@@ -35,28 +36,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-interface RawProjectSummary {
-  id?: unknown;
-  name?: unknown;
-  appStatus?: unknown;
-  crmStatus?: unknown;
-  address?: unknown;
-  created?: unknown;
-  updated?: unknown;
-}
+// A string `id` is required (returns null otherwise); every other field is
+// optional and tolerates wrong types by falling back to its default.
+const projectSummarySchema = z.object({
+  id: z.string(),
+  name: z.string().catch(""),
+  appStatus: z.string().catch(""),
+  crmStatus: z.string().optional().catch(undefined),
+  address: z.string().optional().catch(undefined),
+  created: z.string().optional().catch(undefined),
+  updated: z.string().optional().catch(undefined)
+});
 
 function normalizeProjectSummary(raw: unknown): ProjectSummary | null {
-  const rec = isRecord(raw) ? (raw as RawProjectSummary) : null;
-  if (!rec || typeof rec.id !== "string") return null;
-  return {
-    id: rec.id,
-    name: typeof rec.name === "string" ? rec.name : "",
-    appStatus: typeof rec.appStatus === "string" ? rec.appStatus : "",
-    crmStatus: typeof rec.crmStatus === "string" ? rec.crmStatus : undefined,
-    address: typeof rec.address === "string" ? rec.address : undefined,
-    created: typeof rec.created === "string" ? rec.created : undefined,
-    updated: typeof rec.updated === "string" ? rec.updated : undefined
-  };
+  const result = projectSummarySchema.safeParse(raw);
+  return result.success ? result.data : null;
 }
 
 export interface ProjectRenderBootstrap {
