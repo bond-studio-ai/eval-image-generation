@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, type DataTableColumn, SelectAllCheckbox } from "@/components/data-table";
+import { type ColumnDef, DataTable, SelectAllCheckbox } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { DeleteGenerationButton } from "@/components/delete-generation-button";
 import { GenerationThumbnails } from "@/components/generation-thumbnails";
@@ -109,7 +109,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
     if (inView) void loadMore();
   }, [inView, loadMore]);
 
-  const columns = useMemo<DataTableColumn<GenerationRow>[]>(
+  const columns = useMemo<ColumnDef<GenerationRow>[]>(
     () => [
       checkboxColumn<GenerationRow>({
         selected,
@@ -117,38 +117,44 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
         rowId: (gen) => gen.id
       }),
       {
+        id: "output",
         header: "Output",
-        cell: (gen) => <GenerationThumbnails urls={gen.resultUrls} />,
-        cellClassName: "px-4 py-3"
+        cell: ({ row }) => <GenerationThumbnails urls={row.original.resultUrls} />,
+        meta: { cellClassName: "px-4 py-3" }
       },
       {
+        id: "prompt",
         header: "Prompt",
-        cell: (gen) => (
-          <Link href={`/generations/${gen.id}`} className="hover:text-primary-600 text-text-primary font-medium">
-            {gen.promptName || "Untitled"}
+        cell: ({ row }) => (
+          <Link href={`/generations/${row.original.id}`} className="hover:text-primary-600 text-text-primary font-medium">
+            {row.original.promptName || "Untitled"}
           </Link>
         )
       },
       {
+        id: "rating",
         header: "Rating",
-        cell: (gen) => (
+        cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
-            <RatingBadge rating={gen.sceneAccuracyRating} label="Scene" />
-            <RatingBadge rating={gen.productAccuracyRating} label="Product" />
+            <RatingBadge rating={row.original.sceneAccuracyRating} label="Scene" />
+            <RatingBadge rating={row.original.productAccuracyRating} label="Product" />
           </div>
         )
       },
       {
+        id: "results",
         header: "Results",
-        cell: (gen) => `${gen.resultCount} result${gen.resultCount === 1 ? "" : "s"}`
+        cell: ({ row }) => `${row.original.resultCount} result${row.original.resultCount === 1 ? "" : "s"}`
       },
       {
+        id: "time",
         header: "Time",
-        cell: (gen) => (gen.executionTime ? `${(gen.executionTime / 1000).toFixed(1)}s` : "-")
+        cell: ({ row }) => (row.original.executionTime ? `${(row.original.executionTime / 1000).toFixed(1)}s` : "-")
       },
       {
+        id: "created",
         header: "Created",
-        cell: (gen) => new Date(gen.createdAt).toLocaleDateString()
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
       },
       actionsColumn<GenerationRow>([{ render: (gen) => <DeleteGenerationButton generationId={gen.id} variant="icon" /> }])
     ],

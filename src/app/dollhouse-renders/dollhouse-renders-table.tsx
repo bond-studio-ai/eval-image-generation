@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { DataTable, type DataTableColumn, DateCell, FilterPills, NameCell, SearchBar } from "@/components/data-table";
+import { type ColumnDef, DataTable, DateCell, FilterPills, NameCell, SearchBar } from "@/components/data-table";
 import { actionsColumn } from "@/components/data-table-utils";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { Pagination } from "@/components/pagination";
@@ -88,37 +88,43 @@ export function DollhouseRendersTable() {
     [filters, setFilters, setSearch]
   );
 
-  const columns = useMemo<DataTableColumn<DollhouseRender>[]>(
+  const columns = useMemo<ColumnDef<DollhouseRender>[]>(
     () => [
       {
+        id: "project",
         header: "Project",
-        cell: (row) => <NameCell href={`/dollhouse-renders/${row.id}`} name={row.projectId} />,
-        cellClassName: "px-6 py-4"
+        cell: ({ row }) => <NameCell href={`/dollhouse-renders/${row.original.id}`} name={row.original.projectId} />,
+        meta: { cellClassName: "px-6 py-4" }
       },
       {
+        id: "status",
         header: "Status",
-        cell: (row) => <RenderStatusBadge status={row.status} />
+        cell: ({ row }) => <RenderStatusBadge status={row.original.status} />
       },
       {
+        id: "frames",
         header: "Frames",
-        cell: (row) => <FramesPreview frames={row.frames} />,
-        cellClassName: "px-6 py-2"
+        cell: ({ row }) => <FramesPreview frames={row.original.frames} />,
+        meta: { cellClassName: "px-6 py-2" }
       },
       {
+        id: "image",
         header: "Image",
-        cell: (row) => (
+        cell: ({ row }) => (
           <span className="text-text-secondary">
-            {row.imageConfig.width}×{row.imageConfig.height} {row.imageConfig.format}
+            {row.original.imageConfig.width}×{row.original.imageConfig.height} {row.original.imageConfig.format}
           </span>
         )
       },
       {
+        id: "created",
         header: "Created",
-        cell: (row) => <DateCell date={row.createdAt} />
+        cell: ({ row }) => <DateCell date={row.original.createdAt} />
       },
       {
+        id: "completed",
         header: "Completed",
-        cell: (row) => (row.completedAt ? <DateCell date={row.completedAt} /> : <span className="text-text-muted">&mdash;</span>)
+        cell: ({ row }) => (row.original.completedAt ? <DateCell date={row.original.completedAt} /> : <span className="text-text-muted">&mdash;</span>)
       },
       actionsColumn<DollhouseRender>([
         {

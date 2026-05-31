@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, type DataTableColumn, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
+import { type ColumnDef, DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -87,7 +87,7 @@ export function PromptVersionsList() {
     [router]
   );
 
-  const columns = useMemo<DataTableColumn<PromptVersionRow>[]>(
+  const columns = useMemo<ColumnDef<PromptVersionRow>[]>(
     () => [
       checkboxColumn<PromptVersionRow>({
         selected,
@@ -96,21 +96,25 @@ export function PromptVersionsList() {
         isSelectable: (pv) => !pv.deletedAt
       }),
       {
+        id: "name",
         header: "Name",
-        cell: (pv) => <NameCell href={`/prompt-versions/${pv.id}`} name={pv.name} subtitle={pv.userPrompt} />,
-        cellClassName: "px-6 py-4"
+        cell: ({ row }) => <NameCell href={`/prompt-versions/${row.original.id}`} name={row.original.name} subtitle={row.original.userPrompt} />,
+        meta: { cellClassName: "px-6 py-4" }
       },
       {
+        id: "generations",
         header: "Generations",
-        cell: (pv) => pv.stats?.generationCount ?? 0
+        cell: ({ row }) => row.original.stats?.generationCount ?? 0
       },
       {
+        id: "created",
         header: "Created",
-        cell: (pv) => <DateCell date={pv.createdAt} />
+        cell: ({ row }) => <DateCell date={row.original.createdAt} />
       },
       {
+        id: "status",
         header: "Status",
-        cell: (pv) => <StatusBadge status={pv.deletedAt ? "deleted" : "active"} />
+        cell: ({ row }) => <StatusBadge status={row.original.deletedAt ? "deleted" : "active"} />
       },
       actionsColumn<PromptVersionRow>([
         {

@@ -1,7 +1,7 @@
 "use client";
 
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DataTable, type DataTableColumn, DateCell, FilterPills } from "@/components/data-table";
+import { type ColumnDef, DataTable, DateCell, FilterPills } from "@/components/data-table";
 import { actionsColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
@@ -229,39 +229,42 @@ function TableView({
   selectedProjectId: string | null;
   onSelect: (projectId: string) => void;
 }) {
-  const columns = useMemo<DataTableColumn<ProjectSummary>[]>(
+  const columns = useMemo<ColumnDef<ProjectSummary>[]>(
     () => [
       {
+        id: "project",
         header: "Project",
-        cell: (row) => (
+        cell: ({ row }) => (
           <div>
             <Button
               variant="link"
               onClick={() => {
-                onSelect(row.id);
+                onSelect(row.original.id);
               }}
             >
-              {row.id}
+              {row.original.id}
             </Button>
-            {row.name && <p className="text-caption text-text-muted mt-0.5 max-w-xs truncate">{row.name}</p>}
+            {row.original.name && <p className="text-caption text-text-muted mt-0.5 max-w-xs truncate">{row.original.name}</p>}
           </div>
         ),
-        cellClassName: "px-6 py-4"
+        meta: { cellClassName: "px-6 py-4" }
       },
       {
+        id: "status",
         header: "Status",
-        cell: (row) =>
-          row.appStatus ? (
-            <Badge tone={statusTone(row.appStatus)} variant="soft" size="sm">
-              {row.appStatus}
+        cell: ({ row }) =>
+          row.original.appStatus ? (
+            <Badge tone={statusTone(row.original.appStatus)} variant="soft" size="sm">
+              {row.original.appStatus}
             </Badge>
           ) : (
             <span className="text-text-muted">&mdash;</span>
           )
       },
       {
+        id: "created",
         header: "Created",
-        cell: (row) => (row.created ? <DateCell date={row.created} /> : <span className="text-text-muted">&mdash;</span>)
+        cell: ({ row }) => (row.original.created ? <DateCell date={row.original.created} /> : <span className="text-text-muted">&mdash;</span>)
       },
       actionsColumn<ProjectSummary>([
         {

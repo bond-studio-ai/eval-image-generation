@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, type DataTableColumn, DateCell, NameCell, type RowAction, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter } from "@/components/data-table";
+import { type ColumnDef, DataTable, DateCell, NameCell, type RowAction, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -172,7 +172,7 @@ export function StrategiesTable() {
     [handleClone, handleDelete, cloningId, deletingId]
   );
 
-  const columns = useMemo<DataTableColumn<StrategyListItem>[]>(
+  const columns = useMemo<ColumnDef<StrategyListItem>[]>(
     () => [
       checkboxColumn<StrategyListItem>({
         selected,
@@ -180,13 +180,16 @@ export function StrategiesTable() {
         rowId: (strategy) => strategy.id
       }),
       {
+        id: "name",
         header: "Name",
-        cell: (strategy) => <NameCell href={`/strategies/${strategy.id}`} name={strategy.name} subtitle={strategy.description} />,
-        cellClassName: "px-6 py-4"
+        cell: ({ row }) => <NameCell href={`/strategies/${row.original.id}`} name={row.original.name} subtitle={row.original.description} />,
+        meta: { cellClassName: "px-6 py-4" }
       },
       {
+        id: "status",
         header: "Status",
-        cell: (strategy) => {
+        cell: ({ row }) => {
+          const strategy = row.original;
           if (!strategy.activeForSource) {
             return (
               <Link href={`/strategies/${strategy.id}`} title="Open strategy to activate it">
@@ -203,16 +206,19 @@ export function StrategiesTable() {
         }
       },
       {
+        id: "steps",
         header: "Steps",
-        cell: (strategy) => `${strategy.stepCount} step${strategy.stepCount === 1 ? "" : "s"}`
+        cell: ({ row }) => `${row.original.stepCount} step${row.original.stepCount === 1 ? "" : "s"}`
       },
       {
+        id: "runs",
         header: "Runs",
-        cell: (strategy) => `${strategy.runCount} run${strategy.runCount === 1 ? "" : "s"}`
+        cell: ({ row }) => `${row.original.runCount} run${row.original.runCount === 1 ? "" : "s"}`
       },
       {
+        id: "created",
         header: "Created",
-        cell: (strategy) => <DateCell date={strategy.createdAt} />
+        cell: ({ row }) => <DateCell date={row.original.createdAt} />
       },
       actionsColumn(actions)
     ],

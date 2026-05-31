@@ -24,9 +24,11 @@ each warrants its own focused, visually-verified PR.
 - **Strategy DAG → React Flow** (`@xyflow/react` + `@dagrejs/dagre`). Would
   replace the topological level layout + SVG Bézier edge engine in
   `src/components/strategy-flow-dag.tsx` with a real graph library + auto-layout.
-- **DataTable → `@tanstack/react-table`**. Only worth it if/when client-side
-  sorting, column visibility, or row virtualization is needed; today the
-  `DataTable` wrapper is intentionally thin and backend-driven.
+- ~~**DataTable → `@tanstack/react-table`**~~. Done: `DataTable` now renders via
+  `useReactTable` + `flexRender`, consumers use native `ColumnDef<T>` (classes on
+  `meta`), and a client-side column-visibility menu was added. Backend-driven
+  search/pagination/filters and the `Set`-based selection model were kept as-is;
+  sorting/virtualization remain future work.
 - **Lightbox gallery → `yet-another-react-lightbox`** for the prev/next/zoom slice
   of `src/components/grid-lightbox.tsx`. The comparison slider and embedded
   rating/evaluation forms stay custom.
