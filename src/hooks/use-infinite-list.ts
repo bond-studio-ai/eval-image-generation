@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDebounceValue } from "usehooks-ts";
 import { serviceUrl } from "@/lib/api-base";
 
 interface PaginationResponse {
@@ -98,7 +99,7 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
   const [loading, setLoading] = useState(true);
   const [paginating, setPaginating] = useState(false);
   const [search, setSearchRaw] = useState(initial.search);
-  const [debouncedSearch, setDebouncedSearch] = useState(initial.search);
+  const [debouncedSearch] = useDebounceValue(search, debounceMs);
   const [filters, setFiltersRaw] = useState<Record<string, string>>(initial.filters);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -114,19 +115,6 @@ export function useInfiniteList<T>(endpoint: string, options: UseInfiniteListOpt
       mountedRef.current = false;
     };
   }, []);
-
-  // ---------------------------------------------------------------------------
-  // Debounce search
-  // ---------------------------------------------------------------------------
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, debounceMs);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [search, debounceMs]);
 
   // ---------------------------------------------------------------------------
   // Sync state → URL via history.replaceState (no Next.js re-render)
