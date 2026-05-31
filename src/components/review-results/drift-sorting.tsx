@@ -1,6 +1,6 @@
 "use client";
 
-import { useTooltip } from "./tooltip";
+import { TooltipWrap } from "@/components/ui/tooltip";
 import type { SortDir, SortKey } from "./drift-sorting-utils";
 
 export const NOT_APPLICABLE_CELL = <span className="text-text-disabled">&mdash;</span>;
@@ -49,28 +49,21 @@ export function SortableHeader({
   align?: "left" | "right";
 }) {
   const active = currentKey === sortKey;
-  const { ref, onMouseEnter, onMouseLeave, onFocus, onBlur, portal } = useTooltip(hint, {
-    align: align === "right" ? "end" : "start"
-  });
 
   return (
     <th scope="col" className={`px-3 py-1.5 ${align === "right" ? "text-right" : "text-left"} tabular-nums`}>
-      <button
-        ref={ref}
-        type="button"
-        onClick={() => {
-          onSort(sortKey);
-        }}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        className={`inline-flex w-full items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"} hover:text-text-secondary focus-visible:text-text-secondary cursor-pointer outline-none`}
-      >
-        <span className="decoration-text-disabled decoration-dotted underline-offset-2">{label}</span>
-        <SortIndicator active={active} dir={currentDir} />
-      </button>
-      {portal}
+      <TooltipWrap content={hint} align={align === "right" ? "end" : "start"}>
+        <button
+          type="button"
+          onClick={() => {
+            onSort(sortKey);
+          }}
+          className={`inline-flex w-full items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"} hover:text-text-secondary focus-visible:text-text-secondary cursor-pointer outline-none`}
+        >
+          <span className="decoration-text-disabled decoration-dotted underline-offset-2">{label}</span>
+          <SortIndicator active={active} dir={currentDir} />
+        </button>
+      </TooltipWrap>
     </th>
   );
 }

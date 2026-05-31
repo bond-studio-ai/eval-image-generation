@@ -1,8 +1,9 @@
 "use client";
 
-import { type ButtonHTMLAttributes, type ReactNode, type Ref, useRef, useState } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn } from "./cn";
 import { Spinner } from "./spinner";
+import { TooltipWrap } from "./tooltip";
 
 export type IconButtonVariant = "default" | "danger" | "subtle";
 export type IconButtonSize = "sm" | "md";
@@ -35,42 +36,14 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
  * Replaces the bespoke `ActionButton` inside `actionsColumn` and the various
  * inline icon buttons (delete batch, retry, clear, etc.) across the app.
  */
-export function IconButton({ label, icon, variant = "default", size = "md", loading = false, disabled, className, type = "button", onMouseEnter, onMouseLeave, ref, ...rest }: IconButtonProps) {
-  const localRef = useRef<HTMLButtonElement>(null);
-  const setRef = (el: HTMLButtonElement | null) => {
-    localRef.current = el;
-    if (typeof ref === "function") ref(el);
-    else if (ref) ref.current = el;
-  };
-  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+export function IconButton({ label, icon, variant = "default", size = "md", loading = false, disabled, className, type = "button", ref, ...rest }: IconButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
-    <>
-      <button
-        ref={setRef}
-        type={type}
-        disabled={isDisabled}
-        aria-label={label}
-        className={cn(BASE, VARIANT[variant], SIZE[size], className)}
-        onMouseEnter={(e) => {
-          const rect = localRef.current?.getBoundingClientRect();
-          if (rect) setTip({ x: rect.left + rect.width / 2, y: rect.top });
-          onMouseEnter?.(e);
-        }}
-        onMouseLeave={(e) => {
-          setTip(null);
-          onMouseLeave?.(e);
-        }}
-        {...rest}
-      >
+    <TooltipWrap content={label} side="top">
+      <button ref={ref} type={type} disabled={isDisabled} aria-label={label} className={cn(BASE, VARIANT[variant], SIZE[size], className)} {...rest}>
         {loading ? <Spinner size="xs" /> : icon}
       </button>
-      {tip && (
-        <span className="bg-text-primary text-caption text-text-inverse shadow-popover pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded px-2 py-1 whitespace-nowrap" style={{ left: tip.x, top: tip.y - 4 }}>
-          {label}
-        </span>
-      )}
-    </>
+    </TooltipWrap>
   );
 }
