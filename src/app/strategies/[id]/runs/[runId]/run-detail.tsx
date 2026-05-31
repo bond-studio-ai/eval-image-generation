@@ -1,7 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import ms from "ms";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useReducer, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { serviceUrl } from "@/lib/api-base";
 import { assertNever } from "@/lib/assert-never";
@@ -48,7 +49,29 @@ function viewingPromptReducer(_state: ViewingPromptState, action: ViewingPromptA
 /* ---------- Main component ---------- */
 
 export function RunDetail({ strategyId, runId, initialData }: { strategyId: string; runId: string; initialData: RunData }) {
-  const [data, setData] = useState<RunData>(initialData);
+  // Poll only while the run is still working; the interval function returns
+  // false once it settles. On fetch error React Query keeps the last good data.
+  const { data, refetch } = useQuery({
+    queryKey: ["strategy-run", runId],
+    queryFn: async () => {
+      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { data?: unknown };
+      if (!json.data) throw new Error("Missing run data");
+      const raw = json.data as { judgeResults?: unknown };
+      return {
+        ...(json.data as RunData),
+        judgeResults: parseStrategyRunJudgeResults(raw.judgeResults)
+      };
+    },
+    initialData,
+    refetchOnMount: false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "running" || status === "pending" ? POLL_INTERVAL : false;
+    }
+  });
+
   const [retrying, setRetrying] = useState(false);
   const [markingStatus, setMarkingStatus] = useState<"idle" | "failed" | "completed">("idle");
   const [viewingPrompt, dispatchViewingPrompt] = useReducer(viewingPromptReducer, INITIAL_VIEWING_PROMPT);
@@ -58,51 +81,18 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
   const [showJudge, setShowJudge] = useState(true);
   const [showSteps, setShowSteps] = useState(true);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const isActive = data.status === "running" || data.status === "pending";
-
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch(serviceUrl(`strategy-runs/${runId}`), { cache: "no-store" });
-      if (!res.ok) return;
-      const json = (await res.json()) as { data?: unknown };
-      if (json.data) {
-        const raw = json.data as { judgeResults?: unknown };
-        setData({
-          ...(json.data as RunData),
-          judgeResults: parseStrategyRunJudgeResults(raw.judgeResults)
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [runId]);
-
-  useEffect(() => {
-    if (isActive) {
-      void fetchData();
-      intervalRef.current = setInterval(() => {
-        void fetchData();
-      }, POLL_INTERVAL);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isActive, fetchData]);
-
   const handleRetry = useCallback(async () => {
     setRetrying(true);
     try {
       const res = await fetch(serviceUrl(`strategy-runs/${runId}/retry`), { method: "POST" });
       if (!res.ok) return;
-      await fetchData();
+      await refetch();
     } catch {
       /* ignore */
     } finally {
       setRetrying(false);
     }
-  }, [runId, fetchData]);
+  }, [runId, refetch]);
 
   const handleMarkStatus = useCallback(
     async (status: "failed" | "completed") => {
@@ -114,14 +104,14 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
           body: JSON.stringify({ status })
         });
         if (!res.ok) return;
-        await fetchData();
+        await refetch();
       } catch {
         /* ignore */
       } finally {
         setMarkingStatus("idle");
       }
     },
-    [runId, fetchData]
+    [runId, refetch]
   );
 
   const handleViewPrompt = useCallback((id: string, name: string | null, processedSystemPrompt: string | null, processedUserPrompt: string | null) => {

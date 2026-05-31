@@ -1,7 +1,8 @@
 "use client";
 
 import ms from "ms";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { GridLightbox } from "@/components/grid-lightbox";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
@@ -14,41 +15,32 @@ import { StatusBadge } from "./status-badge";
 const POLL_INTERVAL = ms("3s");
 
 export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strategyId: string; hasJudge?: boolean; initialRuns: Run[] }) {
-  const [runs, setRuns] = useState<Run[]>(initialRuns);
+  // Background poll only while a run is active or a judged batch is awaiting its
+  // verdict; otherwise the interval function returns false and React Query idles.
+  const { data: runs, refetch } = useQuery({
+    queryKey: ["strategy-runs", strategyId],
+    queryFn: async () => {
+      const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { data?: unknown };
+      return normalizeStrategyRuns(json.data);
+    },
+    initialData: initialRuns,
+    refetchOnMount: false,
+    refetchInterval: (query) => {
+      const current = query.state.data ?? initialRuns;
+      const active = current.some((run) => run.status === "running" || run.status === "pending");
+      const awaitingJudge = hasJudge && groupStrategyRuns(current, hasJudge).some((group) => group.awaitingJudge);
+      return active || awaitingJudge ? POLL_INTERVAL : false;
+    }
+  });
+
   const [lightbox, setLightbox] = useState<{
     src: string;
     runHref: string;
     generationId: string | null;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "matrix">("list");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const hasActiveRun = runs.some((run) => run.status === "running" || run.status === "pending");
-
-  const hasAwaitingJudge = hasJudge && groupStrategyRuns(runs, hasJudge).some((group) => group.awaitingJudge);
-  const shouldPoll = hasActiveRun || Boolean(hasAwaitingJudge);
-
-  const fetchRuns = useCallback(async () => {
-    try {
-      const res = await fetch(serviceUrl(`strategies/${strategyId}/runs`), { cache: "no-store" });
-      if (!res.ok) return;
-      const json = (await res.json()) as { data?: unknown };
-      setRuns(normalizeStrategyRuns(json.data));
-    } catch {
-      /* ignore */
-    }
-  }, [strategyId]);
-
-  useEffect(() => {
-    if (shouldPoll) {
-      intervalRef.current = setInterval(() => {
-        void fetchRuns();
-      }, POLL_INTERVAL);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [shouldPoll, fetchRuns]);
 
   const items: ListItem[] = groupStrategyRuns(runs, hasJudge);
 
@@ -69,8 +61,8 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
   const fetchRunsKeepScroll = useCallback(async () => {
     const scrollers = containerRef.current?.querySelectorAll<HTMLElement>(".overflow-x-auto");
     pendingScrollRef.current = scrollers ? Array.from(scrollers, (el) => el.scrollLeft) : [];
-    await fetchRuns();
-  }, [fetchRuns]);
+    await refetch();
+  }, [refetch]);
 
   const openLightbox = useCallback(
     (run: Run) => {
