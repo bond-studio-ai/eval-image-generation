@@ -32,12 +32,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@arthurgeron/eslint-plugin-react-usememo": "^3.0.1",
     "@axe-core/playwright": "^4.11.3",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@microsoft/eslint-plugin-sdl": "^1.1.0",
     "@playwright/test": "^1.60.0",
-    "@shopify/eslint-plugin": "^50.0.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^25.9.1",

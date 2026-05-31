@@ -91,8 +91,12 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
     async (opts: { replace?: boolean; pageToFetch?: number } = {}) => {
       const replace = opts.replace ?? false;
       const pageToFetch = opts.pageToFetch ?? 1;
-      if (replace) setError(null);
-      else setLoadingMore(true);
+      if (replace) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
 
       try {
         const params = new URLSearchParams({
@@ -139,7 +143,6 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
   }, [hasMore, loadingMore, fetchRuns]);
 
   useEffect(() => {
-    setLoading(true);
     void fetchRuns({ replace: true });
   }, [fetchRuns]);
 

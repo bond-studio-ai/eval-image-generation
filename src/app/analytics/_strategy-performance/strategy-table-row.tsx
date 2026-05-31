@@ -60,7 +60,7 @@ export function StrategyTableRow({
               <span className="text-text-disabled block text-[10px]">{row.sceneRatedCount} rated</span>
             </>
           ) : (
-            <span className="text-text-disabled">—</span>
+            <span className="text-text-disabled">&mdash;</span>
           )}
         </td>
         <td className="text-body px-4 py-3 text-right">
@@ -72,7 +72,7 @@ export function StrategyTableRow({
               <span className="text-text-disabled block text-[10px]">{row.productRatedCount} rated</span>
             </>
           ) : (
-            <span className="text-text-disabled">—</span>
+            <span className="text-text-disabled">&mdash;</span>
           )}
         </td>
         <td className="text-text-muted text-body px-4 py-3 text-right">

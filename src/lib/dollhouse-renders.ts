@@ -197,7 +197,7 @@ function summarizeZodIssues(details: unknown): string | null {
 }
 
 /** Server returned 2xx but the body wasn't the expected `{ data: [...] }` shape. */
-export class DollhouseRenderUnexpectedResponseError extends Error {
+class DollhouseRenderUnexpectedResponseError extends Error {
   constructor(message = "Server returned an unexpected response shape") {
     super(message);
     this.name = "DollhouseRenderUnexpectedResponseError";

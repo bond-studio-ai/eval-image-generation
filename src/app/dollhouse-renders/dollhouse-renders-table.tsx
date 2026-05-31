@@ -30,7 +30,7 @@ function readStatusFilter(value: string | undefined): StatusFilter {
 
 function FramesPreview({ frames }: { frames: DollhouseRender["frames"] }) {
   if (!frames || frames.length === 0) {
-    return <span className="text-text-muted">—</span>;
+    return <span className="text-text-muted">&mdash;</span>;
   }
   const visible = frames.slice(0, 3);
   const remaining = frames.length - visible.length;
@@ -118,7 +118,7 @@ export function DollhouseRendersTable() {
       },
       {
         header: "Completed",
-        cell: (row) => (row.completedAt ? <DateCell date={row.completedAt} /> : <span className="text-text-muted">—</span>)
+        cell: (row) => (row.completedAt ? <DateCell date={row.completedAt} /> : <span className="text-text-muted">&mdash;</span>)
       },
       actionsColumn<DollhouseRender>([
         {

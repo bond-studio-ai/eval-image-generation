@@ -15,7 +15,7 @@ import { camelizeKeys } from "./casing";
  */
 
 /** A pass-through object whose keys/values are not modeled. */
-export const looseRecord = z.record(z.string(), z.unknown());
+const looseRecord = z.record(z.string(), z.unknown());
 
 /** `{ data: T }` envelope used by the v1 image-generation service. */
 export const dataEnvelope = <S extends z.ZodType>(inner: S) => z.object({ data: inner });
@@ -25,7 +25,7 @@ export const camelized = <S extends z.ZodType>(inner: S) => z.preprocess(cameliz
 
 // ─── Generations ───────────────────────────────────────────────────────────
 
-export const generationResultSchema = z
+const generationResultSchema = z
   .looseObject({
     id: z.string(),
     url: z.string().nullish()
@@ -66,12 +66,12 @@ export const generationListResponseSchema = z.object({
 
 // ─── Evaluations ─────────────────────────────────────────────────────────────
 
-export const categoryEvalSchema = z.object({
+const categoryEvalSchema = z.object({
   issues: z.array(z.string()).catch([]),
   notes: z.string().catch("")
 });
 
-export const evaluationDataSchema = z.looseObject({
+const evaluationDataSchema = z.looseObject({
   productAccuracy: z.record(z.string(), categoryEvalSchema).catch({}),
   sceneAccuracyIssues: z.array(z.string()).catch([]),
   sceneAccuracyNotes: z.string().catch("")
@@ -97,7 +97,7 @@ export const mutationResponseSchema = z.looseObject({
 
 // ─── Analytics: strategy performance ─────────────────────────────────────────
 
-export const strategyPerformanceRowSchema = z.object({
+const strategyPerformanceRowSchema = z.object({
   id: z.string(),
   name: z.string().catch(""),
   model: z.string().catch(""),
@@ -133,7 +133,7 @@ const ratingSummarySchema = camelized(
   })
 );
 
-export const strategyErrorsSchema = camelized(
+const strategyErrorsSchema = camelized(
   z.looseObject({
     executionErrors: z.array(errorItemSchema).catch([]),
     sceneIssues: z.array(issueItemSchema).catch([]),
@@ -148,7 +148,7 @@ export const strategyErrorsResponseSchema = z.object({ data: strategyErrorsSchem
 
 const reasonCountSchema = z.object({ reason: z.string().catch(""), count: z.number().catch(0) });
 
-export const reliabilitySchema = z.object({
+const reliabilitySchema = z.object({
   summary: z.object({
     totalRuns: z.number().catch(0),
     completedRuns: z.number().catch(0),
@@ -187,7 +187,7 @@ export const reliabilityResponseSchema = z.object({ data: reliabilitySchema.null
 
 // ─── Analytics: accuracy trends + product category rates ─────────────────────
 
-export const accuracyTrendPointSchema = z.object({
+const accuracyTrendPointSchema = z.object({
   date: z.string().catch(""),
   sceneAccuracy: z.number().catch(0),
   productAccuracy: z.number().catch(0)
@@ -206,7 +206,7 @@ export const dataRecordEnvelopeSchema = z.object({ data: looseRecord.nullish() }
 
 // ─── Strategy performance (strategy-detail page) ─────────────────────────────
 
-export const strategyDetailPerformanceSchema = z.object({
+const strategyDetailPerformanceSchema = z.object({
   generationCount: z.number().catch(0),
   sceneGoodCount: z.number().catch(0),
   sceneFailedCount: z.number().catch(0),
@@ -227,7 +227,7 @@ export const strategyDetailPerformanceResponseSchema = z.object({ data: strategy
 
 // ─── Generation summaries (related-generations lists on detail pages) ────────
 
-export const generationSummarySchema = z.looseObject({
+const generationSummarySchema = z.looseObject({
   id: z.string(),
   sceneAccuracyRating: z.string().nullish(),
   productAccuracyRating: z.string().nullish(),
@@ -257,7 +257,7 @@ export const promptVersionDetailSchema = z.looseObject({
 });
 
 /** `{ id, name }` minimal item used by selector dropdowns. */
-export const minimalItemSchema = z.looseObject({ id: z.string(), name: z.string().nullish() });
+const minimalItemSchema = z.looseObject({ id: z.string(), name: z.string().nullish() });
 
 /** `{ data: minimal[], error? }` — minimal list response that also carries an error message. */
 export const minimalListResponseSchema = z.looseObject({
@@ -267,7 +267,7 @@ export const minimalListResponseSchema = z.looseObject({
 
 // ─── Prompt preview ──────────────────────────────────────────────────────────
 
-export const dollhouseSourceSchema = z.looseObject({
+const dollhouseSourceSchema = z.looseObject({
   projectId: z.string().catch(""),
   projectLabel: z.string().catch(""),
   defaultAreaSummary: z.string().nullable().catch(null),
@@ -276,13 +276,13 @@ export const dollhouseSourceSchema = z.looseObject({
 
 export const dollhouseSourceResponseSchema = z.object({ data: dollhouseSourceSchema.nullish() });
 
-export const previewItemSchema = z.looseObject({ systemPrompt: z.string().catch(""), userPrompt: z.string().catch("") });
+const previewItemSchema = z.looseObject({ systemPrompt: z.string().catch(""), userPrompt: z.string().catch("") });
 
 export const previewResponseSchema = z.object({ data: previewItemSchema.nullish() });
 
 // ─── Catalog product images (design settings editor) ─────────────────────────
 
-export const catalogProductImagesSchema = camelized(
+const catalogProductImagesSchema = camelized(
   z.looseObject({
     images: z.array(z.looseObject({ url: z.string().nullish(), tag: z.string().nullish() })).catch([]),
     featuredImage: z.looseObject({ url: z.string().nullish() }).nullish()

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { SegmentationCategoryMetadata } from "@/lib/segmentation-categories";
-import { compareSortValues, getSortValue, NOT_APPLICABLE_CELL, SortableHeader, type SortDir, type SortKey } from "./drift-sorting";
+import { NOT_APPLICABLE_CELL, SortableHeader } from "./drift-sorting";
+import { compareSortValues, getSortValue, type SortDir, type SortKey } from "./drift-sorting-utils";
 import { formatInt, formatNumber, formatPercent, formatPixels } from "./format";
 import { ChevronIcon, WarningIcon } from "./icons";
 import { Tooltip } from "./tooltip";

@@ -249,12 +249,12 @@ function TableView({
               {row.appStatus}
             </Badge>
           ) : (
-            <span className="text-text-muted">—</span>
+            <span className="text-text-muted">&mdash;</span>
           )
       },
       {
         header: "Created",
-        cell: (row) => (row.created ? <DateCell date={row.created} /> : <span className="text-text-muted">—</span>)
+        cell: (row) => (row.created ? <DateCell date={row.created} /> : <span className="text-text-muted">&mdash;</span>)
       },
       actionsColumn<ProjectSummary>([
         {
@@ -338,7 +338,7 @@ function ProjectGridCard({ project, selected, tabIndex, onSelect, onKeyDown, ref
             {project.appStatus}
           </Badge>
         ) : (
-          <span className="text-caption text-text-muted">—</span>
+          <span className="text-caption text-text-muted">&mdash;</span>
         )}
         {project.created && (
           <span className="text-caption text-text-muted">

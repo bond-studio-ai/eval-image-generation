@@ -7,12 +7,12 @@
  */
 
 export function DateCell({ date }: { date: string | null | undefined }) {
-  if (!date) return <span className="text-text-muted">—</span>;
+  if (!date) return <span className="text-text-muted">&mdash;</span>;
   return <>{new Date(date).toLocaleDateString()}</>;
 }
 
 /** Same as `DateCell` but renders date + time. Null-safe. */
 export function DateTimeCell({ date }: { date: string | null | undefined }) {
-  if (!date) return <span className="text-text-muted">—</span>;
+  if (!date) return <span className="text-text-muted">&mdash;</span>;
   return <>{new Date(date).toLocaleString()}</>;
 }

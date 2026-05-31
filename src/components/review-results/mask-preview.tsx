@@ -86,16 +86,20 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     let cancelled = false;
+    const pending: { img: HTMLImageElement; onLoad: () => void; onError: () => void }[] = [];
 
     const loadImage = (url: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
-        img.addEventListener("load", () => {
+        const onLoad = () => {
           resolve(img);
-        });
-        img.addEventListener("error", () => {
+        };
+        const onError = () => {
           reject(new Error(`Failed to load mask: ${url}`));
-        });
+        };
+        img.addEventListener("load", onLoad);
+        img.addEventListener("error", onError);
+        pending.push({ img, onLoad, onError });
         img.src = url;
       });
 
@@ -134,6 +138,10 @@ export function CompositeMaskCanvas({ masks, alt, containerClassName, canvasClas
 
     return () => {
       cancelled = true;
+      for (const { img, onLoad, onError } of pending) {
+        img.removeEventListener("load", onLoad);
+        img.removeEventListener("error", onError);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- maskKey covers it
   }, [maskKey]);
