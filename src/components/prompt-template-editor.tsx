@@ -1,16 +1,17 @@
 "use client";
 
+import { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { localUrl } from "@/lib/api-base";
 import type { DOLLHOUSE_ATTRIBUTES } from "@/lib/prompt-template-constants";
 import { CONDITIONAL_OPTIONS, DOLLHOUSE_PRODUCT_TYPES, dollhouseReferencePath, REFERENCE_OPTIONS, toDollhousePathKey } from "@/lib/prompt-template-constants";
-import { validateHandlebarsTemplate } from "@/lib/validate-handlebars";
 import { ConditionalPopover } from "./prompt-template-editor/conditional-popover";
 import { DollhousePopover } from "./prompt-template-editor/dollhouse-popover";
-import { HighlightedTextarea } from "./prompt-template-editor/highlighted-textarea";
+import { handlebarsHighlighting, handlebarsLanguage } from "./prompt-template-editor/handlebars-language";
+import { handlebarsLinter } from "./prompt-template-editor/handlebars-lint";
 import { ReferencePopover } from "./prompt-template-editor/reference-popover";
 import { attributesInitial, attributesReducer, conditionalInitial, conditionalReducer, dollhouseInitial, dollhouseReducer, referenceInitial, referenceReducer } from "./prompt-template-editor/state";
-import { TemplateErrors } from "./prompt-template-editor/template-errors";
+import { TemplateCodeEditor } from "./prompt-template-editor/template-code-editor";
 
 interface PromptTemplateEditorProps {
   value: string;
@@ -24,95 +25,40 @@ interface PromptTemplateEditorProps {
   fillHeight?: boolean;
 }
 
-/**
- * Replace the selection `[start, end)` with `text` in a way that
- * participates in the browser's native undo stack.
- *
- * `document.execCommand('insertText')` is deprecated but still universally
- * implemented in the browsers we target and is the only path that
- * actually records the change on the textarea's undo history. When it
- * refuses (returns false) we fall back to the prototype-setter trick and
- * a synthetic `input` event, which keeps React's controlled value in sync
- * but will not be undoable in that rare case.
- */
-function insertWithUndo(el: HTMLTextAreaElement, start: number, end: number, text: string): void {
-  el.focus();
-  el.setSelectionRange(start, end);
-  // `document.execCommand` is marked deprecated in lib.dom but is still
-  // the only cross-browser way to edit a textarea's value while keeping
-  // the native undo stack intact. Route the call through a local,
-  // non-deprecated signature to avoid the editor warning at the call
-  // site without suppressing unrelated deprecations.
-  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(document, …), so `this` is bound correctly
-  const exec = (
-    document as unknown as {
-      execCommand(command: string, showUi?: boolean, value?: string): boolean;
-    }
-  ).execCommand;
-  const ok = exec.call(document, "insertText", false, text);
-  if (ok) return;
-  // eslint-disable-next-line @typescript-eslint/unbound-method -- immediately invoked via .call(el, …), so `this` is bound correctly
-  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-  setter?.call(el, el.value.slice(0, start) + text + el.value.slice(end));
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  const caret = start + text.length;
-  el.setSelectionRange(caret, caret);
-}
+// Stable extension list so the editor is not reconfigured on every render.
+const PROMPT_EXTENSIONS = [handlebarsLanguage, handlebarsHighlighting, handlebarsLinter];
 
-export function PromptTemplateEditor({
-  value,
-  onChange,
-  placeholder = "Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}",
-  rows = 8,
-  className = "",
-  showPicker = true,
-  fillHeight = false
-}: PromptTemplateEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+export function PromptTemplateEditor({ value, onChange, placeholder = "Handlebars template: {{products.vanity.name}}, {{#if products.vanity}}...{{/if}}", rows = 8, showPicker = true, fillHeight = false }: PromptTemplateEditorProps) {
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [conditional, dispatchConditional] = useReducer(conditionalReducer, conditionalInitial);
   const [reference, dispatchReference] = useReducer(referenceReducer, referenceInitial);
   const [dollhouse, dispatchDollhouse] = useReducer(dollhouseReducer, dollhouseInitial);
   const [attrState, dispatchAttributes] = useReducer(attributesReducer, attributesInitial);
 
-  const errors = useMemo(() => validateHandlebarsTemplate(value), [value]);
-  const hasErrors = errors.length > 0;
-
-  const textareaClass = useMemo(() => {
-    if (!hasErrors) return className;
-    return className
-      .replace(/\bborder-gray-200\b/, "border-danger-300")
-      .replace(/\bhover:border-border-strong\b/, "hover:border-danger-400")
-      .replace(/\bfocus:border-primary-500\b/, "focus:border-danger-500")
-      .replace(/\bfocus:ring-primary-500\b/, "focus:ring-danger-500");
-  }, [className, hasErrors]);
-
   const handleInsert = useCallback((toInsert: string) => {
-    const el = textareaRef.current;
-    if (!el) return;
-    insertWithUndo(el, el.selectionStart, el.selectionEnd, toInsert);
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    view.dispatch(view.state.update({ changes: { from, to, insert: toInsert }, selection: { anchor: from + toInsert.length } }));
+    view.focus();
   }, []);
 
   const handleConditionalSelect = useCallback((opt: (typeof CONDITIONAL_OPTIONS)[number]) => {
-    const el = textareaRef.current;
-    if (!el) return;
+    const view = editorRef.current?.view;
+    if (!view) return;
     const condition = opt.isProduct ? `products.${opt.value}` : opt.value;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selected = el.value.slice(start, end);
+    const { from, to } = view.state.selection.main;
+    const selected = view.state.sliceDoc(from, to);
     const prefix = `{{#if ${condition}}}`;
     const inner = selected || "\n  \n";
     const wrapper = `${prefix}${inner}{{/if}}`;
-    insertWithUndo(el, start, end, wrapper);
+    // With no selection, drop the caret on the blank line inside the wrapper;
+    // otherwise place it just after the inserted block.
+    const anchor = selected ? from + wrapper.length : from + prefix.length + 1;
+    view.dispatch(view.state.update({ changes: { from, to, insert: wrapper }, selection: { anchor } }));
+    view.focus();
     dispatchConditional({ type: "close" });
-    // When the user had no selection, put the caret on the blank line
-    // inside the wrapper (matches the previous behaviour).
-    if (!selected) {
-      const caret = start + prefix.length + 1;
-      requestAnimationFrame(() => {
-        el.setSelectionRange(caret, caret);
-      });
-    }
   }, []);
 
   const fetchAttributes = useCallback(async (category: string) => {
@@ -211,18 +157,7 @@ export function PromptTemplateEditor({
   if (!showPicker) {
     return (
       <div className={fillHeight ? "flex min-h-0 flex-1 flex-col" : ""}>
-        <HighlightedTextarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          placeholder={placeholder}
-          rows={rows}
-          className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
-          fillHeight={fillHeight}
-        />
-        <TemplateErrors errors={errors} />
+        <TemplateCodeEditor ref={editorRef} value={value} onChange={onChange} extensions={PROMPT_EXTENSIONS} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
       </div>
     );
   }
@@ -275,18 +210,7 @@ export function PromptTemplateEditor({
         />
       </div>
 
-      <HighlightedTextarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        placeholder={placeholder}
-        rows={rows}
-        className={fillHeight ? `min-h-0 flex-1 resize-none ${textareaClass}` : `resize-y ${textareaClass}`}
-        fillHeight={fillHeight}
-      />
-      <TemplateErrors errors={errors} />
+      <TemplateCodeEditor ref={editorRef} value={value} onChange={onChange} extensions={PROMPT_EXTENSIONS} placeholder={placeholder} minRows={rows} fillHeight={fillHeight} />
     </div>
   );
 }

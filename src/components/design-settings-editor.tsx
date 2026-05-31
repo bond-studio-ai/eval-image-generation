@@ -1,5 +1,7 @@
 "use client";
 
+import { json, jsonParseLinter } from "@codemirror/lang-json";
+import { linter } from "@codemirror/lint";
 import { useCallback, useMemo, useState } from "react";
 import { useCatalogProducts } from "@/components/design-settings-catalog";
 import { ProductImageDownloads } from "@/components/design-settings-downloads";
@@ -23,7 +25,11 @@ import {
 import { ProductSelectionModal } from "@/components/design-settings-product-modal";
 import { isNonEmpty } from "@/components/design-settings-values";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { TemplateCodeEditor } from "@/components/prompt-template-editor/template-code-editor";
 import { Button } from "@/components/ui/button";
+
+// Stable extension list so the JSON editor is not reconfigured on every render.
+const JSON_EXTENSIONS = [json(), linter(jsonParseLinter())];
 
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
@@ -244,16 +250,15 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
       ) : (
         <div className="p-5">
           <p className="text-text-muted text-caption mb-2">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
-          <textarea
-            aria-label="Design settings JSON"
+          <TemplateCodeEditor
+            ariaLabel="Design settings JSON"
             value={jsonText}
-            onChange={(e) => {
-              setJsonText(e.target.value);
+            onChange={(next) => {
+              setJsonText(next);
               setJsonError(null);
             }}
-            spellCheck={false}
-            rows={14}
-            className="border-border-strong bg-surface-muted text-text-primary focus:border-primary-500 focus:ring-primary-500 text-caption block w-full rounded-md border px-3 py-2 font-mono shadow-xs focus:ring-1 focus:outline-none"
+            extensions={JSON_EXTENSIONS}
+            minRows={14}
             placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
           />
           {jsonError && <p className="text-danger-600 text-caption mt-2">{jsonError}</p>}
