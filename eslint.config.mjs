@@ -25,15 +25,13 @@ import noOnlyTests from "eslint-plugin-no-only-tests";
  * itself is legacy-eslintrc + ESLint 8 only, so its rule blocks are recreated
  * here as native flat config layered after eslint-config-next.
  *
- * Severity philosophy: hardcore's high-value correctness rules are hard
- * errors. Rules that are valuable as signal but would otherwise be thousands of
- * pre-existing violations (size/complexity limits, magic numbers, type-aware
- * "any" tracing, perf hints) are demoted to `warn` so they surface in editors
- * without blocking `eslint .`. Rules that fundamentally fight Next/React/TS
- * conventions are turned `off` with a justification.
+ * Severity philosophy: every enabled rule is a hard `error`. The codebase was
+ * driven to zero warnings, so the former `warn` tier (size/complexity limits,
+ * magic numbers, type-aware "any" tracing, perf hints) was promoted to `error`
+ * to keep `eslint .` enforcing them. Rules that fundamentally fight
+ * Next/React/TS conventions are turned `off` with a justification.
  */
 const ERROR = "error";
-const WARN = "warn";
 const OFF = "off";
 
 const TEST_FILES = ["**/test/**", "**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "**/*.e2e.*", "tests/**", "e2e/**"];
@@ -155,7 +153,7 @@ const eslintConfig = [
       // `void` is used to explicitly mark intentionally-floating promises.
       "no-void": [ERROR, { allowAsStatement: true }],
       "no-var": ERROR,
-      "no-warning-comments": WARN,
+      "no-warning-comments": ERROR,
       "no-with": ERROR,
       "block-scoped-var": ERROR,
       // Allow snake_case object properties / destructured fields coming from
@@ -182,7 +180,7 @@ const eslintConfig = [
         }
       ],
       "max-depth": ERROR,
-      "max-nested-callbacks": WARN,
+      "max-nested-callbacks": ERROR,
       // 4 is the enforceable ceiling here: every violation was exactly 4 params
       // (typically a label/format helper), and 5+ stays blocked.
       "max-params": [ERROR, 4],
@@ -318,12 +316,12 @@ const eslintConfig = [
 
       // --- promise ---------------------------------------------------------
       "promise/param-names": ERROR,
-      "promise/always-return": WARN,
+      "promise/always-return": ERROR,
       "promise/no-return-wrap": ERROR,
-      "promise/no-nesting": WARN,
-      "promise/no-promise-in-callback": WARN,
+      "promise/no-nesting": ERROR,
+      "promise/no-promise-in-callback": ERROR,
       "promise/avoid-new": OFF, // we legitimately construct Promises
-      "promise/no-callback-in-promise": WARN,
+      "promise/no-callback-in-promise": ERROR,
       "promise/no-return-in-finally": ERROR,
       "promise/valid-params": ERROR,
       "promise/no-new-statics": ERROR,
@@ -338,9 +336,9 @@ const eslintConfig = [
       "security/detect-eval-with-expression": ERROR,
       "security/detect-new-buffer": ERROR,
       "security/detect-no-csrf-before-method-override": ERROR,
-      "security/detect-non-literal-regexp": WARN,
+      "security/detect-non-literal-regexp": ERROR,
       "security/detect-non-literal-require": ERROR,
-      "security/detect-possible-timing-attacks": WARN,
+      "security/detect-possible-timing-attacks": ERROR,
       "security/detect-pseudoRandomBytes": ERROR,
       "security/detect-unsafe-regex": ERROR,
       "security/detect-bidi-characters": ERROR,
@@ -360,7 +358,7 @@ const eslintConfig = [
       "unicorn/no-hex-escape": ERROR,
       "unicorn/no-new-buffer": ERROR,
       "unicorn/no-unreadable-array-destructuring": ERROR,
-      "unicorn/no-unused-properties": WARN,
+      "unicorn/no-unused-properties": ERROR,
       "unicorn/no-zero-fractions": ERROR,
       "unicorn/prefer-add-event-listener": ERROR,
       "unicorn/prefer-keyboard-event-key": ERROR,
@@ -387,7 +385,7 @@ const eslintConfig = [
       "unicorn/no-object-as-default-parameter": ERROR,
       "unicorn/explicit-length-check": ERROR,
       "unicorn/prefer-math-trunc": ERROR,
-      "unicorn/prefer-ternary": WARN,
+      "unicorn/prefer-ternary": ERROR,
       "unicorn/numeric-separators-style": ERROR,
       "unicorn/catch-error-name": ERROR,
       "unicorn/no-lonely-if": ERROR,
@@ -402,7 +400,7 @@ const eslintConfig = [
       "unicorn/no-this-assignment": ERROR,
       "unicorn/no-static-only-class": ERROR,
       "unicorn/prefer-array-flat": ERROR,
-      "unicorn/prefer-switch": WARN,
+      "unicorn/prefer-switch": ERROR,
       "unicorn/prefer-node-protocol": ERROR,
       "unicorn/prefer-module": ERROR,
       "unicorn/no-document-cookie": ERROR,
@@ -427,13 +425,13 @@ const eslintConfig = [
       // Disabled: its autofix drops type-guard predicates (e.g.
       // `(x): x is T => !!x` -> `Boolean`), silently breaking narrowing.
       "unicorn/prefer-native-coercion-functions": OFF,
-      "unicorn/prefer-logical-operator-over-ternary": WARN,
+      "unicorn/prefer-logical-operator-over-ternary": ERROR,
       "unicorn/prefer-event-target": ERROR,
       "unicorn/no-unnecessary-await": ERROR,
       "unicorn/switch-case-braces": ERROR,
       "unicorn/no-typeof-undefined": ERROR,
       "unicorn/prefer-set-size": ERROR,
-      "unicorn/no-negated-condition": WARN,
+      "unicorn/no-negated-condition": ERROR,
       "unicorn/prefer-at": ERROR,
       "unicorn/prefer-blob-reading-methods": ERROR,
       "unicorn/no-single-promise-in-promise-methods": ERROR,
@@ -467,15 +465,15 @@ const eslintConfig = [
       "sonarjs/no-identical-expressions": ERROR,
       "sonarjs/no-use-of-empty-return-value": ERROR,
       "sonarjs/max-switch-cases": ERROR,
-      "sonarjs/no-collapsible-if": WARN,
+      "sonarjs/no-collapsible-if": ERROR,
       "sonarjs/no-identical-functions": ERROR,
       "sonarjs/no-inverted-boolean-check": ERROR,
       "sonarjs/no-redundant-boolean": ERROR,
-      "sonarjs/no-small-switch": WARN,
+      "sonarjs/no-small-switch": ERROR,
       "sonarjs/no-redundant-jump": ERROR,
       "sonarjs/no-same-line-conditional": ERROR,
       "sonarjs/no-gratuitous-expressions": ERROR,
-      "sonarjs/no-nested-switch": WARN,
+      "sonarjs/no-nested-switch": ERROR,
       "sonarjs/no-empty-collection": ERROR,
       "sonarjs/no-nested-template-literals": ERROR,
       // 25 is the enforceable ceiling: the handful of genuinely-complex domain
@@ -588,10 +586,10 @@ const eslintConfig = [
       "regexp/unicode-escape": [ERROR, "unicodeEscape"],
 
       // --- Microsoft SDL ---------------------------------------------------
-      "@microsoft/sdl/no-cookies": WARN,
+      "@microsoft/sdl/no-cookies": ERROR,
       "@microsoft/sdl/no-document-domain": ERROR,
       "@microsoft/sdl/no-html-method": ERROR,
-      "@microsoft/sdl/no-insecure-url": WARN,
+      "@microsoft/sdl/no-insecure-url": ERROR,
       "@microsoft/sdl/no-postmessage-star-origin": ERROR,
 
       // --- no-unsanitized --------------------------------------------------
@@ -671,14 +669,14 @@ const eslintConfig = [
       "@typescript-eslint/consistent-type-imports": ERROR,
       // etc/no-enum substitute: discourage enums in favor of unions/const objects.
       "no-restricted-syntax": [
-        WARN,
+        ERROR,
         {
           selector: "TSEnumDeclaration",
           message: "Prefer a union type or `as const` object over an enum (hardcore etc/no-enum substitute)."
         }
       ],
 
-      // Noisy type-aware rules: keep as signal, not blockers ---------------
+      // Type-aware rules ---------------------------------------------------
       // Off: the remaining violations are either false positives (effect
       // `let cancelled = false` cleanup flags the rule can't see mutated across
       // the async boundary) or defensive `?? default` reads on zod-validated
@@ -699,7 +697,7 @@ const eslintConfig = [
       // Keep any/nullish flagged — those can leak "undefined"/"null"/"[object Object]"
       // into URLs and classNames (explicit opts so the permissive rule defaults
       // for allowAny/allowNullish don't silently apply).
-      "@typescript-eslint/restrict-template-expressions": [WARN, { allowNumber: true, allowBoolean: true, allowAny: false, allowNullish: false, allowRegExp: true, allowArray: false }],
+      "@typescript-eslint/restrict-template-expressions": [ERROR, { allowNumber: true, allowBoolean: true, allowAny: false, allowNullish: false, allowRegExp: true, allowArray: false }],
       "@typescript-eslint/no-confusing-void-expression": ERROR,
       // `||` is the intended operator for string/boolean fallbacks here (display
       // defaults like `name || "Untitled"` and existence guards like `(a || b) &&`),
@@ -716,13 +714,13 @@ const eslintConfig = [
       // them adds verbose guards without removing risk, so the rule can't be
       // enforced as an error — turn it off rather than leave ignorable warnings.
       "@typescript-eslint/no-non-null-assertion": OFF,
-      "@typescript-eslint/no-floating-promises": WARN,
+      "@typescript-eslint/no-floating-promises": ERROR,
       "@typescript-eslint/no-unnecessary-type-conversion": ERROR,
-      "@typescript-eslint/no-explicit-any": WARN,
+      "@typescript-eslint/no-explicit-any": ERROR,
       "@typescript-eslint/no-dynamic-delete": ERROR,
       "@typescript-eslint/no-redundant-type-constituents": ERROR,
       "@typescript-eslint/no-unnecessary-type-parameters": ERROR,
-      "@typescript-eslint/no-misused-promises": [WARN, { checksVoidReturn: { attributes: false } }],
+      "@typescript-eslint/no-misused-promises": [ERROR, { checksVoidReturn: { attributes: false } }],
       // Deliberate `.call()` usages are annotated with scoped disables; keep the
       // rule as an error so genuinely-unbound method references stay caught.
       "@typescript-eslint/unbound-method": ERROR,
@@ -738,7 +736,7 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": OFF,
       // naming-convention via strict preset is unset; explicitly keep off (too strict)
       "@typescript-eslint/naming-convention": OFF,
-      "@typescript-eslint/prefer-readonly": WARN
+      "@typescript-eslint/prefer-readonly": ERROR
     }
   }),
 
@@ -762,20 +760,20 @@ const eslintConfig = [
     rules: {
       // react (subset of react/all that hardcore tunes) --------------------
       "react/jsx-key": [ERROR, { checkFragmentShorthand: true, checkKeyMustBeforeSpread: true, warnOnDuplicates: true }],
-      "react/jsx-max-depth": [WARN, { max: 12 }],
+      "react/jsx-max-depth": [ERROR, { max: 12 }],
       "react/state-in-constructor": [ERROR, "never"],
       "react/no-string-refs": [ERROR, { noTemplateLiterals: true }],
       "react/no-unsafe": [ERROR, { checkAliases: true }],
       "react/jsx-no-target-blank": [ERROR, { forms: true, warnOnSpreadAttributes: true }],
       "react/jsx-curly-brace-presence": [ERROR, { propElementValues: "always" }],
-      "react/destructuring-assignment": [WARN, "always", { destructureInSignature: "always" }],
+      "react/destructuring-assignment": [ERROR, "always", { destructureInSignature: "always" }],
       // Disabled: this codebase renders heavily with ternaries, and the
       // `coerce` autofixer is destructive on chained ternary render branches.
       "react/jsx-no-leaked-render": OFF,
       "react/display-name": [ERROR, { checkContextObjects: true }],
       "react/no-unknown-property": [ERROR, { requireDataLowercase: true }],
       "react/jsx-no-script-url": [ERROR, { includeFromSettings: true }],
-      "react/no-danger": [WARN, { customComponentNames: ["*"] }],
+      "react/no-danger": [ERROR, { customComponentNames: ["*"] }],
       "react/no-array-index-key": ERROR,
       "react/jsx-pascal-case": ERROR,
       "react/no-this-in-sfc": ERROR,
@@ -809,8 +807,8 @@ const eslintConfig = [
       "sonarjs/no-hook-setter-in-body": ERROR,
 
       // react-performance (signal-only to avoid wholesale memoization churn)
-      "react/jsx-no-constructed-context-values": WARN,
-      "react/no-object-type-as-default-prop": WARN
+      "react/jsx-no-constructed-context-values": ERROR,
+      "react/no-object-type-as-default-prop": ERROR
     }
   },
 
