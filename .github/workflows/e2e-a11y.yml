@@ -16,6 +16,10 @@ concurrency:
 jobs:
   e2e-a11y:
     runs-on: ubuntu-latest
+    # Fork PRs don't receive repo secrets, so globalSetup's Clerk sign-in would
+    # abort and the check would always fail. Skip on fork PRs; still run on
+    # same-repo PRs and pushes to main.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       # The mock upstream (test/e2e/mock-server.mjs) stands in for the
       # image-generation backend, so the run is hermetic except for Clerk.
