@@ -93,7 +93,11 @@ export function TopBar({ className }: TopBarProps) {
       </nav>
 
       <div className="flex shrink-0 items-center gap-3">
-        {env && env !== "production" && <span className="rounded-pill bg-warning-50 text-warning-800 ring-warning-600/30 inline-flex items-center px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset">{env.toUpperCase()}</span>}
+        {env && env !== "production" && (
+          <span data-testid="env-badge" className="rounded-pill bg-warning-50 text-warning-800 ring-warning-600/30 inline-flex items-center px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset">
+            {env.toUpperCase()}
+          </span>
+        )}
         <UserButton
           appearance={{
             elements: {

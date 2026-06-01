@@ -18,6 +18,8 @@
     "test:e2e:a11y": "playwright test --project=a11y",
     "test:e2e:visual": "playwright test --project=visual",
     "test:e2e:update": "playwright test --project=visual --update-snapshots",
+    "test:e2e:visual:docker": "E2E_TARGET=test:e2e:visual bash scripts/visual-baselines.sh",
+    "test:e2e:update:docker": "bash scripts/visual-baselines.sh",
     "coverage:clean": "rimraf .coverage-raw .v8-coverage",
     "coverage:unit": "cross-env COVERAGE_RAW=1 vitest run",
     "coverage:build": "cross-env COVERAGE_RAW=1 next build",

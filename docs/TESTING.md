@@ -66,8 +66,15 @@ feature is also fine.
 
 ### `e2e/`
 
-Playwright suites (`*.spec.ts`) that run against a live dev server. See
+Playwright suites (`*.spec.ts`) that run against a live server. Two projects:
+`a11y` (axe-core) and `visual` (screenshot regression under `test/e2e/visual/`,
+split into a breadth `routes.spec.ts` and a depth `flows.spec.ts`). See
 [`test/e2e/README.md`](../test/e2e/README.md) for auth setup and how to run them.
+
+**Visual baselines must be Linux-generated** (font rendering is OS-specific):
+use `yarn test:e2e:update:docker` to (re)generate and commit them, and
+`yarn test:e2e:visual:docker` to verify against the committed PNGs exactly as
+CI does. Both run inside the official Playwright container.
 
 ## Conventions
 
@@ -85,14 +92,16 @@ Playwright suites (`*.spec.ts`) that run against a live dev server. See
 
 ## Running
 
-| Command              | What it runs                                    |
-| -------------------- | ----------------------------------------------- |
-| `yarn test`          | Vitest (`test/unit` + `test/functional`) once   |
-| `yarn test:watch`    | Vitest in watch mode                            |
-| `yarn test:coverage` | Vitest with a V8 coverage report (`coverage/`)  |
-| `yarn test:e2e`      | Playwright e2e suites (`test/e2e`)              |
-| `yarn coverage:all`  | Merged unit + E2E coverage report (`coverage/`) |
-| `yarn verify`        | Full gate: typecheck + lint + coverage + format |
+| Command                       | What it runs                                      |
+| ----------------------------- | ------------------------------------------------- |
+| `yarn test`                   | Vitest (`test/unit` + `test/functional`) once     |
+| `yarn test:watch`             | Vitest in watch mode                              |
+| `yarn test:coverage`          | Vitest with a V8 coverage report (`coverage/`)    |
+| `yarn test:e2e`               | Playwright a11y suite (`test/e2e`)                |
+| `yarn test:e2e:visual:docker` | Visual regression vs. committed baselines (Linux) |
+| `yarn test:e2e:update:docker` | Regenerate visual baselines (Linux) — then commit |
+| `yarn coverage:all`           | Merged unit + E2E coverage report (`coverage/`)   |
+| `yarn verify`                 | Full gate: typecheck + lint + coverage + format   |
 
 Coverage is measured against `src/**` regardless of where tests live, so the
 report reflects true source coverage. The HTML report is written to

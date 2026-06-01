@@ -62,7 +62,9 @@ const appServer = collectCoverage
       url: BASE_URL,
       timeout: 120_000,
       reuseExistingServer,
-      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}`, COVERAGE_RAW: "1" }
+      // TZ pins server-rendered dates so visual baselines don't shift with the
+      // host's locale (the browser timezone is pinned separately, in `use`).
+      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}`, COVERAGE_RAW: "1", TZ: "UTC" }
     }
   : {
       command: "yarn start",
@@ -72,8 +74,9 @@ const appServer = collectCoverage
       // Force the app at the hermetic mock backend. Clerk keys are inherited
       // from the environment (CI job env, or `.env.local` loaded above / by
       // Next at runtime) — never injected as empty strings, which would clobber
-      // a valid `.env.local` value on local runs.
-      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}` }
+      // a valid `.env.local` value on local runs. TZ pins server-rendered dates
+      // so visual baselines don't shift with the host's locale.
+      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}`, TZ: "UTC" }
     };
 
 export default defineConfig({
@@ -91,6 +94,11 @@ export default defineConfig({
     baseURL: BASE_URL,
     storageState: STORAGE_STATE,
     viewport: { width: 1440, height: 900 },
+    // Pin the browser timezone + locale so date pickers, the `tz` query param
+    // the analytics views derive from `browserTimezone()`, and plain-text
+    // `toLocaleString()` output all render identically in CI.
+    timezoneId: "UTC",
+    locale: "en-US",
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
   },
@@ -102,7 +110,8 @@ export default defineConfig({
     },
     {
       name: "visual",
-      testMatch: /visual\.spec\.ts$/,
+      // All specs under test/e2e/visual/ (routes + flows); _helpers.ts is not a spec.
+      testMatch: /visual\/.*\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] }
     }
   ],

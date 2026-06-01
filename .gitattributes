@@ -1,0 +1,4 @@
+# Visual-regression baselines are binary PNGs — never line-ending-normalized or
+# shown inline in diffs, and excluded from language stats.
+test/e2e/visual/**/*.png binary
+test/e2e/visual/**/*.png linguist-generated=true
