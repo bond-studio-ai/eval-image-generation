@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
     // `{ data: [project] }`, so the only thing an extra `successResponse` wrapper
     // would buy us is a confusing second `.data` to unwrap on the client.
     const json: unknown = await res.json();
-    return NextResponse.json(json, { status: 200 });
+    return NextResponse.json(json);
   } catch (error) {
     logger.error("[project detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch project details");

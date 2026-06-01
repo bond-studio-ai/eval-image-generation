@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { AccuracyTrendChart } from "@/app/analytics/accuracy-trend-chart";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
@@ -7,6 +8,14 @@ import { fetchJson } from "@/lib/api/client";
 import { reliabilityResponseSchema } from "@/lib/api/schemas";
 import { definedProps } from "@/lib/defined-props";
 import type { ReliabilityData } from "@/lib/service-client";
+
+const ReliabilityTrendChartGraph = dynamic(
+  async () => {
+    const graphModule = await import("./reliability-trend-chart-graph");
+    return graphModule.ReliabilityTrendChartGraph;
+  },
+  { ssr: false }
+);
 
 interface ReliabilityTabProps {
   from?: string;
@@ -69,45 +78,11 @@ function TrendChart({ trends }: { trends: ReliabilityData["trends"] }) {
     );
   }
 
-  const maxRuns = Math.max(...trends.map((trend) => trend.totalRuns), 1);
-
   return (
     <div className="border-border bg-surface rounded-lg border p-5 shadow-xs">
       <h3 className="text-text-primary text-body font-semibold">Daily Failure Trends</h3>
-      <div className="text-text-muted text-caption mt-2 flex items-center gap-4">
-        <span className="flex items-center gap-1.5">
-          <span className="bg-border-strong inline-block size-2.5 rounded-full" /> Total runs
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-danger-400 inline-block size-2.5 rounded-full" /> Failed runs
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-warning-400 inline-block size-2.5 rounded-full" /> Timeouts
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="bg-accent-400 inline-block size-2.5 rounded-full" /> Judge failures
-        </span>
-      </div>
-      <div className="mt-4 flex items-end gap-1" style={{ height: 160 }}>
-        {trends.map((trend, i) => {
-          const totalH = (trend.totalRuns / maxRuns) * 100;
-          const failedH = trend.totalRuns > 0 ? (trend.failedRuns / trend.totalRuns) * totalH : 0;
-          const date = new Date(trend.period);
-          const label = `${date.getMonth() + 1}/${date.getDate()}`;
-          return (
-            <div
-              key={trend.period}
-              className="group relative flex flex-1 flex-col items-center"
-              title={`${label}: ${trend.totalRuns} runs, ${trend.failedRuns} failed, ${trend.timedOutSteps} timeouts, ${trend.judgeFailures} judge failures`}
-            >
-              <div className="relative w-full" style={{ height: `${totalH}%`, minHeight: trend.totalRuns > 0 ? 4 : 0 }}>
-                <div className="bg-border absolute bottom-0 w-full rounded-t" style={{ height: "100%" }} />
-                <div className="bg-danger-400 absolute bottom-0 w-full rounded-t" style={{ height: `${failedH}%` }} />
-              </div>
-              {i % Math.max(1, Math.floor(trends.length / 10)) === 0 && <span className="text-text-disabled mt-1 text-[9px]">{label}</span>}
-            </div>
-          );
-        })}
+      <div className="mt-4" style={{ height: 200 }}>
+        <ReliabilityTrendChartGraph trends={trends} />
       </div>
     </div>
   );

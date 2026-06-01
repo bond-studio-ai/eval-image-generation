@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { BulkDeleteBar } from "@/components/bulk-delete-bar";
-import { DataTable, type DataTableColumn, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
+import { type ColumnDef, DataTable, DateCell, NameCell, SearchBar, SelectAllCheckbox, StatusBadge } from "@/components/data-table";
 import { actionsColumn, checkboxColumn } from "@/components/data-table-utils";
 import { Pagination } from "@/components/pagination";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -80,7 +80,7 @@ export function InputPresetsList() {
     }
   }, [selected, refresh]);
 
-  const columns = useMemo<DataTableColumn<InputPresetRow>[]>(
+  const columns = useMemo<ColumnDef<InputPresetRow>[]>(
     () => [
       checkboxColumn<InputPresetRow>({
         selected,
@@ -89,21 +89,25 @@ export function InputPresetsList() {
         isSelectable: (ip) => !ip.deletedAt
       }),
       {
+        id: "name",
         header: "Name",
-        cell: (ip) => <NameCell href={`/input-presets/${ip.id}`} name={ip.name} subtitle={ip.description} />,
-        cellClassName: "px-6 py-4"
+        cell: ({ row }) => <NameCell href={`/input-presets/${row.original.id}`} name={row.original.name} subtitle={row.original.description} />,
+        meta: { cellClassName: "px-6 py-4" }
       },
       {
+        id: "generations",
         header: "Generations",
-        cell: (ip) => ip.stats?.generationCount ?? 0
+        cell: ({ row }) => row.original.stats?.generationCount ?? 0
       },
       {
+        id: "created",
         header: "Created",
-        cell: (ip) => <DateCell date={ip.createdAt} />
+        cell: ({ row }) => <DateCell date={row.original.createdAt} />
       },
       {
+        id: "status",
         header: "Status",
-        cell: (ip) => <StatusBadge status={ip.deletedAt ? "deleted" : "active"} />
+        cell: ({ row }) => <StatusBadge status={row.original.deletedAt ? "deleted" : "active"} />
       },
       actionsColumn<InputPresetRow>([
         {

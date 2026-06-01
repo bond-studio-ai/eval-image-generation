@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ComponentType, type SVGProps, useSyncExternalStore } from "react";
+import type { ComponentType, SVGProps } from "react";
+import { useLocalStorage } from "usehooks-ts";
 import { cn } from "@/components/ui/cn";
 import { BarChartIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon, GitCompareIcon, ImageIcon, ImagePlusIcon, PlayIcon, ScrollTextIcon, SparklesIcon, WorkflowIcon } from "@/components/ui/icons";
 
@@ -47,43 +48,15 @@ const NAV_GROUPS: NavGroup[] = [
 
 const COLLAPSED_KEY = "aieval.sidebar.collapsed";
 
-const collapsedListeners = new Set<() => void>();
-
-function readCollapsed(): boolean {
-  try {
-    return window.localStorage.getItem(COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function subscribeCollapsed(onChange: () => void): () => void {
-  collapsedListeners.add(onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    collapsedListeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
-
-function writeCollapsed(next: boolean): void {
-  try {
-    window.localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
-  } catch {
-    // localStorage unavailable; ignore.
-  }
-  for (const listener of collapsedListeners) listener();
-}
-
 export function Sidebar() {
   const pathname = usePathname();
-  // Read the persisted collapse state from localStorage via an external store
-  // so SSR gets a clean `false` snapshot and the client hydrates to the real
-  // value without a mount effect or a separate hydration flag.
-  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  // Persisted collapse state with cross-tab sync. `initializeWithValue: false`
+  // keeps SSR + first client render on the `false` default so hydration matches,
+  // then settles to the stored value (no mount effect / hydration flag needed).
+  const [collapsed, setCollapsed] = useLocalStorage(COLLAPSED_KEY, false, { initializeWithValue: false });
 
   const toggleCollapsed = () => {
-    writeCollapsed(!collapsed);
+    setCollapsed((prev) => !prev);
   };
 
   const isActive = (item: NavItem) => {

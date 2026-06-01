@@ -1,5 +1,6 @@
 "use client";
 
+import { mean } from "es-toolkit";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CdnImage } from "@/components/cdn-image";
@@ -60,7 +61,7 @@ function JudgeGroupCard({ group }: { group: JudgeGroup }) {
 
   const scoredEntries = group.entries.filter((e): e is typeof e & { judgeScore: number } => e.judgeScore != null);
   const scores = scoredEntries.map((e) => e.judgeScore);
-  const avgScore = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null;
+  const avgScore = scores.length > 0 ? Math.round(mean(scores) * 10) / 10 : null;
   const isSingle = group.entries.length === 1;
 
   return (

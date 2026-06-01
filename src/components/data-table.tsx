@@ -1,18 +1,30 @@
+"use client";
+
+import { type ColumnDef, flexRender, getCoreRowModel, type RowData, useReactTable, type VisibilityState } from "@tanstack/react-table";
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { ColumnVisibilityMenu } from "@/components/data-table-column-visibility";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { SearchIcon } from "@/components/ui/icons";
 
 // ---------------------------------------------------------------------------
-// Core types
+// Column types
 // ---------------------------------------------------------------------------
 
-export interface DataTableColumn<T> {
-  header: ReactNode;
-  headerClassName?: string;
-  cell: (row: T) => ReactNode;
-  cellClassName?: string;
+// Per-column Tailwind classes + visibility-menu label ride along on the native
+// ColumnDef via `meta`, so consumers keep using react-table's column API.
+declare module "@tanstack/react-table" {
+  // Declaration merging requires the exact generic signature; the params are
+  // structural only and unused in this body.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- must mirror the library's ColumnMeta<TData, TValue> signature to merge
+  interface ColumnMeta<TData extends RowData, TValue> {
+    headerClassName?: string;
+    cellClassName?: string;
+    label?: string;
+  }
 }
+
+export type { ColumnDef } from "@tanstack/react-table";
 
 // ---------------------------------------------------------------------------
 // Default class names
@@ -27,7 +39,7 @@ const TD_DEFAULT = "whitespace-nowrap px-6 py-4 text-body text-text-secondary";
 // ---------------------------------------------------------------------------
 
 interface DataTableProps<T> {
-  columns: DataTableColumn<T>[];
+  columns: ColumnDef<T>[];
   data: T[];
   rowKey: (row: T) => string;
   rowClassName?: (row: T) => string;
@@ -37,6 +49,8 @@ interface DataTableProps<T> {
   toolbar?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  /** Show the built-in "Columns" show/hide menu. Default true. */
+  enableColumnVisibility?: boolean;
 }
 
 const SKELETON_WIDTHS = ["w-3/4", "w-1/2", "w-2/3", "w-1/3", "w-5/6", "w-2/5"];
@@ -53,8 +67,24 @@ function SkeletonRow({ colCount, rowIndex }: { colCount: number; rowIndex: numbe
   );
 }
 
-export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage = "No items found.", loading = false, skeletonRows = 5, toolbar, footer, className = "mt-8" }: DataTableProps<T>) {
-  const colCount = columns.length;
+export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage = "No items found.", loading = false, skeletonRows = 5, toolbar, footer, className = "mt-8", enableColumnVisibility = true }: DataTableProps<T>) {
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // React Compiler can't memoize TanStack Table's returned methods; that is
+  // expected and safe here (the table is rendered, not passed into memoized
+  // children), so opt this component out of compiler memoization.
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions by design
+  const table = useReactTable<T>({
+    data,
+    columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
+    getRowId: (row) => rowKey(row),
+    getCoreRowModel: getCoreRowModel()
+  });
+
+  const colCount = table.getVisibleLeafColumns().length;
+  const showVisibility = enableColumnVisibility && table.getAllLeafColumns().some((column) => column.getCanHide());
 
   // While loading, size the skeleton to the page already on screen (data is
   // kept during re-fetches); fall back to the prop on the first load.
@@ -73,12 +103,11 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
         </tr>
       );
     }
-    return data.map((row) => (
-      <tr key={rowKey(row)} className={rowClassName?.(row) ?? "hover:bg-surface-muted"}>
-        {columns.map((col, i) => (
-          // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
-          <td key={i} className={col.cellClassName ?? TD_DEFAULT}>
-            {col.cell(row)}
+    return table.getRowModel().rows.map((row) => (
+      <tr key={row.id} className={rowClassName?.(row.original) ?? "hover:bg-surface-muted"}>
+        {row.getVisibleCells().map((cell) => (
+          <td key={cell.id} className={cell.column.columnDef.meta?.cellClassName ?? TD_DEFAULT}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
         ))}
       </tr>
@@ -87,18 +116,26 @@ export function DataTable<T>({ columns, data, rowKey, rowClassName, emptyMessage
 
   return (
     <div className={`rounded-card border-border bg-surface shadow-card overflow-clip border ${className}`}>
-      {toolbar && <div className="border-border bg-surface sticky top-0 z-10 border-b px-6 py-3">{toolbar}</div>}
+      {(toolbar || showVisibility) && (
+        <div className="border-border bg-surface sticky top-0 z-10 border-b px-6 py-3">
+          <div className="flex items-center gap-4">
+            <div className="min-w-0 flex-1">{toolbar}</div>
+            {showVisibility && <ColumnVisibilityMenu table={table} />}
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="divide-border min-w-full divide-y">
           <thead className="bg-surface-muted">
-            <tr>
-              {columns.map((col, i) => (
-                // eslint-disable-next-line react/no-array-index-key -- columns is a static config prop, never reordered, with no per-item id
-                <th key={i} className={col.headerClassName ?? TH_DEFAULT}>
-                  {col.header}
-                </th>
-              ))}
-            </tr>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className={header.column.columnDef.meta?.headerClassName ?? TH_DEFAULT}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
           </thead>
           <tbody className="divide-border bg-surface divide-y">{tableBody()}</tbody>
         </table>

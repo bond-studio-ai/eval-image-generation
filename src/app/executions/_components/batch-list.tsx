@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import { BatchListItem } from "./batch-list-item";
 import { BatchLoadMoreSkeleton } from "./batch-loading-skeleton";
 import type { BatchRow, RunRow } from "./batch-types";
@@ -32,7 +32,7 @@ export function BatchList({
   loadingMore: boolean;
   appliedFrom: string;
   appliedTo: string;
-  sentinelRef: RefObject<HTMLDivElement | null>;
+  sentinelRef: Ref<HTMLDivElement>;
   expandedIds: Set<string>;
   source: "default" | "benchmark";
   viewMode: "list" | "matrix";

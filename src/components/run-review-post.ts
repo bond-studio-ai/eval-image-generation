@@ -1,11 +1,11 @@
+import ms from "ms";
 import { serviceUrl } from "@/lib/api-base";
 import { parseJsonOrEmpty } from "@/lib/async-utils";
+import { HTTP_UNPROCESSABLE_ENTITY } from "@/lib/http-status";
 import type { ReviewState } from "./review-badge";
 
 /** ~3 minutes is enough for the synchronous SAM fan-out + plugin loop on the slowest projects. */
-const REVIEW_POST_TIMEOUT_MS = 180_000;
-
-const HTTP_UNPROCESSABLE_ENTITY = 422;
+const REVIEW_POST_TIMEOUT_MS = ms("3m");
 
 /**
  * Single-generation `POST /generations/:id/review` call that resolves

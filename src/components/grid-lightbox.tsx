@@ -3,6 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import Lightbox from "yet-another-react-lightbox";
+import Captions from "yet-another-react-lightbox/plugins/captions";
+import Counter from "yet-another-react-lightbox/plugins/counter";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { RatingForm } from "@/app/generations/[id]/rating-form";
 import { CdnImage } from "@/components/cdn-image";
 import { ComparisonSlider } from "@/components/comparison-slider";
@@ -13,6 +17,12 @@ import { serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
 import { dataEnvelope, generationDetailSchema } from "@/lib/api/schemas";
 import { getActiveProductCategories, getProductImagesFromInput } from "@/lib/generation-utils";
+import { withImageParams } from "@/lib/image-utils";
+
+const LIGHTBOX_IMAGE_WIDTH = 2048;
+const LIGHTBOX_Z_INDEX = 10_000;
+const LIGHTBOX_MAX_ZOOM = 3;
+const LIGHTBOX_CLOSED = -1;
 
 interface GridLightboxProps {
   src: string;
@@ -57,8 +67,8 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
   const [selectedSceneIndex, setSelectedSceneIndex] = useState<number | null>(null);
   /** 0–100: position of the comparison bar (left % shows scene, right % shows output). */
   const [comparisonPosition, setComparisonPosition] = useState(50);
-  /** When set, show a simple overlay with the full image. */
-  const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
+  /** Active slide index in the zoom gallery; LIGHTBOX_CLOSED (-1) means closed. */
+  const [lightboxIndex, setLightboxIndex] = useState(LIGHTBOX_CLOSED);
 
   const handleRated = useCallback(() => {
     void refetch();
@@ -87,11 +97,29 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
     return idx === -1 ? (list[0]?.url ?? src) : (list[idx]?.url ?? src);
   }, [generation?.results, src]);
 
+  /**
+   * Zoom-gallery slides: the output first, then every product image in render
+   * order. `productSlideIndex` maps a product `${key}:${urlIndex}` to its slide
+   * position so thumbnails can open the lightbox at the right image.
+   */
+  const { slides, productSlideIndex } = useMemo(() => {
+    const list: { src: string; title: string }[] = [{ src: withImageParams(outputUrl, LIGHTBOX_IMAGE_WIDTH), title: "Output" }];
+    const map = new Map<string, number>();
+    for (const img of productImages) {
+      img.urls.forEach((url, urlIndex) => {
+        map.set(`${img.key}:${urlIndex}`, list.length);
+        list.push({ src: withImageParams(url, LIGHTBOX_IMAGE_WIDTH), title: img.urls.length > 1 ? `${img.label} ${urlIndex + 1}` : img.label });
+      });
+    }
+    return { slides: list, productSlideIndex: map };
+  }, [outputUrl, productImages]);
+
   /** Result ID for the evaluation form: always the output that was opened (matches src). */
   const initialResultId = useMemo(() => {
-    if (!generation?.results?.length) return null;
-    const idx = generation.results.findIndex((result) => result.url === src);
-    const result = idx === -1 ? generation.results[0] : generation.results[idx];
+    const list = generation?.results ?? [];
+    if (list.length === 0) return null;
+    const idx = list.findIndex((result) => result.url === src);
+    const result = idx === -1 ? list[0] : list[idx];
     return result?.id ?? null;
   }, [generation?.results, src]);
 
@@ -99,7 +127,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
     <>
       <Modal
         onClose={() => {
-          if (!expandedImage) onClose();
+          if (lightboxIndex < 0) onClose();
         }}
         ariaLabel="Generation result"
         backdropClassName="bg-overlay/80"
@@ -138,7 +166,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setExpandedImage({ src: outputUrl, alt: "Output" });
+                    setLightboxIndex(0);
                   }}
                   className="flex h-full min-h-0 w-full cursor-zoom-in items-center justify-center"
                 >
@@ -181,7 +209,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setExpandedImage({ src: img.urls[0]!, alt: img.label });
+                              setLightboxIndex(productSlideIndex.get(`${img.key}:0`) ?? 0);
                             }}
                             className="relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded"
                           >
@@ -195,7 +223,7 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setExpandedImage({ src: url, alt: `${img.label} ${i + 1}` });
+                                  setLightboxIndex(productSlideIndex.get(`${img.key}:${i}`) ?? 0);
                                 }}
                                 className="relative size-10 shrink-0 cursor-zoom-in overflow-hidden rounded"
                               >
@@ -234,32 +262,26 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
         </div>
       </Modal>
 
-      {expandedImage && (
-        <Modal
-          onClose={() => {
-            setExpandedImage(null);
-          }}
-          ariaLabel="Expanded image"
-          backdropClassName="bg-overlay/80"
-          containerClassName="z-[10000] p-6"
-          className="relative max-h-[90vh] w-auto max-w-[90vw] overflow-hidden rounded-lg bg-transparent p-0 shadow-none"
-        >
-          <CdnImage src={expandedImage.src} alt={expandedImage.alt} width={0} height={0} sizes="100vw" className="h-auto max-h-[90vh] w-auto max-w-full object-contain" />
-          <div className="from-overlay/60 absolute top-0 right-0 left-0 rounded-t-lg bg-gradient-to-b to-transparent px-3 py-2">
-            <span className="text-text-inverse text-body font-medium">{expandedImage.alt}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setExpandedImage(null);
-            }}
-            className="text-text-inverse bg-overlay/50 hover:bg-overlay/70 absolute top-2 right-2 rounded-full p-1.5"
-            aria-label="Close"
-          >
-            <XIcon className="size-5" />
-          </button>
-        </Modal>
-      )}
+      <Lightbox
+        open={lightboxIndex >= 0}
+        index={Math.max(0, lightboxIndex)}
+        close={() => {
+          setLightboxIndex(LIGHTBOX_CLOSED);
+        }}
+        slides={slides}
+        plugins={[Zoom, Captions, Counter]}
+        on={{
+          view: ({ index }) => {
+            setLightboxIndex(index);
+          }
+        }}
+        zoom={{ maxZoomPixelRatio: LIGHTBOX_MAX_ZOOM }}
+        // This lightbox renders as a sibling portal above the Radix-Dialog-based
+        // Modal. Radix's modal mode sets `pointer-events: none` on <body>, which
+        // the portal would otherwise inherit — making the close/zoom/nav controls
+        // unclickable. Re-enable pointer events on the lightbox root.
+        styles={{ root: { zIndex: LIGHTBOX_Z_INDEX, pointerEvents: "auto" } }}
+      />
     </>
   );
 }

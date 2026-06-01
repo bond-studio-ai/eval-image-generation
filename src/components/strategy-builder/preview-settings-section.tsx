@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
-import { SearchableSelect } from "./searchable-select";
+import { ModelSelect } from "./model-select";
 import { defaultPreviewSettings, type ModelOption, PREVIEW_RESOLUTIONS, type PreviewSettings } from "./types";
 
 export function PreviewSettingsSection({
@@ -50,7 +50,7 @@ export function PreviewSettingsSection({
             <label htmlFor="preview-model" className="text-text-secondary text-caption mb-1 block font-medium">
               Preview Model
             </label>
-            <SearchableSelect
+            <ModelSelect
               id="preview-model"
               value={previewSettings.preview_model}
               options={previewModels}

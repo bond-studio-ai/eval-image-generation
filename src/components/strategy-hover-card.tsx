@@ -1,8 +1,8 @@
 "use client";
 
+import * as HoverCard from "@radix-ui/react-hover-card";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useState } from "react";
 import { ViewPromptModal } from "@/components/view-prompt-modal";
 import { serviceUrl } from "@/lib/api-base";
 import { fetchJson } from "@/lib/api/client";
@@ -30,12 +30,8 @@ interface StrategyData {
 const cache = new Map<string, StrategyData>();
 
 export function StrategyHoverCard({ strategyId, children }: { strategyId: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
   const [data, setData] = useState<StrategyData | null>(cache.get(strategyId) ?? null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [viewingPrompt, setViewingPrompt] = useState<{ id: string; name: string | null } | null>(null);
-  const triggerRef = useRef<HTMLSpanElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async () => {
     if (cache.has(strategyId)) {
@@ -51,68 +47,21 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
     }
   }, [strategyId]);
 
-  const show = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      setOpen(true);
-      void fetchData();
-      if (triggerRef.current) {
-        const rect = triggerRef.current.getBoundingClientRect();
-        setPos({ top: rect.bottom + 8, left: rect.left });
-      }
-    }, 300);
-  }, [fetchData]);
-
-  const hide = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      setOpen(false);
-    }, 200);
-  }, []);
-
-  const keepOpen = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  // Clamp the card into the viewport once it mounts. Measuring needs the
-  // rendered dimensions, so we do it in a callback ref (not an effect): the
-  // ref re-fires whenever `pos` changes, and the clamp converges in one pass
-  // because a second measure of the already-clamped position is a no-op.
-  const measureCard = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (!node || !pos) return;
-      const rect = node.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const { top: origTop, left: origLeft } = pos;
-      let top = origTop;
-      let left = origLeft;
-      if (left + rect.width > vw - 16) left = vw - rect.width - 16;
-      if (left < 16) left = 16;
-      if (top + rect.height > vh - 16) {
-        const triggerRect = triggerRef.current?.getBoundingClientRect();
-        if (triggerRect) top = triggerRect.top - rect.height - 8;
-      }
-      if (top !== origTop || left !== origLeft) setPos({ top, left });
-    },
-    [pos]
-  );
-
   return (
     <>
-      <span ref={triggerRef} onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide} className="inline">
-        {children}
-      </span>
-      {open &&
-        pos &&
-        createPortal(
-          <div ref={measureCard} onMouseEnter={keepOpen} onMouseLeave={hide} className="border-border bg-surface fixed z-[9990] w-80 rounded-lg border p-4 shadow-xl" style={{ top: pos.top, left: pos.left }}>
+      <HoverCard.Root
+        openDelay={300}
+        closeDelay={200}
+        onOpenChange={(open) => {
+          if (open) void fetchData();
+        }}
+      >
+        <HoverCard.Trigger asChild>
+          <span className="inline">{children}</span>
+        </HoverCard.Trigger>
+        <HoverCard.Portal>
+          {/* Radix handles viewport collision (flip/shift) — no manual clamping. */}
+          <HoverCard.Content side="bottom" align="start" sideOffset={8} collisionPadding={16} className="border-border bg-surface z-[9990] w-80 rounded-lg border p-4 shadow-xl">
             {data ? (
               <div className="space-y-3">
                 <div>
@@ -163,9 +112,9 @@ export function StrategyHoverCard({ strategyId, children }: { strategyId: string
             ) : (
               <p className="text-text-muted text-caption">Loading…</p>
             )}
-          </div>,
-          document.body
-        )}
+          </HoverCard.Content>
+        </HoverCard.Portal>
+      </HoverCard.Root>
       {viewingPrompt && (
         <ViewPromptModal
           promptVersionId={viewingPrompt.id}

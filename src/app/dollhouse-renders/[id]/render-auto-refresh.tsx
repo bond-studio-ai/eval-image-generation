@@ -1,5 +1,6 @@
 "use client";
 
+import ms from "ms";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Banner } from "@/components/ui/banner";
@@ -10,8 +11,8 @@ interface RenderAutoRefreshProps {
   status: string;
 }
 
-const REFRESH_INTERVAL_MS = 5000;
-const TICK_MS = 1000;
+const REFRESH_INTERVAL_MS = ms("5s");
+const TICK_MS = ms("1s");
 const FLASH_MS = 400;
 
 /**

@@ -1,5 +1,6 @@
 "use client";
 
+import { HTTP_NO_CONTENT } from "@/lib/http-status";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function DeleteGenerationButton({ generationId, variant = "button" }: Del
         method: "DELETE"
       });
 
-      if (res.ok || res.status === 204) {
+      if (res.ok || res.status === HTTP_NO_CONTENT) {
         router.push("/generations");
         router.refresh();
       }

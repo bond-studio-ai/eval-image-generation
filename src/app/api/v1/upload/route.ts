@@ -1,14 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
+import bytes from "bytes";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { s3UploadConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const BYTES_PER_KB = 1024;
-const MAX_SIZE_MB = 10;
-const MAX_SIZE = MAX_SIZE_MB * BYTES_PER_KB * BYTES_PER_KB;
+
+// `bytes` returns `number | null`; a null can only mean the literal is malformed,
+// which is a programmer error — fail loudly rather than silently capping at 0
+// (which would reject every upload).
+function parseSize(literal: string): number {
+  const parsed = bytes(literal);
+  if (parsed == null) throw new Error(`Invalid byte-size literal: ${literal}`);
+  return parsed;
+}
+
+const MAX_SIZE = parseSize("10MB");
 
 export async function POST(request: Request) {
   try {

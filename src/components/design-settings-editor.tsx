@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { useCatalogProducts } from "@/components/design-settings-catalog";
 import { ProductImageDownloads } from "@/components/design-settings-downloads";
@@ -24,6 +25,30 @@ import { ProductSelectionModal } from "@/components/design-settings-product-moda
 import { isNonEmpty } from "@/components/design-settings-values";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { Button } from "@/components/ui/button";
+
+// Lazy-load the CodeMirror JSON editor so its heavy dependencies stay out of the
+// initial bundle; it is browser-only and only renders in JSON mode.
+const JsonCodeEditor = dynamic(
+  async () => {
+    const mod = await import("@/components/prompt-template-editor/json-code-editor");
+    return mod.JsonCodeEditor;
+  },
+  { ssr: false }
+);
+
+type ParsedDesignSettings = { value: Record<string, unknown> } | { error: string };
+
+function parseDesignSettingsObject(text: string): ParsedDesignSettings {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { error: "Must be a JSON object." };
+    }
+    return { value: parsed as Record<string, unknown> };
+  } catch {
+    return { error: "Invalid JSON." };
+  }
+}
 
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
@@ -65,50 +90,36 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
     setMode("json");
   }, [value]);
 
-  const switchToForm = useCallback(() => {
+  // Parse the JSON buffer and push it to the parent, dropping any arbitrary slot
+  // images whose slot is no longer set to "arbitrary". Returns whether the commit
+  // succeeded so callers can decide whether to also switch back to form mode.
+  const commitJson = useCallback((): boolean => {
     const trimmed = jsonText.trim();
     if (trimmed === "" || trimmed === "{}") {
       onChange(null);
-      setMode("form");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setJsonError("Must be a JSON object.");
-        return;
-      }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
-      onArbitraryImagesBySlotChange(nextImages);
-      onChange(parsed as Record<string, unknown>);
       setJsonError(null);
-      setMode("form");
-    } catch {
-      setJsonError("Invalid JSON.");
+      return true;
     }
+    const result = parseDesignSettingsObject(trimmed);
+    if ("error" in result) {
+      setJsonError(result.error);
+      return false;
+    }
+    const record = result.value;
+    const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && record[getProductImageTypeKey(slot)] === "arbitrary"));
+    onArbitraryImagesBySlotChange(nextImages);
+    onChange(record);
+    setJsonError(null);
+    return true;
   }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
 
+  const switchToForm = useCallback(() => {
+    if (commitJson()) setMode("form");
+  }, [commitJson]);
+
   const applyJson = useCallback(() => {
-    const trimmed = jsonText.trim();
-    if (trimmed === "" || trimmed === "{}") {
-      onChange(null);
-      setJsonError(null);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setJsonError("Must be a JSON object.");
-        return;
-      }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
-      onArbitraryImagesBySlotChange(nextImages);
-      onChange(parsed as Record<string, unknown>);
-      setJsonError(null);
-    } catch {
-      setJsonError("Invalid JSON.");
-    }
-  }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
+    commitJson();
+  }, [commitJson]);
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">
@@ -244,16 +255,14 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
       ) : (
         <div className="p-5">
           <p className="text-text-muted text-caption mb-2">Raw JSON with camelCase keys. Switch back to Form to use the structured editor.</p>
-          <textarea
-            aria-label="Design settings JSON"
+          <JsonCodeEditor
+            ariaLabel="Design settings JSON"
             value={jsonText}
-            onChange={(e) => {
-              setJsonText(e.target.value);
+            onChange={(next) => {
+              setJsonText(next);
               setJsonError(null);
             }}
-            spellCheck={false}
-            rows={14}
-            className="border-border-strong bg-surface-muted text-text-primary focus:border-primary-500 focus:ring-primary-500 text-caption block w-full rounded-md border px-3 py-2 font-mono shadow-xs focus:ring-1 focus:outline-none"
+            minRows={14}
             placeholder={'{\n  "vanity": "00000000-0000-4000-8000-000000000000",\n  "wallTilePlacement": "VanityHalfWall"\n}'}
           />
           {jsonError && <p className="text-danger-600 text-caption mt-2">{jsonError}</p>}

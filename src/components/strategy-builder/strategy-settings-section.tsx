@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { FormSection } from "@/components/ui/form-section";
-import { SearchableSelect } from "./searchable-select";
+import { ModelSelect } from "./model-select";
 import { ASPECT_RATIOS, type ModelOption, RESOLUTIONS, type StrategySettings } from "./types";
 
 export function StrategySettingsSection({ strategySettings, setStrategySettings, generationModels }: { strategySettings: StrategySettings; setStrategySettings: Dispatch<SetStateAction<StrategySettings>>; generationModels: ModelOption[] }) {
@@ -13,7 +13,7 @@ export function StrategySettingsSection({ strategySettings, setStrategySettings,
           <label htmlFor="strategy-model" className="text-text-secondary text-caption mb-1 block font-medium">
             Model
           </label>
-          <SearchableSelect
+          <ModelSelect
             id="strategy-model"
             value={strategySettings.model}
             options={generationModels}

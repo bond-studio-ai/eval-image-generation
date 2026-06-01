@@ -1,5 +1,6 @@
 "use client";
 
+import { sortBy } from "es-toolkit";
 import Link from "next/link";
 import { CdnImage } from "@/components/cdn-image";
 import { JudgeScoreBadge } from "@/components/judge-score-badge";
@@ -34,8 +35,8 @@ export function BatchMatrix({
     if (!byPreset.has(key)) byPreset.set(key, []);
     byPreset.get(key)!.push(run);
   }
-  for (const arr of byPreset.values()) {
-    arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  for (const [key, arr] of byPreset) {
+    byPreset.set(key, sortBy(arr, [(run) => new Date(run.createdAt).getTime()]));
   }
   const presetNames = Array.from(byPreset.keys()).sort();
   const maxExecutions = Math.max(0, ...Array.from(byPreset.values(), (a) => a.length));

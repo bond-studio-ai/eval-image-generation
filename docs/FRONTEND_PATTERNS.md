@@ -67,15 +67,15 @@ Avoid raw red text for form failures when `ErrorCard` fits.
 
 ## Tables And Lists
 
-Use `DataTable` for tabular list views. Pair it with:
+Use `DataTable` for tabular list views. It is built on `@tanstack/react-table` (headless): columns are native `ColumnDef<T>` objects (stable `id`, `cell: ({ row }) => row.original.…`, per-column classes via `meta.cellClassName`/`meta.headerClassName`), rendered with `flexRender`. Pair it with:
 
 - `useInfiniteList` for backend-powered search/pagination
 - `SearchBar`, `SelectAllCheckbox`, and filter controls in the toolbar
 - `Pagination` in the footer for paginated resources
-- `BulkDeleteBar` for selection actions
+- `BulkDeleteBar` for selection actions (the `Set`-based selection model, not react-table row selection)
 - `checkboxColumn`, `actionsColumn`, `NameCell`, `StatusBadge`, and `DateCell`
 
-`actionsColumn` renders icon buttons via `IconButton` under the hood and uses lucide icons (`clone`/`delete`/`edit`).
+`actionsColumn` renders icon buttons via `IconButton` under the hood and uses lucide icons (`clone`/`delete`/`edit`). A built-in "Columns" menu lets users show/hide columns client-side (disable with `enableColumnVisibility={false}`).
 
 For non-tabular lists (custom card layouts like the Executions batch tab), keep the layout custom but use `Card`, `Badge`, `IconButton`, `Button`, and `SegmentedControl` so the visual language stays consistent.
 

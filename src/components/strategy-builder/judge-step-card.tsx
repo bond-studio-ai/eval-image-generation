@@ -3,8 +3,8 @@
 import { PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons";
 import type { PromptVersionListItem } from "@/lib/types";
 import { CandidatePicker } from "./candidate-picker";
+import { ModelSelect } from "./model-select";
 import { PromptVersionSelector } from "./prompt-version-selector";
-import { SearchableSelect } from "./searchable-select";
 import { JUDGE_TYPES, type ModelOption, nextUid, type StepData } from "./types";
 
 export function JudgeStepCard({
@@ -118,7 +118,7 @@ export function JudgeStepCard({
                 <label htmlFor={`judge-model-${idx}-${jIdx}`} className="text-text-secondary text-caption mb-1 block font-medium">
                   Model
                 </label>
-                <SearchableSelect
+                <ModelSelect
                   id={`judge-model-${idx}-${jIdx}`}
                   value={judge.judge_model}
                   options={judgeModels}

@@ -1,3 +1,4 @@
+import { uniq } from "es-toolkit";
 import { coerceString } from "@/lib/coerce-string";
 
 const CONFIG_LABELS: Record<string, string> = {
@@ -10,7 +11,7 @@ const CONFIG_LABELS: Record<string, string> = {
 };
 
 export function ConfigDiff({ left, right }: { left: Record<string, unknown> | null; right: Record<string, unknown> | null }) {
-  const allKeys = Array.from(new Set([...Object.keys(left ?? {}), ...Object.keys(right ?? {})]));
+  const allKeys = uniq([...Object.keys(left ?? {}), ...Object.keys(right ?? {})]);
   if (allKeys.length === 0) return <p className="text-text-disabled text-caption">No config data</p>;
 
   return (

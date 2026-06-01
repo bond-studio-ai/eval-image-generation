@@ -1,5 +1,6 @@
 "use client";
 
+import { HTTP_UNAUTHORIZED } from "@/lib/http-status";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useReducer, useState } from "react";
@@ -136,7 +137,7 @@ export function PromptVersionDetail({ data, generations, stats }: PromptVersionD
           const errorJson: unknown = await res.json();
           throw new Error(parseOrFallback(errorEnvelopeSchema, errorJson, {}, "prompt version save").error?.message || "Failed to save");
         }
-        throw new Error(res.status === 401 || res.redirected ? "Session expired. Please refresh the page." : `Failed to save (${res.status})`);
+        throw new Error(res.status === HTTP_UNAUTHORIZED || res.redirected ? "Session expired. Please refresh the page." : `Failed to save (${res.status})`);
       }
 
       // Update baseline so isDirty resets

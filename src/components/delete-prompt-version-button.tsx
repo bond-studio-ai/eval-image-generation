@@ -1,5 +1,6 @@
 "use client";
 
+import { HTTP_NO_CONTENT } from "@/lib/http-status";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export function DeletePromptVersionButton({ id, name }: DeletePromptVersionButto
         method: "DELETE"
       });
 
-      if (res.status === 204) {
+      if (res.status === HTTP_NO_CONTENT) {
         router.push("/prompt-versions");
         return;
       }

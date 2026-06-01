@@ -525,41 +525,4 @@ All errors follow this format:
 | 422         | `UNPROCESSABLE_ENTITY` | Valid syntax but semantic error     |
 | 500         | `INTERNAL_ERROR`       | Server error                        |
 
----
-
-## Rate Limiting
-
-- **Default limit:** 100 requests per minute
-- **Headers returned:**
-  - `X-RateLimit-Limit`: Maximum requests allowed
-  - `X-RateLimit-Remaining`: Requests remaining in window
-  - `X-RateLimit-Reset`: Unix timestamp when limit resets
-
----
-
-## Webhooks (Optional)
-
-Configure webhooks to receive notifications:
-
-```http
-POST /webhooks
-```
-
-**Request Body:**
-
-```json
-{
-  "url": "https://your-app.com/webhooks/ai-gen",
-  "events": ["generation.created", "generation.rated"],
-  "secret": "your-webhook-secret"
-}
-```
-
-**Events:**
-
-| Event                    | Description                  |
-| ------------------------ | ---------------------------- |
-| `prompt_version.created` | New prompt version created   |
-| `prompt_version.deleted` | Prompt version soft-deleted  |
-| `generation.created`     | New generation created       |
-| `generation.rated`       | Generation received a rating |
+The local BFF routes surface these as `{ error: { code, message } }` envelopes (see [FRONTEND_PATTERNS.md](FRONTEND_PATTERNS.md) and `src/lib/proxy-handler.ts`).

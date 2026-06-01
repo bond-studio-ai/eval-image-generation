@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { sumBy } from "es-toolkit";
 import { Fragment, useCallback, useState } from "react";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { browserTimezone, serviceUrl } from "@/lib/api-base";
@@ -210,7 +211,7 @@ const NOTE_PREVIEW_CHARS = 72;
 function CategoryNoteBreakdownRows({ items, failureCount, notesTruncated }: { items: CategoryNoteCount[]; failureCount: number; notesTruncated: boolean }) {
   if (failureCount <= 0 || items.length === 0) return null;
 
-  const notesTotalCount = items.reduce((sum, x) => sum + x.count, 0);
+  const notesTotalCount = sumBy(items, (x) => x.count);
 
   const headerRow = (
     <tr className={ISSUE_BREAKDOWN_TR}>

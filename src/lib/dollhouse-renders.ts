@@ -1,6 +1,5 @@
 import { serviceV2Url } from "./api-base";
-
-const HTTP_NOT_FOUND = 404;
+import { HTTP_NOT_FOUND } from "./http-status";
 
 export type DollhouseRenderStatus = "pending" | "posted" | "completed" | "failed";
 
