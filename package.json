@@ -110,7 +110,6 @@
     "eslint-plugin-validate-jsx-nesting": "^0.1.1",
     "jsdom": "^29.1.1",
     "monocart-coverage-reports": "^2.12.12",
-    "monocart-reporter": "^2.11.2",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "rimraf": "^6.1.3",

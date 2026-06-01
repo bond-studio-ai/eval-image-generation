@@ -1,22 +1,28 @@
-import type { FullConfig, TestInfo } from "@playwright/test";
-import { CDPClient } from "monocart-coverage-reports";
-import { addCoverageReport } from "monocart-reporter";
+import { CDPClient, CoverageReport } from "monocart-coverage-reports";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { E2E_RAW_OPTIONS } from "./coverage-report";
+
 /**
- * Server-side V8 coverage collection for the E2E suite.
+ * Finalizes E2E coverage for the suite.
  *
  * When `COVERAGE_RAW=1`, the Next server is started by `playwright.config.ts`
  * with `NODE_V8_COVERAGE` + `--inspect` (see `webServer`). Here — while the
  * server is still alive — we connect over CDP, flush its V8 coverage to disk,
- * attach the compiled source for each file, and hand it to monocart-reporter so
- * it lands in the same `raw` report as the client coverage. Source maps for
- * these `file://` entries resolve from disk at merge time.
+ * attach the compiled source for each file, and add it to the same
+ * `CoverageReport` the client fixtures fed. We then call `generate()` once to
+ * write `.coverage-raw/e2e/raw` (merging every worker's client data from the
+ * shared cache plus the server data). We always generate — even if the server
+ * flush fails — so client coverage still produces a raw report.
  *
  * No-op unless the flag is set, so normal a11y/visual runs are unaffected.
  */
+interface ServerCoverageEntry {
+  url?: string;
+  source?: string;
+}
 
 // The Next CLI is started with `--inspect=<main>` (see playwright.config.ts).
 // Server components / route handlers run in Next's forked render worker, which
@@ -50,35 +56,39 @@ async function flushServerCoverage(): Promise<string | undefined> {
   return undefined;
 }
 
-export default async function globalTeardown(config: FullConfig): Promise<void> {
-  if (!process.env.COVERAGE_RAW) {
-    return;
-  }
-
-  const dir = await flushServerCoverage();
-  if (!dir) {
-    return;
-  }
-
-  // monocart-reporter's addCoverageReport expects a TestInfo; on teardown there
-  // is no real test, so we pass the minimal shape it reads (just `config`).
-  const mockTestInfo = { config } as unknown as TestInfo;
-
+function readServerCoverage(dir: string): ServerCoverageEntry[] {
+  const entries: ServerCoverageEntry[] = [];
   for (const filename of fs.readdirSync(dir)) {
-    const json = JSON.parse(fs.readFileSync(path.resolve(dir, filename), "utf8")) as { result?: { url?: string; source?: string }[] };
+    const json = JSON.parse(fs.readFileSync(path.resolve(dir, filename), "utf8")) as { result?: ServerCoverageEntry[] };
     const list = (json.result ?? []).filter((entry) => entry.url?.startsWith("file:") && !entry.url.includes("/node_modules/"));
-
-    if (list.length === 0) {
-      continue;
-    }
-
     for (const entry of list) {
       const filePath = fileURLToPath(entry.url!);
       if (fs.existsSync(filePath)) {
         entry.source = fs.readFileSync(filePath, "utf8");
+        entries.push(entry);
       }
     }
-
-    await addCoverageReport(list, mockTestInfo);
   }
+  return entries;
+}
+
+export default async function globalTeardown(): Promise<void> {
+  if (!process.env.COVERAGE_RAW) {
+    return;
+  }
+
+  const report = new CoverageReport(E2E_RAW_OPTIONS);
+
+  const dir = await flushServerCoverage();
+  if (dir) {
+    const serverEntries = readServerCoverage(dir);
+    if (serverEntries.length > 0) {
+      await report.add(serverEntries);
+    }
+  }
+
+  // Always generate: this merges every worker's client coverage (from the shared
+  // cache) with the server coverage above into `.coverage-raw/e2e/raw`, so the
+  // raw report exists even when the server flush yields nothing.
+  await report.generate();
 }

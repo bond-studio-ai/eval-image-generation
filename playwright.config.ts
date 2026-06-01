@@ -38,27 +38,11 @@ const MOCK_PORT = process.env.MOCK_PORT ?? "3001";
 const STORAGE_STATE = process.env.STORAGE_STATE ?? ".playwright/storage.json";
 const INSPECT_PORT = process.env.COVERAGE_INSPECT_PORT ?? "9229";
 
-// In coverage mode, monocart-reporter aggregates the raw V8 data (client from
-// fixtures, server from global-teardown) into `.coverage-raw/e2e/raw` for the
-// merge step. Otherwise the reporting is unchanged.
+// Coverage collection happens via the fixtures + global-teardown (MCR API), not
+// a reporter, so reporting is just the list reporter in coverage mode and is
+// otherwise unchanged.
 const defaultReporter: ReporterDescription[] = isCI ? [["list"], ["html", { open: "never" }]] : [["list"]];
-const coverageReporter: ReporterDescription[] = [
-  ["list"],
-  [
-    "monocart-reporter",
-    {
-      name: "E2E Coverage",
-      outputFile: ".coverage-raw/e2e/report/index.html",
-      coverage: {
-        name: "E2E Coverage (raw)",
-        outputDir: ".coverage-raw/e2e",
-        reports: [["raw", { outputDir: "raw" }]],
-        cleanCache: true
-      }
-    }
-  ]
-];
-const reporter = collectCoverage ? coverageReporter : defaultReporter;
+const reporter: ReporterDescription[] = collectCoverage ? [["list"]] : defaultReporter;
 
 // Coverage needs our own freshly-instrumented dev server, so don't piggy-back on
 // a developer's already-running server in that mode.

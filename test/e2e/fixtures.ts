@@ -1,13 +1,16 @@
 import { test as base, expect } from "@playwright/test";
-import { addCoverageReport } from "monocart-reporter";
+import { CoverageReport } from "monocart-coverage-reports";
+
+import { E2E_RAW_OPTIONS } from "./coverage-report";
 
 /**
  * Client-side V8 coverage collection for the E2E suite.
  *
  * When `COVERAGE_RAW=1` (the merged-coverage pipeline, see `mcr.config.mjs`), an
  * auto fixture wraps every test: it starts JS/CSS coverage before the test and,
- * after it, hands the raw V8 data to monocart-reporter, which writes a `raw`
- * report under `.coverage-raw/e2e/raw` for later merging with the unit coverage.
+ * after it, adds the raw V8 data to a `CoverageReport`. MCR's multiprocessing
+ * support collects every worker's data into `.coverage-raw/e2e/.cache`;
+ * `global-teardown` later calls `generate()` once to write `.coverage-raw/e2e/raw`.
  *
  * Because we collect `raw` and merge in a separate process (the dev server is
  * gone by then), we resolve each browser entry's external source map here —
@@ -69,7 +72,7 @@ export const test = base.extend<{ autoCoverage: void }>({
         }
       }
 
-      await addCoverageReport(entries, test.info());
+      await new CoverageReport(E2E_RAW_OPTIONS).add(entries);
     },
     { auto: true }
   ]

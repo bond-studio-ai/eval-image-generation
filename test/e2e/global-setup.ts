@@ -1,7 +1,10 @@
 import { clerk, clerkSetup } from "@clerk/testing/playwright";
 import { chromium, type FullConfig } from "@playwright/test";
+import { CoverageReport } from "monocart-coverage-reports";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
+
+import { E2E_RAW_OPTIONS } from "./coverage-report";
 
 /**
  * Authenticates once against the real Clerk instance and persists the signed-in
@@ -27,6 +30,12 @@ function requireEnv(name: string): string {
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
+  // Clear any stale multiprocessing cache so this run's E2E coverage starts fresh
+  // before the worker fixtures begin adding data.
+  if (process.env.COVERAGE_RAW) {
+    new CoverageReport(E2E_RAW_OPTIONS).cleanCache();
+  }
+
   const identifier = requireEnv("E2E_CLERK_USER_USERNAME");
   const password = requireEnv("E2E_CLERK_USER_PASSWORD");
   requireEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
