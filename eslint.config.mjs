@@ -34,7 +34,7 @@ import noOnlyTests from "eslint-plugin-no-only-tests";
 const ERROR = "error";
 const OFF = "off";
 
-const TEST_FILES = ["**/test/**", "**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "**/*.e2e.*", "tests/**", "e2e/**"];
+const TEST_FILES = ["**/test/**", "**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "**/*.e2e.*", "test/**", "e2e/**"];
 
 /* ----------------------------------------------------------------------------
  * Existing local conventions (raw Tailwind palette ban, raw <button> ban).
@@ -56,7 +56,9 @@ const nextBase = nextConfig.filter((entry) => entry.name !== "next/typescript");
 
 const eslintConfig = [
   {
-    ignores: [".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "**/*.min.*"]
+    // `.agents/skills/**` is vendored agent-skill content (templates, examples)
+    // that we don't own and shouldn't lint/format as project source.
+    ignores: [".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "**/*.min.*", ".agents/**"]
   },
 
   ...nextBase,
@@ -833,7 +835,16 @@ const eslintConfig = [
       "@typescript-eslint/no-unsafe-member-access": OFF,
       "@typescript-eslint/no-unsafe-call": OFF,
       "@typescript-eslint/no-unsafe-return": OFF,
-      "@typescript-eslint/no-unsafe-argument": OFF
+      "@typescript-eslint/no-unsafe-argument": OFF,
+      // Tests deliberately exercise insecure-URL handling (e.g. http→https
+      // normalization) with literal fixtures.
+      "@microsoft/sdl/no-insecure-url": OFF,
+      // Lightweight next/link stubs spread their props onto a plain <a>; the
+      // target-blank guard isn't meaningful for test doubles.
+      "react/jsx-no-target-blank": OFF,
+      // The e2e harness (mock server, global setup) logs startup/diagnostic
+      // lines to the CI console on purpose; console is the right sink there.
+      "no-console": OFF
     }
   },
 
@@ -902,7 +913,7 @@ const eslintConfig = [
   // An ESLint flat config is conventionally a single large file (one ordered
   // array of config objects), so the source-file line cap doesn't apply here.
   {
-    files: ["**/*.{config,setup}.{js,cjs,mjs,ts}", "*.config.*"],
+    files: ["**/*.{config,setup}.{js,cjs,mjs,ts}", "*.config.{js,cjs,mjs,ts}"],
     rules: {
       "unicorn/prefer-module": OFF,
       "@typescript-eslint/no-magic-numbers": OFF,

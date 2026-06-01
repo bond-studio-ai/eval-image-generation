@@ -1,0 +1,45 @@
+---
+description: Test layout, conventions, and the no-inline-disable lint policy for tests
+globs: test/**
+alwaysApply: false
+---
+
+# Testing
+
+Full guide: [docs/TESTING.md](../../docs/TESTING.md).
+
+## Layout
+
+- All tests live under top-level `test/`, organized by type: `test/unit`,
+  `test/functional`, `test/e2e`. Tests are never colocated with source.
+- `test/unit/` mirrors `src/` (a test for `src/lib/foo.ts` →
+  `test/unit/lib/foo.test.ts`). Component tests → `test/unit/components/`,
+  hooks → `test/unit/hooks/`.
+- Import source via the `@/` alias, never relative `../../src` paths.
+- Component/hook suites opt into jsdom with a top-of-file
+  `// @vitest-environment jsdom` docblock. Use `renderWithQuery` /
+  `renderHookWithQuery` from `test/helpers.tsx` for React Query code.
+
+## Linting: no inline `eslint-disable` in tests
+
+Do **not** litter test files with `eslint-disable` comments. If a lint rule is
+inappropriate for test code, relax it once in the `hardcore/tests` override
+block in [eslint.config.mjs](../../eslint.config.mjs) (scoped to `TEST_FILES`)
+so every test benefits and the intent is recorded in one place.
+
+```js
+// ❌ BAD — inline disable scattered across test files
+// eslint-disable-next-line @microsoft/sdl/no-insecure-url
+vi.stubEnv("BASE_API_HOSTNAME", "http://api.example.com");
+
+// ✅ GOOD — relax the rule for all tests in eslint.config.mjs › hardcore/tests
+"@microsoft/sdl/no-insecure-url": OFF,
+```
+
+This preference is test-scoped: source files may still carry a narrowly-scoped
+disable when a rule genuinely doesn't fit a specific line.
+
+## Coverage ratchet
+
+Coverage thresholds in `vitest.config.ts` are floored to current coverage.
+When you add meaningful tests, raise them so coverage can't backslide.

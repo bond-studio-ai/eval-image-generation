@@ -59,6 +59,7 @@ export function PrimaryFilters({ models, isCompare, from, to, model, source, has
           <div className="relative">
             <select
               value={model}
+              aria-label="Filter by model"
               onChange={(e) => {
                 applyFilters({ model: e.target.value });
               }}

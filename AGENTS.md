@@ -31,21 +31,33 @@ Run `yarn verify` before opening a PR.
 | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)     | Setting up locally, env vars, data flow, troubleshooting.             |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Understanding runtime boundaries, auth, server vs client data access. |
 | [docs/FRONTEND_PATTERNS.md](docs/FRONTEND_PATTERNS.md) | Building UI — layout, primitives, forms, tables, feedback.            |
+| [docs/TESTING.md](docs/TESTING.md)                     | Where tests live, the `test/` layout by type, and how to run them.    |
 | [docs/DESIGN_TOKENS.md](docs/DESIGN_TOKENS.md)         | Choosing colors, type, spacing, shadows (the token system).           |
 | [docs/LIBRARIES.md](docs/LIBRARIES.md)                 | Adding a dependency or deciding whether to hand-roll something.       |
 | [docs/API.md](docs/API.md)                             | Historical reference for the upstream image-generation API shapes.    |
 
-## Conventions enforced automatically
+## Conventions
 
-Project-specific rules live in [`.cursor/rules/`](.cursor/rules/) and are applied
-automatically by Cursor. The key ones:
+The canonical, machine-applied conventions live as rule files in
+[`.cursor/rules/`](.cursor/rules/). Cursor loads them automatically. **If you are
+an agent running outside Cursor (Claude Code, Codex, CI bots, etc.), these still
+apply — open and follow the matching `.cursor/rules/*.mdc` file (they are plain
+markdown).** The table below summarizes each rule so this file stays a complete,
+standalone reference; the linked `.mdc` is the source of truth for the details.
 
-- **`use-yarn`** — Yarn for all package/script commands; never `npm`.
-- **`ui-conventions`** — use semantic tokens and the `src/components/ui/`
-  primitives (`Button`, `Badge`, `Card`, `DataTable`, …); raw Tailwind palette
-  colors and bare font sizes are lint errors. See `docs/DESIGN_TOKENS.md`.
-- **`page-headers`**, **`resource-forms`**, **`data-table`**, **`env-config`** —
-  page/form/table structure and server-only env access.
+| Rule                                                 | Applies to        | In short                                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`use-yarn`](.cursor/rules/use-yarn.mdc)             | everything        | Yarn for all package/script commands; never `npm`.                                                                                                                                                                                                                                  |
+| [`ui-conventions`](.cursor/rules/ui-conventions.mdc) | `src/**` UI       | Use semantic tokens + `src/components/ui/` primitives (`Button`, `Badge`, `Card`, `DataTable`, …); raw Tailwind palette colors and bare font sizes are lint errors. Detail: [docs/DESIGN_TOKENS.md](docs/DESIGN_TOKENS.md), [docs/FRONTEND_PATTERNS.md](docs/FRONTEND_PATTERNS.md). |
+| [`page-headers`](.cursor/rules/page-headers.mdc)     | pages             | Every page title goes through `<PageHeader>`; never a raw `<h1>`.                                                                                                                                                                                                                   |
+| [`resource-forms`](.cursor/rules/resource-forms.mdc) | create/edit forms | `<ResourceFormHeader>` + `<FormSection>` + `<ErrorCard>` structure; separate routes for create/edit.                                                                                                                                                                                |
+| [`data-table`](.cursor/rules/data-table.mdc)         | list/table views  | Use `<DataTable>` + `useInfiniteList`; never raw `<table>` or client-side filtering.                                                                                                                                                                                                |
+| [`env-config`](.cursor/rules/env-config.mdc)         | server code       | Read backend hosts via `@/lib/env` helpers; never `process.env.*` directly. Server-only — never import in client components.                                                                                                                                                        |
+| [`testing`](.cursor/rules/testing.mdc)               | `test/**`         | Tests live in `test/` by type (`unit` mirrors `src/`); no inline `eslint-disable` in tests — relax test-inappropriate rules in `eslint.config.mjs` › `hardcore/tests` instead. Detail: [docs/TESTING.md](docs/TESTING.md).                                                          |
+
+Lint/format/type rules are enforced by `yarn verify`; the ESLint config
+([eslint.config.mjs](eslint.config.mjs)) is the source of truth for severity and
+for test-scoped relaxations (the `hardcore/tests` block).
 
 ## Guiding principles
 

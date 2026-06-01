@@ -184,7 +184,7 @@ export function GenerationsList({ initialData, initialTotal, pageSize, filters }
       )}
       {!loading && !hasMore && generations.length > 0 && (
         <div className="flex items-center justify-center py-4">
-          <p className="text-text-disabled text-caption">
+          <p className="text-text-muted text-caption">
             Showing all {total} generation{total === 1 ? "" : "s"}
           </p>
         </div>

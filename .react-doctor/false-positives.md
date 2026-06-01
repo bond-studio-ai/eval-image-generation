@@ -93,7 +93,7 @@ sits on an element nested inside a real `<button>` (button-in-button is invalid
 HTML), maps to a void element that can't host the existing children/interactivity,
 or maps to a semantically-wrong tag.
 
-- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:255`, `:269`, `:345`, `:359` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
+- `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list.tsx:254`, `:268`, `:344`, `:358` — `role="button"` spans nested inside the card's real expand `<button>`; swapping nests `<button>` in `<button>`.
 - `react-doctor/prefer-tag-over-role` — `src/app/strategies/[id]/runs-list-matrix.tsx:96` — `role="button"` div is a clickable result-thumbnail cell with nested interactive descendants (`JudgeScoreBadge` + overlay); a native `<button>` would nest interactive content illegally. (Migrated out of `runs-list.tsx` during the lint refactor.)
 - `react-doctor/prefer-tag-over-role` — `src/components/judge-score-badge.tsx:279`, `:308` — this shared badge also renders inside a real `<button>` in `batch-matrix-view.tsx`; a native `<button>` would nest button-in-button there.
 - `react-doctor/prefer-tag-over-role` — `src/components/two-pane-split.tsx:124` — `role="separator"` maps to void `<hr>`, which can't carry the focusable/draggable resizer (`tabIndex`, pointer + key handlers, `aria-valuenow`).

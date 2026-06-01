@@ -1,0 +1,55 @@
+name: E2E a11y
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-a11y-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-a11y:
+    runs-on: ubuntu-latest
+    # Fork PRs don't receive repo secrets, so globalSetup's Clerk sign-in would
+    # abort and the check would always fail. Skip on fork PRs; still run on
+    # same-repo PRs and pushes to main.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      # The mock upstream (test/e2e/mock-server.mjs) stands in for the
+      # image-generation backend, so the run is hermetic except for Clerk.
+      BASE_API_HOSTNAME: http://localhost:3001
+      # NEXT_PUBLIC_* is what Next inlines at build and what clerkSetup() reads as
+      # a fallback; CLERK_PUBLISHABLE_KEY is the name @clerk/testing prefers, so
+      # alias the same secret to both for an explicit, version-proof setup.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      E2E_CLERK_USER_USERNAME: ${{ secrets.E2E_CLERK_USER_USERNAME }}
+      E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      # Only Chromium is needed; --with-deps installs the OS libraries Playwright requires.
+      - run: yarn playwright install --with-deps chromium
+      # Production build (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is inlined here). The
+      # listed a11y routes are force-dynamic, so no backend is hit at build time.
+      - run: yarn build
+      # globalSetup signs in the Clerk test user; webServer (playwright.config.ts)
+      # boots the mock backend + `next start` pointed at it.
+      - run: yarn test:e2e:a11y
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
