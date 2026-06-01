@@ -142,7 +142,7 @@ export function getAssetId(product: CatalogProduct): string | null {
   return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? asString(product["3DAssetId"]) ?? asString(product.assetId) ?? null;
 }
 
-export function readPatternTexture(product: CatalogProduct, patternType: unknown): { texture: string | null; scale: TextureScale | null } {
+function readPatternTexture(product: CatalogProduct, patternType: unknown): { texture: string | null; scale: TextureScale | null } {
   const patternName = asString(patternType);
   if (!patternName) return { texture: null, scale: null };
   const key = `${patternName.charAt(0).toLowerCase()}${patternName.slice(1)}PatternId`;
@@ -154,7 +154,7 @@ export function readPatternTexture(product: CatalogProduct, patternType: unknown
   };
 }
 
-export function buildMaterialLike(product: CatalogProduct, productId: string): CatalogProduct {
+function buildMaterialLike(product: CatalogProduct, productId: string): CatalogProduct {
   const renderAttributes = asRecord(product.renderAttributes) ?? {};
   return {
     id: productId,

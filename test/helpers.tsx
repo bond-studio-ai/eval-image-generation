@@ -3,7 +3,7 @@ import { render, renderHook, type RenderHookOptions, type RenderOptions } from "
 import type { ReactElement, ReactNode } from "react";
 
 /** Fresh client per call so tests stay isolated; no retries/cache so async settles fast. */
-export function makeQueryClient(): QueryClient {
+function makeQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, staleTime: 0 }
