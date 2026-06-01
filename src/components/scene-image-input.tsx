@@ -53,6 +53,11 @@ export function SceneImageInput({ label, value, onChange }: SceneImageInputProps
       const [file] = accepted;
       if (file) void uploadFile(file);
     },
+    // `accept` filters non-image files out before `onDrop`, so surface a clear
+    // error for rejected drops instead of silently ignoring them.
+    onDropRejected: () => {
+      setError("Unsupported file type. Use a JPEG, PNG, WebP, or GIF image.");
+    },
     accept: { "image/jpeg": [], "image/png": [], "image/webp": [], "image/gif": [] },
     multiple: false,
     disabled: uploading
