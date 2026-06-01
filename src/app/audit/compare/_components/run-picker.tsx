@@ -295,12 +295,12 @@ export function RunPicker({ leftId, rightId, onToggle, onClearLeft, onClearRight
         {!loading && error ? <p className="text-body text-danger-600 py-4 text-center">{error}</p> : null}
         {!loading && !error ? (
           <>
-            <p className="text-text-disabled mt-2 text-[11px]">
+            <p className="text-text-muted mt-2 text-[11px]">
               Showing {filtered.length} of {total} runs
             </p>
             <div ref={scrollRef} className="mt-2 max-h-[28rem] space-y-1.5 overflow-y-auto">
               {filtered.length === 0 ? (
-                <p className="text-body text-text-disabled py-4 text-center">{filters.filterText ? "No runs match your filter." : "No runs found."}</p>
+                <p className="text-body text-text-muted py-4 text-center">{filters.filterText ? "No runs match your filter." : "No runs found."}</p>
               ) : (
                 runGroups.map((group) => (
                   <RunGroupRow

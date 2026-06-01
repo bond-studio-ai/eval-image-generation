@@ -24,7 +24,9 @@ const ROUTES = [
 for (const route of ROUTES) {
   test(`visual: ${route.name}`, async ({ page }) => {
     await page.goto(route.path);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
+    // SPA routes keep background requests open, so `networkidle` never settles.
+    await Promise.race([page.waitForLoadState("networkidle"), page.waitForTimeout(8000)]);
     // Hide volatile timestamps and avatars so the snapshot is stable.
     await page.addStyleTag({
       content: `

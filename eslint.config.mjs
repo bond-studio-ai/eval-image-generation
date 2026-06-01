@@ -56,7 +56,9 @@ const nextBase = nextConfig.filter((entry) => entry.name !== "next/typescript");
 
 const eslintConfig = [
   {
-    ignores: [".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "**/*.min.*"]
+    // `.agents/skills/**` is vendored agent-skill content (templates, examples)
+    // that we don't own and shouldn't lint/format as project source.
+    ignores: [".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "**/*.min.*", ".agents/**"]
   },
 
   ...nextBase,

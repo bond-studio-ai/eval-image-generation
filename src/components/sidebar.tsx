@@ -84,7 +84,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Sections">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-4">
-            {!collapsed && <div className="text-text-disabled mb-1 px-3 text-[10px] font-semibold tracking-wider uppercase">{group.label}</div>}
+            {!collapsed && <div className="text-text-muted mb-1 px-3 text-[10px] font-semibold tracking-wider uppercase">{group.label}</div>}
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const active = isActive(item);
@@ -119,7 +119,7 @@ export function Sidebar() {
             <ChevronRightIcon className="size-4" />
           </button>
         ) : (
-          <p className="text-text-disabled px-2 text-[10px]">v0.1.0</p>
+          <p className="text-text-muted px-2 text-[10px]">v0.1.0</p>
         )}
       </div>
     </aside>

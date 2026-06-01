@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots",
+    "test:e2e:a11y": "playwright test --project=a11y",
+    "test:e2e:visual": "playwright test --project=visual",
+    "test:e2e:update": "playwright test --project=visual --update-snapshots",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
@@ -61,6 +63,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
+    "@clerk/testing": "^2.0.34",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@microsoft/eslint-plugin-sdl": "^1.1.0",
     "@playwright/test": "^1.60.0",
@@ -77,6 +80,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
+    "dotenv": "^17.4.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
     "eslint-config-prettier": "^10.1.8",

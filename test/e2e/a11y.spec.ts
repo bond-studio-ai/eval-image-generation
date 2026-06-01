@@ -14,7 +14,10 @@ const ROUTES = ["/", "/executions", "/executions?tab=generations", "/audit/compa
 for (const path of ROUTES) {
   test(`a11y: ${path}`, async ({ page }) => {
     await page.goto(path);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
+    // Some routes (e.g. /audit/compare) are SPAs that keep background requests
+    // open, so `networkidle` never settles. Cap the wait so the scan still runs.
+    await Promise.race([page.waitForLoadState("networkidle"), page.waitForTimeout(8000)]);
     const results = await new AxeBuilder({ page }).exclude(".cl-userButton-root").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(results.violations, results.violations.map((v) => `${v.id}: ${v.help}`).join("\n")).toEqual([]);
   });

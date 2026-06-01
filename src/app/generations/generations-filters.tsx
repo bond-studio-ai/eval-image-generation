@@ -96,6 +96,7 @@ function GenerationsFiltersInner({ params, promptVersions }: GenerationsFiltersP
         <FilterGroup label="Prompt">
           <select
             value={params.prompt_version_id ?? ""}
+            aria-label="Filter by prompt version"
             onChange={(e) => {
               const id = e.target.value || undefined;
               router.push(link({ prompt_version_id: id }));

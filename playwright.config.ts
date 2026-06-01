@@ -1,18 +1,33 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+
+// Load local secrets (Clerk keys, E2E user creds) for the Playwright process so
+// `globalSetup` can authenticate. Next.js loads `.env.local` for the app on its
+// own; this only affects the test runner. Absent in CI, where the job provides
+// these via real environment variables — that's fine, dotenv is a no-op then.
+dotenv.config({ path: ".env.local", quiet: true });
 
 /**
  * Visual-regression and accessibility harness.
  *
- * Both suites assume the dev server is reachable at `BASE_URL` (default
- * http://localhost:3000) and that auth has been handled out-of-band — the
- * Clerk-protected admin pages will not render otherwise.
+ * CI (`.github/workflows/e2e-a11y.yml`) runs the `a11y` project fully self-
+ * contained: `globalSetup` signs in a real Clerk test user and saves the
+ * session to `STORAGE_STATE`, while a mock upstream (`test/e2e/mock-server.mjs`)
+ * stands in for the image-generation backend via `BASE_API_HOSTNAME`. Both the
+ * mock and the Next server are started by `webServer` below.
  *
- * Recommended local workflow:
- *   1. `yarn dev` in one terminal
- *   2. Sign in once in your browser to seed Clerk cookies in the storage state
- *   3. Export `STORAGE_STATE=./.playwright/storage.json` to reuse it
- *   4. `yarn playwright test`
+ * Local workflow:
+ *   - Provide Clerk + test-user env (see `test/e2e/README.md`).
+ *   - `yarn build` once, then `yarn test:e2e:a11y` (Playwright starts the
+ *     servers for you). Or run your own `yarn dev` — `reuseExistingServer`
+ *     leaves it alone outside CI.
  */
+const isCI = Boolean(process.env.CI);
+
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+const MOCK_PORT = process.env.MOCK_PORT ?? "3001";
+const STORAGE_STATE = process.env.STORAGE_STATE ?? ".playwright/storage.json";
+
 export default defineConfig({
   testDir: "./test/e2e",
   timeout: 60_000,
@@ -20,12 +35,45 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixelRatio: 0.01 }
   },
   fullyParallel: true,
-  reporter: [["list"]],
+  retries: isCI ? 1 : 0,
+  reporter: isCI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  globalSetup: "./test/e2e/global-setup.ts",
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
-    storageState: process.env.STORAGE_STATE,
+    baseURL: BASE_URL,
+    storageState: STORAGE_STATE,
     viewport: { width: 1440, height: 900 },
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
-  }
+  },
+  projects: [
+    {
+      name: "a11y",
+      testMatch: /a11y\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"] }
+    },
+    {
+      name: "visual",
+      testMatch: /visual\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"] }
+    }
+  ],
+  webServer: [
+    {
+      command: "node test/e2e/mock-server.mjs",
+      port: Number(MOCK_PORT),
+      reuseExistingServer: !isCI,
+      env: { MOCK_PORT }
+    },
+    {
+      command: "yarn start",
+      url: BASE_URL,
+      timeout: 120_000,
+      reuseExistingServer: !isCI,
+      // Force the app at the hermetic mock backend. Clerk keys are inherited
+      // from the environment (CI job env, or `.env.local` loaded above / by
+      // Next at runtime) — never injected as empty strings, which would clobber
+      // a valid `.env.local` value on local runs.
+      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}` }
+    }
+  ]
 });
