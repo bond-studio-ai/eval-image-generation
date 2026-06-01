@@ -1,0 +1,78 @@
+name: Coverage
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  # Needed to post/update the sticky coverage comment on PRs.
+  pull-requests: write
+
+concurrency:
+  group: coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    # Authoritative merged ratchet (Vitest unit/functional + Playwright E2E
+    # client/server). Like e2e-a11y, this needs Clerk secrets to sign in the test
+    # user, so it can't run on fork PRs — skip there, run on same-repo PRs + main.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      # The mock upstream (test/e2e/mock-server.mjs) stands in for the
+      # image-generation backend, so the run is hermetic except for Clerk.
+      BASE_API_HOSTNAME: http://localhost:3001
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      E2E_CLERK_USER_USERNAME: ${{ secrets.E2E_CLERK_USER_USERNAME }}
+      E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn playwright install --with-deps chromium
+      # Raw V8 coverage from unit/functional Vitest -> .coverage-raw/unit/raw
+      - run: yarn coverage:unit
+      # Production build with client + server source maps (COVERAGE_RAW gates them
+      # on in next.config.ts). NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is inlined here.
+      - run: yarn coverage:build
+      # Raw V8 coverage from the E2E suite (client via page.coverage + server via
+      # CDP flush). `next start` with NODE_V8_COVERAGE + --inspect is started by
+      # playwright.config.ts when COVERAGE_RAW=1 -> .coverage-raw/e2e/raw
+      - run: yarn coverage:e2e
+      # Merge everything, map through source maps, filter to src/**, and enforce
+      # the merged ratchet (fails the job if coverage drops below the floor).
+      # Writes coverage/coverage-summary.md (top-level numbers) even on failure.
+      - run: yarn coverage:merge
+      # Surface the top-level numbers prominently (not buried in the job logs):
+      # the run's Summary page...
+      - name: Publish coverage to job summary
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f coverage/coverage-summary.md ]; then
+            cat coverage/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No coverage summary was produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # ...and a sticky comment on the PR (updated in place each run). Guarded on
+      # the summary existing, since a strict merge can fail before writing it.
+      - name: Comment coverage on PR
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.md') != '' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: merged-coverage
+          path: coverage/coverage-summary.md
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7

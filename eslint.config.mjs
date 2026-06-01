@@ -844,7 +844,10 @@ const eslintConfig = [
       "react/jsx-no-target-blank": OFF,
       // The e2e harness (mock server, global setup) logs startup/diagnostic
       // lines to the CI console on purpose; console is the right sink there.
-      "no-console": OFF
+      "no-console": OFF,
+      // Playwright's auto-fixture pattern types a no-value fixture as `void`
+      // (`test.extend<{ fixture: void }>`); that's the documented idiom.
+      "@typescript-eslint/no-invalid-void-type": OFF
     }
   },
 
@@ -918,6 +921,18 @@ const eslintConfig = [
       "unicorn/prefer-module": OFF,
       "@typescript-eslint/no-magic-numbers": OFF,
       "max-lines": OFF
+    }
+  },
+
+  // Node-side coverage tooling: the merge script/config and the E2E coverage
+  // helper print progress to the console on purpose (no app logger available),
+  // and monocart's `transformer`/`onEntry` contracts mutate the passed entry in
+  // place.
+  {
+    files: ["scripts/**", "mcr.config.mjs", "test/e2e/coverage-report.ts"],
+    rules: {
+      "no-console": OFF,
+      "no-param-reassign": OFF
     }
   },
 

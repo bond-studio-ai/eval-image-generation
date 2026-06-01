@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+
+import { expect, test } from "./fixtures";
 
 /**
  * Axe accessibility pass over the most-trafficked screens. Same auth caveats
