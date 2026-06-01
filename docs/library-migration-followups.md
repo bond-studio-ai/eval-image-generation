@@ -5,33 +5,33 @@ with libraries" effort. Tier 1 (low-risk drop-ins) and most of Tier 2 (medium
 refactors) shipped on the `chore/use-libraries` branch. The items below were left
 out on purpose, each for a concrete reason — they are not oversights.
 
-## Tier 3 — larger rewrites (not yet started)
+## Tier 3 — larger rewrites (shipped)
 
-Deferred because the LOC savings are marginal relative to the migration risk, and
-each warrants its own focused, visually-verified PR.
+These shipped on `chore/use-libraries` as individual, visually-verified commits.
 
-- **Prompt template editor → CodeMirror 6** (`@uiw/react-codemirror` +
-  `@codemirror/lang-handlebars`). Would replace the transparent-textarea overlay
-  editor, the regex syntax highlighter (`src/lib/highlight-handlebars.tsx`), and
-  the custom Handlebars validator (`src/lib/validate-handlebars.ts`, ~430 lines
-  with UX-specific error messages that are unit-tested). The pixel-perfect
-  textarea/overlay scroll-sync is the hard part CodeMirror solves natively. The
-  three editor insert popovers (`reference`/`conditional`/`dollhouse`) would be
-  folded into the same editor surface, which is why they were _not_ migrated to
-  Radix Popover in Tier 2 (doing so would be throwaway work). The plain JSON
-  `<textarea>` in `design-settings-editor.tsx` could move to
-  `@codemirror/lang-json` in the same effort.
-- **Strategy DAG → React Flow** (`@xyflow/react` + `@dagrejs/dagre`). Would
-  replace the topological level layout + SVG Bézier edge engine in
-  `src/components/strategy-flow-dag.tsx` with a real graph library + auto-layout.
+- ~~**Prompt template editor → CodeMirror 6**~~. Done: the transparent-textarea
+  overlay editor and the regex syntax highlighter (`src/lib/highlight-handlebars.tsx`,
+  deleted) were replaced by `@uiw/react-codemirror`, code-split via `next/dynamic`.
+  The JSON `<textarea>` in `design-settings-editor.tsx` moved to the same editor
+  (`@codemirror/lang-json`). Syntax highlighting uses a small in-repo
+  `StreamLanguage` (`prompt-template-editor/handlebars-language.ts`) rather than
+  `@codemirror/lang-handlebars`: that package parses Handlebars-in-HTML and would
+  mis-highlight free-text prompt prose, so owning the ~120-line lexer is the
+  deliberate choice (it also avoids the extra dependency). The custom Handlebars
+  validator (`src/lib/validate-handlebars.ts`) and the three insert popovers
+  (`reference`/`conditional`/`dollhouse`) were kept as-is.
+- ~~**Strategy DAG → React Flow**~~. Done: `src/components/strategy-flow-dag.tsx`
+  now builds nodes/edges and lays them out with `@dagrejs/dagre`, rendered by
+  `@xyflow/react`, replacing the hand-rolled topological layout + SVG Bézier edge
+  engine.
 - ~~**DataTable → `@tanstack/react-table`**~~. Done: `DataTable` now renders via
   `useReactTable` + `flexRender`, consumers use native `ColumnDef<T>` (classes on
   `meta`), and a client-side column-visibility menu was added. Backend-driven
   search/pagination/filters and the `Set`-based selection model were kept as-is;
   sorting/virtualization remain future work.
-- **Lightbox gallery → `yet-another-react-lightbox`** for the prev/next/zoom slice
-  of `src/components/grid-lightbox.tsx`. The comparison slider and embedded
-  rating/evaluation forms stay custom.
+- ~~**Lightbox gallery → `yet-another-react-lightbox`**~~. Done for the
+  prev/next/zoom slice of `src/components/grid-lightbox.tsx`. The comparison slider
+  and embedded rating/evaluation forms stay custom.
 
 ## Deferred Tier 2 items
 

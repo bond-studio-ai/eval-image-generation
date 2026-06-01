@@ -61,7 +61,9 @@ function getEdges(step: DagStep): Edge[] {
   return edges;
 }
 
-const STATUS_BORDER: Record<string, string> = {
+type StatusKey = NonNullable<DagStep["status"]> | "default";
+
+const STATUS_BORDER: Record<StatusKey, string> = {
   pending: "border-border",
   running: "border-primary-400",
   completed: "border-success-400",
@@ -70,7 +72,7 @@ const STATUS_BORDER: Record<string, string> = {
   default: "border-border"
 };
 
-const STATUS_BG: Record<string, string> = {
+const STATUS_BG: Record<StatusKey, string> = {
   pending: "bg-surface-muted",
   running: "bg-primary-50",
   completed: "bg-success-50",
@@ -79,7 +81,7 @@ const STATUS_BG: Record<string, string> = {
   default: "bg-surface"
 };
 
-const STATUS_HEADER_BG: Record<string, string> = {
+const STATUS_HEADER_BG: Record<StatusKey, string> = {
   pending: "bg-surface-sunken",
   running: "bg-primary-100",
   completed: "bg-success-100",
@@ -88,7 +90,7 @@ const STATUS_HEADER_BG: Record<string, string> = {
   default: "bg-surface-sunken"
 };
 
-const STATUS_HEADER_TEXT: Record<string, string> = {
+const STATUS_HEADER_TEXT: Record<StatusKey, string> = {
   pending: "text-text-secondary",
   running: "text-primary-700",
   completed: "text-success-700",
@@ -130,11 +132,11 @@ const HANDLE_STYLE = { opacity: 0 } as const;
 
 const StepNode = memo(function StepNode({ data }: NodeProps<StepFlowNode>) {
   const { step } = data;
-  const status = step.status ?? "default";
-  const border = STATUS_BORDER[status] ?? STATUS_BORDER["default"] ?? "";
-  const bg = STATUS_BG[status] ?? STATUS_BG["default"] ?? "";
-  const headerBg = STATUS_HEADER_BG[status] ?? STATUS_HEADER_BG["default"] ?? "";
-  const headerText = STATUS_HEADER_TEXT[status] ?? STATUS_HEADER_TEXT["default"] ?? "";
+  const status: StatusKey = step.status ?? "default";
+  const border = STATUS_BORDER[status];
+  const bg = STATUS_BG[status];
+  const headerBg = STATUS_HEADER_BG[status];
+  const headerText = STATUS_HEADER_TEXT[status];
   const modelLabel = step.model ? (MODEL_LABELS[step.model] ?? step.model) : "";
 
   return (

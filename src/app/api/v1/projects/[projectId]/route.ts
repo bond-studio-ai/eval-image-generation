@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/api-response";
-import { HTTP_OK } from "@/lib/http-status";
 import { platformApiBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -41,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ proj
     // `{ data: [project] }`, so the only thing an extra `successResponse` wrapper
     // would buy us is a confusing second `.data` to unwrap on the client.
     const json: unknown = await res.json();
-    return NextResponse.json(json, { status: HTTP_OK });
+    return NextResponse.json(json);
   } catch (error) {
     logger.error("[project detail] Error:", error);
     return errorResponse("INTERNAL_ERROR", "Failed to fetch project details");

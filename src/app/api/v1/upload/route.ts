@@ -7,8 +7,17 @@ import { s3UploadConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-// `bytes` returns `number | null`; fall back to 0 (reject) if the literal ever fails to parse.
-const MAX_SIZE = bytes("10MB") ?? 0;
+
+// `bytes` returns `number | null`; a null can only mean the literal is malformed,
+// which is a programmer error — fail loudly rather than silently capping at 0
+// (which would reject every upload).
+function parseSize(literal: string): number {
+  const parsed = bytes(literal);
+  if (parsed == null) throw new Error(`Invalid byte-size literal: ${literal}`);
+  return parsed;
+}
+
+const MAX_SIZE = parseSize("10MB");
 
 export async function POST(request: Request) {
   try {

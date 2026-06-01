@@ -12,6 +12,13 @@ import { Tag } from "@lezer/highlight";
  *
  * Tokens may span multiple lines (long-form comments, blocks): the parser state
  * carries the pending kind and its closing delimiter across line breaks.
+ *
+ * Why not `@codemirror/lang-handlebars`? That package parses Handlebars embedded
+ * in *HTML* (it delegates the non-mustache text to an HTML grammar). Our content
+ * is free-text LLM prompts, not markup, so the HTML parser would mis-highlight
+ * the surrounding prose. We only need to color the mustache regions and leave the
+ * prose untouched, which this self-contained tokenizer does without pulling in an
+ * HTML grammar (or an extra dependency). Owning this small lexer is intentional.
  */
 
 type HandlebarsKind = "comment" | "block" | "partial" | "expr" | "unescaped";

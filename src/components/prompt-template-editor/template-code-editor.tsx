@@ -3,7 +3,7 @@
 import { type Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import CodeMirror, { type BasicSetupOptions, type ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { type Ref } from "react";
+import { type Ref, useMemo } from "react";
 import { editorTheme } from "./editor-theme";
 
 const BASIC_SETUP: BasicSetupOptions = {
@@ -34,7 +34,10 @@ export interface TemplateCodeEditorProps {
 }
 
 export function TemplateCodeEditor({ value, onChange, extensions, placeholder, fillHeight = false, minRows = 8, ariaLabel, ref }: TemplateCodeEditorProps) {
-  const allExtensions = ariaLabel ? [editorTheme, EditorView.contentAttributes.of({ "aria-label": ariaLabel }), ...extensions] : [editorTheme, ...extensions];
+  // Keep a stable extensions identity so `@uiw/react-codemirror` does not
+  // dispatch a `reconfigure` effect (rebuilding the full extension set) on
+  // every keystroke-driven re-render.
+  const allExtensions = useMemo(() => (ariaLabel ? [editorTheme, EditorView.contentAttributes.of({ "aria-label": ariaLabel }), ...extensions] : [editorTheme, ...extensions]), [ariaLabel, extensions]);
   const optionalProps = {
     ...(fillHeight ? { height: "100%", minHeight: "0" } : { minHeight: `${minRows * ROW_HEIGHT_REM}rem` }),
     ...(placeholder === undefined ? {} : { placeholder })

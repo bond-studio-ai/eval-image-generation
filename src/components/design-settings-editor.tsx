@@ -76,50 +76,42 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
     setMode("json");
   }, [value]);
 
-  const switchToForm = useCallback(() => {
+  // Parse the JSON buffer and push it to the parent, dropping any arbitrary slot
+  // images whose slot is no longer set to "arbitrary". Returns whether the commit
+  // succeeded so callers can decide whether to also switch back to form mode.
+  const commitJson = useCallback((): boolean => {
     const trimmed = jsonText.trim();
     if (trimmed === "" || trimmed === "{}") {
       onChange(null);
-      setMode("form");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setJsonError("Must be a JSON object.");
-        return;
-      }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
-      onArbitraryImagesBySlotChange(nextImages);
-      onChange(parsed as Record<string, unknown>);
       setJsonError(null);
-      setMode("form");
+      return true;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(trimmed);
     } catch {
       setJsonError("Invalid JSON.");
+      return false;
     }
+    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setJsonError("Must be a JSON object.");
+      return false;
+    }
+    const record = parsed as Record<string, unknown>;
+    const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && record[getProductImageTypeKey(slot)] === "arbitrary"));
+    onArbitraryImagesBySlotChange(nextImages);
+    onChange(record);
+    setJsonError(null);
+    return true;
   }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
 
+  const switchToForm = useCallback(() => {
+    if (commitJson()) setMode("form");
+  }, [commitJson]);
+
   const applyJson = useCallback(() => {
-    const trimmed = jsonText.trim();
-    if (trimmed === "" || trimmed === "{}") {
-      onChange(null);
-      setJsonError(null);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setJsonError("Must be a JSON object.");
-        return;
-      }
-      const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && (parsed as Record<string, unknown>)[getProductImageTypeKey(slot)] === "arbitrary"));
-      onArbitraryImagesBySlotChange(nextImages);
-      onChange(parsed as Record<string, unknown>);
-      setJsonError(null);
-    } catch {
-      setJsonError("Invalid JSON.");
-    }
-  }, [arbitraryImagesBySlot, jsonText, onArbitraryImagesBySlotChange, onChange]);
+    commitJson();
+  }, [commitJson]);
 
   return (
     <div className="border-border bg-surface rounded-lg border shadow-xs">

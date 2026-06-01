@@ -11,7 +11,6 @@ import { StatusCodes } from "http-status-codes";
  * source of truth (the package owns the values) without the magic numbers or
  * the lint friction.
  */
-export const HTTP_OK: number = StatusCodes.OK;
 export const HTTP_NO_CONTENT: number = StatusCodes.NO_CONTENT;
 export const HTTP_UNAUTHORIZED: number = StatusCodes.UNAUTHORIZED;
 export const HTTP_NOT_FOUND: number = StatusCodes.NOT_FOUND;
