@@ -146,12 +146,57 @@ function writeMarkdownSummary(summary) {
   }
 }
 
+const SUMMARY_KEYS = ["bytes", "statements", "branches", "functions", "lines"];
+
+// Recompute the aggregate summary from ONLY our `src/**` files. MCR keeps a few
+// non-src entries it can't fully unpack (server-bundle glue, vendor/CDN), which
+// would otherwise inflate the denominators; the authoritative numbers and the
+// ratchet are based on this src-only view.
+function aggregateSrcSummary(files) {
+  const summary = {};
+  for (const key of SUMMARY_KEYS) {
+    let covered = 0;
+    let total = 0;
+    for (const file of files) {
+      if (!file.sourcePath.startsWith("src/")) {
+        continue;
+      }
+      const metric = file.summary[key];
+      if (metric) {
+        covered += metric.covered ?? 0;
+        total += metric.total ?? 0;
+      }
+    }
+    summary[key] = { covered, total, pct: total > 0 ? (covered / total) * 100 : 0 };
+  }
+  return summary;
+}
+
+// Rewrite the generated lcov to keep only `src/**` records, so external tools
+// see the same src-only picture as the summary.
+function filterLcovToSrc() {
+  const lcovPath = path.join("coverage", "lcov.info");
+  if (!fs.existsSync(lcovPath)) {
+    return;
+  }
+  try {
+    const records = fs.readFileSync(lcovPath, "utf8").split("end_of_record\n");
+    const kept = records.filter((record) => /^SF:(.+)$/m.exec(record)?.[1]?.startsWith("src/"));
+    fs.writeFileSync(lcovPath, kept.map((record) => `${record}end_of_record\n`).join(""));
+  } catch (error) {
+    console.error("Failed to filter lcov.info to src/**", error);
+  }
+}
+
 /** @type {import('monocart-coverage-reports').CoverageReportOptions} */
 const coverageOptions = {
   name: "Merged Coverage (unit + E2E)",
   inputDir: RAW_DIRS,
   outputDir: "coverage",
-  reports: [["v8"], ["html"], ["lcovonly"], ["console-summary"]],
+  // v8 = browsable HTML at coverage/index.html; lcovonly = coverage/lcov.info
+  // (post-filtered to src/** in onEnd). No console-summary: it reports MCR's
+  // all-files view, which would conflict with the src-only summary we emit.
+  reports: [["v8"], ["lcovonly"]],
 
   // Keep only THIS repo's `src/**`. Two stages:
   // - entryFilter runs on the bundled (dist) entries before source-map unpacking.
@@ -214,14 +259,24 @@ const coverageOptions = {
   },
 
   onEnd: (coverageResults) => {
-    const { summary } = coverageResults;
+    if (!coverageResults) {
+      console.error("No coverage results were produced.");
+      process.exitCode = 1;
+      return;
+    }
+
+    // Authoritative numbers come from the src-only view, not MCR's raw summary.
+    const summary = aggregateSrcSummary(coverageResults.files);
     writeMarkdownSummary(summary);
+    filterLcovToSrc();
+
+    console.log(`Merged src/** coverage: lines ${summary.lines.pct.toFixed(2)}%, statements ${summary.statements.pct.toFixed(2)}%, branches ${summary.branches.pct.toFixed(2)}%, functions ${summary.functions.pct.toFixed(2)}%`);
 
     const errors = [];
     for (const key of Object.keys(thresholds)) {
       const pct = summary[key]?.pct ?? 0;
       if (pct < thresholds[key]) {
-        errors.push(`  - ${key}: ${pct}% < ${thresholds[key]}% (floor)`);
+        errors.push(`  - ${key}: ${pct.toFixed(2)}% < ${thresholds[key]}% (floor)`);
       }
     }
     if (errors.length > 0) {
