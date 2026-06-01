@@ -85,7 +85,7 @@ There is exactly **one** button system. Reach for these in priority order:
 | Navigation CTA | `<LinkButton href="/..." iconLeft={<PlusIcon />} />` |
 | Square icon button (table actions, toolbar) | `<IconButton label="..." icon={<TrashIcon />} />` |
 
-Never write inline `<button className="bg-primary-600 ...">`. The legacy `PrimaryButton`/`PrimaryLinkButton` from `@/components/page-header` are deprecated wrappers that delegate to `Button`/`LinkButton` — prefer the new names.
+Never write inline `<button className="bg-primary-600 ...">`. The legacy `PrimaryButton`/`PrimaryLinkButton` wrappers have been removed — use `Button`/`LinkButton` from `@/components/ui/button` directly.
 
 ## Tabs and segmented controls
 

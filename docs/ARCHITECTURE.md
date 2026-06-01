@@ -75,7 +75,7 @@ flowchart LR
 
 Shared primitives are intentionally small and reusable:
 
-- `PageHeader`, `PrimaryButton`, `PrimaryLinkButton`
+- `PageHeader`, `Button`, `LinkButton`
 - `ResourceFormHeader`, `ErrorCard`
 - `DataTable`, `Pagination`, `BulkDeleteBar`
 - `useInfiniteList`

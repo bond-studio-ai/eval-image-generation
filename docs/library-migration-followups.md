@@ -5,33 +5,18 @@ with libraries" effort. Tier 1 (low-risk drop-ins) and most of Tier 2 (medium
 refactors) shipped on the `chore/use-libraries` branch. The items below were left
 out on purpose, each for a concrete reason — they are not oversights.
 
-## Tier 3 — larger rewrites (shipped)
+The larger Tier 3 rewrites (prompt/JSON editors → CodeMirror 6, strategy DAG →
+React Flow + dagre, `DataTable` → `@tanstack/react-table`, lightbox →
+`yet-another-react-lightbox`) shipped on this branch — see git history for the
+per-rewrite commits. Two decisions from that work are worth keeping in mind:
 
-These shipped on `chore/use-libraries` as individual, visually-verified commits.
-
-- ~~**Prompt template editor → CodeMirror 6**~~. Done: the transparent-textarea
-  overlay editor and the regex syntax highlighter (`src/lib/highlight-handlebars.tsx`,
-  deleted) were replaced by `@uiw/react-codemirror`, code-split via `next/dynamic`.
-  The JSON `<textarea>` in `design-settings-editor.tsx` moved to the same editor
-  (`@codemirror/lang-json`). Syntax highlighting uses a small in-repo
-  `StreamLanguage` (`prompt-template-editor/handlebars-language.ts`) rather than
-  `@codemirror/lang-handlebars`: that package parses Handlebars-in-HTML and would
-  mis-highlight free-text prompt prose, so owning the ~120-line lexer is the
-  deliberate choice (it also avoids the extra dependency). The custom Handlebars
-  validator (`src/lib/validate-handlebars.ts`) and the three insert popovers
-  (`reference`/`conditional`/`dollhouse`) were kept as-is.
-- ~~**Strategy DAG → React Flow**~~. Done: `src/components/strategy-flow-dag.tsx`
-  now builds nodes/edges and lays them out with `@dagrejs/dagre`, rendered by
-  `@xyflow/react`, replacing the hand-rolled topological layout + SVG Bézier edge
-  engine.
-- ~~**DataTable → `@tanstack/react-table`**~~. Done: `DataTable` now renders via
-  `useReactTable` + `flexRender`, consumers use native `ColumnDef<T>` (classes on
-  `meta`), and a client-side column-visibility menu was added. Backend-driven
-  search/pagination/filters and the `Set`-based selection model were kept as-is;
-  sorting/virtualization remain future work.
-- ~~**Lightbox gallery → `yet-another-react-lightbox`**~~. Done for the
-  prev/next/zoom slice of `src/components/grid-lightbox.tsx`. The comparison slider
-  and embedded rating/evaluation forms stay custom.
+- The prompt editor keeps a small in-repo Handlebars `StreamLanguage`
+  (`prompt-template-editor/handlebars-language.ts`) instead of
+  `@codemirror/lang-handlebars`. That package parses Handlebars-in-HTML and would
+  mis-highlight free-text prompt prose, so owning the ~120-line lexer is deliberate.
+- The custom Handlebars validator (`src/lib/validate-handlebars.ts`) and the three
+  editor insert popovers (`reference`/`conditional`/`dollhouse`) were intentionally
+  left on their existing implementations.
 
 ## Deferred Tier 2 items
 

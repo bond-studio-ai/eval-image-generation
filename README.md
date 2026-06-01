@@ -64,7 +64,7 @@ docs/                   Architecture and developer workflow docs
 - Client Components call local `/api/v1/**` routes through `serviceUrl()` or `localUrl()`.
 - Browser-accessed admin proxies perform their own `auth()` checks in route handlers.
 - List/table screens should prefer `DataTable`, `Pagination`, `BulkDeleteBar`, and `useInfiniteList`.
-- Resource pages should use `PageHeader`, `PrimaryButton`, `PrimaryLinkButton`, `ResourceFormHeader`, and `ErrorCard`.
+- Resource pages should use `PageHeader`, `Button`/`LinkButton` (from `@/components/ui/button`), `ResourceFormHeader`, and `ErrorCard`.
 
 ## Documentation
 
