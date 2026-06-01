@@ -20,9 +20,10 @@
     "test:e2e:update": "playwright test --project=visual --update-snapshots",
     "coverage:clean": "rimraf .coverage-raw .v8-coverage",
     "coverage:unit": "cross-env COVERAGE_RAW=1 vitest run",
+    "coverage:build": "cross-env COVERAGE_RAW=1 next build",
     "coverage:e2e": "cross-env COVERAGE_RAW=1 playwright test --project=a11y",
     "coverage:merge": "node scripts/merge-coverage.mjs",
-    "coverage:all": "yarn coverage:clean && yarn coverage:unit && yarn coverage:e2e && yarn coverage:merge",
+    "coverage:all": "yarn coverage:clean && yarn coverage:unit && yarn coverage:build && yarn coverage:e2e && yarn coverage:merge",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
@@ -70,6 +71,7 @@
     "@axe-core/playwright": "^4.11.3",
     "@clerk/testing": "^2.0.34",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
+    "@jridgewell/source-map": "^0.3.11",
     "@microsoft/eslint-plugin-sdl": "^1.1.0",
     "@playwright/test": "^1.60.0",
     "@stylistic/eslint-plugin": "^5.10.0",

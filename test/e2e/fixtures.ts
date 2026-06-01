@@ -1,7 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 import { CoverageReport } from "monocart-coverage-reports";
 
-import { E2E_RAW_OPTIONS, isDecodableSourceMap } from "./coverage-report";
+import { E2E_RAW_OPTIONS, flattenSourceMap } from "./coverage-report";
 
 /**
  * Client-side V8 coverage collection for the E2E suite.
@@ -66,10 +66,7 @@ export const test = base.extend<{ autoCoverage: void }>({
         try {
           const response = await page.request.get(new URL(mapRef, entry.url).toString());
           if (response.ok()) {
-            const map: unknown = JSON.parse(await response.text());
-            if (isDecodableSourceMap(map)) {
-              entry.sourceMap = map;
-            }
+            entry.sourceMap = flattenSourceMap(JSON.parse(await response.text()));
           }
         } catch {
           // Best effort: an unresolved map just means that bundle maps less

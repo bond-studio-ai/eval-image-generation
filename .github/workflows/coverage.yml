@@ -41,8 +41,11 @@ jobs:
       - run: yarn playwright install --with-deps chromium
       # Raw V8 coverage from unit/functional Vitest -> .coverage-raw/unit/raw
       - run: yarn coverage:unit
+      # Production build with client + server source maps (COVERAGE_RAW gates them
+      # on in next.config.ts). NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is inlined here.
+      - run: yarn coverage:build
       # Raw V8 coverage from the E2E suite (client via page.coverage + server via
-      # CDP flush). The dev server with NODE_V8_COVERAGE + --inspect is started by
+      # CDP flush). `next start` with NODE_V8_COVERAGE + --inspect is started by
       # playwright.config.ts when COVERAGE_RAW=1 -> .coverage-raw/e2e/raw
       - run: yarn coverage:e2e
       # Merge everything, map through source maps, filter to src/**, and enforce

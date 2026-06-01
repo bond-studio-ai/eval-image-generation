@@ -23,12 +23,13 @@ dotenv.config({ path: ".env.local", quiet: true });
  *     leaves it alone outside CI.
  *
  * Coverage workflow (`COVERAGE_RAW=1`, driven by `yarn coverage:all`):
- *   - The Next server is started in dev mode with `NODE_V8_COVERAGE` +
- *     `--inspect` so both client (page.coverage) and server (CDP flush in
- *     `global-teardown`) V8 coverage can be captured and merged with the unit
- *     coverage. Dev mode is used here because it gives reliable, resolvable
- *     source maps for both layers; production `next start` keeps powering the
- *     normal a11y/visual runs untouched.
+ *   - Runs against a production `next start` build (so it needs a prior
+ *     `yarn build` with COVERAGE_RAW set, which turns on client + server source
+ *     maps — see next.config.ts). The server is started with `NODE_V8_COVERAGE`
+ *     + `--inspect` so both client (page.coverage) and server (CDP flush in
+ *     `global-teardown`) V8 coverage can be captured, mapped to `src/**`, and
+ *     merged with the unit coverage. Production maps are standard external maps
+ *     that MCR can decode (unlike Next's dev/section maps).
  */
 const isCI = Boolean(process.env.CI);
 const collectCoverage = Boolean(process.env.COVERAGE_RAW);
@@ -50,14 +51,14 @@ const reuseExistingServer = !isCI && !collectCoverage;
 
 const appServer = collectCoverage
   ? {
-      // Invoke the Next CLI directly (not via `yarn dev`): with `yarn dev`, Yarn
-      // is the Node process that consumes NODE_OPTIONS=--inspect and binds the
+      // Invoke the Next CLI directly (not via `yarn start`): with `yarn`, Yarn is
+      // the Node process that consumes NODE_OPTIONS=--inspect and binds the
       // inspector port, so the Next child can't open its own CDP endpoint and
-      // global-teardown can't flush server coverage. Running `node .../next dev`
-      // attaches the inspector to the Next process itself; its forked render
-      // worker (where server components/route handlers run) then inspects on
-      // INSPECT_PORT + 1, which global-teardown connects to.
-      command: `cross-env NODE_V8_COVERAGE=.v8-coverage NODE_OPTIONS=--inspect=${INSPECT_PORT} node node_modules/next/dist/bin/next dev`,
+      // global-teardown can't flush server coverage. Running `node .../next start`
+      // attaches the inspector to the Next server process itself; global-teardown
+      // connects to INSPECT_PORT (or its forked worker at INSPECT_PORT + 1).
+      // Requires a prior `yarn build` with COVERAGE_RAW set (see next.config.ts).
+      command: `cross-env NODE_V8_COVERAGE=.v8-coverage NODE_OPTIONS=--inspect=${INSPECT_PORT} node node_modules/next/dist/bin/next start`,
       url: BASE_URL,
       timeout: 120_000,
       reuseExistingServer,

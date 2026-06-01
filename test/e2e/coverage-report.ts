@@ -1,3 +1,4 @@
+import { SourceMapConsumer, SourceMapGenerator } from "@jridgewell/source-map";
 import type { CoverageReportOptions, V8CoverageEntry } from "monocart-coverage-reports";
 
 /**
@@ -21,6 +22,31 @@ const INLINE_SOURCE_MAP = /\n?\/\/[#@]\s*sourceMappingURL=data:\S+\s*$/;
  */
 export function isDecodableSourceMap(map: unknown): boolean {
   return typeof map === "object" && map !== null && !("sections" in map) && typeof (map as { mappings?: unknown }).mappings === "string";
+}
+
+/**
+ * Return a source map MCR can decode, or `undefined` if there's nothing useful.
+ *
+ * Next emits some bundles (notably server route bundles) as **index maps**
+ * (`sections`), which MCR's V8 decoder can't read. We flatten those into a plain
+ * map with `@jridgewell/source-map`. Already-flat maps pass through; empty/stub
+ * maps (no sources) return `undefined` so the entry is dropped rather than left
+ * as a compiled path in the report.
+ */
+export function flattenSourceMap(map: unknown): object | undefined {
+  if (isDecodableSourceMap(map)) {
+    return map as object;
+  }
+  if (typeof map !== "object" || map === null || !("sections" in map)) {
+    return undefined;
+  }
+  try {
+    const consumer = new SourceMapConsumer(map as never);
+    const flat = SourceMapGenerator.fromSourceMap(consumer).toJSON();
+    return Array.isArray(flat.sources) && flat.sources.length > 0 ? flat : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function decodeDataUriJson(ref: string): unknown {

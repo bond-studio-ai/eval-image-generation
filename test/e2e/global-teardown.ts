@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { E2E_RAW_OPTIONS, isDecodableSourceMap } from "./coverage-report";
+import { E2E_RAW_OPTIONS, flattenSourceMap } from "./coverage-report";
 
 /**
  * Finalizes E2E coverage for the suite.
@@ -28,20 +28,25 @@ interface ServerCoverageEntry {
 const SOURCE_MAP_URL = /\/\/[#@]\s*sourceMappingURL=(\S+)/;
 
 // Read the on-disk source map for a compiled server file so MCR can unpack it
-// back to `src/**`. Without this, the dev server bundles (.next/dev/server/**)
-// stay as compiled paths in the report instead of mapping to source.
-function readDiskSourceMap(source: string, filePath: string): unknown {
+// back to `src/**`. Production server bundles (.next/server/**) carry a sibling
+// `<file>.js.map` but usually no `sourceMappingURL` comment, so we fall back to
+// the sibling by convention. Index maps are flattened (see flattenSourceMap).
+function resolveMapPath(source: string, filePath: string): string | undefined {
   const ref = SOURCE_MAP_URL.exec(source)?.[1];
-  if (!ref || ref.startsWith("data:")) {
-    return undefined; // no map, or inline (MCR reads it from the source directly)
+  if (ref && !ref.startsWith("data:")) {
+    return path.resolve(path.dirname(filePath), ref);
+  }
+  const sibling = `${filePath}.map`;
+  return fs.existsSync(sibling) ? sibling : undefined;
+}
+
+function readDiskSourceMap(source: string, filePath: string): object | undefined {
+  const mapPath = resolveMapPath(source, filePath);
+  if (!mapPath || !fs.existsSync(mapPath)) {
+    return undefined;
   }
   try {
-    const mapPath = path.resolve(path.dirname(filePath), ref);
-    if (!fs.existsSync(mapPath)) {
-      return undefined;
-    }
-    const map: unknown = JSON.parse(fs.readFileSync(mapPath, "utf8"));
-    return isDecodableSourceMap(map) ? map : undefined;
+    return flattenSourceMap(JSON.parse(fs.readFileSync(mapPath, "utf8")));
   } catch {
     return undefined; // best effort: leave it unmapped rather than fail the run
   }
