@@ -15,6 +15,11 @@ for (const path of ROUTES) {
   test(`a11y: ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState("load");
+    // Guard against a silent auth failure: a logged-out session redirects to the
+    // Clerk sign-in page, where axe could pass and mask that we never scanned the
+    // real app. Require the authenticated app shell (the sidebar) to be present.
+    await expect(page).not.toHaveURL(/\/auth\/sign-in/);
+    await expect(page.locator("aside[aria-label='Primary']")).toBeVisible();
     // Some routes (e.g. /audit/compare) are SPAs that keep background requests
     // open, so `networkidle` never settles. Cap the wait so the scan still runs.
     await Promise.race([page.waitForLoadState("networkidle"), page.waitForTimeout(8000)]);
