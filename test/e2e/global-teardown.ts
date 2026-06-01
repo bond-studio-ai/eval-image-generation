@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { E2E_RAW_OPTIONS } from "./coverage-report";
+import { E2E_RAW_OPTIONS, isDecodableSourceMap } from "./coverage-report";
 
 /**
  * Finalizes E2E coverage for the suite.
@@ -22,6 +22,29 @@ import { E2E_RAW_OPTIONS } from "./coverage-report";
 interface ServerCoverageEntry {
   url?: string;
   source?: string;
+  sourceMap?: unknown;
+}
+
+const SOURCE_MAP_URL = /\/\/[#@]\s*sourceMappingURL=(\S+)/;
+
+// Read the on-disk source map for a compiled server file so MCR can unpack it
+// back to `src/**`. Without this, the dev server bundles (.next/dev/server/**)
+// stay as compiled paths in the report instead of mapping to source.
+function readDiskSourceMap(source: string, filePath: string): unknown {
+  const ref = SOURCE_MAP_URL.exec(source)?.[1];
+  if (!ref || ref.startsWith("data:")) {
+    return undefined; // no map, or inline (MCR reads it from the source directly)
+  }
+  try {
+    const mapPath = path.resolve(path.dirname(filePath), ref);
+    if (!fs.existsSync(mapPath)) {
+      return undefined;
+    }
+    const map: unknown = JSON.parse(fs.readFileSync(mapPath, "utf8"));
+    return isDecodableSourceMap(map) ? map : undefined;
+  } catch {
+    return undefined; // best effort: leave it unmapped rather than fail the run
+  }
 }
 
 // The Next CLI is started with `--inspect=<main>` (see playwright.config.ts).
@@ -65,6 +88,7 @@ function readServerCoverage(dir: string): ServerCoverageEntry[] {
       const filePath = fileURLToPath(entry.url!);
       if (fs.existsSync(filePath)) {
         entry.source = fs.readFileSync(filePath, "utf8");
+        entry.sourceMap = readDiskSourceMap(entry.source, filePath);
         entries.push(entry);
       }
     }
