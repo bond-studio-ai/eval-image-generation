@@ -16,6 +16,9 @@
 // They MUST be ratcheted up to the achieved numbers once that run reports the
 // real merged (unit + E2E) coverage — see the validate step in the plan.
 
+import fs from "node:fs";
+import path from "node:path";
+
 export const RAW_DIRS = [".coverage-raw/unit/raw", ".coverage-raw/e2e/raw"];
 
 export const thresholds = {
@@ -24,6 +27,60 @@ export const thresholds = {
   functions: 30,
   lines: 20
 };
+
+// Order the markdown/summary rows the way humans read them (lines first).
+const SUMMARY_METRICS = [
+  { key: "lines", label: "Lines" },
+  { key: "statements", label: "Statements" },
+  { key: "branches", label: "Branches" },
+  { key: "functions", label: "Functions" },
+  { key: "bytes", label: "Bytes" }
+];
+
+function statusFor(pct, floor) {
+  if (floor === undefined) {
+    return "—";
+  }
+  return pct >= floor ? "✅" : "❌";
+}
+
+// Render a Markdown summary so the top-level numbers show up where people look —
+// the GitHub Actions job summary and a sticky PR comment — instead of CI logs.
+function renderMarkdown(summary) {
+  const rows = SUMMARY_METRICS.map(({ key, label }) => {
+    const metric = summary[key] ?? {};
+    const pct = typeof metric.pct === "number" ? metric.pct : 0;
+    const floor = thresholds[key];
+    const floorText = floor === undefined ? "—" : `${floor}%`;
+    return `| ${label} | ${pct.toFixed(2)}% | ${metric.covered ?? 0} | ${metric.total ?? 0} | ${floorText} | ${statusFor(pct, floor)} |`;
+  });
+
+  const failed = Object.keys(thresholds).some((key) => (summary[key]?.pct ?? 0) < thresholds[key]);
+  const verdict = failed ? "❌ **Below the merged ratchet** — see the failing rows above." : "✅ All metrics meet the merged floor.";
+
+  return [
+    "## Merged coverage (unit + E2E)",
+    "",
+    "Combined Vitest unit/functional + Playwright E2E (client + server) coverage of `src/**`.",
+    "",
+    "| Metric | Coverage | Covered | Total | Floor | Status |",
+    "| --- | ---: | ---: | ---: | ---: | :---: |",
+    ...rows,
+    "",
+    verdict,
+    ""
+  ].join("\n");
+}
+
+function writeMarkdownSummary(summary) {
+  try {
+    const file = path.join("coverage", "coverage-summary.md");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, renderMarkdown(summary));
+  } catch (error) {
+    console.error("Failed to write coverage-summary.md", error);
+  }
+}
 
 /** @type {import('monocart-coverage-reports').CoverageReportOptions} */
 const coverageOptions = {
@@ -60,6 +117,8 @@ const coverageOptions = {
 
   onEnd: (coverageResults) => {
     const { summary } = coverageResults;
+    writeMarkdownSummary(summary);
+
     const errors = [];
     for (const key of Object.keys(thresholds)) {
       const pct = summary[key]?.pct ?? 0;
