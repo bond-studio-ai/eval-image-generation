@@ -924,11 +924,12 @@ const eslintConfig = [
     }
   },
 
-  // Node-side tooling: the coverage merge script and merge config print progress
-  // and threshold failures to the console on purpose (no app logger available),
-  // and monocart's `transformer` contract mutates the passed entry in place.
+  // Node-side coverage tooling: the merge script/config and the E2E coverage
+  // helper print progress to the console on purpose (no app logger available),
+  // and monocart's `transformer`/`onEntry` contracts mutate the passed entry in
+  // place.
   {
-    files: ["scripts/**", "mcr.config.mjs"],
+    files: ["scripts/**", "mcr.config.mjs", "test/e2e/coverage-report.ts"],
     rules: {
       "no-console": OFF,
       "no-param-reassign": OFF

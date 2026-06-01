@@ -65,6 +65,42 @@ const SUMMARY_METRICS = [
   { key: "bytes", label: "Bytes" }
 ];
 
+const INLINE_SOURCE_MAP = /\n?\/\/[#@]\s*sourceMappingURL=data:\S+\s*$/;
+
+function isDecodableSourceMap(map) {
+  return typeof map === "object" && map !== null && !("sections" in map) && typeof map.mappings === "string";
+}
+
+function decodeDataUriJson(ref) {
+  const comma = ref.indexOf(",");
+  if (comma === -1) {
+    return undefined;
+  }
+  const data = ref.slice(comma + 1);
+  try {
+    const json = ref.slice(0, comma).includes("base64") ? Buffer.from(data, "base64").toString("utf8") : decodeURIComponent(data);
+    return JSON.parse(json);
+  } catch {
+    return undefined;
+  }
+}
+
+// Drop source maps MCR can't decode (attached or inline) so one malformed bundle
+// map can't abort the merge. Mirrors test/e2e/coverage-report.ts.
+function sanitizeEntrySourceMap(entry) {
+  if (entry.sourceMap && !isDecodableSourceMap(entry.sourceMap)) {
+    entry.sourceMap = undefined;
+  }
+  const source = entry.source;
+  if (typeof source !== "string") {
+    return;
+  }
+  const match = /\/\/[#@]\s*sourceMappingURL=(data:\S+)/.exec(source);
+  if (match && !isDecodableSourceMap(decodeDataUriJson(match[1]))) {
+    entry.source = source.replace(INLINE_SOURCE_MAP, "");
+  }
+}
+
 function statusFor(pct, floor) {
   if (floor === undefined) {
     return "—";
@@ -128,6 +164,8 @@ const coverageOptions = {
     "**/src/**": true,
     "**/*": false
   },
+
+  onEntry: sanitizeEntrySourceMap,
 
   // Count every source file (untested files show as 0%) so the metric reflects
   // the whole repo, matching the old Vitest `include: src/**` behavior. The
