@@ -17,10 +17,10 @@ export default defineConfig({
       // Ratchet: floored to the current achieved coverage so it can't backslide.
       // Raise these as coverage grows.
       thresholds: {
-        statements: 11,
-        branches: 8,
-        functions: 8,
-        lines: 11
+        statements: 21,
+        branches: 17,
+        functions: 16,
+        lines: 21
       }
     }
   },

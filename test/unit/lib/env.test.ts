@@ -25,8 +25,6 @@ describe("imageGenerationBase / imageGenerationV2Base", () => {
 
 describe("platformApiBase", () => {
   it("normalizes the protocol to https", () => {
-    // The insecure scheme is the whole point of this case — it must be normalized to https.
-    // eslint-disable-next-line @microsoft/sdl/no-insecure-url
     vi.stubEnv("BASE_API_HOSTNAME", "http://api.example.com");
     expect(platformApiBase()).toBe("https://api.example.com");
   });

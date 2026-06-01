@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { cameraFrameKey, normalizeCameraFrame } from "@/lib/dollhouse-renders";
+import { cameraFrameKey, normalizeCameraFrame, validateUnitySlimDesign } from "@/lib/dollhouse-renders";
+
+describe("validateUnitySlimDesign", () => {
+  it("rejects non-objects", () => {
+    expect(validateUnitySlimDesign(null)).toEqual({ ok: false, error: "Expected a JSON object." });
+    expect(validateUnitySlimDesign([])).toEqual({ ok: false, error: "Expected a JSON object." });
+  });
+
+  it("requires a non-empty id", () => {
+    expect(validateUnitySlimDesign({ objects: {}, surfaces: {} })).toEqual({ ok: false, error: "designMaterials.id is required." });
+    expect(validateUnitySlimDesign({ id: "", objects: {}, surfaces: {} })).toEqual({ ok: false, error: "designMaterials.id is required." });
+  });
+
+  it("requires objects and surfaces to be records", () => {
+    expect(validateUnitySlimDesign({ id: "d1", objects: [], surfaces: {} })).toEqual({ ok: false, error: "designMaterials.objects must be an object." });
+    expect(validateUnitySlimDesign({ id: "d1", objects: {}, surfaces: "no" })).toEqual({ ok: false, error: "designMaterials.surfaces must be an object." });
+  });
+
+  it("returns the normalized value on success", () => {
+    const result = validateUnitySlimDesign({ id: "d1", objects: { vanity: {} }, surfaces: { floorTile: {} }, extra: "ignored" });
+    expect(result).toEqual({ ok: true, value: { id: "d1", objects: { vanity: {} }, surfaces: { floorTile: {} } } });
+  });
+});
 
 describe("normalizeCameraFrame", () => {
   it("returns null when position or rotation is missing", () => {
@@ -40,6 +62,25 @@ describe("normalizeCameraFrame", () => {
       position: { x: 1, y: 2, z: 3 },
       rotation: { x: 0, y: 90, z: 0 },
       products: [{ id: "p1", category: "Vanity", view: "Front" }]
+    });
+  });
+
+  it("returns null for non-record input", () => {
+    expect(normalizeCameraFrame(null)).toBeNull();
+    expect(normalizeCameraFrame("frame")).toBeNull();
+    expect(normalizeCameraFrame([])).toBeNull();
+  });
+
+  it("coerces partial position/rotation coords to 0 and non-array products to []", () => {
+    const out = normalizeCameraFrame({
+      position: { x: 5 },
+      rotation: {},
+      products: "not-an-array"
+    });
+    expect(out).toMatchObject({
+      position: { x: 5, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      products: []
     });
   });
 

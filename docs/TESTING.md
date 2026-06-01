@@ -8,9 +8,11 @@ All tests live under the top-level [`test/`](../test/) directory, organized by
 ```
 test/
 ├── setup.ts        # Vitest setup (jest-dom matchers)
-├── unit/           # Vitest — pure functions + component rendering
+├── helpers.tsx     # renderWithQuery / renderHookWithQuery (React Query wrappers)
+├── unit/           # Vitest — pure functions, hooks, and component rendering
 │   ├── lib/        # mirrors src/lib/
 │   ├── app/        # mirrors src/app/
+│   ├── hooks/      # mirrors src/hooks/
 │   └── components/ # mirrors src/components/ (React component tests)
 ├── functional/     # Vitest — multi-module behavior, adapters, route handlers
 └── e2e/            # Playwright — full-page visual + a11y against a live server
@@ -45,6 +47,11 @@ import userEvent from "@testing-library/user-event";
 and assert behavior (variants, disabled/loading states, callbacks) rather than
 implementation details.
 
+Components and hooks that depend on TanStack Query (e.g. `useInfiniteList`,
+`useBatchReviewStatus`) should be rendered with `renderWithQuery` /
+`renderHookWithQuery` from [`test/helpers.tsx`](../test/helpers.tsx), which wrap
+them in a fresh `QueryClientProvider` with retries disabled.
+
 Keep component tests focused on prop-driven rendering and local interaction.
 Components that need heavy providers (Clerk, React Query, Radix portals,
 Next.js router) belong in `test/e2e` instead.
@@ -70,6 +77,11 @@ Playwright suites (`*.spec.ts`) that run against a live dev server. See
   modules — never relative `../../src` paths.
 - **Keep units pure:** Push pure derivation/normalization logic into `src/lib`
   and cover it under `test/unit`, separate from rendering.
+- **No inline `eslint-disable` in tests.** If a lint rule is inappropriate for
+  test code, relax it once in the `hardcore/tests` override block in
+  [`eslint.config.mjs`](../eslint.config.mjs) (scoped to `TEST_FILES`) rather
+  than scattering disable comments across test files. The relaxation then
+  applies to every test and the reason is recorded in one place.
 
 ## Running
 

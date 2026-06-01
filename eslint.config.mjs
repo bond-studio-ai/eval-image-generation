@@ -833,7 +833,13 @@ const eslintConfig = [
       "@typescript-eslint/no-unsafe-member-access": OFF,
       "@typescript-eslint/no-unsafe-call": OFF,
       "@typescript-eslint/no-unsafe-return": OFF,
-      "@typescript-eslint/no-unsafe-argument": OFF
+      "@typescript-eslint/no-unsafe-argument": OFF,
+      // Tests deliberately exercise insecure-URL handling (e.g. http→https
+      // normalization) with literal fixtures.
+      "@microsoft/sdl/no-insecure-url": OFF,
+      // Lightweight next/link stubs spread their props onto a plain <a>; the
+      // target-blank guard isn't meaningful for test doubles.
+      "react/jsx-no-target-blank": OFF
     }
   },
 
