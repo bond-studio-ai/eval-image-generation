@@ -6,26 +6,54 @@
 // feeds those dirs in via `inputDir`, MCR merges by source file, maps through
 // source maps, filters to `src/**`, and `onEnd` enforces the ratchet.
 //
-// The numbers below are the MERGED floor (unit + E2E), enforced in CI. They are
-// distinct from the unit-only floor in vitest.config.ts AND are measured on a
-// different scale: MCR reports native V8 metrics, which do not line up with
-// Vitest's istanbul-style line/statement counts (e.g. unit-only here is ~29%
-// lines / ~86% statements under V8).
+// The numbers below are the MERGED floor (unit + E2E), enforced in CI. Untested
+// files are compiled (see `all.transformer`) so every metric is computed over
+// the whole `src/**` tree — keeping statements/branches/functions/lines
+// consistent with each other and roughly in line with Vitest's own numbers.
 //
-// PROVISIONAL: these are deliberately loose so the FIRST merged CI run is green.
-// They MUST be ratcheted up to the achieved numbers once that run reports the
-// real merged (unit + E2E) coverage — see the validate step in the plan.
+// PROVISIONAL: seeded just under the unit-only merged numbers (a safe lower
+// bound, since adding E2E coverage only raises them). Ratchet them up to the
+// achieved numbers once the first merged CI run (unit + E2E) reports them.
 
+import { transform } from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 
 export const RAW_DIRS = [".coverage-raw/unit/raw", ".coverage-raw/e2e/raw"];
 
+// esbuild loader per source extension, so untested .ts/.tsx files (added via
+// `all`) can be compiled to JS for MCR's AST parser.
+const LOADER_BY_EXT = {
+  ".ts": "ts",
+  ".tsx": "tsx",
+  ".jsx": "jsx",
+  ".js": "js",
+  ".mjs": "js",
+  ".cjs": "js"
+};
+
+// Compile untested source so MCR computes statements/branches/functions for it
+// too — not just physical lines. Without this, untested TS/TSX files contribute
+// only to the "lines" denominator, making statements/branches/functions reflect
+// just the executed files (inflated) while lines reflects the whole repo.
+async function compileUntestedFile(entry) {
+  const loader = LOADER_BY_EXT[path.extname(entry.url)] ?? "ts";
+  try {
+    const { code, map } = await transform(entry.source, { loader, sourcemap: true, sourcefile: entry.url });
+    entry.source = code;
+    entry.sourceMap = JSON.parse(map);
+  } catch (error) {
+    // Leave the raw source in place (line-only coverage for this one file)
+    // rather than failing the whole report.
+    console.error(`coverage: failed to compile ${entry.url} for AST metrics`, error);
+  }
+}
+
 export const thresholds = {
-  statements: 30,
-  branches: 25,
-  functions: 30,
-  lines: 20
+  statements: 35,
+  branches: 28,
+  functions: 28,
+  lines: 30
 };
 
 // Order the markdown/summary rows the way humans read them (lines first).
@@ -102,7 +130,9 @@ const coverageOptions = {
   },
 
   // Count every source file (untested files show as 0%) so the metric reflects
-  // the whole repo, matching the old Vitest `include: src/**` behavior.
+  // the whole repo, matching the old Vitest `include: src/**` behavior. The
+  // `transformer` compiles untested TS/TSX so ALL metrics (not just lines) are
+  // computed for them — keeping statements/branches/functions/lines consistent.
   all: {
     dir: ["src"],
     filter: {
@@ -112,7 +142,8 @@ const coverageOptions = {
       "**/__tests__/**": false,
       "**/__mocks__/**": false,
       "**/*": false
-    }
+    },
+    transformer: compileUntestedFile
   },
 
   onEnd: (coverageResults) => {

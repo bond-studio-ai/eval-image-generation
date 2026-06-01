@@ -925,11 +925,13 @@ const eslintConfig = [
   },
 
   // Node-side tooling: the coverage merge script and merge config print progress
-  // and threshold failures to the console on purpose (no app logger available).
+  // and threshold failures to the console on purpose (no app logger available),
+  // and monocart's `transformer` contract mutates the passed entry in place.
   {
     files: ["scripts/**", "mcr.config.mjs"],
     rules: {
-      "no-console": OFF
+      "no-console": OFF,
+      "no-param-reassign": OFF
     }
   },
 
