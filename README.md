@@ -71,4 +71,7 @@ docs/                   Architecture and developer workflow docs
 - [Getting Started](docs/GETTING_STARTED.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Frontend Patterns](docs/FRONTEND_PATTERNS.md)
+- [Library & Dependency Conventions](docs/LIBRARIES.md)
 - [API Notes](docs/API.md)
+
+See [AGENTS.md](AGENTS.md) for an agent/contributor orientation map.

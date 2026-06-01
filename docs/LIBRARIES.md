@@ -1,14 +1,46 @@
-# Library migration — follow-up work
+# Library & Dependency Conventions
 
-This note tracks the deliberately deferred parts of the "replace hand-rolled code
-with libraries" effort. Tier 1 (low-risk drop-ins) and most of Tier 2 (medium
-refactors) shipped on the `chore/use-libraries` branch. The items below were left
-out on purpose, each for a concrete reason — they are not oversights.
+## Principle
 
-The larger Tier 3 rewrites (prompt/JSON editors → CodeMirror 6, strategy DAG →
-React Flow + dagre, `DataTable` → `@tanstack/react-table`, lightbox →
-`yet-another-react-lightbox`) shipped on this branch — see git history for the
-per-rewrite commits. Two decisions from that work are worth keeping in mind:
+**Strongly prefer a well-maintained, widely-adopted library over hand-rolling
+equivalent behavior.** Established libraries carry the accessibility, edge-case,
+focus-management, and cross-browser work that hand-rolled versions silently miss,
+and they shrink the surface area we have to own and test.
+
+Reach for a library first for anything in the "solved problem" category:
+
+- **Overlays & interaction** — dialogs, popovers, tooltips, hover cards,
+  dropdowns / command palettes (Radix UI + `cmdk`).
+- **Tables, graphs, layout** — data tables (`@tanstack/react-table`), node graphs
+  / DAGs (`@xyflow/react` + `@dagrejs/dagre`).
+- **Editors & syntax** — code/template editors (CodeMirror 6 via
+  `@uiw/react-codemirror`).
+- **Data fetching / caching / polling** — `@tanstack/react-query`.
+- **Widgets** — dates (`react-day-picker`), compare sliders
+  (`react-compare-slider`), uploads (`react-dropzone`), lightboxes
+  (`yet-another-react-lightbox`), charts (`recharts`), toasts (`sonner`).
+- **Utility idioms** — `es-toolkit`, `clsx` + `tailwind-merge`, `ms`, `bytes`,
+  `http-status-codes`, `zod` for boundary validation.
+
+Rules of thumb:
+
+- Add dependencies with **Yarn** (`yarn add` / `yarn add -D`). Never `npm`.
+- Don't hand-roll focus traps, click-outside, positioning, keyboard navigation,
+  fuzzy filtering, or layout algorithms when a primitive already exists.
+- Keep wrappers **thin** — adapt the library to our design tokens and `ui/`
+  primitives; don't rebuild it on top of the dependency.
+- If you deliberately hand-roll something or defer adopting a library, **record
+  the reason in one of the Exceptions sections below** so it isn't "fixed" later.
+
+## Current stack
+
+This codebase went through a deliberate pass replacing hand-rolled UI/logic with
+libraries (Radix primitives, `cmdk`, `@tanstack/react-table` + React Query,
+`@xyflow/react` + dagre, CodeMirror 6, `react-day-picker`, `recharts`,
+`es-toolkit`, and more). See `package.json` for the current set and git history
+for the per-migration commits.
+
+Two editor decisions are worth keeping in mind:
 
 - The prompt editor keeps a small in-repo Handlebars `StreamLanguage`
   (`prompt-template-editor/handlebars-language.ts`) instead of
@@ -18,7 +50,7 @@ per-rewrite commits. Two decisions from that work are worth keeping in mind:
   editor insert popovers (`reference`/`conditional`/`dollhouse`) were intentionally
   left on their existing implementations.
 
-## Deferred Tier 2 items
+## Exceptions — evaluated, not adopted (yet)
 
 - **Forms → react-hook-form.** Not adopted. The candidate forms are a poor fit:
   `strategy-builder.tsx` is a multi-step builder (not a field form),
@@ -45,7 +77,7 @@ per-rewrite commits. Two decisions from that work are worth keeping in mind:
   `SearchableSelect`. They could be routed through the (now Radix-backed) `Modal`
   primitive for a focus trap in a small follow-up.
 
-## Intentionally kept hand-rolled
+## Exceptions — intentionally kept hand-rolled
 
 - **`two-pane-split.tsx`** — `react-resizable-panels` is JS-driven and
   percentage-based; it would regress the current SSR-safe CSS responsive stacking
