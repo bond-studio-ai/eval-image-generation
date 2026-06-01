@@ -24,7 +24,11 @@ jobs:
       # The mock upstream (test/e2e/mock-server.mjs) stands in for the
       # image-generation backend, so the run is hermetic except for Clerk.
       BASE_API_HOSTNAME: http://localhost:3001
+      # NEXT_PUBLIC_* is what Next inlines at build and what clerkSetup() reads as
+      # a fallback; CLERK_PUBLISHABLE_KEY is the name @clerk/testing prefers, so
+      # alias the same secret to both for an explicit, version-proof setup.
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
       E2E_CLERK_USER_USERNAME: ${{ secrets.E2E_CLERK_USER_USERNAME }}
       E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}

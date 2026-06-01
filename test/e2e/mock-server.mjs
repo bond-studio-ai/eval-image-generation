@@ -235,6 +235,5 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`[mock-server] image-generation backend mock listening on http://localhost:${PORT}`);
 });

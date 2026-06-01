@@ -841,7 +841,10 @@ const eslintConfig = [
       "@microsoft/sdl/no-insecure-url": OFF,
       // Lightweight next/link stubs spread their props onto a plain <a>; the
       // target-blank guard isn't meaningful for test doubles.
-      "react/jsx-no-target-blank": OFF
+      "react/jsx-no-target-blank": OFF,
+      // The e2e harness (mock server, global setup) logs startup/diagnostic
+      // lines to the CI console on purpose; console is the right sink there.
+      "no-console": OFF
     }
   },
 
