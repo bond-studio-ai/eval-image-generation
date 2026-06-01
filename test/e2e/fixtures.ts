@@ -1,0 +1,78 @@
+import { test as base, expect } from "@playwright/test";
+import { addCoverageReport } from "monocart-reporter";
+
+/**
+ * Client-side V8 coverage collection for the E2E suite.
+ *
+ * When `COVERAGE_RAW=1` (the merged-coverage pipeline, see `mcr.config.mjs`), an
+ * auto fixture wraps every test: it starts JS/CSS coverage before the test and,
+ * after it, hands the raw V8 data to monocart-reporter, which writes a `raw`
+ * report under `.coverage-raw/e2e/raw` for later merging with the unit coverage.
+ *
+ * Because we collect `raw` and merge in a separate process (the dev server is
+ * gone by then), we resolve each browser entry's external source map here —
+ * while the server is still up — and attach it so the merge can map minified
+ * bundles back to `src/**` offline. Server-side coverage uses `file://` URLs
+ * whose maps live on disk, so those resolve at merge time without help.
+ *
+ * Coverage APIs are Chromium-only; the fixture is a no-op elsewhere and when the
+ * flag is off, so normal a11y/visual runs are unaffected.
+ */
+const collectCoverage = Boolean(process.env.COVERAGE_RAW);
+
+const SOURCE_MAP_URL = /\/\/[#@]\s*sourceMappingURL=(\S+)/;
+
+interface CoverageEntry {
+  url?: string;
+  source?: string;
+  text?: string;
+  sourceMap?: unknown;
+}
+
+export const test = base.extend<{ autoCoverage: void }>({
+  autoCoverage: [
+    async ({ page, browserName }, use) => {
+      const enabled = collectCoverage && browserName === "chromium";
+
+      if (enabled) {
+        await Promise.all([page.coverage.startJSCoverage({ resetOnNavigation: false }), page.coverage.startCSSCoverage({ resetOnNavigation: false })]);
+      }
+
+      await use();
+
+      if (!enabled) {
+        return;
+      }
+
+      const [jsCoverage, cssCoverage] = await Promise.all([page.coverage.stopJSCoverage(), page.coverage.stopCSSCoverage()]);
+      const entries = [...jsCoverage, ...cssCoverage] as CoverageEntry[];
+
+      // Attach external source maps over HTTP while the server is still alive,
+      // so the offline merge can map minified bundles back to src/**.
+      for (const entry of entries) {
+        const code = entry.source ?? entry.text;
+        if (!entry.url || !code || entry.sourceMap) {
+          continue;
+        }
+        const mapRef = SOURCE_MAP_URL.exec(code)?.[1];
+        if (!mapRef || mapRef.startsWith("data:")) {
+          continue; // no map, or inline map (MCR reads it from the source directly)
+        }
+        try {
+          const response = await page.request.get(new URL(mapRef, entry.url).toString());
+          if (response.ok()) {
+            entry.sourceMap = JSON.parse(await response.text());
+          }
+        } catch {
+          // Best effort: an unresolved map just means that bundle maps less
+          // precisely in the merged report; it never fails the test.
+        }
+      }
+
+      await addCoverageReport(entries, test.info());
+    },
+    { auto: true }
+  ]
+});
+
+export { expect };

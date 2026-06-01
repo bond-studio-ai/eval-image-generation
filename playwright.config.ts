@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices, type ReporterDescription } from "@playwright/test";
 import dotenv from "dotenv";
 
 // Load local secrets (Clerk keys, E2E user creds) for the Playwright process so
@@ -21,12 +21,68 @@ dotenv.config({ path: ".env.local", quiet: true });
  *   - `yarn build` once, then `yarn test:e2e:a11y` (Playwright starts the
  *     servers for you). Or run your own `yarn dev` — `reuseExistingServer`
  *     leaves it alone outside CI.
+ *
+ * Coverage workflow (`COVERAGE_RAW=1`, driven by `yarn coverage:all`):
+ *   - The Next server is started in dev mode with `NODE_V8_COVERAGE` +
+ *     `--inspect` so both client (page.coverage) and server (CDP flush in
+ *     `global-teardown`) V8 coverage can be captured and merged with the unit
+ *     coverage. Dev mode is used here because it gives reliable, resolvable
+ *     source maps for both layers; production `next start` keeps powering the
+ *     normal a11y/visual runs untouched.
  */
 const isCI = Boolean(process.env.CI);
+const collectCoverage = Boolean(process.env.COVERAGE_RAW);
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 const MOCK_PORT = process.env.MOCK_PORT ?? "3001";
 const STORAGE_STATE = process.env.STORAGE_STATE ?? ".playwright/storage.json";
+const INSPECT_PORT = process.env.COVERAGE_INSPECT_PORT ?? "9229";
+
+// In coverage mode, monocart-reporter aggregates the raw V8 data (client from
+// fixtures, server from global-teardown) into `.coverage-raw/e2e/raw` for the
+// merge step. Otherwise the reporting is unchanged.
+const defaultReporter: ReporterDescription[] = isCI ? [["list"], ["html", { open: "never" }]] : [["list"]];
+const coverageReporter: ReporterDescription[] = [
+  ["list"],
+  [
+    "monocart-reporter",
+    {
+      name: "E2E Coverage",
+      outputFile: ".coverage-raw/e2e/report/index.html",
+      coverage: {
+        name: "E2E Coverage (raw)",
+        outputDir: ".coverage-raw/e2e",
+        reports: [["raw", { outputDir: "raw" }]],
+        cleanCache: true
+      }
+    }
+  ]
+];
+const reporter = collectCoverage ? coverageReporter : defaultReporter;
+
+// Coverage needs our own freshly-instrumented dev server, so don't piggy-back on
+// a developer's already-running server in that mode.
+const reuseExistingServer = !isCI && !collectCoverage;
+
+const appServer = collectCoverage
+  ? {
+      command: `cross-env NODE_V8_COVERAGE=.v8-coverage NODE_OPTIONS=--inspect=${INSPECT_PORT} yarn dev`,
+      url: BASE_URL,
+      timeout: 120_000,
+      reuseExistingServer,
+      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}`, COVERAGE_RAW: "1" }
+    }
+  : {
+      command: "yarn start",
+      url: BASE_URL,
+      timeout: 120_000,
+      reuseExistingServer,
+      // Force the app at the hermetic mock backend. Clerk keys are inherited
+      // from the environment (CI job env, or `.env.local` loaded above / by
+      // Next at runtime) — never injected as empty strings, which would clobber
+      // a valid `.env.local` value on local runs.
+      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}` }
+    };
 
 export default defineConfig({
   testDir: "./test/e2e",
@@ -36,8 +92,9 @@ export default defineConfig({
   },
   fullyParallel: true,
   retries: isCI ? 1 : 0,
-  reporter: isCI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  reporter,
   globalSetup: "./test/e2e/global-setup.ts",
+  globalTeardown: "./test/e2e/global-teardown.ts",
   use: {
     baseURL: BASE_URL,
     storageState: STORAGE_STATE,
@@ -61,19 +118,9 @@ export default defineConfig({
     {
       command: "node test/e2e/mock-server.mjs",
       port: Number(MOCK_PORT),
-      reuseExistingServer: !isCI,
+      reuseExistingServer,
       env: { MOCK_PORT }
     },
-    {
-      command: "yarn start",
-      url: BASE_URL,
-      timeout: 120_000,
-      reuseExistingServer: !isCI,
-      // Force the app at the hermetic mock backend. Clerk keys are inherited
-      // from the environment (CI job env, or `.env.local` loaded above / by
-      // Next at runtime) — never injected as empty strings, which would clobber
-      // a valid `.env.local` value on local runs.
-      env: { BASE_API_HOSTNAME: `http://localhost:${MOCK_PORT}` }
-    }
+    appServer
   ]
 });

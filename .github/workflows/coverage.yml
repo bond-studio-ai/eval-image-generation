@@ -1,0 +1,54 @@
+name: Coverage
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    # Authoritative merged ratchet (Vitest unit/functional + Playwright E2E
+    # client/server). Like e2e-a11y, this needs Clerk secrets to sign in the test
+    # user, so it can't run on fork PRs — skip there, run on same-repo PRs + main.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      # The mock upstream (test/e2e/mock-server.mjs) stands in for the
+      # image-generation backend, so the run is hermetic except for Clerk.
+      BASE_API_HOSTNAME: http://localhost:3001
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      E2E_CLERK_USER_USERNAME: ${{ secrets.E2E_CLERK_USER_USERNAME }}
+      E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn playwright install --with-deps chromium
+      # Raw V8 coverage from unit/functional Vitest -> .coverage-raw/unit/raw
+      - run: yarn coverage:unit
+      # Raw V8 coverage from the E2E suite (client via page.coverage + server via
+      # CDP flush). The dev server with NODE_V8_COVERAGE + --inspect is started by
+      # playwright.config.ts when COVERAGE_RAW=1 -> .coverage-raw/e2e/raw
+      - run: yarn coverage:e2e
+      # Merge everything, map through source maps, filter to src/**, and enforce
+      # the merged ratchet (fails the job if coverage drops below the floor).
+      - run: yarn coverage:merge
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7

@@ -24,6 +24,9 @@ declare global {
       MOCK_PORT?: string;
       E2E_CLERK_USER_USERNAME?: string;
       E2E_CLERK_USER_PASSWORD?: string;
+      // Coverage harness (see mcr.config.mjs and .github/workflows/coverage.yml).
+      COVERAGE_RAW?: string;
+      COVERAGE_INSPECT_PORT?: string;
     }
   }
 }
