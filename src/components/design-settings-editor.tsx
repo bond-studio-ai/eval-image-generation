@@ -36,6 +36,20 @@ const JsonCodeEditor = dynamic(
   { ssr: false }
 );
 
+type ParsedDesignSettings = { value: Record<string, unknown> } | { error: string };
+
+function parseDesignSettingsObject(text: string): ParsedDesignSettings {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { error: "Must be a JSON object." };
+    }
+    return { value: parsed as Record<string, unknown> };
+  } catch {
+    return { error: "Invalid JSON." };
+  }
+}
+
 interface DesignSettingsEditorProps {
   value: DesignSettingsValue;
   onChange: (value: DesignSettingsValue) => void;
@@ -86,18 +100,12 @@ export function DesignSettingsEditor({ value, onChange, arbitraryImagesBySlot, o
       setJsonError(null);
       return true;
     }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch {
-      setJsonError("Invalid JSON.");
+    const result = parseDesignSettingsObject(trimmed);
+    if ("error" in result) {
+      setJsonError(result.error);
       return false;
     }
-    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      setJsonError("Must be a JSON object.");
-      return false;
-    }
-    const record = parsed as Record<string, unknown>;
+    const record = result.value;
     const nextImages = Object.fromEntries(Object.entries(arbitraryImagesBySlot).filter(([slot, url]) => Boolean(url) && record[getProductImageTypeKey(slot)] === "arbitrary"));
     onArbitraryImagesBySlotChange(nextImages);
     onChange(record);
