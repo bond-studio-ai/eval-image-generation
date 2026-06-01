@@ -18,28 +18,36 @@ import { fileURLToPath } from "node:url";
  * No-op unless the flag is set, so normal a11y/visual runs are unaffected.
  */
 
-// Next forks a render worker that inspects at the next port up from the main
-// `--inspect` port. Override via COVERAGE_INSPECT_PORT if your setup differs.
-const INSPECT_PORT = Number(process.env.COVERAGE_INSPECT_PORT ?? 9230);
+// The Next CLI is started with `--inspect=<main>` (see playwright.config.ts).
+// Server components / route handlers run in Next's forked render worker, which
+// inherits the flag and inspects on the next free port (main + 1). Try the
+// worker first, then the main process, so we capture server coverage either way.
+const MAIN_INSPECT_PORT = Number(process.env.COVERAGE_INSPECT_PORT ?? 9229);
+const INSPECT_PORTS = [MAIN_INSPECT_PORT + 1, MAIN_INSPECT_PORT];
 
-async function flushServerCoverage(): Promise<string | undefined> {
-  try {
-    const client = await CDPClient({ port: INSPECT_PORT });
-    if (!client) {
-      console.warn(`[coverage] inspector client unavailable on :${INSPECT_PORT}; server coverage skipped.`);
-      return undefined;
-    }
-    const dir = await client.writeCoverage();
-    await client.close();
-    if (!dir || !fs.existsSync(dir)) {
-      console.warn("[coverage] no server V8 coverage was written.");
-      return undefined;
-    }
-    return dir;
-  } catch (error) {
-    console.warn(`[coverage] could not attach to inspector on :${INSPECT_PORT}; server coverage skipped.`, error);
+async function writeCoverageFromPort(port: number): Promise<string | undefined> {
+  const client = await CDPClient({ port });
+  if (!client) {
     return undefined;
   }
+  const dir = await client.writeCoverage();
+  await client.close();
+  return dir;
+}
+
+async function flushServerCoverage(): Promise<string | undefined> {
+  for (const port of INSPECT_PORTS) {
+    try {
+      const dir = await writeCoverageFromPort(port);
+      if (dir && fs.existsSync(dir)) {
+        return dir;
+      }
+    } catch {
+      // Try the next candidate port.
+    }
+  }
+  console.warn(`[coverage] could not flush server V8 coverage from inspector ports ${INSPECT_PORTS.join(", ")}; server coverage skipped.`);
+  return undefined;
 }
 
 export default async function globalTeardown(config: FullConfig): Promise<void> {

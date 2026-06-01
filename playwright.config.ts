@@ -66,7 +66,14 @@ const reuseExistingServer = !isCI && !collectCoverage;
 
 const appServer = collectCoverage
   ? {
-      command: `cross-env NODE_V8_COVERAGE=.v8-coverage NODE_OPTIONS=--inspect=${INSPECT_PORT} yarn dev`,
+      // Invoke the Next CLI directly (not via `yarn dev`): with `yarn dev`, Yarn
+      // is the Node process that consumes NODE_OPTIONS=--inspect and binds the
+      // inspector port, so the Next child can't open its own CDP endpoint and
+      // global-teardown can't flush server coverage. Running `node .../next dev`
+      // attaches the inspector to the Next process itself; its forked render
+      // worker (where server components/route handlers run) then inspects on
+      // INSPECT_PORT + 1, which global-teardown connects to.
+      command: `cross-env NODE_V8_COVERAGE=.v8-coverage NODE_OPTIONS=--inspect=${INSPECT_PORT} node node_modules/next/dist/bin/next dev`,
       url: BASE_URL,
       timeout: 120_000,
       reuseExistingServer,
