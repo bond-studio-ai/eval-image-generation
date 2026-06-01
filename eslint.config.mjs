@@ -913,7 +913,7 @@ const eslintConfig = [
   // An ESLint flat config is conventionally a single large file (one ordered
   // array of config objects), so the source-file line cap doesn't apply here.
   {
-    files: ["**/*.{config,setup}.{js,cjs,mjs,ts}", "*.config.*"],
+    files: ["**/*.{config,setup}.{js,cjs,mjs,ts}", "*.config.{js,cjs,mjs,ts}"],
     rules: {
       "unicorn/prefer-module": OFF,
       "@typescript-eslint/no-magic-numbers": OFF,

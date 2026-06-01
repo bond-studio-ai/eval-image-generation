@@ -2,7 +2,7 @@
 
 import { localUrl } from "./api-base";
 import { camelizeDeep } from "./casing";
-import { asNumber, asRecord, buildObject, buildSurface, getScanContext, isScanLike, OBJECT_SLOTS, SURFACE_SLOTS } from "./design-materials-build";
+import { asNumber, asRecord, buildObject, buildSurface, getScanContext, getShowers, isScanLike, OBJECT_SLOTS, SURFACE_SLOTS, visibilityStyling } from "./design-materials-build";
 import type { CatalogProduct, RawDesignObject, ScanLike, UnitySlimDesignMaterials } from "./design-materials-types";
 import { logger } from "./logger";
 
@@ -119,8 +119,7 @@ export async function buildDesignMaterials(params: { design: RawDesignObject; ro
       product = productBySlot.get("showerWallTile") ?? null;
     }
     if (slot === "curbTile") {
-      const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
-      const hasCurbInScan = showers.some((shower) => {
+      const hasCurbInScan = getShowers(scan).some((shower) => {
         const record = asRecord(shower);
         return (asNumber(record?.curbHeight) ?? 0) > 0 && (asNumber(record?.curbThickness) ?? 0) > 0;
       });
@@ -137,14 +136,10 @@ export async function buildDesignMaterials(params: { design: RawDesignObject; ro
 
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
   if (hasShowerInScan && !result.objects.showerGlass) {
-    result.objects.showerGlass = {
-      styling: params.design.isShowerGlassVisible === false ? "Hidden" : "Default"
-    };
+    result.objects.showerGlass = { styling: visibilityStyling(params.design.isShowerGlassVisible) };
   }
   if (hasAlcoveTubInScan && !result.objects.tubDoor) {
-    result.objects.tubDoor = {
-      styling: params.design.isTubDoorVisible === false ? "Hidden" : "Default"
-    };
+    result.objects.tubDoor = { styling: visibilityStyling(params.design.isTubDoorVisible) };
   }
 
   return result;

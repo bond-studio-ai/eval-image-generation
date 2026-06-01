@@ -7,14 +7,15 @@ import {
   buildSurface,
   getAssetId,
   getScanContext,
-  getStylingState,
+  getShowers,
   getTextureScale,
   isScanLike,
   pickHcl,
   projectColorPalette,
   projectComponents,
   projectTileExtras,
-  resolveTilePattern
+  resolveTilePattern,
+  visibilityStyling
 } from "@/lib/design-materials-build";
 import type { CatalogProduct, ScanLike } from "@/lib/design-materials-types";
 
@@ -130,18 +131,25 @@ describe("getTextureScale", () => {
 });
 
 describe("getAssetId", () => {
-  it("reads from renderAttributes, then top-level 3DAssetId, then assetId", () => {
+  it("reads the 3DAssetId out of renderAttributes", () => {
     expect(getAssetId({ renderAttributes: { "3DAssetId": "a" } })).toBe("a");
-    expect(getAssetId({ "3DAssetId": "b" })).toBe("b");
-    expect(getAssetId({ assetId: "c" })).toBe("c");
     expect(getAssetId({})).toBeNull();
   });
 });
 
-describe("getStylingState", () => {
-  it("maps isRemoved to Removed", () => {
-    expect(getStylingState({ isRemoved: true })).toBe("Removed");
-    expect(getStylingState({ isRemoved: false })).toBe("Default");
+describe("getShowers", () => {
+  it("returns the showers array or an empty array", () => {
+    expect(getShowers({ areas: { showers: [{ id: 1 }] } })).toEqual([{ id: 1 }]);
+    expect(getShowers({ areas: {} })).toEqual([]);
+    expect(getShowers({})).toEqual([]);
+  });
+});
+
+describe("visibilityStyling", () => {
+  it("hides only on an explicit false", () => {
+    expect(visibilityStyling(false)).toBe("Hidden");
+    expect(visibilityStyling(true)).toBe("Default");
+    expect(visibilityStyling(undefined)).toBe("Default");
   });
 });
 
@@ -216,6 +224,11 @@ describe("buildObject", () => {
     expect(obj).toMatchObject({ placement: "Above", rotation: 90 });
   });
 
+  it("uses the side rotation for side-placed lighting", () => {
+    const obj = buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" }, sidePlacementDefaultRotation: 45 }, "lighting", { lightingPlacement: "Side" }, {});
+    expect(obj).toMatchObject({ placement: "Side", rotation: 45 });
+  });
+
   it("maps tubFiller mounting position to placement", () => {
     expect(buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" }, mountingPosition: "Deck" }, "tubFiller", {}, {})?.placement).toBe("Deck");
   });
@@ -223,6 +236,12 @@ describe("buildObject", () => {
   it("marks removed products and drops productId when hidden", () => {
     expect(buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" }, isRemoved: true }, "toilet", {}, {})?.styling).toBe("Removed");
     const hidden = buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" } }, "showerGlass", { isShowerGlassVisible: false }, showerScan);
+    expect(hidden?.styling).toBe("Hidden");
+    expect(hidden?.productId).toBeUndefined();
+  });
+
+  it("hides a tub door with a product when isTubDoorVisible is false", () => {
+    const hidden = buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" } }, "tubDoor", { isTubDoorVisible: false }, tubScan);
     expect(hidden?.styling).toBe("Hidden");
     expect(hidden?.productId).toBeUndefined();
   });

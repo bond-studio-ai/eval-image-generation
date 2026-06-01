@@ -139,7 +139,9 @@ export function getTextureScale(product: CatalogProduct, patternScale?: TextureS
 }
 
 export function getAssetId(product: CatalogProduct): string | null {
-  return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? asString(product["3DAssetId"]) ?? asString(product.assetId) ?? null;
+  // `buildMaterialLike` always coerces the upstream asset into `renderAttributes`,
+  // so that's the only place a real asset id lives on the production path.
+  return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? null;
 }
 
 function readPatternTexture(product: CatalogProduct, patternType: unknown): { texture: string | null; scale: TextureScale | null } {
@@ -154,45 +156,25 @@ function readPatternTexture(product: CatalogProduct, patternType: unknown): { te
   };
 }
 
+/**
+ * Normalize a raw catalog product into the shape the projection helpers read.
+ * The only non-passthrough work is hoisting the dimension fields that may be
+ * nested under `renderAttributes` up to the top level and guaranteeing
+ * `renderAttributes` is a record. Every other field is read through the
+ * null-tolerant `as*` helpers downstream, so we leave it as-is rather than
+ * re-listing ~30 `?? null` defaults that change nothing.
+ */
 function buildMaterialLike(product: CatalogProduct, productId: string): CatalogProduct {
   const renderAttributes = asRecord(product.renderAttributes) ?? {};
   return {
+    ...product,
     id: productId,
     renderAttributes,
-    textureScale: asRecord(product.textureScale) ?? {
-      x: asNumber(product.textureScaleX),
-      y: asNumber(product.textureScaleY)
-    },
     length: product.length ?? renderAttributes.length ?? null,
     width: product.width ?? renderAttributes.width ?? null,
     height: product.height ?? renderAttributes.height ?? null,
-    numberOfSinks: product.numberOfSinks ?? null,
-    counterHeight: product.counterHeight ?? null,
-    sinkOffset: product.sinkOffset ?? null,
-    abovePlacementDefaultRotation: product.abovePlacementDefaultRotation ?? null,
-    sidePlacementDefaultRotation: product.sidePlacementDefaultRotation ?? null,
-    mountingPosition: product.mountingPosition ?? null,
-    colorPalette: product.colorPalette ?? product.color_palette ?? null,
-    components: product.components ?? null,
-    shape: product.shape ?? null,
     pieceLength: product.pieceLength ?? renderAttributes.pieceLength ?? null,
-    pieceWidth: product.pieceWidth ?? renderAttributes.pieceWidth ?? null,
-    isRemoved: product.isRemoved ?? false,
-    patternInfo: asRecord(product.patternInfo) ?? null,
-    horizontalPatternId: product.horizontalPatternId ?? null,
-    verticalPatternId: product.verticalPatternId ?? null,
-    thirdOffsetPatternId: product.thirdOffsetPatternId ?? null,
-    halfOffsetPatternId: product.halfOffsetPatternId ?? null,
-    herringbonePatternId: product.herringbonePatternId ?? null,
-    hexagonPatternId: product.hexagonPatternId ?? null,
-    rhomboidCubePatternId: product.rhomboidCubePatternId ?? null,
-    triangularPatternId: product.triangularPatternId ?? null,
-    horizontalPicketPatternId: product.horizontalPicketPatternId ?? null,
-    verticalPicketPatternId: product.verticalPicketPatternId ?? null,
-    fishScalePatternId: product.fishScalePatternId ?? null,
-    stackedPatternId: product.stackedPatternId ?? null,
-    offsetPatternId: product.offsetPatternId ?? null,
-    straightPatternId: product.straightPatternId ?? null
+    pieceWidth: product.pieceWidth ?? renderAttributes.pieceWidth ?? null
   };
 }
 
@@ -226,45 +208,78 @@ export function buildSurface(product: CatalogProduct | null, slot: SurfaceSlot, 
   return out;
 }
 
-export function getStylingState(product: CatalogProduct): ObjectItem["styling"] {
-  return product.isRemoved ? "Removed" : "Default";
+/** Styling for a visibility-toggled slot: explicitly `false` hides it. */
+export function visibilityStyling(visible: unknown): "Hidden" | "Default" {
+  return visible === false ? "Hidden" : "Default";
+}
+
+export function getShowers(scan: ScanLike): unknown[] {
+  const showers = asRecord(scan.areas)?.showers;
+  return Array.isArray(showers) ? showers : [];
 }
 
 export function getScanContext(scan: ScanLike): { hasShowerInScan: boolean; hasAlcoveTubInScan: boolean } {
-  const showers = Array.isArray(asRecord(scan.areas)?.showers) ? (asRecord(scan.areas)?.showers as unknown[]) : [];
-  const hasAlcoveTubInScan = Array.isArray(scan.tubs) ? scan.tubs.some((tub) => asRecord(tub)?.type === "Alcove") : false;
-
   return {
-    hasShowerInScan: showers.length > 0,
-    hasAlcoveTubInScan
+    hasShowerInScan: getShowers(scan).length > 0,
+    hasAlcoveTubInScan: Array.isArray(scan.tubs) ? scan.tubs.some((tub) => asRecord(tub)?.type === "Alcove") : false
   };
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity -- maps the wide, optional upstream object shape (placement, sizing, styling, scan context) into the Unity object; the per-field branching is irreducible domain logic
-export function buildObject(product: CatalogProduct | null, slot: ObjectSlot, design: RawDesignObject, scan: ScanLike): ObjectItem | null {
+/**
+ * For the two slots that can be present in a scan without a chosen product
+ * (shower glass, tub door), return the styling-only object the scan implies, or
+ * `null` if the slot has no scan-driven fallback.
+ */
+function fallbackStyling(slot: ObjectSlot, design: RawDesignObject, scan: ScanLike): ObjectItem | null {
   const { hasShowerInScan, hasAlcoveTubInScan } = getScanContext(scan);
+  if (slot === "showerGlass" && hasShowerInScan) return { styling: visibilityStyling(design.isShowerGlassVisible) };
+  if (slot === "tubDoor" && hasAlcoveTubInScan) return { styling: visibilityStyling(design.isTubDoorVisible) };
+  return null;
+}
 
-  if (!product) {
-    if (slot === "showerGlass" && hasShowerInScan) {
-      return { styling: design.isShowerGlassVisible === false ? "Hidden" : "Default" };
-    }
-    if (slot === "tubDoor" && hasAlcoveTubInScan) {
-      return { styling: design.isTubDoorVisible === false ? "Hidden" : "Default" };
-    }
-    return null;
+/**
+ * Per-slot enrichers returning the optional placement/sizing/visibility fields
+ * to layer onto a built object. Keeping each slot's rule as its own entry
+ * replaces a long `if (slot === …)` chain and stays individually readable.
+ */
+const OBJECT_ENRICHERS: Partial<Record<ObjectSlot, (material: CatalogProduct, design: RawDesignObject) => Partial<ObjectItem>>> = {
+  vanity(material) {
+    const out: Partial<ObjectItem> = {};
+    const numberOfSinks = asNumber(material.numberOfSinks);
+    if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
+    const counterHeight = coerceString(material.counterHeight);
+    const sinkOffset = coerceString(material.sinkOffset);
+    if (counterHeight) out.counterHeight = counterHeight;
+    if (sinkOffset) out.sinkOffset = sinkOffset;
+    return out;
+  },
+  mirror(_material, design) {
+    return { placement: asString(design.mirrorPlacement) ?? "CenterOnSink" };
+  },
+  lighting(material, design) {
+    const placement = asString(design.lightingPlacement) ?? "Above";
+    if (placement === "Above") return { placement, rotation: asNumber(material.abovePlacementDefaultRotation) ?? 0 };
+    if (placement === "Side") return { placement, rotation: asNumber(material.sidePlacementDefaultRotation) ?? 0 };
+    return { placement };
+  },
+  tubFiller(material) {
+    const mountingPosition = asString(material.mountingPosition);
+    return mountingPosition ? { placement: mountingPosition } : {};
+  },
+  showerGlass(_material, design) {
+    return design.isShowerGlassVisible === false ? { styling: "Hidden" } : {};
+  },
+  tubDoor(_material, design) {
+    return design.isTubDoorVisible === false ? { styling: "Hidden" } : {};
   }
+};
+
+export function buildObject(product: CatalogProduct | null, slot: ObjectSlot, design: RawDesignObject, scan: ScanLike): ObjectItem | null {
+  if (!product) return fallbackStyling(slot, design, scan);
 
   const material = buildMaterialLike(product, asString(product.id) ?? "");
   const asset = getAssetId(material);
-  if (!asset) {
-    if (slot === "showerGlass" && hasShowerInScan) {
-      return { styling: design.isShowerGlassVisible === false ? "Hidden" : "Default" };
-    }
-    if (slot === "tubDoor" && hasAlcoveTubInScan) {
-      return { styling: design.isTubDoorVisible === false ? "Hidden" : "Default" };
-    }
-    return null;
-  }
+  if (!asset) return fallbackStyling(slot, design, scan);
 
   const out: ObjectItem = {
     productId: asString(material.id) ?? undefined,
@@ -274,42 +289,13 @@ export function buildObject(product: CatalogProduct | null, slot: ObjectSlot, de
       width: coerceString(material.width) ?? "",
       height: coerceString(material.height) ?? ""
     },
-    styling: getStylingState(material)
+    styling: material.isRemoved ? "Removed" : "Default"
   };
 
-  if (slot === "vanity") {
-    const numberOfSinks = asNumber(material.numberOfSinks);
-    if (numberOfSinks != null) out.numberOfSinks = numberOfSinks;
-    const counterHeight = coerceString(material.counterHeight) ?? null;
-    const sinkOffset = coerceString(material.sinkOffset) ?? null;
-    if (counterHeight) out.counterHeight = counterHeight;
-    if (sinkOffset) out.sinkOffset = sinkOffset;
-  }
-  if (slot === "mirror") {
-    out.placement = asString(design.mirrorPlacement) ?? "CenterOnSink";
-  }
-  if (slot === "lighting") {
-    const placement = asString(design.lightingPlacement) ?? "Above";
-    out.placement = placement;
-    if (placement === "Above") out.rotation = asNumber(material.abovePlacementDefaultRotation) ?? 0;
-    if (placement === "Side") out.rotation = asNumber(material.sidePlacementDefaultRotation) ?? 0;
-  }
-  if (slot === "tubFiller") {
-    const mountingPosition = asString(material.mountingPosition);
-    if (mountingPosition) out.placement = mountingPosition;
-  }
-  if (slot === "showerGlass" && design.isShowerGlassVisible === false) {
-    out.styling = "Hidden";
-    delete out.productId;
-  }
-  if (slot === "tubDoor" && design.isTubDoorVisible === false) {
-    out.styling = "Hidden";
-    delete out.productId;
-  }
+  Object.assign(out, OBJECT_ENRICHERS[slot]?.(material, design));
 
-  if (out.styling === "Hidden") {
-    delete out.productId;
-  }
+  // Hidden slots carry styling only — never a product reference.
+  if (out.styling === "Hidden") delete out.productId;
 
   const components = projectComponents(material);
   if (components) out.components = components;
