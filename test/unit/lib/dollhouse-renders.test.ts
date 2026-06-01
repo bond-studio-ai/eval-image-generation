@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cameraFrameKey, normalizeCameraFrame } from "./dollhouse-renders";
+import { cameraFrameKey, normalizeCameraFrame } from "@/lib/dollhouse-renders";
 
 describe("normalizeCameraFrame", () => {
   it("returns null when position or rotation is missing", () => {

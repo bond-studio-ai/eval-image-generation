@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { cameraFrameKey, type DollhouseCameraFrame, type UnitySlimDesignMaterials } from "@/lib/dollhouse-renders";
 import type { ProjectRenderBootstrap } from "@/lib/projects";
-import { DEFAULT_IMAGE_CONFIG, type ImageConfigState, type OverrideParseResult } from "./build-request";
-import { buildWizardModel, type WizardInput } from "./wizard-model";
+import { DEFAULT_IMAGE_CONFIG, type ImageConfigState, type OverrideParseResult } from "@/app/dollhouse-renders/new/_components/build-request";
+import { buildWizardModel, type WizardInput } from "@/app/dollhouse-renders/new/_components/wizard-model";
 
 const DESIGN: UnitySlimDesignMaterials = {
   id: "design-1",

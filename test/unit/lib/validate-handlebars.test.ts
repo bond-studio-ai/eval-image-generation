@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateHandlebarsTemplate } from "./validate-handlebars";
+import { validateHandlebarsTemplate } from "@/lib/validate-handlebars";
 
 describe("validateHandlebarsTemplate", () => {
   it("accepts balanced blocks and else branches", () => {

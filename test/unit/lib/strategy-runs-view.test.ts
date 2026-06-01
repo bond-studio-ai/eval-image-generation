@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveBatchStatus, groupStrategyRuns, isAwaitingJudge } from "./strategy-runs-view";
+import { deriveBatchStatus, groupStrategyRuns, isAwaitingJudge } from "@/lib/strategy-runs-view";
 
 describe("strategy run view helpers", () => {
   it("detects batches waiting for judge selection", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildImageConfig, DEFAULT_IMAGE_CONFIG, FORMAT_OPTIONS, parseDesignMaterialsOverride, parseRoomDataOverride } from "./build-request";
+import { buildImageConfig, DEFAULT_IMAGE_CONFIG, FORMAT_OPTIONS, parseDesignMaterialsOverride, parseRoomDataOverride } from "@/app/dollhouse-renders/new/_components/build-request";
 
 describe("dollhouse render image config defaults", () => {
   it("matches the proven 4:3 dollhouse-capture defaults", () => {

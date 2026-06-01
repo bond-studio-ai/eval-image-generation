@@ -31,6 +31,7 @@ Run `yarn verify` before opening a PR.
 | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)     | Setting up locally, env vars, data flow, troubleshooting.             |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Understanding runtime boundaries, auth, server vs client data access. |
 | [docs/FRONTEND_PATTERNS.md](docs/FRONTEND_PATTERNS.md) | Building UI — layout, primitives, forms, tables, feedback.            |
+| [docs/TESTING.md](docs/TESTING.md)                     | Where tests live, the `test/` layout by type, and how to run them.    |
 | [docs/DESIGN_TOKENS.md](docs/DESIGN_TOKENS.md)         | Choosing colors, type, spacing, shadows (the token system).           |
 | [docs/LIBRARIES.md](docs/LIBRARIES.md)                 | Adding a dependency or deciding whether to hand-roll something.       |
 | [docs/API.md](docs/API.md)                             | Historical reference for the upstream image-generation API shapes.    |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStrategyRunInputFromPreset } from "./strategy-run-input";
+import { buildStrategyRunInputFromPreset } from "@/lib/strategy-run-input";
 
 describe("buildStrategyRunInputFromPreset", () => {
   it("maps scene images, design fields, and product image urls from a preset", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseStrategyRunJudgeResults } from "./strategy-run-judge-results";
+import { parseStrategyRunJudgeResults } from "@/lib/strategy-run-judge-results";
 
 describe("parseStrategyRunJudgeResults", () => {
   it("normalizes valid judge rows and coerces legacy numeric strings", () => {

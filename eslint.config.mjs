@@ -34,7 +34,7 @@ import noOnlyTests from "eslint-plugin-no-only-tests";
 const ERROR = "error";
 const OFF = "off";
 
-const TEST_FILES = ["**/test/**", "**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "**/*.e2e.*", "tests/**", "e2e/**"];
+const TEST_FILES = ["**/test/**", "**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "**/*.e2e.*", "test/**", "e2e/**"];
 
 /* ----------------------------------------------------------------------------
  * Existing local conventions (raw Tailwind palette ban, raw <button> ban).
