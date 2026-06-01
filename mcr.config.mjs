@@ -179,6 +179,15 @@ const coverageOptions = {
     return /(?:^|\/)src\//.test(sourcePath);
   },
 
+  // Normalize the many shapes the same source file takes across runners — unit
+  // gives `src/...`, while E2E maps yield `[project]/src/...`, `../../../src/...`,
+  // or `webpack-internal:///./src/...` — down to a single `src/...` path so they
+  // merge into one file instead of double-counting.
+  sourcePath: (filePath) => {
+    const normalized = filePath.replace(/^webpack(?:-internal)?:\/\/\/?/, "").replace(/^\[project\]\//, "");
+    return /(?:^|\/)(src\/.+)$/.exec(normalized)?.[1] ?? normalized;
+  },
+
   onEntry: sanitizeEntrySourceMap,
 
   // Count every source file (untested files show as 0%) so the metric reflects
