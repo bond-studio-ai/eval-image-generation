@@ -3,7 +3,7 @@
 Two suites live here, split into Playwright projects:
 
 - [`a11y.spec.ts`](a11y.spec.ts) (`--project=a11y`) — axe-core WCAG 2.1 AA pass on the highest-traffic surfaces. **Runs in CI** ([`.github/workflows/e2e-a11y.yml`](../../.github/workflows/e2e-a11y.yml)).
-- [`visual.spec.ts`](visual.spec.ts) (`--project=visual`) — full-page screenshots. Local-only for now (needs Linux-generated baselines before it can run in CI).
+- [`visual.spec.ts`](visual.spec.ts) (`--project=visual`) — full-page screenshots. Local-only for now: it has no committed baselines yet, so it is **excluded from the default `yarn test:e2e`** (which runs only `a11y`). Run it explicitly with `yarn test:e2e:visual` after generating baselines via `yarn test:e2e:update`. It needs Linux-generated baselines before it can run in CI.
 
 ## How it works
 
@@ -29,13 +29,14 @@ These power `global-setup`'s sign-in and the app under test. In CI they are GitH
 ## Running
 
 ```bash
-# Build once, then run the a11y project (Playwright starts the servers)
+# Build once, then run the default e2e suite (a11y only — Playwright starts the servers)
 yarn build
+yarn test:e2e          # == yarn test:e2e:a11y until visual baselines exist
 yarn test:e2e:a11y
 
-# Visual project (local only) + updating baselines after intentional design changes
+# Visual project (local only): generate baselines first, then run it
+yarn test:e2e:update   # writes visual.spec.ts-snapshots/ baselines
 yarn test:e2e:visual
-yarn test:e2e:update
 ```
 
 `STORAGE_STATE`, `BASE_URL`, and `MOCK_PORT` can be overridden via env if you need to target a different setup.

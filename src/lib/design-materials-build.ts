@@ -139,9 +139,11 @@ export function getTextureScale(product: CatalogProduct, patternScale?: TextureS
 }
 
 export function getAssetId(product: CatalogProduct): string | null {
-  // `buildMaterialLike` always coerces the upstream asset into `renderAttributes`,
-  // so that's the only place a real asset id lives on the production path.
-  return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? null;
+  // Prefer the asset nested under `renderAttributes`, but fall back to the
+  // top-level `3DAssetId` / `assetId` some upstream catalog shapes use — those
+  // flow through `buildMaterialLike` (which spreads the product), so a material
+  // carrying its asset there still resolves instead of being dropped.
+  return asString(asRecord(product.renderAttributes)?.["3DAssetId"]) ?? asString(product["3DAssetId"]) ?? asString(product.assetId) ?? null;
 }
 
 function readPatternTexture(product: CatalogProduct, patternType: unknown): { texture: string | null; scale: TextureScale | null } {

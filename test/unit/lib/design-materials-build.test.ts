@@ -131,8 +131,10 @@ describe("getTextureScale", () => {
 });
 
 describe("getAssetId", () => {
-  it("reads the 3DAssetId out of renderAttributes", () => {
+  it("reads from renderAttributes, then top-level 3DAssetId, then assetId", () => {
     expect(getAssetId({ renderAttributes: { "3DAssetId": "a" } })).toBe("a");
+    expect(getAssetId({ "3DAssetId": "b" })).toBe("b");
+    expect(getAssetId({ assetId: "c" })).toBe("c");
     expect(getAssetId({})).toBeNull();
   });
 });
@@ -208,6 +210,10 @@ describe("buildObject", () => {
   it("builds a full object with size and styling", () => {
     const obj = buildObject({ id: "p1", renderAttributes: { "3DAssetId": "a" }, length: 10, width: 20, height: 30 }, "toilet", {}, {});
     expect(obj).toMatchObject({ productId: "p1", asset: "a", size: { length: "10", width: "20", height: "30" }, styling: "Default" });
+  });
+
+  it("resolves a top-level asset id when renderAttributes lacks one", () => {
+    expect(buildObject({ id: "p1", "3DAssetId": "top-asset" }, "toilet", {}, {})?.asset).toBe("top-asset");
   });
 
   it("adds vanity sink/counter fields", () => {

@@ -14,7 +14,7 @@
     "verify": "yarn typecheck && yarn lint && yarn test:coverage && yarn format:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=a11y",
     "test:e2e:a11y": "playwright test --project=a11y",
     "test:e2e:visual": "playwright test --project=visual",
     "test:e2e:update": "playwright test --project=visual --update-snapshots",
