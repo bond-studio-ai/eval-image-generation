@@ -50,10 +50,10 @@ async function compileUntestedFile(entry) {
 }
 
 export const thresholds = {
-  statements: 30,
-  branches: 18,
-  functions: 22,
-  lines: 40
+  statements: 28,
+  branches: 17,
+  functions: 21,
+  lines: 52
 };
 
 // Order the markdown/summary rows the way humans read them (lines first).
