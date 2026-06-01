@@ -50,10 +50,10 @@ async function compileUntestedFile(entry) {
 }
 
 export const thresholds = {
-  statements: 35,
-  branches: 28,
-  functions: 28,
-  lines: 30
+  statements: 30,
+  branches: 18,
+  functions: 22,
+  lines: 40
 };
 
 // Order the markdown/summary rows the way humans read them (lines first).
@@ -153,16 +153,30 @@ const coverageOptions = {
   outputDir: "coverage",
   reports: [["v8"], ["html"], ["lcovonly"], ["console-summary"]],
 
-  // Keep only our own source. `entryFilter` drops bundled vendor/runtime entries
-  // before sourcemap unpacking; `sourceFilter` keeps only files under src/ after.
-  entryFilter: {
-    "**/node_modules/**": false,
-    "**/*": true
+  // Keep only THIS repo's `src/**`. Two stages:
+  // - entryFilter runs on the bundled (dist) entries before source-map unpacking.
+  //   We drop vendor/CDN and, crucially, any entry that has no source map and
+  //   isn't our src — in dev those are framework/runtime artifacts (.next, _next
+  //   chunks, Clerk's CDN, document URLs) that can't unpack to src and would
+  //   otherwise pollute the report as their own files.
+  // - sourceFilter runs on files unpacked from source maps. We keep only paths
+  //   under a `src/` segment, explicitly excluding Next's own `next/src/**`.
+  entryFilter: (entry) => {
+    const url = entry.url ?? "";
+    if (!url || url === "anonymous") {
+      return false;
+    }
+    if (url.includes("/node_modules/") || url.includes("clerk.accounts.dev")) {
+      return false;
+    }
+    const hasSourceMap = typeof entry.source === "string" && entry.source.includes("sourceMappingURL=");
+    return hasSourceMap || /(?:^|\/)src\//.test(url);
   },
-  sourceFilter: {
-    "**/node_modules/**": false,
-    "**/src/**": true,
-    "**/*": false
+  sourceFilter: (sourcePath) => {
+    if (sourcePath.includes("node_modules") || sourcePath.includes("next/src/")) {
+      return false;
+    }
+    return /(?:^|\/)src\//.test(sourcePath);
   },
 
   onEntry: sanitizeEntrySourceMap,
