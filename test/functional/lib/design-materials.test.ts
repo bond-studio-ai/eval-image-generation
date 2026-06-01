@@ -62,6 +62,28 @@ describe("buildDesignMaterials", () => {
     expect(result?.objects.tubDoor).toEqual({ styling: "Default" });
   });
 
+  it("resolves the scan by fetching the project when only a projectId is given", async () => {
+    const fetchFn = vi.fn((url: string) => {
+      if (url.includes("/projects/proj-7")) {
+        return Promise.resolve(new Response(JSON.stringify({ data: [{ scan: { areas: {} } }] }), { status: 200, headers: { "content-type": "application/json" } }));
+      }
+      return Promise.resolve(new Response("{}", { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchFn);
+    const result = await buildDesignMaterials({ design: { id: "design-x" }, projectId: "proj-7" });
+    expect(result?.id).toBe("design-x");
+    expect(fetchFn.mock.calls[0]?.[0]).toContain("/projects/proj-7");
+  });
+
+  it("returns null when the project fetch fails and no roomData is given", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response("nope", { status: 500 })))
+    );
+    const result = await buildDesignMaterials({ design: {}, projectId: "proj-down" });
+    expect(result).toBeNull();
+  });
+
   it("falls back to projectId then 'unknown' for the id", async () => {
     vi.stubGlobal(
       "fetch",

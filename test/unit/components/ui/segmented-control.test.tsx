@@ -53,4 +53,40 @@ describe("SegmentedControl", () => {
     await userEvent.keyboard("{ArrowRight}");
     expect(onChange).toHaveBeenLastCalledWith("list");
   });
+
+  it("moves to previous with ArrowUp/ArrowLeft and wraps", async () => {
+    const onChange = vi.fn();
+    render(<SegmentedControl options={options} value="matrix" onChange={onChange} />);
+    screen.getByRole("radio", { name: "Matrix" }).focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(onChange).toHaveBeenLastCalledWith("list");
+    onChange.mockClear();
+    // From List, ArrowUp wraps backward past disabled "Off" to "Matrix".
+    screen.getByRole("radio", { name: "List" }).focus();
+    await userEvent.keyboard("{ArrowUp}");
+    expect(onChange).toHaveBeenLastCalledWith("matrix");
+  });
+
+  it("jumps to the first/last enabled option with Home/End", async () => {
+    const onChange = vi.fn();
+    render(<SegmentedControl options={options} value="matrix" onChange={onChange} />);
+    const matrix = screen.getByRole("radio", { name: "Matrix" });
+    matrix.focus();
+    await userEvent.keyboard("{Home}");
+    expect(onChange).toHaveBeenLastCalledWith("list");
+    onChange.mockClear();
+    matrix.focus();
+    // End lands on the last *enabled* option (Matrix), skipping the disabled "Off".
+    await userEvent.keyboard("{End}");
+    expect(onChange).toHaveBeenLastCalledWith("matrix");
+  });
+
+  it("ignores unrelated keys", async () => {
+    const onChange = vi.fn();
+    render(<SegmentedControl options={options} value="list" onChange={onChange} />);
+    screen.getByRole("radio", { name: "List" }).focus();
+    await userEvent.keyboard("{Enter}");
+    // Enter falls through to the native button click which re-selects "list".
+    expect(onChange).not.toHaveBeenCalledWith("matrix");
+  });
 });

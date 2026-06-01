@@ -26,6 +26,21 @@ describe("dollhouseReferencePath", () => {
     expect(quantity).toBeDefined();
     expect(dollhouseReferencePath("vanity", quantity!)).toBe("{{dollhouse.vanity.quantity}}");
   });
+
+  it("each attribute builder produces a handlebars expression for the given path prefix", () => {
+    for (const attr of DOLLHOUSE_ATTRIBUTES) {
+      const built = dollhouseReferencePath("faucet", attr);
+      expect(built).toContain("dollhouse.faucet");
+      expect(built.startsWith("{{")).toBe(true);
+      expect(built.endsWith("}}")).toBe(true);
+    }
+  });
+
+  it("renders the visibility iteration helpers", () => {
+    const visible = DOLLHOUSE_ATTRIBUTES.find((attr) => attr.value === "#each visibility → visible");
+    expect(visible).toBeDefined();
+    expect(dollhouseReferencePath("vanity", visible!)).toBe("{{#each dollhouse.vanity.visibility}}{{visible}}{{/each}}");
+  });
 });
 
 describe("option tables", () => {

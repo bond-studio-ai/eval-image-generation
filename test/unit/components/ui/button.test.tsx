@@ -2,7 +2,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  )
+}));
 
 describe("Button", () => {
   it("renders children and defaults to type=button", () => {
@@ -53,5 +61,36 @@ describe("Button", () => {
   it("applies the danger variant palette", () => {
     render(<Button variant="danger">Delete</Button>);
     expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("bg-danger-600");
+  });
+
+  it("renders the right icon when not loading", () => {
+    render(<Button iconRight={<svg data-testid="right-icon" />}>Next</Button>);
+    expect(screen.getByTestId("right-icon")).toBeInTheDocument();
+  });
+});
+
+describe("LinkButton", () => {
+  it("renders an internal next/link anchor with icons", () => {
+    render(
+      <LinkButton href="/new" iconLeft={<svg data-testid="li" />} iconRight={<svg data-testid="ri" />}>
+        Create
+      </LinkButton>
+    );
+    const link = screen.getByRole("link", { name: /Create/ });
+    expect(link).toHaveAttribute("href", "/new");
+    expect(screen.getByTestId("li")).toBeInTheDocument();
+    expect(screen.getByTestId("ri")).toBeInTheDocument();
+  });
+
+  it("renders a plain anchor for external links with target/rel", () => {
+    render(
+      <LinkButton href="https://example.com" external target="_blank" rel="noopener">
+        Out
+      </LinkButton>
+    );
+    const link = screen.getByRole("link", { name: "Out" });
+    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener");
   });
 });

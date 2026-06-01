@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { buildImageConfig, DEFAULT_IMAGE_CONFIG, FORMAT_OPTIONS, parseDesignMaterialsOverride, parseRoomDataOverride } from "@/app/dollhouse-renders/new/_components/build-request";
+import {
+  buildCreateRenderBody,
+  buildImageConfig,
+  DEFAULT_IMAGE_CONFIG,
+  DEFAULT_RENDER_CONFIG,
+  DEFAULT_SSM_PARAMS,
+  FORMAT_OPTIONS,
+  parseDesignMaterialsOverride,
+  parseRoomDataOverride
+} from "@/app/dollhouse-renders/new/_components/build-request";
+import type { UnitySlimDesignMaterials } from "@/lib/dollhouse-renders";
 
 describe("dollhouse render image config defaults", () => {
   it("matches the proven 4:3 dollhouse-capture defaults", () => {
@@ -97,5 +107,55 @@ describe("parseRoomDataOverride", () => {
   it("rejects arrays and primitives", () => {
     expect(parseRoomDataOverride("[]").error).toMatch(/object/i);
     expect(parseRoomDataOverride("42").error).toMatch(/object/i);
+  });
+});
+
+describe("buildCreateRenderBody", () => {
+  const designMaterials: UnitySlimDesignMaterials = { id: "d1", objects: {}, surfaces: {} };
+  const base = {
+    projectId: "PRJ-1",
+    designMaterials,
+    roomData: { walls: [] },
+    cameraFrames: [],
+    imageConfig: DEFAULT_IMAGE_CONFIG,
+    renderConfig: DEFAULT_RENDER_CONFIG,
+    ssmParams: DEFAULT_SSM_PARAMS,
+    styleOverrides: []
+  };
+
+  it("emits only the required fields when optional sub-objects are empty", () => {
+    const body = buildCreateRenderBody(base);
+    expect(body).toMatchObject({ projectId: "PRJ-1", designMaterials, roomData: { walls: [] } });
+    expect(body.renderConfig).toBeUndefined();
+    expect(body.ssmParams).toBeUndefined();
+    expect(body.styleOverrides).toBeUndefined();
+  });
+
+  it("includes render config, ssm params, and cleaned style overrides when provided", () => {
+    const body = buildCreateRenderBody({
+      ...base,
+      renderConfig: { renderMode: "LINEWORK", advancedSegmentation: true, overrideCameraHeight: "1.5" },
+      ssmParams: { addressablesCatalog: " cat ", host: "", uploadBucket: "bucket" },
+      styleOverrides: [
+        { id: "o1", product: "vanity", style: "Modern" },
+        { id: "o2", product: "  ", style: "skip" }
+      ]
+    });
+    expect(body.renderConfig).toEqual({ renderMode: "LINEWORK", advancedSegmentation: true, overrideCameraHeight: 1.5 });
+    expect(body.ssmParams).toEqual({ addressablesCatalog: "cat", uploadBucket: "bucket" });
+    expect(body.styleOverrides).toEqual([{ product: "vanity", style: "Modern" }]);
+  });
+
+  it("drops a non-finite override camera height", () => {
+    const body = buildCreateRenderBody({
+      ...base,
+      renderConfig: { renderMode: "default", advancedSegmentation: false, overrideCameraHeight: "not-a-number" }
+    });
+    expect(body.renderConfig).toBeUndefined();
+  });
+
+  it("honors a super-sampling multiplier in the image config", () => {
+    const body = buildCreateRenderBody({ ...base, imageConfig: { ...DEFAULT_IMAGE_CONFIG, superSamplingMultiplier: "2" } });
+    expect(body.imageConfig).toMatchObject({ superSamplingMultiplier: 2 });
   });
 });

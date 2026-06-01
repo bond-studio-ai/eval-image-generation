@@ -3,7 +3,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { FilterPills, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter } from "@/components/data-table";
+import { type ColumnDef, DataTable, FilterPills, NameCell, SearchBar, SelectAllCheckbox, StatusBadge, ToggleFilter } from "@/components/data-table";
+
+interface Row {
+  id: string;
+  name: string;
+}
+const rowColumns: ColumnDef<Row>[] = [{ id: "name", header: "Name", cell: ({ row }) => row.original.name }];
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
@@ -70,6 +76,41 @@ describe("StatusBadge", () => {
     expect(screen.getByText("Active")).toBeInTheDocument();
     rerender(<StatusBadge status="deleted" label="Removed" />);
     expect(screen.getByText("Removed")).toBeInTheDocument();
+  });
+});
+
+describe("DataTable", () => {
+  it("renders a header and a row per item", () => {
+    render(
+      <DataTable
+        columns={rowColumns}
+        data={[
+          { id: "1", name: "Alpha" },
+          { id: "2", name: "Beta" }
+        ]}
+        rowKey={(r) => r.id}
+        enableColumnVisibility={false}
+      />
+    );
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Beta")).toBeInTheDocument();
+  });
+
+  it("renders the empty message when there is no data", () => {
+    render(<DataTable columns={rowColumns} data={[]} rowKey={(r) => r.id} emptyMessage="Nothing here" enableColumnVisibility={false} />);
+    expect(screen.getByText("Nothing here")).toBeInTheDocument();
+  });
+
+  it("renders skeleton rows while loading instead of data", () => {
+    render(<DataTable columns={rowColumns} data={[{ id: "1", name: "Alpha" }]} rowKey={(r) => r.id} loading enableColumnVisibility={false} />);
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+  });
+
+  it("renders a toolbar and footer when provided", () => {
+    render(<DataTable columns={rowColumns} data={[{ id: "1", name: "Alpha" }]} rowKey={(r) => r.id} enableColumnVisibility={false} toolbar={<span>toolbar-here</span>} footer={<span>footer-here</span>} />);
+    expect(screen.getByText("toolbar-here")).toBeInTheDocument();
+    expect(screen.getByText("footer-here")).toBeInTheDocument();
   });
 });
 
