@@ -182,8 +182,14 @@ const coverageOptions = {
   // Normalize the many shapes the same source file takes across runners — unit
   // gives `src/...`, while E2E maps yield `[project]/src/...`, `../../../src/...`,
   // or `webpack-internal:///./src/...` — down to a single `src/...` path so they
-  // merge into one file instead of double-counting.
+  // merge into one file instead of double-counting. Leave framework/dependency
+  // paths (next/src, node_modules) untouched so sourceFilter still drops them —
+  // sourcePath runs BEFORE sourceFilter, so normalizing their `…/src/…` tail
+  // would otherwise sneak them past the filter.
   sourcePath: (filePath) => {
+    if (filePath.includes("node_modules") || filePath.includes("next/src/")) {
+      return filePath;
+    }
     const normalized = filePath.replace(/^webpack(?:-internal)?:\/\/\/?/, "").replace(/^\[project\]\//, "");
     return /(?:^|\/)(src\/.+)$/.exec(normalized)?.[1] ?? normalized;
   },
