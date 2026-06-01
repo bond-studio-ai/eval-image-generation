@@ -276,7 +276,11 @@ export function GridLightbox({ src, runHref, generationId, onRated, onClose }: G
           }
         }}
         zoom={{ maxZoomPixelRatio: LIGHTBOX_MAX_ZOOM }}
-        styles={{ root: { zIndex: LIGHTBOX_Z_INDEX } }}
+        // This lightbox renders as a sibling portal above the Radix-Dialog-based
+        // Modal. Radix's modal mode sets `pointer-events: none` on <body>, which
+        // the portal would otherwise inherit — making the close/zoom/nav controls
+        // unclickable. Re-enable pointer events on the lightbox root.
+        styles={{ root: { zIndex: LIGHTBOX_Z_INDEX, pointerEvents: "auto" } }}
       />
     </>
   );

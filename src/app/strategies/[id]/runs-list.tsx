@@ -26,7 +26,6 @@ export function StrategyRunsList({ strategyId, hasJudge, initialRuns }: { strate
       return normalizeStrategyRuns(json.data);
     },
     initialData: initialRuns,
-    refetchOnMount: false,
     refetchInterval: (query) => {
       const current = query.state.data ?? initialRuns;
       const active = current.some((run) => run.status === "running" || run.status === "pending");

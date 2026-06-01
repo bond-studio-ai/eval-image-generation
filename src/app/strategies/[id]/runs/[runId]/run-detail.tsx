@@ -65,7 +65,6 @@ export function RunDetail({ strategyId, runId, initialData }: { strategyId: stri
       };
     },
     initialData,
-    refetchOnMount: false,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === "running" || status === "pending" ? POLL_INTERVAL : false;
