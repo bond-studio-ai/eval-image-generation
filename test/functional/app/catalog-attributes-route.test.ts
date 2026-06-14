@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/v1/catalog/products/[category]/attributes/route";
 
 vi.mock("@/lib/logger", () => ({
@@ -13,8 +13,13 @@ function call(category: string) {
   return GET(new Request("https://test/attributes"), { params: Promise.resolve({ category }) });
 }
 
+beforeEach(() => {
+  vi.stubEnv("BASE_API_HOSTNAME", "api.example.com");
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("GET catalog product attributes", () => {
@@ -51,7 +56,7 @@ describe("GET catalog product attributes", () => {
     const fetchFn = vi.fn((_url: string) => Promise.resolve(jsonResponse({ data: [] })));
     vi.stubGlobal("fetch", fetchFn);
     await call("floor_tiles");
-    expect(fetchFn.mock.calls[0]?.[0]).toContain("/products/tiles?");
+    expect(fetchFn.mock.calls[0]?.[0]).toContain("https://api.example.com/catalog/v3/products/tiles?");
   });
 
   it("returns a 500 when the catalog API fails", async () => {

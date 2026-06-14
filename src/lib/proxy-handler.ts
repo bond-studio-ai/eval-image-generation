@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { authenticatedUserId } from "./auth";
 import { HTTP_BAD_GATEWAY, HTTP_INTERNAL_SERVER_ERROR, HTTP_UNAUTHORIZED } from "./http-status";
 import { logger } from "./logger";
 
@@ -206,7 +206,7 @@ export function createCatchAllProxy(opts: CreateCatchAllProxyOptions): CatchAllR
 
   const handle: RouteHandler = async (request, { params }) => {
     if (requireAuth) {
-      const { userId } = await auth();
+      const userId = await authenticatedUserId();
       if (!userId) {
         return NextResponse.json(
           {

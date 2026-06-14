@@ -60,9 +60,10 @@ function buildCrumbs(pathname: string): Crumb[] {
 
 interface TopBarProps {
   className?: string;
+  localAuthBypass?: boolean;
 }
 
-export function TopBar({ className }: TopBarProps) {
+export function TopBar({ className, localAuthBypass = false }: TopBarProps) {
   const pathname = usePathname();
   const crumbs = useMemo(() => buildCrumbs(pathname), [pathname]);
   const env = process.env.NEXT_PUBLIC_ENV_LABEL;
@@ -94,13 +95,17 @@ export function TopBar({ className }: TopBarProps) {
 
       <div className="flex shrink-0 items-center gap-3">
         {env && env !== "production" && <span className="rounded-pill bg-warning-50 text-warning-800 ring-warning-600/30 inline-flex items-center px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset">{env.toUpperCase()}</span>}
-        <UserButton
-          appearance={{
-            elements: {
-              avatarBox: "h-8 w-8"
-            }
-          }}
-        />
+        {localAuthBypass ? (
+          <span className="rounded-pill bg-surface-muted text-text-muted ring-border inline-flex items-center px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset">LOCAL</span>
+        ) : (
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "h-8 w-8"
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );

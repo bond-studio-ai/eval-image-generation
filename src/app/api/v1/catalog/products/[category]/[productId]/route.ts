@@ -1,7 +1,7 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { catalogProductsBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
-const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
 const CATALOG_INCLUDE_PARAMS = "include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=components&images.tags=photo-image,tear-sheet,line-drawing";
 
 const TILE_SEGMENTS = new Set(["floor-tiles", "shower-curb-tiles", "shower-floor-tiles", "shower-wall-tiles", "wall-tiles"]);
@@ -18,7 +18,7 @@ function firstCatalogProduct(json: unknown): unknown {
 }
 
 async function fetchCatalogProduct(segment: string, productId: string): Promise<unknown> {
-  const url = `${CATALOG_BASE}/${segment}/${encodeURIComponent(productId)}?${CATALOG_INCLUDE_PARAMS}`;
+  const url = `${catalogProductsBase()}/${segment}/${encodeURIComponent(productId)}?${CATALOG_INCLUDE_PARAMS}`;
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
     next: { revalidate: 600 }

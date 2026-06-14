@@ -1,13 +1,12 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { catalogProductsBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
-
-const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ productId: string }> }) {
   try {
     const { productId } = await params;
 
-    const res = await fetch(`${CATALOG_BASE}/${productId}`, {
+    const res = await fetch(`${catalogProductsBase()}/${productId}`, {
       headers: { Accept: "application/json" },
       next: { revalidate: 600 }
     });

@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/api-response";
+import { authenticatedUserId } from "@/lib/auth";
 import { platformApiBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { normalizeV2PaginationResponse, rewriteV1PaginationToV2 } from "@/lib/v2-pagination";
@@ -12,7 +12,7 @@ const FORWARDED_SCALAR_KEYS = ["status", "crmStatus", "contractorId", "before", 
 const FORWARDED_ARRAY_KEYS = ["format[]", "include[]"] as const;
 
 export async function GET(request: Request) {
-  const { userId } = await auth();
+  const userId = await authenticatedUserId();
   if (!userId) {
     return errorResponse("UNAUTHORIZED", "Sign in is required to access the projects API.");
   }
