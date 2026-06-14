@@ -34,6 +34,11 @@ describe("platformApiBase", () => {
     expect(platformApiBase()).toBe("http://127.0.0.1:5311");
   });
 
+  it("preserves a bracketed IPv6 loopback http origin", () => {
+    vi.stubEnv("BASE_API_HOSTNAME", "http://[::1]:5311");
+    expect(platformApiBase()).toBe("http://[::1]:5311");
+  });
+
   it("adds https when no protocol is present", () => {
     vi.stubEnv("BASE_API_HOSTNAME", "api.example.com");
     expect(platformApiBase()).toBe("https://api.example.com");

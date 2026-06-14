@@ -15,8 +15,12 @@ const HTTP_PREFIX = `${HTTP_PROTOCOL}//`;
 const HTTPS_PREFIX = `${HTTPS_PROTOCOL}//`;
 const LOCAL_HTTP_HOSTS = new Set(["127.0.0.1", "::1", "localhost"]);
 
+function normalizedHostname(hostname: string): string {
+  return hostname === "[::1]" ? "::1" : hostname;
+}
+
 function isLocalHttpOrigin(url: URL): boolean {
-  return url.protocol === HTTP_PROTOCOL && LOCAL_HTTP_HOSTS.has(url.hostname);
+  return url.protocol === HTTP_PROTOCOL && LOCAL_HTTP_HOSTS.has(normalizedHostname(url.hostname));
 }
 
 function apiOrigin(): string {
