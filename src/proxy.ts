@@ -1,5 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { isLocalAuthBypassEnabled } from "@/lib/local-auth-bypass";
 
 const isProtectedRoute = createRouteMatcher(["/", "/analytics(.*)", "/audit(.*)", "/dollhouse-renders(.*)", "/executions(.*)", "/generations(.*)", "/strategies(.*)", "/input-presets(.*)", "/prompt-versions(.*)", "/prompt-preview(.*)"]);
 
@@ -18,6 +20,7 @@ const clerkWithProtection = clerkMiddleware(
 );
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (isLocalAuthBypassEnabled()) return NextResponse.next();
   return clerkWithProtection(request, event);
 }
 

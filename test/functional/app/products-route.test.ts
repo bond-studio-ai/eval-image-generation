@@ -58,7 +58,7 @@ describe("GET product detail", () => {
     vi.stubGlobal("fetch", fetchFn);
     const res = await getProductDetail(new Request("https://test"), { params: Promise.resolve({ productId: "p1" }) });
     await expect(res.json()).resolves.toEqual({ data: { id: "p1" } });
-    expect(fetchFn.mock.calls[0]?.[0]).toContain("/products/p1");
+    expect(fetchFn.mock.calls[0]?.[0]).toBe("https://api.example.com/catalog/v3/products/p1");
   });
 
   it("returns 500 when the catalog API fails", async () => {

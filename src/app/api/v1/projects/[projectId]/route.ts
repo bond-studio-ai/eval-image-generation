@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/api-response";
+import { authenticatedUserId } from "@/lib/auth";
 import { platformApiBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -9,7 +9,7 @@ const PROJECTS_BASE = `${platformApiBase()}/v2/projects`;
 const FORWARDED_KEYS = ["format[]", "include[]"] as const;
 
 export async function GET(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
-  const { userId } = await auth();
+  const userId = await authenticatedUserId();
   if (!userId) {
     return errorResponse("UNAUTHORIZED", "Sign in is required to access the projects API.");
   }

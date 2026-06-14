@@ -17,6 +17,7 @@ declare global {
       NEXT_PUBLIC_ENV_LABEL?: string;
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string;
       CLERK_SECRET_KEY?: string;
+      WEB_EVAL_IMAGE_GENERATION_LOCAL_AUTH_BYPASS?: string;
       BASE_URL?: string;
       STORAGE_STATE?: string;
       // Playwright e2e harness (see test/e2e/ and .github/workflows/e2e-a11y.yml).

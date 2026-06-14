@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { auth } from "@clerk/nextjs/server";
 import bytes from "bytes";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { authenticatedUserId } from "@/lib/auth";
 import { s3UploadConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -21,7 +21,7 @@ const MAX_SIZE = parseSize("10MB");
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const userId = await authenticatedUserId();
     if (!userId) {
       return errorResponse("UNAUTHORIZED", "Sign in is required to upload images");
     }

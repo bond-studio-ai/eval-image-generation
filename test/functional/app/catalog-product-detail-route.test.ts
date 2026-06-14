@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/v1/catalog/products/[category]/[productId]/route";
 
 vi.mock("@/lib/logger", () => ({
@@ -13,8 +13,13 @@ function call(category: string, productId: string) {
   return GET(new Request("https://test/catalog"), { params: Promise.resolve({ category, productId }) });
 }
 
+beforeEach(() => {
+  vi.stubEnv("BASE_API_HOSTNAME", "api.example.com");
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.clearAllMocks();
 });
 
@@ -25,14 +30,14 @@ describe("GET catalog product detail", () => {
     const res = await call("faucets", "p1");
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ data: { id: "p1" } });
-    expect(fetchFn.mock.calls[0]?.[0]).toContain("/products/faucets/p1?");
+    expect(fetchFn.mock.calls[0]?.[0]).toContain("https://api.example.com/catalog/v3/products/faucets/p1?");
   });
 
   it("maps tile categories to the shared tiles segment", async () => {
     const fetchFn = vi.fn((_url: string) => Promise.resolve(jsonResponse({ data: [{ id: "t1" }] })));
     vi.stubGlobal("fetch", fetchFn);
     await call("floor_tiles", "t1");
-    expect(fetchFn.mock.calls[0]?.[0]).toContain("/products/tiles/t1?");
+    expect(fetchFn.mock.calls[0]?.[0]).toContain("https://api.example.com/catalog/v3/products/tiles/t1?");
   });
 
   it("falls back to the lvps segment when a tile lookup returns nothing", async () => {
@@ -44,7 +49,7 @@ describe("GET catalog product detail", () => {
     const res = await call("wall_tiles", "lvp1");
     await expect(res.json()).resolves.toEqual({ data: { id: "lvp1" } });
     expect(fetchFn).toHaveBeenCalledTimes(2);
-    expect(fetchFn.mock.calls[1]?.[0]).toContain("/products/lvps/lvp1?");
+    expect(fetchFn.mock.calls[1]?.[0]).toContain("https://api.example.com/catalog/v3/products/lvps/lvp1?");
   });
 
   it("returns 500 when the catalog API fails", async () => {

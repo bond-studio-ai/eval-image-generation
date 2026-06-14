@@ -9,19 +9,46 @@ function raw(): string {
   return hostname.replace(/\/$/, "");
 }
 
+const HTTP_PROTOCOL = "http:";
+const HTTPS_PROTOCOL = "https:";
+const HTTP_PREFIX = `${HTTP_PROTOCOL}//`;
+const HTTPS_PREFIX = `${HTTPS_PROTOCOL}//`;
+const LOCAL_HTTP_HOSTS = new Set(["127.0.0.1", "::1", "localhost"]);
+
+function isLocalHttpOrigin(url: URL): boolean {
+  return url.protocol === HTTP_PROTOCOL && LOCAL_HTTP_HOSTS.has(url.hostname);
+}
+
+function apiOrigin(): string {
+  const value = raw();
+  if (value.startsWith(HTTPS_PREFIX)) return value;
+  if (value.startsWith(HTTP_PREFIX)) {
+    const url = new URL(value);
+    if (isLocalHttpOrigin(url)) return url.origin;
+    url.protocol = HTTPS_PROTOCOL;
+    return url.origin;
+  }
+  return `${HTTPS_PREFIX}${value}`;
+}
+
 /** Base URL for the image-generation service (e.g. "https://api.example.com/image-generation/v1"). */
 export function imageGenerationBase(): string {
-  return `${raw()}/image-generation/v1`;
+  return `${apiOrigin()}/image-generation/v1`;
 }
 
 /** Base URL for the v2 image-generation service API. */
 export function imageGenerationV2Base(): string {
-  return `${raw()}/image-generation/v2`;
+  return `${apiOrigin()}/image-generation/v2`;
 }
 
-/** Base URL for the platform API, protocol-normalized to https. */
+/** Base URL for the platform API. Non-local http origins are upgraded to https. */
 export function platformApiBase(): string {
-  return `https://${raw().replace(/^https?:\/\//, "")}`;
+  return apiOrigin();
+}
+
+/** Base URL for catalog product routes. */
+export function catalogProductsBase(): string {
+  return `${platformApiBase()}/catalog/v3/products`;
 }
 
 export interface S3UploadConfig {

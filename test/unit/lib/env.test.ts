@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { imageGenerationBase, imageGenerationV2Base, platformApiBase, s3UploadConfig } from "@/lib/env";
+import { catalogProductsBase, imageGenerationBase, imageGenerationV2Base, platformApiBase, s3UploadConfig } from "@/lib/env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -29,9 +29,19 @@ describe("platformApiBase", () => {
     expect(platformApiBase()).toBe("https://api.example.com");
   });
 
+  it("preserves a local http origin", () => {
+    vi.stubEnv("BASE_API_HOSTNAME", "http://127.0.0.1:5311");
+    expect(platformApiBase()).toBe("http://127.0.0.1:5311");
+  });
+
   it("adds https when no protocol is present", () => {
     vi.stubEnv("BASE_API_HOSTNAME", "api.example.com");
     expect(platformApiBase()).toBe("https://api.example.com");
+  });
+
+  it("derives catalog products from the platform API base", () => {
+    vi.stubEnv("BASE_API_HOSTNAME", "http://localhost:5311/");
+    expect(catalogProductsBase()).toBe("http://localhost:5311/catalog/v3/products");
   });
 });
 

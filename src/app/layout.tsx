@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { QueryProvider } from "@/components/query-provider";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { ToasterProvider } from "@/components/ui/toaster";
+import { isLocalAuthBypassEnabled } from "@/lib/local-auth-bypass";
 import "./globals.css";
 
 const inter = Inter({
@@ -45,19 +46,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider localization={clerkLocalization} appearance={clerkAppearance}>
-      <html lang="en" className={inter.variable} suppressHydrationWarning>
-        <body className={`${inter.className} bg-bg-app text-text-primary antialiased`}>
-          <QueryProvider>
-            <ToasterProvider>
-              <ConfirmProvider>
-                <AppShell>{children}</AppShell>
-              </ConfirmProvider>
-            </ToasterProvider>
-          </QueryProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+  const localAuthBypass = isLocalAuthBypassEnabled();
+  const app = (
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className={`${inter.className} bg-bg-app text-text-primary antialiased`}>
+        <QueryProvider>
+          <ToasterProvider>
+            <ConfirmProvider>
+              <AppShell localAuthBypass={localAuthBypass}>{children}</AppShell>
+            </ConfirmProvider>
+          </ToasterProvider>
+        </QueryProvider>
+      </body>
+    </html>
   );
+
+  return localAuthBypass ? app : <ClerkProvider localization={clerkLocalization} appearance={clerkAppearance}>{app}</ClerkProvider>;
 }

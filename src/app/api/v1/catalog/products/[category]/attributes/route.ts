@@ -1,8 +1,7 @@
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { catalogProductsBase } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { PRODUCT_CATEGORIES } from "@/lib/prompt-template-constants";
-
-const CATALOG_BASE = "https://api.usedemo.io/catalog/v3/products";
 
 /** Query params to get full product data so renderAttributes and other nested fields are available. */
 const CATALOG_INCLUDE_PARAMS = "include[]=retailer_data&include[]=details&include[]=manufacturer_data&include[]=texture_scale&include[]=style_attributes&include[]=image";
@@ -79,7 +78,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cat
       return errorResponse("VALIDATION_ERROR", `Invalid category: ${category}`);
     }
 
-    const url = `${CATALOG_BASE}/${catalogSegment(segment)}?perPage=1&${CATALOG_INCLUDE_PARAMS}`;
+    const url = `${catalogProductsBase()}/${catalogSegment(segment)}?perPage=1&${CATALOG_INCLUDE_PARAMS}`;
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
       next: { revalidate: 600 }
