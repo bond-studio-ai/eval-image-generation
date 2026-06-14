@@ -61,5 +61,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 
-  return localAuthBypass ? app : <ClerkProvider localization={clerkLocalization} appearance={clerkAppearance}>{app}</ClerkProvider>;
+  return localAuthBypass ? (
+    app
+  ) : (
+    <ClerkProvider localization={clerkLocalization} appearance={clerkAppearance}>
+      {app}
+    </ClerkProvider>
+  );
 }
